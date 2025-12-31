@@ -42,6 +42,8 @@ interface YearlyCalendarItem {
   description: string | null;
   category: string;
   priority: string;
+  startDate: string | null; // YYYY-MM-DD for calendar display
+  endDate: string | null; // YYYY-MM-DD for calendar display
   createdBy: string;
   createdByName: string;
   assignedTo: string[] | null;
@@ -202,6 +204,8 @@ export default function YearlyCalendar() {
   const [formDescription, setFormDescription] = useState('');
   const [formCategory, setFormCategory] = useState<string>('preparation');
   const [formPriority, setFormPriority] = useState<string>('medium');
+  const [formStartDate, setFormStartDate] = useState<string>('');
+  const [formEndDate, setFormEndDate] = useState<string>('');
   const [formIsRecurring, setFormIsRecurring] = useState(true);
 
   // Permission checks
@@ -311,6 +315,8 @@ export default function YearlyCalendar() {
       description: string | null;
       category: string;
       priority: string;
+      startDate: string | null;
+      endDate: string | null;
       isRecurring: boolean;
     }) => {
       return await apiRequest('POST', '/api/yearly-calendar', data);
@@ -322,6 +328,8 @@ export default function YearlyCalendar() {
       setFormDescription('');
       setFormCategory('preparation');
       setFormPriority('medium');
+      setFormStartDate('');
+      setFormEndDate('');
       setFormIsRecurring(true);
       toast({
         title: 'Calendar item created',
@@ -463,6 +471,8 @@ export default function YearlyCalendar() {
       description: formDescription.trim() || null,
       category: formCategory,
       priority: formPriority,
+      startDate: formStartDate || null,
+      endDate: formEndDate || formStartDate || null, // If no end date, use start date
       isRecurring: formIsRecurring,
     });
   };
@@ -474,6 +484,8 @@ export default function YearlyCalendar() {
     setFormDescription(item.description || '');
     setFormCategory(item.category);
     setFormPriority(item.priority);
+    setFormStartDate(item.startDate || '');
+    setFormEndDate(item.endDate || '');
     setFormIsRecurring(item.isRecurring);
     setIsEditDialogOpen(true);
   };
@@ -494,6 +506,8 @@ export default function YearlyCalendar() {
       description: formDescription.trim() || null,
       category: formCategory,
       priority: formPriority,
+      startDate: formStartDate || null,
+      endDate: formEndDate || formStartDate || null,
       isRecurring: formIsRecurring,
     });
   };
@@ -595,6 +609,7 @@ export default function YearlyCalendar() {
             year={selectedYear}
             month={expandedMonth}
             trackedItems={trackedItems}
+            yearlyItems={items}
             onMonthChange={(year, month) => {
               if (year !== selectedYear) {
                 setSelectedYear(year);
@@ -633,7 +648,14 @@ export default function YearlyCalendar() {
               >
                 <CardHeader className="pb-3 flex-shrink-0">
                   <CardTitle className="text-lg flex items-center justify-between">
-                    <span>{monthName}</span>
+                    <button
+                      onClick={() => setExpandedMonth(isExpanded ? null : monthNumber)}
+                      className="flex items-center gap-2 hover:text-[#236383] transition-colors text-left"
+                      title="Click to expand monthly calendar view"
+                    >
+                      <span>{monthName}</span>
+                      <CalendarDays className="h-4 w-4 text-gray-400 hover:text-[#236383]" />
+                    </button>
                     <div className="flex items-center gap-1">
                       {monthItems.length > 0 && (
                         <Badge variant="secondary" className="ml-2">
@@ -641,18 +663,9 @@ export default function YearlyCalendar() {
                         </Badge>
                       )}
                       {totalTrackedCount > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 hover:bg-amber-100"
-                          onClick={() => setExpandedMonth(isExpanded ? null : monthNumber)}
-                          title={isExpanded ? 'Collapse monthly view' : 'Expand to see school breaks on calendar'}
-                        >
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 mr-1">
-                            {totalTrackedCount}
-                          </Badge>
-                          <CalendarDays className="h-3.5 w-3.5 text-amber-600" />
-                        </Button>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
+                          {totalTrackedCount}
+                        </Badge>
                       )}
                     </div>
                   </CardTitle>
@@ -994,6 +1007,29 @@ export default function YearlyCalendar() {
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-start-date">Start Date (optional)</Label>
+                <Input
+                  id="create-start-date"
+                  type="date"
+                  value={formStartDate}
+                  onChange={(e) => setFormStartDate(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">For calendar grid display</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-end-date">End Date (optional)</Label>
+                <Input
+                  id="create-end-date"
+                  type="date"
+                  value={formEndDate}
+                  onChange={(e) => setFormEndDate(e.target.value)}
+                  min={formStartDate}
+                />
+                <p className="text-xs text-gray-500">Leave blank for single day</p>
+              </div>
+            </div>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="create-recurring"
@@ -1095,6 +1131,29 @@ export default function YearlyCalendar() {
                     <SelectItem value="high">High</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-start-date">Start Date (optional)</Label>
+                <Input
+                  id="edit-start-date"
+                  type="date"
+                  value={formStartDate}
+                  onChange={(e) => setFormStartDate(e.target.value)}
+                />
+                <p className="text-xs text-gray-500">For calendar grid display</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-end-date">End Date (optional)</Label>
+                <Input
+                  id="edit-end-date"
+                  type="date"
+                  value={formEndDate}
+                  onChange={(e) => setFormEndDate(e.target.value)}
+                  min={formStartDate}
+                />
+                <p className="text-xs text-gray-500">Leave blank for single day</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">

@@ -1915,7 +1915,7 @@ export const teamBoardItemCategories = pgTable(
 
 export type TeamBoardItemCategory = typeof teamBoardItemCategories.$inferSelect;
 
-// TSP Yearly Calendar - Month-based planning items (not date-specific)
+// TSP Yearly Calendar - Month-based planning items with optional specific dates
 export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
   id: serial('id').primaryKey(),
   month: integer('month').notNull(), // 1-12 (January = 1, December = 12)
@@ -1924,6 +1924,8 @@ export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
   description: text('description'), // Optional longer description
   category: varchar('category').default('preparation'), // 'preparation', 'event-rush', 'staffing', 'board', 'seasonal', 'other'
   priority: varchar('priority').default('medium'), // 'low', 'medium', 'high'
+  startDate: date('start_date'), // Optional specific start date for calendar display
+  endDate: date('end_date'), // Optional specific end date (if null, same as startDate)
   createdBy: varchar('created_by').notNull(), // User ID who created it
   createdByName: varchar('created_by_name').notNull(), // Display name of creator
   assignedTo: text('assigned_to').array(), // Array of user IDs
@@ -1936,6 +1938,7 @@ export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
   monthYearIndex: index('idx_yearly_calendar_month_year').on(table.year, table.month),
+  dateRangeIndex: index('idx_yearly_calendar_dates').on(table.startDate, table.endDate),
 }));
 
 export const insertYearlyCalendarItemSchema = createInsertSchema(

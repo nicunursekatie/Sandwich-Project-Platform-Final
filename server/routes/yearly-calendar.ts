@@ -14,6 +14,9 @@ import { PERMISSIONS } from '../../shared/auth-utils';
 import type { AuthenticatedRequest } from '../types/express';
 
 // Input validation schemas
+// Date string validation (YYYY-MM-DD format)
+const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').nullable().optional();
+
 const createItemSchema = insertYearlyCalendarItemSchema
   .omit({ createdBy: true, createdByName: true })
   .extend({
@@ -23,6 +26,8 @@ const createItemSchema = insertYearlyCalendarItemSchema
     description: z.string().max(2000, 'Description too long').optional().nullable(),
     category: z.enum(['preparation', 'event-rush', 'staffing', 'board', 'seasonal', 'other']).optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
+    startDate: dateStringSchema,
+    endDate: dateStringSchema,
     assignedTo: z.array(z.string()).nullable().optional(),
     assignedToNames: z.array(z.string()).nullable().optional(),
   });
@@ -32,6 +37,8 @@ const updateItemSchema = z.object({
   description: z.string().max(2000).optional().nullable(),
   category: z.enum(['preparation', 'event-rush', 'staffing', 'board', 'seasonal', 'other']).optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
+  startDate: dateStringSchema,
+  endDate: dateStringSchema,
   assignedTo: z.array(z.string()).nullable().optional(),
   assignedToNames: z.array(z.string()).nullable().optional(),
   isCompleted: z.boolean().optional(),
@@ -300,6 +307,14 @@ yearlyCalendarRouter.post(
         return res.status(404).json({ error: 'Calendar item not found' });
       }
 
+      // Helper to adjust a date string to next year
+      const adjustDateToNextYear = (dateStr: string | null): string | null => {
+        if (!dateStr) return null;
+        const date = new Date(dateStr + 'T12:00:00');
+        date.setFullYear(date.getFullYear() + 1);
+        return date.toISOString().split('T')[0];
+      };
+
       // Create a copy for next year
       const [newItem] = await db
         .insert(yearlyCalendarItems)
@@ -310,6 +325,8 @@ yearlyCalendarRouter.post(
           description: existingItem.description,
           category: existingItem.category,
           priority: existingItem.priority,
+          startDate: adjustDateToNextYear(existingItem.startDate),
+          endDate: adjustDateToNextYear(existingItem.endDate),
           createdBy: existingItem.createdBy,
           createdByName: existingItem.createdByName,
           assignedTo: existingItem.assignedTo,
