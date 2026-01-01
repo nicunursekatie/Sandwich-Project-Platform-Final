@@ -705,6 +705,54 @@ export default function GrantMetrics() {
           { label: 'Grant Metrics' }
         ]} />
 
+        {/* Hero Section - Community Infrastructure */}
+        <div className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] rounded-2xl p-8 text-white shadow-xl">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">
+            Community Infrastructure Disguised as Sandwiches
+          </h2>
+
+          {/* Key Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">2,040</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Collection events organized</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">35</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Host locations across Metro Atlanta</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">70+</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Partner organizations served weekly</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Active volunteer community members</div>
+            </div>
+          </div>
+
+          {/* Narrative */}
+          <div className="max-w-4xl mx-auto space-y-4 text-center">
+            <p className="text-lg md:text-xl leading-relaxed">
+              The Sandwich Project has evolved from pandemic response to proven community infrastructure.
+              Starting with just <span className="font-semibold text-[#fbad3f]">317 sandwiches in April 2020</span>,
+              we've delivered <span className="font-semibold text-[#fbad3f]">2,264,606 sandwiches</span> and
+              grown <span className="font-semibold text-[#fbad3f]">11.6x</span> since inception.
+            </p>
+            <p className="text-base md:text-lg leading-relaxed text-white/90">
+              We don't just feed people — we've built disaster response capability
+              (<span className="font-semibold">14,023 sandwiches during Hurricane Helene</span>),
+              distributed logistics infrastructure across 35 sites, and a volunteer network that could pivot
+              tomorrow to housing crisis response, voter mobilization, or climate disaster coordination.
+            </p>
+            <p className="text-xl md:text-2xl font-semibold mt-6 text-[#47b3cb]">
+              This is not charity. This is community infrastructure that happens to use sandwiches as its medium.
+              <br />
+              <span className="text-white">And we're just getting started.</span>
+            </p>
+          </div>
+        </div>
+
         {/* Header with Filter Controls */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
