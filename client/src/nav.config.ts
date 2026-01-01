@@ -433,12 +433,22 @@ export const NAV_ITEMS: NavItem[] = [
   // ADMIN & RESOURCES
   // ========================================
   {
+    id: 'analytics-section',
+    label: 'Analytics & Reports',
+    icon: BarChart3,
+    permission: PERMISSIONS.NAV_ANALYTICS,
+    group: 'admin',
+    highlighted: true,
+  },
+  {
     id: 'analytics',
-    label: 'Analytics',
+    label: 'Analytics Dashboard',
     icon: BarChart3,
     href: 'analytics',
     permission: PERMISSIONS.NAV_ANALYTICS,
     group: 'admin',
+    parentId: 'analytics-section',
+    isSubItem: true,
   },
   {
     id: 'grant-metrics',
@@ -447,7 +457,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'grant-metrics',
     permission: PERMISSIONS.NAV_GRANT_METRICS,
     group: 'admin',
-    parentId: 'analytics',
+    parentId: 'analytics-section',
     isSubItem: true,
   },
   {
@@ -457,7 +467,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'weekly-monitoring',
     permission: PERMISSIONS.NAV_WEEKLY_MONITORING,
     group: 'admin',
-    parentId: 'analytics',
+    parentId: 'analytics-section',
     isSubItem: true,
   },
   {
@@ -467,7 +477,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-impact-reports',
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'admin',
-    parentId: 'analytics',
+    parentId: 'analytics-section',
     isSubItem: true,
   },
   {
