@@ -31,6 +31,7 @@ import {
   calculateTotalSandwiches,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
+import { isDateInExcludedWeek } from '@/lib/excluded-weeks';
 import { logger } from '@/lib/logger';
 
 export default function PredictiveForecasts() {
@@ -76,6 +77,11 @@ export default function PredictiveForecasts() {
     const hasIncompleteReporting = reportingPercentage < 80; // Flag if less than 80% have reported
 
     const today = new Date();
+
+    // Check if current week is an excluded/holiday week
+    const excludedWeekCheck = isDateInExcludedWeek(today);
+    const isExcludedWeek = excludedWeekCheck.excluded;
+    const excludedWeekReason = excludedWeekCheck.reason || 'Holiday week';
 
     // Helper function for consistent date formatting
     const formatDate = (date: Date) => {
@@ -349,6 +355,9 @@ export default function PredictiveForecasts() {
         totalCoreHosts,
         reportingPercentage,
         hasIncompleteReporting,
+        // Holiday/excluded week
+        isExcludedWeek,
+        excludedWeekReason,
       },
       monthly: {
         current: currentMonthTotal,
@@ -400,7 +409,11 @@ export default function PredictiveForecasts() {
             <div>
               <CardTitle className="text-2xl flex items-center gap-2">
                 Weekly Forecast
-                {!forecasts.weekly.isComplete && (
+                {forecasts.weekly.isExcludedWeek ? (
+                  <Badge className="bg-blue-100 text-blue-800 text-xs">
+                    {forecasts.weekly.excludedWeekReason}
+                  </Badge>
+                ) : !forecasts.weekly.isComplete && (
                   <Badge className="bg-yellow-100 text-yellow-800 text-xs">
                     Week in Progress
                   </Badge>
@@ -496,7 +509,23 @@ export default function PredictiveForecasts() {
             </div>
           </div>
 
-          {forecasts.weekly.vsAvg < -10 && (
+          {/* Holiday/Excluded Week Notice - shows instead of action needed */}
+          {forecasts.weekly.isExcludedWeek && (
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-blue-800">{forecasts.weekly.excludedWeekReason}</p>
+                <p className="text-sm text-gray-700 mt-1">
+                  This is a scheduled off-week with expected reduced or zero collections.
+                  This week is excluded from performance averages and targets.
+                </p>
+                <p className="text-xs text-gray-500 mt-2 italic">
+                  Enjoy the break! Regular collections resume next week.
+                </p>
+              </div>
+            </div>
+          )}
+          {!forecasts.weekly.isExcludedWeek && forecasts.weekly.vsAvg < -10 && (
             <div className="bg-[#A31C41]/10 border-2 border-[#A31C41] rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-[#A31C41] mt-0.5" />
               <div>
@@ -507,7 +536,7 @@ export default function PredictiveForecasts() {
               </div>
             </div>
           )}
-          {forecasts.weekly.vsAvg >= -10 && forecasts.weekly.vsAvg < 0 && (
+          {!forecasts.weekly.isExcludedWeek && forecasts.weekly.vsAvg >= -10 && forecasts.weekly.vsAvg < 0 && (
             <div className="bg-brand-orange/10 border-2 border-brand-orange rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-brand-orange mt-0.5" />
               <div>
@@ -518,7 +547,7 @@ export default function PredictiveForecasts() {
               </div>
             </div>
           )}
-          {forecasts.weekly.vsAvg >= 10 && (
+          {!forecasts.weekly.isExcludedWeek && forecasts.weekly.vsAvg >= 10 && (
             <div className="bg-[#007E8C]/10 border-2 border-[#007E8C] rounded-lg p-4 flex items-start gap-3">
               <TrendingUp className="h-5 w-5 text-[#007E8C] mt-0.5" />
               <div>
@@ -537,7 +566,13 @@ export default function PredictiveForecasts() {
               What to do this week
             </h4>
             <div className="space-y-2 text-sm">
-              {forecasts.weekly.vsAvg >= 10 ? (
+              {forecasts.weekly.isExcludedWeek ? (
+                <>
+                  <p className="text-gray-700">• <strong>Status:</strong> Scheduled off-week ({forecasts.weekly.excludedWeekReason})</p>
+                  <p className="text-gray-700">• <strong>Relax:</strong> No collection targets this week - enjoy the holiday!</p>
+                  <p className="text-gray-700">• <strong>Planning:</strong> Use this time to prepare for next week's return to regular collections</p>
+                </>
+              ) : forecasts.weekly.vsAvg >= 10 ? (
                 <>
                   <p className="text-gray-700">• <strong>Celebrate:</strong> Share this success with your team and volunteers!</p>
                   <p className="text-gray-700">• <strong>Opportunity:</strong> Document what worked well this week to replicate in future weeks</p>
@@ -562,13 +597,17 @@ export default function PredictiveForecasts() {
                   )}
                 </>
               )}
-              <p className="text-gray-700">• <strong>Scheduled events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
-              <p className="text-gray-700">• <strong>Expected individual collections:</strong> ~{forecasts.weekly.expectedIndividual.toLocaleString()} sandwiches from regular donors</p>
+              {!forecasts.weekly.isExcludedWeek && (
+                <>
+                  <p className="text-gray-700">• <strong>Scheduled events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
+                  <p className="text-gray-700">• <strong>Expected individual collections:</strong> ~{forecasts.weekly.expectedIndividual.toLocaleString()} sandwiches from regular donors</p>
+                </>
+              )}
             </div>
           </div>
           
-          {/* Host Reporting Warning */}
-          {forecasts.weekly.hasIncompleteReporting && forecasts.weekly.vsAvg < 0 && (
+          {/* Host Reporting Warning - hide during excluded weeks */}
+          {!forecasts.weekly.isExcludedWeek && forecasts.weekly.hasIncompleteReporting && forecasts.weekly.vsAvg < 0 && (
             <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
               <div>
