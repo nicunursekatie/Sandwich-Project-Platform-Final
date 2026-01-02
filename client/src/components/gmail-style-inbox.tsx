@@ -44,6 +44,7 @@ import {
   Image,
   File,
   Loader2,
+  Video,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -137,6 +138,7 @@ function formatFileSize(bytes: number): string {
 // Helper to get icon for file type
 function getFileIcon(type: string) {
   if (type.startsWith('image/')) return Image;
+  if (type.startsWith('video/')) return Video;
   if (type === 'application/pdf') return FileText;
   return File;
 }
@@ -2028,7 +2030,7 @@ export default function GmailStyleInbox() {
                     onChange={handleFileUpload}
                     className="hidden"
                     multiple
-                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                    accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.mp4,.mov,.avi,.webm"
                   />
                   <Button
                     type="button"
@@ -2084,7 +2086,7 @@ export default function GmailStyleInbox() {
               )}
 
               <p className="text-xs text-gray-500 font-['Roboto']">
-                Max 10MB per file. Images, PDFs, and documents allowed.
+                Max 10MB per file. Images, videos, PDFs, and documents allowed.
               </p>
             </div>
 
