@@ -14,16 +14,24 @@ const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max file size
+    fileSize: 100 * 1024 * 1024, // 100MB max file size (for videos)
     files: 5, // Max 5 files per upload
   },
   fileFilter: (req, file, cb) => {
     // Allow common file types
     const allowedTypes = [
+      // Images
       'image/jpeg',
       'image/png',
       'image/gif',
       'image/webp',
+      // Videos
+      'video/mp4',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/webm',
+      'video/mpeg',
+      // Documents
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
