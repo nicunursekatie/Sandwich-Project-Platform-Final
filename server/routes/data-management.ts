@@ -294,7 +294,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   router.post('/bulk-map-hosts', async (req, res) => {
   try {
     const BATCH_SIZE = 500;
-    const MAX_ITERATIONS = 100000; // Safety limit: 50M records max
+    const MAX_ITERATIONS = 100000; // Safety limit: ~50M records (100k × 500 batch size)
 
     // Hosts table is typically small, safe to load all
     const allHosts = await db.select().from(hosts);
@@ -378,7 +378,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   router.patch('/sandwich-collections/fix-data-corruption', async (req, res) => {
   try {
     const BATCH_SIZE = 500;
-    const MAX_ITERATIONS = 100000; // Safety limit: 50M records max
+    const MAX_ITERATIONS = 100000; // Safety limit: ~50M records (100k × 500 batch size)
 
     let fixedCount = 0;
     let totalChecked = 0;
@@ -547,16 +547,16 @@ router.get('/export/holding-zone', async (req: any, res) => {
 
         results.push(...rows);
         
-        // If we got exactly what we asked for and still have chunks to process, we may have hit the limit
-        if (rows.length === remaining && start + MAX_IN_CLAUSE < itemIds.length) {
+        // If we're approaching or at the limit and still have chunks to process, we hit truncation
+        if (results.length >= MAX_RELATED && start + MAX_IN_CLAUSE < itemIds.length) {
           hitLimit = true;
         }
         
         remaining = MAX_RELATED - results.length;
       }
 
-      // Return truncated=true if we hit the limit or got exactly MAX_RELATED items
-      return { data: results.slice(0, MAX_RELATED), truncated: hitLimit || results.length >= MAX_RELATED };
+      // Return truncated=true if we hit the limit during processing
+      return { data: results.slice(0, MAX_RELATED), truncated: hitLimit || results.length === MAX_RELATED };
     };
 
     // Only fetch related data for the exported items (with limits and chunking)
