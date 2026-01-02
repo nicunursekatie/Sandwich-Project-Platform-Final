@@ -41,7 +41,7 @@ import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { SANDWICH_TYPES } from './constants';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { getPickupDateTimeForInput } from './utils';
+import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -149,6 +149,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     backupContactEmail: '',
     backupContactPhone: '',
     backupContactRole: '',
+    // Previously hosted flag
+    previouslyHosted: 'i_dont_know',
+    // Speaker details (conditional fields when speakers > 0)
+    speakerAudienceType: '',
+    speakerDuration: '',
+    // Delivery details for overnight holding
+    deliveryTimeWindow: '',
+    deliveryParkingAccess: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
@@ -228,84 +236,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
       
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
-      
-      // Normalize assignedRecipientIds to new string format with prefixes
-      // Supports legacy numeric IDs and new prefixed format (host:ID, recipient:ID, custom:text)
-      const normalizeRecipientIds = (ids: any): string[] => {
-        if (!ids) return [];
-        
-        let rawIds: any[] = [];
-        
-        // Handle PostgreSQL array format: {1,2,3} or {"host:5","recipient:10","custom:Hall, Room 2"}
-        if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
-          const arrayContent = ids.slice(1, -1); // Remove { and }
-          
-          // Parse PostgreSQL array format respecting quoted strings
-          // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
-          // Handles: {value1,value2} and {"value 1","value 2"} and {"value,with,commas"} and {"value with ""quotes"""}
-          const parsed: string[] = [];
-          let current = '';
-          let inQuotes = false;
-          
-          for (let i = 0; i < arrayContent.length; i++) {
-            const char = arrayContent[i];
-            const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
-            const prevChar = i > 0 ? arrayContent[i - 1] : null;
-            
-            if (char === '"') {
-              if (inQuotes && nextChar === '"') {
-                // Doubled quote ("") inside quoted string = escaped quote, add one quote
-                current += '"';
-                i++; // Skip the next quote
-              } else if (inQuotes && prevChar === '\\') {
-                // Backslash-escaped quote (\") = actual quote (backslash was already added)
-                current = current.slice(0, -1) + '"'; // Replace the backslash with quote
-              } else {
-                // Regular quote - toggle quote state
-                inQuotes = !inQuotes;
-              }
-            } else if (char === ',' && !inQuotes) {
-              // Comma outside quotes = separator
-              if (current.trim()) {
-                parsed.push(current.trim());
-              }
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          
-          // Don't forget the last value
-          if (current.trim()) {
-            parsed.push(current.trim());
-          }
-          
-          rawIds = parsed;
-        }
-        // Handle JSON array format: [1,2,3] or ["host:5","recipient:10"]
-        else if (Array.isArray(ids)) {
-          rawIds = ids;
-        }
-        
-        // Convert to new format with prefixes
-        return rawIds.map(id => {
-          const idStr = String(id);
-          
-          // If already has a prefix (host:, recipient:, custom:), keep as-is
-          if (idStr.includes(':')) {
-            return idStr;
-          }
-          
-          // Legacy numeric ID - assume it's a recipient ID
-          const numId = parseInt(idStr, 10);
-          if (!isNaN(numId)) {
-            return `recipient:${numId}`;
-          }
-          
-          // Fallback - treat as custom text
-          return `custom:${idStr}`;
-        }).filter(id => id);
-      };
 
       setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
@@ -363,6 +293,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
         backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
         backupContactRole: (eventRequest as any)?.backupContactRole || '',
+        // Previously hosted flag
+        previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
+        // Speaker details
+        speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+        speakerDuration: (eventRequest as any)?.speakerDuration || '',
+        // Delivery details for overnight holding
+        deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+        deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
         isDhlVan: (eventRequest as any)?.isDhlVan || false,
@@ -387,7 +325,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
         followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
         followUpNotes: (eventRequest as any)?.followUpNotes || '',
-        assignedRecipientIds: normalizeRecipientIds((eventRequest as any)?.assignedRecipientIds),
+        assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
       });
       
       // Set mode based on existing data
@@ -660,6 +598,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       backupContactEmail: formData.backupContactEmail || null,
       backupContactPhone: formData.backupContactPhone || null,
       backupContactRole: formData.backupContactRole || null,
+      // Previously hosted flag
+      previouslyHosted: formData.previouslyHosted || null,
+      // Speaker details
+      speakerAudienceType: formData.speakerAudienceType || null,
+      speakerDuration: formData.speakerDuration || null,
+      // Delivery details for overnight holding
+      deliveryTimeWindow: formData.deliveryTimeWindow || null,
+      deliveryParkingAccess: formData.deliveryParkingAccess || null,
       // Van driver assignment
       assignedVanDriverId: formData.isDhlVan
         ? null
@@ -922,6 +868,44 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (!isCollaborationEnabled || !collaboration) return null;
     return collaboration.locks?.get(fieldName) || null;
   }, [isCollaborationEnabled, collaboration]);
+
+  // Cleanup: release all field locks when dialog closes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (!isCollaborationEnabled || !collaboration?.locks || !currentUser) {
+        return;
+      }
+
+      // Release any locks held by the current user when leaving
+      const releasePromises: Promise<void>[] = [];
+
+      collaboration.locks.forEach((lock, fieldName) => {
+        if (lock.lockedBy === currentUser.id) {
+          const releasePromise = (
+            collaboration.releaseFieldLock?.(fieldName) ?? Promise.resolve()
+          )
+            .then(() => {
+              logger.log(
+                `[EventSchedulingForm] Cleanup: Released lock for field: ${fieldName}`
+              );
+            })
+            .catch((error) => {
+              logger.error(
+                `[EventSchedulingForm] Cleanup: Failed to release lock for ${fieldName}:`,
+                error
+              );
+            });
+
+          releasePromises.push(releasePromise);
+        }
+      });
+
+      if (releasePromises.length > 0) {
+        // Fire-and-forget; React does not await cleanup promises
+        void Promise.all(releasePromises);
+      }
+    };
+  }, [isCollaborationEnabled, collaboration, currentUser]);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
@@ -2153,7 +2137,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         size="sm"
                         onClick={() => {
                           setIsMessageEditable(false);
-                          // Reset to original value if needed
+                          // Reset to original value from eventRequest
+                          setFormData(prev => ({ ...prev, message: (eventRequest as any)?.message || '' }));
                         }}
                       >
                         Cancel
