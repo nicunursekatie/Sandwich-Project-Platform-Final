@@ -84,6 +84,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event-flags';
+import { Flag } from 'lucide-react';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -203,6 +205,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
   const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
+  const [showFlagsDialog, setShowFlagsDialog] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -733,6 +736,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       style={{ borderLeftColor: '#236383' }}
     >
       <CardContent className="p-3">
+        {/* Pre-Event Flags Banner */}
+        {request.preEventFlags && Array.isArray(request.preEventFlags) && request.preEventFlags.length > 0 && (
+          <PreEventFlagsBanner
+            flags={request.preEventFlags}
+            eventId={request.id}
+            eventName={request.organizationName || 'Event'}
+            compact={false}
+          />
+        )}
+        
         {/* Header Row - Organization & Status */}
         <div className="flex flex-col gap-2 mb-3 pb-3 border-b-2 border-[#236383]/40">
           {/* Top: Date + Organization Name */}
@@ -2767,6 +2780,33 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
+        {/* Pre-Event Flags Button */}
+        <div className="border-t-2 border-[#007E8C]/10 pt-4 mb-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFlagsDialog(true);
+              }}
+              className="flex-1 justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
+              type="button"
+            >
+              <div className="flex items-center gap-2">
+                <Flag className="w-4 h-4" aria-hidden="true" />
+                <span>Pre-Event Flags</span>
+                {request.preEventFlags && Array.isArray(request.preEventFlags) && 
+                 request.preEventFlags.filter((f: any) => !f.resolvedAt).length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {request.preEventFlags.filter((f: any) => !f.resolvedAt).length}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </div>
+        </div>
+
         {/* Activity History Toggle */}
         <div className="border-t-2 border-[#007E8C]/10 pt-4">
           <Button
@@ -2826,6 +2866,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         isOpen={showSendCorrectionDialog}
         onClose={() => setShowSendCorrectionDialog(false)}
         eventRequest={request}
+      />
+
+      {/* Pre-Event Flags Dialog */}
+      <PreEventFlagsDialog
+        flags={request.preEventFlags || []}
+        eventId={request.id}
+        eventName={request.organizationName || 'Event'}
+        isOpen={showFlagsDialog}
+        onClose={() => setShowFlagsDialog(false)}
       />
     </Card>
   );

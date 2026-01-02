@@ -533,6 +533,26 @@ export const useEventAssignments = () => {
 
   // Handle status change
   const handleStatusChange = (id: number, status: string) => {
+    // When moving to scheduled, check for incomplete next actions
+    if (status === 'scheduled') {
+      const request = eventRequests.find(r => r.id === id);
+      if (request && request.nextAction && request.nextAction.trim()) {
+        // Show confirmation dialog asking if they've completed the next action
+        const confirmed = window.confirm(
+          `This event has a next action that hasn't been marked complete:\n\n"${request.nextAction}"\n\nHave you completed this action? If not, please complete it before marking as scheduled.`
+        );
+        
+        if (!confirmed) {
+          toast({
+            title: 'Action Required',
+            description: 'Please complete or clear the next action before marking this event as scheduled.',
+            variant: 'destructive',
+          });
+          return; // Don't proceed with status change
+        }
+      }
+    }
+
     const data: any = { status };
 
     // When marking as scheduled, set scheduledEventDate to desiredEventDate if not already set
