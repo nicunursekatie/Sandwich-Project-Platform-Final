@@ -132,11 +132,15 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       }
 
       const comments = await storage.getEventCollaborationComments(eventId);
-      
+
       res.json({ comments });
     } catch (error) {
+      // Return empty array if collaboration tables don't exist yet
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+        return res.json({ comments: [] });
+      }
       logger.error('[Event Collaboration] Error fetching comments:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to fetch comments',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -342,11 +346,15 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
       }
 
       const locks = await storage.getEventFieldLocks(eventId);
-      
+
       res.json({ locks });
     } catch (error) {
+      // Return empty array if collaboration tables don't exist yet
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+        return res.json({ locks: [] });
+      }
       logger.error('[Event Collaboration] Error fetching locks:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to fetch locks',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -408,7 +416,7 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
     try {
       const eventId = parseInt(req.params.id, 10);
       const fieldName = req.params.fieldName;
-      
+
       if (isNaN(eventId)) {
         return res.status(400).json({ error: 'Invalid event ID' });
       }
@@ -425,8 +433,12 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
 
       res.json({ success: true });
     } catch (error) {
+      // Return success if collaboration tables don't exist yet (lock can't exist anyway)
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+        return res.json({ success: true });
+      }
       logger.error('[Event Collaboration] Error releasing lock:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to release lock',
         details: error instanceof Error ? error.message : 'Unknown error'
       });

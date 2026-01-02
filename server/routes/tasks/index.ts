@@ -535,6 +535,10 @@ tasksRouter.get(
 
       res.json(tasks);
     } catch (error) {
+      // Return empty array if column doesn't exist yet
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('column'))) {
+        return res.json([]);
+      }
       logger.error('Failed to fetch promoted tasks:', error);
       res.status(500).json({ error: 'Failed to fetch promoted tasks' });
     }

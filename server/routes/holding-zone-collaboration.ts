@@ -60,6 +60,10 @@ export function createHoldingZoneCollaborationRouter(deps: RouterDependencies) {
 
       res.json({ comments: comments || [] });
     } catch (error) {
+      // Return empty array if collaboration tables don't exist yet
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+        return res.json({ comments: [] });
+      }
       logger.error('[Holding Zone Collaboration] Error fetching comments:', error);
       res.status(500).json({
         error: 'Failed to fetch comments',
@@ -213,6 +217,10 @@ export function createHoldingZoneCollaborationRouter(deps: RouterDependencies) {
 
       res.json({ locks: locks || [] });
     } catch (error) {
+      // Return empty array if collaboration tables don't exist yet
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+        return res.json({ locks: [] });
+      }
       logger.error('[Holding Zone Collaboration] Error fetching locks:', error);
       res.status(500).json({
         error: 'Failed to fetch field locks',
@@ -295,6 +303,10 @@ export function createHoldingZoneCollaborationRouter(deps: RouterDependencies) {
 
       res.status(204).send();
     } catch (error) {
+      // Return success if collaboration tables don't exist yet (lock can't exist anyway)
+      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
+        return res.status(204).send();
+      }
       logger.error('[Holding Zone Collaboration] Error releasing lock:', error);
       res.status(500).json({
         error: 'Failed to release field lock',
