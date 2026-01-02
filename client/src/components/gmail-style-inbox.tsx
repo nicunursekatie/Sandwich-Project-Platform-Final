@@ -574,39 +574,40 @@ export default function GmailStyleInbox() {
     },
   });
 
-  // Auto-save draft effect
-  useEffect(() => {
-    if (composeRecipient || composeSubject || composeContent) {
-      if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-      }
-
-      const timer = setTimeout(() => {
-        const draft = {
-          id: currentDraft?.id,
-          recipientId: composeRecipient,
-          recipientName:
-            users.find((u) => u.id === composeRecipient)?.firstName +
-              ' ' +
-              users.find((u) => u.id === composeRecipient)?.lastName || '',
-          subject: composeSubject,
-          content: composeContent,
-          lastSaved: new Date().toISOString(),
-        };
-
-        saveDraftMutation.mutate(draft);
-        setCurrentDraft(draft as Draft);
-      }, 2000); // Auto-save after 2 seconds of inactivity
-
-      setAutoSaveTimer(timer);
-    }
-
-    return () => {
-      if (autoSaveTimer) {
-        clearTimeout(autoSaveTimer);
-      }
-    };
-  }, [composeRecipient, composeSubject, composeContent]);
+  // Auto-save draft effect - DISABLED: /api/drafts endpoint doesn't exist yet
+  // TODO: Implement drafts API endpoint if auto-save is needed
+  // useEffect(() => {
+  //   if (composeRecipient || composeSubject || composeContent) {
+  //     if (autoSaveTimer) {
+  //       clearTimeout(autoSaveTimer);
+  //     }
+  //
+  //     const timer = setTimeout(() => {
+  //       const draft = {
+  //         id: currentDraft?.id,
+  //         recipientId: composeRecipient,
+  //         recipientName:
+  //           users.find((u) => u.id === composeRecipient)?.firstName +
+  //             ' ' +
+  //             users.find((u) => u.id === composeRecipient)?.lastName || '',
+  //         subject: composeSubject,
+  //         content: composeContent,
+  //         lastSaved: new Date().toISOString(),
+  //       };
+  //
+  //       saveDraftMutation.mutate(draft);
+  //       setCurrentDraft(draft as Draft);
+  //     }, 2000);
+  //
+  //     setAutoSaveTimer(timer);
+  //   }
+  //
+  //   return () => {
+  //     if (autoSaveTimer) {
+  //       clearTimeout(autoSaveTimer);
+  //     }
+  //   };
+  // }, [composeRecipient, composeSubject, composeContent]);
 
   // Handle file upload for attachments
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2090,12 +2091,6 @@ export default function GmailStyleInbox() {
               </p>
             </div>
 
-            {saveDraftMutation.isPending && (
-              <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 p-3 rounded-lg">
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                Auto-saving draft...
-              </div>
-            )}
           </div>
 
           <DialogFooter className="pt-4 border-t border-gray-100 gap-3">
