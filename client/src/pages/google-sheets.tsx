@@ -47,7 +47,7 @@ export default function GoogleSheetsPage() {
         </p>
       </div>
 
-      <GoogleSheetsViewer title="Sandwich Totals Data Sheet" height={500} />
+      <GoogleSheetsViewer title="Sandwich Totals Data Sheet" height={700} />
 
       <div className="bg-brand-primary-lighter border border-brand-primary-border rounded-lg p-3 sm:p-4">
         <h3 className="font-semibold text-brand-primary-darker mb-2 text-sm sm:text-base">

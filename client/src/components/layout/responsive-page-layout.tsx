@@ -83,8 +83,18 @@ export function ResponsivePageLayout({
     );
   }
 
-  // Desktop: Pass through children (pages handle their own desktop layout)
-  return <>{children}</>;
+  // Desktop: Wrap children with configurable container
+  const widthClass = maxWidthClasses[maxWidth];
+  const containerClasses = [
+    'w-full',
+    widthClass,
+    centered ? 'mx-auto' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return <div className={containerClasses}>{children}</div>;
 }
 
 /**
