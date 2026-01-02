@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { workLogs } from '@shared/schema';
 import { db } from '../db';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -9,6 +9,10 @@ import {
   requireOwnershipPermission,
 } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
+
+// Default and maximum limits for pagination to prevent unbounded queries
+const DEFAULT_LIMIT = 100;
+const MAX_LIMIT = 1000;
 
 const router = Router();
 
@@ -39,6 +43,11 @@ router.get('/', async (req, res) => {
     const userEmail = req.user?.email;
     const userRole = req.user?.role;
 
+    // Parse pagination params with safe defaults
+    const requestedLimit = parseInt(req.query.limit as string) || DEFAULT_LIMIT;
+    const limit = Math.min(Math.max(1, requestedLimit), MAX_LIMIT);
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
     logger.log(
       `[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`
     );
@@ -61,11 +70,15 @@ router.get('/', async (req, res) => {
 
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
     if (canViewAll || isAdmin) {
-      logger.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
-      const logs = await db.select().from(workLogs);
+      logger.log(`[WORK LOGS] ViewAll permission - fetching logs with limit ${limit}, offset ${offset}`);
+      const logs = await db
+        .select()
+        .from(workLogs)
+        .orderBy(desc(workLogs.workDate))
+        .limit(limit)
+        .offset(offset);
       logger.log(
-        `[WORK LOGS] Found ${logs.length} total logs:`,
-        logs.map((l) => `${l.id}: ${l.userId}`)
+        `[WORK LOGS] Found ${logs.length} logs (page)`
       );
       return res.json(logs);
     }
@@ -75,15 +88,17 @@ router.get('/', async (req, res) => {
     }
 
     logger.log(
-      `[WORK LOGS] Regular user access - fetching logs for ${userId}`
+      `[WORK LOGS] Regular user access - fetching logs for ${userId} with limit ${limit}, offset ${offset}`
     );
     const logs = await db
       .select()
       .from(workLogs)
-      .where(eq(workLogs.userId, userId));
+      .where(eq(workLogs.userId, userId))
+      .orderBy(desc(workLogs.workDate))
+      .limit(limit)
+      .offset(offset);
     logger.log(
-      `[WORK LOGS] Found ${logs.length} logs for user ${userId}:`,
-      logs.map((l) => `${l.id}: ${l.description.substring(0, 30)}`)
+      `[WORK LOGS] Found ${logs.length} logs for user ${userId} (page)`
     );
     return res.json(logs);
   } catch (error) {
