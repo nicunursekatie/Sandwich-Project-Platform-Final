@@ -164,6 +164,9 @@ export default function SimpleNav({
       switch (itemId) {
         case 'gmail-inbox':
           return gmailUnreadCount;
+        case 'inbox-consolidated':
+          // Project Threads uses the email system, so use gmail unread count
+          return gmailUnreadCount;
         case 'chat':
           // Use Stream Chat unread count for team chat
           return streamChatUnread || 0;

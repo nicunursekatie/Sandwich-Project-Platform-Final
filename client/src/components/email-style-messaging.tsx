@@ -346,10 +346,10 @@ export default function EmailStyleMessaging() {
     retry: false,
   });
 
-  // Get users for recipient selection
+  // Get users for recipient selection (uses for-assignments endpoint - no special permissions needed)
   const { data: users = [] } = useQuery({
-    queryKey: ['/api/users'],
-    queryFn: () => apiRequest('GET', '/api/users'),
+    queryKey: ['/api/users/for-assignments'],
+    queryFn: () => apiRequest('GET', '/api/users/for-assignments'),
     retry: false,
   });
 
