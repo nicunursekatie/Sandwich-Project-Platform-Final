@@ -2630,14 +2630,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </p>
                 </div>
               )}
-              {request.duplicateNotes && request.duplicateNotes.toLowerCase().trim() !== 'no' && (
-                <div>
-                  <p className="text-sm font-medium mb-1 text-gray-900">Duplicate Check Notes:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-pink-400">
-                    {request.duplicateNotes}
-                  </p>
-                </div>
-              )}
+              {/* Duplicate check notes hidden - runs in background only */}
               {request.unresponsiveNotes && (
                 <div>
                   <p className="text-sm font-medium mb-1 text-gray-900">Contact Attempts Logged:</p>
