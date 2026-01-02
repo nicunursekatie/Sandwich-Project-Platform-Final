@@ -209,10 +209,22 @@ export default function GmailStyleInbox() {
     null
   );
 
-  // Fetch users for compose
-  const { data: users = [] } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+  // Fetch users for compose - use for-assignments endpoint (no special permissions required)
+  const { data: users = [], isLoading: isLoadingUsers, error: usersError } = useQuery<User[]>({
+    queryKey: ['/api/users/for-assignments'],
+    queryFn: async () => {
+      try {
+        const response = await apiRequest('GET', '/api/users/for-assignments');
+        logger.log(`[Compose] Fetched ${Array.isArray(response) ? response.length : 0} users from for-assignments endpoint`);
+        return Array.isArray(response) ? response : [];
+      } catch (error) {
+        logger.error('[Compose] Error fetching users:', error);
+        return [];
+      }
+    },
   });
+  
+  logger.log(`[Compose] Users loaded: ${users.length}, Loading: ${isLoadingUsers}, Error: ${usersError}`);
 
   // Add this after other useQuery hooks at the top of the component
   const { data: kudos = [] } = useQuery<any[]>({
@@ -1752,22 +1764,42 @@ export default function GmailStyleInbox() {
                 value={composeRecipient}
                 onValueChange={setComposeRecipient}
               >
-                <SelectTrigger className="rounded-lg border border-gray-300 bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 h-11 transition-colors">
-                  <SelectValue placeholder="Choose team member..." />
+                <SelectTrigger 
+                  className="rounded-lg border border-gray-300 bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 h-11 transition-colors cursor-pointer"
+                >
+                  <SelectValue placeholder={isLoadingUsers ? "Loading users..." : "Choose team member..."} />
                 </SelectTrigger>
-                <SelectContent className="rounded-lg border border-gray-200 bg-white shadow-lg z-50">
-                  {users
-                    .filter((u) => u.id !== (user as any)?.id)
-                    .sort((a, b) => {
-                      const nameA = `${a.firstName} ${a.lastName}`
-                        .trim()
-                        .toLowerCase();
-                      const nameB = `${b.firstName} ${b.lastName}`
-                        .trim()
-                        .toLowerCase();
-                      return nameA.localeCompare(nameB);
-                    })
-                    .map((teamUser) => (
+                <SelectContent 
+                  className="rounded-lg border border-gray-200 bg-white shadow-lg"
+                  style={{ zIndex: 100000 }}
+                  position="popper"
+                  sideOffset={8}
+                >
+                  {isLoadingUsers ? (
+                    <SelectItem value="loading" disabled>
+                      Loading users...
+                    </SelectItem>
+                  ) : usersError ? (
+                    <SelectItem value="error" disabled>
+                      Error loading users
+                    </SelectItem>
+                  ) : users.length === 0 ? (
+                    <SelectItem value="no-users" disabled>
+                      No users available
+                    </SelectItem>
+                  ) : (
+                    users
+                      .filter((u) => u.id !== (user as any)?.id)
+                      .sort((a, b) => {
+                        const nameA = `${a.firstName || ''} ${a.lastName || ''}`
+                          .trim()
+                          .toLowerCase() || a.email?.toLowerCase() || '';
+                        const nameB = `${b.firstName || ''} ${b.lastName || ''}`
+                          .trim()
+                          .toLowerCase() || b.email?.toLowerCase() || '';
+                        return nameA.localeCompare(nameB);
+                      })
+                      .map((teamUser) => (
                       <SelectItem
                         key={teamUser.id}
                         value={teamUser.id}
@@ -1791,7 +1823,8 @@ export default function GmailStyleInbox() {
                           </span>
                         </div>
                       </SelectItem>
-                    ))}
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
