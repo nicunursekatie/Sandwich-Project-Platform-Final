@@ -15,10 +15,10 @@ export default function RealTimeMessages() {
   }, [trackView]);
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Threads (Project-Centered Messaging)</h1>
-        <p className="text-gray-600 mt-2">
+    <div className="p-4 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Threads (Project-Centered Messaging)</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
           Send and receive messages organized by project, event, or task context
         </p>
       </div>
