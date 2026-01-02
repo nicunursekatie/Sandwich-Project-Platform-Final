@@ -197,7 +197,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 🔗 Reset Link: ${req.protocol}://${
           req.get('host') || 'localhost:5000'
         }/reset-password?token=${resetToken}
-⏰ Expires: ${new Date(expires).toLocaleString()}
+⏰ Expires: ${expiresAt.toLocaleString()}
         `);
       }
     }
