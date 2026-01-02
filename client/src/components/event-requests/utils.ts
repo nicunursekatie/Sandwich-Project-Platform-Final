@@ -501,48 +501,75 @@ export const parsePostgresArray = (ids: unknown): string[] => {
   if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
     const arrayContent = ids.slice(1, -1); // Remove { and }
 
-    // Parse PostgreSQL array format respecting quoted strings
-    // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
-    const parsed: string[] = [];
-    let current = '';
-    let inQuotes = false;
+    // Explicitly handle empty PostgreSQL array "{}"
+    if (!arrayContent) {
+      rawIds = [];
+    } else {
+      // Parse PostgreSQL array format respecting quoted strings
+      // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
+      const parsed: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      let backslashCount = 0; // Number of consecutive backslashes just seen inside quotes
 
-    for (let i = 0; i < arrayContent.length; i++) {
-      const char = arrayContent[i];
-      const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
-      const prevChar = i > 0 ? arrayContent[i - 1] : null;
+      for (let i = 0; i < arrayContent.length; i++) {
+        const char = arrayContent[i];
+        const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
 
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          // Doubled quote ("") inside quoted string = escaped quote, add one quote
-          current += '"';
-          i++; // Skip the next quote
-        } else if (inQuotes && prevChar === '\\') {
-          // Backslash-escaped quote (\") = actual quote (backslash was already added)
-          current = current.slice(0, -1) + '"'; // Replace the backslash with quote
+        if (char === '"') {
+          if (inQuotes && backslashCount % 2 === 1) {
+            // Backslash-escaped quote (\") with an odd number of preceding backslashes
+            // Replace the last backslash with a quote
+            current = current.slice(0, -1) + '"';
+            backslashCount = 0;
+          } else if (inQuotes && nextChar === '"') {
+            // Doubled quote ("") inside quoted string = escaped quote, add one quote
+            current += '"';
+            i++; // Skip the next quote
+            backslashCount = 0;
+          } else {
+            // Regular quote - toggle quote state
+            inQuotes = !inQuotes;
+            backslashCount = 0;
+          }
+        } else if (char === '\\' && inQuotes) {
+          // Track backslashes inside quoted strings to determine if following quotes are escaped
+          current += char;
+          backslashCount += 1;
+        } else if (char === ',' && !inQuotes) {
+          // Comma outside quotes = separator
+          if (current.trim()) {
+            parsed.push(current.trim());
+          }
+          current = '';
+          backslashCount = 0;
         } else {
-          // Regular quote - toggle quote state
-          inQuotes = !inQuotes;
+          current += char;
+          backslashCount = 0;
         }
-      } else if (char === ',' && !inQuotes) {
-        // Comma outside quotes = separator
-        if (current.trim()) {
-          parsed.push(current.trim());
-        }
-        current = '';
-      } else {
-        current += char;
       }
-    }
 
-    // Don't forget the last value
-    if (current.trim()) {
-      parsed.push(current.trim());
-    }
+      // Don't forget the last value
+      if (current.trim()) {
+        parsed.push(current.trim());
+      }
 
-    rawIds = parsed;
+      rawIds = parsed;
+    }
   }
-  // Handle JSON array format: [1,2,3] or ["host:5","recipient:10"]
+  // Handle JSON string format: '["host:5","recipient:10"]'
+  else if (typeof ids === 'string') {
+    try {
+      const parsed = JSON.parse(ids);
+      if (Array.isArray(parsed)) {
+        rawIds = parsed;
+      }
+    } catch (error) {
+      // If JSON parsing fails, fall through and return the default empty array
+      logger.warn('Failed to parse ids JSON string in parsePostgresArray', { error, ids });
+    }
+  }
+  // Handle JSON array format when ids is already an array
   else if (Array.isArray(ids)) {
     rawIds = ids;
   }
@@ -564,5 +591,5 @@ export const parsePostgresArray = (ids: unknown): string[] => {
 
     // Fallback - treat as custom text
     return `custom:${idStr}`;
-  }).filter(id => id);
+  });
 };
