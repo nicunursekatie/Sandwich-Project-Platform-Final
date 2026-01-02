@@ -470,7 +470,6 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         updateGroups.set(updateKey, ids);
       }
 
-      // Perform batched updates: group by identical updates to minimize queries
       // Chunk large ID arrays to avoid database parameter limits
       const MAX_IDS_PER_UPDATE = 1000;
       
@@ -583,7 +582,7 @@ router.get('/export/holding-zone', async (req: any, res) => {
         }
       }
 
-      return { data: results.slice(0, MAX_RELATED), truncated };
+      return { data: results, truncated };
     };
 
     // Only fetch related data for the exported items (with limits and chunking)
