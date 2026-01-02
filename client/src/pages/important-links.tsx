@@ -174,70 +174,73 @@ export default function ImportantLinks() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-50 p-6">
-      <PageBreadcrumbs segments={[
-        { label: 'Documentation' },
-        { label: 'Quick Tools' }
-      ]} />
+    <div className="h-full flex flex-col bg-gray-50 p-3 sm:p-6">
+      <div className="hidden sm:block">
+        <PageBreadcrumbs segments={[
+          { label: 'Documentation' },
+          { label: 'Quick Tools' }
+        ]} />
+      </div>
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-brand-primary mb-2">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-3xl font-bold text-brand-primary mb-1 sm:mb-2">
           Important Links
         </h1>
-        <p className="text-gray-600">
+        <p className="text-xs sm:text-base text-gray-600">
           Quick access to essential tools and spreadsheets for planning and
           coordination.
         </p>
       </div>
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="toolkit" className="flex items-center gap-2">
-            📦 Event Toolkit
+        {/* Mobile: Horizontal scrollable tabs, Desktop: Grid */}
+        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-7 w-full mb-2 sm:mb-0">
+          <TabsTrigger value="toolkit" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <span className="hidden sm:inline">📦</span> Toolkit
           </TabsTrigger>
-          <TabsTrigger value="flyers" className="flex items-center gap-2">
-            📄 Flyers & QR Codes
+          <TabsTrigger value="flyers" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <span className="hidden sm:inline">📄</span> Flyers
           </TabsTrigger>
-          <TabsTrigger value="calculator" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            Inventory Calculator
+          <TabsTrigger value="calculator" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <Calculator className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Inventory</span> Calc
           </TabsTrigger>
-          <TabsTrigger value="donation-receipt" className="flex items-center gap-2">
-            🧾 Donation Receipt
+          <TabsTrigger value="donation-receipt" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <span className="hidden sm:inline">🧾</span> Receipt
           </TabsTrigger>
-          <TabsTrigger value="donor-management" className="flex items-center gap-2">
-            <Heart className="h-4 w-4" />
-            Donor Management
+          <TabsTrigger value="donor-management" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
+            Donors
           </TabsTrigger>
-          <TabsTrigger value="events" className="flex items-center gap-2">
-            📅 Events Sheet
+          <TabsTrigger value="events" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <span className="hidden sm:inline">📅</span> Events
           </TabsTrigger>
-          <TabsTrigger value="user-sheet" className="flex items-center gap-2">
-            <LinkIcon className="h-4 w-4" />
-            Historical Collections
+          <TabsTrigger value="user-sheet" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <LinkIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+            History
           </TabsTrigger>
         </TabsList>
 
         {/* Event Toolkit Tab */}
         <TabsContent value="toolkit" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 📦 Event Toolkit for Volunteers
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Everything volunteers need to plan and host a sandwich-making event - share this with anyone making sandwiches
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1 flex flex-col">
-                <div className="flex gap-3">
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     size="lg"
                     onClick={() => window.open(eventToolkitUrl, '_blank')}
-                    className="bg-brand-orange hover:bg-orange-600 text-white font-semibold px-8 py-3 text-base flex-1"
+                    className="bg-brand-orange hover:bg-orange-600 text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
-                    <ExternalLink className="w-5 h-5 mr-2" />
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Open Event Toolkit
                   </Button>
                   <Button
@@ -251,35 +254,45 @@ export default function ImportantLinks() {
                         logger.error('Failed to copy:', error);
                       }
                     }}
-                    className="border-brand-orange text-brand-orange hover:bg-orange-50 px-6 py-3 font-medium"
+                    className="border-brand-orange text-brand-orange hover:bg-orange-50 px-4 sm:px-6 py-3 font-medium h-11"
                   >
                     📋 Copy Link
                   </Button>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-blue-900 mb-2">Shareable Link:</h3>
-                  <code className="text-sm bg-white px-3 py-2 rounded border border-blue-200 block break-all">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Shareable Link:</h3>
+                  <code className="text-xs sm:text-sm bg-white px-2 sm:px-3 py-2 rounded border border-blue-200 block break-all">
                     {eventToolkitUrl}
                   </code>
-                  <p className="text-sm text-blue-700 mt-2">
+                  <p className="text-xs sm:text-sm text-blue-700 mt-2">
                     Share this link with schools, churches, community groups, and individuals making sandwiches
                   </p>
                 </div>
 
-                {/* Embedded Toolkit */}
-                <div className="border rounded-lg overflow-hidden flex-1">
+                {/* Embedded Toolkit - Hidden on mobile, show "Open" button instead */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
                     src={eventToolkitUrl}
                     className="w-full h-full border-0"
                     style={{
-                      minHeight: '800px',
+                      minHeight: '600px',
                       height: '100%',
                     }}
                     title="Event Toolkit"
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
+                </div>
+                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the toolkit in a new tab on mobile.</p>
+                  <Button
+                    onClick={() => window.open(eventToolkitUrl, '_blank')}
+                    className="bg-brand-orange hover:bg-orange-600 text-white h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Toolkit
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -289,26 +302,26 @@ export default function ImportantLinks() {
         {/* Flyers & QR Codes Tab */}
         <TabsContent value="flyers" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 📄 Flyers & Promotional Materials
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 {selectedFlyer.description}
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1 flex flex-col">
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
                 {/* Flyer Selector - Only show if multiple flyers available */}
                 {flyers.length > 1 && (
-                  <div className="bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 border border-[#47B3CB]/30 rounded-lg p-4">
-                    <label className="block text-sm font-semibold text-[#236383] mb-2">
+                  <div className="bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 border border-[#47B3CB]/30 rounded-lg p-3 sm:p-4">
+                    <label className="block text-xs sm:text-sm font-semibold text-[#236383] mb-2">
                       Select Flyer:
                     </label>
                     <select
                       value={selectedFlyerId}
                       onChange={(e) => setSelectedFlyerId(e.target.value)}
-                      className="w-full px-4 py-2 border border-[#47B3CB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#236383] bg-white"
+                      className="w-full px-3 sm:px-4 py-2 border border-[#47B3CB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#236383] bg-white text-sm h-11"
                     >
                       {flyers.map((flyer) => (
                         <option key={flyer.id} value={flyer.id}>
@@ -319,13 +332,13 @@ export default function ImportantLinks() {
                   </div>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     size="lg"
                     onClick={() => window.open(selectedFlyer.url, '_blank')}
-                    className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 text-white font-semibold px-8 py-3 text-base flex-1"
+                    className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
-                    <ExternalLink className="w-5 h-5 mr-2" />
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Open Flyer Page
                   </Button>
                   <Button
@@ -339,58 +352,68 @@ export default function ImportantLinks() {
                         logger.error('Failed to copy:', error);
                       }
                     }}
-                    className="border-[#FBAD3F] text-[#FBAD3F] hover:bg-yellow-50 px-6 py-3 font-medium"
+                    className="border-[#FBAD3F] text-[#FBAD3F] hover:bg-yellow-50 px-4 sm:px-6 py-3 font-medium h-11"
                   >
                     📋 Copy Link
                   </Button>
                 </div>
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-yellow-900 mb-2">Shareable Link:</h3>
-                  <code className="text-sm bg-white px-3 py-2 rounded border border-yellow-200 block break-all">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-yellow-900 mb-2 text-sm sm:text-base">Shareable Link:</h3>
+                  <code className="text-xs sm:text-sm bg-white px-2 sm:px-3 py-2 rounded border border-yellow-200 block break-all">
                     {selectedFlyer.url}
                   </code>
-                  <p className="text-sm text-yellow-700 mt-2">
+                  <p className="text-xs sm:text-sm text-yellow-700 mt-2">
                     Share this flyer to promote The Sandwich Project
                   </p>
                 </div>
 
                 {/* Flyer-specific content info - only show for NCL flyer */}
                 {selectedFlyer.id === 'ncl' && (
-                  <div className="grid grid-cols-2 gap-4 p-4 bg-gradient-to-br from-blue-50 to-yellow-50 rounded-lg border">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-yellow-50 rounded-lg border">
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">✅ Social Media QR Codes</p>
-                      <p className="text-xs text-gray-600">Facebook, Instagram, LinkedIn</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">✅ Social Media QR</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600">Facebook, Instagram, LinkedIn</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">📧 Newsletter Signup</p>
-                      <p className="text-xs text-gray-600">QR code for newsletter</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">📧 Newsletter</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600">QR code for newsletter</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">🎁 Amazon Wishlist</p>
-                      <p className="text-xs text-gray-600">QR code for supply donations</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">🎁 Amazon Wishlist</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600">QR code for donations</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">🌐 Website Link</p>
-                      <p className="text-xs text-gray-600">www.thesandwichproject.org</p>
+                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">🌐 Website</p>
+                      <p className="text-[10px] sm:text-xs text-gray-600">thesandwichproject.org</p>
                     </div>
                   </div>
                 )}
 
-                {/* Embedded Flyers */}
-                <div className="border rounded-lg overflow-hidden flex-1">
+                {/* Embedded Flyers - Hidden on mobile */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
                     key={selectedFlyer.id}
                     src={selectedFlyer.url}
                     className="w-full h-full border-0"
                     style={{
-                      minHeight: '800px',
+                      minHeight: '600px',
                       height: '100%',
                     }}
                     title={selectedFlyer.name}
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
+                </div>
+                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the flyer in a new tab on mobile.</p>
+                  <Button
+                    onClick={() => window.open(selectedFlyer.url, '_blank')}
+                    className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Flyer
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -400,80 +423,60 @@ export default function ImportantLinks() {
         {/* Inventory Calculator Tab */}
         <TabsContent value="calculator" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-brand-primary" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Calculator className="h-4 w-4 sm:h-5 sm:w-5 text-brand-primary" />
                 Inventory Calculator
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Interactive tool for calculating sandwich inventory and planning
                 quantities for collections
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1 flex flex-col">
-                <div className="flex gap-3">
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     size="lg"
-                    onClick={() =>
-                      window.open(inventoryCalculatorUrl, '_blank')
-                    }
-                    className="bg-brand-primary hover:bg-brand-teal text-white font-semibold px-8 py-3 text-base flex-1"
+                    onClick={() => window.open(inventoryCalculatorUrl, '_blank')}
+                    className="bg-brand-primary hover:bg-brand-teal text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
-                    <Calculator className="w-5 h-5 mr-2" />
+                    <Calculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Open Calculator
                   </Button>
                   <Button
                     size="lg"
-                    variant="outline"
-                    onClick={() =>
-                      window.open(inventoryCalculatorUrl, '_blank')
-                    }
-                    className="border-brand-primary text-brand-primary hover:bg-brand-primary/5 px-6 py-3 font-medium"
+                    onClick={() => window.open(eventEstimatorUrl, '_blank')}
+                    className="bg-brand-teal hover:bg-brand-primary text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
-                    <ExternalLink className="w-5 h-5 mr-2" />
-                    New Tab
-                  </Button>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    size="lg"
-                    onClick={() =>
-                      window.open(eventEstimatorUrl, '_blank')
-                    }
-                    className="bg-brand-teal hover:bg-brand-primary text-white font-semibold px-8 py-3 text-base flex-1"
-                  >
-                    <Calculator className="w-5 h-5 mr-2" />
+                    <Calculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Event Estimator
                   </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() =>
-                      window.open(eventEstimatorUrl, '_blank')
-                    }
-                    className="border-brand-teal text-brand-teal hover:bg-brand-teal/5 px-6 py-3 font-medium"
-                  >
-                    <ExternalLink className="w-5 h-5 mr-2" />
-                    New Tab
-                  </Button>
                 </div>
 
-                {/* Embedded Calculator */}
-                {/* Embedded Calculator - FIXED HEIGHT */}
-                <div className="border rounded-lg overflow-hidden flex-1">
+                {/* Embedded Calculator - Hidden on mobile */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
                     src={inventoryCalculatorUrl}
                     className="w-full h-full border-0"
                     style={{
-                      minHeight: '800px',
+                      minHeight: '600px',
                       height: '100%',
                     }}
                     title="Inventory Calculator"
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
+                </div>
+                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the calculator in a new tab on mobile.</p>
+                  <Button
+                    onClick={() => window.open(inventoryCalculatorUrl, '_blank')}
+                    className="bg-brand-primary text-white h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Calculator
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -483,24 +486,24 @@ export default function ImportantLinks() {
         {/* Donation Receipt Tab */}
         <TabsContent value="donation-receipt" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 🧾 Donation Receipt Generator
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Generate donation receipts for in-kind donations to The Sandwich Project
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1 flex flex-col">
-                <div className="flex gap-3">
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     size="lg"
                     onClick={() => window.open(donationReceiptUrl, '_blank')}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-8 py-3 text-base flex-1"
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
-                    <ExternalLink className="w-5 h-5 mr-2" />
-                    Open Donation Receipt Generator
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Open Receipt Generator
                   </Button>
                   <Button
                     size="lg"
@@ -513,35 +516,45 @@ export default function ImportantLinks() {
                         logger.error('Failed to copy:', error);
                       }
                     }}
-                    className="border-green-600 text-green-600 hover:bg-green-50 px-6 py-3 font-medium"
+                    className="border-green-600 text-green-600 hover:bg-green-50 px-4 sm:px-6 py-3 font-medium h-11"
                   >
                     📋 Copy Link
                   </Button>
                 </div>
 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-green-900 mb-2">Shareable Link:</h3>
-                  <code className="text-sm bg-white px-3 py-2 rounded border border-green-200 block break-all">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-green-900 mb-2 text-sm sm:text-base">Shareable Link:</h3>
+                  <code className="text-xs sm:text-sm bg-white px-2 sm:px-3 py-2 rounded border border-green-200 block break-all">
                     {donationReceiptUrl}
                   </code>
-                  <p className="text-sm text-green-700 mt-2">
+                  <p className="text-xs sm:text-sm text-green-700 mt-2">
                     Use this tool to generate tax-deductible donation receipts for in-kind donations
                   </p>
                 </div>
 
-                {/* Embedded Donation Receipt Generator */}
-                <div className="border rounded-lg overflow-hidden flex-1">
+                {/* Embedded Donation Receipt Generator - Hidden on mobile */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
                     src={donationReceiptUrl}
                     className="w-full h-full border-0"
                     style={{
-                      minHeight: '800px',
+                      minHeight: '600px',
                       height: '100%',
                     }}
                     title="Donation Receipt Generator"
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
+                </div>
+                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the receipt generator in a new tab on mobile.</p>
+                  <Button
+                    onClick={() => window.open(donationReceiptUrl, '_blank')}
+                    className="bg-green-600 text-white h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Generator
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -551,25 +564,25 @@ export default function ImportantLinks() {
         {/* Donor Management Platform Tab */}
         <TabsContent value="donor-management" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Heart className="h-5 w-5 text-pink-500" />
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-pink-500" />
                 Donor Management Platform
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Track and manage donor relationships, donations, and engagement for The Sandwich Project
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <div className="space-y-4 flex-1 flex flex-col">
-                <div className="flex gap-3">
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
                     size="lg"
                     onClick={() => window.open(donorManagementUrl, '_blank')}
-                    className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-8 py-3 text-base flex-1"
+                    className="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
-                    <ExternalLink className="w-5 h-5 mr-2" />
-                    Open Donor Management Platform
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Open Donor Platform
                   </Button>
                   <Button
                     size="lg"
@@ -582,51 +595,61 @@ export default function ImportantLinks() {
                         logger.error('Failed to copy:', error);
                       }
                     }}
-                    className="border-pink-600 text-pink-600 hover:bg-pink-50 px-6 py-3 font-medium"
+                    className="border-pink-600 text-pink-600 hover:bg-pink-50 px-4 sm:px-6 py-3 font-medium h-11"
                   >
                     📋 Copy Link
                   </Button>
                 </div>
 
-                <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-pink-900 mb-2">Platform Link:</h3>
-                  <code className="text-sm bg-white px-3 py-2 rounded border border-pink-200 block break-all">
+                <div className="bg-pink-50 border border-pink-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-pink-900 mb-2 text-sm sm:text-base">Platform Link:</h3>
+                  <code className="text-xs sm:text-sm bg-white px-2 sm:px-3 py-2 rounded border border-pink-200 block break-all">
                     {donorManagementUrl}
                   </code>
-                  <p className="text-sm text-pink-700 mt-2">
+                  <p className="text-xs sm:text-sm text-pink-700 mt-2">
                     Manage donor information, track donations, and build lasting relationships with supporters
                   </p>
                 </div>
 
                 {/* Feature highlights */}
-                <div className="grid grid-cols-3 gap-4 p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 bg-gradient-to-br from-pink-50 to-purple-50 rounded-lg border">
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">👥 Donor Profiles</p>
-                    <p className="text-xs text-gray-600">Track donor information & history</p>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">👥 Profiles</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Donor info & history</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">💰 Donation Tracking</p>
-                    <p className="text-xs text-gray-600">Log and manage contributions</p>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">💰 Tracking</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Log contributions</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">📊 Analytics</p>
-                    <p className="text-xs text-gray-600">View donation trends & insights</p>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">📊 Analytics</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Trends & insights</p>
                   </div>
                 </div>
 
-                {/* Embedded Platform */}
-                <div className="border rounded-lg overflow-hidden flex-1">
+                {/* Embedded Platform - Hidden on mobile */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
                     src={donorManagementUrl}
                     className="w-full h-full border-0"
                     style={{
-                      minHeight: '800px',
+                      minHeight: '600px',
                       height: '100%',
                     }}
                     title="Donor Management Platform"
                     loading="eager"
                     referrerPolicy="no-referrer"
                   />
+                </div>
+                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the donor platform in a new tab on mobile.</p>
+                  <Button
+                    onClick={() => window.open(donorManagementUrl, '_blank')}
+                    className="bg-pink-600 text-white h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Platform
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -636,9 +659,9 @@ export default function ImportantLinks() {
         {/* Events Google Sheet Tab */}
         <TabsContent value="events" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader className="pb-1">
-              <div className="flex items-center justify-between mb-3">
-                <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <CardHeader className="pb-1 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3">
+                <CardTitle className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
                   📅 Events Calendar Sheet
                 </CardTitle>
                 <div className="flex items-center gap-2">
@@ -647,27 +670,28 @@ export default function ImportantLinks() {
                     size="sm"
                     onClick={handleRefreshEvents}
                     disabled={isLoading}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 h-9 text-xs sm:text-sm"
                   >
                     <RefreshCw
-                      className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                      className={`h-3 w-3 sm:h-4 sm:w-4 ${isLoading ? 'animate-spin' : ''}`}
                     />
-                    Refresh
+                    <span className="hidden sm:inline">Refresh</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => window.open(eventsFullViewUrl, '_blank')}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 h-9 text-xs sm:text-sm"
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    Open in New Tab
+                    <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Open in New Tab</span>
+                    <span className="sm:hidden">Open</span>
                   </Button>
                 </div>
               </div>
 
-              {/* Zoom Controls for Events */}
-              <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
+              {/* Zoom Controls for Events - Hidden on mobile */}
+              <div className="hidden sm:flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -720,9 +744,10 @@ export default function ImportantLinks() {
             </CardHeader>
 
             <CardContent className="p-0 flex-1">
+              {/* Desktop embedded view */}
               <div
-                className="w-full relative overflow-hidden"
-                style={{ height: 'calc(100vh - 320px)', minHeight: '700px' }}
+                className="w-full relative overflow-hidden hidden sm:block"
+                style={{ height: 'calc(100vh - 320px)', minHeight: '500px' }}
               >
                 {isLoading && (
                   <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
@@ -750,6 +775,17 @@ export default function ImportantLinks() {
                   sandbox="allow-scripts allow-same-origin allow-forms"
                 />
               </div>
+              {/* Mobile: Show button to open in new tab */}
+              <div className="sm:hidden p-4 bg-gray-100 rounded-lg mx-4 mb-4 text-center">
+                <p className="text-sm text-gray-600 mb-3">Spreadsheets work best in full screen on mobile devices.</p>
+                <Button
+                  onClick={() => window.open(eventsFullViewUrl, '_blank')}
+                  className="bg-brand-primary text-white h-11"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Events Sheet
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -757,16 +793,15 @@ export default function ImportantLinks() {
         {/* User's Custom Google Sheet Tab */}
         <TabsContent value="user-sheet" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
-            <CardHeader className="pb-1">
-              <div className="flex items-center justify-between mb-3">
+            <CardHeader className="pb-1 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-3">
                 <div>
-                  <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                    <LinkIcon className="h-5 w-5 text-brand-primary" />
-                    Historical Collections Record
+                  <CardTitle className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4 sm:h-5 sm:w-5 text-brand-primary" />
+                    Historical Collections
                   </CardTitle>
-                  <CardDescription>
-                    Historical collections tracking spreadsheet - available as
-                    link and embedded view
+                  <CardDescription className="text-xs sm:text-sm">
+                    Historical collections tracking spreadsheet
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -775,49 +810,50 @@ export default function ImportantLinks() {
                     size="sm"
                     onClick={handleRefreshUserSheet}
                     disabled={isLoading}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 h-9 text-xs sm:text-sm"
                   >
                     <RefreshCw
-                      className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                      className={`h-3 w-3 sm:h-4 sm:w-4 ${isLoading ? 'animate-spin' : ''}`}
                     />
-                    Refresh
+                    <span className="hidden sm:inline">Refresh</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => window.open(userSheetUrl, '_blank')}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2 h-9 text-xs sm:text-sm"
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    Open in New Tab
+                    <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Open in New Tab</span>
+                    <span className="sm:hidden">Open</span>
                   </Button>
                 </div>
               </div>
 
               {/* Direct Link Section */}
-              <div className="mb-4 p-3 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-brand-primary-darker">
+              <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-brand-primary-lighter rounded-lg border border-brand-primary-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-medium text-brand-primary-darker">
                       Direct Link Access
                     </p>
-                    <p className="text-xs text-brand-primary truncate max-w-md">
+                    <p className="text-[10px] sm:text-xs text-brand-primary truncate">
                       {userSheetUrl}
                     </p>
                   </div>
                   <Button
                     size="sm"
                     onClick={() => window.open(userSheetUrl, '_blank')}
-                    className="bg-brand-primary hover:bg-brand-teal text-white"
+                    className="bg-brand-primary hover:bg-brand-teal text-white h-9 text-xs sm:text-sm"
                   >
-                    <ExternalLink className="h-4 w-4 mr-1" />
+                    <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     Open Link
                   </Button>
                 </div>
               </div>
 
-              {/* Zoom Controls for User Sheet */}
-              <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
+              {/* Zoom Controls for User Sheet - Hidden on mobile */}
+              <div className="hidden sm:flex items-center gap-3 p-2 bg-gray-50 rounded-lg border">
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -870,9 +906,10 @@ export default function ImportantLinks() {
             </CardHeader>
 
             <CardContent className="p-0 flex-1">
+              {/* Desktop embedded view */}
               <div
-                className="w-full relative overflow-hidden"
-                style={{ height: 'calc(100vh - 180px)', minHeight: '800px' }}
+                className="w-full relative overflow-hidden hidden sm:block"
+                style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}
               >
                 {isLoading && (
                   <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
@@ -899,6 +936,17 @@ export default function ImportantLinks() {
                   loading="lazy"
                   sandbox="allow-scripts allow-same-origin allow-forms"
                 />
+              </div>
+              {/* Mobile: Show button to open in new tab */}
+              <div className="sm:hidden p-4 bg-gray-100 rounded-lg mx-4 mb-4 text-center">
+                <p className="text-sm text-gray-600 mb-3">Spreadsheets work best in full screen on mobile devices.</p>
+                <Button
+                  onClick={() => window.open(userSheetUrl, '_blank')}
+                  className="bg-brand-primary text-white h-11"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Collections Sheet
+                </Button>
               </div>
             </CardContent>
           </Card>

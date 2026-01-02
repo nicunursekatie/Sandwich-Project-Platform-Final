@@ -123,7 +123,8 @@ export default function RecipientMapView() {
   const { toast } = useToast();
   const { trackView, trackSearch } = useActivityTracker();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  // Default panel closed on mobile, open on desktop
+  const [isPanelOpen, setIsPanelOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
   const [selectedRecipientId, setSelectedRecipientId] = useState<number | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState(10);
@@ -294,53 +295,79 @@ export default function RecipientMapView() {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-purple-600" />
+      <div className="flex-shrink-0 p-3 sm:p-4 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Recipient Map</h1>
-              <p className="text-sm text-gray-500">
-                {filteredRecipients.length} of {recipientsWithCoords.length} recipients shown
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl font-bold text-gray-900">Recipient Map</h1>
+              <p className="text-xs sm:text-sm text-gray-500 truncate">
+                {filteredRecipients.length} of {recipientsWithCoords.length} shown
                 {recipientsWithoutCoords.length > 0 && (
-                  <span className="text-amber-600 ml-2">
+                  <span className="text-amber-600 ml-1 sm:ml-2">
                     ({recipientsWithoutCoords.length} need geocoding)
                   </span>
                 )}
               </p>
             </div>
           </div>
-          <PageBreadcrumbs items={[
-            { label: 'Recipients', href: '/recipients' },
-            { label: 'Map' }
-          ]} />
+          <div className="hidden sm:block">
+            <PageBreadcrumbs items={[
+              { label: 'Recipients', href: '/recipients' },
+              { label: 'Map' }
+            ]} />
+          </div>
+          {/* Mobile panel toggle button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+            className="md:hidden h-9 px-2"
+          >
+            <List className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Side Panel */}
-        <div className={`flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-300 ${isPanelOpen ? 'w-96' : 'w-0'}`}>
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Side Panel - Overlays on mobile, side-by-side on desktop */}
+        <div className={`
+          absolute md:relative inset-0 md:inset-auto z-[1001] md:z-auto
+          flex-shrink-0 bg-white border-r border-gray-200 transition-all duration-300
+          ${isPanelOpen ? 'w-full md:w-80 lg:w-96' : 'w-0 -translate-x-full md:translate-x-0'}
+        `}>
           {isPanelOpen && (
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col w-full">
               {/* Search */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    type="text"
-                    placeholder="Search recipients..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      if (e.target.value.length > 2) {
-                        trackSearch('recipient_map', e.target.value, filteredRecipients.length);
-                      }
-                    }}
-                    className="pl-10"
-                  />
+              <div className="p-3 sm:p-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search recipients..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        if (e.target.value.length > 2) {
+                          trackSearch('recipient_map', e.target.value, filteredRecipients.length);
+                        }
+                      }}
+                      className="pl-10 h-11"
+                    />
+                  </div>
+                  {/* Close button for mobile */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsPanelOpen(false)}
+                    className="md:hidden h-11 w-11 p-0"
+                  >
+                    ✕
+                  </Button>
                 </div>
               </div>
 
@@ -437,13 +464,13 @@ export default function RecipientMapView() {
           )}
         </div>
 
-        {/* Toggle Panel Button */}
+        {/* Toggle Panel Button - Hidden on mobile (use header button instead) */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-[1000] bg-white shadow-md rounded-r-lg rounded-l-none h-12 px-1"
-          style={{ left: isPanelOpen ? '384px' : '0px' }}
+          className="hidden md:flex absolute left-0 top-1/2 transform -translate-y-1/2 z-[1000] bg-white shadow-md rounded-r-lg rounded-l-none h-12 px-1"
+          style={{ left: isPanelOpen ? 'calc(min(100%, 24rem) - 4px)' : '0px' }}
         >
           {isPanelOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </Button>
@@ -550,11 +577,11 @@ export default function RecipientMapView() {
           </MapContainer>
 
           {/* Legend */}
-          <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
-            <div className="text-xs font-semibold mb-2">Legend</div>
-            <div className="flex items-center gap-2 text-xs">
-              <div className="w-4 h-4 rounded-full bg-purple-500"></div>
-              <span>Recipient Location</span>
+          <div className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-white rounded-lg shadow-lg p-2 sm:p-3 z-[1000]">
+            <div className="text-[10px] sm:text-xs font-semibold mb-1 sm:mb-2">Legend</div>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-purple-500"></div>
+              <span>Recipient</span>
             </div>
           </div>
         </div>

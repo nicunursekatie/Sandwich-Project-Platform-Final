@@ -215,14 +215,39 @@ export default function GmailInbox() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <div className="h-screen flex flex-col md:flex-row bg-gray-50">
+      {/* Mobile Header - Only visible on mobile */}
+      <div className="md:hidden bg-white border-b border-gray-200 p-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedFolder}
+            onChange={(e) => setSelectedFolder(e.target.value)}
+            className="text-sm font-medium bg-transparent border border-gray-200 rounded-md px-2 py-1.5"
+          >
+            {FOLDERS.map((folder) => (
+              <option key={folder.id} value={folder.id}>
+                {folder.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button
+          onClick={() => setIsComposing(true)}
+          size="sm"
+          className="bg-brand-primary hover:bg-brand-primary-dark text-white h-9"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          <span className="text-sm">Compose</span>
+        </Button>
+      </div>
+
+      {/* Sidebar - Hidden on mobile */}
+      <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col">
         {/* Compose Button */}
         <div className="p-4">
           <Button
             onClick={() => setIsComposing(true)}
-            className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white"
+            className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white h-11"
           >
             <Plus className="w-4 h-4 mr-2" />
             Compose
@@ -239,7 +264,7 @@ export default function GmailInbox() {
               <button
                 key={folder.id}
                 onClick={() => setSelectedFolder(folder.id)}
-                className={`w-full flex items-center px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
+                className={`w-full flex items-center px-4 py-2.5 text-left hover:bg-gray-100 transition-colors ${
                   selectedFolder === folder.id
                     ? 'bg-brand-primary-lighter border-r-2 border-brand-primary'
                     : ''
@@ -261,31 +286,31 @@ export default function GmailInbox() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Search Bar */}
-        <div className="bg-white border-b border-gray-200 p-4">
+        <div className="bg-white border-b border-gray-200 p-2 sm:p-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
               placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-10 sm:h-11 text-sm"
             />
           </div>
         </div>
 
-        <div className="flex-1 flex">
-          {/* Message List */}
-          <div className="w-1/3 bg-white border-r border-gray-200 overflow-y-auto">
+        <div className="flex-1 flex min-h-0">
+          {/* Message List - Full width on mobile when no message selected, 1/3 on desktop */}
+          <div className={`${selectedMessage ? 'hidden md:block' : 'w-full'} md:w-1/3 bg-white border-r border-gray-200 overflow-y-auto`}>
             {messagesLoading ? (
-              <div className="p-4 text-center text-gray-500">
+              <div className="p-4 text-center text-gray-500 text-sm">
                 Loading messages...
               </div>
             ) : messages.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                <div className="text-4xl mb-2">📭</div>
-                <div>
+              <div className="p-6 text-center text-gray-500">
+                <div className="text-3xl sm:text-4xl mb-2">📭</div>
+                <div className="text-sm sm:text-base">
                   No messages in{' '}
                   {FOLDERS.find((f) => f.id === selectedFolder)?.name}
                 </div>
@@ -295,15 +320,15 @@ export default function GmailInbox() {
                 <div
                   key={message.id}
                   onClick={() => handleSelectMessage(message)}
-                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                  className={`p-3 sm:p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors ${
                     selectedMessage?.id === message.id ? 'bg-brand-primary-lighter' : ''
                   } ${!message.isRead ? 'bg-blue-25' : ''}`}
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center mb-1">
+                      <div className="flex items-center mb-1 flex-wrap gap-1">
                         <span
-                          className={`text-sm ${
+                          className={`text-xs sm:text-sm ${
                             !message.isRead
                               ? 'font-semibold text-gray-900'
                               : 'text-gray-700'
@@ -314,14 +339,14 @@ export default function GmailInbox() {
                             : `From: ${message.sender}`}
                         </span>
                         {message.isKudos && (
-                          <Heart className="w-3 h-3 ml-2 text-red-500 fill-current" />
+                          <Heart className="w-3 h-3 text-red-500 fill-current" />
                         )}
                         {message.isStarred && (
-                          <Star className="w-3 h-3 ml-2 text-amber-500 fill-current" />
+                          <Star className="w-3 h-3 text-amber-500 fill-current" />
                         )}
                       </div>
                       <div
-                        className={`text-sm mb-1 ${
+                        className={`text-xs sm:text-sm mb-1 line-clamp-1 ${
                           !message.isRead
                             ? 'font-semibold text-gray-900'
                             : 'text-gray-600'
@@ -329,11 +354,11 @@ export default function GmailInbox() {
                       >
                         {message.subject}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">
+                      <div className="text-xs text-gray-500 line-clamp-1">
                         {message.content.substring(0, 100)}...
                       </div>
                     </div>
-                    <div className="text-xs text-gray-400 ml-2">
+                    <div className="text-[10px] sm:text-xs text-gray-400 flex-shrink-0">
                       {formatTimestamp(message.timestamp)}
                     </div>
                   </div>
@@ -342,39 +367,56 @@ export default function GmailInbox() {
             )}
           </div>
 
-          {/* Message Detail */}
-          <div className="flex-2 bg-white overflow-y-auto">
+          {/* Message Detail - Full width on mobile when message selected */}
+          <div className={`${selectedMessage ? 'flex-1' : 'hidden md:block'} md:flex-1 bg-white overflow-y-auto`}>
             {selectedMessage ? (
               <div className="h-full flex flex-col">
+                {/* Mobile Back Button */}
+                <div className="md:hidden border-b border-gray-200 p-3">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedMessage(null)}
+                    className="text-gray-600"
+                  >
+                    ← Back to messages
+                  </Button>
+                </div>
+
                 {/* Message Header */}
-                <div className="border-b border-gray-200 p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <div className="border-b border-gray-200 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                         {selectedMessage.subject}
                         {selectedMessage.isKudos && (
-                          <Heart className="w-5 h-5 inline ml-2 text-red-500 fill-current" />
+                          <Heart className="w-4 h-4 sm:w-5 sm:h-5 inline ml-2 text-red-500 fill-current" />
                         )}
                       </h2>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <User className="w-4 h-4 mr-2" />
-                        <span className="font-medium mr-2">
-                          {selectedFolder === 'sent'
-                            ? selectedMessage.recipient
-                            : selectedMessage.sender}
-                        </span>
-                        <Clock className="w-4 h-4 mr-1 ml-4" />
-                        <span>
-                          {new Date(selectedMessage.timestamp).toLocaleString()}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-600">
+                        <div className="flex items-center">
+                          <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span className="font-medium">
+                            {selectedFolder === 'sent'
+                              ? selectedMessage.recipient
+                              : selectedMessage.sender}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                          <span>
+                            {new Date(selectedMessage.timestamp).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1 sm:space-x-2 flex-shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-9 w-9 p-0"
                         onClick={() =>
                           toggleStarMutation.mutate({
                             messageId: selectedMessage.id,
@@ -393,6 +435,7 @@ export default function GmailInbox() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-9 w-9 p-0"
                         onClick={() =>
                           moveToFolderMutation.mutate({
                             messageId: selectedMessage.id,
@@ -405,6 +448,7 @@ export default function GmailInbox() {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-9 w-9 p-0"
                         onClick={() =>
                           moveToFolderMutation.mutate({
                             messageId: selectedMessage.id,
@@ -419,18 +463,19 @@ export default function GmailInbox() {
                 </div>
 
                 {/* Message Content */}
-                <div className="flex-1 p-6">
+                <div className="flex-1 p-4 sm:p-6">
                   <div className="prose max-w-none">
-                    <div className="whitespace-pre-wrap text-gray-800">
+                    <div className="whitespace-pre-wrap text-sm sm:text-base text-gray-800">
                       {selectedMessage.content}
                     </div>
                   </div>
                 </div>
 
                 {/* Reply Section */}
-                <div className="border-t border-gray-200 p-6">
-                  <div className="flex space-x-2">
+                <div className="border-t border-gray-200 p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
                     <Button
+                      className="h-11 flex-1 sm:flex-none"
                       onClick={() => {
                         setIsComposing(true);
                         setComposeData({
@@ -444,7 +489,7 @@ export default function GmailInbox() {
                       <Reply className="w-4 h-4 mr-2" />
                       Reply
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" className="h-11 flex-1 sm:flex-none">
                       <Forward className="w-4 h-4 mr-2" />
                       Forward
                     </Button>
@@ -452,11 +497,11 @@ export default function GmailInbox() {
                 </div>
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
+              <div className="h-full hidden md:flex items-center justify-center text-gray-500">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">✉️</div>
-                  <div className="text-xl mb-2">Select a message to read</div>
-                  <div>Choose a message from the list to view its contents</div>
+                  <div className="text-5xl sm:text-6xl mb-4">✉️</div>
+                  <div className="text-lg sm:text-xl mb-2">Select a message to read</div>
+                  <div className="text-sm sm:text-base">Choose a message from the list to view its contents</div>
                 </div>
               </div>
             )}
@@ -466,21 +511,22 @@ export default function GmailInbox() {
 
       {/* Compose Modal */}
       {isComposing && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <Card className="w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[80vh] overflow-y-auto rounded-t-2xl sm:rounded-xl">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center justify-between text-base sm:text-lg">
                 <span>Compose Message</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsComposing(false)}
+                  className="h-9 w-9 p-0"
                 >
                   ✕
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-4 sm:p-6 pt-0 sm:pt-0">
               <div>
                 <label className="block text-sm font-medium mb-1">To:</label>
                 <Input
@@ -489,6 +535,7 @@ export default function GmailInbox() {
                     setComposeData({ ...composeData, to: e.target.value })
                   }
                   placeholder="recipient@example.com"
+                  className="h-11"
                 />
               </div>
               <div>
@@ -501,9 +548,10 @@ export default function GmailInbox() {
                     setComposeData({ ...composeData, subject: e.target.value })
                   }
                   placeholder="Enter subject"
+                  className="h-11"
                 />
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 py-1">
                 <input
                   type="checkbox"
                   id="isKudos"
@@ -514,6 +562,7 @@ export default function GmailInbox() {
                       isKudos: e.target.checked,
                     })
                   }
+                  className="w-5 h-5"
                 />
                 <label
                   htmlFor="isKudos"
@@ -533,18 +582,24 @@ export default function GmailInbox() {
                     setComposeData({ ...composeData, content: e.target.value })
                   }
                   placeholder="Write your message..."
-                  rows={8}
+                  rows={6}
+                  className="text-base"
                 />
               </div>
-              <div className="flex space-x-2">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:space-x-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsComposing(false)}
+                  className="h-11 w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
                 <Button
                   onClick={handleSendMessage}
                   disabled={sendMessageMutation.isPending}
+                  className="h-11 w-full sm:w-auto"
                 >
                   {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
-                </Button>
-                <Button variant="outline" onClick={() => setIsComposing(false)}>
-                  Cancel
                 </Button>
               </div>
             </CardContent>

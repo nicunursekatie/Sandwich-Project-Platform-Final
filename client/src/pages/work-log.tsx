@@ -44,7 +44,7 @@ export default function WorkLogPage() {
   });
 
   const {
-    data: logs = [],
+    data: logsResponse,
     refetch,
     isLoading,
     error,
@@ -61,8 +61,10 @@ export default function WorkLogPage() {
     refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
-  // Ensure logs is always an array
-  const safelogs = Array.isArray(logs) ? logs : [];
+  // Handle both old array format and new paginated format { data, total, ... }
+  const safelogs = Array.isArray(logsResponse)
+    ? logsResponse
+    : (logsResponse?.data && Array.isArray(logsResponse.data) ? logsResponse.data : []);
 
   const createLog = useMutation({
     mutationFn: async () => {

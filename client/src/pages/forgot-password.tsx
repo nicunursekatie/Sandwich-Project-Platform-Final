@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowLeft, CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
 import tspLogo from '@assets/LOGOS/TSP_transparent.png';
+import { AuthPageLayout } from '@/components/layout/responsive-page-layout';
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
@@ -50,6 +51,60 @@ export default function ForgotPassword() {
 
   if (isSuccess) {
     return (
+      <AuthPageLayout title="Check Email" showBack>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <img
+                  src={tspLogo}
+                  alt="The Sandwich Project"
+                  className="h-12 sm:h-16 w-auto mx-auto"
+                />
+              </div>
+              <CardTitle className="text-teal-600 text-xl sm:text-2xl">Check Your Email</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                We've sent password reset instructions to your email
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center space-y-4 px-4 sm:px-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto">
+                <Mail className="w-7 h-7 sm:w-8 sm:h-8 text-teal-600" />
+              </div>
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">{message}</AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => setLocation('/login')}
+                  className="w-full bg-teal-600 hover:bg-teal-700 h-11"
+                >
+                  Back to Login
+                </Button>
+                <p className="text-xs sm:text-sm text-gray-600">
+                  Didn't receive the email? Check your spam folder or{' '}
+                  <button
+                    onClick={() => {
+                      setIsSuccess(false);
+                      setEmail('');
+                      setMessage('');
+                    }}
+                    className="text-teal-600 hover:text-teal-700 underline"
+                  >
+                    try again
+                  </button>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthPageLayout>
+    );
+  }
+
+  return (
+    <AuthPageLayout title="Forgot Password" showBack>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -57,118 +112,68 @@ export default function ForgotPassword() {
               <img
                 src={tspLogo}
                 alt="The Sandwich Project"
-                className="h-16 w-auto mx-auto"
+                className="h-12 sm:h-16 w-auto mx-auto"
               />
             </div>
-            <CardTitle className="text-teal-600">Check Your Email</CardTitle>
-            <CardDescription>
-              We've sent password reset instructions to your email
+            <CardTitle className="text-xl sm:text-2xl">Forgot Password</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Enter your email address and we'll send you a link to reset your password
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto">
-              <Mail className="w-8 h-8 text-teal-600" />
-            </div>
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-            <div className="space-y-2">
+          <CardContent className="px-4 sm:px-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {message && !isSuccess && (
+                <Alert variant="destructive">
+                  <XCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">{message}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="w-full h-11 text-base"
+                />
+              </div>
+
               <Button
-                onClick={() => setLocation('/login')}
-                className="w-full bg-teal-600 hover:bg-teal-700"
+                type="submit"
+                disabled={isLoading || !email}
+                className="w-full bg-teal-600 hover:bg-teal-700 h-11"
               >
-                Back to Login
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Reset Link'
+                )}
               </Button>
-              <p className="text-sm text-gray-600">
-                Didn't receive the email? Check your spam folder or{' '}
-                <button
-                  onClick={() => {
-                    setIsSuccess(false);
-                    setEmail('');
-                    setMessage('');
-                  }}
-                  className="text-teal-600 hover:text-teal-700 underline"
+
+              <div className="text-center">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setLocation('/login')}
+                  className="text-slate-600 hover:text-slate-800"
                 >
-                  try again
-                </button>
-              </p>
-            </div>
+                  <ArrowLeft size={16} className="mr-2" />
+                  Back to Login
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              src={tspLogo}
-              alt="The Sandwich Project"
-              className="h-16 w-auto mx-auto"
-            />
-          </div>
-          <CardTitle>Forgot Password</CardTitle>
-          <CardDescription>
-            Enter your email address and we'll send you a link to reset your password
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {message && !isSuccess && (
-              <Alert variant="destructive">
-                <XCircle className="h-4 w-4" />
-                <AlertDescription>{message}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your.email@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                className="w-full"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading || !email}
-              className="w-full bg-teal-600 hover:bg-teal-700"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                'Send Reset Link'
-              )}
-            </Button>
-
-            <div className="text-center">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setLocation('/login')}
-                className="text-slate-600 hover:text-slate-800"
-              >
-                <ArrowLeft size={16} className="mr-2" />
-                Back to Login
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthPageLayout>
   );
 }
 
