@@ -533,10 +533,17 @@ router.get('/export/holding-zone', async (req: any, res) => {
         return { data: results, truncated: false };
       }
 
-      let remaining = MAX_RELATED;
-      let hitLimit = false;
+      let totalFetched = 0;
+      let truncated = false;
 
-      for (let start = 0; start < itemIds.length && remaining > 0; start += MAX_IN_CLAUSE) {
+      for (let start = 0; start < itemIds.length; start += MAX_IN_CLAUSE) {
+        // Calculate how many more we can fetch
+        const remaining = MAX_RELATED - totalFetched;
+        if (remaining <= 0) {
+          truncated = true;
+          break;
+        }
+
         const chunk = itemIds.slice(start, start + MAX_IN_CLAUSE);
 
         const rows = await db
@@ -546,17 +553,15 @@ router.get('/export/holding-zone', async (req: any, res) => {
           .limit(remaining);
 
         results.push(...rows);
+        totalFetched += rows.length;
         
-        // If we're approaching or at the limit and still have chunks to process, we hit truncation
-        if (results.length >= MAX_RELATED && start + MAX_IN_CLAUSE < itemIds.length) {
-          hitLimit = true;
+        // If we got the full amount we requested and have more chunks, we might be truncated
+        if (rows.length === remaining && start + MAX_IN_CLAUSE < itemIds.length) {
+          truncated = true;
         }
-        
-        remaining = MAX_RELATED - results.length;
       }
 
-      // Return truncated=true if we hit the limit during processing
-      return { data: results.slice(0, MAX_RELATED), truncated: hitLimit || results.length === MAX_RELATED };
+      return { data: results.slice(0, MAX_RELATED), truncated };
     };
 
     // Only fetch related data for the exported items (with limits and chunking)
