@@ -102,6 +102,7 @@ export default function ResetPassword() {
 
     if (newPassword !== confirmPassword) {
       setMessage('Passwords do not match.');
+      setIsSuccess(false);
       return;
     }
 
@@ -109,6 +110,7 @@ export default function ResetPassword() {
       Object.values(passwordStrength).every(Boolean);
     if (!allStrengthRequirements) {
       setMessage('Password does not meet security requirements.');
+      setIsSuccess(false);
       return;
     }
 
@@ -132,9 +134,11 @@ export default function ResetPassword() {
           window.location.href = '/login';
         }, 3000);
       } else {
+        setIsSuccess(false);
         setMessage(data.message);
       }
     } catch (error) {
+      setIsSuccess(false);
       setMessage('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
