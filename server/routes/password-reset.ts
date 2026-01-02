@@ -6,21 +6,20 @@ import sgMail from '@sendgrid/mail';
 import { authService } from '../services/auth.service';
 import { logger } from '../utils/production-safe-logger';
 import { passwordResetRateLimiter } from '../middleware/rate-limiter';
+import { db } from '../db';
+import { passwordResetTokens } from '@shared/schema';
+import { eq, and, gt, isNull, lt } from 'drizzle-orm';
 
-// Store password reset tokens temporarily (in production, use Redis or database)
-const resetTokens = new Map<
-  string,
-  { userId: string; email: string; expires: number }
->();
-
-// Clean up expired tokens periodically
-setInterval(() => {
-  const now = Date.now();
-  resetTokens.forEach((data, token) => {
-    if (now > data.expires) {
-      resetTokens.delete(token);
-    }
-  });
+// Clean up expired tokens periodically (database-based)
+setInterval(async () => {
+  try {
+    const result = await db
+      .delete(passwordResetTokens)
+      .where(lt(passwordResetTokens.expiresAt, new Date()));
+    logger.log(`[Token Cleanup] Cleaned up expired password reset tokens`);
+  } catch (error) {
+    logger.error('[Token Cleanup] Failed to clean up expired tokens:', error);
+  }
 }, 60000 * 60); // Clean up every hour
 
 export function createPasswordResetRouter(deps: RouterDependencies) {
@@ -49,13 +48,21 @@ export function createPasswordResetRouter(deps: RouterDependencies) {
 
     // Generate secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Store token
-    resetTokens.set(resetToken, {
+    // Store token in database (delete any existing tokens for this user first)
+    await db.delete(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.userId, user.id!),
+        eq(passwordResetTokens.tokenType, 'password_reset')
+      ));
+
+    await db.insert(passwordResetTokens).values({
+      token: resetToken,
       userId: user.id!,
       email: user.email,
-      expires,
+      tokenType: 'password_reset',
+      expiresAt,
     });
 
     // Send password reset email
@@ -231,9 +238,18 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 
     const { token, newPassword } = schema.parse(req.body);
 
-    // Check if token exists and is valid
-    const tokenData = resetTokens.get(token);
-    if (!tokenData || Date.now() > tokenData.expires) {
+    // Check if token exists and is valid (not expired, not used)
+    const [tokenData] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        gt(passwordResetTokens.expiresAt, new Date()),
+        isNull(passwordResetTokens.usedAt)
+      ))
+      .limit(1);
+
+    if (!tokenData) {
       return res.status(400).json({
         success: false,
         message:
@@ -244,7 +260,10 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
     // Get user and update password
     const user = await storage.getUserById(tokenData.userId);
     if (!user) {
-      resetTokens.delete(token);
+      // Mark token as used even if user not found
+      await db.update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(passwordResetTokens.id, tokenData.id));
       return res.status(400).json({
         success: false,
         message: 'User not found',
@@ -257,8 +276,10 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
       password: hashedPassword,
     });
 
-    // Remove used token
-    resetTokens.delete(token);
+    // Mark token as used
+    await db.update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, tokenData.id));
 
     logger.log(`Password reset successful for user: ${user.email}`);
 
@@ -284,21 +305,38 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 });
 
 // Verify reset token (for frontend to check if token is valid)
-  router.get('/verify-reset-token/:token', (req, res) => {
-  const { token } = req.params;
-  const tokenData = resetTokens.get(token);
+  router.get('/verify-reset-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
 
-  if (!tokenData || Date.now() > tokenData.expires) {
-    return res.status(400).json({
+    const [tokenData] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(and(
+        eq(passwordResetTokens.token, token),
+        gt(passwordResetTokens.expiresAt, new Date()),
+        isNull(passwordResetTokens.usedAt)
+      ))
+      .limit(1);
+
+    if (!tokenData) {
+      return res.status(400).json({
+        valid: false,
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    res.json({
+      valid: true,
+      email: tokenData.email,
+    });
+  } catch (error) {
+    logger.error('Verify reset token error:', error);
+    res.status(500).json({
       valid: false,
-      message: 'Invalid or expired reset token',
+      message: 'Error verifying token',
     });
   }
-
-  res.json({
-    valid: true,
-    email: tokenData.email,
-  });
 });
 
   return router;
