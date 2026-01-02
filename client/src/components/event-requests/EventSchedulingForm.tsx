@@ -1377,26 +1377,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   </p>
                 )}
               </div>
-              <div className="flex items-end">
-                <div className="flex items-center space-x-2 pb-0 mb-0">
-                  <input
-                    type="checkbox"
-                    id="canHoldOvernight"
-                    checked={!!formData.overnightHoldingLocation}
-                    onChange={(e) => {
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        overnightHoldingLocation: e.target.checked ? 'Yes' : ''
-                      }));
-                    }}
-                    className="w-4 h-4 text-[#007E8C] rounded focus:ring-2 focus:ring-[#007E8C]"
-                    data-testid="checkbox-can-hold-overnight"
-                  />
-                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer mb-0">
-                    Can hold sandwiches overnight
-                  </Label>
-                </div>
-              </div>
             </div>
           </div>
 
