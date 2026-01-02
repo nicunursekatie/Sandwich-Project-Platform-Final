@@ -171,6 +171,9 @@ export default function SimpleNav({
           return unreadCounts.suggestions || 0;
         case 'event-reminders':
           return remindersCount;
+        case 'inbox-consolidated':
+          // Use total unread from internal messaging system
+          return totalUnread || 0;
         default:
           return 0;
       }

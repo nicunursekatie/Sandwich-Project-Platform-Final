@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +39,11 @@ import {
   RefreshCw,
   Trophy,
   Heart,
+  Paperclip,
+  FileText,
+  Image,
+  File,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -102,6 +107,8 @@ interface Message {
   contextType?: string;
   contextId?: string;
   contextTitle?: string;
+  // Attachments
+  attachments?: MessageAttachment[];
 }
 
 interface Draft {
@@ -111,6 +118,27 @@ interface Draft {
   subject: string;
   content: string;
   lastSaved: string;
+}
+
+interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Helper to get icon for file type
+function getFileIcon(type: string) {
+  if (type.startsWith('image/')) return Image;
+  if (type === 'application/pdf') return FileText;
+  return File;
 }
 
 export default function GmailStyleInbox() {
@@ -208,6 +236,11 @@ export default function GmailStyleInbox() {
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(
     null
   );
+
+  // Attachment State
+  const [attachments, setAttachments] = useState<MessageAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch users for compose - use for-assignments endpoint (no special permissions required)
   const { data: users = [], isLoading: isLoadingUsers, error: usersError } = useQuery<User[]>({
@@ -350,7 +383,7 @@ export default function GmailStyleInbox() {
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: any) => {
       // Use proper email format for emailMessages table
-      const emailData = {
+      const emailData: any = {
         recipientId: messageData.recipientId,
         recipientName: messageData.recipientName,
         recipientEmail: messageData.recipientEmail,
@@ -358,6 +391,10 @@ export default function GmailStyleInbox() {
         content: messageData.content,
         isDraft: messageData.isDraft || false,
       };
+      // Include attachments if present
+      if (messageData.attachments && messageData.attachments.length > 0) {
+        emailData.attachments = messageData.attachments;
+      }
       logger.log('Sending email with data:', emailData);
       return await apiRequest('POST', '/api/emails', emailData);
     },
@@ -569,12 +606,73 @@ export default function GmailStyleInbox() {
     };
   }, [composeRecipient, composeSubject, composeContent]);
 
+  // Handle file upload for attachments
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Check total attachments limit
+    if (attachments.length + files.length > 5) {
+      toast({
+        title: 'Too many attachments',
+        description: 'Maximum 5 attachments allowed per message',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append('files', files[i]);
+      }
+
+      const response = await fetch('/api/messaging/attachments/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload files');
+      }
+
+      const result = await response.json();
+      setAttachments(prev => [...prev, ...result.attachments]);
+
+      toast({
+        description: `${result.attachments.length} file(s) uploaded`,
+      });
+    } catch (error) {
+      logger.error('Failed to upload attachments:', error);
+      toast({
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [attachments.length, toast]);
+
+  // Remove an attachment
+  const removeAttachment = useCallback((index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   // Helper functions
   const resetCompose = () => {
     setComposeRecipient('');
     setComposeSubject('');
     setComposeContent('');
     setCurrentDraft(null);
+    setAttachments([]); // Clear attachments when resetting
   };
 
   const handleSelectMessage = (message: Message) => {
@@ -626,6 +724,7 @@ export default function GmailStyleInbox() {
       subject: composeSubject || 'Project Discussion',
       content: composeContent,
       isDraft: false,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
   };
 
@@ -1384,7 +1483,17 @@ export default function GmailStyleInbox() {
                           >
                             {message.content || message.subject || '(No content)'}
                           </p>
-                          
+
+                          {/* Show attachment indicator */}
+                          {message.attachments && message.attachments.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Paperclip className="h-3 w-3 text-gray-400" />
+                              <span className="text-xs text-gray-500">
+                                {message.attachments.length} attachment{message.attachments.length > 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          )}
+
                           {/* Show context for kudos */}
                           {isKudos && message.entityName && (
                             <div className="mt-2">
@@ -1616,6 +1725,40 @@ export default function GmailStyleInbox() {
                         <div className="whitespace-pre-wrap">
                           {selectedMessage.content}
                         </div>
+
+                        {/* Display attachments if present */}
+                        {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Paperclip className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-700">
+                                Attachments ({selectedMessage.attachments.length})
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              {selectedMessage.attachments.map((attachment, index) => {
+                                const FileIcon = getFileIcon(attachment.type);
+                                return (
+                                  <a
+                                    key={index}
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-amber-300 hover:bg-amber-50 transition-colors"
+                                  >
+                                    <FileIcon className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium text-gray-800 truncate">{attachment.name}</p>
+                                      <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
+                                    </div>
+                                    <span className="text-xs text-amber-600 font-medium">Download</span>
+                                  </a>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         {selectedMessage.contextType && selectedMessage.contextId && (
                           <MessageContextBadge
                             contextType={selectedMessage.contextType}
@@ -1866,6 +2009,83 @@ export default function GmailStyleInbox() {
                 className="rounded-lg border border-gray-300 bg-white focus:border-amber-400 focus:ring-2 focus:ring-amber-200 font-['Roboto'] placeholder:text-gray-500 resize-none transition-colors text-gray-900"
                 style={{ color: '#1f2937' }}
               />
+            </div>
+
+            {/* Attachments Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold text-gray-700 font-['Roboto'] flex items-center gap-2">
+                  <Paperclip className="h-4 w-4 text-gray-500" />
+                  Attachments
+                  <Badge variant="outline" className="text-xs ml-1">
+                    {attachments.length}/5
+                  </Badge>
+                </Label>
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading || attachments.length >= 5}
+                    className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Paperclip className="h-4 w-4" />
+                        Attach Files
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Attached files list */}
+              {attachments.length > 0 && (
+                <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  {attachments.map((attachment, index) => {
+                    const FileIcon = getFileIcon(attachment.type);
+                    return (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200"
+                      >
+                        <FileIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{attachment.name}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeAttachment(index)}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500 font-['Roboto']">
+                Max 10MB per file. Images, PDFs, and documents allowed.
+              </p>
             </div>
 
             {saveDraftMutation.isPending && (
