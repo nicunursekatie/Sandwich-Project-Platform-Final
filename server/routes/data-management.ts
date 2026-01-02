@@ -204,7 +204,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
 
     // Get mapped count using INNER JOIN for better performance (case-insensitive match)
     const [mappedResult] = await db
-      .select({ count: sql<number>`count(DISTINCT ${sandwichCollections.id})` })
+      .select({ count: sql<number>`count(*)` })
       .from(sandwichCollections)
       .innerJoin(hosts, sql`lower(trim(${sandwichCollections.hostName})) = lower(trim(${hosts.name}))`);
     const mappedRecords = Number(mappedResult?.count || 0);
@@ -555,9 +555,15 @@ router.get('/export/holding-zone', async (req: any, res) => {
         results.push(...rows);
         totalFetched += rows.length;
         
-        // If we got the full amount we requested and have more chunks, we might be truncated
+        // If we got fewer rows than requested, there are no more records to fetch
+        if (rows.length < remaining) {
+          break;
+        }
+        
+        // If we got exactly what we requested and have more chunks, we hit truncation
         if (rows.length === remaining && start + MAX_IN_CLAUSE < itemIds.length) {
           truncated = true;
+          break;
         }
       }
 
