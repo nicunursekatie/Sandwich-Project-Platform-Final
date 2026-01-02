@@ -517,15 +517,15 @@ export const parsePostgresArray = (ids: unknown): string[] => {
         const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
 
         if (char === '"') {
-          if (inQuotes && nextChar === '"') {
-            // Doubled quote ("") inside quoted string = escaped quote, add one quote
-            current += '"';
-            i++; // Skip the next quote
-            backslashCount = 0;
-          } else if (inQuotes && backslashCount % 2 === 1) {
+          if (inQuotes && backslashCount % 2 === 1) {
             // Backslash-escaped quote (\") with an odd number of preceding backslashes
             // Replace the last backslash with a quote
             current = current.slice(0, -1) + '"';
+            backslashCount = 0;
+          } else if (inQuotes && nextChar === '"') {
+            // Doubled quote ("") inside quoted string = escaped quote, add one quote
+            current += '"';
+            i++; // Skip the next quote
             backslashCount = 0;
           } else {
             // Regular quote - toggle quote state
