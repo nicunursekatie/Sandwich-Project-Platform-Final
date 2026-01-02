@@ -341,11 +341,18 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       }
 
       // Perform batched updates: one UPDATE per distinct standardized host name
+      // Chunk large ID arrays to avoid database parameter limits
+      const MAX_IDS_PER_UPDATE = 1000;
+      
       for (const [matchedHostName, ids] of updatesByHost.entries()) {
-        await db
-          .update(sandwichCollections)
-          .set({ hostName: matchedHostName })
-          .where(inArray(sandwichCollections.id, ids));
+        // Chunk the IDs if there are too many
+        for (let i = 0; i < ids.length; i += MAX_IDS_PER_UPDATE) {
+          const chunk = ids.slice(i, i + MAX_IDS_PER_UPDATE);
+          await db
+            .update(sandwichCollections)
+            .set({ hostName: matchedHostName })
+            .where(inArray(sandwichCollections.id, chunk));
+        }
 
         updatedRecords += ids.length;
       }
@@ -463,12 +470,21 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         updateGroups.set(updateKey, ids);
       }
 
+      // Perform batched updates: group by identical updates to minimize queries
+      // Chunk large ID arrays to avoid database parameter limits
+      const MAX_IDS_PER_UPDATE = 1000;
+      
       for (const [updateKey, ids] of updateGroups.entries()) {
         const updates = JSON.parse(updateKey);
-        await db
-          .update(sandwichCollections)
-          .set(updates)
-          .where(inArray(sandwichCollections.id, ids));
+        
+        // Chunk the IDs if there are too many
+        for (let i = 0; i < ids.length; i += MAX_IDS_PER_UPDATE) {
+          const chunk = ids.slice(i, i + MAX_IDS_PER_UPDATE);
+          await db
+            .update(sandwichCollections)
+            .set(updates)
+            .where(inArray(sandwichCollections.id, chunk));
+        }
       }
 
       fixedCount += batchUpdates.length;
