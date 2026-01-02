@@ -2086,7 +2086,7 @@ export default function GmailStyleInbox() {
               )}
 
               <p className="text-xs text-gray-500 font-['Roboto']">
-                Max 10MB per file. Images, videos, PDFs, and documents allowed.
+                Max 100MB per file. Images, videos, PDFs, and documents allowed.
               </p>
             </div>
 
