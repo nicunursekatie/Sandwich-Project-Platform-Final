@@ -41,15 +41,15 @@ export function MentionInput({
   const [mentionPosition, setMentionPosition] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch all users for mentions
+  // Fetch all users for mentions (uses for-assignments endpoint - no special permissions needed)
   const {
     data: users = [],
     error,
     isLoading,
   } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     queryFn: async () => {
-      const response = await fetch('/api/users', {
+      const response = await fetch('/api/users/for-assignments', {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch users');
@@ -364,15 +364,15 @@ export function MentionTextarea({
   const [mentionPosition, setMentionPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Fetch all users for mentions
+  // Fetch all users for mentions (uses for-assignments endpoint - no special permissions needed)
   const {
     data: users = [],
     error,
     isLoading,
   } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     queryFn: async () => {
-      const response = await fetch('/api/users', {
+      const response = await fetch('/api/users/for-assignments', {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch users');

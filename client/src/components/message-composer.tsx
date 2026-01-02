@@ -120,12 +120,12 @@ export function MessageComposer({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  // Fetch all users for recipient selection
+  // Fetch all users for recipient selection (uses for-assignments endpoint - no special permissions needed)
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/users');
+        const response = await apiRequest('GET', '/api/users/for-assignments');
         return Array.isArray(response) ? response : [];
       } catch (error) {
         logger.error('Error fetching users:', error);
