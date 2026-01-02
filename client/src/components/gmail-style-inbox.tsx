@@ -1198,7 +1198,7 @@ export default function GmailStyleInbox() {
               <KudosInbox />
             </div>
           ) : (
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 h-full">
               {isLoadingMessages ? (
                 <div className="flex items-center justify-center p-8">
                   <div className="text-center">
@@ -1207,7 +1207,7 @@ export default function GmailStyleInbox() {
                   </div>
                 </div>
               ) : (
-              <div className="divide-y" style={{ minHeight: '200px' }}>
+              <div className="divide-y">
                 {filteredMessages.length > 0 && logger.log(`[Render] Rendering ${filteredMessages.length} messages`)}
                 {filteredMessages.map((message, index) => {
                   if (index === 0) {
@@ -1238,10 +1238,15 @@ export default function GmailStyleInbox() {
                             ? 'bg-amber-100 border-r-4 border-amber-500 shadow-sm'
                             : !message.isRead
                             ? 'bg-brand-primary-lighter font-bold border-l-4 border-blue-500'
-                            : 'bg-white font-normal'
-                        } hover:bg-amber-50 border-gray-100
+                            : 'bg-white font-normal border-gray-200'
+                        } hover:bg-amber-50
                         ${isKudos && !message.isRead ? 'animate-pulse' : ''}
                       `}
+                      style={{ 
+                        minHeight: '80px',
+                        display: 'block',
+                        visibility: 'visible'
+                      }}
                     >
                       <div className="flex items-start gap-2 lg:gap-3">
                         <input
@@ -1390,6 +1395,11 @@ export default function GmailStyleInbox() {
                     {activeFolder === 'inbox' && messages.length > 0 && (
                       <p className="text-xs text-gray-400 mt-2">
                         (Note: Inbox shows messages sent TO you, not messages you sent)
+                      </p>
+                    )}
+                    {activeFolder === 'inbox' && messages.length === 0 && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        Your inbox is empty. Messages sent to you will appear here.
                       </p>
                     )}
                   </div>
