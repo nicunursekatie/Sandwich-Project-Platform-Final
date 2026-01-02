@@ -557,6 +557,7 @@ export function MonthlyCalendarGrid({
               onClick={goToPrevMonth}
               className="hover:bg-[#e8f4f8]"
               style={{ color: '#236383' }}
+              aria-label="Go to previous month"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -571,6 +572,7 @@ export function MonthlyCalendarGrid({
               onClick={goToNextMonth}
               className="hover:bg-[#e8f4f8]"
               style={{ color: '#236383' }}
+              aria-label="Go to next month"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

@@ -620,13 +620,13 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             <Button variant="outline" size="default" onClick={goToToday} className="px-4 py-2">
               Today
             </Button>
-            <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="w-10 h-10">
+            <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="w-10 h-10" aria-label="Go to previous month">
               <ChevronLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1 min-w-0 text-center font-bold text-base sm:text-lg truncate px-2">
               {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
             </div>
-            <Button variant="outline" size="icon" onClick={goToNextMonth} className="w-10 h-10">
+            <Button variant="outline" size="icon" onClick={goToNextMonth} className="w-10 h-10" aria-label="Go to next month">
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>

@@ -82,10 +82,18 @@ export function createEmailRouter(deps: RouterDependencies) {
       requestPhoneCall,
     } = req.body;
 
-    if (!subject || !content) {
+    // Subject is required, but content can be empty if there are attachments
+    if (!subject) {
       return res
         .status(400)
-        .json({ message: 'Subject and content are required' });
+        .json({ message: 'Subject is required' });
+    }
+
+    // Content is required unless there are attachments
+    if (!content && (!attachments || attachments.length === 0)) {
+      return res
+        .status(400)
+        .json({ message: 'Content or attachments required' });
     }
 
     if (!isDraft && (!recipientId || !recipientName || !recipientEmail)) {
@@ -111,7 +119,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       recipientName: recipientName || 'Draft',
       recipientEmail: recipientEmail || user.email,
       subject,
-      content,
+      content: content || '', // Default to empty string for attachment-only messages
       // Threading removed
       contextType: contextType || null,
       contextId: contextId || null,
@@ -438,10 +446,18 @@ export function createEmailRouter(deps: RouterDependencies) {
       contextTitle,
     } = req.body;
 
-    if (!subject || !content) {
+    // Subject is required, but content can be empty if there are attachments
+    if (!subject) {
       return res
         .status(400)
-        .json({ message: 'Subject and content are required' });
+        .json({ message: 'Subject is required' });
+    }
+
+    // Content is required unless there are attachments
+    if (!content && (!attachments || attachments.length === 0)) {
+      return res
+        .status(400)
+        .json({ message: 'Content or attachments required' });
     }
 
     if (!isDraft && !recipientEmail) {
@@ -478,7 +494,7 @@ export function createEmailRouter(deps: RouterDependencies) {
         recipientName: recipientName || 'Event Contact',
         recipientEmail: recipientEmail || user.email,
         subject,
-        content,
+        content: content || '', // Default to empty string for attachment-only messages
         isDraft: true,
         contextType: contextType || 'event_request',
         contextId: contextId || eventRequestId?.toString(),
@@ -755,7 +771,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       recipientName: recipientName || 'Event Contact',
       recipientEmail,
       subject,
-      content,
+      content: content || '', // Default to empty string for attachment-only messages
       contextType: contextType || 'event_request',
       contextId: contextId || eventRequestId?.toString(),
       contextTitle: contextTitle || `Event Communication`,

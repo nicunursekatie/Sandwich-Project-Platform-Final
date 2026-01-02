@@ -78,6 +78,7 @@ export function MentionNotifications({
           size="icon"
           className="relative"
           data-testid="button-mentions"
+          aria-label={mentions.length > 0 ? `${mentions.length} new mentions` : "View mentions"}
         >
           <Bell className="h-5 w-5" />
           {mentions.length > 0 && (
@@ -174,6 +175,7 @@ export function MentionNotifications({
                         onClearMention(mention.id);
                       }}
                       data-testid={`button-clear-mention-${index}`}
+                      aria-label="Dismiss this mention"
                     >
                       <X className="h-3 w-3" />
                     </Button>

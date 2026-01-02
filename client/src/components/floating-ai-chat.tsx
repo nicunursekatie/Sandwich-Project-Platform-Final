@@ -829,6 +829,7 @@ export function FloatingAIChat({
               className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => copyToClipboard(chart, chartId)}
               title="Copy data"
+              aria-label="Copy chart data to clipboard"
             >
               {copiedChartId === chartId ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
             </Button>
@@ -838,6 +839,7 @@ export function FloatingAIChat({
               className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => exportAsCSV(chart)}
               title="Download CSV"
+              aria-label="Download chart data as CSV"
             >
               <FileSpreadsheet className="h-3.5 w-3.5" />
             </Button>
@@ -847,6 +849,7 @@ export function FloatingAIChat({
               className="h-7 w-7 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => exportAsPNG(chart, chartId)}
               title="Download PNG"
+              aria-label="Download chart as PNG image"
             >
               <Image className="h-3.5 w-3.5" />
             </Button>
@@ -916,6 +919,7 @@ export function FloatingAIChat({
         )}
         size="icon"
         title="AI Data Assistant"
+        aria-label="Open AI Data Assistant"
       >
         <Sparkles className="h-5 w-5 text-white transition-transform duration-300 hover:scale-110" />
       </Button>
@@ -933,10 +937,10 @@ export function FloatingAIChat({
               <span className="font-medium text-sm">{title}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => setIsMinimized(false)}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => setIsMinimized(false)} aria-label="Expand chat window">
                 <Maximize2 className="h-3 w-3" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => setIsOpen(false)}>
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => setIsOpen(false)} aria-label="Close chat">
                 <X className="h-3 w-3" />
               </Button>
             </div>
@@ -959,10 +963,10 @@ export function FloatingAIChat({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={() => setIsMinimized(true)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={() => setIsMinimized(true)} aria-label="Minimize chat window">
               <Minimize2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={() => setIsOpen(false)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-white hover:bg-white/20" onClick={() => setIsOpen(false)} aria-label="Close chat">
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -1075,6 +1079,9 @@ export function FloatingAIChat({
               disabled={!inputValue.trim() || chatMutation.isPending}
               size="icon"
               className="bg-[#47B3CB] hover:bg-[#236383]"
+              aria-label={chatMutation.isPending ? "Sending message..." : "Send message"}
+              aria-live="polite"
+              aria-busy={chatMutation.isPending}
             >
               {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>

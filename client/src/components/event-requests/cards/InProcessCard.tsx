@@ -49,6 +49,8 @@ import {
   statusOptions,
   statusBorderColors,
   statusBgColors,
+  statusTooltips,
+  indicatorTooltips,
 } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
@@ -320,38 +322,59 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </div>
           )}
           {/* Confirmation Status Badge - Click to toggle */}
-          <Badge
-            onClick={() => {
-              startEditing?.('isConfirmed', (!request.isConfirmed).toString());
-              // Immediately save the toggle
-              setTimeout(() => saveEdit?.(), 0);
-            }}
-            className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
-              request.isConfirmed
-                ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
-                : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
-            }`}
-            title="Click to toggle confirmation status"
-          >
-            {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                onClick={() => {
+                  startEditing?.('isConfirmed', (!request.isConfirmed).toString());
+                  // Immediately save the toggle
+                  setTimeout(() => saveEdit?.(), 0);
+                }}
+                className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
+                  request.isConfirmed
+                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
+                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
+                }`}
+              >
+                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
+              <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
+            </TooltipContent>
+          </Tooltip>
           {isInProcessStale && (
-            <Badge
-              variant="outline"
-              className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap"
-            >
-              <AlertTriangle className="w-3 h-3 mr-1" />
-              Needs follow-up
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap cursor-help"
+                >
+                  <AlertTriangle className="w-3 h-3 mr-1" />
+                  Needs follow-up
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{indicatorTooltips.needsFollowUp}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
           {/* Past Date Warning Badge */}
           {isPast && (
-            <Badge
-              className="bg-[#A31C41] text-white px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap"
-            >
-              <Clock className="w-3 h-3 mr-1" />
-              Date Passed
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  className="bg-[#A31C41] text-white px-2.5 py-0.5 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap cursor-help"
+                >
+                  <Clock className="w-3 h-3 mr-1" />
+                  Date Passed
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{indicatorTooltips.datePassed}</p>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {/* Validation badges for missing intake info */}
@@ -420,34 +443,54 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
             {/* Date Population Badges */}
             {datePopulationInfo && datePopulationInfo.isOpen && (
-              <Badge
-                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
-                style={{ backgroundColor: '#47B3CB' }}
-                title="No other events scheduled or in process on this date"
-              >
-                <CalendarCheck className="w-3 h-3" />
-                Open date
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                    style={{ backgroundColor: '#47B3CB' }}
+                  >
+                    <CalendarCheck className="w-3 h-3" />
+                    Open date
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{indicatorTooltips.openDate}</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
-              <Badge
-                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
-                style={{ backgroundColor: '#FBAD3F' }}
-                title={`${datePopulationInfo.scheduledCount} scheduled event${datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date`}
-              >
-                <AlertTriangle className="w-3 h-3" />
-                {datePopulationInfo.scheduledCount} scheduled
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                    style={{ backgroundColor: '#FBAD3F' }}
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    {datePopulationInfo.scheduledCount} scheduled
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{indicatorTooltips.scheduledConflict}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.scheduledCount} event{datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
-              <Badge
-                className="flex items-center gap-1 text-white text-xs px-2 py-0.5"
-                style={{ backgroundColor: '#007E8C' }}
-                title={`${datePopulationInfo.inProcessCount} in-process event${datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date`}
-              >
-                <Calendar className="w-3 h-3" />
-                {datePopulationInfo.inProcessCount} in process
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                    style={{ backgroundColor: '#007E8C' }}
+                  >
+                    <Calendar className="w-3 h-3" />
+                    {datePopulationInfo.inProcessCount} in process
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{indicatorTooltips.inProcessConflict}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.inProcessCount} event{datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             {canEdit && startEditing && (
               <Button
@@ -716,18 +759,32 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </div>
               {followUpStatus === 'toolkit' && (
                 <div className="mt-2">
-                  <Badge className="bg-red-500 text-white border-red-400 px-3 py-1">
-                    <AlertTriangle className="w-4 h-4 mr-1" />
-                    Follow-up needed - Over 1 week since toolkit sent
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className="bg-red-500 text-white border-red-400 px-3 py-1 cursor-help">
+                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        Follow-up needed - Over 1 week since toolkit sent
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{indicatorTooltips.toolkitFollowUp}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               )}
               {followUpStatus === 'contact' && (
                 <div className="mt-2">
-                  <Badge className="bg-orange-500 text-white border-orange-400 px-3 py-1">
-                    <AlertTriangle className="w-4 h-4 mr-1" />
-                    Follow-up needed - Over 1 week since last contact
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge className="bg-orange-500 text-white border-orange-400 px-3 py-1 cursor-help">
+                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        Follow-up needed - Over 1 week since last contact
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{indicatorTooltips.contactFollowUp}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               )}
             </div>

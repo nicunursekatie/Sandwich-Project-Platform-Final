@@ -98,3 +98,36 @@ export const statusOptions = [
   { value: 'postponed', label: 'Postponed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
+
+// Status tooltips for accessibility - explains what each status means to non-technical users
+export const statusTooltips: Record<string, string> = {
+  new: 'New request awaiting initial review and contact',
+  in_process: 'Currently being coordinated - intake call scheduled or in progress',
+  scheduled: 'Event date confirmed and logistics being finalized',
+  completed: 'Event successfully completed',
+  declined: 'Request was declined or could not be accommodated',
+  postponed: 'Event temporarily delayed - will be rescheduled',
+  cancelled: 'Event was cancelled and will not take place',
+};
+
+// Additional indicator tooltips for special badges
+export const indicatorTooltips = {
+  dateConfirmed: 'The event date has been confirmed with the organizer',
+  datePending: 'Waiting for date confirmation from the organizer',
+  needsFollowUp: 'This request requires follow-up action',
+  datePassed: 'The scheduled date has passed - needs rescheduling or status update',
+  openDate: 'No other events scheduled on this date',
+  scheduledConflict: 'Other events are already scheduled on this date',
+  inProcessConflict: 'Other events are being coordinated for this date',
+  fullyStaffed: 'All required drivers, speakers, and volunteers are assigned',
+  partiallyStaffed: 'Some positions still need to be filled',
+  notStaffed: 'Drivers, speakers, or volunteers still needed',
+  manualEntry: 'This event was manually entered (not from the request form)',
+  selfTransport: 'The group will pick up and transport their own sandwiches',
+  holdingOvernight: 'Sandwiches will be held overnight before delivery',
+  onOfficialSheet: 'Event has been added to the official planning spreadsheet',
+  notOnOfficialSheet: 'Event needs to be added to the official planning spreadsheet',
+  overdue: 'This item is past its due date',
+  toolkitFollowUp: 'Over 1 week since toolkit was sent - follow up needed',
+  contactFollowUp: 'Over 1 week since last contact - follow up needed',
+};
