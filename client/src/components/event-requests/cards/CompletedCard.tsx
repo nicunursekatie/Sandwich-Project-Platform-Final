@@ -38,7 +38,7 @@ import { useEventQueries } from '../hooks/useEventQueries';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { statusIcons, statusOptions, statusBorderColors, statusBgColors, SANDWICH_TYPES } from '@/components/event-requests/constants';
+import { statusIcons, statusOptions, statusBorderColors, statusBgColors, SANDWICH_TYPES, statusTooltips, indicatorTooltips } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -348,27 +348,48 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </div>
           )}
 
-            <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px]">
-              <StatusIcon className="w-3 h-3 mr-1" />
-              {getStatusLabel(request.status)}
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 hover:bg-primary/80 bg-gradient-to-br from-[#e6f2f5] to-[#d1e9ed] text-[#236383] border border-[#236383]/30 text-[16px] cursor-help">
+                  <StatusIcon className="w-3 h-3 mr-1" />
+                  {getStatusLabel(request.status)}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{statusTooltips[request.status] || 'Event status'}</p>
+              </TooltipContent>
+            </Tooltip>
             {/* Confirmation Status Badge - Completed events are always confirmed */}
-            <Badge
-              onClick={() => request.status !== 'completed' && startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
-              className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center ${
-                request.status === 'completed' || request.isConfirmed
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-400 text-white'
-              } ${request.status !== 'completed' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-              title={request.status === 'completed' ? 'Completed events are always confirmed' : 'Click to toggle confirmation status'}
-            >
-              {request.status === 'completed' || request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  onClick={() => request.status !== 'completed' && startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+                  className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center ${
+                    request.status === 'completed' || request.isConfirmed
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-400 text-white'
+                  } ${request.status !== 'completed' ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-help'}`}
+                >
+                  {request.status === 'completed' || request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{request.status === 'completed' ? 'Completed events are always confirmed' : (request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending)}</p>
+                {request.status !== 'completed' && <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>}
+              </TooltipContent>
+            </Tooltip>
             {isInProcessStale && (
-              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                Needs follow-up
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 cursor-help">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Needs follow-up
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{indicatorTooltips.needsFollowUp}</p>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
           <div className="text-sm text-[#236383] mt-1 space-y-1">

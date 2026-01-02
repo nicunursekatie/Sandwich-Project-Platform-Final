@@ -66,6 +66,8 @@ import {
   statusOptions,
   statusBorderColors,
   statusBgColors,
+  statusTooltips,
+  indicatorTooltips,
 } from '@/components/event-requests/constants';
 import {
   parseSandwichTypes,
@@ -910,58 +912,100 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
 
             {/* Status Badges Group */}
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <Badge variant="outline" className="bg-[#007E8C]/5 text-[#007E8C] border-[#007E8C]/30 font-medium">
-                <StatusIcon className="w-3 h-3 mr-1" />
-                {getStatusLabel(request.status)}
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="bg-[#007E8C]/5 text-[#007E8C] border-[#007E8C]/30 font-medium cursor-help">
+                    <StatusIcon className="w-3 h-3 mr-1" />
+                    {getStatusLabel(request.status)}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{statusTooltips[request.status] || 'Event status'}</p>
+                </TooltipContent>
+              </Tooltip>
 
-              <Badge
-                onClick={() => quickToggleBoolean('isConfirmed', request.isConfirmed)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.isConfirmed
-                    ? 'bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30'
-                    : 'bg-[#236383]/10 text-[#236383] border-[#236383]/40'
-                }`}
-                variant="outline"
-                title="Click to toggle confirmation status"
-              >
-                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    onClick={() => quickToggleBoolean('isConfirmed', request.isConfirmed)}
+                    className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
+                      request.isConfirmed
+                        ? 'bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30'
+                        : 'bg-[#236383]/10 text-[#236383] border-[#236383]/40'
+                    }`}
+                    variant="outline"
+                  >
+                    {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
+                </TooltipContent>
+              </Tooltip>
 
-              <Badge
-                onClick={() => quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
-                className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
-                  request.addedToOfficialSheet
-                    ? 'bg-[#236383]/10 text-[#236383] border-[#236383]/30'
-                    : 'bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/40'
-                }`}
-                variant="outline"
-                title="Click to toggle official sheet status"
-              >
-                {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Official Sheet'}
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    onClick={() => quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+                    className={`cursor-pointer hover:opacity-80 transition-opacity font-medium ${
+                      request.addedToOfficialSheet
+                        ? 'bg-[#236383]/10 text-[#236383] border-[#236383]/30'
+                        : 'bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/40'
+                    }`}
+                    variant="outline"
+                  >
+                    {request.addedToOfficialSheet ? '✓ On Official Sheet' : 'Not on Official Sheet'}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{request.addedToOfficialSheet ? indicatorTooltips.onOfficialSheet : indicatorTooltips.notOnOfficialSheet}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
+                </TooltipContent>
+              </Tooltip>
 
               {request.externalId && request.externalId.startsWith('manual-') && (
-                <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-medium">
-                  <FileText className="w-3 h-3 mr-1" />
-                  Manual Entry
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#FBAD3F] border-[#FBAD3F]/30 font-medium cursor-help">
+                      <FileText className="w-3 h-3 mr-1" />
+                      Manual Entry
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{indicatorTooltips.manualEntry}</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
 
               {/* Self-transport badge */}
               {request.selfTransport && (
-                <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#D68319] border-[#FBAD3F] font-medium flex items-center gap-1">
-                  <Car className="w-3 h-3" />
-                  <span>Driving Own Sandwiches</span>
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge variant="outline" className="bg-[#FBAD3F]/10 text-[#D68319] border-[#FBAD3F] font-medium flex items-center gap-1 cursor-help">
+                      <Car className="w-3 h-3" />
+                      <span>Driving Own Sandwiches</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{indicatorTooltips.selfTransport}</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
 
               {/* Overnight holding badge */}
               {request.overnightHoldingLocation && (
-                <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1">
-                  <span>🌙</span>
-                  <span>Holding Overnight</span>
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge className="bg-[#236383] text-white border border-[#236383] font-medium flex items-center gap-1 cursor-help">
+                      <span>🌙</span>
+                      <span>Holding Overnight</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{indicatorTooltips.holdingOvernight}</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
 
@@ -986,10 +1030,17 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             {!request.selfTransport && (
               <div className="flex flex-wrap items-center gap-2">
                 {staffingComplete ? (
-                  <Badge variant="outline" className="bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30 font-medium">
-                    <Check className="w-3 h-3 mr-1" />
-                    Fully Staffed
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="bg-[#47B3CB]/10 text-[#007E8C] border-[#007E8C]/30 font-medium cursor-help">
+                        <Check className="w-3 h-3 mr-1" />
+                        Fully Staffed
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{indicatorTooltips.fullyStaffed}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 ) : (
                   <>
                     {driverNeeded > driverAssigned && (
