@@ -20,6 +20,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import tspLogo from '@assets/LOGOS/TSP_transparent.png';
+import { AuthPageLayout } from '@/components/layout/responsive-page-layout';
 
 export default function ResetPassword() {
   const [, setLocation] = useLocation();
@@ -142,232 +143,242 @@ export default function ResetPassword() {
 
   if (isVerifyingToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-teal-600" />
-              <p className="text-slate-600">Verifying reset token...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthPageLayout title="Verifying..." showBack={false}>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-teal-600" />
+                <p className="text-slate-600">Verifying reset token...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthPageLayout>
     );
   }
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <img
-              src={tspLogo}
-              alt="The Sandwich Project"
-              className="h-16 w-auto mx-auto mb-4"
-            />
-            <CardTitle className="text-red-600">Invalid Reset Link</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <Alert>
-              <XCircle className="h-4 w-4" />
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-            <div className="space-y-2">
-              <Button
-                onClick={() => (window.location.href = '/login')}
-                className="w-full bg-teal-600 hover:bg-teal-700"
-              >
-                Back to Login
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => (window.location.href = '/login')}
-                className="w-full"
-              >
-                Request New Reset Link
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthPageLayout title="Invalid Link" showBack>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <img
+                src={tspLogo}
+                alt="The Sandwich Project"
+                className="h-12 sm:h-16 w-auto mx-auto mb-4"
+              />
+              <CardTitle className="text-red-600 text-xl sm:text-2xl">Invalid Reset Link</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4 px-4 sm:px-6">
+              <Alert>
+                <XCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">{message}</AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <Button
+                  onClick={() => (window.location.href = '/login')}
+                  className="w-full bg-teal-600 hover:bg-teal-700 h-11"
+                >
+                  Back to Login
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => (window.location.href = '/forgot-password')}
+                  className="w-full h-11"
+                >
+                  Request New Reset Link
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthPageLayout>
     );
   }
 
   if (isSuccess) {
     return (
+      <AuthPageLayout title="Success" showBack={false}>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <img
+                src={tspLogo}
+                alt="The Sandwich Project"
+                className="h-12 sm:h-16 w-auto mx-auto mb-4"
+              />
+              <CardTitle className="text-green-600 text-xl sm:text-2xl">
+                Password Reset Successful
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-4 px-4 sm:px-6">
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">{message}</AlertDescription>
+              </Alert>
+              <p className="text-slate-600 text-xs sm:text-sm">
+                You will be redirected to login in 3 seconds...
+              </p>
+              <Button
+                onClick={() => (window.location.href = '/login')}
+                className="w-full bg-teal-600 hover:bg-teal-700 h-11"
+              >
+                Go to Login Now
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthPageLayout>
+    );
+  }
+
+  return (
+    <AuthPageLayout title="Reset Password" showBack>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <img
               src={tspLogo}
               alt="The Sandwich Project"
-              className="h-16 w-auto mx-auto mb-4"
+              className="h-12 sm:h-16 w-auto mx-auto mb-4"
             />
-            <CardTitle className="text-green-600">
-              Password Reset Successful
-            </CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Reset Your Password</CardTitle>
+            <CardDescription className="text-sm sm:text-base">
+              Enter a new password for {userEmail}
+            </CardDescription>
           </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>{message}</AlertDescription>
-            </Alert>
-            <p className="text-slate-600 text-sm">
-              You will be redirected to login in 3 seconds...
-            </p>
-            <Button
-              onClick={() => (window.location.href = '/login')}
-              className="w-full bg-teal-600 hover:bg-teal-700"
-            >
-              Go to Login Now
-            </Button>
+          <CardContent className="px-4 sm:px-6">
+            <form onSubmit={handleResetPassword} className="space-y-4 sm:space-y-6">
+              {message && (
+                <Alert variant={isSuccess ? 'default' : 'destructive'}>
+                  <AlertDescription className="text-sm">{message}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* New Password */}
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    required
+                    className="h-11 text-base pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Password Strength Indicators */}
+              {newPassword && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-slate-600">
+                    Password Requirements:
+                  </Label>
+                  <div className="space-y-1">
+                    {Object.entries({
+                      hasLength: 'At least 8 characters',
+                      hasLowercase: 'One lowercase letter',
+                      hasUppercase: 'One uppercase letter',
+                      hasNumber: 'One number',
+                    }).map(([key, label]) => (
+                      <div key={key} className="flex items-center gap-2 text-xs">
+                        {passwordStrength[
+                          key as keyof typeof passwordStrength
+                        ] ? (
+                          <CheckCircle size={12} className="text-green-600" />
+                        ) : (
+                          <XCircle size={12} className="text-red-400" />
+                        )}
+                        <span
+                          className={
+                            passwordStrength[key as keyof typeof passwordStrength]
+                              ? 'text-green-600'
+                              : 'text-slate-500'
+                          }
+                        >
+                          {label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    required
+                    className="h-11 text-base pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+                {confirmPassword && newPassword !== confirmPassword && (
+                  <p className="text-red-500 text-sm">Passwords do not match</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-teal-600 hover:bg-teal-700 h-11"
+                disabled={
+                  isLoading ||
+                  !Object.values(passwordStrength).every(Boolean) ||
+                  newPassword !== confirmPassword
+                }
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Resetting Password...
+                  </>
+                ) : (
+                  'Reset Password'
+                )}
+              </Button>
+
+              <div className="text-center">
+                <Button
+                  variant="ghost"
+                  onClick={() => (window.location.href = '/login')}
+                  className="text-slate-600 hover:text-slate-800"
+                >
+                  <ArrowLeft size={16} className="mr-2" />
+                  Back to Login
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <img
-            src={tspLogo}
-            alt="The Sandwich Project"
-            className="h-16 w-auto mx-auto mb-4"
-          />
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-          <CardDescription>
-            Enter a new password for {userEmail}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleResetPassword} className="space-y-6">
-            {message && (
-              <Alert variant={isSuccess ? 'default' : 'destructive'}>
-                <AlertDescription>{message}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* New Password */}
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showPassword ? 'text' : 'password'}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* Password Strength Indicators */}
-            {newPassword && (
-              <div className="space-y-2">
-                <Label className="text-sm text-slate-600">
-                  Password Requirements:
-                </Label>
-                <div className="space-y-1">
-                  {Object.entries({
-                    hasLength: 'At least 8 characters',
-                    hasLowercase: 'One lowercase letter',
-                    hasUppercase: 'One uppercase letter',
-                    hasNumber: 'One number',
-                  }).map(([key, label]) => (
-                    <div key={key} className="flex items-center gap-2 text-xs">
-                      {passwordStrength[
-                        key as keyof typeof passwordStrength
-                      ] ? (
-                        <CheckCircle size={12} className="text-green-600" />
-                      ) : (
-                        <XCircle size={12} className="text-red-400" />
-                      )}
-                      <span
-                        className={
-                          passwordStrength[key as keyof typeof passwordStrength]
-                            ? 'text-green-600'
-                            : 'text-slate-500'
-                        }
-                      >
-                        {label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={16} />
-                  ) : (
-                    <Eye size={16} />
-                  )}
-                </button>
-              </div>
-              {confirmPassword && newPassword !== confirmPassword && (
-                <p className="text-red-500 text-sm">Passwords do not match</p>
-              )}
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full bg-teal-600 hover:bg-teal-700"
-              disabled={
-                isLoading ||
-                !Object.values(passwordStrength).every(Boolean) ||
-                newPassword !== confirmPassword
-              }
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Resetting Password...
-                </>
-              ) : (
-                'Reset Password'
-              )}
-            </Button>
-
-            <div className="text-center">
-              <Button
-                variant="ghost"
-                onClick={() => (window.location.href = '/login')}
-                className="text-slate-600 hover:text-slate-800"
-              >
-                <ArrowLeft size={16} className="mr-2" />
-                Back to Login
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    </AuthPageLayout>
   );
 }

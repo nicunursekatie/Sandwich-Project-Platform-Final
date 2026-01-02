@@ -24,6 +24,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
 import { AlertCircle, Clock, LogIn } from 'lucide-react';
 import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
+import { AuthPageLayout } from '@/components/layout/responsive-page-layout';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -109,144 +110,148 @@ export default function LoginPage() {
 
   if (pendingApproval) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Clock className="w-12 h-12 text-amber-600" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">
-              Account Pending Approval
-            </h2>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              Thank you for signing up! Your account is currently being reviewed by our team. 
-              You'll receive an email notification once your account has been approved.
-            </p>
-            <p className="text-sm text-gray-500 mb-8">
-              This usually takes 1-2 business days.
-            </p>
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                asChild
-                className="w-full border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white py-3 rounded-xl transition-all duration-300"
-              >
-                <Link href="/">Return to Home</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthPageLayout title="Pending Approval" showBack={false}>
+        <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
+          <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+            <CardContent className="p-6 sm:p-8 text-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <Clock className="w-10 h-10 sm:w-12 sm:h-12 text-amber-600" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+                Account Pending Approval
+              </h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
+                Thank you for signing up! Your account is currently being reviewed by our team.
+                You'll receive an email notification once your account has been approved.
+              </p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-6 sm:mb-8">
+                This usually takes 1-2 business days.
+              </p>
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  asChild
+                  className="w-full border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white py-3 rounded-xl transition-all duration-300"
+                >
+                  <Link href="/">Return to Home</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthPageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
-      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
-        <CardHeader className="text-center pb-2">
-          <div className="flex justify-center mb-4">
-            <img
-              src={tspLogo}
-              alt="The Sandwich Project"
-              className="h-20 w-auto"
-            />
-          </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Team Login
-          </CardTitle>
-          <CardDescription className="text-base text-gray-600">
-            Sign in to access the platform
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              {errorMessage && (
-                <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Email Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="your.email@example.com"
-                        data-testid="input-email"
-                        className="border-gray-300 focus:border-amber-500 focus:ring-amber-500"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+    <AuthPageLayout title="Login" showBack={false}>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #F5A623 50%, #E89A2F 100%)' }}>
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm border-0 shadow-2xl">
+          <CardHeader className="text-center pb-2">
+            <div className="flex justify-center mb-4">
+              <img
+                src={tspLogo}
+                alt="The Sandwich Project"
+                className="h-16 sm:h-20 w-auto"
               />
+            </div>
+            <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+              Team Login
+            </CardTitle>
+            <CardDescription className="text-sm sm:text-base text-gray-600">
+              Sign in to access the platform
+            </CardDescription>
+          </CardHeader>
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-700">Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter your password"
-                        data-testid="input-password"
-                        className="border-gray-300 focus:border-amber-500 focus:ring-amber-500"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+          <CardContent className="px-4 sm:px-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5">
+                {errorMessage && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
                 )}
-              />
 
-              <Button
-                type="submit"
-                disabled={isLoading}
-                data-testid="button-login"
-                className="w-full text-white font-semibold py-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-amber-500/30"
-                style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #E89A2F 100%)' }}
-              >
-                {isLoading ? (
-                  'Signing in...'
-                ) : (
-                  <span className="flex items-center justify-center gap-2">
-                    <LogIn className="w-4 h-4" />
-                    Sign In
-                  </span>
-                )}
-              </Button>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Email Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="your.email@example.com"
+                          data-testid="input-email"
+                          className="border-gray-300 focus:border-amber-500 focus:ring-amber-500 h-11 text-base"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <div className="text-center space-y-2 pt-2">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-gray-600 hover:text-amber-600 hover:underline"
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-700">Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Enter your password"
+                          data-testid="input-password"
+                          className="border-gray-300 focus:border-amber-500 focus:ring-amber-500 h-11 text-base"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  data-testid="button-login"
+                  className="w-full text-white font-semibold py-3 h-12 rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-amber-500/30"
+                  style={{ background: 'linear-gradient(135deg, #FBAD3F 0%, #E89A2F 100%)' }}
                 >
-                  Forgot your password?
-                </Link>
-                <div className="text-sm text-gray-600">
-                  Don't have an account?{' '}
+                  {isLoading ? (
+                    'Signing in...'
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </span>
+                  )}
+                </Button>
+
+                <div className="text-center space-y-2 pt-2">
                   <Link
-                    href="/signup"
-                    className="text-amber-600 hover:text-amber-700 hover:underline font-medium"
+                    href="/forgot-password"
+                    className="text-sm text-gray-600 hover:text-amber-600 hover:underline"
                   >
-                    Sign up
+                    Forgot your password?
                   </Link>
+                  <div className="text-sm text-gray-600">
+                    Don't have an account?{' '}
+                    <Link
+                      href="/signup"
+                      className="text-amber-600 hover:text-amber-700 hover:underline font-medium"
+                    >
+                      Sign up
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
-    </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    </AuthPageLayout>
   );
 }
