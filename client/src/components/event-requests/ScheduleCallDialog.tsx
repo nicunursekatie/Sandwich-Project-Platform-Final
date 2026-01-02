@@ -51,7 +51,7 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scheduleCallDate || !scheduleCallTime) return;
+    if (!scheduleCallDate) return; // Only date is required, time is optional
     onCallScheduled();
   };
 
@@ -123,13 +123,12 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="schedule-call-time">Call Time</Label>
+              <Label htmlFor="schedule-call-time">Call Time <span className="text-gray-400 text-xs font-normal">(optional)</span></Label>
               <Input
                 id="schedule-call-time"
                 type="time"
                 value={scheduleCallTime}
                 onChange={(e) => setScheduleCallTime(e.target.value)}
-                required
                 data-testid="input-schedule-call-time"
               />
             </div>
@@ -152,7 +151,7 @@ export const ScheduleCallDialog: React.FC<ScheduleCallDialogProps> = ({
             </Button>
             <Button
               type="submit"
-              disabled={!scheduleCallDate || !scheduleCallTime || isLoading}
+              disabled={!scheduleCallDate || isLoading}
               className="bg-blue-600 hover:bg-blue-700 text-white"
               data-testid="button-confirm-schedule-call"
             >

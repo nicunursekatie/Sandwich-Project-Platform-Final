@@ -408,10 +408,12 @@ const EventRequestsManagementContent: React.FC = () => {
   }, [eventRequests, user?.role, user?.permissions]);
 
   const handleScheduleCall = () => {
-    if (!selectedEventRequest || !scheduleCallDate || !scheduleCallTime) return;
+    if (!selectedEventRequest || !scheduleCallDate) return;
 
+    // Use provided time or default to start of day if no time specified
+    const timeToUse = scheduleCallTime || '00:00';
     const combinedDateTime = new Date(
-      `${scheduleCallDate}T${scheduleCallTime}`
+      `${scheduleCallDate}T${timeToUse}`
     ).toISOString();
 
     trackButtonClick('schedule_call', 'event_requests');
