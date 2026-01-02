@@ -881,8 +881,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
       collaboration.locks.forEach((lock, fieldName) => {
         if (lock.lockedBy === currentUser.id) {
-          const releasePromise = Promise.resolve(
-            collaboration.releaseFieldLock?.(fieldName)
+          const releasePromise = (
+            collaboration.releaseFieldLock?.(fieldName) || Promise.resolve()
           )
             .then(() => {
               logger.log(
