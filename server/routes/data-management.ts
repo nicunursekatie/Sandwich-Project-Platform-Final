@@ -233,11 +233,11 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       .select({
         hostName: sandwichCollections.hostName,
         count: sql<number>`count(*)`.as('count'),
-        mapped: sql<boolean>`${hosts.id} IS NOT NULL`.as('mapped')
+        mapped: sql<boolean>`MAX(CASE WHEN ${hosts.id} IS NOT NULL THEN 1 ELSE 0 END) = 1`.as('mapped')
       })
       .from(sandwichCollections)
       .leftJoin(hosts, sql`lower(trim(${sandwichCollections.hostName})) = lower(trim(${hosts.name}))`)
-      .groupBy(sandwichCollections.hostName, hosts.id)
+      .groupBy(sandwichCollections.hostName)
       .orderBy(sql`count(*) DESC`)
       .limit(limit);
 
@@ -527,13 +527,14 @@ router.get('/export/holding-zone', async (req: any, res) => {
     const itemIds = items.map(i => i.id);
 
     // Helper function to fetch related data in chunks
-    const fetchRelatedInChunks = async (table: any, itemIdColumn: any) => {
+    const fetchRelatedInChunks = async (table: any, itemIdColumn: any): Promise<{ data: any[], truncated: boolean }> => {
       const results: any[] = [];
       if (itemIds.length === 0 || MAX_RELATED <= 0) {
-        return results;
+        return { data: results, truncated: false };
       }
 
       let remaining = MAX_RELATED;
+      let hitLimit = false;
 
       for (let start = 0; start < itemIds.length && remaining > 0; start += MAX_IN_CLAUSE) {
         const chunk = itemIds.slice(start, start + MAX_IN_CLAUSE);
@@ -545,29 +546,46 @@ router.get('/export/holding-zone', async (req: any, res) => {
           .limit(remaining);
 
         results.push(...rows);
+        
+        // If we got exactly what we asked for and still have chunks to process, we may have hit the limit
+        if (rows.length === remaining && start + MAX_IN_CLAUSE < itemIds.length) {
+          hitLimit = true;
+        }
+        
         remaining = MAX_RELATED - results.length;
       }
 
-      // Ensure we never return more than MAX_RELATED even if duplicates arise
-      return results.slice(0, MAX_RELATED);
+      // Return truncated=true if we hit the limit or got exactly MAX_RELATED items
+      return { data: results.slice(0, MAX_RELATED), truncated: hitLimit || results.length >= MAX_RELATED };
     };
 
     // Only fetch related data for the exported items (with limits and chunking)
     let comments: any[] = [];
     let likes: any[] = [];
     let assignments: any[] = [];
+    let commentsTruncated = false;
+    let likesTruncated = false;
+    let assignmentsTruncated = false;
 
     if (itemIds.length > 0) {
-      comments = await fetchRelatedInChunks(teamBoardComments, teamBoardComments.itemId);
-      likes = await fetchRelatedInChunks(teamBoardItemLikes, teamBoardItemLikes.itemId);
-      assignments = await fetchRelatedInChunks(teamBoardAssignments, teamBoardAssignments.itemId);
+      const commentsResult = await fetchRelatedInChunks(teamBoardComments, teamBoardComments.itemId);
+      comments = commentsResult.data;
+      commentsTruncated = commentsResult.truncated;
+
+      const likesResult = await fetchRelatedInChunks(teamBoardItemLikes, teamBoardItemLikes.itemId);
+      likes = likesResult.data;
+      likesTruncated = likesResult.truncated;
+
+      const assignmentsResult = await fetchRelatedInChunks(teamBoardAssignments, teamBoardAssignments.itemId);
+      assignments = assignmentsResult.data;
+      assignmentsTruncated = assignmentsResult.truncated;
     }
 
     // Check if any data was truncated
     const truncated = {
-      comments: comments.length >= MAX_RELATED,
-      likes: likes.length >= MAX_RELATED,
-      assignments: assignments.length >= MAX_RELATED,
+      comments: commentsTruncated,
+      likes: likesTruncated,
+      assignments: assignmentsTruncated,
     };
 
     const backup = {
