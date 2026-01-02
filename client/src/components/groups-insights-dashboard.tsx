@@ -885,6 +885,7 @@ export default function GroupsInsightsDashboard() {
                     variant="outline"
                     size="icon"
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    aria-label={sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'}
                   >
                     {sortOrder === 'asc' ? (
                       <TrendingUp className="h-4 w-4" />
