@@ -294,10 +294,12 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     let hasMore = true;
 
     // Process collections in batches to avoid memory issues
+    // Order by id for deterministic pagination (prevents skipping/repeating rows)
     while (hasMore) {
       const batch = await db
         .select({ id: sandwichCollections.id, hostName: sandwichCollections.hostName })
         .from(sandwichCollections)
+        .orderBy(sandwichCollections.id)
         .limit(BATCH_SIZE)
         .offset(offset);
 
@@ -352,10 +354,12 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     let hasMore = true;
 
     // Process collections in batches to avoid memory issues
+    // Order by id for deterministic pagination (prevents skipping/repeating rows)
     while (hasMore) {
       const batch = await db
         .select()
         .from(sandwichCollections)
+        .orderBy(sandwichCollections.id)
         .limit(BATCH_SIZE)
         .offset(offset);
 

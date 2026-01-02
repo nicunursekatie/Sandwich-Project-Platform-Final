@@ -11,8 +11,9 @@ import {
 import { logger } from '../utils/production-safe-logger';
 
 // Default and maximum limits for pagination to prevent unbounded queries
-const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 1000;
+// Default is set high (1000) to maintain backwards compatibility since client doesn't paginate yet
+const DEFAULT_LIMIT = 1000;
+const MAX_LIMIT = 5000;
 
 const router = Router();
 
