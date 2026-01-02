@@ -577,23 +577,25 @@ export default function Help({ onLaunchTour }: HelpProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container max-w-7xl mx-auto px-4 py-8">
+      <div className="container max-w-7xl mx-auto px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <PageBreadcrumbs
-            segments={[
-              { label: 'Help Center' }
-            ]}
-          />
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#236383] to-[#007e8c] flex items-center justify-center shadow-lg">
-              <HelpCircle className="w-9 h-9 text-white" />
+        <div className="mb-4 sm:mb-8">
+          <div className="hidden sm:block">
+            <PageBreadcrumbs
+              segments={[
+                { label: 'Help Center' }
+              ]}
+            />
+          </div>
+          <div className="flex items-center gap-3 sm:gap-4 mb-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#236383] to-[#007e8c] flex items-center justify-center shadow-lg flex-shrink-0">
+              <HelpCircle className="w-6 h-6 sm:w-9 sm:h-9 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100" data-testid="help-title">
+              <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 dark:text-slate-100" data-testid="help-title">
                 Help Center
               </h1>
-              <p className="text-lg text-slate-600 dark:text-slate-400 mt-1">
+              <p className="text-sm sm:text-lg text-slate-600 dark:text-slate-400 mt-1">
                 Find answers and learn how to use The Sandwich Project platform
               </p>
             </div>
@@ -601,28 +603,29 @@ export default function Help({ onLaunchTour }: HelpProps) {
         </div>
 
         {/* Search and Filters */}
-        <Card className="mb-8 border-2 border-[#fbad3f]/20">
-          <CardContent className="p-6">
-            <div className="space-y-4">
+        <Card className="mb-4 sm:mb-8 border-2 border-[#fbad3f]/20">
+          <CardContent className="p-4 sm:p-6">
+            <div className="space-y-3 sm:space-y-4">
               {/* Search Bar */}
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                 <Input
                   placeholder="Search help topics..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 h-12 text-base border-2 focus:border-[#236383]"
+                  className="pl-10 sm:pl-12 h-11 sm:h-12 text-sm sm:text-base border-2 focus:border-[#236383]"
                   data-testid="help-search"
                 />
               </div>
 
               {/* Category Filters */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <Button
                   variant={selectedCategory === null ? 'default' : 'outline'}
                   onClick={() => setSelectedCategory(null)}
+                  size="sm"
                   className={cn(
-                    'transition-all',
+                    'transition-all text-xs sm:text-sm',
                     selectedCategory === null &&
                       'bg-gradient-to-r from-[#236383] to-[#007e8c] hover:from-[#1a4d66] hover:to-[#006270]'
                   )}
@@ -637,15 +640,16 @@ export default function Help({ onLaunchTour }: HelpProps) {
                       key={key}
                       variant={selectedCategory === key ? 'default' : 'outline'}
                       onClick={() => setSelectedCategory(key as TourCategory)}
+                      size="sm"
                       className={cn(
-                        'transition-all',
+                        'transition-all text-xs sm:text-sm',
                         selectedCategory === key &&
                           'bg-gradient-to-r from-[#236383] to-[#007e8c] hover:from-[#1a4d66] hover:to-[#006270]'
                       )}
                       data-testid={`filter-${key}`}
                     >
-                      {IconComponent && <IconComponent className="w-4 h-4 mr-2" />}
-                      {category.label}
+                      {IconComponent && <IconComponent className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />}
+                      <span className="truncate">{category.label}</span>
                     </Button>
                   );
                 })}
@@ -679,17 +683,17 @@ export default function Help({ onLaunchTour }: HelpProps) {
 
               return (
                 <div key={categoryKey} data-testid={`category-${categoryKey}`}>
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                     {CategoryIcon && (
-                      <div className="w-10 h-10 rounded-lg bg-[#007e8c]/10 flex items-center justify-center">
-                        <CategoryIcon className="w-5 h-5 text-[#007e8c]" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-[#007e8c]/10 flex items-center justify-center flex-shrink-0">
+                        <CategoryIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#007e8c]" />
                       </div>
                     )}
-                    <div>
-                      <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    <div className="min-w-0">
+                      <h2 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100">
                         {category.label}
                       </h2>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
                         {category.description}
                       </p>
                     </div>
@@ -714,38 +718,39 @@ export default function Help({ onLaunchTour }: HelpProps) {
                             data-testid={`topic-${topic.id}`}
                           >
                             <CollapsibleTrigger asChild>
-                              <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="flex items-start gap-4 flex-1">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#236383]/10 to-[#007e8c]/10 flex items-center justify-center flex-shrink-0">
-                                      <TopicIcon className="w-6 h-6 text-[#236383]" />
+                              <CardHeader className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors p-3 sm:p-6">
+                                <div className="flex items-start justify-between gap-2 sm:gap-4">
+                                  <div className="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#236383]/10 to-[#007e8c]/10 flex items-center justify-center flex-shrink-0">
+                                      <TopicIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#236383]" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <CardTitle className="text-xl mb-2 text-slate-900 dark:text-slate-100">
+                                      <CardTitle className="text-base sm:text-xl mb-1 sm:mb-2 text-slate-900 dark:text-slate-100">
                                         {topic.title}
                                       </CardTitle>
-                                      <CardDescription className="text-base">
+                                      <CardDescription className="text-xs sm:text-base line-clamp-2">
                                         {topic.description}
                                       </CardDescription>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                                     {topic.tourId && (
                                       <Badge
                                         variant="secondary"
-                                        className="bg-[#fbad3f]/10 text-[#fbad3f] border-[#fbad3f]/20"
+                                        className="bg-[#fbad3f]/10 text-[#fbad3f] border-[#fbad3f]/20 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5"
                                       >
-                                        <PlayCircle className="w-3 h-3 mr-1" />
-                                        Tour Available
+                                        <PlayCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
+                                        <span className="hidden sm:inline">Tour Available</span>
+                                        <span className="sm:hidden">Tour</span>
                                       </Badge>
                                     )}
                                     <div
                                       className={cn(
-                                        'w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-transform',
+                                        'w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-transform',
                                         isExpanded && 'rotate-180'
                                       )}
                                     >
-                                      <ChevronDown className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                                      <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-400" />
                                     </div>
                                   </div>
                                 </div>
@@ -753,27 +758,27 @@ export default function Help({ onLaunchTour }: HelpProps) {
                             </CollapsibleTrigger>
 
                             <CollapsibleContent>
-                              <CardContent className="pt-0 pb-6">
-                                <div className="space-y-6">
+                              <CardContent className="pt-0 pb-4 sm:pb-6 px-3 sm:px-6">
+                                <div className="space-y-4 sm:space-y-6">
                                   {/* Summary */}
-                                  <div className="bg-[#007e8c]/5 border-l-4 border-[#007e8c] p-4 rounded-r-lg">
-                                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                                  <div className="bg-[#007e8c]/5 border-l-4 border-[#007e8c] p-3 sm:p-4 rounded-r-lg">
+                                    <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed">
                                       {topic.content.summary}
                                     </p>
                                   </div>
 
                                   {/* Steps */}
                                   <div>
-                                    <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                                      <div className="w-6 h-6 rounded-md bg-[#236383] text-white flex items-center justify-center text-sm">
+                                    <h4 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 mb-2 sm:mb-3 flex items-center gap-2">
+                                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#236383] text-white flex items-center justify-center text-xs sm:text-sm">
                                         1
                                       </div>
                                       Step-by-Step Guide
                                     </h4>
                                     <ol className="space-y-2">
                                       {topic.content.steps.map((step, index) => (
-                                        <li key={index} className="flex gap-3 text-slate-700 dark:text-slate-300">
-                                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#fbad3f]/20 text-[#fbad3f] flex items-center justify-center text-sm font-semibold">
+                                        <li key={index} className="flex gap-2 sm:gap-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                                          <span className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#fbad3f]/20 text-[#fbad3f] flex items-center justify-center text-xs sm:text-sm font-semibold">
                                             {index + 1}
                                           </span>
                                           <span className="flex-1 pt-0.5">{step}</span>
@@ -784,15 +789,15 @@ export default function Help({ onLaunchTour }: HelpProps) {
 
                                   {/* Tips */}
                                   {topic.content.tips && topic.content.tips.length > 0 && (
-                                    <div className="bg-[#fbad3f]/5 border border-[#fbad3f]/20 rounded-lg p-4">
-                                      <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3 flex items-center gap-2">
-                                        <HelpCircle className="w-5 h-5 text-[#fbad3f]" />
+                                    <div className="bg-[#fbad3f]/5 border border-[#fbad3f]/20 rounded-lg p-3 sm:p-4">
+                                      <h4 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 mb-2 sm:mb-3 flex items-center gap-2">
+                                        <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#fbad3f]" />
                                         Pro Tips
                                       </h4>
                                       <ul className="space-y-2">
                                         {topic.content.tips.map((tip, index) => (
-                                          <li key={index} className="flex gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                            <ChevronRight className="w-4 h-4 text-[#fbad3f] flex-shrink-0 mt-0.5" />
+                                          <li key={index} className="flex gap-2 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                                            <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-[#fbad3f] flex-shrink-0 mt-0.5" />
                                             <span>{tip}</span>
                                           </li>
                                         ))}
@@ -802,15 +807,15 @@ export default function Help({ onLaunchTour }: HelpProps) {
 
                                   {/* Launch Tour Button */}
                                   {topic.tourId && (
-                                    <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                                    <div className="pt-3 sm:pt-4 border-t border-slate-200 dark:border-slate-700">
                                       <Button
                                         onClick={() => handleLaunchTour(topic.tourId!)}
-                                        className="w-full bg-gradient-to-r from-[#236383] to-[#007e8c] hover:from-[#1a4d66] hover:to-[#006270] text-white shadow-md hover:shadow-lg transition-all"
+                                        className="w-full bg-gradient-to-r from-[#236383] to-[#007e8c] hover:from-[#1a4d66] hover:to-[#006270] text-white shadow-md hover:shadow-lg transition-all h-11"
                                         size="lg"
                                         data-testid={`launch-tour-${topic.id}`}
                                       >
-                                        <PlayCircle className="w-5 h-5 mr-2" />
-                                        Launch Interactive Tour
+                                        <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                                        <span className="text-sm sm:text-base">Launch Interactive Tour</span>
                                       </Button>
                                     </div>
                                   )}
@@ -829,23 +834,23 @@ export default function Help({ onLaunchTour }: HelpProps) {
         )}
 
         {/* Footer Note */}
-        <Card className="mt-8 bg-gradient-to-r from-[#236383]/5 to-[#007e8c]/5 border-2 border-[#007e8c]/20">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#007e8c]/10 flex items-center justify-center flex-shrink-0">
-                <HelpCircle className="w-6 h-6 text-[#007e8c]" />
+        <Card className="mt-4 sm:mt-8 bg-gradient-to-r from-[#236383]/5 to-[#007e8c]/5 border-2 border-[#007e8c]/20">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-[#007e8c]/10 flex items-center justify-center flex-shrink-0">
+                <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#007e8c]" />
               </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 mb-1 sm:mb-2">
                   Need More Help?
                 </h3>
-                <p className="text-slate-700 dark:text-slate-300 mb-3">
+                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 mb-2 sm:mb-3">
                   Can't find what you're looking for? Our interactive tours provide step-by-step guidance
                   for each feature. Click the floating help button (
-                  <HelpCircle className="w-4 h-4 inline mx-1" />) in the bottom-right corner to browse
+                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4 inline mx-0.5 sm:mx-1" />) in the bottom-right corner to browse
                   all available tours.
                 </p>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                   For additional assistance, contact your team administrator or reach out through the Team Chat.
                 </p>
               </div>
