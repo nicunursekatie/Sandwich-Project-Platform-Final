@@ -102,8 +102,8 @@ export const useEventAssignments = () => {
         return userIdOrName.length > 20 ? `User ID: ${userIdOrName.slice(-8)}` : userIdOrName;
       }
 
-      // Handle user IDs (format: user_xxxx_xxxxx, admin_xxxx, or committee_xxxx)
-      if (userIdOrName.includes('_') && (userIdOrName.startsWith('user_') || userIdOrName.startsWith('admin_') || userIdOrName.startsWith('committee_'))) {
+      // Handle user IDs (format: user_xxxx_xxxxx, admin_xxxx, committee_xxxx, or driver_xxxx)
+      if (userIdOrName.includes('_') && (userIdOrName.startsWith('user_') || userIdOrName.startsWith('admin_') || userIdOrName.startsWith('committee_') || userIdOrName.startsWith('driver_'))) {
         const user = allUsers.find((u) => u?.id === userIdOrName);
         if (user) {
           return `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.displayName || user.email || 'Unknown User';
@@ -111,7 +111,7 @@ export const useEventAssignments = () => {
         // If user not found in users array, return a more readable format
         // Only warn if we actually have users loaded (avoids spam during loading)
         if (allUsers.length > 0) {
-          logger.warn(`TSP Contact user not found: ${userIdOrName}`);
+          logger.warn(`User not found: ${userIdOrName}`);
         }
         return `User (${userIdOrName.slice(-8)})`;
       }
