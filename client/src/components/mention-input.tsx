@@ -289,6 +289,7 @@ export function MentionInput({
           onClick={onSend}
           disabled={disabled || !value.trim()}
           size="icon"
+          aria-label="Send message"
         >
           <Send className="h-4 w-4" />
         </Button>

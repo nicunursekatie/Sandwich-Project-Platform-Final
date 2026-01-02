@@ -216,7 +216,7 @@ export function MessageComposer({
             )}
           </CardTitle>
           {onCancel && (
-            <Button variant="ghost" size="icon" onClick={onCancel}>
+            <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Close message composer">
               <X className="h-4 w-4" />
             </Button>
           )}
@@ -344,6 +344,7 @@ export function MessageComposer({
                       size="sm"
                       onClick={() => removeAttachment(index)}
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                      aria-label={`Remove attachment ${attachment.name}`}
                     >
                       <X className="h-4 w-4" />
                     </Button>
