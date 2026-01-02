@@ -283,7 +283,12 @@ export default function GmailStyleInbox() {
         logger.log(
           `[Inbox] Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
         );
-        logger.log(`[Inbox] Sample messages:`, allMessages.slice(0, 3));
+        if (allMessages.length > 0) {
+          logger.log(`[Inbox] Sample message structure:`, JSON.stringify(allMessages[0], null, 2));
+          logger.log(`[Inbox] Message has id:`, allMessages[0].id);
+          logger.log(`[Inbox] Message has senderName:`, allMessages[0].senderName);
+          logger.log(`[Inbox] Message has content:`, allMessages[0].content?.substring(0, 50));
+        }
         return allMessages;
       } else {
         // For other folders, only fetch regular emails
@@ -659,6 +664,14 @@ export default function GmailStyleInbox() {
     logger.log(`[Inbox] Total messages: ${messages.length}, Filtered: ${filteredMessages.length}, Search: "${searchQuery}"`);
     if (messages.length > 0 && filteredMessages.length === 0 && searchQuery) {
       logger.log(`[Inbox] Messages filtered out by search query`);
+    }
+    if (filteredMessages.length > 0) {
+      logger.log(`[Inbox] First filtered message:`, {
+        id: filteredMessages[0].id,
+        senderName: filteredMessages[0].senderName,
+        hasContent: !!filteredMessages[0].content,
+        messageType: filteredMessages[0].messageType
+      });
     }
   }
 
@@ -1194,13 +1207,27 @@ export default function GmailStyleInbox() {
                   </div>
                 </div>
               ) : (
-              <div className="divide-y">
-                {filteredMessages.map((message) => {
+              <div className="divide-y" style={{ minHeight: '200px' }}>
+                {filteredMessages.length > 0 && logger.log(`[Render] Rendering ${filteredMessages.length} messages`)}
+                {filteredMessages.map((message, index) => {
+                  if (index === 0) {
+                    logger.log(`[Render] First message details:`, {
+                      id: message.id,
+                      hasId: !!message.id,
+                      senderName: message.senderName,
+                      content: message.content?.substring(0, 30),
+                      messageType: message.messageType
+                    });
+                  }
                   const isKudos = message.messageType === 'kudos';
+                  
+                  if (!message.id) {
+                    logger.warn(`[Render] Message missing id:`, message);
+                  }
                   
                   return (
                     <div
-                      key={message.id}
+                      key={message.id || `msg-${Math.random()}`}
                       onClick={() => handleSelectMessage(message)}
                       className={`
                         p-3 lg:p-5 cursor-pointer transition-all duration-200 font-['Roboto'] border-b
@@ -1338,7 +1365,7 @@ export default function GmailStyleInbox() {
                               whiteSpace: 'pre-wrap',
                             }}
                           >
-                            {message.content}
+                            {message.content || message.subject || '(No content)'}
                           </p>
                           
                           {/* Show context for kudos */}
