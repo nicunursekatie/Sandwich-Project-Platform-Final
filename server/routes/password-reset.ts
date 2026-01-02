@@ -238,12 +238,13 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 
     const { token, newPassword } = schema.parse(req.body);
 
-    // Check if token exists and is valid (not expired, not used)
+    // Check if token exists and is valid (not expired, not used, correct type)
     const [tokenData] = await db
       .select()
       .from(passwordResetTokens)
       .where(and(
         eq(passwordResetTokens.token, token),
+        eq(passwordResetTokens.tokenType, 'password_reset'),
         gt(passwordResetTokens.expiresAt, new Date()),
         isNull(passwordResetTokens.usedAt)
       ))
@@ -314,6 +315,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
       .from(passwordResetTokens)
       .where(and(
         eq(passwordResetTokens.token, token),
+        eq(passwordResetTokens.tokenType, 'password_reset'),
         gt(passwordResetTokens.expiresAt, new Date()),
         isNull(passwordResetTokens.usedAt)
       ))
