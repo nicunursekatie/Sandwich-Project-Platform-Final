@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { workLogs } from '@shared/schema';
 import { db } from '../db';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -72,6 +72,11 @@ router.get('/', async (req, res) => {
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
     if (canViewAll || isAdmin) {
       logger.log(`[WORK LOGS] ViewAll permission - fetching logs with limit ${limit}, offset ${offset}`);
+      
+      // Get total count for pagination
+      const [totalResult] = await db.select({ count: sql<number>`count(*)` }).from(workLogs);
+      const total = Number(totalResult?.count || 0);
+      
       const logs = await db
         .select()
         .from(workLogs)
@@ -81,7 +86,13 @@ router.get('/', async (req, res) => {
       logger.log(
         `[WORK LOGS] Found ${logs.length} logs (page)`
       );
-      return res.json(logs);
+      return res.json({
+        data: logs,
+        total,
+        limit,
+        offset,
+        hasMore: offset + logs.length < total
+      });
     }
 
     if (!userId) {
@@ -91,6 +102,14 @@ router.get('/', async (req, res) => {
     logger.log(
       `[WORK LOGS] Regular user access - fetching logs for ${userId} with limit ${limit}, offset ${offset}`
     );
+    
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(workLogs)
+      .where(eq(workLogs.userId, userId));
+    const total = Number(totalResult?.count || 0);
+    
     const logs = await db
       .select()
       .from(workLogs)
@@ -101,7 +120,13 @@ router.get('/', async (req, res) => {
     logger.log(
       `[WORK LOGS] Found ${logs.length} logs for user ${userId} (page)`
     );
-    return res.json(logs);
+    return res.json({
+      data: logs,
+      total,
+      limit,
+      offset,
+      hasMore: offset + logs.length < total
+    });
   } catch (error) {
     logger.error('Error fetching work logs:', error);
     res.status(500).json({ error: 'Failed to fetch work logs' });

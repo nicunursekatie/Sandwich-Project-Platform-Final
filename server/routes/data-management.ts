@@ -202,10 +202,11 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     const [totalResult] = await db.select({ count: sql<number>`count(*)` }).from(sandwichCollections);
     const totalRecords = Number(totalResult?.count || 0);
 
-    // Get mapped count using a subquery join (case-insensitive match)
-    const [mappedResult] = await db.select({ count: sql<number>`count(*)` })
+    // Get mapped count using INNER JOIN for better performance (case-insensitive match)
+    const [mappedResult] = await db
+      .select({ count: sql<number>`count(*)` })
       .from(sandwichCollections)
-      .where(sql`lower(trim(${sandwichCollections.hostName})) IN (SELECT lower(trim(name)) FROM ${hosts})`);
+      .innerJoin(hosts, sql`lower(trim(${sandwichCollections.hostName})) = lower(trim(${hosts.name}))`);
     const mappedRecords = Number(mappedResult?.count || 0);
 
     res.json({
@@ -226,14 +227,16 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     const requestedLimit = parseInt(req.query.limit as string) || 100;
     const limit = Math.min(Math.max(1, requestedLimit), 500);
 
-    // Use SQL GROUP BY to count collections per host, ordered by count
+    // Use SQL GROUP BY with LEFT JOIN to check if host is mapped
+    // This avoids the correlated subquery performance issue
     const distribution = await db
       .select({
         hostName: sandwichCollections.hostName,
         count: sql<number>`count(*)`.as('count'),
-        mapped: sql<boolean>`lower(trim(${sandwichCollections.hostName})) IN (SELECT lower(trim(name)) FROM ${hosts})`.as('mapped')
+        mapped: sql<boolean>`MAX(CASE WHEN ${hosts.id} IS NOT NULL THEN 1 ELSE 0 END) = 1`.as('mapped')
       })
       .from(sandwichCollections)
+      .leftJoin(hosts, sql`lower(trim(${sandwichCollections.hostName})) = lower(trim(${hosts.name}))`)
       .groupBy(sandwichCollections.hostName)
       .orderBy(sql`count(*) DESC`)
       .limit(limit);
@@ -259,6 +262,13 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     const limit = Math.min(Math.max(1, requestedLimit), 500);
     const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
 
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sandwichCollections)
+      .where(eq(sandwichCollections.hostName, host));
+    const total = Number(totalResult?.count || 0);
+
     const collections = await db
       .select()
       .from(sandwichCollections)
@@ -267,7 +277,13 @@ export function createDataManagementRouter(deps: RouterDependencies) {
       .limit(limit)
       .offset(offset);
 
-    res.json(collections);
+    res.json({
+      data: collections,
+      total,
+      limit,
+      offset,
+      hasMore: offset + collections.length < total
+    });
   } catch (error) {
     logger.error('Get collections by host failed:', error);
     res.status(500).json({ error: 'Failed to get collections for host' });
@@ -278,6 +294,7 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   router.post('/bulk-map-hosts', async (req, res) => {
   try {
     const BATCH_SIZE = 500;
+    const MAX_ITERATIONS = 100000; // Safety limit: ~50M records (100k × 500 batch size)
 
     // Hosts table is typically small, safe to load all
     const allHosts = await db.select().from(hosts);
@@ -291,11 +308,13 @@ export function createDataManagementRouter(deps: RouterDependencies) {
     let updatedRecords = 0;
     let processedRecords = 0;
     let offset = 0;
-    let hasMore = true;
+    let iterations = 0;
 
     // Process collections in batches to avoid memory issues
     // Order by id for deterministic pagination (prevents skipping/repeating rows)
-    while (hasMore) {
+    while (iterations < MAX_ITERATIONS) {
+      iterations++;
+      
       const batch = await db
         .select({ id: sandwichCollections.id, hostName: sandwichCollections.hostName })
         .from(sandwichCollections)
@@ -304,31 +323,50 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         .offset(offset);
 
       if (batch.length === 0) {
-        hasMore = false;
         break;
       }
 
-      // Update collections in this batch where hostName doesn't match exactly
+      // Collect IDs to update grouped by the standardized host name
+      const updatesByHost = new Map<string, number[]>();
+
       for (const collection of batch) {
         const lowerHostName = collection.hostName.toLowerCase().trim();
         const matchedHostName = hostMapping.get(lowerHostName);
 
         if (matchedHostName && matchedHostName !== collection.hostName) {
+          const idsForHost = updatesByHost.get(matchedHostName) ?? [];
+          idsForHost.push(collection.id);
+          updatesByHost.set(matchedHostName, idsForHost);
+        }
+      }
+
+      // Perform batched updates: one UPDATE per distinct standardized host name
+      // Chunk large ID arrays to avoid database parameter limits
+      const MAX_IDS_PER_UPDATE = 1000;
+      
+      for (const [matchedHostName, ids] of updatesByHost.entries()) {
+        // Chunk the IDs if there are too many
+        for (let i = 0; i < ids.length; i += MAX_IDS_PER_UPDATE) {
+          const chunk = ids.slice(i, i + MAX_IDS_PER_UPDATE);
           await db
             .update(sandwichCollections)
             .set({ hostName: matchedHostName })
-            .where(eq(sandwichCollections.id, collection.id));
-
-          updatedRecords++;
+            .where(inArray(sandwichCollections.id, chunk));
         }
+
+        updatedRecords += ids.length;
       }
 
       processedRecords += batch.length;
       offset += BATCH_SIZE;
 
       if (batch.length < BATCH_SIZE) {
-        hasMore = false;
+        break;
       }
+    }
+
+    if (iterations >= MAX_ITERATIONS) {
+      logger.warn(`bulk-map-hosts reached max iterations safety limit at ${processedRecords} records`);
     }
 
     res.json({
@@ -347,15 +385,18 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   router.patch('/sandwich-collections/fix-data-corruption', async (req, res) => {
   try {
     const BATCH_SIZE = 500;
+    const MAX_ITERATIONS = 100000; // Safety limit: ~50M records (100k × 500 batch size)
 
     let fixedCount = 0;
     let totalChecked = 0;
     let offset = 0;
-    let hasMore = true;
+    let iterations = 0;
 
     // Process collections in batches to avoid memory issues
     // Order by id for deterministic pagination (prevents skipping/repeating rows)
-    while (hasMore) {
+    while (iterations < MAX_ITERATIONS) {
+      iterations++;
+      
       const batch = await db
         .select()
         .from(sandwichCollections)
@@ -364,9 +405,11 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         .offset(offset);
 
       if (batch.length === 0) {
-        hasMore = false;
         break;
       }
+
+      // Collect IDs and updates for batch processing
+      const batchUpdates: Array<{ id: number; updates: any }> = [];
 
       for (const collection of batch) {
         let needsUpdate = false;
@@ -413,21 +456,47 @@ export function createDataManagementRouter(deps: RouterDependencies) {
         }
 
         if (needsUpdate) {
-          await db
-            .update(sandwichCollections)
-            .set(updates)
-            .where(eq(sandwichCollections.id, collection.id));
-
-          fixedCount++;
+          batchUpdates.push({ id: collection.id, updates });
         }
       }
 
+      // Perform batched updates: group by identical updates to minimize queries
+      const updateGroups = new Map<string, number[]>();
+      
+      for (const { id, updates } of batchUpdates) {
+        const updateKey = JSON.stringify(updates);
+        const ids = updateGroups.get(updateKey) ?? [];
+        ids.push(id);
+        updateGroups.set(updateKey, ids);
+      }
+
+      // Chunk large ID arrays to avoid database parameter limits
+      const MAX_IDS_PER_UPDATE = 1000;
+      
+      for (const [updateKey, ids] of updateGroups.entries()) {
+        const updates = JSON.parse(updateKey);
+        
+        // Chunk the IDs if there are too many
+        for (let i = 0; i < ids.length; i += MAX_IDS_PER_UPDATE) {
+          const chunk = ids.slice(i, i + MAX_IDS_PER_UPDATE);
+          await db
+            .update(sandwichCollections)
+            .set(updates)
+            .where(inArray(sandwichCollections.id, chunk));
+        }
+      }
+
+      fixedCount += batchUpdates.length;
       totalChecked += batch.length;
       offset += BATCH_SIZE;
 
       if (batch.length < BATCH_SIZE) {
-        hasMore = false;
+        break;
       }
+    }
+
+    if (iterations >= MAX_ITERATIONS) {
+      logger.warn(`fix-data-corruption reached max iterations safety limit at ${totalChecked} records`);
     }
     
     res.json({
@@ -455,6 +524,7 @@ router.get('/export/holding-zone', async (req: any, res) => {
     // Parse limits from query params (defaults prevent unbounded queries)
     const MAX_ITEMS = 10000;
     const MAX_RELATED = 50000; // For comments, likes, assignments
+    const MAX_IN_CLAUSE = 1000; // Maximum items per inArray call
     const requestedLimit = parseInt(req.query.limit as string) || MAX_ITEMS;
     const itemsLimit = Math.min(Math.max(1, requestedLimit), MAX_ITEMS);
 
@@ -471,30 +541,78 @@ router.get('/export/holding-zone', async (req: any, res) => {
     // Get item IDs for filtering related data
     const itemIds = items.map(i => i.id);
 
-    // Only fetch related data for the exported items (with limits)
+    // Helper function to fetch related data in chunks
+    const fetchRelatedInChunks = async (table: any, itemIdColumn: any): Promise<{ data: any[], truncated: boolean }> => {
+      const results: any[] = [];
+      if (itemIds.length === 0 || MAX_RELATED <= 0) {
+        return { data: results, truncated: false };
+      }
+
+      let totalFetched = 0;
+      let truncated = false;
+
+      for (let start = 0; start < itemIds.length; start += MAX_IN_CLAUSE) {
+        // Calculate how many more we can fetch
+        const remaining = MAX_RELATED - totalFetched;
+        if (remaining <= 0) {
+          truncated = true;
+          break;
+        }
+
+        const chunk = itemIds.slice(start, start + MAX_IN_CLAUSE);
+
+        const rows = await db
+          .select()
+          .from(table)
+          .where(inArray(itemIdColumn, chunk))
+          .limit(remaining);
+
+        results.push(...rows);
+        totalFetched += rows.length;
+        
+        // If we got fewer rows than requested, there are no more records to fetch
+        if (rows.length < remaining) {
+          break;
+        }
+        
+        // If we got exactly what we requested and have more chunks, we hit truncation
+        if (rows.length === remaining && start + MAX_IN_CLAUSE < itemIds.length) {
+          truncated = true;
+          break;
+        }
+      }
+
+      return { data: results, truncated };
+    };
+
+    // Only fetch related data for the exported items (with limits and chunking)
     let comments: any[] = [];
     let likes: any[] = [];
     let assignments: any[] = [];
+    let commentsTruncated = false;
+    let likesTruncated = false;
+    let assignmentsTruncated = false;
 
     if (itemIds.length > 0) {
-      comments = await db
-        .select()
-        .from(teamBoardComments)
-        .where(inArray(teamBoardComments.itemId, itemIds))
-        .limit(MAX_RELATED);
+      const commentsResult = await fetchRelatedInChunks(teamBoardComments, teamBoardComments.itemId);
+      comments = commentsResult.data;
+      commentsTruncated = commentsResult.truncated;
 
-      likes = await db
-        .select()
-        .from(teamBoardItemLikes)
-        .where(inArray(teamBoardItemLikes.itemId, itemIds))
-        .limit(MAX_RELATED);
+      const likesResult = await fetchRelatedInChunks(teamBoardItemLikes, teamBoardItemLikes.itemId);
+      likes = likesResult.data;
+      likesTruncated = likesResult.truncated;
 
-      assignments = await db
-        .select()
-        .from(teamBoardAssignments)
-        .where(inArray(teamBoardAssignments.itemId, itemIds))
-        .limit(MAX_RELATED);
+      const assignmentsResult = await fetchRelatedInChunks(teamBoardAssignments, teamBoardAssignments.itemId);
+      assignments = assignmentsResult.data;
+      assignmentsTruncated = assignmentsResult.truncated;
     }
+
+    // Check if any data was truncated
+    const truncated = {
+      comments: commentsTruncated,
+      likes: likesTruncated,
+      assignments: assignmentsTruncated,
+    };
 
     const backup = {
       exportDate: new Date().toISOString(),
@@ -503,6 +621,7 @@ router.get('/export/holding-zone', async (req: any, res) => {
         itemsLimit,
         relatedLimit: MAX_RELATED,
       },
+      truncated,
       counts: {
         items: items.length,
         categories: categories.length,
