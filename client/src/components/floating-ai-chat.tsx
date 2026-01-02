@@ -1079,7 +1079,9 @@ export function FloatingAIChat({
               disabled={!inputValue.trim() || chatMutation.isPending}
               size="icon"
               className="bg-[#47B3CB] hover:bg-[#236383]"
-              aria-label={chatMutation.isPending ? "Sending message" : "Send message"}
+              aria-label={chatMutation.isPending ? "Sending message..." : "Send message"}
+              aria-live="polite"
+              aria-busy={chatMutation.isPending}
             >
               {chatMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
