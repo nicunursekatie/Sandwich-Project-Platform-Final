@@ -245,13 +245,19 @@ export default function GmailStyleInbox() {
         return formattedKudos;
       } else if (activeFolder === 'inbox') {
         // For inbox, fetch both emails and kudos, then merge them
+        logger.log(`[Inbox] Fetching inbox messages for user: ${user?.email}`);
         const [emailsResponse, kudosResponse] = await Promise.all([
           apiRequest('GET', `/api/emails?folder=${activeFolder}`),
           apiRequest('GET', '/api/emails/kudos')
         ]);
         
+        logger.log(`[Inbox] Raw emails response:`, emailsResponse);
+        logger.log(`[Inbox] Raw kudos response:`, kudosResponse);
+        
         const emails = Array.isArray(emailsResponse) ? emailsResponse : emailsResponse.messages || [];
         const kudos = Array.isArray(kudosResponse) ? kudosResponse : [];
+        
+        logger.log(`[Inbox] Parsed ${emails.length} emails, ${kudos.length} kudos`);
         
         // Format emails with message type
         const formattedEmails = emails.map((email: any) => ({
@@ -275,20 +281,28 @@ export default function GmailStyleInbox() {
         );
         
         logger.log(
-          `Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
+          `[Inbox] Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
         );
+        logger.log(`[Inbox] Sample messages:`, allMessages.slice(0, 3));
         return allMessages;
       } else {
         // For other folders, only fetch regular emails
+        logger.log(`[${activeFolder}] Fetching messages for folder: ${activeFolder}`);
         const response = await apiRequest('GET', `/api/emails?folder=${activeFolder}`);
+        logger.log(`[${activeFolder}] Raw response:`, response);
         const messages = Array.isArray(response) ? response : response.messages || [];
+        
+        logger.log(`[${activeFolder}] Parsed ${messages.length} messages`);
         
         const formattedMessages = messages.map((msg: any) => ({
           ...msg,
           messageType: 'email',
         }));
         
-        logger.log(`Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
+        logger.log(`[${activeFolder}] Fetched ${formattedMessages.length} emails from ${activeFolder} folder`);
+        if (formattedMessages.length > 0) {
+          logger.log(`[${activeFolder}] Sample message:`, formattedMessages[0]);
+        }
         return formattedMessages;
       }
     },
@@ -634,14 +648,41 @@ export default function GmailStyleInbox() {
     );
   });
 
+  // Fetch inbox messages separately for count (to avoid counting from wrong folder)
+  const { data: inboxMessagesForCount = [] } = useQuery<any[]>({
+    queryKey: [apiBase, 'inbox', 'count'],
+    queryFn: async () => {
+      if (activeFolder === 'inbox') {
+        // If already viewing inbox, use the main messages query
+        return messages;
+      }
+      // Otherwise, fetch inbox messages separately for count
+      const [emailsResponse, kudosResponse] = await Promise.all([
+        apiRequest('GET', '/api/emails?folder=inbox'),
+        apiRequest('GET', '/api/emails/kudos')
+      ]);
+      const emails = Array.isArray(emailsResponse) ? emailsResponse : emailsResponse.messages || [];
+      const kudos = Array.isArray(kudosResponse) ? kudosResponse : [];
+      return [...emails, ...kudos];
+    },
+    enabled: activeFolder !== 'inbox', // Only fetch if not already viewing inbox
+  });
+
   // Get folder counts
   const getUnreadCount = (folder: string) => {
-    return messages.filter((m) => {
+    // For inbox, use the separate count query if available, otherwise use current messages
+    const messagesToCount = folder === 'inbox' && activeFolder !== 'inbox' 
+      ? inboxMessagesForCount 
+      : folder === activeFolder 
+        ? messages 
+        : [];
+    
+    return messagesToCount.filter((m) => {
       switch (folder) {
         case 'inbox':
           return !m.isRead; // Count unread messages in inbox
         case 'starred':
-          return false; // No starred functionality yet
+          return m.isStarred && !m.isRead;
         case 'archived':
           return false; // No archived functionality yet
         case 'trash':
@@ -693,6 +734,7 @@ export default function GmailStyleInbox() {
     activeFolder,
     selectedMessage: !!selectedMessage,
     messageCount: messages.length,
+    messages: messages.slice(0, 3), // Log first 3 messages for debugging
   });
 
   // Add this helper function near other helpers
