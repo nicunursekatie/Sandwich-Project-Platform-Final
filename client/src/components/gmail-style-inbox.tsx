@@ -707,9 +707,18 @@ export default function GmailStyleInbox() {
   };
 
   const handleSendMessage = () => {
-    if (!composeRecipient || !composeContent) {
+    if (!composeRecipient) {
       toast({
-        description: 'Please select a recipient and enter a message',
+        description: 'Please select a recipient',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Allow sending if there's content OR attachments
+    if (!composeContent && attachments.length === 0) {
+      toast({
+        description: 'Please enter a message or attach a file',
         variant: 'destructive',
       });
       return;
