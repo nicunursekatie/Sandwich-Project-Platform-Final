@@ -61,9 +61,9 @@ export default function WorkLogPage() {
     refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
-  // Handle both old array format and new paginated format {data: [...], total, ...}
-  const safelogs = Array.isArray(logsResponse) 
-    ? logsResponse 
+  // Handle both old array format and new paginated format { data, total, ... }
+  const safelogs = Array.isArray(logsResponse)
+    ? logsResponse
     : (logsResponse?.data && Array.isArray(logsResponse.data) ? logsResponse.data : []);
 
   const createLog = useMutation({
