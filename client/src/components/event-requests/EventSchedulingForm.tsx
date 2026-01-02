@@ -872,18 +872,37 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // Cleanup: release all field locks when dialog closes or component unmounts
   useEffect(() => {
     return () => {
-      if (isCollaborationEnabled && collaboration?.locks) {
-        // Release any locks held by the current user when leaving
-        collaboration.locks.forEach(async (lock, fieldName) => {
-          if (currentUser && lock.lockedBy === currentUser.id) {
-            try {
-              await collaboration.releaseFieldLock?.(fieldName);
-              logger.log(`[EventSchedulingForm] Cleanup: Released lock for field: ${fieldName}`);
-            } catch (error) {
-              logger.error(`[EventSchedulingForm] Cleanup: Failed to release lock for ${fieldName}:`, error);
-            }
-          }
-        });
+      if (!isCollaborationEnabled || !collaboration?.locks || !currentUser) {
+        return;
+      }
+
+      // Release any locks held by the current user when leaving
+      const releasePromises: Promise<void>[] = [];
+
+      collaboration.locks.forEach((lock, fieldName) => {
+        if (lock.lockedBy === currentUser.id) {
+          const releasePromise = Promise.resolve(
+            collaboration.releaseFieldLock?.(fieldName)
+          )
+            .then(() => {
+              logger.log(
+                `[EventSchedulingForm] Cleanup: Released lock for field: ${fieldName}`
+              );
+            })
+            .catch((error) => {
+              logger.error(
+                `[EventSchedulingForm] Cleanup: Failed to release lock for ${fieldName}:`,
+                error
+              );
+            });
+
+          releasePromises.push(releasePromise);
+        }
+      });
+
+      if (releasePromises.length > 0) {
+        // Fire-and-forget; React does not await cleanup promises
+        void Promise.all(releasePromises);
       }
     };
   }, [isCollaborationEnabled, collaboration, currentUser]);
