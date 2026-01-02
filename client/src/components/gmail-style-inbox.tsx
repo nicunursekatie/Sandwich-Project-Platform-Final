@@ -224,7 +224,7 @@ export default function GmailStyleInbox() {
   const apiBase = '/api/emails';
 
   // Fetch both regular messages and kudos for unified inbox
-  const { data: messages = [], refetch: refetchMessages } = useQuery<any[]>({
+  const { data: messages = [], refetch: refetchMessages, isLoading: isLoadingMessages } = useQuery<any[]>({
     queryKey: [apiBase, activeFolder],
     queryFn: async () => {
       if (activeFolder === 'kudos') {
@@ -345,7 +345,11 @@ export default function GmailStyleInbox() {
       return await apiRequest('POST', '/api/emails', emailData);
     },
     onSuccess: () => {
+      // Invalidate all email-related queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: [apiBase] });
+      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'inbox'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'sent'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'inbox', 'count'] });
       // Also invalidate Gmail unread count to update navigation indicator
       queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
       // Track challenge completion
@@ -353,6 +357,7 @@ export default function GmailStyleInbox() {
       setShowCompose(false);
       resetCompose();
       toast({ description: 'Message sent successfully' });
+      logger.log('[Send] Message sent, invalidated all email queries');
     },
     onError: (error) => {
       logger.error('Send email error:', error);
@@ -643,10 +648,19 @@ export default function GmailStyleInbox() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      message.content.toLowerCase().includes(query) ||
-      message.senderName.toLowerCase().includes(query)
+      (message.content?.toLowerCase().includes(query)) ||
+      (message.senderName?.toLowerCase().includes(query)) ||
+      (message.subject?.toLowerCase().includes(query))
     );
   });
+  
+  // Debug logging for filtered messages
+  if (activeFolder === 'inbox') {
+    logger.log(`[Inbox] Total messages: ${messages.length}, Filtered: ${filteredMessages.length}, Search: "${searchQuery}"`);
+    if (messages.length > 0 && filteredMessages.length === 0 && searchQuery) {
+      logger.log(`[Inbox] Messages filtered out by search query`);
+    }
+  }
 
   // Fetch inbox messages separately for count (to avoid counting from wrong folder)
   const { data: inboxMessagesForCount = [] } = useQuery<any[]>({
@@ -1172,6 +1186,14 @@ export default function GmailStyleInbox() {
             </div>
           ) : (
             <ScrollArea className="flex-1">
+              {isLoadingMessages ? (
+                <div className="flex items-center justify-center p-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading messages...</p>
+                  </div>
+                </div>
+              ) : (
               <div className="divide-y">
                 {filteredMessages.map((message) => {
                   const isKudos = message.messageType === 'kudos';
@@ -1333,14 +1355,20 @@ export default function GmailStyleInbox() {
                   );
                 })}
 
-                {filteredMessages.length === 0 && (
+                {filteredMessages.length === 0 && !isLoadingMessages && (
                   <div className="p-8 text-center text-gray-500">
                     {searchQuery
                       ? 'No messages found matching your search'
                       : `No ${activeFolder} messages`}
+                    {activeFolder === 'inbox' && messages.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-2">
+                        (Note: Inbox shows messages sent TO you, not messages you sent)
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
+              )}
             </ScrollArea>
           )}
         </div>
