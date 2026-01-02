@@ -277,10 +277,10 @@ export default function StreamChatRooms() {
     setShowMembersDialog(true);
   };
 
-  // Fetch all users for DM/group creation
+  // Fetch all users for DM/group creation (uses for-assignments endpoint - no special permissions needed)
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['/api/users'],
-    queryFn: () => apiRequest('GET', '/api/users'),
+    queryKey: ['/api/users/for-assignments'],
+    queryFn: () => apiRequest('GET', '/api/users/for-assignments'),
   });
 
   // Filter users for search

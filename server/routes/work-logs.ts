@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { workLogs } from '@shared/schema';
 import { db } from '../db';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -9,6 +9,11 @@ import {
   requireOwnershipPermission,
 } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
+
+// Default and maximum limits for pagination to prevent unbounded queries
+// Default is set high (1000) to maintain backwards compatibility since client doesn't paginate yet
+const DEFAULT_LIMIT = 1000;
+const MAX_LIMIT = 5000;
 
 const router = Router();
 
@@ -39,6 +44,11 @@ router.get('/', async (req, res) => {
     const userEmail = req.user?.email;
     const userRole = req.user?.role;
 
+    // Parse pagination params with safe defaults
+    const requestedLimit = parseInt(req.query.limit as string) || DEFAULT_LIMIT;
+    const limit = Math.min(Math.max(1, requestedLimit), MAX_LIMIT);
+    const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+
     logger.log(
       `[WORK LOGS] User: ${userId}, Email: ${userEmail}, Role: ${userRole}`
     );
@@ -61,13 +71,28 @@ router.get('/', async (req, res) => {
 
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
     if (canViewAll || isAdmin) {
-      logger.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
-      const logs = await db.select().from(workLogs);
+      logger.log(`[WORK LOGS] ViewAll permission - fetching logs with limit ${limit}, offset ${offset}`);
+      
+      // Get total count for pagination
+      const [totalResult] = await db.select({ count: sql<number>`count(*)` }).from(workLogs);
+      const total = Number(totalResult?.count || 0);
+      
+      const logs = await db
+        .select()
+        .from(workLogs)
+        .orderBy(desc(workLogs.workDate))
+        .limit(limit)
+        .offset(offset);
       logger.log(
-        `[WORK LOGS] Found ${logs.length} total logs:`,
-        logs.map((l) => `${l.id}: ${l.userId}`)
+        `[WORK LOGS] Found ${logs.length} logs (page)`
       );
-      return res.json(logs);
+      return res.json({
+        data: logs,
+        total,
+        limit,
+        offset,
+        hasMore: offset + logs.length < total
+      });
     }
 
     if (!userId) {
@@ -75,17 +100,33 @@ router.get('/', async (req, res) => {
     }
 
     logger.log(
-      `[WORK LOGS] Regular user access - fetching logs for ${userId}`
+      `[WORK LOGS] Regular user access - fetching logs for ${userId} with limit ${limit}, offset ${offset}`
     );
+    
+    // Get total count for pagination
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(workLogs)
+      .where(eq(workLogs.userId, userId));
+    const total = Number(totalResult?.count || 0);
+    
     const logs = await db
       .select()
       .from(workLogs)
-      .where(eq(workLogs.userId, userId));
+      .where(eq(workLogs.userId, userId))
+      .orderBy(desc(workLogs.workDate))
+      .limit(limit)
+      .offset(offset);
     logger.log(
-      `[WORK LOGS] Found ${logs.length} logs for user ${userId}:`,
-      logs.map((l) => `${l.id}: ${l.description.substring(0, 30)}`)
+      `[WORK LOGS] Found ${logs.length} logs for user ${userId} (page)`
     );
-    return res.json(logs);
+    return res.json({
+      data: logs,
+      total,
+      limit,
+      offset,
+      hasMore: offset + logs.length < total
+    });
   } catch (error) {
     logger.error('Error fetching work logs:', error);
     res.status(500).json({ error: 'Failed to fetch work logs' });

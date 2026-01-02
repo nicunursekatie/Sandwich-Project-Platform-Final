@@ -435,6 +435,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
               className="h-8 w-8 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => copyToClipboard(chart, chartId)}
               title="Copy data to clipboard"
+              aria-label="Copy chart data to clipboard"
             >
               {copiedChartId === chartId ? (
                 <Check className="h-4 w-4 text-green-500" />
@@ -448,6 +449,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
               className="h-8 w-8 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => exportAsCSV(chart)}
               title="Download as CSV"
+              aria-label="Download chart data as CSV"
             >
               <FileSpreadsheet className="h-4 w-4" />
             </Button>
@@ -457,6 +459,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
               className="h-8 w-8 text-gray-500 hover:text-[#47B3CB]"
               onClick={() => exportAsPNG(chart, chartId)}
               title="Download as PNG"
+              aria-label="Download chart as PNG image"
             >
               <Image className="h-4 w-4" />
             </Button>

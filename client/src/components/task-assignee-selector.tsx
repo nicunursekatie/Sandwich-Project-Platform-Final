@@ -49,9 +49,9 @@ export function TaskAssigneeSelector({
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
 
-  // Fetch users from the system
+  // Fetch users from the system (uses for-assignments endpoint - no special permissions needed)
   const { data: users = [], isLoading } = useQuery<User[]>({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
   });
 
   // Initialize state with existing values

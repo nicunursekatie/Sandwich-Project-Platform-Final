@@ -120,12 +120,12 @@ export function MessageComposer({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  // Fetch all users for recipient selection
+  // Fetch all users for recipient selection (uses for-assignments endpoint - no special permissions needed)
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['/api/users'],
+    queryKey: ['/api/users/for-assignments'],
     queryFn: async () => {
       try {
-        const response = await apiRequest('GET', '/api/users');
+        const response = await apiRequest('GET', '/api/users/for-assignments');
         return Array.isArray(response) ? response : [];
       } catch (error) {
         logger.error('Error fetching users:', error);
@@ -216,7 +216,7 @@ export function MessageComposer({
             )}
           </CardTitle>
           {onCancel && (
-            <Button variant="ghost" size="icon" onClick={onCancel}>
+            <Button variant="ghost" size="icon" onClick={onCancel} aria-label="Close message composer">
               <X className="h-4 w-4" />
             </Button>
           )}
@@ -344,6 +344,7 @@ export function MessageComposer({
                       size="sm"
                       onClick={() => removeAttachment(index)}
                       className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                      aria-label={`Remove attachment ${attachment.name}`}
                     >
                       <X className="h-4 w-4" />
                     </Button>
