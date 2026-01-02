@@ -119,7 +119,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       recipientName: recipientName || 'Draft',
       recipientEmail: recipientEmail || user.email,
       subject,
-      content,
+      content: content || '', // Default to empty string for attachment-only messages
       // Threading removed
       contextType: contextType || null,
       contextId: contextId || null,
@@ -494,7 +494,7 @@ export function createEmailRouter(deps: RouterDependencies) {
         recipientName: recipientName || 'Event Contact',
         recipientEmail: recipientEmail || user.email,
         subject,
-        content,
+        content: content || '', // Default to empty string for attachment-only messages
         isDraft: true,
         contextType: contextType || 'event_request',
         contextId: contextId || eventRequestId?.toString(),
@@ -771,7 +771,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       recipientName: recipientName || 'Event Contact',
       recipientEmail,
       subject,
-      content,
+      content: content || '', // Default to empty string for attachment-only messages
       contextType: contextType || 'event_request',
       contextId: contextId || eventRequestId?.toString(),
       contextTitle: contextTitle || `Event Communication`,
