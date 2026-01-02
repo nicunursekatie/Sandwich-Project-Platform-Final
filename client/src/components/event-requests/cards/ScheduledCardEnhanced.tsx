@@ -200,7 +200,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
   const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
   const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
 
@@ -2433,43 +2433,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     Assign TSP Contact
                   </Button>
                 )}
-
-                {/* Team Comments - moved from bottom section */}
-                <div className="pt-2 border-t border-white/30">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowComments(!showComments)}
-                    className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-1.5 h-auto mb-1"
-                  >
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-[#236383]" />
-                      <h3 className="text-sm uppercase font-bold tracking-wide">Team Comments</h3>
-                      {collaboration.comments && collaboration.comments.length > 0 && (
-                        <Badge variant="secondary" className="ml-1">
-                          {collaboration.comments.length}
-                        </Badge>
-                      )}
-                    </div>
-                    {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </Button>
-
-                  {showComments && (
-                    <div className="mt-1 max-h-[300px]">
-                      <CommentThread
-                        comments={collaboration.comments || []}
-                        currentUserId={user?.id || ''}
-                        currentUserName={user?.fullName || user?.email || ''}
-                        eventId={request.id}
-                        onAddComment={collaboration.addComment}
-                        onEditComment={collaboration.updateComment}
-                        onDeleteComment={collaboration.deleteComment}
-                        isLoading={collaboration.commentsLoading || false}
-                        compact={true}
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
             {/* Recipient Logistics moved to Column 1, right after times row */}
@@ -2763,6 +2726,46 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             )}
           </Button>
         </div>
+
+        {/* Team Comments Section */}
+        {request.id && (
+          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(!showComments)}
+                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold">Team Comments</h3>
+                  {collaboration.comments && collaboration.comments.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {collaboration.comments.length}
+                    </Badge>
+                  )}
+                </div>
+                {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {showComments && (
+              <div className="mt-3 max-h-[500px]">
+                <CommentThread
+                  comments={collaboration.comments || []}
+                  currentUserId={user?.id || ''}
+                  currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
+                  onAddComment={collaboration.addComment}
+                  onEditComment={collaboration.updateComment}
+                  onDeleteComment={collaboration.deleteComment}
+                  isLoading={collaboration.commentsLoading || false}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Activity History Toggle */}
         <div className="border-t-2 border-[#007E8C]/10 pt-4">

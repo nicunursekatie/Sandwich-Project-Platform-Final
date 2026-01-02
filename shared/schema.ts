@@ -1930,7 +1930,11 @@ export const yearlyCalendarItems = pgTable('yearly_calendar_items', {
   createdByName: varchar('created_by_name').notNull(), // Display name of creator
   assignedTo: text('assigned_to').array(), // Array of user IDs
   assignedToNames: text('assigned_to_names').array(), // Array of display names
-  isRecurring: boolean('is_recurring').notNull().default(true), // Whether this repeats every year
+  isRecurring: boolean('is_recurring').notNull().default(true), // Whether this repeats every year (legacy)
+  // New recurrence fields for weekly/monthly/yearly patterns
+  recurrenceType: varchar('recurrence_type').default('none'), // 'none', 'weekly', 'monthly', 'yearly'
+  recurrencePattern: jsonb('recurrence_pattern'), // { dayOfWeek: 0-6, dayOfMonth: 1-31, weekOfMonth: 1-5 }
+  recurrenceEndDate: date('recurrence_end_date'), // Optional: when the recurrence stops
   isCompleted: boolean('is_completed').notNull().default(false), // Mark as completed for the year
   completedAt: timestamp('completed_at'), // When it was marked complete
   completedBy: varchar('completed_by'), // User who marked it complete
