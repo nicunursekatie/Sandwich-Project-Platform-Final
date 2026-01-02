@@ -36,7 +36,7 @@ import {
   Sparkles,
   CheckCircle,
 } from 'lucide-react';
-import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors, statusTooltips, indicatorTooltips } from '@/components/event-requests/constants';
+import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
