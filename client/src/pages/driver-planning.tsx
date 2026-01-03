@@ -4776,7 +4776,13 @@ export default function DriverPlanningDashboard() {
                   {selectedEvent.assignedVanDriverId && !selectedEvent.isDhlVan && (
                     <div className="text-sm text-gray-700">
                       <span className="font-medium">Van driver:</span>{' '}
-                      {getAssignedDriversLabel({ ...selectedEvent, assignedDriverIds: [selectedEvent.assignedVanDriverId] } as any)}
+                      {(() => {
+                        const vanDriverEvent: Parameters<typeof getAssignedDriversLabel>[0] = {
+                          ...selectedEvent,
+                          assignedDriverIds: [selectedEvent.assignedVanDriverId],
+                        };
+                        return getAssignedDriversLabel(vanDriverEvent);
+                      })()}
                     </div>
                   )}
                   {getAssignedSpeakersLabel(selectedEvent) && (
