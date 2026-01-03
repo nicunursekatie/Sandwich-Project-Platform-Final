@@ -100,6 +100,7 @@ interface TimeDialogContentProps {
   startEditing: (field: string, value: string) => void;
   saveEdit: () => void;
   cancelEdit: () => void;
+  saveTimes?: (data: { eventStartTime?: string; eventEndTime?: string; pickupDateTime?: string }) => void;
 }
 
 const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
@@ -107,6 +108,7 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   startEditing,
   saveEdit,
   cancelEdit,
+  saveTimes,
 }) => {
   const [tempStartTime, setTempStartTime] = React.useState(
     request.eventStartTime || ''
@@ -126,6 +128,25 @@ const TimeDialogContent: React.FC<TimeDialogContentProps> = ({
   }, [request.eventStartTime, request.eventEndTime, request.pickupDateTime]);
 
   const handleSave = () => {
+    // Use saveTimes for batch update if available (fixes the bug where only last field was saved)
+    if (saveTimes) {
+      const updates: { eventStartTime?: string; eventEndTime?: string; pickupDateTime?: string } = {};
+      if (tempStartTime && !request.eventStartTime) {
+        updates.eventStartTime = tempStartTime;
+      }
+      if (tempEndTime && !request.eventEndTime) {
+        updates.eventEndTime = tempEndTime;
+      }
+      if (tempPickupDateTime && !request.pickupDateTime) {
+        updates.pickupDateTime = tempPickupDateTime;
+      }
+      if (Object.keys(updates).length > 0) {
+        saveTimes(updates);
+      }
+      return;
+    }
+
+    // Fallback to single-field editing (only saves the last field due to React state batching)
     if (tempStartTime && !request.eventStartTime) {
       startEditing('eventStartTime', tempStartTime);
     }
@@ -231,6 +252,7 @@ interface ScheduledCardProps {
   saveEdit: () => void;
   cancelEdit: () => void;
   setEditingValue: (value: string) => void;
+  saveTimes?: (data: { eventStartTime?: string; eventEndTime?: string; pickupDateTime?: string }) => void;
   tempIsConfirmed: boolean;
   setTempIsConfirmed: (value: boolean) => void;
   quickToggleBoolean: (field: 'isConfirmed' | 'addedToOfficialSheet', value: boolean) => void;
@@ -307,6 +329,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   saveEdit,
   cancelEdit,
   setEditingValue,
+  saveTimes,
   tempIsConfirmed,
   setTempIsConfirmed,
   quickToggleBoolean,
@@ -1740,6 +1763,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                       startEditing={startEditing}
                       saveEdit={saveEdit}
                       cancelEdit={cancelEdit}
+                      saveTimes={saveTimes}
                     />
                   </DialogContent>
                 </Dialog>
