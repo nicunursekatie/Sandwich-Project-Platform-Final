@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
-import { eq } from 'drizzle-orm';
+import { eq, desc, inArray, or, sql } from 'drizzle-orm';
 import type { RouterDependencies } from '../types';
 import type { AuthenticatedRequest } from '../types/express';
-import { drivers, insertDriverSchema, type Driver } from '@shared/schema';
+import { drivers, insertDriverSchema, type Driver, type DriverAgreement } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
@@ -175,9 +175,47 @@ export function createDriversRouter(deps: RouterDependencies) {
       const drivers = await storage.getAllDrivers();
 
       // Query driver agreements directly from database
+      // Strategy: Get agreements for exported drivers only to ensure completeness
       const { db } = await import('../db');
       const { driverAgreements } = await import('@shared/schema');
-      const agreements = await db.select().from(driverAgreements);
+      
+      // Get emails of all drivers and pre-compute lowercase versions
+      const driverEmails = drivers
+        .map(d => d.email)
+        .filter((email): email is string => !!email && email.trim() !== '');
+      
+      const lowerCaseEmails = driverEmails.map(e => e.toLowerCase());
+      
+      // Query agreements filtered to exported drivers using case-insensitive matching
+      // Handle large lists by chunking if needed (PostgreSQL limit ~32767 parameters)
+      let agreements: DriverAgreement[] = [];
+      
+      if (lowerCaseEmails.length > 0) {
+        const CHUNK_SIZE = 1000; // Safe chunk size for inArray queries
+        
+        if (lowerCaseEmails.length <= CHUNK_SIZE) {
+          // Single query for smaller lists
+          agreements = await db.select()
+            .from(driverAgreements)
+            .where(sql`LOWER(${driverAgreements.email}) IN (${sql.join(lowerCaseEmails.map(e => sql`${e}`), sql`, `)})`)
+            .orderBy(desc(driverAgreements.submittedAt));
+        } else {
+          // Chunk for larger lists
+          for (let i = 0; i < lowerCaseEmails.length; i += CHUNK_SIZE) {
+            const chunk = lowerCaseEmails.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await db.select()
+              .from(driverAgreements)
+              .where(sql`LOWER(${driverAgreements.email}) IN (${sql.join(chunk.map(e => sql`${e}`), sql`, `)})`)
+              .orderBy(desc(driverAgreements.submittedAt));
+            agreements.push(...chunkResults);
+          }
+        }
+      }
+      
+      // Log if we're processing a large number of agreements
+      if (agreements.length > 0) {
+        logger.info(`Exporting ${drivers.length} drivers with ${agreements.length} agreements`);
+      }
 
       // Create a map of driver agreements by email for quick lookup
       const agreementsByEmail = new Map();

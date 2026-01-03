@@ -366,6 +366,26 @@ export default function GmailStyleInbox() {
     enabled: activeFolder === 'drafts',
   });
 
+  // Helper to invalidate email-related queries efficiently
+  // Consolidates multiple invalidateQueries calls into fewer operations
+  const invalidateEmailQueries = (options?: { includeUnreadCount?: boolean; includeFolders?: boolean }) => {
+    const { includeUnreadCount = true, includeFolders = false } = options || {};
+
+    // Invalidate main email query for current folder
+    // This prefix match invalidates all queries starting with [apiBase], including:
+    // - ['/api/emails', activeFolder] (main messages query)
+    // - ['/api/emails', 'inbox'], ['/api/emails', 'sent'], etc. (specific folders)
+    // - ['/api/emails', 'inbox', 'count'] (inbox count query)
+    queryClient.invalidateQueries({ queryKey: [apiBase] });
+
+    // Invalidate unread count for navigation badge
+    if (includeUnreadCount) {
+      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+    }
+
+    // Note: includeFolders parameter is preserved for API compatibility but no longer needed
+    // since the prefix match above handles all folder invalidations
+  };
 
   // Auto-save draft mutation
   const saveDraftMutation = useMutation({
@@ -401,19 +421,14 @@ export default function GmailStyleInbox() {
       return await apiRequest('POST', '/api/emails', emailData);
     },
     onSuccess: () => {
-      // Invalidate all email-related queries to ensure fresh data
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'inbox'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'sent'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'inbox', 'count'] });
-      // Also invalidate Gmail unread count to update navigation indicator
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      // Invalidate email queries - include all folders since we're sending new message
+      invalidateEmailQueries({ includeFolders: true });
       // Track challenge completion
       track('inbox_send_email');
       setShowCompose(false);
       resetCompose();
       toast({ description: 'Message sent successfully' });
-      logger.log('[Send] Message sent, invalidated all email queries');
+      logger.log('[Send] Message sent, invalidated email queries');
     },
     onError: (error) => {
       logger.error('Send email error:', error);
@@ -447,9 +462,7 @@ export default function GmailStyleInbox() {
       return await apiRequest('POST', '/api/emails', replyEmailData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
-      // Also invalidate Gmail unread count to update navigation indicator
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      invalidateEmailQueries({ includeFolders: true });
       setShowReply(false);
       setReplyContent('');
       toast({ description: 'Reply sent successfully' });
@@ -473,9 +486,7 @@ export default function GmailStyleInbox() {
       return await Promise.all(promises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
-      // Also invalidate Gmail unread count to update navigation indicator
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      invalidateEmailQueries();
       toast({ description: 'Marked as read' });
     },
     onError: (error) => {
@@ -504,7 +515,7 @@ export default function GmailStyleInbox() {
       return Promise.resolve();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
+      invalidateEmailQueries({ includeUnreadCount: false });
     },
   });
 
@@ -518,9 +529,7 @@ export default function GmailStyleInbox() {
       return await Promise.all(promises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
-      // Also invalidate Gmail unread count to update navigation indicator
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      invalidateEmailQueries();
       setSelectedMessages(new Set());
       toast({ description: 'Messages archived successfully' });
     },
@@ -543,9 +552,7 @@ export default function GmailStyleInbox() {
       return await Promise.all(promises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
-      // Also invalidate Gmail unread count to update navigation indicator
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
+      invalidateEmailQueries();
       setSelectedMessages(new Set());
       toast({ description: 'Messages moved to trash' });
     },
@@ -568,7 +575,7 @@ export default function GmailStyleInbox() {
       return Promise.all(deletePromises);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [apiBase] });
+      invalidateEmailQueries();
       setSelectedMessages(new Set());
       toast({ description: 'Messages deleted permanently' });
     },

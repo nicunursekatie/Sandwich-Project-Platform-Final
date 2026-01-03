@@ -1687,6 +1687,19 @@ export class DatabaseStorage implements IStorage {
 
   // Drivers
   async getAllDrivers(): Promise<Driver[]> {
+    // Safety limit to prevent unbounded queries - drivers table should be small
+    const results = await db.select().from(drivers).orderBy(drivers.name).limit(2000);
+    
+    // Log warning if we hit the limit (indicating potential data truncation)
+    if (results.length === 2000) {
+      console.warn('getAllDrivers() returned exactly 2000 drivers - limit may have been reached, some data could be missing');
+    }
+    
+    return results;
+  }
+
+  // Get all drivers without limit - ONLY for backups and operations requiring complete data
+  async getAllDriversUnlimited(): Promise<Driver[]> {
     return await db.select().from(drivers).orderBy(drivers.name);
   }
 

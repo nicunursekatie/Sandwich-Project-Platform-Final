@@ -396,6 +396,7 @@ export interface IStorage {
 
   // Drivers
   getAllDrivers(): Promise<Driver[]>;
+  getAllDriversUnlimited(): Promise<Driver[]>;
   getDriver(id: number): Promise<Driver | undefined>;
   createDriver(driver: InsertDriver): Promise<Driver>;
   updateDriver(
@@ -1985,6 +1986,21 @@ export class MemStorage implements IStorage {
 
   // Driver methods
   async getAllDrivers(): Promise<Driver[]> {
+    const drivers = Array.from(this.drivers.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+    
+    // Apply same limit as database storage for consistency
+    const results = drivers.slice(0, 2000);
+    
+    if (results.length === 2000) {
+      console.warn('getAllDrivers() returned exactly 2000 drivers - limit may have been reached, some data could be missing');
+    }
+    
+    return results;
+  }
+
+  async getAllDriversUnlimited(): Promise<Driver[]> {
     return Array.from(this.drivers.values()).sort((a, b) =>
       a.name.localeCompare(b.name)
     );

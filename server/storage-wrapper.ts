@@ -1076,6 +1076,13 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  async getAllDriversUnlimited() {
+    return this.executeWithFallback(
+      () => this.primaryStorage.getAllDriversUnlimited(),
+      () => this.fallbackStorage.getAllDriversUnlimited()
+    );
+  }
+
   async getDriver(id: number) {
     return this.executeWithFallback(
       () => this.primaryStorage.getDriver(id),
