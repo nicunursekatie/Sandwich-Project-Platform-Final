@@ -1687,7 +1687,8 @@ export class DatabaseStorage implements IStorage {
 
   // Drivers
   async getAllDrivers(): Promise<Driver[]> {
-    return await db.select().from(drivers).orderBy(drivers.name);
+    // Safety limit to prevent unbounded queries - drivers table should be small
+    return await db.select().from(drivers).orderBy(drivers.name).limit(2000);
   }
 
   async getDriver(id: number): Promise<Driver | undefined> {

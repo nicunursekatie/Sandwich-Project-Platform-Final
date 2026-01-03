@@ -174,10 +174,10 @@ export function createDriversRouter(deps: RouterDependencies) {
     try {
       const drivers = await storage.getAllDrivers();
 
-      // Query driver agreements directly from database
+      // Query driver agreements directly from database (with safety limit)
       const { db } = await import('../db');
       const { driverAgreements } = await import('@shared/schema');
-      const agreements = await db.select().from(driverAgreements);
+      const agreements = await db.select().from(driverAgreements).limit(5000);
 
       // Create a map of driver agreements by email for quick lookup
       const agreementsByEmail = new Map();
