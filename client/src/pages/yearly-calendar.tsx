@@ -207,6 +207,12 @@ export default function YearlyCalendar() {
   const [formStartDate, setFormStartDate] = useState<string>('');
   const [formEndDate, setFormEndDate] = useState<string>('');
   const [formIsRecurring, setFormIsRecurring] = useState(true);
+  // Recurrence form state
+  const [formRecurrenceType, setFormRecurrenceType] = useState<string>('none');
+  const [formDayOfWeek, setFormDayOfWeek] = useState<number>(1); // Monday default
+  const [formDayOfMonth, setFormDayOfMonth] = useState<number>(1);
+  const [formWeekOfMonth, setFormWeekOfMonth] = useState<number>(1);
+  const [formRecurrenceEndDate, setFormRecurrenceEndDate] = useState<string>('');
 
   // Permission checks
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
@@ -488,6 +494,14 @@ export default function YearlyCalendar() {
       return;
     }
 
+    // Build recurrence pattern based on type
+    let recurrencePattern = null;
+    if (formRecurrenceType === 'weekly') {
+      recurrencePattern = { dayOfWeek: formDayOfWeek };
+    } else if (formRecurrenceType === 'monthly') {
+      recurrencePattern = { dayOfMonth: formDayOfMonth };
+    }
+
     createItemMutation.mutate({
       month: formMonth,
       year: selectedYear,
@@ -498,6 +512,9 @@ export default function YearlyCalendar() {
       startDate: formStartDate || null,
       endDate: formEndDate || formStartDate || null, // If no end date, use start date
       isRecurring: formIsRecurring,
+      recurrenceType: formRecurrenceType,
+      recurrencePattern,
+      recurrenceEndDate: formRecurrenceEndDate || null,
     });
   };
 
@@ -511,6 +528,13 @@ export default function YearlyCalendar() {
     setFormStartDate(item.startDate || '');
     setFormEndDate(item.endDate || '');
     setFormIsRecurring(item.isRecurring);
+    // Load recurrence settings
+    setFormRecurrenceType((item as any).recurrenceType || 'none');
+    const pattern = (item as any).recurrencePattern as { dayOfWeek?: number; dayOfMonth?: number; weekOfMonth?: number } | null;
+    setFormDayOfWeek(pattern?.dayOfWeek ?? 1);
+    setFormDayOfMonth(pattern?.dayOfMonth ?? 1);
+    setFormWeekOfMonth(pattern?.weekOfMonth ?? 1);
+    setFormRecurrenceEndDate((item as any).recurrenceEndDate || '');
     setIsEditDialogOpen(true);
   };
 
@@ -524,6 +548,14 @@ export default function YearlyCalendar() {
       return;
     }
 
+    // Build recurrence pattern based on type
+    let recurrencePattern = null;
+    if (formRecurrenceType === 'weekly') {
+      recurrencePattern = { dayOfWeek: formDayOfWeek };
+    } else if (formRecurrenceType === 'monthly') {
+      recurrencePattern = { dayOfMonth: formDayOfMonth };
+    }
+
     updateItemMutation.mutate({
       id: editingItem.id,
       title: formTitle.trim(),
@@ -533,6 +565,9 @@ export default function YearlyCalendar() {
       startDate: formStartDate || null,
       endDate: formEndDate || formStartDate || null,
       isRecurring: formIsRecurring,
+      recurrenceType: formRecurrenceType,
+      recurrencePattern,
+      recurrenceEndDate: formRecurrenceEndDate || null,
     });
   };
 
@@ -614,7 +649,20 @@ export default function YearlyCalendar() {
           {canSubmit && (
             <Button
               onClick={() => {
+                // Reset form state for new item
                 setFormMonth(new Date().getMonth() + 1);
+                setFormTitle('');
+                setFormDescription('');
+                setFormCategory('preparation');
+                setFormPriority('medium');
+                setFormStartDate('');
+                setFormEndDate('');
+                setFormIsRecurring(true);
+                setFormRecurrenceType('none');
+                setFormDayOfWeek(1);
+                setFormDayOfMonth(1);
+                setFormWeekOfMonth(1);
+                setFormRecurrenceEndDate('');
                 setIsCreateDialogOpen(true);
               }}
               className="bg-[#236383] hover:bg-[#007E8C]"
@@ -1056,15 +1104,71 @@ export default function YearlyCalendar() {
                 <p className="text-xs text-gray-500">Leave blank for single day</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="create-recurring"
-                checked={formIsRecurring}
-                onCheckedChange={(checked) => setFormIsRecurring(checked as boolean)}
-              />
-              <Label htmlFor="create-recurring" className="cursor-pointer">
-                Recurring (repeats every year)
-              </Label>
+            {/* Recurrence Options */}
+            <div className="space-y-3 border rounded-lg p-3 bg-gray-50">
+              <Label className="text-sm font-medium">Recurrence</Label>
+              <Select value={formRecurrenceType} onValueChange={setFormRecurrenceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select recurrence type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No recurrence (one-time)</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {formRecurrenceType === 'weekly' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Repeat every</Label>
+                  <Select value={String(formDayOfWeek)} onValueChange={(v) => setFormDayOfWeek(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sunday</SelectItem>
+                      <SelectItem value="1">Monday</SelectItem>
+                      <SelectItem value="2">Tuesday</SelectItem>
+                      <SelectItem value="3">Wednesday</SelectItem>
+                      <SelectItem value="4">Thursday</SelectItem>
+                      <SelectItem value="5">Friday</SelectItem>
+                      <SelectItem value="6">Saturday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formRecurrenceType === 'monthly' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Repeat on day</Label>
+                  <Select value={String(formDayOfMonth)} onValueChange={(v) => setFormDayOfMonth(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                        <SelectItem key={day} value={String(day)}>
+                          {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of each month
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formRecurrenceType !== 'none' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">End date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={formRecurrenceEndDate}
+                    onChange={(e) => setFormRecurrenceEndDate(e.target.value)}
+                    min={formStartDate || undefined}
+                  />
+                  <p className="text-xs text-gray-500">Leave blank to recur indefinitely</p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -1184,15 +1288,71 @@ export default function YearlyCalendar() {
                 <p className="text-xs text-gray-500">Leave blank for single day</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="edit-recurring"
-                checked={formIsRecurring}
-                onCheckedChange={(checked) => setFormIsRecurring(checked as boolean)}
-              />
-              <Label htmlFor="edit-recurring" className="cursor-pointer">
-                Recurring (repeats every year)
-              </Label>
+            {/* Recurrence Options */}
+            <div className="space-y-3 border rounded-lg p-3 bg-gray-50">
+              <Label className="text-sm font-medium">Recurrence</Label>
+              <Select value={formRecurrenceType} onValueChange={setFormRecurrenceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select recurrence type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No recurrence (one-time)</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {formRecurrenceType === 'weekly' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Repeat every</Label>
+                  <Select value={String(formDayOfWeek)} onValueChange={(v) => setFormDayOfWeek(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sunday</SelectItem>
+                      <SelectItem value="1">Monday</SelectItem>
+                      <SelectItem value="2">Tuesday</SelectItem>
+                      <SelectItem value="3">Wednesday</SelectItem>
+                      <SelectItem value="4">Thursday</SelectItem>
+                      <SelectItem value="5">Friday</SelectItem>
+                      <SelectItem value="6">Saturday</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formRecurrenceType === 'monthly' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">Repeat on day</Label>
+                  <Select value={String(formDayOfMonth)} onValueChange={(v) => setFormDayOfMonth(parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                        <SelectItem key={day} value={String(day)}>
+                          {day}{day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'} of each month
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {formRecurrenceType !== 'none' && (
+                <div className="space-y-2">
+                  <Label className="text-sm">End date (optional)</Label>
+                  <Input
+                    type="date"
+                    value={formRecurrenceEndDate}
+                    onChange={(e) => setFormRecurrenceEndDate(e.target.value)}
+                    min={formStartDate || undefined}
+                  />
+                  <p className="text-xs text-gray-500">Leave blank to recur indefinitely</p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>
@@ -1270,4 +1430,3 @@ export default function YearlyCalendar() {
     </div>
   );
 }
-

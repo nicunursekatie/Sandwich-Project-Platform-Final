@@ -271,6 +271,15 @@ export const MyAssignmentsTab: React.FC = () => {
               setEditingValue('');
             }}
             setEditingValue={setEditingValue}
+            saveTimes={(data) => {
+              updateEventRequestMutation.mutate({
+                id: request.id,
+                data,
+              });
+              setEditingScheduledId(null);
+              setEditingField(null);
+              setEditingValue('');
+            }}
             setInlineSandwichMode={setInlineSandwichMode}
             setInlineTotalCount={setInlineTotalCount}
             setInlineRangeMin={() => {}}

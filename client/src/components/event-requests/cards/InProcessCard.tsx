@@ -1148,7 +1148,16 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   <Phone className="w-4 h-4 text-brand-primary-muted" />
                   <span className="text-sm font-medium">Call scheduled:</span>
                   <span className="text-sm">
-                    {new Date(request.scheduledCallDate).toLocaleString()}
+                    {(() => {
+                      const date = new Date(request.scheduledCallDate);
+                      const hours = date.getHours();
+                      const minutes = date.getMinutes();
+                      // If time is midnight (00:00), show date only
+                      if (hours === 0 && minutes === 0) {
+                        return date.toLocaleDateString();
+                      }
+                      return date.toLocaleString();
+                    })()}
                   </span>
                 </div>
               </div>

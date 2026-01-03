@@ -84,6 +84,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event-flags';
+import { Flag } from 'lucide-react';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -200,9 +202,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
   const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
   const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
+  const [showFlagsDialog, setShowFlagsDialog] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -733,6 +736,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       style={{ borderLeftColor: '#236383' }}
     >
       <CardContent className="p-3">
+        {/* Pre-Event Flags Banner */}
+        {request.preEventFlags && Array.isArray(request.preEventFlags) && request.preEventFlags.length > 0 && (
+          <PreEventFlagsBanner
+            flags={request.preEventFlags}
+            eventId={request.id}
+            eventName={request.organizationName || 'Event'}
+            compact={false}
+          />
+        )}
+        
         {/* Header Row - Organization & Status */}
         <div className="flex flex-col gap-2 mb-3 pb-3 border-b-2 border-[#236383]/40">
           {/* Top: Date + Organization Name */}
@@ -2433,43 +2446,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     Assign TSP Contact
                   </Button>
                 )}
-
-                {/* Team Comments - moved from bottom section */}
-                <div className="pt-2 border-t border-white/30">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowComments(!showComments)}
-                    className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10 font-medium p-1.5 h-auto mb-1"
-                  >
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-[#236383]" />
-                      <h3 className="text-sm uppercase font-bold tracking-wide">Team Comments</h3>
-                      {collaboration.comments && collaboration.comments.length > 0 && (
-                        <Badge variant="secondary" className="ml-1">
-                          {collaboration.comments.length}
-                        </Badge>
-                      )}
-                    </div>
-                    {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  </Button>
-
-                  {showComments && (
-                    <div className="mt-1 max-h-[300px]">
-                      <CommentThread
-                        comments={collaboration.comments || []}
-                        currentUserId={user?.id || ''}
-                        currentUserName={user?.fullName || user?.email || ''}
-                        eventId={request.id}
-                        onAddComment={collaboration.addComment}
-                        onEditComment={collaboration.updateComment}
-                        onDeleteComment={collaboration.deleteComment}
-                        isLoading={collaboration.commentsLoading || false}
-                        compact={true}
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
             {/* Recipient Logistics moved to Column 1, right after times row */}
@@ -2654,14 +2630,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </p>
                 </div>
               )}
-              {request.duplicateNotes && request.duplicateNotes.toLowerCase().trim() !== 'no' && (
-                <div>
-                  <p className="text-sm font-medium mb-1 text-gray-900">Duplicate Check Notes:</p>
-                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-4 border-pink-400">
-                    {request.duplicateNotes}
-                  </p>
-                </div>
-              )}
+              {/* Duplicate check notes hidden - runs in background only */}
               {request.unresponsiveNotes && (
                 <div>
                   <p className="text-sm font-medium mb-1 text-gray-900">Contact Attempts Logged:</p>
@@ -2764,6 +2733,73 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </Button>
         </div>
 
+        {/* Team Comments Section */}
+        {request.id && (
+          <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(!showComments)}
+                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-gray-600" />
+                  <h3 className="text-sm font-semibold">Team Comments</h3>
+                  {collaboration.comments && collaboration.comments.length > 0 && (
+                    <Badge variant="secondary" className="ml-1">
+                      {collaboration.comments.length}
+                    </Badge>
+                  )}
+                </div>
+                {showComments ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {showComments && (
+              <div className="mt-3 max-h-[500px]">
+                <CommentThread
+                  comments={collaboration.comments || []}
+                  currentUserId={user?.id || ''}
+                  currentUserName={user?.fullName || user?.email || ''}
+                  eventId={request.id}
+                  onAddComment={collaboration.addComment}
+                  onEditComment={collaboration.updateComment}
+                  onDeleteComment={collaboration.deleteComment}
+                  isLoading={collaboration.commentsLoading || false}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pre-Event Flags Button */}
+        <div className="border-t-2 border-[#007E8C]/10 pt-4 mb-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFlagsDialog(true);
+              }}
+              className="flex-1 justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
+              type="button"
+            >
+              <div className="flex items-center gap-2">
+                <Flag className="w-4 h-4" aria-hidden="true" />
+                <span>Pre-Event Flags</span>
+                {request.preEventFlags && Array.isArray(request.preEventFlags) && 
+                 request.preEventFlags.filter((f: any) => !f.resolvedAt).length > 0 && (
+                  <Badge variant="secondary" className="ml-1">
+                    {request.preEventFlags.filter((f: any) => !f.resolvedAt).length}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </div>
+        </div>
+
         {/* Activity History Toggle */}
         <div className="border-t-2 border-[#007E8C]/10 pt-4">
           <Button
@@ -2823,6 +2859,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         isOpen={showSendCorrectionDialog}
         onClose={() => setShowSendCorrectionDialog(false)}
         eventRequest={request}
+      />
+
+      {/* Pre-Event Flags Dialog */}
+      <PreEventFlagsDialog
+        flags={request.preEventFlags || []}
+        eventId={request.id}
+        eventName={request.organizationName || 'Event'}
+        isOpen={showFlagsDialog}
+        onClose={() => setShowFlagsDialog(false)}
       />
     </Card>
   );

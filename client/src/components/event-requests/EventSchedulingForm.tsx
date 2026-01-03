@@ -35,13 +35,21 @@ import {
   Users,
   MessageSquare,
   Edit,
+  User,
+  Calendar,
+  MapPin,
+  Sandwich,
+  Car,
+  FileText,
+  CheckCircle2,
+  Package,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { SANDWICH_TYPES } from './constants';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
-import { getPickupDateTimeForInput } from './utils';
+import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -149,6 +157,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     backupContactEmail: '',
     backupContactPhone: '',
     backupContactRole: '',
+    // Previously hosted flag
+    previouslyHosted: 'i_dont_know',
+    // Speaker details (conditional fields when speakers > 0)
+    speakerAudienceType: '',
+    speakerDuration: '',
+    // Delivery details for overnight holding
+    deliveryTimeWindow: '',
+    deliveryParkingAccess: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
@@ -228,84 +244,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
       
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
-      
-      // Normalize assignedRecipientIds to new string format with prefixes
-      // Supports legacy numeric IDs and new prefixed format (host:ID, recipient:ID, custom:text)
-      const normalizeRecipientIds = (ids: any): string[] => {
-        if (!ids) return [];
-        
-        let rawIds: any[] = [];
-        
-        // Handle PostgreSQL array format: {1,2,3} or {"host:5","recipient:10","custom:Hall, Room 2"}
-        if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
-          const arrayContent = ids.slice(1, -1); // Remove { and }
-          
-          // Parse PostgreSQL array format respecting quoted strings
-          // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
-          // Handles: {value1,value2} and {"value 1","value 2"} and {"value,with,commas"} and {"value with ""quotes"""}
-          const parsed: string[] = [];
-          let current = '';
-          let inQuotes = false;
-          
-          for (let i = 0; i < arrayContent.length; i++) {
-            const char = arrayContent[i];
-            const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
-            const prevChar = i > 0 ? arrayContent[i - 1] : null;
-            
-            if (char === '"') {
-              if (inQuotes && nextChar === '"') {
-                // Doubled quote ("") inside quoted string = escaped quote, add one quote
-                current += '"';
-                i++; // Skip the next quote
-              } else if (inQuotes && prevChar === '\\') {
-                // Backslash-escaped quote (\") = actual quote (backslash was already added)
-                current = current.slice(0, -1) + '"'; // Replace the backslash with quote
-              } else {
-                // Regular quote - toggle quote state
-                inQuotes = !inQuotes;
-              }
-            } else if (char === ',' && !inQuotes) {
-              // Comma outside quotes = separator
-              if (current.trim()) {
-                parsed.push(current.trim());
-              }
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          
-          // Don't forget the last value
-          if (current.trim()) {
-            parsed.push(current.trim());
-          }
-          
-          rawIds = parsed;
-        }
-        // Handle JSON array format: [1,2,3] or ["host:5","recipient:10"]
-        else if (Array.isArray(ids)) {
-          rawIds = ids;
-        }
-        
-        // Convert to new format with prefixes
-        return rawIds.map(id => {
-          const idStr = String(id);
-          
-          // If already has a prefix (host:, recipient:, custom:), keep as-is
-          if (idStr.includes(':')) {
-            return idStr;
-          }
-          
-          // Legacy numeric ID - assume it's a recipient ID
-          const numId = parseInt(idStr, 10);
-          if (!isNaN(numId)) {
-            return `recipient:${numId}`;
-          }
-          
-          // Fallback - treat as custom text
-          return `custom:${idStr}`;
-        }).filter(id => id);
-      };
 
       setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
@@ -363,6 +301,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
         backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
         backupContactRole: (eventRequest as any)?.backupContactRole || '',
+        // Previously hosted flag
+        previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
+        // Speaker details
+        speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+        speakerDuration: (eventRequest as any)?.speakerDuration || '',
+        // Delivery details for overnight holding
+        deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+        deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
         // Van driver assignment
         assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
         isDhlVan: (eventRequest as any)?.isDhlVan || false,
@@ -387,7 +333,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
         followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
         followUpNotes: (eventRequest as any)?.followUpNotes || '',
-        assignedRecipientIds: normalizeRecipientIds((eventRequest as any)?.assignedRecipientIds),
+        assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
       });
       
       // Set mode based on existing data
@@ -660,6 +606,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       backupContactEmail: formData.backupContactEmail || null,
       backupContactPhone: formData.backupContactPhone || null,
       backupContactRole: formData.backupContactRole || null,
+      // Previously hosted flag
+      previouslyHosted: formData.previouslyHosted || null,
+      // Speaker details
+      speakerAudienceType: formData.speakerAudienceType || null,
+      speakerDuration: formData.speakerDuration || null,
+      // Delivery details for overnight holding
+      deliveryTimeWindow: formData.deliveryTimeWindow || null,
+      deliveryParkingAccess: formData.deliveryParkingAccess || null,
       // Van driver assignment
       assignedVanDriverId: formData.isDhlVan
         ? null
@@ -923,6 +877,56 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     return collaboration.locks?.get(fieldName) || null;
   }, [isCollaborationEnabled, collaboration]);
 
+  // Cleanup: release all field locks when dialog closes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (!isCollaborationEnabled || !collaboration?.locks || !currentUser) {
+        return;
+      }
+
+      // Release any locks held by the current user when leaving
+      const releasePromises: Promise<void>[] = [];
+
+      collaboration.locks.forEach((lock, fieldName) => {
+        if (lock.lockedBy === currentUser.id) {
+          const releasePromise = (
+            collaboration.releaseFieldLock?.(fieldName) ?? Promise.resolve()
+          )
+            .then(() => {
+              logger.log(
+                `[EventSchedulingForm] Cleanup: Released lock for field: ${fieldName}`
+              );
+            })
+            .catch((error) => {
+              logger.error(
+                `[EventSchedulingForm] Cleanup: Failed to release lock for ${fieldName}:`,
+                error
+              );
+            });
+
+          releasePromises.push(releasePromise);
+        }
+      });
+
+      if (releasePromises.length > 0) {
+        // Fire-and-forget; React does not await cleanup promises
+        void Promise.all(releasePromises);
+      }
+    };
+  }, [isCollaborationEnabled, collaboration, currentUser]);
+
+  // Section completion tracking for progress indicator
+  const sectionStatus = {
+    contact: !!(formData.firstName || formData.lastName || formData.email || formData.phone),
+    schedule: !!(formData.eventDate),
+    delivery: !!(formData.eventAddress || formData.assignedRecipientIds.length > 0),
+    sandwiches: !!(formData.totalSandwichCount > 0 || formData.sandwichTypes.length > 0 || formData.estimatedSandwichCountMin > 0),
+    resources: !!(formData.driversNeeded > 0 || formData.speakersNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
+    notes: !!(formData.schedulingNotes || formData.planningNotes || formData.nextAction),
+  };
+  const completedSections = Object.values(sectionStatus).filter(Boolean).length;
+  const totalSections = Object.keys(sectionStatus).length;
+
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -942,19 +946,35 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Progress Indicator */}
+        <div className="bg-slate-50 rounded-lg p-3 border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-[#236383]">Form Progress</span>
+            <span className="text-sm text-gray-600">{completedSections} of {totalSections} sections</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-[#47B3CB] h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(completedSections / totalSections) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Contact Information Section - Collapsible */}
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Button
               type="button"
               variant="ghost"
-              className="w-full flex justify-between items-center p-4"
+              className="w-full flex justify-between items-center p-4 bg-[#e6f2f5] hover:bg-[#d4e8ed]"
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
-              <span className="font-semibold">
-                Primary Contact Information (Editable)
-              </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5 text-[#236383]" />
+                <span className="font-semibold text-[#236383]">Primary Contact Information</span>
+                {sectionStatus.contact && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[#236383] transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
             </Button>
             
             {showContactInfo && (
@@ -1206,8 +1226,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Event Schedule */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold">Event Schedule</Label>
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <Calendar className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Event Schedule</span>
+              {sectionStatus.schedule && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
 
             {/* Conflict Warnings */}
             <EventConflictWarnings
@@ -1384,34 +1408,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   min={formData.pickupDate === formData.eventDate && formData.eventEndTime ? formData.eventEndTime : undefined}
                   data-testid="pickup-time-input"
                 />
-                {formData.pickupDate === formData.eventDate && 
-                 formData.eventEndTime && 
-                 formData.pickupTimeSeparate && 
-                 formData.pickupTimeSeparate <= formData.eventEndTime && (
-                  <p className="text-xs text-red-600 mt-1">
-                    Pickup time should be after event end time ({formData.eventEndTime})
+                {formData.pickupDate === formData.eventDate &&
+                 formData.eventEndTime &&
+                 formData.pickupTimeSeparate &&
+                 formData.pickupTimeSeparate < formData.eventEndTime && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Note: Pickup time is before event ends ({formData.eventEndTime})
                   </p>
                 )}
-              </div>
-              <div className="flex items-end">
-                <div className="flex items-center space-x-2 pb-0 mb-0">
-                  <input
-                    type="checkbox"
-                    id="canHoldOvernight"
-                    checked={!!formData.overnightHoldingLocation}
-                    onChange={(e) => {
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        overnightHoldingLocation: e.target.checked ? 'Yes' : ''
-                      }));
-                    }}
-                    className="w-4 h-4 text-[#007E8C] rounded focus:ring-2 focus:ring-[#007E8C]"
-                    data-testid="checkbox-can-hold-overnight"
-                  />
-                  <Label htmlFor="canHoldOvernight" className="text-sm font-medium text-gray-700 cursor-pointer mb-0">
-                    Can hold sandwiches overnight
-                  </Label>
-                </div>
               </div>
             </div>
           </div>
@@ -1533,8 +1537,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Sandwich Planning */}
-          <div className="space-y-4">
-            <Label>Sandwich Planning</Label>
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <Sandwich className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Sandwich Planning</span>
+              {sectionStatus.sandwiches && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
             
             {/* Mode Selector */}
             <div className="flex gap-2">
@@ -1813,8 +1821,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Resource Requirements */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Drivers */}
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <Car className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Resource Requirements</span>
+              {sectionStatus.resources && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Drivers */}
             <div className="space-y-3">
               <Label>Driver Requirements</Label>
               <div className="space-y-2">
@@ -1972,6 +1986,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 </div>
               </div>
             </div>
+            </div>
           </div>
           {/* TSP Contact Assignment */}
           <div>
@@ -2109,10 +2124,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           )}
 
           {/* Notes & Requirements Section */}
-          <div className="space-y-4">
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <FileText className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Notes & Requirements</span>
+              {sectionStatus.notes && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
             <div>
-              <h3 className="text-lg font-semibold text-[#47B3CB] mb-4">Notes & Requirements</h3>
-              
               {/* Initial Request Message */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
@@ -2153,7 +2171,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         size="sm"
                         onClick={() => {
                           setIsMessageEditable(false);
-                          // Reset to original value if needed
+                          // Reset to original value from eventRequest
+                          setFormData(prev => ({ ...prev, message: (eventRequest as any)?.message || '' }));
                         }}
                       >
                         Cancel

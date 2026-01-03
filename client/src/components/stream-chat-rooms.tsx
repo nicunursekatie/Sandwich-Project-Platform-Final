@@ -440,8 +440,10 @@ export default function StreamChatRooms() {
 
   // Initialize Stream Chat client
   useEffect(() => {
+    let isInitialized = false;
+
     const initializeClient = async () => {
-      if (!user) return;
+      if (!user || isInitialized) return;
 
       try {
         // Get Stream credentials and user token from backend
@@ -462,13 +464,18 @@ export default function StreamChatRooms() {
 
         const chatClient = StreamChat.getInstance(apiKey);
 
-        await chatClient.connectUser(
-          {
-            id: streamUserId,
-            name: (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email) || user.email || 'User',
-          } as any,
-          userToken
-        );
+        // Only connect if not already connected
+        if (!chatClient.userID) {
+          await chatClient.connectUser(
+            {
+              id: streamUserId,
+              name: (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email) || user.email || 'User',
+            } as any,
+            userToken
+          );
+        }
+
+        isInitialized = true;
 
         // Listen for new messages from this user to track challenge completion
         chatClient.on('message.new', (event) => {

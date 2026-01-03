@@ -17,6 +17,14 @@ import type { AuthenticatedRequest } from '../types/express';
 // Date string validation (YYYY-MM-DD format)
 const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').nullable().optional();
 
+// Recurrence pattern schema
+const recurrencePatternSchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6).optional(), // 0 = Sunday, 6 = Saturday
+  dayOfMonth: z.number().int().min(1).max(31).optional(), // 1-31
+  weekOfMonth: z.number().int().min(1).max(5).optional(), // 1st, 2nd, 3rd, 4th, 5th (last)
+  month: z.number().int().min(1).max(12).optional(), // For yearly recurrence
+}).nullable().optional();
+
 const createItemSchema = insertYearlyCalendarItemSchema
   .omit({ createdBy: true, createdByName: true })
   .extend({
@@ -30,6 +38,10 @@ const createItemSchema = insertYearlyCalendarItemSchema
     endDate: dateStringSchema,
     assignedTo: z.array(z.string()).nullable().optional(),
     assignedToNames: z.array(z.string()).nullable().optional(),
+    // New recurrence fields
+    recurrenceType: z.enum(['none', 'weekly', 'monthly', 'yearly']).optional(),
+    recurrencePattern: recurrencePatternSchema,
+    recurrenceEndDate: dateStringSchema,
   });
 
 const updateItemSchema = z.object({
@@ -43,7 +55,67 @@ const updateItemSchema = z.object({
   assignedToNames: z.array(z.string()).nullable().optional(),
   isCompleted: z.boolean().optional(),
   isRecurring: z.boolean().optional(),
+  // New recurrence fields
+  recurrenceType: z.enum(['none', 'weekly', 'monthly', 'yearly']).optional(),
+  recurrencePattern: recurrencePatternSchema,
+  recurrenceEndDate: dateStringSchema,
 });
+
+// Helper function to generate recurring dates within a date range
+function generateRecurringDates(
+  startDate: Date,
+  endDate: Date,
+  recurrenceType: string,
+  pattern: { dayOfWeek?: number; dayOfMonth?: number; weekOfMonth?: number; month?: number } | null
+): Date[] {
+  const dates: Date[] = [];
+  const current = new Date(startDate);
+
+  if (!pattern) return dates;
+
+  while (current <= endDate) {
+    if (recurrenceType === 'weekly' && pattern.dayOfWeek !== undefined) {
+      // Weekly: every X day of week
+      if (current.getDay() === pattern.dayOfWeek) {
+        dates.push(new Date(current));
+      }
+      current.setDate(current.getDate() + 1);
+    } else if (recurrenceType === 'monthly') {
+      if (pattern.dayOfMonth !== undefined) {
+        // Monthly: specific day of month (e.g., 15th of every month)
+        if (current.getDate() === pattern.dayOfMonth) {
+          dates.push(new Date(current));
+        }
+        current.setDate(current.getDate() + 1);
+      } else if (pattern.weekOfMonth !== undefined && pattern.dayOfWeek !== undefined) {
+        // Monthly: Nth weekday of month (e.g., 2nd Tuesday)
+        const firstOfMonth = new Date(current.getFullYear(), current.getMonth(), 1);
+        const firstWeekday = firstOfMonth.getDay();
+        let targetDay = pattern.dayOfWeek - firstWeekday;
+        if (targetDay < 0) targetDay += 7;
+        targetDay += 1; // Convert to 1-indexed day of month
+        targetDay += (pattern.weekOfMonth - 1) * 7;
+
+        if (current.getDate() === targetDay && targetDay <= new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate()) {
+          dates.push(new Date(current));
+        }
+        current.setDate(current.getDate() + 1);
+      } else {
+        current.setDate(current.getDate() + 1);
+      }
+    } else if (recurrenceType === 'yearly' && pattern.month !== undefined && pattern.dayOfMonth !== undefined) {
+      // Yearly: specific month and day
+      if (current.getMonth() + 1 === pattern.month && current.getDate() === pattern.dayOfMonth) {
+        dates.push(new Date(current));
+      }
+      current.setDate(current.getDate() + 1);
+    } else {
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  return dates;
+}
 
 // Create yearly calendar router
 export const yearlyCalendarRouter = Router();
@@ -332,6 +404,9 @@ yearlyCalendarRouter.post(
           assignedTo: existingItem.assignedTo,
           assignedToNames: existingItem.assignedToNames,
           isRecurring: existingItem.isRecurring,
+          recurrenceType: existingItem.recurrenceType,
+          recurrencePattern: existingItem.recurrencePattern,
+          recurrenceEndDate: adjustDateToNextYear(existingItem.recurrenceEndDate),
           isCompleted: false, // Reset completion status
           completedAt: null,
           completedBy: null,
@@ -351,6 +426,115 @@ yearlyCalendarRouter.post(
       res.status(500).json({
         error: 'Failed to copy calendar item',
         message: 'An error occurred while copying the calendar item',
+      });
+    }
+  }
+);
+
+// GET /api/yearly-calendar/recurring-instances - Get expanded recurring instances for a date range
+yearlyCalendarRouter.get(
+  '/recurring-instances',
+  requirePermission(PERMISSIONS.YEARLY_CALENDAR_VIEW),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
+      const month = req.query.month ? parseInt(req.query.month as string) : null;
+
+      if (isNaN(year)) {
+        return res.status(400).json({ error: 'Invalid year parameter' });
+      }
+
+      logger.info('Fetching recurring calendar instances', { year, month, userId: req.user.id });
+
+      // Get all items with recurrence for this year
+      const items = await db
+        .select()
+        .from(yearlyCalendarItems)
+        .where(eq(yearlyCalendarItems.year, year));
+
+      // Filter to only recurring items and expand them
+      const instances: Array<{
+        sourceItemId: number;
+        title: string;
+        description: string | null;
+        category: string | null;
+        priority: string | null;
+        date: string;
+        recurrenceType: string;
+        assignedTo: string[] | null;
+        assignedToNames: string[] | null;
+      }> = [];
+
+      // Calculate date range
+      const startDate = month
+        ? new Date(year, month - 1, 1)
+        : new Date(year, 0, 1);
+      const endDate = month
+        ? new Date(year, month, 0) // Last day of specified month
+        : new Date(year, 11, 31); // Dec 31
+
+      for (const item of items) {
+        if (!item.recurrenceType || item.recurrenceType === 'none' || item.recurrenceType === 'yearly') {
+          continue; // Skip non-recurring or yearly items (yearly are handled differently)
+        }
+
+        // Check if recurrence has ended
+        if (item.recurrenceEndDate && new Date(item.recurrenceEndDate) < startDate) {
+          continue;
+        }
+
+        const pattern = item.recurrencePattern as {
+          dayOfWeek?: number;
+          dayOfMonth?: number;
+          weekOfMonth?: number;
+        } | null;
+
+        if (!pattern) continue;
+
+        const recurringDates = generateRecurringDates(
+          startDate,
+          item.recurrenceEndDate && new Date(item.recurrenceEndDate) < endDate
+            ? new Date(item.recurrenceEndDate)
+            : endDate,
+          item.recurrenceType,
+          pattern
+        );
+
+        for (const date of recurringDates) {
+          instances.push({
+            sourceItemId: item.id,
+            title: item.title,
+            description: item.description,
+            category: item.category,
+            priority: item.priority,
+            date: date.toISOString().split('T')[0],
+            recurrenceType: item.recurrenceType,
+            assignedTo: item.assignedTo,
+            assignedToNames: item.assignedToNames,
+          });
+        }
+      }
+
+      // Sort by date
+      instances.sort((a, b) => a.date.localeCompare(b.date));
+
+      logger.info('Successfully generated recurring instances', {
+        year,
+        month,
+        count: instances.length,
+        userId: req.user.id,
+      });
+
+      res.json(instances);
+    } catch (error) {
+      logger.error('Failed to fetch recurring calendar instances', error);
+      res.status(500).json({
+        error: 'Failed to fetch recurring instances',
+        message: 'An error occurred while generating recurring instances',
       });
     }
   }

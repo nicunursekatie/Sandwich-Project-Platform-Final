@@ -236,15 +236,8 @@ export const EventMessageThread: React.FC<EventMessageThreadProps> = ({
       });
     }
 
-    // Add duplicate check notes (only if there's actual content, not just "No")
-    if (eventRequest.duplicateNotes && eventRequest.duplicateNotes.toLowerCase().trim() !== 'no') {
-      items.push({
-        type: 'note',
-        icon: <Copy className="h-4 w-4" />,
-        title: 'Duplicate Check Notes',
-        content: eventRequest.duplicateNotes,
-      });
-    }
+    // Duplicate check notes are processed in the background for internal use only
+    // and not displayed to users to avoid confusion
 
     // Add social media notes
     if (eventRequest.socialMediaPostNotes) {

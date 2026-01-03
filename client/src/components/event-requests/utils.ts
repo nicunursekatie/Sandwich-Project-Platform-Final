@@ -478,3 +478,118 @@ export const getPickupDateTimeForInput = (
     return '';
   }
 };
+
+/**
+ * Parses PostgreSQL array format and normalizes recipient IDs
+ * Supports legacy numeric IDs and new prefixed format (host:ID, recipient:ID, custom:text)
+ *
+ * PostgreSQL array formats handled:
+ * - {1,2,3} - simple numeric values
+ * - {"host:5","recipient:10","custom:Hall, Room 2"} - quoted strings with prefixes
+ * - {"value with ""quotes"""} - escaped quotes (doubled)
+ * - {"value,with,commas"} - commas inside quoted strings
+ *
+ * @param ids - PostgreSQL array string, JSON array, or raw array
+ * @returns Normalized array of prefixed ID strings
+ */
+export const parsePostgresArray = (ids: unknown): string[] => {
+  if (!ids) return [];
+
+  let rawIds: unknown[] = [];
+
+  // Handle PostgreSQL array format: {1,2,3} or {"host:5","recipient:10","custom:Hall, Room 2"}
+  if (typeof ids === 'string' && ids.startsWith('{') && ids.endsWith('}')) {
+    const arrayContent = ids.slice(1, -1); // Remove { and }
+
+    // Explicitly handle empty PostgreSQL array "{}"
+    if (!arrayContent) {
+      rawIds = [];
+    } else {
+      // Parse PostgreSQL array format respecting quoted strings
+      // PostgreSQL escapes quotes as "" (doubled) or \" (backslash)
+      const parsed: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      let backslashCount = 0; // Number of consecutive backslashes just seen inside quotes
+
+      for (let i = 0; i < arrayContent.length; i++) {
+        const char = arrayContent[i];
+        const nextChar = i < arrayContent.length - 1 ? arrayContent[i + 1] : null;
+
+        if (char === '"') {
+          if (inQuotes && backslashCount % 2 === 1) {
+            // Backslash-escaped quote (\") with an odd number of preceding backslashes
+            // Replace the last backslash with a quote
+            current = current.slice(0, -1) + '"';
+            backslashCount = 0;
+          } else if (inQuotes && nextChar === '"') {
+            // Doubled quote ("") inside quoted string = escaped quote, add one quote
+            current += '"';
+            i++; // Skip the next quote
+            backslashCount = 0;
+          } else {
+            // Regular quote - toggle quote state
+            inQuotes = !inQuotes;
+            backslashCount = 0;
+          }
+        } else if (char === '\\' && inQuotes) {
+          // Track backslashes inside quoted strings to determine if following quotes are escaped
+          current += char;
+          backslashCount += 1;
+        } else if (char === ',' && !inQuotes) {
+          // Comma outside quotes = separator
+          if (current.trim()) {
+            parsed.push(current.trim());
+          }
+          current = '';
+          backslashCount = 0;
+        } else {
+          current += char;
+          backslashCount = 0;
+        }
+      }
+
+      // Don't forget the last value
+      if (current.trim()) {
+        parsed.push(current.trim());
+      }
+
+      rawIds = parsed;
+    }
+  }
+  // Handle JSON string format: '["host:5","recipient:10"]'
+  else if (typeof ids === 'string') {
+    try {
+      const parsed = JSON.parse(ids);
+      if (Array.isArray(parsed)) {
+        rawIds = parsed;
+      }
+    } catch (error) {
+      // If JSON parsing fails, fall through and return the default empty array
+      logger.warn('Failed to parse ids JSON string in parsePostgresArray', { error, ids });
+    }
+  }
+  // Handle JSON array format when ids is already an array
+  else if (Array.isArray(ids)) {
+    rawIds = ids;
+  }
+
+  // Convert to new format with prefixes
+  return rawIds.map(id => {
+    const idStr = String(id);
+
+    // If already has a prefix (host:, recipient:, custom:), keep as-is
+    if (idStr.includes(':')) {
+      return idStr;
+    }
+
+    // Legacy numeric ID - assume it's a recipient ID
+    const numId = parseInt(idStr, 10);
+    if (!isNaN(numId)) {
+      return `recipient:${numId}`;
+    }
+
+    // Fallback - treat as custom text
+    return `custom:${idStr}`;
+  });
+};
