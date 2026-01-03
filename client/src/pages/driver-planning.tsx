@@ -4294,6 +4294,7 @@ export default function DriverPlanningDashboard() {
                           size="icon"
                           className="h-9 w-9 flex-shrink-0"
                           onClick={openEditDialog}
+                          aria-label="Edit event"
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
@@ -4366,7 +4367,13 @@ export default function DriverPlanningDashboard() {
                       {selectedEvent.assignedVanDriverId && !selectedEvent.isDhlVan && (
                         <div className="text-sm text-gray-700 break-words">
                           <span className="font-medium">Van driver:</span>{' '}
-                          {getAssignedDriversLabel({ ...selectedEvent, assignedDriverIds: [selectedEvent.assignedVanDriverId] } as any)}
+                          {(() => {
+                            const vanDriverEvent: Parameters<typeof getAssignedDriversLabel>[0] = {
+                              ...selectedEvent,
+                              assignedDriverIds: [selectedEvent.assignedVanDriverId],
+                            };
+                            return getAssignedDriversLabel(vanDriverEvent);
+                          })()}
                         </div>
                       )}
                       {getAssignedSpeakersLabel(selectedEvent) && (
@@ -4391,7 +4398,8 @@ export default function DriverPlanningDashboard() {
                         !getAssignedDriversLabel(selectedEvent) &&
                         !getAssignedSpeakersLabel(selectedEvent) &&
                         !getAssignedVolunteersLabel(selectedEvent) &&
-                        !getDesignatedRecipientLabel(selectedEvent) && (
+                        !getDesignatedRecipientLabel(selectedEvent) &&
+                        (!selectedEvent.assignedVanDriverId || selectedEvent.isDhlVan) && (
                         <div className="text-sm text-gray-500">No assignments yet.</div>
                       )}
                     </div>
@@ -4421,6 +4429,7 @@ export default function DriverPlanningDashboard() {
                                   ? 'bg-green-100 border-green-400'
                                   : 'bg-green-50 border-green-200 hover:bg-green-100'
                               }`}
+                              aria-label={`Focus on host ${host.contactName}`}
                             >
                               <div className="flex items-center justify-between">
                                 <span className="font-medium break-words">{host.contactName}</span>
@@ -4433,6 +4442,7 @@ export default function DriverPlanningDashboard() {
                             <button
                               onClick={() => setShowAllHosts(!showAllHosts)}
                               className="w-full text-sm text-green-700 font-medium py-2"
+                              aria-label={showAllHosts ? 'Show fewer hosts' : `Show ${nearbyHosts.length - 3} more hosts`}
                             >
                               {showAllHosts ? 'Show less' : `View ${nearbyHosts.length - 3} more hosts`}
                             </button>
@@ -4468,6 +4478,7 @@ export default function DriverPlanningDashboard() {
                                   ? 'bg-purple-100 border-purple-400'
                                   : 'bg-purple-50 border-purple-200 hover:bg-purple-100'
                               }`}
+                              aria-label={`Focus on recipient ${recipient.name}`}
                             >
                               <div className="flex items-center justify-between">
                                 <span className="font-medium break-words">{recipient.name}</span>
@@ -4484,6 +4495,11 @@ export default function DriverPlanningDashboard() {
                             <button
                               onClick={() => setShowAllRecipients(!showAllRecipients)}
                               className="w-full text-sm text-purple-700 font-medium py-2"
+                              aria-label={
+                                showAllRecipients
+                                  ? 'Show fewer recipients'
+                                  : `Show ${nearbyRecipients.length - 3} more recipients`
+                              }
                             >
                               {showAllRecipients ? 'Show less' : `View ${nearbyRecipients.length - 3} more recipients`}
                             </button>
@@ -4517,7 +4533,6 @@ export default function DriverPlanningDashboard() {
                                   variant={selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
                                   className="h-8 text-xs"
                                   onClick={() => {
-                                    if (!selectedEvent) return;
                                     toggleDriverMutation.mutate({
                                       eventId: selectedEvent.id,
                                       driverId: String(driver.id),
@@ -4534,7 +4549,6 @@ export default function DriverPlanningDashboard() {
                                   variant={hasDriver(selectedEvent, String(driver.id)) ? 'default' : 'outline'}
                                   className="h-8 text-xs"
                                   onClick={() => {
-                                    if (!selectedEvent) return;
                                     toggleDriverMutation.mutate({
                                       eventId: selectedEvent.id,
                                       driverId: String(driver.id),
@@ -4559,7 +4573,6 @@ export default function DriverPlanningDashboard() {
                   /* Events List View - When no event is selected */
                   <div className="p-3 space-y-2">
                     {events.map((event) => {
-                      const isSelected = selectedEvent?.id === event.id;
                       const eventDate = event.scheduledEventDate || event.desiredEventDate;
                       const driversAssigned = getDriverCount(event);
                       const driversTentative = event.tentativeDriverIds?.length || 0;
@@ -4574,13 +4587,9 @@ export default function DriverPlanningDashboard() {
                       return (
                         <Card
                           key={event.id}
-                          className={`p-3 cursor-pointer transition-all active:scale-[0.98] ${
-                            isSelected
-                              ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
-                              : 'hover:shadow-md active:bg-gray-50'
-                          }`}
+                          className="p-3 cursor-pointer transition-all active:scale-[0.98] hover:shadow-md active:bg-gray-50"
                           onClick={() => {
-                            setSelectedEvent(isSelected ? null : event);
+                            setSelectedEvent(event);
                             setShowAllHosts(false);
                             setShowAllRecipients(false);
                           }}
