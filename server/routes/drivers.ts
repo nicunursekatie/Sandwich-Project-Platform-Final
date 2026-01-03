@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { eq } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import type { RouterDependencies } from '../types';
 import type { AuthenticatedRequest } from '../types/express';
 import { drivers, insertDriverSchema, type Driver } from '@shared/schema';
@@ -174,10 +174,29 @@ export function createDriversRouter(deps: RouterDependencies) {
     try {
       const drivers = await storage.getAllDrivers();
 
-      // Query driver agreements directly from database (with safety limit)
+      // Query driver agreements directly from database
+      // Strategy: Get agreements for exported drivers only to ensure completeness
       const { db } = await import('../db');
       const { driverAgreements } = await import('@shared/schema');
-      const agreements = await db.select().from(driverAgreements).limit(5000);
+      
+      // Get emails of all drivers to filter agreements
+      const driverEmails = drivers
+        .map(d => d.email?.toLowerCase())
+        .filter((email): email is string => !!email);
+      
+      // Query agreements filtered to exported drivers, ordered by most recent first
+      // This ensures we get agreements for all drivers in the export
+      const agreements = driverEmails.length > 0
+        ? await db.select()
+            .from(driverAgreements)
+            .where(inArray(driverAgreements.email, driverEmails))
+            .orderBy(desc(driverAgreements.submittedAt))
+        : [];
+      
+      // Log if we're processing a large number of agreements
+      if (agreements.length > 0) {
+        logger.info(`Exporting ${drivers.length} drivers with ${agreements.length} agreements`);
+      }
 
       // Create a map of driver agreements by email for quick lookup
       const agreementsByEmail = new Map();

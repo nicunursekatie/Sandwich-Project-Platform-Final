@@ -55,7 +55,7 @@ export class BackupManager {
       const projects = await storage.getAllProjects();
       const contacts = await storage.getAllContacts();
       const users = await storage.getAllUsers();
-      const drivers = await storage.getAllDrivers();
+      const drivers = await storage.getAllDriversUnlimited(); // Use unlimited for complete backups
       const recipients = await storage.getAllRecipients();
       const auditLogs = await AuditLogger.getAuditHistory();
 

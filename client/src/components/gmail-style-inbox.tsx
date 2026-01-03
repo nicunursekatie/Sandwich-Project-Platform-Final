@@ -372,6 +372,10 @@ export default function GmailStyleInbox() {
     const { includeUnreadCount = true, includeFolders = false } = options || {};
 
     // Invalidate main email query for current folder
+    // This prefix match invalidates all queries starting with [apiBase], including:
+    // - ['/api/emails', activeFolder] (main messages query)
+    // - ['/api/emails', 'inbox'], ['/api/emails', 'sent'], etc. (specific folders)
+    // - ['/api/emails', 'inbox', 'count'] (inbox count query)
     queryClient.invalidateQueries({ queryKey: [apiBase] });
 
     // Invalidate unread count for navigation badge
@@ -379,12 +383,8 @@ export default function GmailStyleInbox() {
       queryClient.invalidateQueries({ queryKey: ['/api/emails/unread-count'] });
     }
 
-    // Only invalidate all folders when sending new messages
-    if (includeFolders) {
-      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'inbox'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'sent'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/emails', 'inbox', 'count'] });
-    }
+    // Note: includeFolders parameter is preserved for API compatibility but no longer needed
+    // since the prefix match above handles all folder invalidations
   };
 
   // Auto-save draft mutation
