@@ -195,26 +195,30 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   }
 });
 
-// Collection statistics endpoint
+// Collection statistics endpoint - uses SQL aggregation for efficiency
   router.get('/collection-stats', async (req, res) => {
   try {
-    const allCollections = await db.select().from(sandwichCollections);
-    const allHosts = await db.select({ name: hosts.name }).from(hosts);
-    
-    const hostNames = new Set(allHosts.map(h => h.name.toLowerCase().trim()));
-    
-    const mappedRecords = allCollections.filter(c => 
-      hostNames.has(c.hostName.toLowerCase().trim())
-    );
-    
-    const unmappedRecords = allCollections.filter(c => 
-      !hostNames.has(c.hostName.toLowerCase().trim())
-    );
-    
+    // Get total count using SQL COUNT
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sandwichCollections);
+
+    // Get count of mapped records using a subquery/join
+    const [mappedResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sandwichCollections)
+      .innerJoin(
+        hosts,
+        sql`LOWER(TRIM(${sandwichCollections.hostName})) = LOWER(TRIM(${hosts.name}))`
+      );
+
+    const totalRecords = Number(totalResult?.count || 0);
+    const mappedRecords = Number(mappedResult?.count || 0);
+
     res.json({
-      totalRecords: allCollections.length,
-      mappedRecords: mappedRecords.length,
-      unmappedRecords: unmappedRecords.length,
+      totalRecords,
+      mappedRecords,
+      unmappedRecords: totalRecords - mappedRecords,
     });
   } catch (error) {
     logger.error('Collection stats failed:', error);
@@ -222,38 +226,35 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   }
 });
 
-// Host mapping distribution statistics
+// Host mapping distribution statistics - uses SQL GROUP BY for efficiency
   router.get('/host-mapping-stats', async (req, res) => {
   try {
-    const allCollections = await db.select().from(sandwichCollections);
+    // Parse pagination parameters (default limit 200 for stats display)
+    const limit = Math.min(parseInt(req.query.limit as string) || 200, 1000);
+
+    // Use SQL GROUP BY to aggregate counts efficiently
+    const distribution = await db
+      .select({
+        hostName: sandwichCollections.hostName,
+        count: sql<number>`count(*)`.as('count'),
+      })
+      .from(sandwichCollections)
+      .groupBy(sandwichCollections.hostName)
+      .orderBy(sql`count(*) DESC`)
+      .limit(limit);
+
+    // Get all host names for mapping check (this is a small lookup table)
     const allHosts = await db.select({ name: hosts.name }).from(hosts);
-    
     const hostNames = new Set(allHosts.map(h => h.name.toLowerCase().trim()));
-    
-    // Group collections by hostName and count
-    const hostDistribution: Record<string, { count: number; mapped: boolean }> = {};
-    
-    allCollections.forEach(collection => {
-      const hostName = collection.hostName;
-      if (!hostDistribution[hostName]) {
-        hostDistribution[hostName] = {
-          count: 0,
-          mapped: hostNames.has(hostName.toLowerCase().trim())
-        };
-      }
-      hostDistribution[hostName].count++;
-    });
-    
-    // Convert to array and sort by count
-    const distribution = Object.entries(hostDistribution)
-      .map(([name, data]) => ({
-        hostName: name,
-        count: data.count,
-        mapped: data.mapped
-      }))
-      .sort((a, b) => b.count - a.count);
-    
-    res.json(distribution);
+
+    // Add mapped status to each result
+    const result = distribution.map(item => ({
+      hostName: item.hostName,
+      count: Number(item.count),
+      mapped: hostNames.has(item.hostName.toLowerCase().trim())
+    }));
+
+    res.json(result);
   } catch (error) {
     logger.error('Host mapping stats failed:', error);
     res.status(500).json({ error: 'Failed to get host mapping stats' });
@@ -264,13 +265,17 @@ export function createDataManagementRouter(deps: RouterDependencies) {
   router.get('/collections-by-host/:host', async (req, res) => {
   try {
     const { host } = req.params;
-    
+    const limit = Math.min(parseInt(req.query.limit as string) || 500, 2000);
+    const offset = parseInt(req.query.offset as string) || 0;
+
     const collections = await db
       .select()
       .from(sandwichCollections)
       .where(eq(sandwichCollections.hostName, host))
-      .orderBy(desc(sandwichCollections.collectionDate));
-    
+      .orderBy(desc(sandwichCollections.collectionDate))
+      .limit(limit)
+      .offset(offset);
+
     res.json(collections);
   } catch (error) {
     logger.error('Get collections by host failed:', error);
@@ -279,38 +284,68 @@ export function createDataManagementRouter(deps: RouterDependencies) {
 });
 
 // Bulk map hosts - attempt to match collection hostNames to hosts table
+// Uses batch updates instead of individual queries for efficiency
   router.post('/bulk-map-hosts', async (req, res) => {
   try {
-    const allCollections = await db.select().from(sandwichCollections);
+    // Get all hosts (small lookup table)
     const allHosts = await db.select().from(hosts);
-    
+
     // Create mapping of lowercase host names to actual host names
     const hostMapping = new Map<string, string>();
     allHosts.forEach(host => {
       hostMapping.set(host.name.toLowerCase().trim(), host.name);
     });
-    
-    let updatedRecords = 0;
-    
-    // Update collections where hostName doesn't match exactly but matches case-insensitively
-    for (const collection of allCollections) {
-      const lowerHostName = collection.hostName.toLowerCase().trim();
-      const matchedHostName = hostMapping.get(lowerHostName);
-      
-      if (matchedHostName && matchedHostName !== collection.hostName) {
-        await db
-          .update(sandwichCollections)
-          .set({ hostName: matchedHostName })
-          .where(eq(sandwichCollections.id, collection.id));
-        
-        updatedRecords++;
+
+    let totalUpdated = 0;
+    const BATCH_SIZE = 500;
+    let offset = 0;
+    let hasMore = true;
+
+    // Process in batches to avoid loading all collections at once
+    while (hasMore) {
+      const batchCollections = await db
+        .select({ id: sandwichCollections.id, hostName: sandwichCollections.hostName })
+        .from(sandwichCollections)
+        .limit(BATCH_SIZE)
+        .offset(offset);
+
+      if (batchCollections.length < BATCH_SIZE) {
+        hasMore = false;
       }
+
+      // Group collections by their corrected host name
+      const updatesByTargetName = new Map<string, number[]>();
+
+      for (const collection of batchCollections) {
+        const lowerHostName = collection.hostName.toLowerCase().trim();
+        const matchedHostName = hostMapping.get(lowerHostName);
+
+        if (matchedHostName && matchedHostName !== collection.hostName) {
+          if (!updatesByTargetName.has(matchedHostName)) {
+            updatesByTargetName.set(matchedHostName, []);
+          }
+          updatesByTargetName.get(matchedHostName)!.push(collection.id);
+        }
+      }
+
+      // Batch update: one UPDATE query per target host name
+      for (const [targetHostName, ids] of updatesByTargetName) {
+        if (ids.length > 0) {
+          await db
+            .update(sandwichCollections)
+            .set({ hostName: targetHostName })
+            .where(inArray(sandwichCollections.id, ids));
+          totalUpdated += ids.length;
+        }
+      }
+
+      offset += BATCH_SIZE;
     }
-    
+
     res.json({
       success: true,
-      updatedRecords,
-      message: `Successfully standardized ${updatedRecords} host name(s) to match the hosts directory`
+      updatedRecords: totalUpdated,
+      message: `Successfully standardized ${totalUpdated} host name(s) to match the hosts directory`
     });
   } catch (error) {
     logger.error('Bulk map hosts failed:', error);
@@ -319,71 +354,88 @@ export function createDataManagementRouter(deps: RouterDependencies) {
 });
 
 // Fix data corruption in sandwich collections
+// Uses bulk SQL updates for efficiency instead of individual queries
   router.patch('/sandwich-collections/fix-data-corruption', async (req, res) => {
   try {
-    const allCollections = await db.select().from(sandwichCollections);
-    
     let fixedCount = 0;
-    
-    for (const collection of allCollections) {
-      let needsUpdate = false;
-      const updates: any = {};
-      
-      // Fix null or negative sandwich counts
-      if (collection.individualSandwiches === null || collection.individualSandwiches < 0) {
-        updates.individualSandwiches = 0;
-        needsUpdate = true;
+
+    // Fix 1: Negative or null individual sandwich counts (bulk SQL update)
+    const negativeSandwichResult = await db
+      .update(sandwichCollections)
+      .set({ individualSandwiches: 0 })
+      .where(sql`${sandwichCollections.individualSandwiches} IS NULL OR ${sandwichCollections.individualSandwiches} < 0`);
+    fixedCount += negativeSandwichResult.rowCount || 0;
+
+    // Fix 2: Negative group1Count
+    const negativeGroup1Result = await db
+      .update(sandwichCollections)
+      .set({ group1Count: 0 })
+      .where(sql`${sandwichCollections.group1Count} < 0`);
+    fixedCount += negativeGroup1Result.rowCount || 0;
+
+    // Fix 3: Negative group2Count
+    const negativeGroup2Result = await db
+      .update(sandwichCollections)
+      .set({ group2Count: 0 })
+      .where(sql`${sandwichCollections.group2Count} < 0`);
+    fixedCount += negativeGroup2Result.rowCount || 0;
+
+    // Fix 4: Empty or whitespace-only hostNames (bulk update)
+    const emptyHostResult = await db
+      .update(sandwichCollections)
+      .set({ hostName: 'Unknown Host' })
+      .where(sql`${sandwichCollections.hostName} IS NULL OR TRIM(${sandwichCollections.hostName}) = ''`);
+    fixedCount += emptyHostResult.rowCount || 0;
+
+    // Fix 5: Process JSON validation in batches (can't do this in pure SQL easily)
+    const BATCH_SIZE = 500;
+    let offset = 0;
+    let hasMore = true;
+    const idsToFixJson: number[] = [];
+
+    while (hasMore) {
+      const batch = await db
+        .select({ id: sandwichCollections.id, groupCollections: sandwichCollections.groupCollections })
+        .from(sandwichCollections)
+        .limit(BATCH_SIZE)
+        .offset(offset);
+
+      if (batch.length < BATCH_SIZE) {
+        hasMore = false;
       }
-      
-      // Fix null group counts
-      if (collection.group1Count !== null && collection.group1Count < 0) {
-        updates.group1Count = 0;
-        needsUpdate = true;
-      }
-      
-      if (collection.group2Count !== null && collection.group2Count < 0) {
-        updates.group2Count = 0;
-        needsUpdate = true;
-      }
-      
-      // Fix empty or whitespace-only hostNames
-      if (!collection.hostName || collection.hostName.trim() === '') {
-        updates.hostName = 'Unknown Host';
-        needsUpdate = true;
-      }
-      
-      // Fix invalid dates
-      if (collection.collectionDate && isNaN(Date.parse(collection.collectionDate))) {
-        // If date is invalid, set to creation date or current date
-        updates.collectionDate = new Date().toISOString().split('T')[0];
-        needsUpdate = true;
-      }
-      
-      // Fix malformed groupCollections JSON
-      try {
+
+      for (const collection of batch) {
         if (typeof collection.groupCollections === 'string') {
-          JSON.parse(collection.groupCollections);
+          try {
+            JSON.parse(collection.groupCollections);
+          } catch (e) {
+            idsToFixJson.push(collection.id);
+          }
         }
-      } catch (e) {
-        updates.groupCollections = [];
-        needsUpdate = true;
       }
-      
-      if (needsUpdate) {
-        await db
-          .update(sandwichCollections)
-          .set(updates)
-          .where(eq(sandwichCollections.id, collection.id));
-        
-        fixedCount++;
-      }
+
+      offset += BATCH_SIZE;
     }
-    
+
+    // Batch update malformed JSON records
+    if (idsToFixJson.length > 0) {
+      await db
+        .update(sandwichCollections)
+        .set({ groupCollections: [] })
+        .where(inArray(sandwichCollections.id, idsToFixJson));
+      fixedCount += idsToFixJson.length;
+    }
+
+    // Get total count for reporting
+    const [totalResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(sandwichCollections);
+
     res.json({
       success: true,
       fixedCount,
-      totalChecked: allCollections.length,
-      message: `Fixed ${fixedCount} data corruption issue(s) out of ${allCollections.length} records checked`
+      totalChecked: Number(totalResult?.count || 0),
+      message: `Fixed ${fixedCount} data corruption issue(s)`
     });
   } catch (error) {
     logger.error('Fix data corruption failed:', error);
@@ -396,16 +448,19 @@ export function createDataManagementRouter(deps: RouterDependencies) {
 // ==========================================
 
 // Export all holding zone items with their categories, comments, likes, and assignments
+// Note: For exports, we need all data but add a safety limit to prevent memory issues
+const EXPORT_MAX_ITEMS = 10000;
+
 router.get('/export/holding-zone', async (req: any, res) => {
   try {
     const { format = 'json' } = req.query;
 
-    // Fetch all data
-    const items = await db.select().from(teamBoardItems).orderBy(desc(teamBoardItems.createdAt));
-    const categories = await db.select().from(holdingZoneCategories);
-    const comments = await db.select().from(teamBoardComments);
-    const likes = await db.select().from(teamBoardItemLikes);
-    const assignments = await db.select().from(teamBoardAssignments);
+    // Fetch data with safety limits for export
+    const items = await db.select().from(teamBoardItems).orderBy(desc(teamBoardItems.createdAt)).limit(EXPORT_MAX_ITEMS);
+    const categories = await db.select().from(holdingZoneCategories).limit(1000);
+    const comments = await db.select().from(teamBoardComments).limit(EXPORT_MAX_ITEMS);
+    const likes = await db.select().from(teamBoardItemLikes).limit(EXPORT_MAX_ITEMS);
+    const assignments = await db.select().from(teamBoardAssignments).limit(EXPORT_MAX_ITEMS);
 
     const backup = {
       exportDate: new Date().toISOString(),

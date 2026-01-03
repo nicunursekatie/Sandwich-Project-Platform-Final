@@ -1,8 +1,12 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { workLogs } from '@shared/schema';
 import { db } from '../db';
+
+// Default pagination limits
+const DEFAULT_LIMIT = 500;
+const MAX_LIMIT = 2000;
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   requirePermission,
@@ -59,13 +63,24 @@ router.get('/', async (req, res) => {
         .json({ error: 'Insufficient permissions to view work logs' });
     }
 
+    // Parse pagination parameters
+    const limit = Math.min(
+      parseInt(req.query.limit as string) || DEFAULT_LIMIT,
+      MAX_LIMIT
+    );
+    const offset = parseInt(req.query.offset as string) || 0;
+
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
     if (canViewAll || isAdmin) {
-      logger.log(`[WORK LOGS] ViewAll permission - fetching ALL logs`);
-      const logs = await db.select().from(workLogs);
+      logger.log(`[WORK LOGS] ViewAll permission - fetching logs with limit ${limit}, offset ${offset}`);
+      const logs = await db
+        .select()
+        .from(workLogs)
+        .orderBy(desc(workLogs.workDate))
+        .limit(limit)
+        .offset(offset);
       logger.log(
-        `[WORK LOGS] Found ${logs.length} total logs:`,
-        logs.map((l) => `${l.id}: ${l.userId}`)
+        `[WORK LOGS] Found ${logs.length} logs`
       );
       return res.json(logs);
     }
@@ -75,15 +90,17 @@ router.get('/', async (req, res) => {
     }
 
     logger.log(
-      `[WORK LOGS] Regular user access - fetching logs for ${userId}`
+      `[WORK LOGS] Regular user access - fetching logs for ${userId} with limit ${limit}`
     );
     const logs = await db
       .select()
       .from(workLogs)
-      .where(eq(workLogs.userId, userId));
+      .where(eq(workLogs.userId, userId))
+      .orderBy(desc(workLogs.workDate))
+      .limit(limit)
+      .offset(offset);
     logger.log(
-      `[WORK LOGS] Found ${logs.length} logs for user ${userId}:`,
-      logs.map((l) => `${l.id}: ${l.description.substring(0, 30)}`)
+      `[WORK LOGS] Found ${logs.length} logs for user ${userId}`
     );
     return res.json(logs);
   } catch (error) {

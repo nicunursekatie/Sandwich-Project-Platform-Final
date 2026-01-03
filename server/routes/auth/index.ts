@@ -19,6 +19,12 @@ import { logger } from '../../utils/production-safe-logger';
 import { isAuthenticated } from '../../middleware/auth';
 import { loginRateLimiter } from '../../middleware/rate-limiter';
 import type { AuthenticatedRequest, MaybeAuthenticatedRequest } from '../../types/express';
+import { db } from '../../db';
+import { passwordResetTokens } from '@shared/schema';
+import { eq, and, gt, isNull } from 'drizzle-orm';
+
+// Token expiration time: 1 hour
+const TOKEN_EXPIRY_MS = 60 * 60 * 1000;
 
 export function createAuthRouter() {
   const router = Router();
@@ -428,21 +434,16 @@ export function createAuthRouter() {
     }
   });
 
-  // Store initial password setup tokens temporarily (in production, use Redis or database)
-  const initialPasswordTokens = new Map<
-    string,
-    { userId: string; email: string; expires: number }
-  >();
-
-  // Clean up expired tokens periodically
-  setInterval(() => {
-    const now = Date.now();
-    initialPasswordTokens.forEach((data, token) => {
-      if (now > data.expires) {
-        initialPasswordTokens.delete(token);
-      }
-    });
-  }, 60000 * 60); // Clean up every hour
+  // Helper function to clean up expired tokens (run periodically during token operations)
+  async function cleanupExpiredTokens() {
+    try {
+      await db
+        .delete(passwordResetTokens)
+        .where(gt(new Date(), passwordResetTokens.expiresAt));
+    } catch (error) {
+      logger.error('Failed to cleanup expired tokens:', error);
+    }
+  }
 
   /**
    * POST /api/auth/request-initial-password
@@ -483,14 +484,19 @@ export function createAuthRouter() {
       // Generate secure token
       const crypto = await import('crypto');
       const setupToken = crypto.randomBytes(32).toString('hex');
-      const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+      const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS);
 
-      // Store token
-      initialPasswordTokens.set(setupToken, {
+      // Store token in database
+      await db.insert(passwordResetTokens).values({
+        token: setupToken,
         userId: user.id,
         email: user.email,
-        expires,
+        tokenType: 'initial_setup',
+        expiresAt,
       });
+
+      // Clean up old expired tokens periodically (non-blocking)
+      cleanupExpiredTokens().catch(() => {});
 
       // Send password setup email
       try {
@@ -595,7 +601,7 @@ Fighting food insecurity one sandwich at a time
 🔧 DEVELOPMENT FALLBACK - Email failed, but setup link available:
 📧 Email: ${email}
 🔗 Setup Link: ${req.protocol}://${req.get('host') || 'localhost:5000'}/set-password?token=${setupToken}
-⏰ Expires: ${new Date(expires).toLocaleString()}
+⏰ Expires: ${expiresAt.toLocaleString()}
           `);
         }
       }
@@ -649,9 +655,21 @@ Fighting food insecurity one sandwich at a time
         });
       }
 
-      // Check if token exists and is valid
-      const tokenData = initialPasswordTokens.get(token);
-      if (!tokenData || Date.now() > tokenData.expires) {
+      // Check if token exists and is valid (not expired, not used)
+      const [tokenData] = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.tokenType, 'initial_setup'),
+            gt(passwordResetTokens.expiresAt, new Date()),
+            isNull(passwordResetTokens.usedAt)
+          )
+        )
+        .limit(1);
+
+      if (!tokenData) {
         return res.status(400).json({
           success: false,
           message: 'Invalid or expired setup token. Please request a new password setup link.',
@@ -661,7 +679,11 @@ Fighting food insecurity one sandwich at a time
       // Get user and verify they still need password setup
       const user = await storage.getUserById(tokenData.userId);
       if (!user) {
-        initialPasswordTokens.delete(token);
+        // Mark token as used even if user not found
+        await db
+          .update(passwordResetTokens)
+          .set({ usedAt: new Date() })
+          .where(eq(passwordResetTokens.id, tokenData.id));
         return res.status(400).json({
           success: false,
           message: 'User not found',
@@ -670,7 +692,10 @@ Fighting food insecurity one sandwich at a time
 
       // Verify that this user still needs password setup (may have been set already)
       if (!user.needsPasswordSetup) {
-        initialPasswordTokens.delete(token);
+        await db
+          .update(passwordResetTokens)
+          .set({ usedAt: new Date() })
+          .where(eq(passwordResetTokens.id, tokenData.id));
         return res.status(400).json({
           success: false,
           message: 'This account already has a password. Use forgot password to reset it.',
@@ -686,8 +711,11 @@ Fighting food insecurity one sandwich at a time
         needsPasswordSetup: false,
       });
 
-      // Remove used token
-      initialPasswordTokens.delete(token);
+      // Mark token as used
+      await db
+        .update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(passwordResetTokens.id, tokenData.id));
 
       logger.log(`✅ Initial password set for user: ${user.email}`);
 
@@ -708,12 +736,24 @@ Fighting food insecurity one sandwich at a time
    * GET /api/auth/verify-initial-password-token/:token
    * Verify if an initial password setup token is valid (for frontend to check)
    */
-  router.get('/verify-initial-password-token/:token', (req: MaybeAuthenticatedRequest, res: Response) => {
+  router.get('/verify-initial-password-token/:token', async (req: MaybeAuthenticatedRequest, res: Response) => {
     try {
       const { token } = req.params;
-      const tokenData = initialPasswordTokens.get(token);
 
-      if (!tokenData || Date.now() > tokenData.expires) {
+      const [tokenData] = await db
+        .select()
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.tokenType, 'initial_setup'),
+            gt(passwordResetTokens.expiresAt, new Date()),
+            isNull(passwordResetTokens.usedAt)
+          )
+        )
+        .limit(1);
+
+      if (!tokenData) {
         return res.status(400).json({
           valid: false,
           message: 'Invalid or expired setup token',

@@ -6,26 +6,27 @@ import sgMail from '@sendgrid/mail';
 import { authService } from '../services/auth.service';
 import { logger } from '../utils/production-safe-logger';
 import { passwordResetRateLimiter } from '../middleware/rate-limiter';
+import { db } from '../db';
+import { passwordResetTokens } from '@shared/schema';
+import { eq, and, gt, isNull } from 'drizzle-orm';
 
-// Store password reset tokens temporarily (in production, use Redis or database)
-const resetTokens = new Map<
-  string,
-  { userId: string; email: string; expires: number }
->();
-
-// Clean up expired tokens periodically
-setInterval(() => {
-  const now = Date.now();
-  resetTokens.forEach((data, token) => {
-    if (now > data.expires) {
-      resetTokens.delete(token);
-    }
-  });
-}, 60000 * 60); // Clean up every hour
+// Token expiration time: 1 hour
+const TOKEN_EXPIRY_MS = 60 * 60 * 1000;
 
 export function createPasswordResetRouter(deps: RouterDependencies) {
   const router = Router();
   const { storage } = deps;
+
+  // Helper function to clean up expired tokens (run periodically or on token operations)
+  async function cleanupExpiredTokens() {
+    try {
+      await db
+        .delete(passwordResetTokens)
+        .where(gt(new Date(), passwordResetTokens.expiresAt));
+    } catch (error) {
+      logger.error('Failed to cleanup expired tokens:', error);
+    }
+  }
 
 // Request password reset
   router.post('/forgot-password', passwordResetRateLimiter, async (req, res) => {
@@ -49,14 +50,19 @@ export function createPasswordResetRouter(deps: RouterDependencies) {
 
     // Generate secure reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expires = Date.now() + 60 * 60 * 1000; // 1 hour
+    const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MS);
 
-    // Store token
-    resetTokens.set(resetToken, {
+    // Store token in database
+    await db.insert(passwordResetTokens).values({
+      token: resetToken,
       userId: user.id!,
       email: user.email,
-      expires,
+      tokenType: 'reset',
+      expiresAt,
     });
+
+    // Clean up old expired tokens periodically (non-blocking)
+    cleanupExpiredTokens().catch(() => {});
 
     // Send password reset email
     try {
@@ -113,39 +119,39 @@ export function createPasswordResetRouter(deps: RouterDependencies) {
                 <h1 style="color: #236383; margin: 0; font-size: 28px;">The Sandwich Project</h1>
                 <p style="color: #666; margin: 10px 0 0 0;">Volunteer Management Platform</p>
               </div>
-              
+
               <h2 style="color: #333; margin-bottom: 20px;">Password Reset Request</h2>
-              
+
               <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
-                We received a request to reset the password for your account. If you made this request, 
+                We received a request to reset the password for your account. If you made this request,
                 click the button below to set a new password:
               </p>
-              
+
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetLink}" 
-                   style="background-color: #236383; color: white; padding: 15px 30px; text-decoration: none; 
-                          border-radius: 8px; font-weight: bold; display: inline-block; 
+                <a href="${resetLink}"
+                   style="background-color: #236383; color: white; padding: 15px 30px; text-decoration: none;
+                          border-radius: 8px; font-weight: bold; display: inline-block;
                           transition: background-color 0.3s;">
                   Reset Your Password
                 </a>
               </div>
-              
+
               <p style="color: #555; line-height: 1.6; margin-bottom: 15px;">
                 This link will expire in 1 hour for security reasons.
               </p>
-              
+
               <p style="color: #555; line-height: 1.6; margin-bottom: 20px;">
-                If you didn't request this password reset, please ignore this email. 
+                If you didn't request this password reset, please ignore this email.
                 Your account remains secure and no changes have been made.
               </p>
-              
+
               <div style="border-top: 1px solid #eee; padding-top: 20px; margin-top: 30px;">
                 <p style="color: #888; font-size: 14px; margin: 0;">
                   If the button doesn't work, copy and paste this link into your browser:<br>
                   <a href="${resetLink}" style="color: #236383; word-break: break-all;">${resetLink}</a>
                 </p>
               </div>
-              
+
               <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
                 <p style="color: #888; font-size: 12px; margin: 0 0 10px 0;">
                   The Sandwich Project<br>
@@ -190,7 +196,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 🔗 Reset Link: ${req.protocol}://${
           req.get('host') || 'localhost:5000'
         }/reset-password?token=${resetToken}
-⏰ Expires: ${new Date(expires).toLocaleString()}
+⏰ Expires: ${expiresAt.toLocaleString()}
         `);
       }
     }
@@ -231,9 +237,21 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 
     const { token, newPassword } = schema.parse(req.body);
 
-    // Check if token exists and is valid
-    const tokenData = resetTokens.get(token);
-    if (!tokenData || Date.now() > tokenData.expires) {
+    // Check if token exists and is valid (not expired, not used)
+    const [tokenData] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          eq(passwordResetTokens.tokenType, 'reset'),
+          gt(passwordResetTokens.expiresAt, new Date()),
+          isNull(passwordResetTokens.usedAt)
+        )
+      )
+      .limit(1);
+
+    if (!tokenData) {
       return res.status(400).json({
         success: false,
         message:
@@ -244,7 +262,11 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
     // Get user and update password
     const user = await storage.getUserById(tokenData.userId);
     if (!user) {
-      resetTokens.delete(token);
+      // Mark token as used even if user not found
+      await db
+        .update(passwordResetTokens)
+        .set({ usedAt: new Date() })
+        .where(eq(passwordResetTokens.id, tokenData.id));
       return res.status(400).json({
         success: false,
         message: 'User not found',
@@ -257,8 +279,11 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
       password: hashedPassword,
     });
 
-    // Remove used token
-    resetTokens.delete(token);
+    // Mark token as used
+    await db
+      .update(passwordResetTokens)
+      .set({ usedAt: new Date() })
+      .where(eq(passwordResetTokens.id, tokenData.id));
 
     logger.log(`Password reset successful for user: ${user.email}`);
 
@@ -284,23 +309,42 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
 });
 
 // Verify reset token (for frontend to check if token is valid)
-  router.get('/verify-reset-token/:token', (req, res) => {
-  const { token } = req.params;
-  const tokenData = resetTokens.get(token);
+  router.get('/verify-reset-token/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
 
-  if (!tokenData || Date.now() > tokenData.expires) {
-    return res.status(400).json({
+    const [tokenData] = await db
+      .select()
+      .from(passwordResetTokens)
+      .where(
+        and(
+          eq(passwordResetTokens.token, token),
+          eq(passwordResetTokens.tokenType, 'reset'),
+          gt(passwordResetTokens.expiresAt, new Date()),
+          isNull(passwordResetTokens.usedAt)
+        )
+      )
+      .limit(1);
+
+    if (!tokenData) {
+      return res.status(400).json({
+        valid: false,
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    res.json({
+      valid: true,
+      email: tokenData.email,
+    });
+  } catch (error) {
+    logger.error('Verify token error:', error);
+    res.status(500).json({
       valid: false,
-      message: 'Invalid or expired reset token',
+      message: 'Error verifying token',
     });
   }
-
-  res.json({
-    valid: true,
-    email: tokenData.email,
-  });
 });
 
   return router;
 }
-

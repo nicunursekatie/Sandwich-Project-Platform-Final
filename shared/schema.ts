@@ -56,6 +56,25 @@ export const users = pgTable('users', {
   passwordBackup20241023: text('password_backup_20241023'),
 });
 
+// Password reset/setup tokens table - replaces in-memory storage for scalability
+export const passwordResetTokens = pgTable(
+  'password_reset_tokens',
+  {
+    id: serial('id').primaryKey(),
+    token: varchar('token', { length: 64 }).notNull().unique(),
+    userId: varchar('user_id').notNull(),
+    email: varchar('email').notNull(),
+    tokenType: varchar('token_type', { length: 20 }).notNull().default('reset'), // 'reset' or 'initial_setup'
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_password_reset_tokens_token').on(table.token),
+    index('idx_password_reset_tokens_expires').on(table.expiresAt),
+  ]
+);
+
 // Audit logging table for tracking all data changes
 export const auditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
