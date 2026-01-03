@@ -35,6 +35,14 @@ import {
   Users,
   MessageSquare,
   Edit,
+  User,
+  Calendar,
+  MapPin,
+  Sandwich,
+  Car,
+  FileText,
+  CheckCircle2,
+  Package,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
@@ -907,6 +915,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     };
   }, [isCollaborationEnabled, collaboration, currentUser]);
 
+  // Section completion tracking for progress indicator
+  const sectionStatus = {
+    contact: !!(formData.firstName || formData.lastName || formData.email || formData.phone),
+    schedule: !!(formData.eventDate),
+    delivery: !!(formData.eventAddress || formData.assignedRecipientIds.length > 0),
+    sandwiches: !!(formData.totalSandwichCount > 0 || formData.sandwichTypes.length > 0 || formData.estimatedSandwichCountMin > 0),
+    resources: !!(formData.driversNeeded > 0 || formData.speakersNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
+    notes: !!(formData.schedulingNotes || formData.planningNotes || formData.nextAction),
+  };
+  const completedSections = Object.values(sectionStatus).filter(Boolean).length;
+  const totalSections = Object.keys(sectionStatus).length;
+
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -926,19 +946,35 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Progress Indicator */}
+        <div className="bg-slate-50 rounded-lg p-3 border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-[#236383]">Form Progress</span>
+            <span className="text-sm text-gray-600">{completedSections} of {totalSections} sections</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-[#47B3CB] h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(completedSections / totalSections) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Contact Information Section - Collapsible */}
-          <div className="border rounded-lg">
+          <div className="border rounded-lg overflow-hidden">
             <Button
               type="button"
               variant="ghost"
-              className="w-full flex justify-between items-center p-4"
+              className="w-full flex justify-between items-center p-4 bg-[#e6f2f5] hover:bg-[#d4e8ed]"
               onClick={() => setShowContactInfo(!showContactInfo)}
             >
-              <span className="font-semibold">
-                Primary Contact Information (Editable)
-              </span>
-              <ChevronDown className={`w-4 h-4 transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5 text-[#236383]" />
+                <span className="font-semibold text-[#236383]">Primary Contact Information</span>
+                {sectionStatus.contact && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[#236383] transition-transform ${showContactInfo ? 'rotate-180' : ''}`} />
             </Button>
             
             {showContactInfo && (
@@ -1190,8 +1226,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Event Schedule */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold">Event Schedule</Label>
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <Calendar className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Event Schedule</span>
+              {sectionStatus.schedule && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
 
             {/* Conflict Warnings */}
             <EventConflictWarnings
@@ -1497,8 +1537,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Sandwich Planning */}
-          <div className="space-y-4">
-            <Label>Sandwich Planning</Label>
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <Sandwich className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Sandwich Planning</span>
+              {sectionStatus.sandwiches && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
             
             {/* Mode Selector */}
             <div className="flex gap-2">
@@ -1777,8 +1821,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Resource Requirements */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Drivers */}
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <Car className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Resource Requirements</span>
+              {sectionStatus.resources && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Drivers */}
             <div className="space-y-3">
               <Label>Driver Requirements</Label>
               <div className="space-y-2">
@@ -1936,6 +1986,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 </div>
               </div>
             </div>
+            </div>
           </div>
           {/* TSP Contact Assignment */}
           <div>
@@ -2073,10 +2124,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           )}
 
           {/* Notes & Requirements Section */}
-          <div className="space-y-4">
+          <div className="space-y-4 border rounded-lg p-4 bg-white">
+            <div className="flex items-center gap-3 pb-2 border-b">
+              <FileText className="w-5 h-5 text-[#236383]" />
+              <span className="text-lg font-semibold text-[#236383]">Notes & Requirements</span>
+              {sectionStatus.notes && <CheckCircle2 className="w-4 h-4 text-green-600" />}
+            </div>
             <div>
-              <h3 className="text-lg font-semibold text-[#47B3CB] mb-4">Notes & Requirements</h3>
-              
               {/* Initial Request Message */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
