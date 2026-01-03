@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { eq, desc, inArray } from 'drizzle-orm';
+import { eq, desc, inArray, or, sql } from 'drizzle-orm';
 import type { RouterDependencies } from '../types';
 import type { AuthenticatedRequest } from '../types/express';
 import { drivers, insertDriverSchema, type Driver } from '@shared/schema';
@@ -179,19 +179,36 @@ export function createDriversRouter(deps: RouterDependencies) {
       const { db } = await import('../db');
       const { driverAgreements } = await import('@shared/schema');
       
-      // Get emails of all drivers to filter agreements
+      // Get emails of all drivers (keep original casing)
       const driverEmails = drivers
-        .map(d => d.email?.toLowerCase())
-        .filter((email): email is string => !!email);
+        .map(d => d.email)
+        .filter((email): email is string => !!email && email.trim() !== '');
       
-      // Query agreements filtered to exported drivers, ordered by most recent first
-      // This ensures we get agreements for all drivers in the export
-      const agreements = driverEmails.length > 0
-        ? await db.select()
+      // Query agreements filtered to exported drivers using case-insensitive matching
+      // Handle large lists by chunking if needed (PostgreSQL limit ~32767 parameters)
+      let agreements: any[] = [];
+      
+      if (driverEmails.length > 0) {
+        const CHUNK_SIZE = 1000; // Safe chunk size for inArray queries
+        
+        if (driverEmails.length <= CHUNK_SIZE) {
+          // Single query for smaller lists
+          agreements = await db.select()
             .from(driverAgreements)
-            .where(inArray(driverAgreements.email, driverEmails))
-            .orderBy(desc(driverAgreements.submittedAt))
-        : [];
+            .where(sql`LOWER(${driverAgreements.email}) IN (${sql.join(driverEmails.map(e => sql`LOWER(${e})`), sql`, `)})`)
+            .orderBy(desc(driverAgreements.submittedAt));
+        } else {
+          // Chunk for larger lists
+          for (let i = 0; i < driverEmails.length; i += CHUNK_SIZE) {
+            const chunk = driverEmails.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await db.select()
+              .from(driverAgreements)
+              .where(sql`LOWER(${driverAgreements.email}) IN (${sql.join(chunk.map(e => sql`LOWER(${e})`), sql`, `)})`)
+              .orderBy(desc(driverAgreements.submittedAt));
+            agreements.push(...chunkResults);
+          }
+        }
+      }
       
       // Log if we're processing a large number of agreements
       if (agreements.length > 0) {
