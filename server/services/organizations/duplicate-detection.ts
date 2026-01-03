@@ -273,3 +273,135 @@ export async function getOrganizationDetails(orgName: string) {
     throw error;
   }
 }
+
+/**
+ * Check if an organization is returning (has past events or exists in catalog)
+ *
+ * This is used to flag new requests from organizations that have worked with us before,
+ * so the intake team can personalize their outreach instead of sending generic first-time emails.
+ *
+ * @param orgName - Organization name to check
+ * @param currentEventId - Optional current event request ID to exclude from counts
+ * @returns Object with returning status, past event count, and most recent event info
+ */
+export async function checkReturningOrganization(
+  orgName: string,
+  currentEventId?: number
+): Promise<{
+  isReturning: boolean;
+  inCatalog: boolean;
+  pastEventCount: number;
+  collectionCount: number;
+  mostRecentEvent?: {
+    id: number;
+    eventDate: Date | null;
+    status: string | null;
+  };
+  mostRecentCollection?: {
+    id: number;
+    dateCollected: Date | null;
+  };
+  similarNames?: string[];
+}> {
+  try {
+    const canonicalName = canonicalizeOrgName(orgName);
+
+    // Check for exact matches and similar names in past events
+    // Exclude the current event request if provided
+    const eventCondition = currentEventId
+      ? sql`${eventRequests.organizationName} IS NOT NULL
+            AND ${eventRequests.organizationName} != ''
+            AND ${eventRequests.id} != ${currentEventId}`
+      : sql`${eventRequests.organizationName} IS NOT NULL
+            AND ${eventRequests.organizationName} != ''`;
+
+    const pastEvents = await db
+      .select({
+        id: eventRequests.id,
+        organizationName: eventRequests.organizationName,
+        eventDate: eventRequests.eventDate,
+        scheduledEventDate: eventRequests.scheduledEventDate,
+        status: eventRequests.status,
+      })
+      .from(eventRequests)
+      .where(eventCondition)
+      .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.eventDate}) DESC`);
+
+    // Find events with matching or similar organization names
+    const matchingEvents: typeof pastEvents = [];
+    const similarNames = new Set<string>();
+
+    for (const event of pastEvents) {
+      if (!event.organizationName) continue;
+
+      const eventCanonical = canonicalizeOrgName(event.organizationName);
+      const similarity = calculateSimilarity(canonicalName, eventCanonical);
+
+      // Include exact matches and high similarity matches (>0.85)
+      if (similarity > 0.85 || event.organizationName.toLowerCase() === orgName.toLowerCase()) {
+        matchingEvents.push(event);
+        if (event.organizationName.toLowerCase() !== orgName.toLowerCase()) {
+          similarNames.add(event.organizationName);
+        }
+      }
+    }
+
+    // Check sandwich collections for matching organization
+    const collections = await db
+      .select({
+        id: sandwichCollections.id,
+        dateCollected: sandwichCollections.dateCollected,
+        group1Name: sandwichCollections.group1Name,
+        group2Name: sandwichCollections.group2Name,
+      })
+      .from(sandwichCollections)
+      .orderBy(sql`${sandwichCollections.dateCollected} DESC`);
+
+    // Find collections with matching organization names
+    const matchingCollections: typeof collections = [];
+
+    for (const collection of collections) {
+      const group1Canonical = collection.group1Name ? canonicalizeOrgName(collection.group1Name) : '';
+      const group2Canonical = collection.group2Name ? canonicalizeOrgName(collection.group2Name) : '';
+
+      const similarity1 = group1Canonical ? calculateSimilarity(canonicalName, group1Canonical) : 0;
+      const similarity2 = group2Canonical ? calculateSimilarity(canonicalName, group2Canonical) : 0;
+
+      if (similarity1 > 0.85 || similarity2 > 0.85 ||
+          (collection.group1Name && collection.group1Name.toLowerCase() === orgName.toLowerCase()) ||
+          (collection.group2Name && collection.group2Name.toLowerCase() === orgName.toLowerCase())) {
+        matchingCollections.push(collection);
+        if (collection.group1Name && collection.group1Name.toLowerCase() !== orgName.toLowerCase() && similarity1 > 0.85) {
+          similarNames.add(collection.group1Name);
+        }
+        if (collection.group2Name && collection.group2Name.toLowerCase() !== orgName.toLowerCase() && similarity2 > 0.85) {
+          similarNames.add(collection.group2Name);
+        }
+      }
+    }
+
+    const isReturning = matchingEvents.length > 0 || matchingCollections.length > 0;
+    const mostRecentEvent = matchingEvents[0];
+    const mostRecentCollection = matchingCollections[0];
+
+    return {
+      isReturning,
+      inCatalog: false, // TODO: Check organizations table when properly implemented
+      pastEventCount: matchingEvents.length,
+      collectionCount: matchingCollections.length,
+      mostRecentEvent: mostRecentEvent ? {
+        id: mostRecentEvent.id,
+        eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.eventDate,
+        status: mostRecentEvent.status,
+      } : undefined,
+      mostRecentCollection: mostRecentCollection ? {
+        id: mostRecentCollection.id,
+        dateCollected: mostRecentCollection.dateCollected,
+      } : undefined,
+      similarNames: similarNames.size > 0 ? Array.from(similarNames).slice(0, 5) : undefined,
+    };
+  } catch (error) {
+    logger.error('Error checking returning organization', { orgName, currentEventId, error });
+    throw error;
+  }
+}

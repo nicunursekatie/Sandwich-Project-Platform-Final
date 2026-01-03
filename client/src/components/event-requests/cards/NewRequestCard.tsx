@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
+import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import {
   MessageSquare,
   Sparkles,
   CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -166,6 +168,17 @@ interface CardHeaderProps {
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
   datePopulationInfo?: DatePopulationInfo;
+  returningOrgData?: {
+    isReturning: boolean;
+    pastEventCount: number;
+    collectionCount: number;
+    mostRecentEvent?: {
+      id: number;
+      eventDate: string | null;
+      status: string | null;
+    };
+    similarNames?: string[];
+  };
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -183,6 +196,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   presentUsers = [],
   currentUserId = '',
   datePopulationInfo,
+  returningOrgData,
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -267,6 +281,56 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
+            {/* Returning Organization Indicator */}
+            {returningOrgData?.isReturning && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className="bg-purple-50 text-purple-700 border-purple-300 whitespace-nowrap cursor-help"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Returning Org
+                    {returningOrgData.pastEventCount > 0 && (
+                      <span className="ml-1 text-xs opacity-80">
+                        ({returningOrgData.pastEventCount} past event{returningOrgData.pastEventCount !== 1 ? 's' : ''})
+                      </span>
+                    )}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="font-medium">This organization has worked with us before!</p>
+                    {returningOrgData.pastEventCount > 0 && (
+                      <p className="text-sm">
+                        {returningOrgData.pastEventCount} previous event{returningOrgData.pastEventCount !== 1 ? 's' : ''} on file
+                      </p>
+                    )}
+                    {returningOrgData.collectionCount > 0 && (
+                      <p className="text-sm">
+                        {returningOrgData.collectionCount} sandwich collection{returningOrgData.collectionCount !== 1 ? 's' : ''} recorded
+                      </p>
+                    )}
+                    {returningOrgData.mostRecentEvent && (
+                      <p className="text-xs text-muted-foreground">
+                        Most recent: {returningOrgData.mostRecentEvent.eventDate
+                          ? new Date(returningOrgData.mostRecentEvent.eventDate).toLocaleDateString()
+                          : 'Date unknown'}
+                        {returningOrgData.mostRecentEvent.status && ` (${returningOrgData.mostRecentEvent.status})`}
+                      </p>
+                    )}
+                    {returningOrgData.similarNames && returningOrgData.similarNames.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Similar names: {returningOrgData.similarNames.slice(0, 3).join(', ')}
+                      </p>
+                    )}
+                    <p className="text-xs text-purple-600 font-medium mt-2">
+                      Personalize your outreach - don't send a generic first-time email!
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {/* Partner Organizations */}
             {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
               <div className="text-sm text-gray-600 mt-1">
@@ -612,6 +676,13 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
 
+  // Check if this organization is returning (has past events)
+  const { data: returningOrgData } = useReturningOrganization(
+    request.organizationName,
+    request.id,
+    request.status === 'new' // Only check for new requests
+  );
+
   // Date population hook - to show warnings for busy dates
   const { getDatePopulation } = useDatePopulation();
   const displayDate = request.scheduledEventDate || request.desiredEventDate;
@@ -680,6 +751,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           presentUsers={collaboration.presentUsers}
           currentUserId={user?.id}
           datePopulationInfo={datePopulationInfo}
+          returningOrgData={returningOrgData}
         />
 
         {/* Next Action - Prominent display for intake tracking */}
