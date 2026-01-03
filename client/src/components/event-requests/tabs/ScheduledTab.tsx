@@ -344,7 +344,7 @@ export const ScheduledTab: React.FC = () => {
       };
 
       // Check if this is a critical field that requires confirmation
-      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'volunteersNeeded'];
+      const criticalFields = ['eventStartTime', 'eventEndTime', 'pickupTime', 'pickupDateTime', 'overnightPickupTime', 'eventAddress', 'overnightHoldingLocation', 'deliveryDestination', 'hasRefrigeration', 'driversNeeded', 'volunteersNeeded'];
 
       if (criticalFields.includes(editingField)) {
         const fieldName = editingField.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
@@ -376,6 +376,15 @@ export const ScheduledTab: React.FC = () => {
     setInlineSandwichMode('total');
     setInlineTotalCount(0);
     setInlineSandwichTypes([]);
+  };
+
+  // Batch save function for saving multiple time fields at once (used by TimeDialogContent)
+  const saveTimes = (requestId: number, data: { eventStartTime?: string; eventEndTime?: string; pickupDateTime?: string }) => {
+    updateEventRequestMutation.mutate({
+      id: requestId,
+      data,
+    });
+    cancelEdit();
   };
 
   const addInlineSandwichType = () => {
@@ -587,6 +596,7 @@ export const ScheduledTab: React.FC = () => {
                 saveEdit={saveEdit}
                 cancelEdit={cancelEdit}
                 setEditingValue={setEditingValue}
+                saveTimes={(data) => saveTimes(request.id, data)}
                 tempIsConfirmed={tempIsConfirmed}
                 setTempIsConfirmed={setTempIsConfirmed}
                 quickToggleBoolean={(field, value) => quickToggleBoolean(request.id, field, value)}

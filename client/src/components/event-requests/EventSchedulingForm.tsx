@@ -1408,12 +1408,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   min={formData.pickupDate === formData.eventDate && formData.eventEndTime ? formData.eventEndTime : undefined}
                   data-testid="pickup-time-input"
                 />
-                {formData.pickupDate === formData.eventDate && 
-                 formData.eventEndTime && 
-                 formData.pickupTimeSeparate && 
-                 formData.pickupTimeSeparate <= formData.eventEndTime && (
-                  <p className="text-xs text-red-600 mt-1">
-                    Pickup time should be after event end time ({formData.eventEndTime})
+                {formData.pickupDate === formData.eventDate &&
+                 formData.eventEndTime &&
+                 formData.pickupTimeSeparate &&
+                 formData.pickupTimeSeparate < formData.eventEndTime && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Note: Pickup time is before event ends ({formData.eventEndTime})
                   </p>
                 )}
               </div>
