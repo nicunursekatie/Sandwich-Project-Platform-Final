@@ -4514,18 +4514,18 @@ export default function DriverPlanningDashboard() {
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                         <Truck className="w-4 h-4 text-yellow-600" />
-                        Suggested Drivers ({nearbyDriversFiltered.length})
+                        Suggested Drivers ({nearbyDrivers.length})
                       </h3>
-                      {nearbyDriversFiltered.length > 0 ? (
+                      {nearbyDrivers.length > 0 ? (
                         <div className="space-y-2">
-                          {nearbyDriversFiltered.slice(0, 5).map((driver) => (
+                          {nearbyDrivers.slice(0, 5).map(({ driver, distance }) => (
                             <div
                               key={driver.id}
                               className="w-full text-left text-sm p-3 border rounded-lg bg-yellow-50 border-yellow-200"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="font-medium break-words">{driver.firstName} {driver.lastName}</span>
-                                <span className="text-yellow-700 flex-shrink-0 ml-2">{driver.distance.toFixed(1)} mi</span>
+                                <span className="font-medium break-words">{driver.name}</span>
+                                <span className="text-yellow-700 flex-shrink-0 ml-2">{distance.toFixed(1)} mi</span>
                               </div>
                               <div className="flex items-center gap-2 mt-2">
                                 <Button
