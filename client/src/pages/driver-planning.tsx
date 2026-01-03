@@ -5,7 +5,7 @@ import { useLocation } from 'wouter';
 
 import {
   MapPin, Calendar, Package, Phone, AlertCircle,
-  ChevronRight, RefreshCw, Clock, Truck,
+  ChevronRight, ChevronLeft, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
   ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink,
   Navigation, Home, Target, User, Megaphone
@@ -3956,7 +3956,9 @@ export default function DriverPlanningDashboard() {
                   eventHandlers={{
                     click: () => {
                       setSelectedEvent(event);
-                      setMobilePanel('details');
+                      // Expand events list to show details (don't use Sheet overlay)
+                      setMobileEventsCollapsed(false);
+                      setMobileFullscreenMap(false);
                     }
                   }}
                 >
@@ -4170,7 +4172,11 @@ export default function DriverPlanningDashboard() {
                 <Button
                   size="sm"
                   className="h-9 px-3"
-                  onClick={() => setMobilePanel('details')}
+                  onClick={() => {
+                    // Exit fullscreen and show event details inline
+                    setMobileFullscreenMap(false);
+                    setMobileEventsCollapsed(false);
+                  }}
                   data-testid="btn-view-event-details"
                 >
                   Details
@@ -4191,17 +4197,26 @@ export default function DriverPlanningDashboard() {
               onClick={() => setMobileEventsCollapsed(!mobileEventsCollapsed)}
               data-testid="btn-toggle-events-panel"
             >
-              <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-[#007E8C]" />
-                <span className="font-semibold text-sm">Events ({events.length}{showOnlyUnmetStaffing ? `/${upcomingEvents.length}` : ''})</span>
-                {selectedEvent && mobileEventsCollapsed && (
-                  <Badge variant="outline" className="text-[10px]">
-                    {selectedEvent.organizationName?.substring(0, 15)}...
-                  </Badge>
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {selectedEvent ? (
+                  <>
+                    <Users className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
+                    <span className="font-semibold text-sm truncate">
+                      {mobileEventsCollapsed
+                        ? (selectedEvent.organizationName?.substring(0, 20) || 'Event Details') + '...'
+                        : 'Event Details'
+                      }
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
+                    <span className="font-semibold text-sm">Events ({events.length}{showOnlyUnmetStaffing ? `/${upcomingEvents.length}` : ''})</span>
+                  </>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                {!mobileEventsCollapsed && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!mobileEventsCollapsed && !selectedEvent && (
                   <Select value={weeksAhead} onValueChange={setWeeksAhead}>
                     <SelectTrigger className="w-28 h-7 text-xs" onClick={(e) => e.stopPropagation()}>
                       <SelectValue />
@@ -4223,8 +4238,8 @@ export default function DriverPlanningDashboard() {
               </div>
             </button>
 
-            {/* Filter Toggles */}
-            {!mobileEventsCollapsed && (
+            {/* Filter Toggles - Only show when viewing events list (not event details) */}
+            {!mobileEventsCollapsed && !selectedEvent && (
               <div className="px-3 py-2 border-b bg-gray-50 space-y-2">
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <input
@@ -4247,137 +4262,427 @@ export default function DriverPlanningDashboard() {
               </div>
             )}
 
-            {/* Events List Content */}
+            {/* Mobile Content Area - Either Events List OR Event Details */}
             {!mobileEventsCollapsed && (
               <ScrollArea className="flex-1">
-                <div className="p-3 space-y-2">
-                  {events.map((event) => {
-                    const isSelected = selectedEvent?.id === event.id;
-                    const eventDate = event.scheduledEventDate || event.desiredEventDate;
-                    const driversAssigned = getDriverCount(event);
-                    const driversTentative = event.tentativeDriverIds?.length || 0;
-                    const driversNeeded = event.driversNeeded || 0;
-                    const speakersNeeded = event.speakersNeeded || 0;
-                    const speakersAssigned = getSpeakerCount(event);
-                    const volunteersNeeded = event.volunteersNeeded || 0;
-                    const volunteersAssigned = getVolunteerCount(event);
-                    // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
-                    const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
-
-                    return (
-                      <Card
-                        key={event.id}
-                        className={`p-3 cursor-pointer transition-all active:scale-[0.98] ${
-                          isSelected
-                            ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
-                            : 'hover:shadow-md active:bg-gray-50'
-                        }`}
+                {/* Event Details View - When an event is selected */}
+                {selectedEvent ? (
+                  <div className="p-3 space-y-4">
+                    {/* Back Button & Header */}
+                    <div className="flex items-center gap-3 pb-2 border-b">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-2"
                         onClick={() => {
-                          setSelectedEvent(isSelected ? null : event);
+                          setSelectedEvent(null);
                           setShowAllHosts(false);
                           setShowAllRecipients(false);
-                          if (!isSelected) {
-                            setMobilePanel('details');
-                          }
                         }}
-                        data-testid={`event-card-${event.id}`}
                       >
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
-                              {event.organizationName || 'Unknown Organization'}
-                            </h3>
-                            <ChevronRight className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-700">
-                            <Calendar className="w-4 h-4 flex-shrink-0" />
-                            <span className="font-medium">
-                              {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
-                            </span>
-                            {event.eventStartTime && (
-                              <span className="text-gray-500">
-                                at {formatTime12Hour(event.eventStartTime)}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <MapPin className="w-4 h-4 flex-shrink-0" />
-                            <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {event.selfTransport ? (
-                              <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                                Self-transport
-                              </Badge>
-                            ) : hasDriverRequirement ? (
-                              <Badge
-                                variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
-                                className="text-xs px-2 py-0.5"
-                              >
-                                <Truck className="w-3.5 h-3.5 mr-1" />
-                                {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                                {event.vanDriverNeeded && (
-                                  event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van' : ' + Van needed')
-                                )}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-400">
-                                No driver requirement
-                              </Badge>
-                            )}
-                            {/* Speakers - only show if needed > 0 */}
-                            {speakersNeeded > 0 && (
-                              <Badge
-                                variant={speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
-                                className="text-xs px-2 py-0.5"
-                                title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                              >
-                                <Megaphone className="w-3.5 h-3.5 mr-1" />
-                                {`${speakersAssigned}/${speakersNeeded} spk`}
-                              </Badge>
-                            )}
-                            {/* Volunteers - only show if needed > 0 */}
-                            {volunteersNeeded > 0 && (
-                              <Badge
-                                variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
-                                className="text-xs px-2 py-0.5"
-                                title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
-                              >
-                                <Users className="w-3.5 h-3.5 mr-1" />
-                                {`${volunteersAssigned}/${volunteersNeeded} vol`}
-                              </Badge>
-                            )}
-                            {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
-                              <span className={`text-xs ${event.estimatedSandwichCount > 400 ? 'font-semibold' : 'text-gray-500'}`} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
-                                ~{event.estimatedSandwichCount} sandwiches
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                  {events.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                      <p className="text-sm">
-                        {showOnlyUnmetStaffing && upcomingEvents.length > 0
-                          ? 'All events have drivers assigned!'
-                          : 'No scheduled events in this period'}
-                      </p>
-                      {showOnlyUnmetStaffing && upcomingEvents.length > 0 && (
+                        <ChevronLeft className="w-5 h-5 mr-1" />
+                        Events
+                      </Button>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm text-gray-900 break-words">
+                          {selectedEvent.organizationName || 'Unknown Organization'}
+                        </h3>
+                      </div>
+                      {canEditEvents && (
                         <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => setShowOnlyUnmetStaffing(false)}
-                          className="text-[#007E8C] mt-2"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 flex-shrink-0"
+                          onClick={openEditDialog}
                         >
-                          Show all {upcomingEvents.length} events
+                          <Edit2 className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
-                  )}
-                </div>
+
+                    {/* Event Info */}
+                    <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <span>
+                          {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
+                            ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEEE, MMMM d, yyyy')
+                            : 'No date'}
+                        </span>
+                      </div>
+                      {selectedEvent.eventStartTime && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <span>{formatTime12Hour(selectedEvent.eventStartTime)}</span>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <span className="break-words">{selectedEvent.eventAddress}</span>
+                          {selectedEvent.eventAddress && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedEvent.eventAddress)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block text-[#007E8C] text-xs mt-1 underline"
+                            >
+                              Open in Google Maps
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      {selectedEvent.estimatedSandwichCount && selectedEvent.estimatedSandwichCount > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Package className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                          <span className={selectedEvent.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={selectedEvent.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
+                            ~{selectedEvent.estimatedSandwichCount} sandwiches
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Assignments */}
+                    <div className="bg-white rounded-lg border p-3 space-y-2">
+                      <div className="text-sm font-semibold text-gray-700">Assignments</div>
+                      <div className="text-xs text-gray-600">
+                        <span className="font-medium">Staffing:</span>{' '}
+                        Drivers {getTotalDriverCount(selectedEvent)}/{selectedEvent.driversNeeded || 0}
+                        {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${getSpeakerCount(selectedEvent)}/${selectedEvent.speakersNeeded || 0}`}
+                        {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${getVolunteerCount(selectedEvent)}/${selectedEvent.volunteersNeeded || 0}`}
+                      </div>
+                      {getTspContactLabel(selectedEvent) && (
+                        <div className="text-sm text-gray-700 break-words">
+                          <span className="font-medium">TSP Contact:</span>{' '}
+                          {getTspContactLabel(selectedEvent)}
+                        </div>
+                      )}
+                      {getAssignedDriversLabel(selectedEvent) && (
+                        <div className="text-sm text-gray-700 break-words">
+                          <span className="font-medium">Assigned drivers:</span>{' '}
+                          {getAssignedDriversLabel(selectedEvent)}
+                        </div>
+                      )}
+                      {selectedEvent.assignedVanDriverId && !selectedEvent.isDhlVan && (
+                        <div className="text-sm text-gray-700 break-words">
+                          <span className="font-medium">Van driver:</span>{' '}
+                          {getAssignedDriversLabel({ ...selectedEvent, assignedDriverIds: [selectedEvent.assignedVanDriverId] } as any)}
+                        </div>
+                      )}
+                      {getAssignedSpeakersLabel(selectedEvent) && (
+                        <div className="text-sm text-gray-700 break-words">
+                          <span className="font-medium">Speakers:</span>{' '}
+                          {getAssignedSpeakersLabel(selectedEvent)}
+                        </div>
+                      )}
+                      {getAssignedVolunteersLabel(selectedEvent) && (
+                        <div className="text-sm text-gray-700 break-words">
+                          <span className="font-medium">Volunteers:</span>{' '}
+                          {getAssignedVolunteersLabel(selectedEvent)}
+                        </div>
+                      )}
+                      {getDesignatedRecipientLabel(selectedEvent) && (
+                        <div className="text-sm text-gray-700 break-words">
+                          <span className="font-medium">Recipient:</span>{' '}
+                          {getDesignatedRecipientLabel(selectedEvent)}
+                        </div>
+                      )}
+                      {!getTspContactLabel(selectedEvent) &&
+                        !getAssignedDriversLabel(selectedEvent) &&
+                        !getAssignedSpeakersLabel(selectedEvent) &&
+                        !getAssignedVolunteersLabel(selectedEvent) &&
+                        !getDesignatedRecipientLabel(selectedEvent) && (
+                        <div className="text-sm text-gray-500">No assignments yet.</div>
+                      )}
+                    </div>
+
+                    {/* Nearby Hosts */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-green-600" />
+                        Nearby Hosts ({nearbyHosts.length})
+                      </h3>
+                      {nearbyHosts.length > 0 ? (
+                        <div className="space-y-2">
+                          {(showAllHosts ? nearbyHosts : nearbyHosts.slice(0, 3)).map((host) => (
+                            <button
+                              key={host.id}
+                              onClick={() => {
+                                handleItemClick({
+                                  type: 'host',
+                                  id: host.id,
+                                  latitude: host.latitude,
+                                  longitude: host.longitude,
+                                  name: host.contactName || host.hostLocationName
+                                });
+                              }}
+                              className={`w-full text-left text-sm p-3 border rounded-lg transition-colors ${
+                                focusedItem?.type === 'host' && focusedItem?.id === host.id
+                                  ? 'bg-green-100 border-green-400'
+                                  : 'bg-green-50 border-green-200 hover:bg-green-100'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium break-words">{host.contactName}</span>
+                                <span className="text-green-700 flex-shrink-0 ml-2">{host.distance.toFixed(1)} mi</span>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1 break-words">{host.hostLocationName}</div>
+                            </button>
+                          ))}
+                          {nearbyHosts.length > 3 && (
+                            <button
+                              onClick={() => setShowAllHosts(!showAllHosts)}
+                              className="w-full text-sm text-green-700 font-medium py-2"
+                            >
+                              {showAllHosts ? 'Show less' : `View ${nearbyHosts.length - 3} more hosts`}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg">No nearby hosts found</p>
+                      )}
+                    </div>
+
+                    {/* Nearby Recipients */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-purple-600" />
+                        Nearby Recipients ({nearbyRecipients.length})
+                      </h3>
+                      {nearbyRecipients.length > 0 ? (
+                        <div className="space-y-2">
+                          {(showAllRecipients ? nearbyRecipients : nearbyRecipients.slice(0, 3)).map((recipient) => (
+                            <button
+                              key={recipient.id}
+                              onClick={() => {
+                                handleItemClick({
+                                  type: 'recipient',
+                                  id: recipient.id,
+                                  latitude: recipient.latitude,
+                                  longitude: recipient.longitude,
+                                  name: recipient.name
+                                });
+                              }}
+                              className={`w-full text-left text-sm p-3 border rounded-lg transition-colors ${
+                                focusedItem?.type === 'recipient' && focusedItem?.id === recipient.id
+                                  ? 'bg-purple-100 border-purple-400'
+                                  : 'bg-purple-50 border-purple-200 hover:bg-purple-100'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium break-words">{recipient.name}</span>
+                                <span className="text-purple-700 flex-shrink-0 ml-2">{recipient.distance.toFixed(1)} mi</span>
+                              </div>
+                              {recipient.estimatedSandwiches && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Needs ~{recipient.estimatedSandwiches} sandwiches
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                          {nearbyRecipients.length > 3 && (
+                            <button
+                              onClick={() => setShowAllRecipients(!showAllRecipients)}
+                              className="w-full text-sm text-purple-700 font-medium py-2"
+                            >
+                              {showAllRecipients ? 'Show less' : `View ${nearbyRecipients.length - 3} more recipients`}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg">No nearby recipients found</p>
+                      )}
+                    </div>
+
+                    {/* Suggested Drivers */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-yellow-600" />
+                        Suggested Drivers ({nearbyDriversFiltered.length})
+                      </h3>
+                      {nearbyDriversFiltered.length > 0 ? (
+                        <div className="space-y-2">
+                          {nearbyDriversFiltered.slice(0, 5).map((driver) => (
+                            <div
+                              key={driver.id}
+                              className="w-full text-left text-sm p-3 border rounded-lg bg-yellow-50 border-yellow-200"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium break-words">{driver.firstName} {driver.lastName}</span>
+                                <span className="text-yellow-700 flex-shrink-0 ml-2">{driver.distance.toFixed(1)} mi</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Button
+                                  size="sm"
+                                  variant={selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
+                                  className="h-8 text-xs"
+                                  onClick={() => {
+                                    if (!selectedEvent) return;
+                                    toggleDriverMutation.mutate({
+                                      eventId: selectedEvent.id,
+                                      driverId: String(driver.id),
+                                      currentAssigned: getDriverIds(selectedEvent),
+                                      currentTentative: selectedEvent.tentativeDriverIds || [],
+                                      action: 'toggleTentative'
+                                    });
+                                  }}
+                                >
+                                  {selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'Tentative' : 'Maybe'}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={hasDriver(selectedEvent, String(driver.id)) ? 'default' : 'outline'}
+                                  className="h-8 text-xs"
+                                  onClick={() => {
+                                    if (!selectedEvent) return;
+                                    toggleDriverMutation.mutate({
+                                      eventId: selectedEvent.id,
+                                      driverId: String(driver.id),
+                                      currentAssigned: getDriverIds(selectedEvent),
+                                      currentTentative: selectedEvent.tentativeDriverIds || [],
+                                      action: 'toggleConfirm'
+                                    });
+                                  }}
+                                >
+                                  {hasDriver(selectedEvent, String(driver.id)) ? 'Confirmed' : 'Confirm'}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg">No nearby drivers found</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* Events List View - When no event is selected */
+                  <div className="p-3 space-y-2">
+                    {events.map((event) => {
+                      const isSelected = selectedEvent?.id === event.id;
+                      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                      const driversAssigned = getDriverCount(event);
+                      const driversTentative = event.tentativeDriverIds?.length || 0;
+                      const driversNeeded = event.driversNeeded || 0;
+                      const speakersNeeded = event.speakersNeeded || 0;
+                      const speakersAssigned = getSpeakerCount(event);
+                      const volunteersNeeded = event.volunteersNeeded || 0;
+                      const volunteersAssigned = getVolunteerCount(event);
+                      // Has driver requirement if: driversNeeded > 0, or vanDriverNeeded, or drivers are already assigned
+                      const hasDriverRequirement = driversNeeded > 0 || event.vanDriverNeeded || driversAssigned > 0 || !!event.assignedVanDriverId;
+
+                      return (
+                        <Card
+                          key={event.id}
+                          className={`p-3 cursor-pointer transition-all active:scale-[0.98] ${
+                            isSelected
+                              ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                              : 'hover:shadow-md active:bg-gray-50'
+                          }`}
+                          onClick={() => {
+                            setSelectedEvent(isSelected ? null : event);
+                            setShowAllHosts(false);
+                            setShowAllRecipients(false);
+                          }}
+                          data-testid={`event-card-${event.id}`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
+                                {event.organizationName || 'Unknown Organization'}
+                              </h3>
+                              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-700">
+                              <Calendar className="w-4 h-4 flex-shrink-0" />
+                              <span className="font-medium">
+                                {eventDate ? format(parseLocalDate(eventDate), 'EEE, MMM d') : 'No date'}
+                              </span>
+                              {event.eventStartTime && (
+                                <span className="text-gray-500">
+                                  at {formatTime12Hour(event.eventStartTime)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <MapPin className="w-4 h-4 flex-shrink-0" />
+                              <span className="line-clamp-1">{extractCityFromAddress(event.eventAddress) || event.eventAddress}</span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {event.selfTransport ? (
+                                <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                                  Self-transport
+                                </Badge>
+                              ) : hasDriverRequirement ? (
+                                <Badge
+                                  variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
+                                  className="text-xs px-2 py-0.5"
+                                >
+                                  <Truck className="w-3.5 h-3.5 mr-1" />
+                                  {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                                  {event.vanDriverNeeded && (
+                                    event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van' : ' + Van needed')
+                                  )}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-400">
+                                  No driver requirement
+                                </Badge>
+                              )}
+                              {/* Speakers - only show if needed > 0 */}
+                              {speakersNeeded > 0 && (
+                                <Badge
+                                  variant={speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                                  className="text-xs px-2 py-0.5"
+                                  title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
+                                >
+                                  <Megaphone className="w-3.5 h-3.5 mr-1" />
+                                  {`${speakersAssigned}/${speakersNeeded} spk`}
+                                </Badge>
+                              )}
+                              {/* Volunteers - only show if needed > 0 */}
+                              {volunteersNeeded > 0 && (
+                                <Badge
+                                  variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                                  className="text-xs px-2 py-0.5"
+                                  title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
+                                >
+                                  <Users className="w-3.5 h-3.5 mr-1" />
+                                  {`${volunteersAssigned}/${volunteersNeeded} vol`}
+                                </Badge>
+                              )}
+                              {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
+                                <span className={`text-xs ${event.estimatedSandwichCount > 400 ? 'font-semibold' : 'text-gray-500'}`} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
+                                  ~{event.estimatedSandwichCount} sandwiches
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                    {events.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Calendar className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">
+                          {showOnlyUnmetStaffing && upcomingEvents.length > 0
+                            ? 'All events have drivers assigned!'
+                            : 'No scheduled events in this period'}
+                        </p>
+                        {showOnlyUnmetStaffing && upcomingEvents.length > 0 && (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={() => setShowOnlyUnmetStaffing(false)}
+                            className="text-[#007E8C] mt-2"
+                          >
+                            Show all {upcomingEvents.length} events
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </ScrollArea>
             )}
           </div>
