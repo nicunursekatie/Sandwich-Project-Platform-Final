@@ -8,81 +8,18 @@ import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { db } from '../db';
 
-type DriverLocationSource = 'hostLocation' | 'homeAddress' | 'routeDescription' | 'zone' | 'area';
+// Get driver's home address for geocoding - only use actual addresses, not zone/area guesses
+function getDriverAddressForGeocoding(driver: Driver): string | null {
+  // Only geocode drivers with an actual home address
+  const address = driver.homeAddress?.trim();
+  if (!address) return null;
 
-interface DriverLocationTarget {
-  location: string;
-  source: DriverLocationSource;
-}
-
-// Normalize the raw location text into something geocodable
-function normalizeDriverLocation(
-  value: string | null | undefined,
-  source: DriverLocationSource
-): string | null {
-  if (!value) return null;
-
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-
-  if (source === 'routeDescription') {
-    // Remove the word "route" and try to extract endpoints like "Sandy Springs to Dunwoody"
-    const cleaned = trimmed.replace(/route/gi, '').trim();
-    const parts = cleaned
-      .split(/(?:\s+to\s+|->|—|–|-|\/|\|)/i)
-      .map((p) => p.trim())
-      .filter(Boolean);
-
-    if (parts.length >= 2) {
-      // Use the endpoints as a comma-separated query for better geocoding results
-      return `${parts[0]}, ${parts[parts.length - 1]}`;
-    }
-
-    return cleaned;
+  // Add regional context if missing to improve geocoding accuracy
+  if (!address.match(/,\s*(GA|Georgia)/i) && !address.match(/USA|United States/i)) {
+    return `${address}, Georgia, USA`;
   }
 
-  if (source === 'zone') {
-    // Strip the word "zone" which can confuse geocoding
-    return trimmed.replace(/zone\s*/i, '').trim() || trimmed;
-  }
-
-  return trimmed;
-}
-
-// Choose the best available field to geocode for a driver
-function getDriverLocationForGeocoding(driver: Driver): DriverLocationTarget | null {
-  const candidates: Array<{ value: string | null; source: DriverLocationSource }> = [
-    { value: driver.hostLocation, source: 'hostLocation' },
-    { value: driver.homeAddress, source: 'homeAddress' },
-    { value: driver.routeDescription, source: 'routeDescription' },
-    { value: driver.zone, source: 'zone' },
-    { value: driver.area, source: 'area' },
-  ];
-
-  for (const candidate of candidates) {
-    const normalized = normalizeDriverLocation(candidate.value, candidate.source);
-    if (normalized) {
-      return { location: normalized, source: candidate.source };
-    }
-  }
-
-  return null;
-}
-
-// Convert a raw location into a geocodable query string
-function buildGeocodeQuery(rawLocation: string): string {
-  const trimmed = rawLocation.trim();
-
-  // Split multi-area strings like "A/B/C" into a comma-separated query
-  const parts = trimmed.split(/[\\/]/).map((p) => p.trim()).filter(Boolean);
-  let query = parts.length > 1 ? parts.join(', ') : trimmed;
-
-  // Add regional context if missing to improve accuracy
-  if (!query.match(/,\s*(GA|Georgia)/i) && !query.match(/USA|United States/i)) {
-    query = `${query}, Georgia, USA`;
-  }
-
-  return query;
+  return address;
 }
 
 const GEOCODE_DELAY_MS = 1100; // Respect Nominatim 1 req/sec guidance
@@ -111,8 +48,10 @@ export function createDriversRouter(deps: RouterDependencies) {
         storage.getAllVolunteers?.(),
       ]);
 
+      // Only include drivers with a home address AND geocoded coordinates
+      // This ensures we're showing actual address-based locations, not zone/area guesses
       const driverCandidates = (allDrivers || [])
-        .filter((d: any) => d.isActive && d.latitude && d.longitude)
+        .filter((d: any) => d.isActive && d.homeAddress?.trim() && d.latitude && d.longitude)
         .map((d: any) => ({
           id: `driver-${d.id}`,
           driverId: d.id,
@@ -125,7 +64,7 @@ export function createDriversRouter(deps: RouterDependencies) {
           availability: d.availability,
           vehicleType: d.vehicleType,
           vanApproved: d.vanApproved,
-          hostLocation: d.hostLocation || d.area || d.zone || d.routeDescription,
+          homeAddress: d.homeAddress,
         }));
 
       const hostCandidates = (hostsWithContacts || [])
@@ -495,31 +434,82 @@ export function createDriversRouter(deps: RouterDependencies) {
     }
   });
 
-  // Batch geocode all drivers that have location data but no coordinates
+  // Clear coordinates for drivers without a home address (removes old guess-based geocoding)
+  router.post('/clear-guessed-coordinates', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const allDrivers = await storage.getAllDrivers();
+
+      // Find drivers with coordinates but no home address (these were geocoded from zones/areas)
+      const driversToReset = allDrivers.filter(d =>
+        (d.latitude || d.longitude) && !d.homeAddress?.trim()
+      );
+
+      if (driversToReset.length === 0) {
+        return res.json({
+          message: 'No drivers with guessed coordinates found',
+          total: allDrivers.length,
+        });
+      }
+
+      // Clear coordinates for these drivers
+      for (const driver of driversToReset) {
+        await db.update(drivers)
+          .set({
+            latitude: null,
+            longitude: null,
+            geocodedAt: null,
+          })
+          .where(eq(drivers.id, driver.id));
+      }
+
+      logger.info('Cleared guessed coordinates', {
+        count: driversToReset.length,
+        driverNames: driversToReset.map(d => d.name),
+      });
+
+      res.json({
+        message: `Cleared coordinates for ${driversToReset.length} drivers without home addresses`,
+        cleared: driversToReset.length,
+        driversCleared: driversToReset.map(d => ({ id: d.id, name: d.name })),
+      });
+    } catch (error) {
+      logger.error('Failed to clear guessed coordinates', error);
+      res.status(500).json({ message: 'Failed to clear guessed coordinates' });
+    }
+  });
+
+  // Batch geocode drivers that have a home address but no coordinates
+  // Only uses actual addresses, not zone/area guesses
   router.post('/batch-geocode', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const allDrivers = await storage.getAllDrivers();
 
-      // Build the list of drivers with a geocodable location and missing coordinates
+      // Build the list of drivers with a home address that need geocoding
       const driversToGeocode = allDrivers
         .map((driver) => ({
           driver,
-          location: getDriverLocationForGeocoding(driver),
+          address: getDriverAddressForGeocoding(driver),
         }))
         .filter(
-          (item): item is { driver: Driver; location: DriverLocationTarget } =>
-            Boolean(item.location) && (!item.driver.latitude || !item.driver.longitude)
+          (item): item is { driver: Driver; address: string } =>
+            Boolean(item.address) && (!item.driver.latitude || !item.driver.longitude)
         );
+
+      // Count drivers with addresses vs without
+      const driversWithAddress = allDrivers.filter(d => d.homeAddress?.trim());
+      const driversWithCoords = allDrivers.filter(d => d.latitude && d.longitude && d.homeAddress?.trim());
 
       if (driversToGeocode.length === 0) {
         return res.json({
           message: 'No drivers need geocoding',
           total: allDrivers.length,
-          alreadyGeocoded: allDrivers.filter(d => d.latitude && d.longitude).length,
+          withAddress: driversWithAddress.length,
+          alreadyGeocoded: driversWithCoords.length,
+          withoutAddress: allDrivers.length - driversWithAddress.length,
         });
       }
 
-      logger.info('Starting batch geocoding', {
+      logger.info('Starting batch geocoding (address-based only)', {
         count: driversToGeocode.length
       });
 
@@ -530,18 +520,16 @@ export function createDriversRouter(deps: RouterDependencies) {
         failures: [] as Array<{
           driverId: number;
           name: string;
-          location: string;
-          source: DriverLocationSource;
+          address: string;
         }>,
       };
 
       // Geocode each driver with rate limiting
-      for (const { driver, location } of driversToGeocode) {
+      for (const { driver, address } of driversToGeocode) {
         // Respect Nominatim rate limits
         await new Promise((resolve) => setTimeout(resolve, GEOCODE_DELAY_MS));
 
-        const query = buildGeocodeQuery(location.location);
-        const geocodeResult = await geocodeAddress(query);
+        const geocodeResult = await geocodeAddress(address);
 
         if (geocodeResult) {
           // Update driver with coordinates
@@ -554,25 +542,22 @@ export function createDriversRouter(deps: RouterDependencies) {
             .where(eq(drivers.id, driver.id));
 
           results.success++;
-          logger.info('Geocoded driver', {
+          logger.info('Geocoded driver from home address', {
             driverId: driver.id,
             name: driver.name,
-            location: location.location,
-            source: location.source,
+            address,
           });
         } else {
           results.failed++;
           results.failures.push({
             driverId: driver.id,
-            name: driver.name,
-            location: location.location,
-            source: location.source,
+            name: driver.name || 'Unknown',
+            address,
           });
-          logger.warn('Failed to geocode driver', {
+          logger.warn('Failed to geocode driver address', {
             driverId: driver.id,
             name: driver.name,
-            location: location.location,
-            source: location.source,
+            address,
           });
         }
       }
