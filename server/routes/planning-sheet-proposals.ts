@@ -300,6 +300,7 @@ export function createPlanningSheetProposalsRouter(
   /**
    * GET /api/planning-sheet-proposals/preview/:eventId
    * Preview what data would be sent to the sheet for an event
+   * Also returns any matching rows currently in the sheet for comparison
    */
   router.get('/preview/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -322,10 +323,63 @@ export function createPlanningSheetProposalsRouter(
         labeledData[key] = rowData[index] || '';
       });
 
+      // Find matching row in the current sheet for side-by-side comparison
+      let existingSheetRow = null;
+      let potentialMatches: any[] = [];
+      try {
+        // Try exact match first
+        existingSheetRow = await service.findMatchingRow(parseInt(eventId));
+
+        // If no exact match, look for potential matches (same org name or same date)
+        if (!existingSheetRow) {
+          const allSheetRows = await service.readPlanningSheet();
+          const proposedDate = rowData[0]; // Date column
+          const proposedOrg = rowData[2]?.toLowerCase().trim(); // Group Name column
+
+          potentialMatches = allSheetRows
+            .filter(row => {
+              const rowOrg = row.groupName?.toLowerCase().trim();
+              const rowDate = row.date;
+              // Match if same org OR same date (potential conflicts)
+              return (proposedOrg && rowOrg && rowOrg.includes(proposedOrg.substring(0, 10))) ||
+                     (proposedDate && rowDate === proposedDate);
+            })
+            .slice(0, 5) // Limit to 5 potential matches
+            .map(row => ({
+              rowIndex: row.rowIndex,
+              date: row.date,
+              groupName: row.groupName,
+              staffing: row.staffing,
+              estimateSandwiches: row.estimateSandwiches,
+              contactName: row.contactName,
+            }));
+        }
+      } catch (sheetError) {
+        logger.warn('Could not fetch sheet data for comparison:', sheetError);
+        // Continue without comparison data - non-fatal
+      }
+
       res.json({
         rawData: rowData,
         labeledData,
-        columns: PLANNING_SHEET_COLUMNS
+        columns: PLANNING_SHEET_COLUMNS,
+        existingSheetRow: existingSheetRow ? {
+          rowIndex: existingSheetRow.rowIndex,
+          date: existingSheetRow.date,
+          groupName: existingSheetRow.groupName,
+          eventStartTime: existingSheetRow.eventStartTime,
+          eventEndTime: existingSheetRow.eventEndTime,
+          pickUpTime: existingSheetRow.pickUpTime,
+          staffing: existingSheetRow.staffing,
+          estimateSandwiches: existingSheetRow.estimateSandwiches,
+          deliOrPbj: existingSheetRow.deliOrPbj,
+          contactName: existingSheetRow.contactName,
+          email: existingSheetRow.email,
+          phone: existingSheetRow.phone,
+          tspContact: existingSheetRow.tspContact,
+          address: existingSheetRow.address,
+        } : null,
+        potentialMatches,
       });
     } catch (error) {
       logger.error('Error previewing event data:', error);

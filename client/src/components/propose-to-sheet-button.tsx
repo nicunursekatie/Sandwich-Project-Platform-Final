@@ -15,8 +15,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { FileSpreadsheet, Check, Loader2, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileSpreadsheet, Check, Loader2, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, ArrowRight } from 'lucide-react';
 
 interface ProposeToSheetButtonProps {
   eventId: number;
@@ -183,40 +184,105 @@ export function ProposeToSheetButton({
                 <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
               </div>
             ) : previewData?.rawData ? (
-              <div className="space-y-3">
-                {/* Key fields summary */}
-                <div className="flex flex-wrap gap-2">
-                  {getKeyFields(previewData.rawData).map((field, i) => (
-                    <span key={i} className="text-sm bg-gray-100 px-2 py-1 rounded">
-                      <strong>{field.label}:</strong> {field.value}
-                    </span>
-                  ))}
-                </div>
+              <div className="space-y-4">
+                {/* Warning if event already exists in sheet */}
+                {previewData.existingSheetRow && (
+                  <Alert variant="destructive" className="bg-orange-50 border-orange-200">
+                    <AlertTriangle className="h-4 w-4 text-orange-600" />
+                    <AlertTitle className="text-orange-800">Event already exists in sheet</AlertTitle>
+                    <AlertDescription className="text-orange-700">
+                      Found at row {previewData.existingSheetRow.rowIndex}: {previewData.existingSheetRow.groupName} on {previewData.existingSheetRow.date}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                {/* Expand/collapse all fields */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAllFields(!showAllFields)}
-                  className="text-xs"
-                >
-                  {showAllFields ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
-                  {showAllFields ? 'Hide all fields' : 'Show all fields'}
-                </Button>
+                {/* Potential matches warning */}
+                {!previewData.existingSheetRow && previewData.potentialMatches?.length > 0 && (
+                  <Alert className="bg-yellow-50 border-yellow-200">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertTitle className="text-yellow-800">Possible duplicates found</AlertTitle>
+                    <AlertDescription className="text-yellow-700">
+                      <div className="mt-2 space-y-1">
+                        {previewData.potentialMatches.map((match: any, i: number) => (
+                          <div key={i} className="text-xs">
+                            Row {match.rowIndex}: {match.groupName} - {match.date}
+                          </div>
+                        ))}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
-                {showAllFields && (
-                  <div className="bg-gray-50 p-4 rounded space-y-2 max-h-64 overflow-y-auto">
-                    {previewData.rawData.map((value: string, idx: number) => (
-                      value && (
-                        <div key={idx} className="flex border-b border-gray-200 pb-1 text-sm">
-                          <span className="font-medium text-gray-600 w-40 flex-shrink-0">
-                            {COLUMN_LABELS[idx] || `Column ${idx}`}
-                          </span>
-                          <span className="text-gray-900">{value}</span>
-                        </div>
-                      )
-                    ))}
+                {/* Side-by-side comparison if existing row found */}
+                {previewData.existingSheetRow ? (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Side-by-side comparison:</h4>
+                    <div className="grid grid-cols-3 gap-2 text-xs bg-gray-50 p-3 rounded max-h-64 overflow-y-auto">
+                      <div className="font-semibold text-gray-600">Field</div>
+                      <div className="font-semibold text-gray-600">Currently in Sheet</div>
+                      <div className="font-semibold text-green-700">App Would Send</div>
+
+                      {[
+                        { label: 'Date', sheet: previewData.existingSheetRow.date, app: previewData.rawData[0] },
+                        { label: 'Group Name', sheet: previewData.existingSheetRow.groupName, app: previewData.rawData[2] },
+                        { label: 'Start Time', sheet: previewData.existingSheetRow.eventStartTime, app: previewData.rawData[3] },
+                        { label: 'Pick Up Time', sheet: previewData.existingSheetRow.pickUpTime, app: previewData.rawData[5] },
+                        { label: 'Staffing', sheet: previewData.existingSheetRow.staffing, app: previewData.rawData[9] },
+                        { label: 'Sandwiches', sheet: previewData.existingSheetRow.estimateSandwiches, app: previewData.rawData[10] },
+                        { label: 'Type', sheet: previewData.existingSheetRow.deliOrPbj, app: previewData.rawData[11] },
+                        { label: 'Contact', sheet: previewData.existingSheetRow.contactName, app: previewData.rawData[15] },
+                        { label: 'Email', sheet: previewData.existingSheetRow.email, app: previewData.rawData[16] },
+                        { label: 'TSP Contact', sheet: previewData.existingSheetRow.tspContact, app: previewData.rawData[18] },
+                      ].map((row, i) => (
+                        <>
+                          <div key={`${i}-label`} className="font-medium text-gray-600 border-t border-gray-200 pt-1">{row.label}</div>
+                          <div key={`${i}-sheet`} className={`border-t border-gray-200 pt-1 ${row.sheet !== row.app ? 'bg-red-50 px-1 rounded' : ''}`}>
+                            {row.sheet || <span className="text-gray-400">(empty)</span>}
+                          </div>
+                          <div key={`${i}-app`} className={`border-t border-gray-200 pt-1 ${row.sheet !== row.app ? 'bg-green-50 px-1 rounded font-medium' : ''}`}>
+                            {row.app || <span className="text-gray-400">(empty)</span>}
+                          </div>
+                        </>
+                      ))}
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {/* Key fields summary for new rows */}
+                    <div className="flex flex-wrap gap-2">
+                      {getKeyFields(previewData.rawData).map((field, i) => (
+                        <span key={i} className="text-sm bg-gray-100 px-2 py-1 rounded">
+                          <strong>{field.label}:</strong> {field.value}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Expand/collapse all fields */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAllFields(!showAllFields)}
+                      className="text-xs"
+                    >
+                      {showAllFields ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
+                      {showAllFields ? 'Hide all fields' : 'Show all fields'}
+                    </Button>
+
+                    {showAllFields && (
+                      <div className="bg-gray-50 p-4 rounded space-y-2 max-h-64 overflow-y-auto">
+                        {previewData.rawData.map((value: string, idx: number) => (
+                          value && (
+                            <div key={idx} className="flex border-b border-gray-200 pb-1 text-sm">
+                              <span className="font-medium text-gray-600 w-40 flex-shrink-0">
+                                {COLUMN_LABELS[idx] || `Column ${idx}`}
+                              </span>
+                              <span className="text-gray-900">{value}</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
