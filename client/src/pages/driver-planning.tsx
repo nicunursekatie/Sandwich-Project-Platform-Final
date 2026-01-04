@@ -1221,6 +1221,21 @@ export default function DriverPlanningDashboard() {
       });
   }, [allEvents, weeksAhead, showPendingEvents]);
 
+  // Sync selectedEvent with latest data when events are refetched
+  // This ensures the UI shows updated data after edits
+  useEffect(() => {
+    if (selectedEvent && allEvents.length > 0) {
+      const updatedEvent = allEvents.find(e => e.id === selectedEvent.id);
+      if (updatedEvent) {
+        // Only update if the data actually changed
+        const hasChanged = JSON.stringify(updatedEvent) !== JSON.stringify(selectedEvent);
+        if (hasChanged) {
+          setSelectedEvent(updatedEvent);
+        }
+      }
+    }
+  }, [allEvents, selectedEvent?.id]);
+
   // Map-safe subset: only events with coordinates
   const upcomingEventsWithCoords = useMemo(() => {
     return upcomingEvents.filter((e) => {
