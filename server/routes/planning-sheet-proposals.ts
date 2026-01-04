@@ -160,6 +160,11 @@ export function createPlanningSheetProposalsRouter(
       const { id } = req.params;
       const userId = req.user?.id;
 
+      const proposalId = Number.parseInt(id, 10);
+      if (Number.isNaN(proposalId)) {
+        return res.status(400).json({ error: 'Invalid proposal id' });
+      }
+
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
@@ -169,7 +174,7 @@ export function createPlanningSheetProposalsRouter(
         return res.status(500).json({ error: 'Planning Sheet service not configured' });
       }
 
-      const result = await service.applyApprovedProposal(parseInt(id), userId);
+      const result = await service.applyApprovedProposal(proposalId, userId);
 
       if (result.success) {
         res.json({ success: true, message: result.message });
@@ -192,6 +197,11 @@ export function createPlanningSheetProposalsRouter(
       const { notes } = req.body;
       const userId = req.user?.id;
 
+      const proposalId = Number.parseInt(id, 10);
+      if (Number.isNaN(proposalId)) {
+        return res.status(400).json({ error: 'Invalid proposal id' });
+      }
+
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
@@ -201,7 +211,7 @@ export function createPlanningSheetProposalsRouter(
         return res.status(500).json({ error: 'Planning Sheet service not configured' });
       }
 
-      const result = await service.rejectProposal(parseInt(id), userId, notes);
+      const result = await service.rejectProposal(proposalId, userId, notes);
 
       if (result.success) {
         res.json({ success: true, message: result.message });
@@ -223,6 +233,11 @@ export function createPlanningSheetProposalsRouter(
       const { id } = req.params;
       const { proposedValue, proposedRowData } = req.body;
 
+      const proposalId = Number.parseInt(id, 10);
+      if (Number.isNaN(proposalId)) {
+        return res.status(400).json({ error: 'Invalid proposal id' });
+      }
+
       await db
         .update(proposedSheetChanges)
         .set({
@@ -230,7 +245,7 @@ export function createPlanningSheetProposalsRouter(
           proposedRowData,
           updatedAt: new Date(),
         })
-        .where(eq(proposedSheetChanges.id, parseInt(id)));
+        .where(eq(proposedSheetChanges.id, proposalId));
 
       res.json({ success: true, message: 'Proposal updated' });
     } catch (error) {
@@ -312,12 +327,17 @@ export function createPlanningSheetProposalsRouter(
     try {
       const { eventId } = req.params;
 
+      const parsedEventId = Number.parseInt(eventId, 10);
+      if (Number.isNaN(parsedEventId) || parsedEventId <= 0) {
+        return res.status(400).json({ error: 'Invalid event id' });
+      }
+
       const service = getPlanningSheetService();
       if (!service) {
         return res.status(500).json({ error: 'Planning Sheet service not configured' });
       }
 
-      const rowData = await service.eventToSheetRow(parseInt(eventId));
+      const rowData = await service.eventToSheetRow(parsedEventId);
 
       if (!rowData) {
         return res.status(404).json({ error: 'Event not found' });
@@ -334,7 +354,7 @@ export function createPlanningSheetProposalsRouter(
       let potentialMatches: any[] = [];
       try {
         // Try exact match first
-        existingSheetRow = await service.findMatchingRow(parseInt(eventId));
+        existingSheetRow = await service.findMatchingRow(parsedEventId);
 
         // If no exact match, look for potential matches (same org name or same date)
         if (!existingSheetRow) {
