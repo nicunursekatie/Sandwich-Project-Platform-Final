@@ -8,10 +8,11 @@ import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { db } from '../db';
 
-// Get driver's home address for geocoding - only use actual addresses, not zone/area guesses
+// Get driver's address for geocoding - only use actual addresses, not zone/area guesses
+// Checks both 'address' (UI field) and 'homeAddress' (legacy field)
 function getDriverAddressForGeocoding(driver: Driver): string | null {
-  // Only geocode drivers with an actual home address
-  const address = driver.homeAddress?.trim();
+  // Check both address fields - UI uses 'address', some data may have 'homeAddress'
+  const address = (driver.address?.trim()) || (driver.homeAddress?.trim());
   if (!address) return null;
 
   // Add regional context if missing to improve geocoding accuracy
@@ -20,6 +21,11 @@ function getDriverAddressForGeocoding(driver: Driver): string | null {
   }
 
   return address;
+}
+
+// Check if driver has an address (for filtering)
+function driverHasAddress(driver: Driver): boolean {
+  return !!(driver.address?.trim() || driver.homeAddress?.trim());
 }
 
 const GEOCODE_DELAY_MS = 1100; // Respect Nominatim 1 req/sec guidance
@@ -48,10 +54,10 @@ export function createDriversRouter(deps: RouterDependencies) {
         storage.getAllVolunteers?.(),
       ]);
 
-      // Only include drivers with a home address AND geocoded coordinates
+      // Only include drivers with an address AND geocoded coordinates
       // This ensures we're showing actual address-based locations, not zone/area guesses
       const driverCandidates = (allDrivers || [])
-        .filter((d: any) => d.isActive && d.homeAddress?.trim() && d.latitude && d.longitude)
+        .filter((d: any) => d.isActive && (d.address?.trim() || d.homeAddress?.trim()) && d.latitude && d.longitude)
         .map((d: any) => ({
           id: `driver-${d.id}`,
           driverId: d.id,
@@ -64,7 +70,7 @@ export function createDriversRouter(deps: RouterDependencies) {
           availability: d.availability,
           vehicleType: d.vehicleType,
           vanApproved: d.vanApproved,
-          homeAddress: d.homeAddress,
+          homeAddress: d.address || d.homeAddress, // Return whichever address field is set
         }));
 
       const hostCandidates = (hostsWithContacts || [])
@@ -439,9 +445,9 @@ export function createDriversRouter(deps: RouterDependencies) {
     try {
       const allDrivers = await storage.getAllDrivers();
 
-      // Find drivers with coordinates but no home address (these were geocoded from zones/areas)
+      // Find drivers with coordinates but no address (these were geocoded from zones/areas)
       const driversToReset = allDrivers.filter(d =>
-        (d.latitude || d.longitude) && !d.homeAddress?.trim()
+        (d.latitude || d.longitude) && !driverHasAddress(d)
       );
 
       if (driversToReset.length === 0) {
@@ -500,12 +506,12 @@ export function createDriversRouter(deps: RouterDependencies) {
         count: driversWithCoords.length,
       });
 
-      // Step 2: Geocode only drivers with home addresses
-      const driversWithAddress = allDrivers.filter(d => d.homeAddress?.trim());
+      // Step 2: Geocode only drivers with addresses
+      const driversWithAddress = allDrivers.filter(d => driverHasAddress(d));
 
       if (driversWithAddress.length === 0) {
         return res.json({
-          message: 'Cleared all coordinates but no drivers have home addresses to geocode',
+          message: 'Cleared all coordinates but no drivers have addresses to geocode',
           cleared: driversWithCoords.length,
           success: 0,
           failed: 0,
@@ -580,8 +586,8 @@ export function createDriversRouter(deps: RouterDependencies) {
         );
 
       // Count drivers with addresses vs without
-      const driversWithAddress = allDrivers.filter(d => d.homeAddress?.trim());
-      const driversWithCoords = allDrivers.filter(d => d.latitude && d.longitude && d.homeAddress?.trim());
+      const driversWithAddress = allDrivers.filter(d => driverHasAddress(d));
+      const driversWithCoords = allDrivers.filter(d => d.latitude && d.longitude && driverHasAddress(d));
 
       if (driversToGeocode.length === 0) {
         return res.json({
