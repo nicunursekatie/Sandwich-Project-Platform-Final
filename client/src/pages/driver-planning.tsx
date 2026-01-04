@@ -1221,6 +1221,25 @@ export default function DriverPlanningDashboard() {
       });
   }, [allEvents, weeksAhead, showPendingEvents]);
 
+  // Sync selectedEvent with latest data when events are refetched
+  // This ensures the UI shows updated data after edits
+  // We use selectedEvent?.id (not full object) intentionally to avoid re-running when we update it ourselves
+  const selectedEventId = selectedEvent?.id;
+  useEffect(() => {
+    if (selectedEventId && allEvents.length > 0) {
+      const updatedEvent = allEvents.find(e => e.id === selectedEventId);
+      if (updatedEvent) {
+        setSelectedEvent(prev => {
+          // Only update if the data actually changed
+          if (!prev || JSON.stringify(updatedEvent) !== JSON.stringify(prev)) {
+            return updatedEvent;
+          }
+          return prev;
+        });
+      }
+    }
+  }, [allEvents, selectedEventId]);
+
   // Map-safe subset: only events with coordinates
   const upcomingEventsWithCoords = useMemo(() => {
     return upcomingEvents.filter((e) => {
@@ -4533,12 +4552,12 @@ export default function DriverPlanningDashboard() {
                                   variant={selectedEvent.tentativeDriverIds?.includes(String(driver.id)) ? 'default' : 'outline'}
                                   className="h-8 text-xs"
                                   onClick={() => {
-                                    toggleDriverMutation.mutate({
+                                    assignDriverMutation.mutate({
                                       eventId: selectedEvent.id,
                                       driverId: String(driver.id),
                                       currentAssigned: getDriverIds(selectedEvent),
                                       currentTentative: selectedEvent.tentativeDriverIds || [],
-                                      action: 'toggleTentative'
+                                      tentative: true
                                     });
                                   }}
                                 >
@@ -4549,12 +4568,12 @@ export default function DriverPlanningDashboard() {
                                   variant={hasDriver(selectedEvent, String(driver.id)) ? 'default' : 'outline'}
                                   className="h-8 text-xs"
                                   onClick={() => {
-                                    toggleDriverMutation.mutate({
+                                    assignDriverMutation.mutate({
                                       eventId: selectedEvent.id,
                                       driverId: String(driver.id),
                                       currentAssigned: getDriverIds(selectedEvent),
                                       currentTentative: selectedEvent.tentativeDriverIds || [],
-                                      action: 'toggleConfirm'
+                                      tentative: false
                                     });
                                   }}
                                 >

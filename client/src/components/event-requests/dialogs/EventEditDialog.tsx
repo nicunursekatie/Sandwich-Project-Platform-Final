@@ -260,8 +260,8 @@ function PersonSelector({
         </div>
       )}
 
-      {/* People list */}
-      <ScrollArea className="h-48 border rounded-lg">
+      {/* People list - using max-height with overflow instead of ScrollArea to allow parent scroll */}
+      <div className="max-h-48 overflow-y-auto border rounded-lg">
         <div className="p-2 space-y-1">
           {filteredPeople.map(person => {
             const isSelected = selectedPeople.includes(person.id);
@@ -293,7 +293,7 @@ function PersonSelector({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

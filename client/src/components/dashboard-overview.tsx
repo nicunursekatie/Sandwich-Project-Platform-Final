@@ -688,6 +688,138 @@ export default function DashboardOverview({
           </div>
         </div>
 
+        {/* TSP External Tools Section */}
+        <div className="mx-4 mb-8 max-w-full">
+          <h3 className="premium-text-h3 text-brand-primary mb-6">
+            TSP External Tools
+          </h3>
+          <p className="premium-text-body-sm text-gray-600 mb-6">
+            External platforms we've built to support TSP operations
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
+            {/* Hour Hero Magic - Service Hours Portal */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #FBAD3F' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center mr-3">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Hour Hero Magic
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Portal for volunteers to enter their info and receive automated service hours letters
+              </p>
+              <button
+                onClick={() => window.open('https://hour-hero-magic.lovable.app', '_blank')}
+                className="premium-btn-accent w-full text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Service Hours Portal
+              </button>
+            </div>
+
+            {/* Bread and Butter Donors - Donor Management */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #236383' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center mr-3">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Bread & Butter Donors
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                DIY donor management - tracks donations, donors, and "Friends in TSP" network connections
+              </p>
+              <button
+                onClick={() => window.open('https://bread-and-butter-donors.lovable.app/', '_blank')}
+                className="premium-btn-primary w-full text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Donor Platform
+              </button>
+            </div>
+
+            {/* TSP Grant Manager */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #007E8C' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center mr-3">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Grant Manager
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Track grants, deadlines, and use AI research tools to work on grant applications
+              </p>
+              <button
+                onClick={() => window.open('https://tsp-grant-manager.lovable.app', '_blank')}
+                className="premium-btn-secondary w-full text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Grant Manager
+              </button>
+            </div>
+
+            {/* Sandwich Steward - Host Onboarding */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #5B9EA6' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-light-blue rounded-lg flex items-center justify-center mr-3">
+                  <Building2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Sandwich Steward
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Track hosts being onboarded - will eventually include all existing hosts
+              </p>
+              <button
+                onClick={() => window.open('https://sandwich-steward.lovable.app', '_blank')}
+                className="premium-btn-outline w-full text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Host Tracker
+              </button>
+            </div>
+
+            {/* Receipt Generator */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #A31C41' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-burgundy rounded-lg flex items-center justify-center mr-3">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Receipt Generator
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Generate donation receipts for donors quickly and easily
+              </p>
+              <button
+                onClick={() => window.open('https://receipt-gen--katielong2316.replit.app', '_blank')}
+                className="premium-btn-outline w-full text-sm border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Receipt Generator
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Action Tracker Widget */}
         <div className="mx-4 mb-8 max-w-full">
           <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
