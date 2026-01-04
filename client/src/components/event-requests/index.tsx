@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'wouter';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
@@ -19,7 +20,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck, MapPin } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -728,6 +729,16 @@ const EventRequestsManagementContent: React.FC = () => {
                 <Calendar className="w-4 h-4 mr-1.5" />
                 Today
               </Button>
+              <Link href="/driver-planning">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                >
+                  <MapPin className="w-4 h-4 mr-1.5" />
+                  Driver Planning Map
+                </Button>
+              </Link>
             </div>
             {/* Filters and Tabs */}
             <RequestFilters
