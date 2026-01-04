@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { db } from './db';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 import { eventRequests, proposedSheetChanges, users } from '@shared/schema';
 import { logger } from './utils/production-safe-logger';
 
@@ -40,8 +40,29 @@ export const PLANNING_SHEET_COLUMNS = {
 
 /**
  * Staffing format parser and generator
- * Format: D: Name, S: Name, V: Name, VD: Name
- * Unassigned: D, S, V, VD (no colon or name)
+ * 
+ * Format specifications:
+ * - The staffing column contains comma-separated role assignments
+ * - Format: "D: Name, S: Name, V: Name, VD: Name"
+ * - Each role can be:
+ *   - Assigned with name: "D: John Doe" (role needed and assigned to John Doe)
+ *   - Unassigned but needed: "D:" or "D: " (role needed but no one assigned)
+ *   - Not needed: role is omitted from the string
+ * 
+ * Roles:
+ * - D: Driver (regular)
+ * - VD: Van Driver (special type of driver, checked before D)
+ * - S: Speaker
+ * - V: Volunteer
+ * 
+ * Examples:
+ * - "D: John Doe, S: Jane Smith" = Driver assigned to John, Speaker assigned to Jane
+ * - "D:, S:" = Driver and Speaker needed but unassigned
+ * - "VD: Bob Jones, V:" = Van Driver assigned to Bob, Volunteer needed but unassigned
+ * - "" = No roles needed
+ * 
+ * Note: When parsing, VD must be checked before D to avoid false matches.
+ * Note: Unassigned positions may include trailing space after colon (e.g., "D: ").
  */
 export interface StaffingInfo {
   driver: { needed: boolean; assigned: string | null; isVanDriver: boolean };
@@ -49,6 +70,10 @@ export interface StaffingInfo {
   volunteer: { needed: boolean; assigned: string | null };
 }
 
+/**
+ * Parse a staffing column string into structured staffing information.
+ * See StaffingInfo documentation for format details.
+ */
 export function parseStaffingColumn(staffingStr: string): StaffingInfo {
   const result: StaffingInfo = {
     driver: { needed: false, assigned: null, isVanDriver: false },
@@ -102,6 +127,17 @@ export function parseStaffingColumn(staffingStr: string): StaffingInfo {
   return result;
 }
 
+/**
+ * Format a StaffingInfo object into the string format for the Planning Sheet.
+ * 
+ * Trailing space behavior:
+ * - When a role is needed but unassigned, the format includes a trailing space after the colon.
+ * - Examples: "D: ", "S: ", "V: ", "VD: "
+ * - This is intentional to indicate the position is open/needed but not yet filled.
+ * - The parser handles both "D:" and "D: " as unassigned positions.
+ * 
+ * See StaffingInfo documentation for complete format specification.
+ */
 export function formatStaffingColumn(staffing: StaffingInfo): string {
   const parts: string[] = [];
 
@@ -183,7 +219,7 @@ export class PlanningSheetSyncService {
   private spreadsheetId: string;
   private worksheetName: string;
 
-  constructor(spreadsheetId: string, worksheetName: string = 'Sheet1') {
+  constructor(spreadsheetId: string, worksheetName: string = 'Schedule') {
     this.spreadsheetId = spreadsheetId;
     this.worksheetName = worksheetName;
   }
@@ -256,7 +292,7 @@ export class PlanningSheetSyncService {
 
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range: `${this.worksheetName}!A2:Z1000`, // Skip header row
+      range: `${this.worksheetName}!A2:Z`, // Skip header row
     });
 
     const rows = response.data.values || [];
@@ -337,13 +373,14 @@ export class PlanningSheetSyncService {
 
     // Format date
     const eventDate = e.scheduledEventDate || e.desiredEventDate;
-    const dateStr = eventDate ? new Date(eventDate).toLocaleDateString('en-US', {
+    const eventDateObj = eventDate ? new Date(eventDate) : null;
+    const dateStr = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
       month: 'numeric',
       day: 'numeric',
       year: 'numeric'
     }) : '';
 
-    const dayOfWeek = eventDate ? new Date(eventDate).toLocaleDateString('en-US', {
+    const dayOfWeek = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
       weekday: 'long'
     }) : '';
 
@@ -389,21 +426,21 @@ export class PlanningSheetSyncService {
   private async getAssignedNames(userIds: string[]): Promise<string[]> {
     if (!userIds || userIds.length === 0) return [];
 
-    const names: string[] = [];
-    for (const id of userIds) {
-      const user = await db
-        .select({ firstName: users.firstName, lastName: users.lastName, displayName: users.displayName })
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
+    const userList = await db
+      .select({ id: users.id, firstName: users.firstName, lastName: users.lastName, displayName: users.displayName })
+      .from(users)
+      .where(inArray(users.id, userIds));
 
-      if (user && user.length > 0) {
-        const u = user[0];
-        const name = u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown';
-        names.push(name);
-      }
-    }
-    return names;
+    // Create a map of user IDs to names
+    const userMap = new Map(
+      userList.map(u => [
+        u.id,
+        u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown'
+      ])
+    );
+
+    // Return names in the same order as userIds
+    return userIds.map(id => userMap.get(id) || 'Unknown');
   }
 
   /**
@@ -508,7 +545,7 @@ export class PlanningSheetSyncService {
       .select()
       .from(proposedSheetChanges)
       .where(eq(proposedSheetChanges.status, 'pending'))
-      .orderBy(proposedSheetChanges.proposedAt);
+      .orderBy(desc(proposedSheetChanges.proposedAt));
   }
 
   /**

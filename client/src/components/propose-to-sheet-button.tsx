@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { FileSpreadsheet, Check, Loader2, ExternalLink, ChevronDown, ChevronUp, AlertTriangle, ArrowRight } from 'lucide-react';
+import { FileSpreadsheet, Check, Loader2, ExternalLink, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 
 interface ProposeToSheetButtonProps {
   eventId: number;
