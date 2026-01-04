@@ -18,6 +18,12 @@ export function createPlanningSheetProposalsRouter(
 ) {
   const router = Router();
 
+  // ============================================================================
+  // IMPORTANT: Route ordering matters in Express!
+  // Specific routes (like /preview/:eventId, /batch/approve) MUST come BEFORE
+  // parameterized routes (like /:id) to avoid the param catching everything.
+  // ============================================================================
+
   /**
    * GET /api/planning-sheet-proposals
    * Get all proposals with optional status filter
@@ -111,217 +117,11 @@ export function createPlanningSheetProposalsRouter(
   });
 
   /**
-   * GET /api/planning-sheet-proposals/:id
-   * Get a single proposal with full details
-   */
-  router.get('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { id } = req.params;
-      const proposalId = Number.parseInt(id, 10);
-
-      if (Number.isNaN(proposalId)) {
-        return res.status(400).json({ error: 'Invalid proposal id' });
-      }
-
-      const [proposal] = await db
-        .select()
-        .from(proposedSheetChanges)
-        .where(eq(proposedSheetChanges.id, proposalId))
-        .limit(1);
-
-      if (!proposal) {
-        return res.status(404).json({ error: 'Proposal not found' });
-      }
-
-      // Get event details if linked
-      let eventDetails = null;
-      if (proposal.eventRequestId) {
-        const [event] = await db
-          .select()
-          .from(eventRequests)
-          .where(eq(eventRequests.id, proposal.eventRequestId))
-          .limit(1);
-        eventDetails = event;
-      }
-
-      res.json({ proposal, eventDetails });
-    } catch (error) {
-      logger.error('Error fetching proposal:', error);
-      res.status(500).json({ error: 'Failed to fetch proposal' });
-    }
-  });
-
-  /**
-   * POST /api/planning-sheet-proposals/:id/approve
-   * Approve and apply a proposal
-   */
-  router.post('/:id/approve', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { id } = req.params;
-      const userId = req.user?.id;
-
-      const proposalId = Number.parseInt(id, 10);
-      if (Number.isNaN(proposalId)) {
-        return res.status(400).json({ error: 'Invalid proposal id' });
-      }
-
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const service = getPlanningSheetService();
-      if (!service) {
-        return res.status(500).json({ error: 'Planning Sheet service not configured' });
-      }
-
-      const result = await service.applyApprovedProposal(proposalId, userId);
-
-      if (result.success) {
-        res.json({ success: true, message: result.message });
-      } else {
-        res.status(400).json({ success: false, error: result.message });
-      }
-    } catch (error) {
-      logger.error('Error approving proposal:', error);
-      res.status(500).json({ error: 'Failed to approve proposal' });
-    }
-  });
-
-  /**
-   * POST /api/planning-sheet-proposals/:id/reject
-   * Reject a proposal
-   */
-  router.post('/:id/reject', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { notes } = req.body;
-      const userId = req.user?.id;
-
-      const proposalId = Number.parseInt(id, 10);
-      if (Number.isNaN(proposalId)) {
-        return res.status(400).json({ error: 'Invalid proposal id' });
-      }
-
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const service = getPlanningSheetService();
-      if (!service) {
-        return res.status(500).json({ error: 'Planning Sheet service not configured' });
-      }
-
-      const result = await service.rejectProposal(proposalId, userId, notes);
-
-      if (result.success) {
-        res.json({ success: true, message: result.message });
-      } else {
-        res.status(400).json({ success: false, error: result.message });
-      }
-    } catch (error) {
-      logger.error('Error rejecting proposal:', error);
-      res.status(500).json({ error: 'Failed to reject proposal' });
-    }
-  });
-
-  /**
-   * POST /api/planning-sheet-proposals/:id/edit
-   * Edit a proposal's proposed value before approving
-   */
-  router.post('/:id/edit', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { id } = req.params;
-      const { proposedValue, proposedRowData } = req.body;
-
-      const proposalId = Number.parseInt(id, 10);
-      if (Number.isNaN(proposalId)) {
-        return res.status(400).json({ error: 'Invalid proposal id' });
-      }
-
-      await db
-        .update(proposedSheetChanges)
-        .set({
-          proposedValue,
-          proposedRowData,
-          updatedAt: new Date(),
-        })
-        .where(eq(proposedSheetChanges.id, proposalId));
-
-      res.json({ success: true, message: 'Proposal updated' });
-    } catch (error) {
-      logger.error('Error editing proposal:', error);
-      res.status(500).json({ error: 'Failed to edit proposal' });
-    }
-  });
-
-  /**
-   * POST /api/planning-sheet-proposals/propose-event/:eventId
-   * Create a proposal to add an event to the Planning Sheet
-   */
-  router.post('/propose-event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const { eventId } = req.params;
-      const { reason } = req.body;
-      const userId = req.user?.id;
-
-      const parsedEventId = Number.parseInt(eventId, 10);
-      if (Number.isNaN(parsedEventId) || parsedEventId <= 0) {
-        return res.status(400).json({ error: 'Invalid event id' });
-      }
-
-      if (!userId) {
-        return res.status(401).json({ error: 'User not authenticated' });
-      }
-
-      const service = getPlanningSheetService();
-      if (!service) {
-        return res.status(500).json({ error: 'Planning Sheet service not configured' });
-      }
-
-      // Check if event already has a pending proposal
-      const existing = await db
-        .select()
-        .from(proposedSheetChanges)
-        .where(
-          and(
-            eq(proposedSheetChanges.eventRequestId, parsedEventId),
-            eq(proposedSheetChanges.status, 'pending')
-          )
-        )
-        .limit(1);
-
-      if (existing.length > 0) {
-        return res.status(400).json({
-          error: 'A pending proposal already exists for this event',
-          existingProposalId: existing[0].id
-        });
-      }
-
-      const result = await service.proposeNewRow(
-        parsedEventId,
-        userId,
-        reason || 'Event ready for scheduling'
-      );
-
-      if (result.success) {
-        res.json({
-          success: true,
-          proposalId: result.proposalId,
-          message: result.message
-        });
-      } else {
-        res.status(400).json({ success: false, error: result.message });
-      }
-    } catch (error) {
-      logger.error('Error creating event proposal:', error);
-      res.status(500).json({ error: 'Failed to create proposal' });
-    }
-  });
-
-  /**
    * GET /api/planning-sheet-proposals/preview/:eventId
    * Preview what data would be sent to the sheet for an event
    * Also returns any matching rows currently in the sheet for comparison
+   *
+   * NOTE: This route MUST come before /:id to avoid "preview" being caught as an id
    */
   router.get('/preview/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -416,6 +216,8 @@ export function createPlanningSheetProposalsRouter(
   /**
    * GET /api/planning-sheet-proposals/sheet/read
    * Read current data from the Planning Sheet (for comparison/debugging)
+   *
+   * NOTE: This route MUST come before /:id to avoid "sheet" being caught as an id
    */
   router.get('/sheet/read', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -433,8 +235,48 @@ export function createPlanningSheetProposalsRouter(
   });
 
   /**
+   * GET /api/planning-sheet-proposals/:id
+   * Get a single proposal with full details
+   *
+   * NOTE: This parameterized route MUST come after specific routes like /preview/:eventId
+   */
+  router.get('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const [proposal] = await db
+        .select()
+        .from(proposedSheetChanges)
+        .where(eq(proposedSheetChanges.id, parseInt(id)))
+        .limit(1);
+
+      if (!proposal) {
+        return res.status(404).json({ error: 'Proposal not found' });
+      }
+
+      // Get event details if linked
+      let eventDetails = null;
+      if (proposal.eventRequestId) {
+        const [event] = await db
+          .select()
+          .from(eventRequests)
+          .where(eq(eventRequests.id, proposal.eventRequestId))
+          .limit(1);
+        eventDetails = event;
+      }
+
+      res.json({ proposal, eventDetails });
+    } catch (error) {
+      logger.error('Error fetching proposal:', error);
+      res.status(500).json({ error: 'Failed to fetch proposal' });
+    }
+  });
+
+  /**
    * POST /api/planning-sheet-proposals/batch/approve
    * Approve multiple proposals at once
+   *
+   * NOTE: This route MUST come before /:id/approve to avoid "batch" being caught as an id
    */
   router.post('/batch/approve', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -477,6 +319,8 @@ export function createPlanningSheetProposalsRouter(
   /**
    * POST /api/planning-sheet-proposals/batch/reject
    * Reject multiple proposals at once
+   *
+   * NOTE: This route MUST come before /:id/reject to avoid "batch" being caught as an id
    */
   router.post('/batch/reject', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -521,6 +365,156 @@ export function createPlanningSheetProposalsRouter(
     } catch (error) {
       logger.error('Error batch rejecting proposals:', error);
       res.status(500).json({ error: 'Failed to batch reject proposals' });
+    }
+  });
+
+  /**
+   * POST /api/planning-sheet-proposals/propose-event/:eventId
+   * Create a proposal to add an event to the Planning Sheet
+   */
+  router.post('/propose-event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      const { reason } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const service = getPlanningSheetService();
+      if (!service) {
+        return res.status(500).json({ error: 'Planning Sheet service not configured' });
+      }
+
+      // Check if event already has a pending proposal
+      const existing = await db
+        .select()
+        .from(proposedSheetChanges)
+        .where(
+          and(
+            eq(proposedSheetChanges.eventRequestId, parseInt(eventId)),
+            eq(proposedSheetChanges.status, 'pending'),
+            eq(proposedSheetChanges.changeType, 'create_row')
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({
+          error: 'A pending proposal already exists for this event',
+          existingProposalId: existing[0].id
+        });
+      }
+
+      const result = await service.proposeNewRow(
+        parseInt(eventId),
+        userId,
+        reason || 'Event ready for scheduling'
+      );
+
+      if (result.success) {
+        res.json({
+          success: true,
+          proposalId: result.proposalId,
+          message: result.message
+        });
+      } else {
+        res.status(400).json({ success: false, error: result.message });
+      }
+    } catch (error) {
+      logger.error('Error creating event proposal:', error);
+      res.status(500).json({ error: 'Failed to create proposal' });
+    }
+  });
+
+  /**
+   * POST /api/planning-sheet-proposals/:id/approve
+   * Approve and apply a proposal
+   *
+   * NOTE: This parameterized route MUST come after specific routes like /batch/approve
+   */
+  router.post('/:id/approve', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const service = getPlanningSheetService();
+      if (!service) {
+        return res.status(500).json({ error: 'Planning Sheet service not configured' });
+      }
+
+      const result = await service.applyApprovedProposal(parseInt(id), userId);
+
+      if (result.success) {
+        res.json({ success: true, message: result.message });
+      } else {
+        res.status(400).json({ success: false, error: result.message });
+      }
+    } catch (error) {
+      logger.error('Error approving proposal:', error);
+      res.status(500).json({ error: 'Failed to approve proposal' });
+    }
+  });
+
+  /**
+   * POST /api/planning-sheet-proposals/:id/reject
+   * Reject a proposal
+   */
+  router.post('/:id/reject', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const service = getPlanningSheetService();
+      if (!service) {
+        return res.status(500).json({ error: 'Planning Sheet service not configured' });
+      }
+
+      const result = await service.rejectProposal(parseInt(id), userId, notes);
+
+      if (result.success) {
+        res.json({ success: true, message: result.message });
+      } else {
+        res.status(400).json({ success: false, error: result.message });
+      }
+    } catch (error) {
+      logger.error('Error rejecting proposal:', error);
+      res.status(500).json({ error: 'Failed to reject proposal' });
+    }
+  });
+
+  /**
+   * POST /api/planning-sheet-proposals/:id/edit
+   * Edit a proposal's proposed value before approving
+   */
+  router.post('/:id/edit', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { proposedValue, proposedRowData } = req.body;
+
+      await db
+        .update(proposedSheetChanges)
+        .set({
+          proposedValue: proposedValue !== undefined ? proposedValue : undefined,
+          proposedRowData: proposedRowData !== undefined ? proposedRowData : undefined,
+          updatedAt: new Date(),
+        })
+        .where(eq(proposedSheetChanges.id, parseInt(id)));
+
+      res.json({ success: true, message: 'Proposal updated' });
+    } catch (error) {
+      logger.error('Error editing proposal:', error);
+      res.status(500).json({ error: 'Failed to edit proposal' });
     }
   });
 
