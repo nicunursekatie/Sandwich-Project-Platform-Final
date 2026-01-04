@@ -40,29 +40,32 @@ export const PLANNING_SHEET_COLUMNS = {
 
 /**
  * Staffing format parser and generator
- * 
+ *
  * Format specifications:
- * - The staffing column contains comma-separated role assignments
- * - Format: "D: Name, S: Name, V: Name, VD: Name"
+ * - The staffing column contains role assignments separated by role prefixes
+ * - Format: "D: Name1, Name2, S: Name3, V: Name4, VD: Name5"
+ * - Each role can have multiple people assigned (comma-separated names)
  * - Each role can be:
- *   - Assigned with name: "D: John Doe" (role needed and assigned to John Doe)
+ *   - Assigned with name(s): "D: John Doe, Jane Smith" (role needed, assigned to John and Jane)
  *   - Unassigned but needed: "D:" or "D: " (role needed but no one assigned)
  *   - Not needed: role is omitted from the string
- * 
+ *
  * Roles:
  * - D: Driver (regular)
  * - VD: Van Driver (special type of driver, checked before D)
  * - S: Speaker
  * - V: Volunteer
- * 
+ *
  * Examples:
  * - "D: John Doe, S: Jane Smith" = Driver assigned to John, Speaker assigned to Jane
+ * - "D: John, Jane, S: Bob" = Drivers assigned to John AND Jane, Speaker assigned to Bob
  * - "D:, S:" = Driver and Speaker needed but unassigned
  * - "VD: Bob Jones, V:" = Van Driver assigned to Bob, Volunteer needed but unassigned
  * - "" = No roles needed
- * 
+ *
  * Note: When parsing, VD must be checked before D to avoid false matches.
  * Note: Unassigned positions may include trailing space after colon (e.g., "D: ").
+ * Note: Comma-separated names within a role are preserved as a single string.
  */
 export interface StaffingInfo {
   driver: { needed: boolean; assigned: string | null; isVanDriver: boolean };
@@ -72,6 +75,10 @@ export interface StaffingInfo {
 
 /**
  * Parse a staffing column string into structured staffing information.
+ *
+ * Uses regex to split on role prefixes (VD:, D:, S:, V:) to correctly handle
+ * multiple comma-separated names within a single role.
+ *
  * See StaffingInfo documentation for format details.
  */
 export function parseStaffingColumn(staffingStr: string): StaffingInfo {
@@ -85,42 +92,51 @@ export function parseStaffingColumn(staffingStr: string): StaffingInfo {
     return result;
   }
 
-  // Split by comma and process each part
-  const parts = staffingStr.split(',').map(p => p.trim()).filter(p => p);
+  // Use regex to find role sections - split on role prefixes
+  // Match: VD: or D: or S: or V: (case insensitive, VD must come before D)
+  // The lookahead ensures we capture content until the next role prefix
+  const rolePattern = /\b(VD|D|S|V)\s*:/gi;
+  const matches: { role: string; startIndex: number }[] = [];
+  let match;
 
-  for (const part of parts) {
-    // Check for VD (Van Driver) - must check before D
-    if (part.startsWith('VD:') || part === 'VD') {
-      result.driver.needed = true;
-      result.driver.isVanDriver = true;
-      if (part.includes(':')) {
-        const name = part.split(':')[1]?.trim();
-        result.driver.assigned = name || null;
-      }
-    }
-    // Check for D (Driver)
-    else if (part.startsWith('D:') || part === 'D') {
-      result.driver.needed = true;
-      if (part.includes(':')) {
-        const name = part.split(':')[1]?.trim();
-        result.driver.assigned = name || null;
-      }
-    }
-    // Check for S (Speaker)
-    else if (part.startsWith('S:') || part === 'S') {
-      result.speaker.needed = true;
-      if (part.includes(':')) {
-        const name = part.split(':')[1]?.trim();
-        result.speaker.assigned = name || null;
-      }
-    }
-    // Check for V (Volunteer) - but not VD
-    else if ((part.startsWith('V:') || part === 'V') && !part.startsWith('VD')) {
-      result.volunteer.needed = true;
-      if (part.includes(':')) {
-        const name = part.split(':')[1]?.trim();
-        result.volunteer.assigned = name || null;
-      }
+  while ((match = rolePattern.exec(staffingStr)) !== null) {
+    matches.push({ role: match[1].toUpperCase(), startIndex: match.index });
+  }
+
+  // Process each role section
+  for (let i = 0; i < matches.length; i++) {
+    const currentMatch = matches[i];
+    const nextMatch = matches[i + 1];
+
+    // Extract content from after the colon to the next role prefix (or end of string)
+    const colonIndex = staffingStr.indexOf(':', currentMatch.startIndex);
+    const endIndex = nextMatch ? nextMatch.startIndex : staffingStr.length;
+    const content = staffingStr.slice(colonIndex + 1, endIndex).trim();
+
+    // Remove trailing comma if present (from being before the next role)
+    const cleanedContent = content.replace(/,\s*$/, '').trim();
+
+    switch (currentMatch.role) {
+      case 'VD':
+        result.driver.needed = true;
+        result.driver.isVanDriver = true;
+        result.driver.assigned = cleanedContent || null;
+        break;
+      case 'D':
+        // Only set if not already set by VD
+        if (!result.driver.isVanDriver) {
+          result.driver.needed = true;
+          result.driver.assigned = cleanedContent || null;
+        }
+        break;
+      case 'S':
+        result.speaker.needed = true;
+        result.speaker.assigned = cleanedContent || null;
+        break;
+      case 'V':
+        result.volunteer.needed = true;
+        result.volunteer.assigned = cleanedContent || null;
+        break;
     }
   }
 

@@ -277,8 +277,9 @@ export function createPlanningSheetProposalsRouter(
    * Approve multiple proposals at once
    *
    * NOTE: This route MUST come before /:id/approve to avoid "batch" being caught as an id
+   * Requires 'manage:events' permission to write to Google Sheet
    */
-  router.post('/batch/approve', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/batch/approve', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { proposalIds } = req.body;
       const userId = req.user?.id;
@@ -321,8 +322,9 @@ export function createPlanningSheetProposalsRouter(
    * Reject multiple proposals at once
    *
    * NOTE: This route MUST come before /:id/reject to avoid "batch" being caught as an id
+   * Requires 'manage:events' permission
    */
-  router.post('/batch/reject', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/batch/reject', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { proposalIds, notes } = req.body;
       const userId = req.user?.id;
@@ -433,8 +435,9 @@ export function createPlanningSheetProposalsRouter(
    * Approve and apply a proposal
    *
    * NOTE: This parameterized route MUST come after specific routes like /batch/approve
+   * Requires 'manage:events' permission to write to Google Sheet
    */
-  router.post('/:id/approve', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:id/approve', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const userId = req.user?.id;
@@ -464,8 +467,9 @@ export function createPlanningSheetProposalsRouter(
   /**
    * POST /api/planning-sheet-proposals/:id/reject
    * Reject a proposal
+   * Requires 'manage:events' permission
    */
-  router.post('/:id/reject', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:id/reject', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { notes } = req.body;
@@ -496,11 +500,32 @@ export function createPlanningSheetProposalsRouter(
   /**
    * POST /api/planning-sheet-proposals/:id/edit
    * Edit a proposal's proposed value before approving
+   * Requires 'manage:events' permission
    */
-  router.post('/:id/edit', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:id/edit', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { proposedValue, proposedRowData } = req.body;
+      const proposalId = parseInt(id, 10);
+
+      if (isNaN(proposalId)) {
+        return res.status(400).json({ error: 'Invalid proposal ID' });
+      }
+
+      // Check if proposal exists first
+      const [existing] = await db
+        .select({ id: proposedSheetChanges.id, status: proposedSheetChanges.status })
+        .from(proposedSheetChanges)
+        .where(eq(proposedSheetChanges.id, proposalId))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Proposal not found' });
+      }
+
+      if (existing.status !== 'pending') {
+        return res.status(400).json({ error: 'Can only edit pending proposals' });
+      }
 
       await db
         .update(proposedSheetChanges)
@@ -509,7 +534,7 @@ export function createPlanningSheetProposalsRouter(
           proposedRowData: proposedRowData !== undefined ? proposedRowData : undefined,
           updatedAt: new Date(),
         })
-        .where(eq(proposedSheetChanges.id, parseInt(id)));
+        .where(eq(proposedSheetChanges.id, proposalId));
 
       res.json({ success: true, message: 'Proposal updated' });
     } catch (error) {
