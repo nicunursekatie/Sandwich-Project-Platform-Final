@@ -877,7 +877,6 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use(
     '/api/planning-sheet-proposals',
-    deps.isAuthenticated,
     ...createStandardMiddleware(),
     planningSheetProposalsRouter
   );

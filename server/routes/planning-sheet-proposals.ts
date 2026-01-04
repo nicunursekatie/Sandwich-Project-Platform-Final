@@ -3,11 +3,8 @@ import { db } from '../db';
 import { eq, desc, and, inArray } from 'drizzle-orm';
 import { proposedSheetChanges, eventRequests, users } from '@shared/schema';
 import {
-  PlanningSheetSyncService,
   getPlanningSheetService,
   PLANNING_SHEET_COLUMNS,
-  parseStaffingColumn,
-  formatStaffingColumn,
 } from '../planning-sheet-sync-service';
 import { logger } from '../utils/production-safe-logger';
 
@@ -120,11 +117,16 @@ export function createPlanningSheetProposalsRouter(
   router.get('/:id', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
+      const proposalId = Number.parseInt(id, 10);
+
+      if (Number.isNaN(proposalId)) {
+        return res.status(400).json({ error: 'Invalid proposal id' });
+      }
 
       const [proposal] = await db
         .select()
         .from(proposedSheetChanges)
-        .where(eq(proposedSheetChanges.id, parseInt(id)))
+        .where(eq(proposedSheetChanges.id, proposalId))
         .limit(1);
 
       if (!proposal) {
@@ -224,8 +226,8 @@ export function createPlanningSheetProposalsRouter(
       await db
         .update(proposedSheetChanges)
         .set({
-          proposedValue: proposedValue !== undefined ? proposedValue : undefined,
-          proposedRowData: proposedRowData !== undefined ? proposedRowData : undefined,
+          proposedValue,
+          proposedRowData,
           updatedAt: new Date(),
         })
         .where(eq(proposedSheetChanges.id, parseInt(id)));
@@ -247,6 +249,11 @@ export function createPlanningSheetProposalsRouter(
       const { reason } = req.body;
       const userId = req.user?.id;
 
+      const parsedEventId = Number.parseInt(eventId, 10);
+      if (Number.isNaN(parsedEventId) || parsedEventId <= 0) {
+        return res.status(400).json({ error: 'Invalid event id' });
+      }
+
       if (!userId) {
         return res.status(401).json({ error: 'User not authenticated' });
       }
@@ -262,9 +269,8 @@ export function createPlanningSheetProposalsRouter(
         .from(proposedSheetChanges)
         .where(
           and(
-            eq(proposedSheetChanges.eventRequestId, parseInt(eventId)),
-            eq(proposedSheetChanges.status, 'pending'),
-            eq(proposedSheetChanges.changeType, 'create_row')
+            eq(proposedSheetChanges.eventRequestId, parsedEventId),
+            eq(proposedSheetChanges.status, 'pending')
           )
         )
         .limit(1);
@@ -277,7 +283,7 @@ export function createPlanningSheetProposalsRouter(
       }
 
       const result = await service.proposeNewRow(
-        parseInt(eventId),
+        parsedEventId,
         userId,
         reason || 'Event ready for scheduling'
       );
@@ -470,15 +476,26 @@ export function createPlanningSheetProposalsRouter(
         return res.status(500).json({ error: 'Planning Sheet service not configured' });
       }
 
-      const results = [];
+      const results: Array<{ id: string; success: boolean; error?: string; [key: string]: any }> = [];
       for (const id of proposalIds) {
-        const result = await service.rejectProposal(id, userId, notes);
-        results.push({ id, ...result });
+        try {
+          const result = await service.rejectProposal(id, userId, notes);
+          results.push({ id, success: true, ...result });
+        } catch (err: any) {
+          logger.error('Error rejecting proposal in batch operation:', { id, error: err });
+          results.push({
+            id,
+            success: false,
+            error: err?.message ?? 'Failed to reject proposal'
+          });
+        }
       }
 
+      const successCount = results.filter(r => r.success).length;
+
       res.json({
-        success: true,
-        message: `Rejected ${proposalIds.length} proposals`,
+        success: successCount === proposalIds.length,
+        message: `Rejected ${successCount} of ${proposalIds.length} proposals`,
         results
       });
     } catch (error) {
