@@ -478,6 +478,90 @@ export function createDriversRouter(deps: RouterDependencies) {
     }
   });
 
+  // Reset ALL coordinates and re-geocode from home addresses only
+  // Use this to migrate from old guess-based geocoding to address-based
+  router.post('/reset-and-geocode', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const allDrivers = await storage.getAllDrivers();
+
+      // Step 1: Clear ALL coordinates
+      const driversWithCoords = allDrivers.filter(d => d.latitude || d.longitude);
+      for (const driver of driversWithCoords) {
+        await db.update(drivers)
+          .set({
+            latitude: null,
+            longitude: null,
+            geocodedAt: null,
+          })
+          .where(eq(drivers.id, driver.id));
+      }
+
+      logger.info('Cleared all driver coordinates for re-geocoding', {
+        count: driversWithCoords.length,
+      });
+
+      // Step 2: Geocode only drivers with home addresses
+      const driversWithAddress = allDrivers.filter(d => d.homeAddress?.trim());
+
+      if (driversWithAddress.length === 0) {
+        return res.json({
+          message: 'Cleared all coordinates but no drivers have home addresses to geocode',
+          cleared: driversWithCoords.length,
+          success: 0,
+          failed: 0,
+          withoutAddress: allDrivers.length,
+        });
+      }
+
+      const results = {
+        cleared: driversWithCoords.length,
+        success: 0,
+        failed: 0,
+        total: driversWithAddress.length,
+        failures: [] as Array<{ driverId: number; name: string; address: string }>,
+      };
+
+      // Geocode each driver with rate limiting
+      for (const driver of driversWithAddress) {
+        await new Promise((resolve) => setTimeout(resolve, GEOCODE_DELAY_MS));
+
+        const address = getDriverAddressForGeocoding(driver);
+        if (!address) continue;
+
+        const geocodeResult = await geocodeAddress(address);
+
+        if (geocodeResult) {
+          await db.update(drivers)
+            .set({
+              latitude: geocodeResult.latitude,
+              longitude: geocodeResult.longitude,
+              geocodedAt: new Date(),
+            })
+            .where(eq(drivers.id, driver.id));
+
+          results.success++;
+          logger.info('Re-geocoded driver from home address', {
+            driverId: driver.id,
+            name: driver.name,
+            address,
+          });
+        } else {
+          results.failed++;
+          results.failures.push({
+            driverId: driver.id,
+            name: driver.name || 'Unknown',
+            address,
+          });
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      logger.error('Reset and geocode failed', error);
+      res.status(500).json({ message: 'Reset and geocode failed' });
+    }
+  });
+
   // Batch geocode drivers that have a home address but no coordinates
   // Only uses actual addresses, not zone/area guesses
   router.post('/batch-geocode', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {

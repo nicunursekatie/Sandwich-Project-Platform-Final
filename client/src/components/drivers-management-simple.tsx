@@ -471,6 +471,40 @@ export default function DriversManagement() {
     }
   };
 
+  // Reset all coordinates and re-geocode from home addresses only
+  const handleResetAndGeocode = async () => {
+    if (!confirm('This will clear ALL existing driver coordinates and re-geocode only from home addresses. Drivers without a home address will no longer appear on the map. Continue?')) {
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      const response = await fetch('/api/drivers/reset-and-geocode', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Reset and geocode failed');
+
+      const data = await response.json();
+      toast({
+        title: 'Reset & Geocode complete',
+        description: `Cleared ${data.cleared} old coordinates. Geocoded ${data.success} from addresses, ${data.failed} failed.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/drivers/driver-candidates'] });
+    } catch (error) {
+      logger.error('Reset and geocode failed', error);
+      toast({
+        title: 'Reset & Geocode failed',
+        description: 'Check your connection or try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-6">Loading drivers...</div>;
   }
@@ -494,24 +528,44 @@ export default function DriversManagement() {
             </h1>
             <div className="flex flex-col sm:flex-row gap-2">
               {isAdmin && (
-                <Button
-                  variant="secondary"
-                  onClick={handleBatchGeocode}
-                  disabled={isGeocoding}
-                  className="text-xs sm:text-sm"
-                >
-                  {isGeocoding ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <MapPin className="w-4 h-4 mr-2" />
-                  )}
-                  <span className="hidden sm:inline">
-                    {isGeocoding ? 'Geocoding...' : 'Geocode Missing Drivers'}
-                  </span>
-                  <span className="sm:hidden">
-                    {isGeocoding ? 'Geocoding' : 'Geocode'}
-                  </span>
-                </Button>
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={handleBatchGeocode}
+                    disabled={isGeocoding}
+                    className="text-xs sm:text-sm"
+                  >
+                    {isGeocoding ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <MapPin className="w-4 h-4 mr-2" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {isGeocoding ? 'Geocoding...' : 'Geocode New'}
+                    </span>
+                    <span className="sm:hidden">
+                      {isGeocoding ? '...' : 'Geocode'}
+                    </span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleResetAndGeocode}
+                    disabled={isGeocoding}
+                    className="text-xs sm:text-sm border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    {isGeocoding ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <MapPin className="w-4 h-4 mr-2" />
+                    )}
+                    <span className="hidden sm:inline">
+                      Reset & Re-geocode All
+                    </span>
+                    <span className="sm:hidden">
+                      Reset
+                    </span>
+                  </Button>
+                </>
               )}
               <Button
                 variant="outline"
