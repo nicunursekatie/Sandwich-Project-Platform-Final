@@ -445,10 +445,19 @@ export default function DriversManagement() {
       if (!response.ok) throw new Error('Geocoding failed');
 
       const data = await response.json();
-      toast({
-        title: 'Geocoding complete',
-        description: `${data.success} updated, ${data.failed} failed`,
-      });
+
+      // Show appropriate message based on results
+      if (data.message === 'No drivers need geocoding') {
+        toast({
+          title: 'Geocoding complete',
+          description: `No drivers need geocoding. ${data.withAddress || 0} have addresses, ${data.alreadyGeocoded || 0} already geocoded, ${data.withoutAddress || 0} missing addresses.`,
+        });
+      } else {
+        toast({
+          title: 'Geocoding complete',
+          description: `${data.success} updated, ${data.failed} failed`,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
     } catch (error) {
       logger.error('Batch geocode failed', error);

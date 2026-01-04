@@ -502,6 +502,8 @@ export function createDriversRouter(deps: RouterDependencies) {
       if (driversToGeocode.length === 0) {
         return res.json({
           message: 'No drivers need geocoding',
+          success: 0,
+          failed: 0,
           total: allDrivers.length,
           withAddress: driversWithAddress.length,
           alreadyGeocoded: driversWithCoords.length,
