@@ -465,7 +465,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   // Helper functions
   const parsePostgresArray = (arr: any): string[] => {
     if (!arr) return [];
-    if (Array.isArray(arr)) return arr;
+    if (Array.isArray(arr)) return arr.map(String).filter((item) => item && item.trim());
     if (typeof arr === 'string') {
       if (arr === '{}' || arr === '') return [];
       let cleaned = arr.replace(/^{|}$/g, '');

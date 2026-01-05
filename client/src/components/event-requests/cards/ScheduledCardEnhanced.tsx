@@ -134,7 +134,7 @@ interface ScheduledCardEnhancedProps {
 
 const parsePostgresArray = (arr: unknown): string[] => {
   if (!arr) return [];
-  if (Array.isArray(arr)) return arr;
+  if (Array.isArray(arr)) return arr.map(String).filter((item) => item && item.trim());
   if (typeof arr === 'string') {
     if (arr === '{}' || arr === '') return [];
     const cleaned = arr.replace(/^{|}$/g, '');

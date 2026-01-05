@@ -622,7 +622,7 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
 }) => {
   const parsePostgresArray = (arr: unknown): string[] => {
     if (!arr) return [];
-    if (Array.isArray(arr)) return arr.map(String); // Convert all elements to strings
+    if (Array.isArray(arr)) return arr.map(String).filter((item) => item && item.trim());
     if (typeof arr === 'string') {
       if (arr === '{}' || arr === '') return [];
       const cleaned = arr.replace(/^{|}$/g, '');
@@ -1854,7 +1854,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Helper to parse PostgreSQL arrays
   const parsePostgresArray = (value: unknown): string[] => {
     if (!value) return [];
-    if (Array.isArray(value)) return value.map(String);
+    if (Array.isArray(value)) return value.map(String).filter((item) => item && item.trim());
     if (typeof value === 'string') {
       const cleaned = value.replace(/[{}]/g, '');
       if (!cleaned) return [];
