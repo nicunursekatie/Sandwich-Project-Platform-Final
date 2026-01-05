@@ -2715,29 +2715,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </Button>
           )}
 
-          {/* Export to Google Sheet button */}
-          <Button
-            size="sm"
+          {/* Propose to Planning Sheet button */}
+          <ProposeToSheetButton
+            eventId={request.id}
+            organizationName={request.organizationName || 'Unknown'}
             variant="outline"
-            onClick={handleExportToGoogleSheet}
-            disabled={isExportingToSheet || request.addedToOfficialSheet}
-            className={`border-green-500/30 text-green-600 hover:bg-green-50 ${
-              request.addedToOfficialSheet ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            title={request.addedToOfficialSheet ? 'Already added to sheet' : 'Add event to TSP Google Sheet'}
-          >
-            {isExportingToSheet ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Sheet className="w-4 h-4 mr-1" />
-                {request.addedToOfficialSheet ? 'On Sheet' : 'Add to Sheet'}
-              </>
-            )}
-          </Button>
+            size="sm"
+            className="border-blue-500/30"
+          />
         </div>
 
         {/* Team Comments Section */}
