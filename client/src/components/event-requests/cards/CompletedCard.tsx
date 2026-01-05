@@ -137,6 +137,7 @@ interface CardHeaderProps {
   setTempIsConfirmed?: (value: boolean) => void;
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
+  canEditTspContact?: boolean;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -169,6 +170,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   setTempIsConfirmed,
   presentUsers = [],
   currentUserId = '',
+  canEditTspContact = false,
 }) => {
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
@@ -2143,6 +2145,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           setTempIsConfirmed={setTempIsConfirmed}
           presentUsers={collaboration.presentUsers}
           currentUserId={user?.id}
+          canEditTspContact={canEditTspContact}
         />
 
         {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
