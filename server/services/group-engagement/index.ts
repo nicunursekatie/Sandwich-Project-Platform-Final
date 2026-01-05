@@ -226,7 +226,40 @@ function calculateOverallScore(scores: Omit<EngagementScores, 'overall'>): numbe
 }
 
 /**
- * Determine engagement level based on overall score
+ * Calculate the expected interval between events based on historical frequency.
+ * This helps determine dynamic thresholds for when an org is "overdue" for contact.
+ */
+function calculateExpectedInterval(metrics: EngagementMetrics): number {
+  // If they have an average interval from past events, use that
+  if (metrics.averageEventInterval !== null && metrics.averageEventInterval > 0) {
+    return metrics.averageEventInterval;
+  }
+  
+  // Calculate from total events and time span
+  if (metrics.totalEvents >= 2 && metrics.daysSinceFirstEvent !== null && metrics.daysSinceFirstEvent > 0) {
+    return metrics.daysSinceFirstEvent / (metrics.totalEvents - 1);
+  }
+  
+  // Default: assume yearly if we can't calculate
+  return 365;
+}
+
+/**
+ * Calculate how "overdue" an organization is based on their typical event frequency.
+ * Returns a multiplier: 1.0 = on schedule, 2.0 = 2x overdue, etc.
+ */
+function calculateOverdueMultiplier(metrics: EngagementMetrics): number {
+  if (metrics.daysSinceLastEvent === null || metrics.daysSinceLastEvent === 0) {
+    return 0;
+  }
+  
+  const expectedInterval = calculateExpectedInterval(metrics);
+  return metrics.daysSinceLastEvent / expectedInterval;
+}
+
+/**
+ * Determine engagement level based on overall score AND frequency-adjusted thresholds.
+ * Organizations that were frequent contributors get flagged sooner when they go quiet.
  */
 function determineEngagementLevel(
   score: number,
@@ -243,12 +276,45 @@ function determineEngagementLevel(
     return 'new';
   }
 
-  // Check for dormant (no activity in over a year)
-  if (metrics.daysSinceLastEvent !== null && metrics.daysSinceLastEvent > 365) {
+  // Calculate how overdue they are based on their typical frequency
+  const overdueMultiplier = calculateOverdueMultiplier(metrics);
+  const expectedInterval = calculateExpectedInterval(metrics);
+  
+  // Dynamic dormant threshold: 
+  // - Frequent contributors (monthly): dormant after ~3x their interval (3 months)
+  // - Yearly contributors: dormant after ~1.5x their interval (18 months)
+  // We use a sliding scale based on frequency
+  let dormantMultiplier: number;
+  if (expectedInterval <= 30) {
+    // Monthly or more frequent: 3x overdue = dormant
+    dormantMultiplier = 3.0;
+  } else if (expectedInterval <= 90) {
+    // Quarterly: 2.5x overdue = dormant
+    dormantMultiplier = 2.5;
+  } else if (expectedInterval <= 180) {
+    // Semi-annual: 2x overdue = dormant
+    dormantMultiplier = 2.0;
+  } else {
+    // Yearly or less: 1.5x overdue = dormant
+    dormantMultiplier = 1.5;
+  }
+  
+  // Check for dormant based on frequency-adjusted threshold
+  if (overdueMultiplier >= dormantMultiplier) {
     return 'dormant';
   }
+  
+  // Cap engagement level based on how overdue they are
+  // If they're significantly overdue, they can't be "engaged" regardless of historical score
+  if (overdueMultiplier >= 2.0) {
+    // 2x+ overdue: cap at "low"
+    if (score >= 40) return 'low';
+  } else if (overdueMultiplier >= 1.5) {
+    // 1.5x+ overdue: cap at "moderate"  
+    if (score >= 60) return 'moderate';
+  }
 
-  // Score-based levels
+  // Score-based levels (for orgs that are reasonably on schedule)
   if (score >= 80) return 'highly_engaged';
   if (score >= 60) return 'engaged';
   if (score >= 40) return 'moderate';
@@ -268,13 +334,13 @@ function wasRegularContributor(metrics: EngagementMetrics): boolean {
 }
 
 /**
- * Determine outreach priority based on engagement patterns
- *
- * Priority logic:
- * - URGENT: Regular contributor who stopped 1-3 months ago (catch before they go cold)
- * - HIGH: Regular contributor who stopped 3-6 months ago (still recoverable)
- * - NORMAL: Dormant 6-12 months with meaningful history (worth re-engaging but not urgent)
- * - LOW: Never engaged, highly engaged (no outreach needed), or dormant 12+ months
+ * Determine outreach priority based on engagement patterns with DYNAMIC thresholds.
+ * 
+ * Priority logic (based on overdue multiplier relative to their typical frequency):
+ * - URGENT: 1.2x - 1.75x overdue (catch before they go cold)
+ * - HIGH: 1.75x - 2.25x overdue (still recoverable)
+ * - NORMAL: 2.25x+ overdue but not yet dormant
+ * - LOW: Never engaged, highly engaged (no outreach needed), or fully dormant
  */
 function determineOutreachPriority(
   engagementLevel: OrganizationEngagement['engagementLevel'],
@@ -291,32 +357,33 @@ function determineOutreachPriority(
     return 'low';
   }
 
+  // Dormant partners are low priority (too far gone for urgent outreach)
+  if (engagementLevel === 'dormant') {
+    return 'low';
+  }
+
   const daysSinceLastEvent = metrics.daysSinceLastEvent;
   if (daysSinceLastEvent === null) {
     return 'low';
   }
 
   const wasRegular = wasRegularContributor(metrics);
+  const overdueMultiplier = calculateOverdueMultiplier(metrics);
 
-  // Recently disengaged regular contributors are the highest priority
+  // Only prioritize outreach for organizations that were regular contributors
   if (wasRegular) {
-    // Stopped 1-3 months ago - urgent, catch them before they go cold
-    if (daysSinceLastEvent >= 30 && daysSinceLastEvent <= 90) {
+    // Just becoming overdue (1.2x - 1.75x their interval) - urgent, catch them now
+    if (overdueMultiplier >= 1.2 && overdueMultiplier < 1.75) {
       return 'urgent';
     }
-    // Stopped 3-6 months ago - high priority, still recoverable
-    if (daysSinceLastEvent > 90 && daysSinceLastEvent <= 180) {
+    // Significantly overdue (1.75x - 2.25x) - high priority, still recoverable
+    if (overdueMultiplier >= 1.75 && overdueMultiplier < 2.25) {
       return 'high';
     }
-    // Stopped 6-12 months ago - normal priority, worth re-engaging
-    if (daysSinceLastEvent > 180 && daysSinceLastEvent <= 365) {
+    // Very overdue but not dormant - normal priority
+    if (overdueMultiplier >= 2.25) {
       return 'normal';
     }
-  }
-
-  // Long dormant (12+ months) or sporadic contributors - low priority
-  if (daysSinceLastEvent > 365) {
-    return 'low';
   }
 
   // Default for other cases
@@ -334,21 +401,28 @@ function generateInsights(
   const insights: EngagementInsight[] = [];
   const wasRegular = wasRegularContributor(metrics);
   const daysSinceLastEvent = metrics.daysSinceLastEvent;
+  const overdueMultiplier = calculateOverdueMultiplier(metrics);
+  const expectedInterval = calculateExpectedInterval(metrics);
 
-  // Recent drop-off insights for regular contributors
-  if (wasRegular && daysSinceLastEvent !== null) {
-    if (daysSinceLastEvent >= 30 && daysSinceLastEvent <= 90) {
+  // Dynamic drop-off insights based on their typical frequency
+  if (wasRegular && daysSinceLastEvent !== null && overdueMultiplier > 0) {
+    const expectedDays = Math.round(expectedInterval);
+    const frequencyLabel = expectedDays <= 30 ? 'monthly' : 
+                           expectedDays <= 90 ? 'quarterly' : 
+                           expectedDays <= 180 ? 'semi-annual' : 'yearly';
+    
+    if (overdueMultiplier >= 1.2 && overdueMultiplier < 1.75) {
       insights.push({
         type: 'warning',
-        title: 'Recent Disengagement',
-        description: 'Regular contributor who stopped 1-3 months ago. Reach out now before they go cold.',
+        title: 'Becoming Overdue',
+        description: `This ${frequencyLabel} contributor is ${Math.round((overdueMultiplier - 1) * 100)}% past their typical event interval. Reach out now before they go cold.`,
         priority: 1
       });
-    } else if (daysSinceLastEvent > 90 && daysSinceLastEvent <= 180) {
+    } else if (overdueMultiplier >= 1.75 && overdueMultiplier < 2.5) {
       insights.push({
         type: 'warning',
-        title: 'Engagement Declining',
-        description: 'Regular contributor with no activity in 3-6 months. Schedule a check-in soon.',
+        title: 'Significantly Overdue',
+        description: `This ${frequencyLabel} contributor hasn't had an event in ${daysSinceLastEvent} days (typically every ${expectedDays} days). Schedule a check-in soon.`,
         priority: 2
       });
     }
