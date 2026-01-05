@@ -124,6 +124,20 @@ export const useEventAssignments = () => {
         }
       }
 
+      // Handle driver- prefixed IDs (e.g., "driver-443")
+      if (userIdOrName.startsWith('driver-')) {
+        const driverId = userIdOrName.replace('driver-', '');
+        const numericDriverId = parseInt(driverId);
+        
+        const driver = drivers.find((d) => d && d.id === numericDriverId);
+        if (driver) {
+          return driver.name || `Driver #${driverId}`;
+        }
+        
+        logger.warn(`Driver not found: ${userIdOrName}`);
+        return `Driver #${driverId}`;
+      }
+
       // Handle volunteer- prefixed IDs (e.g., "volunteer-123")
       if (userIdOrName.startsWith('volunteer-')) {
         const volunteerId = userIdOrName.replace('volunteer-', '');
