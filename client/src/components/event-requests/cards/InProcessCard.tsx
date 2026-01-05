@@ -69,6 +69,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -1516,6 +1517,15 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+
+            {/* Propose to Planning Sheet */}
+            <ProposeToSheetButton
+              eventId={request.id}
+              organizationName={request.organizationName || 'Unknown'}
+              eventDate={request.scheduledEventDate || request.desiredEventDate || undefined}
+              variant="outline"
+              size="sm"
+            />
 
             <div className="flex-1" />
 
