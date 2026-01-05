@@ -100,6 +100,9 @@ router.get('/', async (req, res) => {
         isDhlVan: eventRequests.isDhlVan,
         assignedRecipientIds: eventRequests.assignedRecipientIds,
         recipientAllocations: eventRequests.recipientAllocations,
+        driverDetails: eventRequests.driverDetails,
+        speakerDetails: eventRequests.speakerDetails,
+        volunteerDetails: eventRequests.volunteerDetails,
       })
       .from(eventRequests)
       .where(and(...conditions));
