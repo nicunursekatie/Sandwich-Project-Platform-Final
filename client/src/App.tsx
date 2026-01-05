@@ -400,6 +400,9 @@ function Router() {
         <Route path="/google-sheets">
           {() => <Dashboard initialSection="google-sheets" />}
         </Route>
+        <Route path="/planning-sheet-proposals">
+          {() => <Dashboard initialSection="planning-sheet-proposals" />}
+        </Route>
         <Route path="/meetings">
           {() => <Dashboard initialSection="meetings" />}
         </Route>

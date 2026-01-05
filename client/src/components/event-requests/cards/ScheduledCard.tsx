@@ -94,6 +94,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
+import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 
 interface TimeDialogContentProps {
   request: EventRequest;
@@ -1113,6 +1114,12 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <p>Message about this event</p>
               </TooltipContent>
             </Tooltip>
+
+            {/* Propose to Planning Sheet */}
+            <ProposeToSheetButton
+              eventId={request.id}
+              organizationName={request.organizationName || 'Unknown'}
+            />
 
             {canEdit && (
               <>

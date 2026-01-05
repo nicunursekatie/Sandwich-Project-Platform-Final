@@ -2940,6 +2940,58 @@ export const insertGoogleSheetSchema = createInsertSchema(googleSheets).omit({
 export type GoogleSheet = typeof googleSheets.$inferSelect;
 export type InsertGoogleSheet = z.infer<typeof insertGoogleSheetSchema>;
 
+// Proposed Sheet Changes - Safety gate for app-to-sheet writes
+// Changes proposed by the app are queued here for human review before being written to Google Sheets
+export const proposedSheetChanges = pgTable('proposed_sheet_changes', {
+  id: serial('id').primaryKey(),
+
+  // Which event this change relates to
+  eventRequestId: integer('event_request_id').references(() => eventRequests.id, { onDelete: 'cascade' }),
+
+  // Target sheet information
+  targetSheetId: varchar('target_sheet_id').notNull(), // Google Sheets document ID
+  targetSheetName: varchar('target_sheet_name').default('Schedule'), // Tab name within the sheet
+  targetRowIndex: integer('target_row_index'), // Row number if updating existing, null if new row
+
+  // The proposed change
+  changeType: varchar('change_type').notNull(), // 'create_row', 'update_cell', 'update_row', 'delete_row'
+  fieldName: varchar('field_name'), // Which column/field (for cell updates)
+  currentValue: text('current_value'), // What's currently in the sheet (for updates)
+  proposedValue: text('proposed_value'), // What the app wants to write
+  proposedRowData: jsonb('proposed_row_data'), // Full row data for create/update_row operations
+
+  // Mapping info for safety
+  columnMapping: jsonb('column_mapping'), // Which app field maps to which sheet column
+
+  // Who proposed it
+  proposedBy: varchar('proposed_by').references(() => users.id),
+  proposedAt: timestamp('proposed_at').defaultNow().notNull(),
+  proposalReason: text('proposal_reason'), // Why this change was proposed (e.g., "Event scheduled", "Driver assigned")
+
+  // Review status
+  status: varchar('status').notNull().default('pending'), // 'pending', 'approved', 'rejected', 'applied', 'failed'
+  reviewedBy: varchar('reviewed_by').references(() => users.id),
+  reviewedAt: timestamp('reviewed_at'),
+  reviewNotes: text('review_notes'), // Reviewer can add notes
+
+  // If approved and applied
+  appliedAt: timestamp('applied_at'),
+  applyError: text('apply_error'), // If write failed, store the error
+
+  // Audit trail
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertProposedSheetChangeSchema = createInsertSchema(proposedSheetChanges).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type ProposedSheetChange = typeof proposedSheetChanges.$inferSelect;
+export type InsertProposedSheetChange = z.infer<typeof insertProposedSheetChangeSchema>;
+
 // OLD COMPLEX MESSAGING TABLES REMOVED - Using simple 3-table system only
 // The following tables were part of the old 7-table messaging system:
 // - conversationThreads

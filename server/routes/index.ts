@@ -58,6 +58,7 @@ import { createEmailRouter } from './email-routes';
 import { createOnboardingRouter } from './onboarding';
 import { createGoogleSheetsRouter } from './google-sheets';
 import { createGoogleCalendarRouter } from './google-calendar';
+import { createPlanningSheetProposalsRouter } from './planning-sheet-proposals';
 import { createRouteOptimizationRouter } from './routes';
 import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
 import { createSandwichDistributionsRouter } from './sandwich-distributions';
@@ -868,6 +869,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     googleSheetsRouter
   );
   router.use('/api/google-sheets', createErrorHandler('google-sheets'));
+
+  // Planning Sheet Proposals - safety gate for app-to-sheet writes
+  const planningSheetProposalsRouter = createPlanningSheetProposalsRouter(
+    deps.isAuthenticated,
+    deps.requirePermission
+  );
+  router.use(
+    '/api/planning-sheet-proposals',
+    ...createStandardMiddleware(),
+    planningSheetProposalsRouter
+  );
+  router.use('/api/planning-sheet-proposals', createErrorHandler('planning-sheet-proposals'));
 
   // Google Calendar integration
   const googleCalendarRouter = createGoogleCalendarRouter(deps);

@@ -102,6 +102,7 @@ const OnboardingAdmin = lazyWithRetry(() => import('@/pages/onboarding-admin'));
 const WorkLogPage = lazyWithRetry(() => import('@/pages/work-log'));
 const SuggestionsPortal = lazyWithRetry(() => import('@/pages/suggestions'));
 const GoogleSheetsPage = lazyWithRetry(() => import('@/pages/google-sheets'));
+const PlanningSheetProposalsPage = lazyWithRetry(() => import('@/pages/planning-sheet-proposals'));
 const RealTimeMessages = lazyWithRetry(() => import('@/pages/real-time-messages'));
 const GmailStyleInbox = lazyWithRetry(() => import('@/components/gmail-style-inbox'));
 const MessagingInbox = lazyWithRetry(() => import('@/pages/messaging-inbox'));
@@ -543,6 +544,8 @@ export default function Dashboard({
         return <SuggestionsPortal />;
       case 'google-sheets':
         return <GoogleSheetsPage />;
+      case 'planning-sheet-proposals':
+        return <PlanningSheetProposalsPage />;
       case 'committee':
       case 'committee-chat':
         return (
