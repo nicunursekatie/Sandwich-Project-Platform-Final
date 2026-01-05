@@ -86,6 +86,7 @@ import {
 } from '@/components/ui/tooltip';
 import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event-flags';
 import { Flag } from 'lucide-react';
+import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -1182,6 +1183,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   <p>Message about this event</p>
                 </TooltipContent>
               </Tooltip>
+
+              {/* Propose to Planning Sheet */}
+              <ProposeToSheetButton
+                eventId={request.id}
+                organizationName={request.organizationName || 'Unknown'}
+              />
 
               {canEdit && (
                 <>
