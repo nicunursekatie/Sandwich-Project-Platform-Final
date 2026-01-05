@@ -44,6 +44,7 @@ import {
   MessageSquare,
   Loader2,
   Sparkles,
+  Plus,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -806,7 +807,28 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
               
               {/* Address - moved from Event Details */}
-              {request.eventAddress && (
+              {isEditingThisCard && editingField === 'eventAddress' ? (
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <MapPin className="w-5 h-5 shrink-0 text-[#007E8C]" />
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    placeholder="Enter event address"
+                    className="h-9 text-base flex-1 min-w-[200px] max-w-md"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveEdit();
+                      if (e.key === 'Escape') cancelEdit();
+                    }}
+                  />
+                  <Button size="sm" onClick={saveEdit} className="bg-[#007E8C] hover:bg-[#007E8C]/90 text-white" aria-label="Save address">
+                    <Save className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                    <X className="w-3 h-3" aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : request.eventAddress ? (
                 <div className="flex items-start gap-2 mt-2">
                   <MapPin className="w-5 h-5 shrink-0 mt-0.5 text-[#007E8C]" />
                   <a
@@ -829,7 +851,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </Button>
                   )}
                 </div>
-              )}
+              ) : canEdit ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <MapPin className="w-5 h-5 shrink-0 text-gray-400" />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => startEditing('eventAddress', '')}
+                    className="text-[#007E8C] border-[#007E8C]/30 hover:bg-[#007E8C]/10 h-7 px-3"
+                  >
+                    <Plus className="w-3 h-3 mr-1" aria-hidden="true" />
+                    Add Address
+                  </Button>
+                </div>
+              ) : null}
             </div>
 
             {/* Date Display */}
