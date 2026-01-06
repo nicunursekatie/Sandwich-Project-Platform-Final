@@ -183,7 +183,57 @@ router.post('/geocode/:id', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error geocoding event address:', error);
-    res.status(500).json({ 
+    res.status(500).json({
+      error: 'Failed to geocode address',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/event-map/geocode-address
+ * Geocode an arbitrary address without saving to database
+ * Used for quick location lookup in driver planning tool
+ */
+router.post('/geocode-address', async (req, res) => {
+  try {
+    const { address } = req.body;
+
+    if (!address || typeof address !== 'string' || !address.trim()) {
+      return res.status(400).json({ error: 'Address is required' });
+    }
+
+    // Rate limit: Wait if needed
+    await rateLimiter.checkAndWait('geocode', 200);
+
+    // Clean address for geocoding (remove suite/building numbers)
+    const cleanedAddress = cleanAddressForGeocoding(address.trim());
+
+    logger.log(`Quick geocode lookup:`);
+    logger.log(`  Original: ${address}`);
+    logger.log(`  Cleaned:  ${cleanedAddress}`);
+
+    // Geocode the cleaned address
+    const coordinates = await geocodeAddress(cleanedAddress);
+
+    if (!coordinates) {
+      logger.warn(`Quick geocode failed for: "${cleanedAddress}" (original: "${address}")`);
+      return res.status(400).json({
+        error: 'Failed to geocode address',
+        details: `Could not find coordinates for: "${address}"`
+      });
+    }
+
+    res.json({
+      success: true,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      address: cleanedAddress, // Return cleaned address for display
+      source: coordinates.source,
+    });
+  } catch (error) {
+    logger.error('Error in quick geocode lookup:', error);
+    res.status(500).json({
       error: 'Failed to geocode address',
       details: error instanceof Error ? error.message : 'Unknown error'
     });

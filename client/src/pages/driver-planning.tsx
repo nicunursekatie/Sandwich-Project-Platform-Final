@@ -342,11 +342,13 @@ const colors = {
   recipient: '#9b59b6',  // Violet/Purple
   recipientFocused: '#ff9500', // Orange
   volunteer: '#8b5cf6',  // Purple/violet for volunteers/speakers
-  driver: '#f1c40f'      // Yellow
+  driver: '#f1c40f',     // Yellow
+  customLocation: '#ea580c' // Orange for custom/quick lookup locations
 };
 
 const eventIcon = createEventIcon(colors.event);
 const selectedEventIcon = createEventIcon(colors.selectedEvent);
+const customLocationIcon = createEventIcon(colors.customLocation); // Orange pin for custom locations
 const hostIcon = createHostIcon(colors.host);
 const hostFocusedIcon = createHostIcon(colors.hostFocused);
 const recipientIcon = createRecipientIcon(colors.recipient);
@@ -802,6 +804,16 @@ export default function DriverPlanningDashboard() {
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
   const [showVolunteersSpeakers, setShowVolunteersSpeakers] = useState(false);
+
+  // Quick Location Lookup state
+  const [customLocation, setCustomLocation] = useState<{
+    address: string;
+    latitude: string;
+    longitude: string;
+  } | null>(null);
+  const [showQuickLookup, setShowQuickLookup] = useState(false);
+  const [quickLookupAddress, setQuickLookupAddress] = useState('');
+  const [isGeocodingQuickLookup, setIsGeocodingQuickLookup] = useState(false);
 
   // Helper to clear trip planning selections when switching events
   const clearTripPlanningState = () => {
@@ -1418,13 +1430,14 @@ export default function DriverPlanningDashboard() {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
 
-  // Get nearest driver candidates (drivers + hosts + volunteers) to the selected event (by distance)
+  // Get nearest driver candidates (drivers + hosts + volunteers) to the selected/custom location (by distance)
   // Only exclude drivers who are explicitly busy or off-duty
+  // Note: Uses effectiveSelectedEvent which can be either a real event or custom location
   const nearbyDriversAll = useMemo(() => {
-    if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
-    const eventLat = parseFloat(selectedEvent.latitude);
-    const eventLng = parseFloat(selectedEvent.longitude);
+    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
+    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
     return driverCandidates
       .filter((c) => c.latitude && c.longitude && c.availability !== 'busy' && c.availability !== 'off-duty')
@@ -1438,12 +1451,12 @@ export default function DriverPlanningDashboard() {
         return { driver, distance };
       })
       .sort((a, b) => a.distance - b.distance);
-  }, [driverCandidates, selectedEvent]);
+  }, [driverCandidates, effectiveSelectedEvent]);
 
 
   // Get suggested drivers for selected event - exclude busy/off-duty drivers
   const suggestedDrivers = useMemo(() => {
-    if (!selectedEvent) return [];
+    if (!effectiveSelectedEvent) return [];
 
     return activeDrivers
       .filter(driver => {
@@ -1455,10 +1468,10 @@ export default function DriverPlanningDashboard() {
         if (!hasLocation) return false;
 
         // Check if driver matches event area
-        return doesDriverMatchEventArea(driver, selectedEvent.eventAddress);
+        return doesDriverMatchEventArea(driver, effectiveSelectedEvent.eventAddress);
       })
       .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }, [selectedEvent, activeDrivers]);
+  }, [effectiveSelectedEvent, activeDrivers]);
 
   // Get drivers without location data
   const driversWithoutLocation = useMemo(() => {
@@ -1467,13 +1480,117 @@ export default function DriverPlanningDashboard() {
     );
   }, [activeDrivers]);
 
-  // Get nearby host contacts near the selected event (show individual contacts, not locations)
+  // Effective selected event: either custom location (as virtual event) or real selected event
+  // This allows the quick location lookup to reuse all the nearby entity calculations
+  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
+    if (customLocation) {
+      return {
+        id: -1,
+        organizationName: customLocation.address,
+        organizationCategory: null,
+        department: null,
+        firstName: null,
+        lastName: null,
+        email: null,
+        phone: null,
+        eventAddress: customLocation.address,
+        latitude: customLocation.latitude,
+        longitude: customLocation.longitude,
+        desiredEventDate: null,
+        scheduledEventDate: null,
+        status: 'custom',
+        estimatedSandwichCount: null,
+        tspContactAssigned: null,
+        tspContact: null,
+        customTspContact: null,
+        eventStartTime: null,
+        eventEndTime: null,
+        driversNeeded: null,
+        assignedDriverIds: null,
+        assignedRecipientIds: null,
+        tentativeDriverIds: null,
+        speakersNeeded: null,
+        assignedSpeakerIds: null,
+        volunteersNeeded: null,
+        assignedVolunteerIds: null,
+        driverDetails: null,
+        speakerDetails: null,
+        volunteerDetails: null,
+        sandwichTypes: null,
+        pickupTime: null,
+        pickupTimeWindow: null,
+        selfTransport: null,
+        vanDriverNeeded: null,
+        assignedVanDriverId: null,
+        isDhlVan: null,
+      };
+    }
+    return selectedEvent;
+  }, [customLocation, selectedEvent]);
+
+  // Handle quick location lookup geocoding
+  const handleQuickLookup = async () => {
+    if (!quickLookupAddress.trim()) return;
+
+    setIsGeocodingQuickLookup(true);
+    try {
+      const response = await fetch('/api/event-map/geocode-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: quickLookupAddress.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast({
+          title: 'Geocoding failed',
+          description: data.details || data.error || 'Could not find that address',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Clear any selected event and set custom location
+      setSelectedEvent(null);
+      clearTripPlanningState();
+      setCustomLocation({
+        address: data.address || quickLookupAddress.trim(),
+        latitude: data.latitude,
+        longitude: data.longitude,
+      });
+      setShowQuickLookup(false);
+
+      toast({
+        title: 'Location found',
+        description: `Showing nearby hosts, recipients, and drivers for "${data.address || quickLookupAddress}"`,
+      });
+    } catch (error) {
+      console.error('Quick lookup error:', error);
+      toast({
+        title: 'Geocoding failed',
+        description: 'An error occurred while looking up the address',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeocodingQuickLookup(false);
+    }
+  };
+
+  // Clear custom location
+  const clearCustomLocation = () => {
+    setCustomLocation(null);
+    setQuickLookupAddress('');
+    clearTripPlanningState();
+  };
+
+  // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
   // Dynamically expands search radius if not enough hosts found nearby
   const nearbyHosts = useMemo(() => {
-    if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
-    const eventLat = parseFloat(selectedEvent.latitude);
-    const eventLng = parseFloat(selectedEvent.longitude);
+    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
+    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
     const hostsWithDistance = hostContacts
       .filter(contact => contact.latitude && contact.longitude)
@@ -1503,15 +1620,15 @@ export default function DriverPlanningDashboard() {
 
     // If still not enough, just return whatever we have (sorted by distance)
     return hostsWithDistance.slice(0, 10);
-  }, [selectedEvent, hostContacts]);
+  }, [effectiveSelectedEvent, hostContacts]);
 
-  // Get nearby recipients (delivery locations) near the selected event
+  // Get nearby recipients (delivery locations) near the selected/custom location
   // Dynamically expands search radius if not enough recipients found nearby
   const nearbyRecipients = useMemo(() => {
-    if (!selectedEvent?.latitude || !selectedEvent?.longitude) return [];
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
-    const eventLat = parseFloat(selectedEvent.latitude);
-    const eventLng = parseFloat(selectedEvent.longitude);
+    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
+    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
     const recipientsWithDistance = recipientMapData
       .filter(recipient => recipient.latitude && recipient.longitude)
@@ -1537,7 +1654,7 @@ export default function DriverPlanningDashboard() {
 
     // If still not enough, just return whatever we have (sorted by distance)
     return recipientsWithDistance.slice(0, 10);
-  }, [selectedEvent, recipientMapData]);
+  }, [effectiveSelectedEvent, recipientMapData]);
 
   // Designated recipient(s) explicitly assigned on the event (if any)
   const designatedRecipients = useMemo(() => {
@@ -2138,6 +2255,77 @@ export default function DriverPlanningDashboard() {
               />
               <span className="text-gray-600">Show speakers/volunteers on map</span>
             </label>
+
+            {/* Quick Location Lookup */}
+            <div className="pt-2 border-t border-gray-200">
+              {!showQuickLookup && !customLocation ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowQuickLookup(true)}
+                  className="w-full text-xs h-7 border-dashed border-orange-300 text-orange-700 hover:bg-orange-50"
+                >
+                  <MapPin className="w-3 h-3 mr-1" />
+                  Quick Location Lookup
+                </Button>
+              ) : customLocation ? (
+                <div className="bg-orange-50 border border-orange-200 rounded-md p-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] uppercase text-orange-600 font-semibold">Custom Location</div>
+                      <div className="text-xs font-medium text-gray-900 truncate" title={customLocation.address}>
+                        {customLocation.address}
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearCustomLocation}
+                      className="h-6 w-6 p-0 text-orange-600 hover:text-orange-800 hover:bg-orange-100"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-1.5">
+                    <Input
+                      type="text"
+                      placeholder="Enter address or place name..."
+                      value={quickLookupAddress}
+                      onChange={(e) => setQuickLookupAddress(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleQuickLookup()}
+                      className="h-7 text-xs flex-1"
+                      disabled={isGeocodingQuickLookup}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleQuickLookup}
+                      disabled={!quickLookupAddress.trim() || isGeocodingQuickLookup}
+                      className="h-7 px-2 bg-orange-600 hover:bg-orange-700"
+                    >
+                      {isGeocodingQuickLookup ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Navigation className="w-3 h-3" />
+                      )}
+                    </Button>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowQuickLookup(false);
+                      setQuickLookupAddress('');
+                    }}
+                    className="w-full h-6 text-[10px] text-gray-500 hover:text-gray-700"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
           <ScrollArea className="flex-1">
             <div className="p-3 space-y-2">
@@ -2472,8 +2660,37 @@ export default function DriverPlanningDashboard() {
               );
             })}
 
-            {/* Nearby host markers when event selected */}
-            {selectedEvent && nearbyHosts.map((host) => (
+            {/* Custom location marker (for quick lookup) */}
+            {customLocation && (
+              <Marker
+                key="custom-location"
+                position={[parseFloat(customLocation.latitude), parseFloat(customLocation.longitude)]}
+                icon={customLocationIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -35]}
+                  className="!bg-orange-600/90 !border-orange-600 !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                >
+                  <span className="truncate max-w-[120px] block">
+                    {customLocation.address}
+                  </span>
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <div className="text-[10px] uppercase text-orange-600 font-semibold">Quick Lookup Location</div>
+                    <h3 className="font-semibold">{customLocation.address}</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Use this to view nearby hosts, recipients, and drivers
+                    </p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
+            {/* Nearby host markers when event or custom location selected */}
+            {effectiveSelectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
@@ -2507,7 +2724,7 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Assigned recipient markers when event selected */}
-            {selectedEvent && designatedRecipients.map((recipient) => (
+            {effectiveSelectedEvent && designatedRecipients.map((recipient) => (
               <Marker
                 key={`designated-recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -4076,7 +4293,24 @@ export default function DriverPlanningDashboard() {
                 </Marker>
               );
             })}
-            {selectedEvent && nearbyHosts.map((host) => (
+            {/* Custom location marker (tablet view) */}
+            {customLocation && (
+              <Marker
+                key="custom-location-tablet"
+                position={[parseFloat(customLocation.latitude), parseFloat(customLocation.longitude)]}
+                icon={customLocationIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -35]}
+                  className="!bg-orange-600/90 !border-orange-600 !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                >
+                  {customLocation.address}
+                </Tooltip>
+              </Marker>
+            )}
+            {effectiveSelectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
@@ -4098,7 +4332,7 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {selectedEvent && designatedRecipients.map((recipient) => (
+            {effectiveSelectedEvent && designatedRecipients.map((recipient) => (
               <Marker
                 key={`designated-recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -4410,7 +4644,24 @@ export default function DriverPlanningDashboard() {
                 </Marker>
               );
             })}
-            {selectedEvent && nearbyHosts.map((host) => (
+            {/* Custom location marker (mobile view) */}
+            {customLocation && (
+              <Marker
+                key="custom-location-mobile"
+                position={[parseFloat(customLocation.latitude), parseFloat(customLocation.longitude)]}
+                icon={customLocationIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -35]}
+                  className="!bg-orange-600/90 !border-orange-600 !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                >
+                  {customLocation.address}
+                </Tooltip>
+              </Marker>
+            )}
+            {effectiveSelectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
@@ -4432,7 +4683,7 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {selectedEvent && designatedRecipients.map((recipient) => (
+            {effectiveSelectedEvent && designatedRecipients.map((recipient) => (
               <Marker
                 key={`designated-recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
