@@ -2873,9 +2873,9 @@ export default function DriverPlanningDashboard() {
             )}
 
             {/* Nearby driver markers (triangles) when event or custom location selected */}
-            {/* Only show actual drivers (source: 'driver'), not hosts - hosts show as green circles */}
+            {/* Show drivers and volunteers (who are flagged as drivers), not hosts - hosts show as green circles */}
             {effectiveSelectedEvent && nearbyDriversAll
-              .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id && driver.source === 'driver')
+              .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id && (driver.source === 'driver' || driver.source === 'volunteer'))
               .slice(0, 15)
               .map(({ driver, distance }) => (
               <Marker
@@ -4494,9 +4494,10 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             )}
-            {/* Show all driver candidates with geocoded coordinates */}
+            {/* Show driver candidates with geocoded coordinates (drivers + volunteers, not hosts) */}
+            {/* Hosts show as green circles via nearbyHosts */}
             {driverCandidates
-              .filter((driver) => driver.latitude && driver.longitude)
+              .filter((driver) => driver.latitude && driver.longitude && (driver.source === 'driver' || driver.source === 'volunteer'))
               .map((driver) => (
               <Marker
                 key={`driver-${driver.id}`}
