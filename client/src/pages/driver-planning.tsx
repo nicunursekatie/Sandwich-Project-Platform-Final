@@ -284,6 +284,29 @@ const createDriverIcon = (color: string) => {
   });
 };
 
+// Volunteers/Speakers: Star shape
+const createVolunteerIcon = (color: string) => {
+  const size = 22;
+  const html = `
+    <div style="
+      position: relative;
+      width: ${size}px;
+      height: ${size}px;
+    ">
+      <svg viewBox="0 0 24 24" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="${color}" stroke="white" stroke-width="1.5"/>
+      </svg>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker volunteer-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
 // Color mappings
 const colors = {
   event: '#3388ff',      // Blue
@@ -292,6 +315,7 @@ const colors = {
   hostFocused: '#ff9500', // Orange
   recipient: '#9b59b6',  // Violet/Purple
   recipientFocused: '#ff9500', // Orange
+  volunteer: '#8b5cf6',  // Purple/violet for volunteers/speakers
   driver: '#f1c40f'      // Yellow
 };
 
@@ -302,6 +326,7 @@ const hostFocusedIcon = createHostIcon(colors.hostFocused);
 const recipientIcon = createRecipientIcon(colors.recipient);
 const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
 const driverIcon = createDriverIcon(colors.driver);
+const volunteerIcon = createVolunteerIcon(colors.volunteer);
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
@@ -750,6 +775,7 @@ export default function DriverPlanningDashboard() {
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
+  const [showVolunteersSpeakers, setShowVolunteersSpeakers] = useState(false);
 
   // Helper to clear trip planning selections when switching events
   const clearTripPlanningState = () => {
@@ -1127,6 +1153,30 @@ export default function DriverPlanningDashboard() {
       if (!response.ok) throw new Error('Failed to fetch drivers');
       return response.json();
     },
+  });
+
+  // Fetch volunteers (for speaker/volunteer layer on map)
+  const { data: volunteers = [] } = useQuery<Array<{
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    homeAddress: string | null;
+    latitude: string | null;
+    longitude: string | null;
+    isSpeaker: boolean;
+    isDriver: boolean;
+    isActive: boolean;
+    availability: string | null;
+  }>>({
+    queryKey: ['/api/volunteers'],
+    queryFn: async () => {
+      const response = await fetch('/api/volunteers');
+      if (!response.ok) throw new Error('Failed to fetch volunteers');
+      return response.json();
+    },
+    enabled: showVolunteersSpeakers, // Only fetch when the toggle is on
   });
 
   // Fetch basic users for resolving user IDs (for assigned staff / assigned drivers that are user IDs)
@@ -1626,6 +1676,67 @@ export default function DriverPlanningDashboard() {
     });
   }, [nearbyDriversAll, assignedDrivers, selectedEvent?.vanDriverNeeded]);
 
+  // Compute volunteers/speakers assigned to visible events with geocoded locations
+  // Shows volunteers that are assigned to ANY visible event (not just selected)
+  const volunteersWithLocations = useMemo(() => {
+    if (!showVolunteersSpeakers || volunteers.length === 0) return [];
+
+    // Collect all assigned volunteer/speaker IDs from ALL visible events
+    const assignedVolunteerIds = new Set<string>();
+    const volunteerToEvents = new Map<string, { eventId: number; eventName: string; role: 'speaker' | 'volunteer' }[]>();
+
+    for (const event of events) {
+      // Get speaker IDs from speakerDetails or assignedSpeakerIds
+      const speakerIds = getSpeakerIds(event);
+      for (const id of speakerIds) {
+        const strId = String(id);
+        // Extract numeric ID if it's a prefixed ID like "volunteer-123"
+        const numericId = strId.replace(/^(volunteer-|speaker-)/, '');
+        assignedVolunteerIds.add(numericId);
+        if (!volunteerToEvents.has(numericId)) {
+          volunteerToEvents.set(numericId, []);
+        }
+        volunteerToEvents.get(numericId)!.push({
+          eventId: event.id,
+          eventName: event.organizationName || 'Unknown',
+          role: 'speaker',
+        });
+      }
+
+      // Get volunteer IDs from volunteerDetails or assignedVolunteerIds
+      const volunteerIds = getVolunteerIds(event);
+      for (const id of volunteerIds) {
+        const strId = String(id);
+        const numericId = strId.replace(/^(volunteer-|speaker-)/, '');
+        assignedVolunteerIds.add(numericId);
+        if (!volunteerToEvents.has(numericId)) {
+          volunteerToEvents.set(numericId, []);
+        }
+        // Avoid duplicate entries if someone is both speaker and volunteer
+        const existing = volunteerToEvents.get(numericId)!;
+        if (!existing.some(e => e.eventId === event.id && e.role === 'volunteer')) {
+          existing.push({
+            eventId: event.id,
+            eventName: event.organizationName || 'Unknown',
+            role: 'volunteer',
+          });
+        }
+      }
+    }
+
+    // Filter to volunteers that have coordinates and are assigned to events
+    return volunteers
+      .filter(v => {
+        if (!v.latitude || !v.longitude) return false;
+        if (!v.isActive) return false;
+        return assignedVolunteerIds.has(String(v.id));
+      })
+      .map(v => ({
+        ...v,
+        assignedEvents: volunteerToEvents.get(String(v.id)) || [],
+      }));
+  }, [showVolunteersSpeakers, volunteers, events]);
+
   // Track whether we've auto-populated for the current event
   const lastAutoPopulatedEventId = useRef<number | null>(null);
 
@@ -1981,6 +2092,15 @@ export default function DriverPlanningDashboard() {
                 className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
               />
               <span className="text-gray-600">Include pending/new requests</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showVolunteersSpeakers}
+                onChange={(e) => setShowVolunteersSpeakers(e.target.checked)}
+                className="rounded border-gray-300 text-purple-600 focus:ring-purple-600"
+              />
+              <span className="text-gray-600">Show speakers/volunteers on map</span>
             </label>
           </div>
           <ScrollArea className="flex-1">
@@ -2489,6 +2609,55 @@ export default function DriverPlanningDashboard() {
                 />
               </>
             )}
+
+            {/* Show volunteers/speakers assigned to visible events when toggle is on */}
+            {showVolunteersSpeakers && volunteersWithLocations.map((volunteer) => (
+              <Marker
+                key={`volunteer-${volunteer.id}`}
+                position={[parseFloat(volunteer.latitude!), parseFloat(volunteer.longitude!)]}
+                icon={volunteerIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-purple-50 !border-purple-300 !text-purple-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {volunteer.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
+                      <Megaphone className="w-3 h-3" />
+                      {volunteer.name}
+                      {volunteer.isSpeaker && <span className="text-purple-400 text-[11px]">(Speaker)</span>}
+                    </h3>
+                    {volunteer.homeAddress && (
+                      <p className="text-xs text-gray-600">{volunteer.homeAddress}</p>
+                    )}
+                    {volunteer.phone && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {volunteer.phone}
+                      </p>
+                    )}
+                    {volunteer.assignedEvents.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-purple-200">
+                        <p className="text-xs text-purple-600 font-medium">Assigned to:</p>
+                        <ul className="text-xs text-gray-600 mt-1">
+                          {volunteer.assignedEvents.map((evt, i) => (
+                            <li key={i} className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: evt.role === 'speaker' ? colors.volunteer : '#a78bfa' }} />
+                              {evt.eventName} ({evt.role})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Full trip info box - shows when both driver and destination are selected */}
@@ -4003,6 +4172,54 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+            {/* Show volunteers/speakers assigned to visible events when toggle is on */}
+            {showVolunteersSpeakers && volunteersWithLocations.map((volunteer) => (
+              <Marker
+                key={`volunteer-${volunteer.id}`}
+                position={[parseFloat(volunteer.latitude!), parseFloat(volunteer.longitude!)]}
+                icon={volunteerIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-purple-50 !border-purple-300 !text-purple-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {volunteer.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
+                      <Megaphone className="w-3 h-3" />
+                      {volunteer.name}
+                      {volunteer.isSpeaker && <span className="text-purple-400 text-[11px]">(Speaker)</span>}
+                    </h3>
+                    {volunteer.homeAddress && (
+                      <p className="text-xs text-gray-600">{volunteer.homeAddress}</p>
+                    )}
+                    {volunteer.phone && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {volunteer.phone}
+                      </p>
+                    )}
+                    {volunteer.assignedEvents.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-purple-200">
+                        <p className="text-xs text-purple-600 font-medium">Assigned to:</p>
+                        <ul className="text-xs text-gray-600 mt-1">
+                          {volunteer.assignedEvents.map((evt, i) => (
+                            <li key={i} className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: evt.role === 'speaker' ? colors.volunteer : '#a78bfa' }} />
+                              {evt.eventName} ({evt.role})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Tablet Details Panel - Bottom overlay when event selected */}
@@ -4242,6 +4459,37 @@ export default function DriverPlanningDashboard() {
                 </Tooltip>
               </Marker>
             )}
+
+            {/* Show volunteers/speakers assigned to visible events when toggle is on */}
+            {showVolunteersSpeakers && volunteersWithLocations.map((volunteer) => (
+              <Marker
+                key={`volunteer-${volunteer.id}`}
+                position={[parseFloat(volunteer.latitude!), parseFloat(volunteer.longitude!)]}
+                icon={volunteerIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-purple-50 !border-purple-300 !text-purple-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {volunteer.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
+                      <Megaphone className="w-3 h-3" />
+                      {volunteer.name}
+                    </h3>
+                    {volunteer.assignedEvents.length > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {volunteer.assignedEvents.map(e => e.eventName).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Mobile Map Controls - Top Right */}
