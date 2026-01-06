@@ -2401,6 +2401,33 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
+            {/* Selected driver marker - show on map when a driver is selected for trip planning */}
+            {selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+              <Marker
+                key={`selected-driver-${selectedDriver.id}`}
+                position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
+                icon={driverIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-yellow-100 !border-yellow-400 !text-yellow-900 !text-xs !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                >
+                  {selectedDriver.name} (Selected)
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {selectedDriver.name}
+                    </h3>
+                    <p className="text-xs text-green-600 mt-1">Selected for trip planning</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
             {/* Driving route polyline (single leg preview) */}
             {drivingRoute && drivingRoute.coordinates.length > 0 && !fullTripRoute && (
               <Polyline
@@ -2708,6 +2735,37 @@ export default function DriverPlanningDashboard() {
                     <Check className="w-3 h-3" />
                     Select as Destination
                   </button>
+                </div>
+              )}
+
+              {/* Driver-to-event route info - show when driver is selected but no destination yet */}
+              {drivingRoute && selectedDriver && !selectedDestination && !focusedItem && (
+                <div className="mb-3 p-2 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2 text-xs text-amber-700 mb-1">
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span className="font-medium">Driver → Event</span>
+                    {drivingRoute.durationInTraffic && (
+                      <span className="text-[9px] text-green-600 ml-auto">✓ Traffic</span>
+                    )}
+                  </div>
+                  <div className="flex gap-2 text-sm">
+                    <span className="font-medium text-gray-800">{(drivingRoute.distance / 1609.34).toFixed(1)} mi</span>
+                    <span className="text-gray-400">·</span>
+                    <span className="font-medium text-gray-800">
+                      {(() => {
+                        const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="flex items-center gap-1">
+                            {dur.text} min
+                            {dur.trafficDelay && dur.trafficDelay > 0 && (
+                              <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                            )}
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">Select a destination below to see full trip</p>
                 </div>
               )}
 
@@ -3829,6 +3887,32 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+            {/* Selected driver marker - show on map when a driver is selected for trip planning */}
+            {selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+              <Marker
+                key={`selected-driver-${selectedDriver.id}`}
+                position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
+                icon={driverIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-yellow-100 !border-yellow-400 !text-yellow-900 !text-xs !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                >
+                  {selectedDriver.name} (Selected)
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {selectedDriver.name}
+                    </h3>
+                    <p className="text-xs text-green-600 mt-1">Selected for trip planning</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
             {/* Show all driver candidates with geocoded coordinates */}
             {driverCandidates
               .filter((driver) => driver.latitude && driver.longitude)
@@ -4089,6 +4173,24 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Selected driver marker - show on mobile map when a driver is selected */}
+            {selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+              <Marker
+                key={`selected-driver-${selectedDriver.id}`}
+                position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
+                icon={driverIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-yellow-100 !border-yellow-400 !text-yellow-900 !text-xs !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                >
+                  {selectedDriver.name} (Selected)
+                </Tooltip>
+              </Marker>
+            )}
           </MapContainer>
 
           {/* Mobile Map Controls - Top Right */}
