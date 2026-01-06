@@ -3,7 +3,12 @@
  * 
  * Sends automated reminders to TSP contacts when:
  * 1. Approaching events (within 7 days) still have 'in_progress' status
- * 2. Events with only toolkit sent and 48+ hours have passed without progress
+ * 2. Events with only toolkit sent and 2+ BUSINESS DAYS have passed without progress
+ * 
+ * Weekend handling:
+ * - Toolkit follow-up reminders are NOT sent on Saturday or Sunday
+ * - The "2 days" window counts only business days (Mon-Fri)
+ * - Example: Friday toolkit → reminder comes Tuesday (2 business days later)
  */
 
 import { db } from '../db';
@@ -19,6 +24,36 @@ const serviceLogger = {
   warn: (msg: string, ...args: any[]) => logger.warn(`[TSP-Followup] ${msg}`, ...args),
   error: (msg: string, ...args: any[]) => logger.error(`[TSP-Followup] ${msg}`, ...args),
 };
+
+/**
+ * Check if today is a weekend (Saturday = 6, Sunday = 0)
+ */
+function isWeekend(date: Date = new Date()): boolean {
+  const day = date.getDay();
+  return day === 0 || day === 6;
+}
+
+/**
+ * Calculate business days elapsed between two dates (excludes Sat/Sun)
+ */
+function getBusinessDaysElapsed(startDate: Date, endDate: Date = new Date()): number {
+  let count = 0;
+  const current = new Date(startDate);
+  current.setHours(0, 0, 0, 0);
+  
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  
+  while (current < end) {
+    current.setDate(current.getDate() + 1);
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      count++;
+    }
+  }
+  
+  return count;
+}
 
 interface FollowupResult {
   notificationsSent: number;
@@ -112,20 +147,22 @@ async function getApproachingInProgressEvents() {
 }
 
 /**
- * Get events where only toolkit was sent 48+ hours ago with no progress
+ * Get events where only toolkit was sent with no progress
+ * Note: We fetch all toolkit-only events here and filter by business days in code
+ * This allows for more accurate business day calculation
  */
 async function getToolkitOnlyEvents() {
   const now = new Date();
-  const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   
-  return db
+  const events = await db
     .select()
     .from(eventRequests)
     .where(
       and(
         eq(eventRequests.status, 'in_progress'),
         eq(eventRequests.toolkitSent, true),
-        lte(eventRequests.toolkitSentAt, fortyEightHoursAgo),
+        gte(eventRequests.toolkitSentAt, oneWeekAgo),
         eq(eventRequests.followUpEmailSent, false),
         or(
           sql`${eventRequests.tspContact} IS NOT NULL`,
@@ -133,6 +170,12 @@ async function getToolkitOnlyEvents() {
         )
       )
     );
+  
+  return events.filter(event => {
+    if (!event.toolkitSentAt) return false;
+    const businessDays = getBusinessDaysElapsed(event.toolkitSentAt);
+    return businessDays >= 2;
+  });
 }
 
 /**
@@ -229,12 +272,17 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
   try {
     serviceLogger.info('Starting TSP contact follow-up check...');
     
-    const [approachingEvents, toolkitEvents] = await Promise.all([
-      getApproachingInProgressEvents(),
-      getToolkitOnlyEvents(),
-    ]);
+    const now = new Date();
+    const skipToolkitReminders = isWeekend(now);
     
-    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${toolkitEvents.length} toolkit-only events`);
+    if (skipToolkitReminders) {
+      serviceLogger.info('Weekend detected - skipping toolkit follow-up reminders (approaching event reminders will still be processed)');
+    }
+    
+    const approachingEvents = await getApproachingInProgressEvents();
+    const toolkitEvents = skipToolkitReminders ? [] : await getToolkitOnlyEvents();
+    
+    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${toolkitEvents.length} toolkit-only events${skipToolkitReminders ? ' (toolkit checks skipped on weekend)' : ''}`);
     
     for (const event of approachingEvents) {
       result.eventsProcessed++;
