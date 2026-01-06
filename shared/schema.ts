@@ -2343,6 +2343,13 @@ export const eventRequests = pgTable(
     mlkDayMarkedAt: timestamp('mlk_day_marked_at'), // When it was marked as MLK Day event
     mlkDayMarkedBy: varchar('mlk_day_marked_by'), // User ID who marked it as MLK Day event
 
+    // Event instructions for volunteers (included in automated alerts)
+    driverInstructions: text('driver_instructions'), // Special instructions for drivers (included in reminder texts/emails)
+    volunteerInstructions: text('volunteer_instructions'), // Special instructions for general volunteers
+    speakerInstructions: text('speaker_instructions'), // Special instructions for speakers
+    instructionsLastUpdatedAt: timestamp('instructions_last_updated_at'), // When instructions were last modified
+    instructionsLastUpdatedBy: varchar('instructions_last_updated_by'), // User ID who last updated instructions
+
     // Audit tracking
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
