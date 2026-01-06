@@ -2074,7 +2074,7 @@ export default function DriverPlanningDashboard() {
                         {/* Speakers - only show if needed > 0 */}
                         {speakersNeeded > 0 && (
                           <Badge
-                            variant={speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                            variant={speakersAssigned < speakersNeeded ? 'destructive' : 'default'}
                             className="text-xs"
                             title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
                           >
@@ -2085,7 +2085,7 @@ export default function DriverPlanningDashboard() {
                         {/* Volunteers - only show if needed > 0 */}
                         {volunteersNeeded > 0 && (
                           <Badge
-                            variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                            variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'default'}
                             className="text-xs"
                             title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
                           >
@@ -4664,7 +4664,7 @@ export default function DriverPlanningDashboard() {
                               {/* Speakers - only show if needed > 0 */}
                               {speakersNeeded > 0 && (
                                 <Badge
-                                  variant={speakersAssigned < speakersNeeded ? 'destructive' : 'secondary'}
+                                  variant={speakersAssigned < speakersNeeded ? 'destructive' : 'default'}
                                   className="text-xs px-2 py-0.5"
                                   title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
                                 >
@@ -4675,7 +4675,7 @@ export default function DriverPlanningDashboard() {
                               {/* Volunteers - only show if needed > 0 */}
                               {volunteersNeeded > 0 && (
                                 <Badge
-                                  variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'secondary'}
+                                  variant={volunteersAssigned < volunteersNeeded ? 'destructive' : 'default'}
                                   className="text-xs px-2 py-0.5"
                                   title={getAssignedVolunteersLabel(event) ? `Volunteers: ${getAssignedVolunteersLabel(event)}` : undefined}
                                 >
