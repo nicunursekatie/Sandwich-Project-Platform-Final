@@ -48,12 +48,22 @@ async function geocodeWithGoogle(
 }
 
 /**
- * Geocode using OpenStreetMap Nominatim (fallback - free, no API key required)
  */
 async function geocodeWithOpenStreetMap(
   address: string
 ): Promise<{ latitude: string; longitude: string } | null> {
   try {
+    // Try Google first (more accurate, handles address variations better)
+    logger.log(`🗺️ Trying Google Geocoding for: ${address}`);
+    const googleResult = await geocodeWithGoogle(address);
+
+    if (googleResult) {
+      return googleResult;
+    }
+
+    // Fallback to OpenStreetMap if Google fails or is not configured
+    logger.log(`🔄 Falling back to OpenStreetMap for: ${address}`);
+
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
       {
@@ -74,9 +84,11 @@ async function geocodeWithOpenStreetMap(
 
     if (data && data.length > 0) {
       const result = data[0];
+
       logger.log(
         `✅ OpenStreetMap SUCCESS: ${address} -> (${result.lat}, ${result.lon})`
       );
+
       return {
         latitude: result.lat,
         longitude: result.lon,
@@ -92,6 +104,7 @@ async function geocodeWithOpenStreetMap(
 }
 
 /**
+
  * Geocode an address to latitude and longitude
  * Primary: Google Geocoding API (better at parsing typos and messy addresses)
  * Fallback: OpenStreetMap Nominatim API (free, no API key required)
@@ -149,7 +162,6 @@ export async function geocodeAddresses(
   for (const address of addresses) {
     const result = await geocodeAddress(address);
     results.push(result);
-
     // Rate limit: 100ms for Google, 1 second if falling back to OpenStreetMap
     if (addresses.indexOf(address) < addresses.length - 1) {
       await new Promise((resolve) =>

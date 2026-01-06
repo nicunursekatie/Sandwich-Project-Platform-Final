@@ -453,9 +453,14 @@ export default function DriversManagement() {
           description: `No drivers need geocoding. ${data.withAddress || 0} have addresses, ${data.alreadyGeocoded || 0} already geocoded, ${data.withoutAddress || 0} missing addresses.`,
         });
       } else {
+        const failureList = data.failures?.slice(0, 3).map((f: any) => f.name).join(', ');
+        const moreCount = data.failures?.length > 3 ? ` +${data.failures.length - 3} more` : '';
         toast({
           title: 'Geocoding complete',
-          description: `${data.success} updated, ${data.failed} failed`,
+          description: data.failed > 0
+            ? `${data.success} updated, ${data.failed} failed (need manual review: ${failureList}${moreCount})`
+            : `${data.success} drivers updated successfully`,
+          duration: data.failed > 0 ? 10000 : 5000,
         });
       }
       queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
@@ -541,7 +546,7 @@ export default function DriversManagement() {
                       <MapPin className="w-4 h-4 mr-2" />
                     )}
                     <span className="hidden sm:inline">
-                      {isGeocoding ? 'Geocoding...' : 'Geocode New'}
+                      {isGeocoding ? 'Geocoding...' : 'Geocode Missing'}
                     </span>
                     <span className="sm:hidden">
                       {isGeocoding ? '...' : 'Geocode'}

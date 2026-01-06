@@ -28,7 +28,8 @@ function driverHasAddress(driver: Driver): boolean {
   return !!(driver.address?.trim() || driver.homeAddress?.trim());
 }
 
-const GEOCODE_DELAY_MS = 1100; // Respect Nominatim 1 req/sec guidance
+// Use faster rate if Google API is available (200ms), slower for OpenStreetMap (1100ms)
+const getGeocodeDelay = () => process.env.GOOGLE_GEOCODING_API_KEY ? 200 : 1100;
 
 export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -529,7 +530,7 @@ export function createDriversRouter(deps: RouterDependencies) {
 
       // Geocode each driver with rate limiting
       for (const driver of driversWithAddress) {
-        await new Promise((resolve) => setTimeout(resolve, GEOCODE_DELAY_MS));
+        await new Promise((resolve) => setTimeout(resolve, getGeocodeDelay()));
 
         const address = getDriverAddressForGeocoding(driver);
         if (!address) continue;
@@ -619,7 +620,7 @@ export function createDriversRouter(deps: RouterDependencies) {
       // Geocode each driver with rate limiting
       for (const { driver, address } of driversToGeocode) {
         // Respect Nominatim rate limits
-        await new Promise((resolve) => setTimeout(resolve, GEOCODE_DELAY_MS));
+        await new Promise((resolve) => setTimeout(resolve, getGeocodeDelay()));
 
         const geocodeResult = await geocodeAddress(address);
 
