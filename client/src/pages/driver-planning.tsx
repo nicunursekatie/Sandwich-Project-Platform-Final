@@ -310,6 +310,32 @@ const createDriverIcon = (color: string) => {
   });
 };
 
+// Host+Driver combo: Circle with inner triangle (for people who are both hosts and drivers)
+const createHostDriverIcon = (hostColor: string, driverColor: string) => {
+  const size = 26;
+  const html = `
+    <div style="
+      position: relative;
+      width: ${size}px;
+      height: ${size}px;
+    ">
+      <svg viewBox="0 0 26 26" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer circle (host) -->
+        <circle cx="13" cy="13" r="11" fill="${hostColor}" stroke="white" stroke-width="2"/>
+        <!-- Inner triangle (driver) -->
+        <path d="M13 6L19 18H7L13 6Z" fill="${driverColor}" stroke="white" stroke-width="1.5"/>
+      </svg>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker host-driver-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
 // Volunteers/Speakers: Star shape
 const createVolunteerIcon = (color: string) => {
   const size = 22;
@@ -354,6 +380,7 @@ const hostFocusedIcon = createHostIcon(colors.hostFocused);
 const recipientIcon = createRecipientIcon(colors.recipient);
 const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
 const driverIcon = createDriverIcon(colors.driver);
+const hostDriverIcon = createHostDriverIcon(colors.host, colors.driver); // Combined icon for host+driver
 const volunteerIcon = createVolunteerIcon(colors.volunteer);
 
 // Format time to 12-hour format
@@ -1600,14 +1627,29 @@ export default function DriverPlanningDashboard() {
 
   // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
   // Dynamically expands search radius if not enough hosts found nearby
+  // Excludes hosts who are already showing as drivers (source: 'host' in nearbyDriversAll)
   const nearbyHosts = useMemo(() => {
     if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(effectiveSelectedEvent.latitude);
     const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
+    // Get IDs of host contacts who are also drivers (they'll show with the combined icon in drivers list)
+    const hostDriverIds = new Set(
+      nearbyDriversAll
+        .filter(({ driver }) => driver.source === 'host')
+        .map(({ driver }) => {
+          // Driver ID format is "host-{contactId}", extract the contact ID
+          const match = driver.id.match(/^host-(\d+)$/);
+          return match ? parseInt(match[1], 10) : null;
+        })
+        .filter((id): id is number => id !== null)
+    );
+
     const hostsWithDistance = hostContacts
       .filter(contact => contact.latitude && contact.longitude)
+      // Exclude hosts who are already showing as drivers
+      .filter(contact => !hostDriverIds.has(contact.id))
       .map(contact => ({
         id: contact.id,
         contactName: contact.contactName,
@@ -1634,7 +1676,7 @@ export default function DriverPlanningDashboard() {
 
     // If still not enough, just return whatever we have (sorted by distance)
     return hostsWithDistance.slice(0, 10);
-  }, [effectiveSelectedEvent, hostContacts]);
+  }, [effectiveSelectedEvent, hostContacts, nearbyDriversAll]);
 
   // Get nearby recipients (delivery locations) near the selected/custom location
   // Dynamically expands search radius if not enough recipients found nearby
@@ -2848,21 +2890,24 @@ export default function DriverPlanningDashboard() {
               <Marker
                 key={`driver-${driver.id}`}
                 position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
-                icon={driverIcon}
+                icon={driver.source === 'host' ? hostDriverIcon : driverIcon}
               >
                 <Tooltip
                   permanent
                   direction="top"
                   offset={[0, -10]}
-                  className="!bg-yellow-50 !border-yellow-300 !text-yellow-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                  className={driver.source === 'host'
+                    ? "!bg-green-50 !border-green-300 !text-green-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                    : "!bg-yellow-50 !border-yellow-300 !text-yellow-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                  }
                 >
                   {driver.name}
                 </Tooltip>
                 <Popup>
                   <div className="p-2 min-w-[180px]">
-                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                    <h3 className={`font-semibold text-sm flex items-center gap-1 ${driver.source === 'host' ? 'text-green-700' : 'text-yellow-700'}`}>
                       <Truck className="w-3 h-3" />
-                      {driver.name} <span className="text-gray-400 text-[11px]">({driver.source})</span>
+                      {driver.name} <span className="text-gray-400 text-[11px]">({driver.source === 'host' ? 'Host+Driver' : driver.source})</span>
                     </h3>
                     <p className="text-xs text-gray-600">
                       {driver.hostLocation || 'Driver location'}
@@ -3427,6 +3472,13 @@ export default function DriverPlanningDashboard() {
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
                     <span>Driver (triangle)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                      <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
+                    </svg>
+                    <span>Host+Driver</span>
                   </div>
                   <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
                     <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
