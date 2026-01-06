@@ -1684,11 +1684,12 @@ export default function DriverPlanningDashboard() {
   }, [selectedEvent, recipientMapData]);
 
   const nonDesignatedNearbyRecipients = useMemo(() => {
-    if (!selectedEvent) return [];
+    // For custom locations, show all nearby recipients (no designated ones)
+    if (!effectiveSelectedEvent) return [];
     if (designatedRecipients.length === 0) return nearbyRecipients;
     const designatedIds = new Set(designatedRecipients.map((r) => r.id));
     return nearbyRecipients.filter((r) => !designatedIds.has(r.id));
-  }, [selectedEvent, designatedRecipients, nearbyRecipients]);
+  }, [effectiveSelectedEvent, designatedRecipients, nearbyRecipients]);
 
   // Assigned driver(s) explicitly assigned on the event (if any)
   // Returns full DriverCandidate objects for drivers with valid coordinates
