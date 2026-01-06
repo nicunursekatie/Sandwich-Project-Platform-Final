@@ -314,6 +314,16 @@ export function createDriversRouter(deps: RouterDependencies) {
       delete updateData.updatedAt;
       delete updateData.geocodedAt;
 
+      // CRITICAL: Preserve address and geocoding data when not explicitly provided
+      // This prevents partial updates from wiping out addresses
+      const preserveFields = ['address', 'homeAddress', 'latitude', 'longitude'];
+      preserveFields.forEach(field => {
+        // Only delete if undefined or empty string (not if explicitly set to a value)
+        if (updateData[field] === undefined || updateData[field] === '') {
+          delete updateData[field];
+        }
+      });
+
       // Handle timestamp fields that can be updated
       const timestampFields = ['unavailableUntil'];
       timestampFields.forEach(field => {
@@ -370,6 +380,16 @@ export function createDriversRouter(deps: RouterDependencies) {
       delete updateData.createdAt;
       delete updateData.updatedAt;
       delete updateData.geocodedAt;
+
+      // CRITICAL: Preserve address and geocoding data when not explicitly provided
+      // This prevents partial updates from wiping out addresses
+      const preserveFields = ['address', 'homeAddress', 'latitude', 'longitude'];
+      preserveFields.forEach(field => {
+        // Only delete if undefined or empty string (not if explicitly set to a value)
+        if (updateData[field] === undefined || updateData[field] === '') {
+          delete updateData[field];
+        }
+      });
 
       // Handle timestamp fields that can be updated
       const timestampFields = ['unavailableUntil'];

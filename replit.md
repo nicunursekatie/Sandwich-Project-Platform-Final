@@ -42,6 +42,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
   - **Root cause**: Storage layer didn't always return `role`, so `checkPermission` received `role: undefined` and the super_admin bypass at line 62-71 in `unified-auth-utils.ts` failed
   - **Fix**: `/api/auth/user` now explicitly includes `role: userRole` using fallback `freshUser.role ?? req.user.role`
   - **Key file**: `server/routes/auth/index.ts` (lines 228-241)
+  
+  **DRIVER ADDRESS PRESERVATION FIX (Jan 2026):**
+  - **Issue**: Driver addresses were being erased when making partial updates (status toggle, notes, etc.)
+  - **Root cause**: PUT/PATCH routes spread `req.body` directly, so undefined/empty address fields overwrote existing data with null
+  - **Fix**: Both PUT and PATCH routes now preserve `address`, `homeAddress`, `latitude`, `longitude` fields when they're undefined or empty string in the request
+  - **Key file**: `server/routes/drivers.ts` (lines 320-328 for PUT, lines 387-395 for PATCH)
 - **Database Configuration**: Centralized database URL selection in `server/db-url.ts` based on `NODE_ENV` (development/production) to connect to appropriate Neon branches. Critical rule: Avoid `.returning()` on update operations with Neon serverless; always use an explicit fetch after update pattern.
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
 - **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
