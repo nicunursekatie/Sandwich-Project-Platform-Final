@@ -827,6 +827,55 @@ export default function DriverPlanningDashboard() {
   // Check if user has edit permission
   const canEditEvents = user && hasPermission(user as UserForPermissions, PERMISSIONS.EVENT_REQUESTS_EDIT);
 
+  // Effective selected event: either custom location (as virtual event) or real selected event
+  // This allows the quick location lookup to reuse all the nearby entity calculations
+  // NOTE: Must be defined before handleItemClick which references it
+  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
+    if (customLocation) {
+      return {
+        id: -1,
+        organizationName: customLocation.address,
+        organizationCategory: null,
+        department: null,
+        firstName: null,
+        lastName: null,
+        email: null,
+        phone: null,
+        eventAddress: customLocation.address,
+        latitude: customLocation.latitude,
+        longitude: customLocation.longitude,
+        desiredEventDate: null,
+        scheduledEventDate: null,
+        status: 'custom',
+        estimatedSandwichCount: null,
+        tspContactAssigned: null,
+        tspContact: null,
+        customTspContact: null,
+        eventStartTime: null,
+        eventEndTime: null,
+        driversNeeded: null,
+        assignedDriverIds: null,
+        assignedRecipientIds: null,
+        tentativeDriverIds: null,
+        speakersNeeded: null,
+        assignedSpeakerIds: null,
+        volunteersNeeded: null,
+        assignedVolunteerIds: null,
+        driverDetails: null,
+        speakerDetails: null,
+        volunteerDetails: null,
+        sandwichTypes: null,
+        pickupTime: null,
+        pickupTimeWindow: null,
+        selfTransport: null,
+        vanDriverNeeded: null,
+        assignedVanDriverId: null,
+        isDhlVan: null,
+      };
+    }
+    return selectedEvent;
+  }, [customLocation, selectedEvent]);
+
   // Handle clicking on a host/recipient to show driving route from selected event
   const handleItemClick = async (item: FocusedMapItem) => {
     // Toggle off if clicking the same item again
@@ -838,8 +887,8 @@ export default function DriverPlanningDashboard() {
 
     setFocusedItem(item);
 
-    // Only fetch route if we have a selected event with coordinates
-    if (!selectedEvent?.latitude || !selectedEvent?.longitude) {
+    // Only fetch route if we have a selected event or custom location with coordinates
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
       setDrivingRoute(null);
       return;
     }
@@ -855,10 +904,10 @@ export default function DriverPlanningDashboard() {
 
     setIsLoadingRoute(true);
     try {
-      const departureTime = getEventDepartureTime(selectedEvent);
+      const departureTime = getEventDepartureTime(effectiveSelectedEvent);
       const routeData = await fetchDrivingRoute(
-        parseFloat(selectedEvent.latitude),
-        parseFloat(selectedEvent.longitude),
+        parseFloat(effectiveSelectedEvent.latitude),
+        parseFloat(effectiveSelectedEvent.longitude),
         parseFloat(item.latitude),
         parseFloat(item.longitude),
         departureTime,
@@ -877,8 +926,8 @@ export default function DriverPlanningDashboard() {
           duration: routeData.duration,
           durationInTraffic: routeData.durationInTraffic,
           fromEvent: {
-            lat: parseFloat(selectedEvent.latitude),
-            lng: parseFloat(selectedEvent.longitude),
+            lat: parseFloat(effectiveSelectedEvent.latitude),
+            lng: parseFloat(effectiveSelectedEvent.longitude),
           },
           toItem: {
             lat: parseFloat(item.latitude),
@@ -923,9 +972,9 @@ export default function DriverPlanningDashboard() {
   }, [selectedEvent?.id]);
 
   // Fetch driver-to-event route when only driver is selected (no destination yet)
-  // This shows the route from driver's home to the event location
+  // This shows the route from driver's home to the event/custom location
   useEffect(() => {
-    if (!selectedDriver || selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
+    if (!selectedDriver || selectedDestination || !effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
       // Don't fetch if: no driver, or destination is set (full trip will handle it), or no event coords
       return;
     }
@@ -933,9 +982,9 @@ export default function DriverPlanningDashboard() {
     const fetchDriverToEventRoute = async () => {
       setIsLoadingRoute(true);
       try {
-        const eventLat = parseFloat(selectedEvent.latitude!);
-        const eventLng = parseFloat(selectedEvent.longitude!);
-        const departureTime = getEventDepartureTime(selectedEvent);
+        const eventLat = parseFloat(effectiveSelectedEvent.latitude!);
+        const eventLng = parseFloat(effectiveSelectedEvent.longitude!);
+        const departureTime = getEventDepartureTime(effectiveSelectedEvent);
 
         const routeData = await fetchDrivingRoute(
           parseFloat(selectedDriver.latitude),
@@ -971,11 +1020,11 @@ export default function DriverPlanningDashboard() {
     };
 
     fetchDriverToEventRoute();
-  }, [selectedDriver, selectedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
+  }, [selectedDriver, selectedDestination, effectiveSelectedEvent?.latitude, effectiveSelectedEvent?.longitude]);
 
   // Fetch full trip route when both driver and destination are selected
   useEffect(() => {
-    if (!selectedDriver || !selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
+    if (!selectedDriver || !selectedDestination || !effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
       setFullTripRoute(null);
       return;
     }
@@ -984,9 +1033,9 @@ export default function DriverPlanningDashboard() {
       setIsLoadingFullTrip(true);
       try {
         // We already checked these exist in the condition above
-        const eventLat = parseFloat(selectedEvent.latitude!);
-        const eventLng = parseFloat(selectedEvent.longitude!);
-        const departureTime = getEventDepartureTime(selectedEvent);
+        const eventLat = parseFloat(effectiveSelectedEvent.latitude!);
+        const eventLng = parseFloat(effectiveSelectedEvent.longitude!);
+        const departureTime = getEventDepartureTime(effectiveSelectedEvent);
 
         // Fetch leg 1: Driver home -> Event (using predictive traffic for event time)
         const leg1 = await fetchDrivingRoute(
@@ -1045,7 +1094,7 @@ export default function DriverPlanningDashboard() {
     };
 
     fetchFullTrip();
-  }, [selectedDriver, selectedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
+  }, [selectedDriver, selectedDestination, effectiveSelectedEvent?.latitude, effectiveSelectedEvent?.longitude]);
 
   // Update event mutation
   const updateEventMutation = useMutation({
@@ -1430,54 +1479,6 @@ export default function DriverPlanningDashboard() {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
 
-  // Effective selected event: either custom location (as virtual event) or real selected event
-  // This allows the quick location lookup to reuse all the nearby entity calculations
-  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
-    if (customLocation) {
-      return {
-        id: -1,
-        organizationName: customLocation.address,
-        organizationCategory: null,
-        department: null,
-        firstName: null,
-        lastName: null,
-        email: null,
-        phone: null,
-        eventAddress: customLocation.address,
-        latitude: customLocation.latitude,
-        longitude: customLocation.longitude,
-        desiredEventDate: null,
-        scheduledEventDate: null,
-        status: 'custom',
-        estimatedSandwichCount: null,
-        tspContactAssigned: null,
-        tspContact: null,
-        customTspContact: null,
-        eventStartTime: null,
-        eventEndTime: null,
-        driversNeeded: null,
-        assignedDriverIds: null,
-        assignedRecipientIds: null,
-        tentativeDriverIds: null,
-        speakersNeeded: null,
-        assignedSpeakerIds: null,
-        volunteersNeeded: null,
-        assignedVolunteerIds: null,
-        driverDetails: null,
-        speakerDetails: null,
-        volunteerDetails: null,
-        sandwichTypes: null,
-        pickupTime: null,
-        pickupTimeWindow: null,
-        selfTransport: null,
-        vanDriverNeeded: null,
-        assignedVanDriverId: null,
-        isDhlVan: null,
-      };
-    }
-    return selectedEvent;
-  }, [customLocation, selectedEvent]);
-
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected/custom location (by distance)
   // Only exclude drivers who are explicitly busy or off-duty
   // Note: Uses effectiveSelectedEvent which can be either a real event or custom location
@@ -1809,7 +1810,7 @@ export default function DriverPlanningDashboard() {
   // Also filter to only van-approved drivers when vanDriverNeeded is true
   const nearbyDrivers = useMemo(() => {
     const assignedIds = new Set(assignedDrivers.map(d => d.id));
-    const vanNeeded = selectedEvent?.vanDriverNeeded;
+    const vanNeeded = effectiveSelectedEvent?.vanDriverNeeded;
     return nearbyDriversAll.filter(({ driver }) => {
       // Exclude already-assigned drivers
       if (assignedIds.has(driver.id)) return false;
@@ -1817,7 +1818,7 @@ export default function DriverPlanningDashboard() {
       if (vanNeeded && !driver.vanApproved) return false;
       return true;
     });
-  }, [nearbyDriversAll, assignedDrivers, selectedEvent?.vanDriverNeeded]);
+  }, [nearbyDriversAll, assignedDrivers, effectiveSelectedEvent?.vanDriverNeeded]);
 
   // Compute volunteers/speakers assigned to visible events with geocoded locations
   // Shows volunteers that are assigned to ANY visible event (not just selected)
@@ -2604,7 +2605,7 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={selectedEvent}
+              selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -2759,8 +2760,8 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {/* Nearby recipient markers when event selected */}
-            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
+            {/* Nearby recipient markers when event or custom location selected */}
+            {effectiveSelectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -2824,6 +2825,42 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             )}
+
+            {/* Nearby driver markers (triangles) when event or custom location selected */}
+            {effectiveSelectedEvent && nearbyDriversAll
+              .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id)
+              .slice(0, 15)
+              .map(({ driver, distance }) => (
+              <Marker
+                key={`driver-${driver.id}`}
+                position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
+                icon={driverIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-yellow-50 !border-yellow-300 !text-yellow-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {driver.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {driver.name} <span className="text-gray-400 text-[11px]">({driver.source})</span>
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      {driver.hostLocation || 'Driver location'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{distance.toFixed(1)} miles away</p>
+                    {driver.vanApproved && (
+                      <p className="text-xs text-green-600 mt-1">Van Approved</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
 
             {/* Driving route polyline (single leg preview) */}
             {drivingRoute && drivingRoute.coordinates.length > 0 && !fullTripRoute && (
@@ -4250,7 +4287,7 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={selectedEvent}
+              selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -4598,7 +4635,7 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={selectedEvent}
+              selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
