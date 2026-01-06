@@ -58,7 +58,7 @@ import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
 import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
-import { PresenceAvatars, FieldLockIndicator, CommentThread } from '@/components/collaboration';
+import { PresenceAvatars, FieldLockIndicator } from '@/components/collaboration';
 import { EventConflictWarnings } from './EventConflictWarnings';
 
 // Event Scheduling Form Component
@@ -179,7 +179,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showMlkDayDialog, setShowMlkDayDialog] = useState(false);
   const [mlkDayAsked, setMlkDayAsked] = useState(false);
   const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
-  const [showCollaboration, setShowCollaboration] = useState(false);
   const [showVanConflictDialog, setShowVanConflictDialog] = useState(false);
   const [vanConflictDetails, setVanConflictDetails] = useState<{
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
@@ -2265,81 +2264,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Collaboration Section - Only visible for existing events */}
-          {isCollaborationEnabled && (
-            <div className="border rounded-lg border-[#007E8C]/30">
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full flex justify-between items-center p-4"
-                onClick={() => setShowCollaboration(!showCollaboration)}
-                data-testid="toggle-collaboration"
-              >
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-[#007E8C]" />
-                  <span className="font-semibold text-[#236383]">
-                    Collaboration & Comments
-                  </span>
-                  {collaboration.comments && collaboration.comments.length > 0 && (
-                    <span className="bg-[#FBAD3F] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                      {collaboration.comments.length}
-                    </span>
-                  )}
-                </div>
-                <ChevronDown className={`w-4 h-4 transition-transform ${showCollaboration ? 'rotate-180' : ''}`} />
-              </Button>
-              
-              {showCollaboration && currentUser && (
-                <div className="p-4 border-t bg-[#e6f2f5]/30 space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="text-md font-semibold text-[#236383] flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Who's Here
-                    </h4>
-                    <div className="bg-white p-3 rounded border border-[#007E8C]/20">
-                      {collaboration.presentUsers && collaboration.presentUsers.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {collaboration.presentUsers.map((user) => (
-                            <div
-                              key={user.userId}
-                              className="flex items-center gap-2 bg-[#e6f2f5] px-3 py-1 rounded-full text-sm"
-                              data-testid={`presence-user-${user.userId}`}
-                            >
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                              <span className={user.userId === currentUser.id ? 'font-semibold' : ''}>
-                                {user.userName} {user.userId === currentUser.id && '(You)'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500">Only you are viewing this event</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-md font-semibold text-[#236383] flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4" />
-                      Discussion Thread
-                    </h4>
-                    <div className="bg-white rounded border border-[#007E8C]/20" data-testid="comment-thread-container">
-                      <CommentThread
-                        comments={collaboration.comments || []}
-                        currentUserId={currentUser.id}
-                        currentUserName={currentUser.fullName || currentUser.email}
-                        onAddComment={collaboration.addComment}
-                        onEditComment={collaboration.updateComment}
-                        onDeleteComment={collaboration.deleteComment}
-                        isLoading={collaboration.commentsLoading || false}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Completed Event Details Section - Only visible when status is "completed" */}
           {formData.status === 'completed' && (
