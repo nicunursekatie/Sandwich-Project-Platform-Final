@@ -186,8 +186,17 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
-  // Calculate if date is past
-  const isPast = displayDate ? new Date(displayDate) < new Date() : false;
+  // Calculate if date is past (compare dates in local timezone, not UTC)
+  const isPast = (() => {
+    if (!displayDate) return false;
+    // Parse the event date as midnight local time (not UTC)
+    const eventDate = new Date(displayDate + 'T00:00:00');
+    // Get today's date at midnight local time
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Event is past if the event date is before today
+    return eventDate < today;
+  })();
 
   // Calculate relative time
   const getRelativeTime = (dateString: string) => {
