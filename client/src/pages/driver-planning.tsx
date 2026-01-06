@@ -2033,12 +2033,17 @@ export default function DriverPlanningDashboard() {
                         )}
                       </div>
 
-                      {/* Sandwich count - only show if > 0 */}
+                      {/* Sandwich count and types - only show if > 0 */}
                       {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                         <div className="flex items-center gap-1.5 text-xs text-gray-600">
                           <Package className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className={event.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
                             ~{event.estimatedSandwichCount} sandwiches
+                            {event.sandwichTypes && event.sandwichTypes.length > 0 && (
+                              <span className="text-gray-500 font-normal ml-1">
+                                ({event.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
+                              </span>
+                            )}
                           </span>
                         </div>
                       )}
@@ -2291,6 +2296,11 @@ export default function DriverPlanningDashboard() {
                       {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                         <p className="text-sm" style={event.estimatedSandwichCount > 400 ? { color: '#a31c41', fontWeight: 600 } : undefined}>
                           ~{event.estimatedSandwichCount} sandwiches
+                          {event.sandwichTypes && event.sandwichTypes.length > 0 && (
+                            <span className="text-gray-500 font-normal block text-xs">
+                              {event.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')}
+                            </span>
+                          )}
                         </p>
                       )}
                     </div>
@@ -4488,6 +4498,11 @@ export default function DriverPlanningDashboard() {
                           <Package className="w-4 h-4 text-gray-500 flex-shrink-0" />
                           <span className={selectedEvent.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={selectedEvent.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
                             ~{selectedEvent.estimatedSandwichCount} sandwiches
+                            {selectedEvent.sandwichTypes && selectedEvent.sandwichTypes.length > 0 && (
+                              <span className="text-gray-500 font-normal ml-1">
+                                ({selectedEvent.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
+                              </span>
+                            )}
                           </span>
                         </div>
                       )}
@@ -4814,6 +4829,11 @@ export default function DriverPlanningDashboard() {
                               {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                                 <span className={`text-xs ${event.estimatedSandwichCount > 400 ? 'font-semibold' : 'text-gray-500'}`} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
                                   ~{event.estimatedSandwichCount} sandwiches
+                                  {event.sandwichTypes && event.sandwichTypes.length > 0 && (
+                                    <span className="text-gray-400 font-normal ml-1">
+                                      ({event.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
+                                    </span>
+                                  )}
                                 </span>
                               )}
                             </div>
@@ -4898,6 +4918,11 @@ export default function DriverPlanningDashboard() {
                       <Package className="w-4 h-4 text-gray-500" />
                       <span className={selectedEvent.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={selectedEvent.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
                         ~{selectedEvent.estimatedSandwichCount} sandwiches
+                        {selectedEvent.sandwichTypes && selectedEvent.sandwichTypes.length > 0 && (
+                          <span className="text-gray-500 font-normal ml-1">
+                            ({selectedEvent.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
+                          </span>
+                        )}
                       </span>
                     </div>
                   )}
