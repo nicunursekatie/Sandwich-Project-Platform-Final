@@ -1627,29 +1627,14 @@ export default function DriverPlanningDashboard() {
 
   // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
   // Dynamically expands search radius if not enough hosts found nearby
-  // Excludes hosts who are already showing as drivers (source: 'host' in nearbyDriversAll)
   const nearbyHosts = useMemo(() => {
     if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(effectiveSelectedEvent.latitude);
     const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
-    // Get IDs of host contacts who are also drivers (they'll show with the combined icon in drivers list)
-    const hostDriverIds = new Set(
-      nearbyDriversAll
-        .filter(({ driver }) => driver.source === 'host')
-        .map(({ driver }) => {
-          // Driver ID format is "host-{contactId}", extract the contact ID
-          const match = driver.id.match(/^host-(\d+)$/);
-          return match ? parseInt(match[1], 10) : null;
-        })
-        .filter((id): id is number => id !== null)
-    );
-
     const hostsWithDistance = hostContacts
       .filter(contact => contact.latitude && contact.longitude)
-      // Exclude hosts who are already showing as drivers
-      .filter(contact => !hostDriverIds.has(contact.id))
       .map(contact => ({
         id: contact.id,
         contactName: contact.contactName,
@@ -1676,7 +1661,7 @@ export default function DriverPlanningDashboard() {
 
     // If still not enough, just return whatever we have (sorted by distance)
     return hostsWithDistance.slice(0, 10);
-  }, [effectiveSelectedEvent, hostContacts, nearbyDriversAll]);
+  }, [effectiveSelectedEvent, hostContacts]);
 
   // Get nearby recipients (delivery locations) near the selected/custom location
   // Dynamically expands search radius if not enough recipients found nearby
@@ -2883,34 +2868,32 @@ export default function DriverPlanningDashboard() {
             )}
 
             {/* Nearby driver markers (triangles) when event or custom location selected */}
+            {/* Only show actual drivers (source: 'driver'), not hosts - hosts show as green circles */}
             {effectiveSelectedEvent && nearbyDriversAll
-              .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id)
+              .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id && driver.source === 'driver')
               .slice(0, 15)
               .map(({ driver, distance }) => (
               <Marker
                 key={`driver-${driver.id}`}
                 position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
-                icon={driver.source === 'host' ? hostDriverIcon : driverIcon}
+                icon={driverIcon}
               >
                 <Tooltip
                   permanent
                   direction="top"
                   offset={[0, -10]}
-                  className={driver.source === 'host'
-                    ? "!bg-green-50 !border-green-300 !text-green-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
-                    : "!bg-yellow-50 !border-yellow-300 !text-yellow-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
-                  }
+                  className="!bg-yellow-50 !border-yellow-300 !text-yellow-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
                 >
                   {driver.name}
                 </Tooltip>
                 <Popup>
                   <div className="p-2 min-w-[180px]">
-                    <h3 className={`font-semibold text-sm flex items-center gap-1 ${driver.source === 'host' ? 'text-green-700' : 'text-yellow-700'}`}>
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
                       <Truck className="w-3 h-3" />
-                      {driver.name} <span className="text-gray-400 text-[11px]">({driver.source === 'host' ? 'Host+Driver' : driver.source})</span>
+                      {driver.name}
                     </h3>
                     <p className="text-xs text-gray-600">
-                      {driver.hostLocation || 'Driver location'}
+                      {driver.hostLocation || driver.homeAddress || 'Driver location'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">{distance.toFixed(1)} miles away</p>
                     {driver.vanApproved && (
