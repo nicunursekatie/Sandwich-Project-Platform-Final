@@ -758,6 +758,13 @@ export default function DriverPlanningDashboard() {
 
   // Handle clicking on a host/recipient to show driving route from selected event
   const handleItemClick = async (item: FocusedMapItem) => {
+    // Toggle off if clicking the same item again
+    if (focusedItem?.type === item.type && focusedItem?.id === item.id) {
+      setFocusedItem(null);
+      setDrivingRoute(null);
+      return;
+    }
+
     setFocusedItem(item);
 
     // Only fetch route if we have a selected event with coordinates
