@@ -4423,3 +4423,48 @@ export const passwordResetTokens = pgTable('password_reset_tokens', {
 
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+// ============================================================================
+// TSP CONTACT FOLLOWUP NOTIFICATIONS - Track automated reminders to TSP contacts
+// ============================================================================
+
+/**
+ * TSP Contact Followup Notifications - Prevents duplicate automated reminders
+ * Tracks when notifications were sent to TSP contacts for specific reminder types
+ */
+export const tspContactFollowups = pgTable('tsp_contact_followups', {
+  id: serial('id').primaryKey(),
+  
+  // Event and contact identification
+  eventRequestId: integer('event_request_id').notNull().references(() => eventRequests.id, { onDelete: 'cascade' }),
+  tspContactUserId: varchar('tsp_contact_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  // Reminder type: 'approaching_event' | 'toolkit_followup'
+  reminderType: varchar('reminder_type').notNull(),
+  
+  // Delivery tracking
+  deliveryChannel: varchar('delivery_channel').notNull(), // 'sms' | 'email'
+  sentAt: timestamp('sent_at').defaultNow().notNull(),
+  deliveryStatus: varchar('delivery_status').default('sent'), // 'sent' | 'delivered' | 'failed'
+  
+  // Context snapshot (for audit/debugging)
+  eventOrganization: varchar('event_organization'),
+  eventDate: timestamp('event_date'),
+  messagePreview: text('message_preview'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_tsp_followup_event').on(table.eventRequestId),
+  index('idx_tsp_followup_contact').on(table.tspContactUserId),
+  index('idx_tsp_followup_type').on(table.reminderType),
+  index('idx_tsp_followup_sent').on(table.sentAt),
+  uniqueIndex('idx_tsp_followup_unique').on(table.eventRequestId, table.tspContactUserId, table.reminderType),
+]);
+
+export const insertTspContactFollowupSchema = createInsertSchema(tspContactFollowups).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type TspContactFollowup = typeof tspContactFollowups.$inferSelect;
+export type InsertTspContactFollowup = z.infer<typeof insertTspContactFollowupSchema>;
