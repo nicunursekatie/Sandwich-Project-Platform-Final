@@ -1585,6 +1585,19 @@ export default function DriverPlanningDashboard() {
     clearTripPlanningState();
   };
 
+  // Handle selecting an event (clears custom location if set)
+  const handleSelectEvent = (event: EventMapData) => {
+    if (selectedEvent?.id !== event.id) {
+      clearTripPlanningState();
+    }
+    // Clear custom location when selecting a real event
+    if (customLocation) {
+      setCustomLocation(null);
+      setQuickLookupAddress('');
+    }
+    setSelectedEvent(event);
+  };
+
   // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
   // Dynamically expands search radius if not enough hosts found nearby
   const nearbyHosts = useMemo(() => {
@@ -2359,8 +2372,11 @@ export default function DriverPlanningDashboard() {
                         : 'hover:shadow-md hover:bg-white'
                     }`}
                     onClick={() => {
-                      if (!isSelected) clearTripPlanningState();
-                      setSelectedEvent(isSelected ? null : event);
+                      if (isSelected) {
+                        setSelectedEvent(null);
+                      } else {
+                        handleSelectEvent(event);
+                      }
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
                     }}
@@ -2626,10 +2642,7 @@ export default function DriverPlanningDashboard() {
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
                   eventHandlers={{
-                    click: () => {
-                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                      setSelectedEvent(event);
-                    }
+                    click: () => handleSelectEvent(event)
                   }}
                 >
                   <Tooltip
@@ -4202,8 +4215,11 @@ export default function DriverPlanningDashboard() {
                         : 'hover:shadow-md hover:bg-white'
                     }`}
                     onClick={() => {
-                      if (!isSelected) clearTripPlanningState();
-                      setSelectedEvent(isSelected ? null : event);
+                      if (isSelected) {
+                        setSelectedEvent(null);
+                      } else {
+                        handleSelectEvent(event);
+                      }
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
                     }}
@@ -4306,10 +4322,7 @@ export default function DriverPlanningDashboard() {
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
                   eventHandlers={{
-                    click: () => {
-                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                      setSelectedEvent(event);
-                    }
+                    click: () => handleSelectEvent(event)
                   }}
                 >
                   <Tooltip
@@ -4655,8 +4668,7 @@ export default function DriverPlanningDashboard() {
                   icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
                   eventHandlers={{
                     click: () => {
-                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                      setSelectedEvent(event);
+                      handleSelectEvent(event);
                       // Expand events list to show details (don't use Sheet overlay)
                       setMobileEventsCollapsed(false);
                       setMobileFullscreenMap(false);
@@ -5369,8 +5381,7 @@ export default function DriverPlanningDashboard() {
                           key={event.id}
                           className="p-3 cursor-pointer transition-all active:scale-[0.98] hover:shadow-md active:bg-gray-50"
                           onClick={() => {
-                            if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                            setSelectedEvent(event);
+                            handleSelectEvent(event);
                             setShowAllHosts(false);
                             setShowAllRecipients(false);
                           }}
