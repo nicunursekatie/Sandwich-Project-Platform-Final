@@ -382,6 +382,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     console.log('[EventEditDialog] handleSave called');
     console.log('[EventEditDialog] Current state - tspContact:', tspContact, ', customTspContact:', customTspContact);
     console.log('[EventEditDialog] Original event - tspContact:', event?.tspContact, ', customTspContact:', event?.customTspContact);
+    console.log('[EventEditDialog] vanDriverNeeded state:', vanDriverNeeded, 'event.vanDriverNeeded:', event?.vanDriverNeeded);
 
     // Logistics
     if (driversNeeded !== (event?.driversNeeded?.toString() || '')) {
@@ -405,7 +406,9 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     if (pickupTimeWindow !== (event?.pickupTimeWindow || '')) {
       updates.pickupTimeWindow = pickupTimeWindow || null;
     }
+    console.log('[EventEditDialog] vanDriverNeeded comparison:', vanDriverNeeded, '!==', (event?.vanDriverNeeded || false), '=', vanDriverNeeded !== (event?.vanDriverNeeded || false));
     if (vanDriverNeeded !== (event?.vanDriverNeeded || false)) {
+      console.log('[EventEditDialog] Adding vanDriverNeeded to updates:', vanDriverNeeded);
       updates.vanDriverNeeded = vanDriverNeeded;
     }
 
