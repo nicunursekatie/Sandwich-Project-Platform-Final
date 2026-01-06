@@ -42,9 +42,9 @@ async function geocodeWithGoogle(address: string): Promise<{ latitude: string; l
 
 /**
  * Geocode an address to latitude and longitude
- * Primary: OpenStreetMap Nominatim API (free, no API key)
- * Fallback: Google Geocoding API (when OpenStreetMap fails)
- * 
+ * Primary: Google Geocoding API (more accurate, handles address variations better)
+ * Fallback: OpenStreetMap Nominatim API (free, when Google unavailable)
+ *
  * @param address - Full address string to geocode
  * @returns Object with latitude and longitude, or null if geocoding failed
  */
@@ -54,9 +54,17 @@ export async function geocodeAddress(address: string): Promise<{ latitude: strin
   }
 
   try {
-    // Try OpenStreetMap Nominatim first (free, no API key required)
-    logger.log(`🗺️ Trying OpenStreetMap for: ${address}`);
-    
+    // Try Google first (more accurate, handles address variations better)
+    logger.log(`🗺️ Trying Google Geocoding for: ${address}`);
+    const googleResult = await geocodeWithGoogle(address);
+
+    if (googleResult) {
+      return googleResult;
+    }
+
+    // Fallback to OpenStreetMap if Google fails or is not configured
+    logger.log(`🔄 Falling back to OpenStreetMap for: ${address}`);
+
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
       {
@@ -68,62 +76,51 @@ export async function geocodeAddress(address: string): Promise<{ latitude: strin
 
     if (!response.ok) {
       logger.error(`OpenStreetMap API error: ${response.status} ${response.statusText}`);
-    } else {
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        const result = data[0];
-        logger.log(`✅ OpenStreetMap SUCCESS: ${address} -> (${result.lat}, ${result.lon})`);
-        return {
-          latitude: result.lat,
-          longitude: result.lon,
-        };
-      }
-
-      logger.warn(`OpenStreetMap returned 0 results for: "${address}"`);
+      return null;
     }
 
-    // Fallback to Google Geocoding if OpenStreetMap fails
-    logger.log(`🔄 Falling back to Google Geocoding for: ${address}`);
-    const googleResult = await geocodeWithGoogle(address);
-    
-    if (googleResult) {
-      return googleResult;
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const result = data[0];
+      logger.log(`✅ OpenStreetMap SUCCESS: ${address} -> (${result.lat}, ${result.lon})`);
+      return {
+        latitude: result.lat,
+        longitude: result.lon,
+      };
     }
 
+    logger.warn(`OpenStreetMap returned 0 results for: "${address}"`);
     logger.error(`❌ ALL GEOCODING FAILED for address: "${address}"`);
     return null;
   } catch (error) {
     logger.error('Error geocoding address:', error);
-    
-    // Try Google as last resort
-    try {
-      logger.log(`🔄 Exception fallback to Google Geocoding for: ${address}`);
-      return await geocodeWithGoogle(address);
-    } catch (fallbackError) {
-      logger.error('Google fallback also failed:', fallbackError);
-      return null;
-    }
+    return null;
   }
 }
 
 /**
- * Batch geocode multiple addresses with rate limiting (1 request per second for Nominatim)
- * 
+ * Batch geocode multiple addresses with rate limiting
+ * Google: 50 req/sec allowed, but we use 200ms delay to be safe
+ * OpenStreetMap fallback: 1 req/sec limit
+ *
  * @param addresses - Array of address strings to geocode
  * @returns Array of geocoded results (null for failed geocoding)
  */
 export async function geocodeAddresses(addresses: string[]): Promise<(
 { latitude: string; longitude: string } | null)[]> {
   const results: ({ latitude: string; longitude: string } | null)[] = [];
+  const hasGoogleKey = !!process.env.GOOGLE_GEOCODING_API_KEY;
+  // Use faster rate if Google is available, slower for OpenStreetMap fallback
+  const delayMs = hasGoogleKey ? 200 : 1100;
 
   for (const address of addresses) {
     const result = await geocodeAddress(address);
     results.push(result);
 
-    // Rate limit: 1 request per second for Nominatim
+    // Rate limit between requests
     if (addresses.indexOf(address) < addresses.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 
