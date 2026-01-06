@@ -4317,8 +4317,15 @@ router.patch(
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { socialMediaPostRequested, socialMediaPostCompleted, notes } =
-        req.body;
+      const { 
+        socialMediaPostRequested, 
+        socialMediaPostCompleted, 
+        socialMediaPostNotes,
+        socialMediaPostLink,
+        socialMediaPostRequestedDate,
+        socialMediaPostCompletedDate,
+        notes  // Legacy field name
+      } = req.body;
 
       if (!id || isNaN(id)) {
         return res.status(400).json({ error: 'Valid event ID required' });
@@ -4328,21 +4335,51 @@ router.patch(
 
       if (socialMediaPostRequested !== undefined) {
         updates.socialMediaPostRequested = socialMediaPostRequested;
-        updates.socialMediaPostRequestedDate = socialMediaPostRequested
-          ? new Date()
+        // Auto-set date if setting to true and no explicit date provided
+        if (socialMediaPostRequested && !socialMediaPostRequestedDate) {
+          updates.socialMediaPostRequestedDate = new Date();
+        } else if (!socialMediaPostRequested) {
+          updates.socialMediaPostRequestedDate = null;
+        }
+      }
+
+      // Allow explicit date override
+      if (socialMediaPostRequestedDate !== undefined) {
+        updates.socialMediaPostRequestedDate = socialMediaPostRequestedDate 
+          ? new Date(socialMediaPostRequestedDate) 
           : null;
       }
 
       if (socialMediaPostCompleted !== undefined) {
         updates.socialMediaPostCompleted = socialMediaPostCompleted;
-        updates.socialMediaPostCompletedDate = socialMediaPostCompleted
-          ? new Date()
+        // Auto-set date if setting to true and no explicit date provided
+        if (socialMediaPostCompleted && !socialMediaPostCompletedDate) {
+          updates.socialMediaPostCompletedDate = new Date();
+        } else if (!socialMediaPostCompleted) {
+          updates.socialMediaPostCompletedDate = null;
+        }
+      }
+
+      // Allow explicit date override
+      if (socialMediaPostCompletedDate !== undefined) {
+        updates.socialMediaPostCompletedDate = socialMediaPostCompletedDate 
+          ? new Date(socialMediaPostCompletedDate) 
           : null;
       }
 
-      if (notes !== undefined) {
+      // Handle notes (support both field names)
+      if (socialMediaPostNotes !== undefined) {
+        updates.socialMediaPostNotes = socialMediaPostNotes;
+      } else if (notes !== undefined) {
         updates.socialMediaPostNotes = notes;
       }
+
+      // Handle post link
+      if (socialMediaPostLink !== undefined) {
+        updates.socialMediaPostLink = socialMediaPostLink;
+      }
+
+      logger.info(`[PATCH /:id/social-media] Updating event ${id} with:`, updates);
 
       const updatedEventRequest = await storage.updateEventRequest(id, updates);
 

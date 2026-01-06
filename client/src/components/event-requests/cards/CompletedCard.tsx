@@ -1511,7 +1511,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Social media mutation
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
-      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+      apiRequest('PATCH', `/api/event-requests/${request.id}/social-media`, data),
     onSuccess: () => {
       toast({
         title: 'Social media tracking updated',
