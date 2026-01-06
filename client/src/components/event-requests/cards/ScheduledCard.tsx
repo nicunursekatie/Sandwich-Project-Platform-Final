@@ -1,5 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/lib/logger';
+import { Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -353,6 +358,8 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   canEdit = true,
 }) => {
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
@@ -361,9 +368,71 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showRecipientAllocationDialog, setShowRecipientAllocationDialog] = useState(false);
 
+  // Event Instructions section state
+  const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
+  const [isEditingInstructions, setIsEditingInstructions] = useState(false);
+  const [tempDriverInstructions, setTempDriverInstructions] = useState(request.driverInstructions || '');
+  const [tempVolunteerInstructions, setTempVolunteerInstructions] = useState(request.volunteerInstructions || '');
+  const [tempSpeakerInstructions, setTempSpeakerInstructions] = useState(request.speakerInstructions || '');
+
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
   const canEditTspContact = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
+
+  // Mutation for saving event instructions
+  const saveInstructionsMutation = useMutation({
+    mutationFn: (data: {
+      driverInstructions: string | null;
+      volunteerInstructions: string | null;
+      speakerInstructions: string | null;
+      instructionsLastUpdatedAt: string;
+      instructionsLastUpdatedBy: string;
+    }) => {
+      logger.log('Saving event instructions for event:', request.id);
+      return apiRequest('PATCH', `/api/event-requests/${request.id}`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Instructions saved',
+        description: 'Event instructions have been updated successfully.',
+      });
+      invalidateEventRequestQueries(queryClient);
+      setIsEditingInstructions(false);
+    },
+    onError: (error: any) => {
+      logger.error('Failed to save instructions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save instructions. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSaveInstructions = () => {
+    if (!user) return;
+    saveInstructionsMutation.mutate({
+      driverInstructions: tempDriverInstructions.trim() || null,
+      volunteerInstructions: tempVolunteerInstructions.trim() || null,
+      speakerInstructions: tempSpeakerInstructions.trim() || null,
+      instructionsLastUpdatedAt: new Date().toISOString(),
+      instructionsLastUpdatedBy: user.id,
+    });
+  };
+
+  const handleCancelEditInstructions = () => {
+    setTempDriverInstructions(request.driverInstructions || '');
+    setTempVolunteerInstructions(request.volunteerInstructions || '');
+    setTempSpeakerInstructions(request.speakerInstructions || '');
+    setIsEditingInstructions(false);
+  };
+
+  const handleStartEditInstructions = () => {
+    setTempDriverInstructions(request.driverInstructions || '');
+    setTempVolunteerInstructions(request.volunteerInstructions || '');
+    setTempSpeakerInstructions(request.speakerInstructions || '');
+    setIsEditingInstructions(true);
+  };
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
@@ -2100,6 +2169,184 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             )}
           </div>
         )}
+
+        {/* Event Instructions for Volunteers - Collapsible */}
+        <div className="bg-gradient-to-r from-[#007E8C]/20 to-[#007E8C]/10 rounded-lg border-l-4 border-[#007E8C] shadow-md mb-4">
+          <button
+            onClick={() => setIsInstructionsExpanded(!isInstructionsExpanded)}
+            className="w-full p-4 flex items-center justify-between hover:bg-[#007E8C]/5 transition-colors rounded-t-lg"
+          >
+            <h3 className="text-base font-semibold text-[#007E8C] flex items-center gap-2">
+              <FileText className="w-4 h-4 text-[#007E8C]" />
+              Event Instructions for Volunteers
+            </h3>
+            <div className="flex items-center gap-2">
+              {(request.driverInstructions || request.volunteerInstructions || request.speakerInstructions) && (
+                <Badge variant="outline" className="bg-[#007E8C]/10 text-[#007E8C] border-[#007E8C]/30 text-xs">
+                  Has Instructions
+                </Badge>
+              )}
+              {isInstructionsExpanded ? (
+                <ChevronUp className="w-5 h-5 text-[#007E8C]" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-[#007E8C]" />
+              )}
+            </div>
+          </button>
+          {isInstructionsExpanded && (
+            <div className="px-4 pb-4">
+              {/* Info note about automated reminders */}
+              <div className="flex items-start gap-2 mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-blue-700">
+                  These instructions will be included in automated reminder texts and emails sent to assigned volunteers.
+                </p>
+              </div>
+
+              {/* Edit/Save buttons */}
+              {canEdit && (
+                <div className="flex justify-end mb-3">
+                  {isEditingInstructions ? (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleSaveInstructions}
+                        disabled={saveInstructionsMutation.isPending}
+                        data-testid="button-save-instructions"
+                      >
+                        {saveInstructionsMutation.isPending ? (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        ) : (
+                          <Save className="w-3 h-3 mr-1" />
+                        )}
+                        Save Instructions
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCancelEditInstructions}
+                        disabled={saveInstructionsMutation.isPending}
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleStartEditInstructions}
+                      className="border-[#007E8C]/30 text-[#007E8C] hover:bg-[#007E8C]/10"
+                    >
+                      <Edit2 className="w-3 h-3 mr-1" />
+                      Edit Instructions
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Three instruction areas */}
+              <div className="grid grid-cols-1 gap-4">
+                {/* Driver Instructions */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Truck className="w-4 h-4 text-[#236383]" />
+                    <p className="text-base font-medium text-[#236383]">Driver Instructions</p>
+                  </div>
+                  {isEditingInstructions ? (
+                    <textarea
+                      value={tempDriverInstructions}
+                      onChange={(e) => setTempDriverInstructions(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded text-base min-h-[100px] text-gray-900 bg-white"
+                      placeholder="Enter special instructions for drivers..."
+                      data-testid="instructions-driver"
+                    />
+                  ) : request.driverInstructions ? (
+                    <p
+                      className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-[#236383] whitespace-pre-wrap"
+                      data-testid="instructions-driver"
+                    >
+                      {request.driverInstructions}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic" data-testid="instructions-driver">
+                      No driver instructions added
+                    </p>
+                  )}
+                </div>
+
+                {/* Volunteer Instructions */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-[#47B3CB]" />
+                    <p className="text-base font-medium text-[#47B3CB]">Volunteer Instructions</p>
+                  </div>
+                  {isEditingInstructions ? (
+                    <textarea
+                      value={tempVolunteerInstructions}
+                      onChange={(e) => setTempVolunteerInstructions(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded text-base min-h-[100px] text-gray-900 bg-white"
+                      placeholder="Enter general instructions for volunteers..."
+                      data-testid="instructions-volunteer"
+                    />
+                  ) : request.volunteerInstructions ? (
+                    <p
+                      className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-[#47B3CB] whitespace-pre-wrap"
+                      data-testid="instructions-volunteer"
+                    >
+                      {request.volunteerInstructions}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic" data-testid="instructions-volunteer">
+                      No volunteer instructions added
+                    </p>
+                  )}
+                </div>
+
+                {/* Speaker Instructions */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Megaphone className="w-4 h-4 text-[#FBAD3F]" />
+                    <p className="text-base font-medium text-[#FBAD3F]">Speaker Instructions</p>
+                  </div>
+                  {isEditingInstructions ? (
+                    <textarea
+                      value={tempSpeakerInstructions}
+                      onChange={(e) => setTempSpeakerInstructions(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded text-base min-h-[100px] text-gray-900 bg-white"
+                      placeholder="Enter special instructions for speakers..."
+                      data-testid="instructions-speaker"
+                    />
+                  ) : request.speakerInstructions ? (
+                    <p
+                      className="text-base text-gray-700 bg-white p-3 rounded border-l-4 border-[#FBAD3F] whitespace-pre-wrap"
+                      data-testid="instructions-speaker"
+                    >
+                      {request.speakerInstructions}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic" data-testid="instructions-speaker">
+                      No speaker instructions added
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Last updated info */}
+              {request.instructionsLastUpdatedAt && (
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    Last updated: {new Date(request.instructionsLastUpdatedAt).toLocaleDateString()} at{' '}
+                    {new Date(request.instructionsLastUpdatedAt).toLocaleTimeString()}
+                    {request.instructionsLastUpdatedBy && (
+                      <span> by {resolveUserName(request.instructionsLastUpdatedBy)}</span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Initial Request Message - Collapsible */}
         {request.message && (
