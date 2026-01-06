@@ -3447,15 +3447,15 @@ export default function DriverPlanningDashboard() {
                                 )}
                               </h4>
                               <p className="text-xs text-gray-500">
-                                {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                                {driver.hostLocation || driver.area || driver.routeDescription || extractCityFromAddress(driver.homeAddress) || 'No location'}
                               </p>
                               <p className="text-[11px] text-gray-400 mt-1">{distance.toFixed(1)} miles away</p>
                             </div>
                             <Badge
-                              variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                              variant={driver.source === 'driver' ? 'default' : driver.source === 'host' ? 'outline' : 'secondary'}
                               className="text-xs"
                             >
-                              {driver.availability || 'Unknown'}
+                              {driver.source === 'driver' ? 'Driver' : driver.source === 'host' ? 'Host' : 'Volunteer'}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
@@ -5023,17 +5023,17 @@ export default function DriverPlanningDashboard() {
                                 <div className="flex-1 min-w-0">
                                   <h4 className="font-medium text-sm truncate">{driver.name}</h4>
                                   <p className="text-xs text-gray-500 truncate">
-                                    {driver.hostLocation || driver.area || driver.routeDescription || 'No location'}
+                                    {driver.hostLocation || driver.area || driver.routeDescription || extractCityFromAddress(driver.homeAddress) || 'No location'}
                                   </p>
                                   <p className="text-[11px] text-[#007E8C] font-medium mt-1">
                                     {distance.toFixed(1)} miles away
                                   </p>
                                 </div>
                                 <Badge
-                                  variant={driver.availability === 'available' ? 'default' : 'secondary'}
+                                  variant={driver.source === 'driver' ? 'default' : driver.source === 'host' ? 'outline' : 'secondary'}
                                   className="text-xs flex-shrink-0"
                                 >
-                                  {driver.availability || 'Unknown'}
+                                  {driver.source === 'driver' ? 'Driver' : driver.source === 'host' ? 'Host' : 'Volunteer'}
                                 </Badge>
                               </div>
                               <div className="flex items-center gap-3 text-xs text-gray-600 flex-wrap">
