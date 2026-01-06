@@ -8,7 +8,7 @@ import {
   ChevronRight, ChevronLeft, RefreshCw, Clock, Truck,
   Users, Copy, Check, Building2, Heart, Edit2, Save, Loader2,
   ChevronUp, ChevronDown, X, Maximize2, Minimize2, List, ExternalLink,
-  Navigation, Home, Target, User, Megaphone
+  Navigation, Home, Target, User, Megaphone, EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -2803,6 +2803,17 @@ export default function DriverPlanningDashboard() {
                 </div>
               </div>
 
+              {/* Hide/Show route toggle for assigned drivers */}
+              {selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && drivingRoute && (
+                <button
+                  onClick={() => setDrivingRoute(null)}
+                  className="w-full mt-3 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <EyeOff className="w-4 h-4" />
+                  Hide Driver's Route
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
@@ -2813,7 +2824,8 @@ export default function DriverPlanningDashboard() {
                   // Keep pre-assigned items, clear the rest
                   if (!driverIsAssigned) setSelectedDriver(null);
                   if (!destIsAssigned) setSelectedDestination(null);
-                  setDrivingRoute(null);
+                  // Only clear driving route if driver is NOT assigned
+                  if (!driverIsAssigned) setDrivingRoute(null);
                   setFocusedItem(null);
                 }}
                 className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
