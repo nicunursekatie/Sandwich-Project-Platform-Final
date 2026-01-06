@@ -582,6 +582,13 @@ function MapController({
 }) {
   const map = useMap();
 
+  // Close popups when focused item is cleared
+  useEffect(() => {
+    if (!focusedItem) {
+      map.closePopup();
+    }
+  }, [focusedItem, map]);
+
   // Handle full trip route - fit bounds to show all three points (driver, event, destination)
   useEffect(() => {
     if (fullTripRoute) {
@@ -1931,7 +1938,7 @@ export default function DriverPlanningDashboard() {
       {/* Main Content - Desktop 3-Panel Layout */}
       <div className="flex-1 hidden lg:flex overflow-hidden">
         {/* Left Panel - Event List */}
-        <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list">
+        <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list" onClick={() => setFocusedItem(null)}>
           <div className="p-3 border-b bg-white space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -2947,7 +2954,7 @@ export default function DriverPlanningDashboard() {
         </div>
 
         {/* Right Panel - Driver Suggestions */}
-        <div className="w-96 border-l bg-gray-50 flex flex-col">
+        <div className="w-96 border-l bg-gray-50 flex flex-col" onClick={() => setFocusedItem(null)}>
           <div className="p-3 border-b bg-white">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -3109,13 +3116,16 @@ export default function DriverPlanningDashboard() {
                           }`}
                         >
                           <button
-                            onClick={() => handleItemClick({
-                              type: 'host',
-                              id: host.id,
-                              latitude: host.latitude,
-                              longitude: host.longitude,
-                              name: host.contactName || host.hostLocationName
-                            })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleItemClick({
+                                type: 'host',
+                                id: host.id,
+                                latitude: host.latitude,
+                                longitude: host.longitude,
+                                name: host.contactName || host.hostLocationName
+                              });
+                            }}
                             className="flex-1 text-left p-2"
                             data-testid={`host-locate-${host.id}`}
                           >
@@ -3207,13 +3217,16 @@ export default function DriverPlanningDashboard() {
                             }`}
                           >
                             <button
-                              onClick={() => handleItemClick({
-                                type: 'recipient',
-                                id: recipient.id,
-                                latitude: recipient.latitude,
-                                longitude: recipient.longitude,
-                                name: recipient.name
-                              })}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleItemClick({
+                                  type: 'recipient',
+                                  id: recipient.id,
+                                  latitude: recipient.latitude,
+                                  longitude: recipient.longitude,
+                                  name: recipient.name
+                                });
+                              }}
                               className="flex-1 text-left p-2"
                             >
                               <div className="flex items-center justify-between">
@@ -3280,13 +3293,16 @@ export default function DriverPlanningDashboard() {
                           }`}
                         >
                           <button
-                            onClick={() => handleItemClick({
-                              type: 'recipient',
-                              id: recipient.id,
-                              latitude: recipient.latitude,
-                              longitude: recipient.longitude,
-                              name: recipient.name
-                            })}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleItemClick({
+                                type: 'recipient',
+                                id: recipient.id,
+                                latitude: recipient.latitude,
+                                longitude: recipient.longitude,
+                                name: recipient.name
+                              });
+                            }}
                             className="flex-1 text-left p-2"
                             data-testid={`recipient-locate-${recipient.id}`}
                           >
@@ -3427,13 +3443,16 @@ export default function DriverPlanningDashboard() {
                         </div>
                         <button
                           className="w-full text-left"
-                          onClick={() => handleItemClick({
-                            type: 'driver',
-                            id: driver.id,
-                            latitude: driver.latitude,
-                            longitude: driver.longitude,
-                            name: driver.name
-                          })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleItemClick({
+                              type: 'driver',
+                              id: driver.id,
+                              latitude: driver.latitude,
+                              longitude: driver.longitude,
+                              name: driver.name
+                            });
+                          }}
                         >
                           <div className="flex items-start justify-between">
                             <div>
@@ -3520,13 +3539,16 @@ export default function DriverPlanningDashboard() {
                         </div>
                         <button
                           className="w-full text-left"
-                          onClick={() => handleItemClick({
-                            type: 'driver',
-                            id: driver.id,
-                            latitude: driver.latitude,
-                            longitude: driver.longitude,
-                            name: driver.name
-                          })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleItemClick({
+                              type: 'driver',
+                              id: driver.id,
+                              latitude: driver.latitude,
+                              longitude: driver.longitude,
+                              name: driver.name
+                            });
+                          }}
                         >
                           <div className="flex items-start justify-between">
                             <div>
