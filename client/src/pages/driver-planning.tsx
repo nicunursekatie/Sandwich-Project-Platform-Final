@@ -1797,7 +1797,17 @@ export default function DriverPlanningDashboard() {
     const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
       .map((v) => (v || '').trim())
       .filter(Boolean)
-      .map((v) => (v.startsWith('user_') || v.startsWith('admin_') || v.startsWith('auth0|') || v.startsWith('google-oauth2|')) ? resolveUserName(v) : v);
+      .map((v) => {
+        // Always try to resolve user name - the function handles the lookup and falls back gracefully
+        const resolved = resolveUserName(v);
+        // If resolved is the same as the raw ID and looks like a user ID, keep trying via usersById
+        if (resolved === v) {
+          // Check if it's a user ID format and try to get the name
+          const userName = usersById.get(v);
+          if (userName) return userName;
+        }
+        return resolved;
+      });
     if (parts.length === 0) return null;
     // De-dupe while preserving order
     return Array.from(new Set(parts)).join(' • ');
