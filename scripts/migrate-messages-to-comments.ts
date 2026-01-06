@@ -66,8 +66,11 @@ async function migrateMessagesToComments() {
         )
         .limit(1);
 
+      console.log(`Checking for duplicate: eventRequestId=${eventRequestId}, userId=${msg.userId}, content starts with "${msg.content.substring(0, 30)}..."`);
+      console.log(`Found ${existingComment.length} existing comments matching criteria`);
+
       if (existingComment.length > 0) {
-        console.log(`Skipping message ${msg.id}: already migrated`);
+        console.log(`Skipping message ${msg.id}: already migrated (found id ${existingComment[0].id})`);
         skipped++;
         continue;
       }
