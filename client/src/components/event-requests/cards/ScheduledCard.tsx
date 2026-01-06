@@ -86,7 +86,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
-import { EventMessageThread } from '@/components/event-message-thread';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import {
@@ -2601,30 +2600,6 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
             </div>
           )}
         </div>
-
-        {/* Communication & Notes Section */}
-        {request.id && (
-          <div className="bg-gradient-to-r from-[#236383]/25 to-[#236383]/12 rounded-lg p-4 mb-4 border-l-4 border-[#236383] shadow-md">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-[#236383]">Communication & Notes</h3>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onLogContact}
-                className="h-7 text-xs flex items-center gap-1 border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
-              >
-                <Phone className="w-3 h-3" />
-                Log Contact
-              </Button>
-            </div>
-            <EventMessageThread
-              eventId={request.id.toString()}
-              eventRequest={request}
-              eventTitle={`${request.organizationName} event`}
-              maxHeight="300px"
-            />
-          </div>
-        )}
 
         {/* Action Buttons */}
         <TooltipProvider>

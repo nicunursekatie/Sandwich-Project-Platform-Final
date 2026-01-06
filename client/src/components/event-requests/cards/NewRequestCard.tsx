@@ -50,7 +50,6 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
-import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { invalidateEventRequestQueries } from '@/lib/queryClient';
@@ -1010,15 +1009,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </div>
             )}
 
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Contact Log & Messages</h3>
-              <EventMessageThread
-                eventId={request.id.toString()}
-                eventRequest={request}
-                eventTitle={`${request.organizationName} event`}
-                maxHeight="300px"
-              />
-            </div>
           </div>
         )}
 

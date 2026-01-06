@@ -52,7 +52,6 @@ import {
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
-import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -2683,24 +2682,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-between mb-3 mt-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-700">Contact Log & Messages</h3>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onLogContact}
-                className="h-7 text-xs flex items-center gap-1"
-              >
-                <Phone className="w-3 h-3" />
-                Log Contact
-              </Button>
-            </div>
-            <EventMessageThread
-              eventId={request.id.toString()}
-              eventRequest={request}
-              eventTitle={`${request.organizationName} event`}
-              maxHeight="300px"
-            />
           </div>
         )}
 

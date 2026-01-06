@@ -28,7 +28,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { MessageComposer } from '@/components/message-composer';
-import { EventMessageThread } from '@/components/event-message-thread';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { useAuth } from '@/hooks/useAuth';
@@ -428,25 +427,6 @@ export const PostponedCard: React.FC<PostponedCardProps> = ({
               </div>
             )}
 
-            <div className="flex items-center justify-between mb-3 mt-4 pt-4 border-t">
-              <h3 className="text-sm font-semibold text-gray-700">Contact Log & Messages</h3>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onLogContact}
-                className="h-7 text-xs flex items-center gap-1"
-                data-testid="button-log-contact"
-              >
-                <Phone className="w-3 h-3" />
-                Log Contact
-              </Button>
-            </div>
-            <EventMessageThread
-              eventId={request.id.toString()}
-              eventRequest={request}
-              eventTitle={`${request.organizationName} event`}
-              maxHeight="300px"
-            />
           </div>
         )}
 
