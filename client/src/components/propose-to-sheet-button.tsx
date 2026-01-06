@@ -254,13 +254,34 @@ export function ProposeToSheetButton({
                 ) : previewData?.rawData ? (
                   <div className="space-y-4">
                     {previewData.existingSheetRow && (
-                      <Alert variant="destructive" className="bg-orange-50 border-orange-200">
-                        <AlertTriangle className="h-4 w-4 text-orange-600" />
-                        <AlertTitle className="text-orange-800">Event already exists in sheet</AlertTitle>
-                        <AlertDescription className="text-orange-700">
-                          Found at row {previewData.existingSheetRow.rowIndex}: {previewData.existingSheetRow.groupName} on {previewData.existingSheetRow.date}
-                        </AlertDescription>
-                      </Alert>
+                      <div className="space-y-3">
+                        <Alert className="bg-blue-50 border-blue-200">
+                          <FileSpreadsheet className="h-4 w-4 text-blue-600" />
+                          <AlertTitle className="text-blue-800">Current spreadsheet data (Row {previewData.existingSheetRow.rowIndex})</AlertTitle>
+                          <AlertDescription className="text-blue-700">
+                            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                              <div><strong>Group:</strong> {previewData.existingSheetRow.groupName || '-'}</div>
+                              <div><strong>Date:</strong> {previewData.existingSheetRow.date || '-'}</div>
+                              <div><strong>Start:</strong> {previewData.existingSheetRow.eventStartTime || '-'}</div>
+                              <div><strong>End:</strong> {previewData.existingSheetRow.eventEndTime || '-'}</div>
+                              <div><strong>Pickup:</strong> {previewData.existingSheetRow.pickUpTime || '-'}</div>
+                              <div><strong>Staffing:</strong> {previewData.existingSheetRow.staffing || '-'}</div>
+                              <div><strong>Est. Sandwiches:</strong> {previewData.existingSheetRow.estimateSandwiches || '-'}</div>
+                              <div><strong>Type:</strong> {previewData.existingSheetRow.deliOrPbj || '-'}</div>
+                              <div><strong>Contact:</strong> {previewData.existingSheetRow.contactName || '-'}</div>
+                              <div><strong>TSP Contact:</strong> {previewData.existingSheetRow.tspContact || '-'}</div>
+                              <div className="col-span-2"><strong>Address:</strong> {previewData.existingSheetRow.address || '-'}</div>
+                            </div>
+                          </AlertDescription>
+                        </Alert>
+                        <Alert variant="destructive" className="bg-orange-50 border-orange-200">
+                          <AlertTriangle className="h-4 w-4 text-orange-600" />
+                          <AlertTitle className="text-orange-800">This will update the existing row</AlertTitle>
+                          <AlertDescription className="text-orange-700">
+                            Creating a proposal will replace the data shown above with the proposed values below.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
                     )}
 
                     {!previewData.existingSheetRow && previewData.potentialMatches?.length > 0 && (
