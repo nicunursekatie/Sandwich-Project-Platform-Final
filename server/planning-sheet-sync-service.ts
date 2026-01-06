@@ -370,6 +370,15 @@ export class PlanningSheetSyncService {
     const speakerNames = await this.getAssignedNames(e.assignedSpeakerIds || []);
     const volunteerNames = await this.getAssignedNames(e.assignedVolunteerIds || []);
 
+    // Resolve TSP contact - either customTspContact (free text) or tspContact (user ID)
+    let tspContactName = '';
+    if (e.customTspContact) {
+      tspContactName = e.customTspContact;
+    } else if (e.tspContact) {
+      const names = await this.getAssignedNames([e.tspContact]);
+      tspContactName = names[0] || e.tspContact; // Fall back to ID if not found
+    }
+
     // Build staffing string
     const staffing: StaffingInfo = {
       driver: {
@@ -418,13 +427,14 @@ export class PlanningSheetSyncService {
     row[PLANNING_SHEET_COLUMNS.STAFFING] = formatStaffingColumn(staffing);
     row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] = e.estimatedSandwichCount?.toString() || '';
     row[PLANNING_SHEET_COLUMNS.DELI_OR_PBJ] = deliOrPbj;
-    row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = e.actualSandwichCount?.toString() || '';
+    // Only show final sandwich count if it's a positive number (not 0 or null)
+    row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = (e.actualSandwichCount && e.actualSandwichCount > 0) ? e.actualSandwichCount.toString() : '';
     row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] = e.socialMediaPostCompleted ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.CONTACT_NAME] = `${e.firstName || ''} ${e.lastName || ''}`.trim();
     row[PLANNING_SHEET_COLUMNS.EMAIL] = e.email || '';
     row[PLANNING_SHEET_COLUMNS.PHONE] = e.phone || '';
-    row[PLANNING_SHEET_COLUMNS.TSP_CONTACT] = e.tspContact || '';
+    row[PLANNING_SHEET_COLUMNS.TSP_CONTACT] = tspContactName;
     row[PLANNING_SHEET_COLUMNS.ADDRESS] = e.eventAddress || '';
     row[PLANNING_SHEET_COLUMNS.RECIPIENT_HOST] = e.deliveryDestination || '';
     row[PLANNING_SHEET_COLUMNS.AFTER_EVENT_NOTES] = e.followUpNotes || '';
