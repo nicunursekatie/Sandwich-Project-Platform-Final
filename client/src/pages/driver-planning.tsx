@@ -1430,6 +1430,54 @@ export default function DriverPlanningDashboard() {
     return drivers.filter(d => d.isActive);
   }, [drivers]);
 
+  // Effective selected event: either custom location (as virtual event) or real selected event
+  // This allows the quick location lookup to reuse all the nearby entity calculations
+  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
+    if (customLocation) {
+      return {
+        id: -1,
+        organizationName: customLocation.address,
+        organizationCategory: null,
+        department: null,
+        firstName: null,
+        lastName: null,
+        email: null,
+        phone: null,
+        eventAddress: customLocation.address,
+        latitude: customLocation.latitude,
+        longitude: customLocation.longitude,
+        desiredEventDate: null,
+        scheduledEventDate: null,
+        status: 'custom',
+        estimatedSandwichCount: null,
+        tspContactAssigned: null,
+        tspContact: null,
+        customTspContact: null,
+        eventStartTime: null,
+        eventEndTime: null,
+        driversNeeded: null,
+        assignedDriverIds: null,
+        assignedRecipientIds: null,
+        tentativeDriverIds: null,
+        speakersNeeded: null,
+        assignedSpeakerIds: null,
+        volunteersNeeded: null,
+        assignedVolunteerIds: null,
+        driverDetails: null,
+        speakerDetails: null,
+        volunteerDetails: null,
+        sandwichTypes: null,
+        pickupTime: null,
+        pickupTimeWindow: null,
+        selfTransport: null,
+        vanDriverNeeded: null,
+        assignedVanDriverId: null,
+        isDhlVan: null,
+      };
+    }
+    return selectedEvent;
+  }, [customLocation, selectedEvent]);
+
   // Get nearest driver candidates (drivers + hosts + volunteers) to the selected/custom location (by distance)
   // Only exclude drivers who are explicitly busy or off-duty
   // Note: Uses effectiveSelectedEvent which can be either a real event or custom location
@@ -1479,54 +1527,6 @@ export default function DriverPlanningDashboard() {
       !driver.hostLocation && !driver.area && !driver.zone && !driver.routeDescription && !driver.homeAddress
     );
   }, [activeDrivers]);
-
-  // Effective selected event: either custom location (as virtual event) or real selected event
-  // This allows the quick location lookup to reuse all the nearby entity calculations
-  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
-    if (customLocation) {
-      return {
-        id: -1,
-        organizationName: customLocation.address,
-        organizationCategory: null,
-        department: null,
-        firstName: null,
-        lastName: null,
-        email: null,
-        phone: null,
-        eventAddress: customLocation.address,
-        latitude: customLocation.latitude,
-        longitude: customLocation.longitude,
-        desiredEventDate: null,
-        scheduledEventDate: null,
-        status: 'custom',
-        estimatedSandwichCount: null,
-        tspContactAssigned: null,
-        tspContact: null,
-        customTspContact: null,
-        eventStartTime: null,
-        eventEndTime: null,
-        driversNeeded: null,
-        assignedDriverIds: null,
-        assignedRecipientIds: null,
-        tentativeDriverIds: null,
-        speakersNeeded: null,
-        assignedSpeakerIds: null,
-        volunteersNeeded: null,
-        assignedVolunteerIds: null,
-        driverDetails: null,
-        speakerDetails: null,
-        volunteerDetails: null,
-        sandwichTypes: null,
-        pickupTime: null,
-        pickupTimeWindow: null,
-        selfTransport: null,
-        vanDriverNeeded: null,
-        assignedVanDriverId: null,
-        isDhlVan: null,
-      };
-    }
-    return selectedEvent;
-  }, [customLocation, selectedEvent]);
 
   // Handle quick location lookup geocoding
   const handleQuickLookup = async () => {
