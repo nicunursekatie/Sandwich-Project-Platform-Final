@@ -56,6 +56,32 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
+// Override Leaflet's default divIcon styles that hide custom SVG markers
+// Leaflet adds background: #fff and border which covers our SVG icons
+const customMarkerStyles = `
+  .custom-marker.leaflet-div-icon {
+    background: transparent !important;
+    border: none !important;
+  }
+  .driver-marker.leaflet-div-icon,
+  .volunteer-marker.leaflet-div-icon,
+  .event-marker.leaflet-div-icon {
+    background: transparent !important;
+    border: none !important;
+  }
+`;
+
+// Inject custom marker styles
+if (typeof document !== 'undefined') {
+  const styleId = 'driver-planning-marker-styles';
+  if (!document.getElementById(styleId)) {
+    const styleEl = document.createElement('style');
+    styleEl.id = styleId;
+    styleEl.textContent = customMarkerStyles;
+    document.head.appendChild(styleEl);
+  }
+}
+
 // Helper function to parse date strings as local dates
 const parseLocalDate = (dateString: string): Date => {
   if (!dateString) return new Date();
