@@ -546,8 +546,11 @@ export function createDriversRouter(deps: RouterDependencies) {
 
         const geocodeResult = await geocodeAddress(address);
 
+        // Track which service was last attempted for rate limiting
+        // If null, OpenStreetMap was last attempted (as fallback)
+        lastSource = geocodeResult ? geocodeResult.source : 'openstreetmap';
+
         if (geocodeResult) {
-          lastSource = geocodeResult.source;
           await db.update(drivers)
             .set({
               latitude: geocodeResult.latitude,
@@ -640,8 +643,11 @@ export function createDriversRouter(deps: RouterDependencies) {
 
         const geocodeResult = await geocodeAddress(address);
 
+        // Track which service was last attempted for rate limiting
+        // If null, OpenStreetMap was last attempted (as fallback)
+        lastSource = geocodeResult ? geocodeResult.source : 'openstreetmap';
+
         if (geocodeResult) {
-          lastSource = geocodeResult.source;
           // Update driver with coordinates
           await db.update(drivers)
             .set({

@@ -77,6 +77,7 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
     }
 
     // Fallback to OpenStreetMap if Google fails or is not configured
+    // Track that we're about to hit OpenStreetMap for rate limiting purposes
     logger.log(`🔄 Falling back to OpenStreetMap for: ${address}`);
 
     const response = await fetch(
@@ -139,10 +140,9 @@ export async function geocodeAddresses(addresses: string[]): Promise<GeocodingRe
     const result = await geocodeAddress(addresses[i]);
     results.push(result);
 
-    // Track which service was used for rate limiting
-    if (result) {
-      lastSource = result.source;
-    }
+    // Track which service was last attempted for rate limiting
+    // If result exists, use its source. If null, OpenStreetMap was last attempted (as fallback)
+    lastSource = result ? result.source : 'openstreetmap';
 
     // Rate limit between requests based on the service that was actually used
     if (i < addresses.length - 1) {
