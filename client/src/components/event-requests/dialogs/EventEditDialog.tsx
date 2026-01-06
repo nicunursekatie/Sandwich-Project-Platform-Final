@@ -128,8 +128,8 @@ function PersonSelector({
     // Add drivers (for driver assignments)
     if (assignmentType === 'driver') {
       drivers.forEach((driver: any) => {
-        // Filter for van-approved if needed
-        if (vanDriverNeeded && !driver.vanApproved) return;
+        // Filter for van-approved AND willing to drive van if needed
+        if (vanDriverNeeded && (!driver.vanApproved || !driver.interestedInVanDriving)) return;
 
         people.push({
           id: `driver-${driver.id}`,

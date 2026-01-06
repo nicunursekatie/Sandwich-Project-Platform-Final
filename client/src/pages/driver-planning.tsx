@@ -2043,16 +2043,18 @@ export default function DriverPlanningDashboard() {
                           >
                             <Truck className="w-3 h-3 mr-1" />
                             {driversNeeded > 0 ? (
-                              <>
-                                {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                                {event.isDhlVan
-                                  ? ' + DHL'
-                                  : event.assignedVanDriverId
-                                  ? ' + Van'
-                                  : event.vanDriverNeeded
-                                  ? ' + Van needed'
-                                  : ''}
-                              </>
+                              event.vanDriverNeeded ? (
+                                // Van driver requirement - show as "X/Y Van driver needed/assigned"
+                                <>
+                                  {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} Van driver
+                                  {event.isDhlVan ? ' (DHL)' : event.assignedVanDriverId ? '' : ' needed'}
+                                </>
+                              ) : (
+                                // Regular drivers only
+                                <>
+                                  {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                                </>
+                              )
                             ) : (
                               // Only van driver needed (no regular drivers)
                               event.isDhlVan
@@ -4647,9 +4649,9 @@ export default function DriverPlanningDashboard() {
                                   className="text-xs px-2 py-0.5"
                                 >
                                   <Truck className="w-3.5 h-3.5 mr-1" />
-                                  {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                                  {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} {event.vanDriverNeeded ? 'Van driver' : 'drivers'}
                                   {event.vanDriverNeeded && (
-                                    event.isDhlVan ? ' + DHL van' : (event.assignedVanDriverId ? ' + Van' : ' + Van needed')
+                                    event.isDhlVan ? ' (DHL)' : (event.assignedVanDriverId ? '' : ' needed')
                                   )}
                                 </Badge>
                               ) : (
