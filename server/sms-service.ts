@@ -1110,7 +1110,8 @@ export async function sendEventReminderSMS(
   organizationName: string,
   eventDate: Date,
   role?: string,
-  appUrl?: string
+  appUrl?: string,
+  instructions?: string | null
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
   
@@ -1130,7 +1131,12 @@ export async function sendEventReminderSMS(
     });
 
     const roleText = role && role !== 'general' ? ` as ${role}` : '';
-    const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}. ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
+    const instructionsText = instructions && instructions.length < 100 
+      ? ` Note: ${instructions}` 
+      : instructions 
+        ? ' Check your email for detailed instructions.' 
+        : '';
+    const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}.${instructionsText} ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
 
     const result = await provider.sendSMS({
       to: phoneNumber,

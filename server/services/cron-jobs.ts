@@ -121,6 +121,14 @@ async function sendVolunteerReminders(): Promise<{
       // Get volunteers for this event from pre-fetched data (O(1) lookup instead of DB query)
       const volunteers = volunteersByEventId.get(event.id) || [];
 
+      // Helper to get role-specific instructions (case-insensitive comparison)
+      const getRoleInstructions = (role: string): string | null => {
+        const normalizedRole = role?.toLowerCase() || '';
+        if (normalizedRole === 'driver') return event.driverInstructions || null;
+        if (normalizedRole === 'speaker') return event.speakerInstructions || null;
+        return event.volunteerInstructions || null;
+      };
+
       // Process volunteer reminders
       for (const volunteer of volunteers) {
         volunteersProcessed++;
@@ -175,7 +183,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.id,
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate,
-                volunteer.role
+                volunteer.role,
+                getRoleInstructions(volunteer.role)
               );
 
               if (emailSent) {
@@ -202,7 +211,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate,
                 volunteer.role,
-                `${appUrl}/dashboard?section=event-requests`
+                `${appUrl}/dashboard?section=event-requests`,
+                getRoleInstructions(volunteer.role)
               );
 
               if (smsSent.success) {
@@ -235,7 +245,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.id,
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate,
-                volunteer.role
+                volunteer.role,
+                getRoleInstructions(volunteer.role)
               );
 
               if (emailSent) {
@@ -262,7 +273,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate,
                 volunteer.role,
-                `${appUrl}/dashboard?section=event-requests`
+                `${appUrl}/dashboard?section=event-requests`,
+                getRoleInstructions(volunteer.role)
               );
 
               if (smsSent.success) {
@@ -345,7 +357,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.id,
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate!,
-                assignment.role
+                assignment.role,
+                getRoleInstructions(assignment.role)
               );
 
               if (emailSent) {
@@ -366,7 +379,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate,
                 assignment.role,
-                `${appUrl}/dashboard?section=event-requests`
+                `${appUrl}/dashboard?section=event-requests`,
+                getRoleInstructions(assignment.role)
               );
 
               if (smsSent.success) {
@@ -393,7 +407,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.id,
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate!,
-                assignment.role
+                assignment.role,
+                getRoleInstructions(assignment.role)
               );
 
               if (emailSent) {
@@ -414,7 +429,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.organizationName || 'Unknown Organization',
                 event.scheduledEventDate,
                 assignment.role,
-                `${appUrl}/dashboard?section=event-requests`
+                `${appUrl}/dashboard?section=event-requests`,
+                getRoleInstructions(assignment.role)
               );
 
               if (smsSent.success) {

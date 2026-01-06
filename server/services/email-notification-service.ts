@@ -354,7 +354,8 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     eventId: number,
     organizationName: string,
     eventDate: Date | string,
-    role: string
+    role: string,
+    instructions?: string | null
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
       logger.log('SendGrid not configured - skipping volunteer reminder notification');
@@ -428,6 +429,13 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
                     : '• Your enthusiasm and willingness to help!'}
                 </div>
                 
+                ${instructions ? `
+                <div style="background: #fff4e6; border-left: 4px solid #FBAD3F; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <strong style="color: #333;">📋 Important Instructions:</strong>
+                  <p style="margin: 10px 0 0 0; color: #555;">${instructions}</p>
+                </div>
+                ` : ''}
+                
                 <p>If you have any questions or need to make changes to your commitment, please contact us as soon as possible.</p>
                 
                 <p>Click the button below to view the full event details:</p>
@@ -455,6 +463,7 @@ ${role === 'driver' ? 'What to bring:\n• Valid driver\'s license\n• Your veh
   : role === 'speaker' ? 'What to bring:\n• Any presentation materials\n• Your enthusiasm for The Sandwich Project!' 
   : 'What to bring:\n• Your enthusiasm and willingness to help!'}
 
+${instructions ? `\n📋 Important Instructions:\n${instructions}\n` : ''}
 If you have any questions or need to make changes to your commitment, please contact us as soon as possible.
 
 View event details: ${eventUrl}
