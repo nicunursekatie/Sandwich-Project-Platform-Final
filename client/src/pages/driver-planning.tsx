@@ -1932,10 +1932,15 @@ export default function DriverPlanningDashboard() {
   designatedRecipientsRef.current = designatedRecipients;
 
   // Auto-populate trip planning with pre-assigned driver/recipient when event is selected
-  // Only depends on selectedEvent.id to avoid timeout cancellation when memos recompute
+  // Depends on selectedEvent.id and driver data being loaded
   useEffect(() => {
     if (!selectedEvent) {
       lastAutoPopulatedEventId.current = null;
+      return;
+    }
+
+    // Wait for driver candidates to load before auto-populating
+    if (driverCandidatesLoading) {
       return;
     }
 
@@ -1950,9 +1955,9 @@ export default function DriverPlanningDashboard() {
       const currentAssignedDrivers = assignedDriversRef.current;
       const currentDesignatedRecipients = designatedRecipientsRef.current;
 
-      // Auto-populate driver if there's exactly one assigned driver with coordinates
-      // (If multiple, let user pick which one to preview)
-      if (currentAssignedDrivers.length === 1) {
+      // Auto-populate driver if there are assigned drivers with coordinates
+      // Select the first one to show the route immediately
+      if (currentAssignedDrivers.length >= 1) {
         const driver = currentAssignedDrivers[0];
         setSelectedDriver({
           id: driver.id,
@@ -1973,10 +1978,10 @@ export default function DriverPlanningDashboard() {
           longitude: recipient.longitude!,
         });
       }
-    }, 50);
+    }, 100);
 
     return () => clearTimeout(timeout);
-  }, [selectedEvent?.id]);
+  }, [selectedEvent?.id, driverCandidatesLoading]);
 
   const getTspContactLabel = (event: EventMapData): string | null => {
     const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
