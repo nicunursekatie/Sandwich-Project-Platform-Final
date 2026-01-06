@@ -324,10 +324,16 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
   const [assignedSpeakerIds, setAssignedSpeakerIds] = useState<string[]>([]);
   const [assignedVolunteerIds, setAssignedVolunteerIds] = useState<string[]>([]);
   const [assignedVanDriverId, setAssignedVanDriverId] = useState<string | null>(null);
+  const [assignedRecipientIds, setAssignedRecipientIds] = useState<string[]>([]);
 
   // Fetch users for TSP contact dropdown
   const { data: usersBasic = [] } = useQuery<any[]>({
     queryKey: ['/api/users/basic'],
+  });
+
+  // Fetch recipients for delivery destination dropdown
+  const { data: recipients = [] } = useQuery<any[]>({
+    queryKey: ['/api/recipients'],
   });
 
   // Populate form when event changes
@@ -347,6 +353,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       setAssignedSpeakerIds(getSpeakerIds(event));
       setAssignedVolunteerIds(getVolunteerIds(event));
       setAssignedVanDriverId(event.assignedVanDriverId || null);
+      setAssignedRecipientIds(parsePostgresArray((event as any).assignedRecipientIds));
     }
   }, [event]);
 
@@ -485,6 +492,12 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
     if (assignedVanDriverId !== (event?.assignedVanDriverId || null)) {
       updates.assignedVanDriverId = assignedVanDriverId;
+    }
+
+    // Planned recipients (where sandwiches are going)
+    const originalRecipientIds = parsePostgresArray((event as any)?.assignedRecipientIds);
+    if (JSON.stringify(assignedRecipientIds.sort()) !== JSON.stringify(originalRecipientIds.sort())) {
+      updates.assignedRecipientIds = assignedRecipientIds;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -691,6 +704,64 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                     Remove TSP Contact
                   </Button>
                 )}
+              </div>
+
+              <Separator />
+
+              {/* Planned Recipients - Where are the sandwiches going */}
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Planned Recipients
+                </h4>
+                <p className="text-xs text-gray-500">Select where the sandwiches from this event will be delivered</p>
+
+                {/* Selected recipients */}
+                {assignedRecipientIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg">
+                    {assignedRecipientIds.map(recipientId => {
+                      const recipient = recipients.find((r: any) => String(r.id) === recipientId);
+                      return (
+                        <Badge key={recipientId} variant="secondary" className="flex items-center gap-1">
+                          {recipient?.name || recipientId}
+                          <button
+                            type="button"
+                            onClick={() => setAssignedRecipientIds(prev => prev.filter(id => id !== recipientId))}
+                            className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Recipient selector */}
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value && !assignedRecipientIds.includes(value)) {
+                      setAssignedRecipientIds(prev => [...prev, value]);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Add a recipient..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipients
+                      .filter((r: any) => r.status === 'active' && !assignedRecipientIds.includes(String(r.id)))
+                      .map((r: any) => (
+                        <SelectItem key={r.id} value={String(r.id)}>
+                          <div className="flex flex-col">
+                            <span>{r.name}</span>
+                            {r.region && <span className="text-xs text-gray-500">{r.region}</span>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
             </TabsContent>
 
