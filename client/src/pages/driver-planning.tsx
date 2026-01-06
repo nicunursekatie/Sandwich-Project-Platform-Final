@@ -1557,8 +1557,8 @@ export default function DriverPlanningDashboard() {
       clearTripPlanningState();
       setCustomLocation({
         address: data.address || quickLookupAddress.trim(),
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: String(data.latitude),
+        longitude: String(data.longitude),
       });
       setShowQuickLookup(false);
 
