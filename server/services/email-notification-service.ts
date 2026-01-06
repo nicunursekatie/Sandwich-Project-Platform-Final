@@ -1289,4 +1289,100 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       return false;
     }
   }
+
+  /**
+   * Send automated TSP follow-up reminder email
+   * Used for approaching events still in progress or toolkit-only events needing follow-up
+   */
+  static async sendTSPFollowupReminderEmail(
+    email: string,
+    userName: string,
+    organizationName: string,
+    reminderType: 'approaching_event' | 'toolkit_followup',
+    eventDate: Date | null,
+    eventId: number
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping TSP follow-up reminder email');
+      return false;
+    }
+
+    try {
+      const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+      const eventUrl = `${appUrl}/dashboard?section=event-requests&tab=in-progress`;
+      
+      let subject: string;
+      let bodyContent: string;
+      
+      if (reminderType === 'approaching_event') {
+        const daysUntil = eventDate
+          ? Math.ceil((new Date(eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          : 'a few';
+        
+        subject = `Friendly Reminder: ${organizationName} Event Coming Up`;
+        bodyContent = `
+          <p>The event with <strong>${organizationName}</strong> is coming up in <strong>${daysUntil} days</strong> and is still marked as in-progress.</p>
+          <p>Let us know if you need any help getting it scheduled, or if you'd like to update the status!</p>
+        `;
+      } else {
+        subject = `Quick Check-in: ${organizationName} Toolkit Follow-up`;
+        bodyContent = `
+          <p>We sent the toolkit for <strong>${organizationName}</strong> a couple days ago but haven't heard back yet.</p>
+          <p>Would you like to send a follow-up email, or do you need any help moving things along?</p>
+        `;
+      }
+
+      const msg = {
+        to: email,
+        from: 'katie@thesandwichproject.org',
+        bcc: 'katie@thesandwichproject.org',
+        subject: `${subject} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .event-details { background-color: #fff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #236383; }
+              .btn { display: inline-block; background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🥪 Quick Reminder</h1>
+              </div>
+              <div class="content">
+                <p>Hi ${userName}!</p>
+                
+                <div class="event-details">
+                  ${bodyContent}
+                </div>
+
+                <p>Click below to view the event details:</p>
+                <a href="${eventUrl}" class="btn">View Event</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Hi ${userName}!\n\n${reminderType === 'approaching_event' 
+          ? `The event with ${organizationName} is coming up soon and is still in-progress. Let us know if you need help!` 
+          : `We sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
+        }\n\nView event: ${eventUrl}\n\n---\nThe Sandwich Project`,
+      };
+
+      await sgMail.send(msg);
+      logger.log(`TSP follow-up reminder email sent to ${email} for ${reminderType}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending TSP follow-up reminder email:', error);
+      return false;
+    }
+  }
 }

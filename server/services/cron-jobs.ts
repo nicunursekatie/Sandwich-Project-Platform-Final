@@ -15,6 +15,7 @@ import { sendEventReminderSMS } from '../sms-service';
 import { getEventNotificationPreferences, getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import type { EventNotificationPreferences } from '@shared/types';
 import { generateImpactReport, saveImpactReport } from './ai-impact-reports';
+import { processTspContactFollowups } from './tsp-contact-followup-service';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -1023,6 +1024,38 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // TSP Contact follow-up reminders - runs twice daily at 8 AM and 4 PM
+  // Sends reminders for: approaching events still in-progress, toolkit-only events needing follow-up
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 8,16 * * *' = At 8:00 AM and 4:00 PM every day
+  const tspFollowupJob = cron.schedule('0 8,16 * * *', async () => {
+    cronLogger.info('Running TSP contact follow-up check...');
+    try {
+      const result = await processTspContactFollowups();
+      cronLogger.info('TSP contact follow-up job completed', {
+        notificationsSent: result.notificationsSent,
+        eventsProcessed: result.eventsProcessed,
+        errors: result.errors,
+        timestamp: result.timestamp,
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running TSP contact follow-up cron job',
+        undefined,
+        { jobType: 'tsp-contact-followup' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('TSP contact follow-up job scheduled successfully', {
+    schedule: 'Daily at 8:00 AM and 4:00 PM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1030,6 +1063,7 @@ export function initializeCronJobs() {
     impactReportJob,
     autoCompleteJob,
     pastDateNotificationJob,
+    tspFollowupJob,
   };
 }
 
@@ -1043,5 +1077,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.impactReportJob.stop();
   jobs.autoCompleteJob.stop();
   jobs.pastDateNotificationJob.stop();
+  jobs.tspFollowupJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

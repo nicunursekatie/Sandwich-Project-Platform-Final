@@ -1412,3 +1412,48 @@ export async function sendEventCommentSMS(
     };
   }
 }
+
+/**
+ * Send automated TSP follow-up reminder SMS
+ * Used for approaching events still in progress or toolkit-only events needing follow-up
+ */
+export async function sendTSPFollowupReminderSMS(
+  phoneNumber: string,
+  message: string
+): Promise<SMSReminderResult> {
+  const provider = await resolveProvider();
+
+  if (!provider || !provider.isConfigured()) {
+    return {
+      success: false,
+      message: 'SMS service not configured',
+    };
+  }
+
+  try {
+    const result = await provider.sendSMS({
+      to: phoneNumber,
+      body: message,
+    });
+
+    if (result.success) {
+      logger.log(`✅ TSP follow-up reminder SMS sent to ${phoneNumber}`);
+      return {
+        success: true,
+        message: 'TSP follow-up reminder sent successfully',
+        sentTo: phoneNumber,
+      };
+    } else {
+      return {
+        success: false,
+        message: result.message,
+      };
+    }
+  } catch (error) {
+    logger.error('Error sending TSP follow-up reminder SMS:', error);
+    return {
+      success: false,
+      message: `Failed to send TSP follow-up reminder: ${(error as Error).message}`,
+    };
+  }
+}
