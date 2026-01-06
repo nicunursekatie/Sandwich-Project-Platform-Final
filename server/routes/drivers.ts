@@ -28,8 +28,11 @@ function driverHasAddress(driver: Driver): boolean {
   return !!(driver.address?.trim() || driver.homeAddress?.trim());
 }
 
-// Use faster rate if Google API is available (200ms), slower for OpenStreetMap (1100ms)
-const getGeocodeDelay = () => process.env.GOOGLE_GEOCODING_API_KEY ? 200 : 1100;
+// Rate limits by geocoding service
+const RATE_LIMITS = {
+  google: 200,        // Google allows 50 req/sec, we use 200ms to be safe
+  openstreetmap: 1100 // OpenStreetMap requires 1 req/sec max
+};
 
 export function createDriversRouter(deps: RouterDependencies) {
   const router = express.Router();
@@ -528,9 +531,15 @@ export function createDriversRouter(deps: RouterDependencies) {
         failures: [] as Array<{ driverId: number; name: string; address: string }>,
       };
 
-      // Geocode each driver with rate limiting
-      for (const driver of driversWithAddress) {
-        await new Promise((resolve) => setTimeout(resolve, getGeocodeDelay()));
+      // Geocode each driver with adaptive rate limiting
+      let lastSource: 'google' | 'openstreetmap' = 'google';
+      for (let i = 0; i < driversWithAddress.length; i++) {
+        const driver = driversWithAddress[i];
+
+        // Rate limit based on which service was used last
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMITS[lastSource]));
+        }
 
         const address = getDriverAddressForGeocoding(driver);
         if (!address) continue;
@@ -538,6 +547,7 @@ export function createDriversRouter(deps: RouterDependencies) {
         const geocodeResult = await geocodeAddress(address);
 
         if (geocodeResult) {
+          lastSource = geocodeResult.source;
           await db.update(drivers)
             .set({
               latitude: geocodeResult.latitude,
@@ -551,6 +561,7 @@ export function createDriversRouter(deps: RouterDependencies) {
             driverId: driver.id,
             name: driver.name,
             address,
+            source: geocodeResult.source,
           });
         } else {
           results.failed++;
@@ -617,14 +628,20 @@ export function createDriversRouter(deps: RouterDependencies) {
         }>,
       };
 
-      // Geocode each driver with rate limiting
-      for (const { driver, address } of driversToGeocode) {
-        // Respect Nominatim rate limits
-        await new Promise((resolve) => setTimeout(resolve, getGeocodeDelay()));
+      // Geocode each driver with adaptive rate limiting
+      let lastSource: 'google' | 'openstreetmap' = 'google';
+      for (let i = 0; i < driversToGeocode.length; i++) {
+        const { driver, address } = driversToGeocode[i];
+
+        // Rate limit based on which service was used last
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMITS[lastSource]));
+        }
 
         const geocodeResult = await geocodeAddress(address);
 
         if (geocodeResult) {
+          lastSource = geocodeResult.source;
           // Update driver with coordinates
           await db.update(drivers)
             .set({
@@ -639,6 +656,7 @@ export function createDriversRouter(deps: RouterDependencies) {
             driverId: driver.id,
             name: driver.name,
             address,
+            source: geocodeResult.source,
           });
         } else {
           results.failed++;
