@@ -260,22 +260,24 @@ const createRecipientIcon = (color: string) => {
   });
 };
 
-// Drivers: Triangle shape
+// Drivers: Triangle shape using SVG for proper rendering
 const createDriverIcon = (color: string) => {
-  const size = 20;
+  const size = 24;
   const html = `
     <div style="
-      width: 0;
-      height: 0;
-      border-left: ${size / 2}px solid transparent;
-      border-right: ${size / 2}px solid transparent;
-      border-bottom: ${size}px solid ${color};
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-    "></div>
+      position: relative;
+      width: ${size}px;
+      height: ${size}px;
+    ">
+      <svg viewBox="0 0 24 24" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L22 20H2L12 2Z" fill="${color}" stroke="white" stroke-width="2"/>
+        <circle cx="12" cy="14" r="3" fill="white"/>
+      </svg>
+    </div>
   `;
   return L.divIcon({
     html,
-    className: 'custom-marker',
+    className: 'custom-marker driver-marker',
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
     popupAnchor: [0, -size]
