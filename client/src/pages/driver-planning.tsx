@@ -744,6 +744,15 @@ export default function DriverPlanningDashboard() {
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
 
+  // Helper to clear trip planning selections when switching events
+  const clearTripPlanningState = () => {
+    setSelectedDriver(null);
+    setSelectedDestination(null);
+    setFullTripRoute(null);
+    setDrivingRoute(null);
+    setFocusedItem(null);
+  };
+
   // Check if user has edit permission
   const canEditEvents = user && hasPermission(user as UserForPermissions, PERMISSIONS.EVENT_REQUESTS_EDIT);
 
@@ -1990,6 +1999,7 @@ export default function DriverPlanningDashboard() {
                         : 'hover:shadow-md hover:bg-white'
                     }`}
                     onClick={() => {
+                      if (!isSelected) clearTripPlanningState();
                       setSelectedEvent(isSelected ? null : event);
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
@@ -2251,7 +2261,10 @@ export default function DriverPlanningDashboard() {
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
                   eventHandlers={{
-                    click: () => setSelectedEvent(event)
+                    click: () => {
+                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
+                      setSelectedEvent(event);
+                    }
                   }}
                 >
                   <Tooltip
@@ -3620,6 +3633,7 @@ export default function DriverPlanningDashboard() {
                         : 'hover:shadow-md hover:bg-white'
                     }`}
                     onClick={() => {
+                      if (!isSelected) clearTripPlanningState();
                       setSelectedEvent(isSelected ? null : event);
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
@@ -3723,7 +3737,10 @@ export default function DriverPlanningDashboard() {
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
                   eventHandlers={{
-                    click: () => setSelectedEvent(event)
+                    click: () => {
+                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
+                      setSelectedEvent(event);
+                    }
                   }}
                 >
                   <Tooltip
@@ -3978,6 +3995,7 @@ export default function DriverPlanningDashboard() {
                   icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
                   eventHandlers={{
                     click: () => {
+                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
                       setSelectedEvent(event);
                       // Expand events list to show details (don't use Sheet overlay)
                       setMobileEventsCollapsed(false);
@@ -4612,6 +4630,7 @@ export default function DriverPlanningDashboard() {
                           key={event.id}
                           className="p-3 cursor-pointer transition-all active:scale-[0.98] hover:shadow-md active:bg-gray-50"
                           onClick={() => {
+                            if (selectedEvent?.id !== event.id) clearTripPlanningState();
                             setSelectedEvent(event);
                             setShowAllHosts(false);
                             setShowAllRecipients(false);
