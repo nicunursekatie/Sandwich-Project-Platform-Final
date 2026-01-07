@@ -14,9 +14,19 @@ CREATE TABLE IF NOT EXISTS event_collaboration_comments (
     updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_collab_comments_event_id ON event_collaboration_comments(event_request_id);
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_collab_comments_user_id ON event_collaboration_comments(user_id);
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_collab_comments_created_at ON event_collaboration_comments(created_at);
+
+--> statement-breakpoint
 
 -- Event collaboration comment likes table
 CREATE TABLE IF NOT EXISTS event_collaboration_comment_likes (
@@ -27,7 +37,11 @@ CREATE TABLE IF NOT EXISTS event_collaboration_comment_likes (
     UNIQUE(comment_id, user_id)
 );
 
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_collab_likes_comment_id ON event_collaboration_comment_likes(comment_id);
+
+--> statement-breakpoint
 
 -- Event field locks table for preventing edit conflicts
 CREATE TABLE IF NOT EXISTS event_field_locks (
@@ -41,8 +55,15 @@ CREATE TABLE IF NOT EXISTS event_field_locks (
     UNIQUE(event_request_id, field_name)
 );
 
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_field_locks_event_id ON event_field_locks(event_request_id);
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_field_locks_expires_at ON event_field_locks(expires_at);
+
+--> statement-breakpoint
 
 -- Event edit revisions table for tracking change history
 CREATE TABLE IF NOT EXISTS event_edit_revisions (
@@ -57,9 +78,19 @@ CREATE TABLE IF NOT EXISTS event_edit_revisions (
     created_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_edit_revisions_event_id ON event_edit_revisions(event_request_id);
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_edit_revisions_field_name ON event_edit_revisions(field_name);
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_event_edit_revisions_created_at ON event_edit_revisions(created_at);
+
+--> statement-breakpoint
 
 -- Holding zone collaboration tables (similar structure)
 CREATE TABLE IF NOT EXISTS holding_zone_collaboration_comments (
@@ -74,7 +105,11 @@ CREATE TABLE IF NOT EXISTS holding_zone_collaboration_comments (
     updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS idx_hz_collab_comments_zone_id ON holding_zone_collaboration_comments(holding_zone_id);
+
+--> statement-breakpoint
 
 CREATE TABLE IF NOT EXISTS holding_zone_field_locks (
     id SERIAL PRIMARY KEY,
@@ -86,5 +121,7 @@ CREATE TABLE IF NOT EXISTS holding_zone_field_locks (
     expires_at TIMESTAMP NOT NULL,
     UNIQUE(holding_zone_id, field_name)
 );
+
+--> statement-breakpoint
 
 CREATE INDEX IF NOT EXISTS idx_hz_field_locks_zone_id ON holding_zone_field_locks(holding_zone_id);

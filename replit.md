@@ -49,6 +49,12 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
   - **Fix**: Both PUT and PATCH routes now preserve `address`, `homeAddress`, `latitude`, `longitude` fields when they're undefined or empty string in the request
   - **Key file**: `server/routes/drivers.ts` (lines 320-328 for PUT, lines 387-395 for PATCH)
 - **Database Configuration**: Centralized database URL selection in `server/db-url.ts` based on `NODE_ENV` (development/production) to connect to appropriate Neon branches. Critical rule: Avoid `.returning()` on update operations with Neon serverless; always use an explicit fetch after update pattern.
+  
+  **MIGRATION PATTERN (Jan 2026):**
+  - **Issue**: Neon serverless driver rejects multi-statement SQL in a single prepared statement
+  - **Solution**: Use `--> statement-breakpoint` markers between SQL statements in migration files
+  - **How it works**: `server/migrate.ts` splits on this marker and executes each statement separately
+  - **Key files**: All `.sql` files in `migrations/` directory should use this pattern for multi-statement migrations
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
 - **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
 - **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool. Event impact reports only count actual `sandwichCollections` records.
