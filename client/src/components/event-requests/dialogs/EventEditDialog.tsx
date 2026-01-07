@@ -517,8 +517,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             Edit Event Details
             <Badge variant="outline" className="ml-2">
@@ -527,7 +527,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           <Tabs defaultValue="logistics" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="logistics">
@@ -880,7 +880,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
           </Tabs>
         </ScrollArea>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
