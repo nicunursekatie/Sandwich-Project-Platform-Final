@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,6 +170,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
   const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
   const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
+  
+  // Store original form data to detect changes and preserve existing data
+  const originalFormDataRef = useRef<typeof formData | null>(null);
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showBackupContactInfo, setShowBackupContactInfo] = useState(false);
   const [showCompletedDetails, setShowCompletedDetails] = useState(false);
@@ -345,6 +348,92 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
       // Auto-expand Completed Event Details section if event is completed
       setShowCompletedDetails(eventRequest?.status === 'completed');
+      
+      // Store original form data to detect changes later (preserve existing data)
+      // Use setTimeout to ensure formData state has been set
+      setTimeout(() => {
+        originalFormDataRef.current = {
+          eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+          backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
+          eventStartTime: eventRequest?.eventStartTime || '',
+          eventEndTime: eventRequest?.eventEndTime || '',
+          pickupTime: eventRequest?.pickupTime || '',
+          pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+          pickupDate: (() => {
+            const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+            return pickupDT ? pickupDT.split('T')[0] : '';
+          })(),
+          pickupTimeSeparate: (() => {
+            const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+            return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+          })(),
+          eventAddress: eventRequest?.eventAddress || '',
+          deliveryDestination: eventRequest?.deliveryDestination || '',
+          holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
+          overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
+          overnightPickupTime: eventRequest?.overnightPickupTime || '',
+          sandwichTypes: existingSandwichTypes,
+          hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
+          driversNeeded: eventRequest?.driversNeeded || 0,
+          selfTransport: eventRequest?.selfTransport || false,
+          vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+          speakersNeeded: eventRequest?.speakersNeeded || 0,
+          volunteersNeeded: eventRequest?.volunteersNeeded || 0,
+          tspContact: eventRequest?.tspContact || '',
+          customTspContact: (eventRequest as any)?.customTspContact || '',
+          message: (eventRequest as any)?.message || '',
+          schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
+          planningNotes: (eventRequest as any)?.planningNotes || '',
+          nextAction: (eventRequest as any)?.nextAction || '',
+          totalSandwichCount: totalCount,
+          estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
+          estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
+          rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
+          volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+          estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
+          adultCount: (eventRequest as any)?.adultCount || 0,
+          childrenCount: (eventRequest as any)?.childrenCount || 0,
+          firstName: eventRequest?.firstName || '',
+          lastName: eventRequest?.lastName || '',
+          email: eventRequest?.email || '',
+          phone: eventRequest?.phone || '',
+          organizationName: eventRequest?.organizationName || '',
+          department: eventRequest?.department || '',
+          organizationCategory: (eventRequest as any)?.organizationCategory || '',
+          schoolClassification: (eventRequest as any)?.schoolClassification || '',
+          backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
+          backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
+          backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
+          backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
+          backupContactRole: (eventRequest as any)?.backupContactRole || '',
+          previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
+          speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+          speakerDuration: (eventRequest as any)?.speakerDuration || '',
+          deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+          deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
+          assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+          isDhlVan: (eventRequest as any)?.isDhlVan || false,
+          status: eventRequest?.status || 'new',
+          toolkitSent: eventRequest?.toolkitSent || false,
+          toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
+          toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+          socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
+          socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
+          socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
+          socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
+          socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
+          actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
+          actualSandwichTypes: existingActualSandwichTypes,
+          actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
+          actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
+          followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
+          followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
+          followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
+          followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
+          followUpNotes: (eventRequest as any)?.followUpNotes || '',
+          assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
+        };
+      }, 0);
     }
   }, [isVisible, isOpen, eventRequest, mode]);
 
