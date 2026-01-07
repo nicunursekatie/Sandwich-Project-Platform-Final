@@ -713,27 +713,42 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                 <h4 className="font-medium flex items-center gap-2">
                   <Package className="w-4 h-4" />
                   Planned Recipients
+                  {assignedRecipientIds.length > 0 && (
+                    <Badge variant="secondary">{assignedRecipientIds.length} selected</Badge>
+                  )}
                 </h4>
                 <p className="text-xs text-gray-500">Select where the sandwiches from this event will be delivered</p>
 
-                {/* Selected recipients */}
-                {assignedRecipientIds.length > 0 && (
-                  <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-lg">
+                {/* Selected recipients - detailed list */}
+                {assignedRecipientIds.length > 0 ? (
+                  <div className="space-y-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
                     {assignedRecipientIds.map(recipientId => {
                       const recipient = recipients.find((r: any) => String(r.id) === recipientId);
                       return (
-                        <Badge key={recipientId} variant="secondary" className="flex items-center gap-1">
-                          {recipient?.name || recipientId}
+                        <div key={recipientId} className="flex items-center justify-between bg-white p-2 rounded border">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{recipient?.name || `Recipient #${recipientId}`}</span>
+                            {recipient?.region && (
+                              <span className="text-xs text-gray-500">{recipient.region}</span>
+                            )}
+                            {recipient?.address && (
+                              <span className="text-xs text-gray-400">{recipient.address}</span>
+                            )}
+                          </div>
                           <button
                             type="button"
                             onClick={() => setAssignedRecipientIds(prev => prev.filter(id => id !== recipientId))}
-                            className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                            className="ml-2 p-1 hover:bg-red-100 rounded-full text-red-500"
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-4 h-4" />
                           </button>
-                        </Badge>
+                        </div>
                       );
                     })}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center text-sm text-gray-500">
+                    No recipients assigned yet. Use the dropdown below to add one.
                   </div>
                 )}
 
