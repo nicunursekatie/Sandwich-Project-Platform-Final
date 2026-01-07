@@ -2665,23 +2665,28 @@ export default function DriverPlanningDashboard() {
             />
 
             {/* Event markers - when an event is selected, only show events on the same date */}
+            {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              const isSelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  icon={isSelected ? selectedEventIcon : eventIcon}
                   eventHandlers={{
                     click: () => handleSelectEvent(event)
                   }}
                 >
                   <Tooltip
-                    permanent
+                    permanent={isSelected}
                     direction="top"
                     offset={[0, -35]}
-                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    className={isSelected
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    }
                   >
                     <span className="truncate max-w-[120px] block">
                       {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
@@ -4353,23 +4358,28 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              const isSelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  icon={isSelected ? selectedEventIcon : eventIcon}
                   eventHandlers={{
                     click: () => handleSelectEvent(event)
                   }}
                 >
                   <Tooltip
-                    permanent
+                    permanent={isSelected}
                     direction="top"
                     offset={[0, -35]}
-                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    className={isSelected
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    }
                   >
                     <span className="truncate max-w-[120px] block">
                       {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
@@ -4699,14 +4709,16 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              const isSelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  icon={isSelected ? selectedEventIcon : eventIcon}
                   eventHandlers={{
                     click: () => {
                       handleSelectEvent(event);
@@ -4717,10 +4729,13 @@ export default function DriverPlanningDashboard() {
                   }}
                 >
                   <Tooltip
-                    permanent
+                    permanent={isSelected}
                     direction="top"
                     offset={[0, -35]}
-                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    className={isSelected
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    }
                   >
                     <span className="truncate max-w-[100px] block">
                       {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
