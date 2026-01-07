@@ -125,7 +125,7 @@ interface OrganizationEngagement {
   category: string | null;
   scores: EngagementScores;
   metrics: EngagementMetrics;
-  engagementLevel: 'highly_engaged' | 'engaged' | 'moderate' | 'low' | 'at_risk' | 'dormant' | 'new';
+  engagementLevel: 'active' | 'at_risk' | 'dormant' | 'new';
   engagementTrend: 'increasing' | 'decreasing' | 'stable' | 'new';
   trendPercentChange: number;
   outreachPriority: 'urgent' | 'high' | 'normal' | 'low';
@@ -138,10 +138,7 @@ interface OrganizationEngagement {
 interface GroupInsightsSummary {
   totalOrganizations: number;
   engagementDistribution: {
-    highlyEngaged: number;
-    engaged: number;
-    moderate: number;
-    low: number;
+    active: number;
     atRisk: number;
     dormant: number;
     new: number;
@@ -165,11 +162,8 @@ interface GroupInsightsSummary {
 // Helper functions
 const getEngagementLevelColor = (level: string): string => {
   switch (level) {
-    case 'highly_engaged': return 'bg-green-500';
-    case 'engaged': return 'bg-emerald-400';
-    case 'moderate': return 'bg-yellow-400';
-    case 'low': return 'bg-orange-400';
-    case 'at_risk': return 'bg-red-500';
+    case 'active': return 'bg-green-500';
+    case 'at_risk': return 'bg-orange-500';
     case 'dormant': return 'bg-gray-500';
     case 'new': return 'bg-blue-500';
     default: return 'bg-gray-400';
@@ -178,20 +172,14 @@ const getEngagementLevelColor = (level: string): string => {
 
 const getEngagementLevelBadge = (level: string) => {
   const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    'highly_engaged': 'default',
-    'engaged': 'default',
-    'moderate': 'secondary',
-    'low': 'secondary',
+    'active': 'default',
     'at_risk': 'destructive',
     'dormant': 'outline',
     'new': 'default',
   };
 
   const labels: Record<string, string> = {
-    'highly_engaged': 'Highly Engaged',
-    'engaged': 'Engaged',
-    'moderate': 'Moderate',
-    'low': 'Low',
+    'active': 'Active',
     'at_risk': 'At Risk',
     'dormant': 'Dormant',
     'new': 'New',
@@ -199,9 +187,9 @@ const getEngagementLevelBadge = (level: string) => {
 
   return (
     <Badge variant={variants[level] || 'secondary'} className={cn(
-      level === 'highly_engaged' && 'bg-green-500',
-      level === 'engaged' && 'bg-emerald-500',
+      level === 'active' && 'bg-green-500',
       level === 'new' && 'bg-blue-500',
+      level === 'at_risk' && 'bg-orange-500',
     )}>
       {labels[level] || level}
     </Badge>
@@ -630,7 +618,7 @@ export default function GroupsInsightsDashboard() {
             break;
           case 'level':
             // Sort by engagement level order
-            const levelOrder = ['highly_engaged', 'engaged', 'moderate', 'low', 'at_risk', 'dormant', 'new'];
+            const levelOrder = ['active', 'at_risk', 'dormant', 'new'];
             aVal = levelOrder.indexOf(a.engagementLevel);
             bVal = levelOrder.indexOf(b.engagementLevel);
             break;
@@ -677,11 +665,8 @@ export default function GroupsInsightsDashboard() {
   const engagementChartData = useMemo(() => {
     if (!summary) return [];
     return [
-      { name: 'Highly Engaged', value: summary.engagementDistribution.highlyEngaged, color: '#22c55e' },
-      { name: 'Engaged', value: summary.engagementDistribution.engaged, color: '#10b981' },
-      { name: 'Moderate', value: summary.engagementDistribution.moderate, color: '#eab308' },
-      { name: 'Low', value: summary.engagementDistribution.low, color: '#f97316' },
-      { name: 'At Risk', value: summary.engagementDistribution.atRisk, color: '#ef4444' },
+      { name: 'Active', value: summary.engagementDistribution.active, color: '#22c55e' },
+      { name: 'At Risk', value: summary.engagementDistribution.atRisk, color: '#f97316' },
       { name: 'Dormant', value: summary.engagementDistribution.dormant, color: '#6b7280' },
       { name: 'New', value: summary.engagementDistribution.new, color: '#3b82f6' },
     ].filter(item => item.value > 0);
@@ -929,10 +914,7 @@ export default function GroupsInsightsDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="highly_engaged">Highly Engaged</SelectItem>
-                      <SelectItem value="engaged">Engaged</SelectItem>
-                      <SelectItem value="moderate">Moderate</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="at_risk">At Risk</SelectItem>
                       <SelectItem value="dormant">Dormant</SelectItem>
                       <SelectItem value="new">New</SelectItem>

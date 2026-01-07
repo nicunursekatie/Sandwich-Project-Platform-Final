@@ -269,9 +269,9 @@ export function createGroupEngagementRoutes(deps: GroupEngagementDependencies) {
 
       let engagements = await calculateAllOrganizationEngagement();
 
-      // Filter to highly engaged and engaged organizations
+      // Filter to active organizations
       engagements = engagements.filter(
-        eng => eng.engagementLevel === 'highly_engaged' || eng.engagementLevel === 'engaged'
+        eng => eng.engagementLevel === 'active'
       );
 
       // Sort by overall score (highest first)
@@ -359,10 +359,7 @@ export function createGroupEngagementRoutes(deps: GroupEngagementDependencies) {
             totalSandwiches: 0,
             totalEvents: 0,
             engagementLevels: {
-              highly_engaged: 0,
-              engaged: 0,
-              moderate: 0,
-              low: 0,
+              active: 0,
               at_risk: 0,
               dormant: 0,
               new: 0

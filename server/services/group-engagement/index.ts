@@ -54,7 +54,7 @@ export interface OrganizationEngagement {
   category: string | null;
   scores: EngagementScores;
   metrics: EngagementMetrics;
-  engagementLevel: 'highly_engaged' | 'engaged' | 'moderate' | 'low' | 'at_risk' | 'dormant' | 'new';
+  engagementLevel: 'active' | 'at_risk' | 'dormant' | 'new';
   engagementTrend: 'increasing' | 'decreasing' | 'stable' | 'new';
   trendPercentChange: number;
   outreachPriority: 'urgent' | 'high' | 'normal' | 'low';
@@ -67,10 +67,7 @@ export interface OrganizationEngagement {
 export interface GroupInsightsSummary {
   totalOrganizations: number;
   engagementDistribution: {
-    highlyEngaged: number;
-    engaged: number;
-    moderate: number;
-    low: number;
+    active: number;
     atRisk: number;
     dormant: number;
     new: number;
@@ -259,7 +256,7 @@ function calculateOverdueMultiplier(metrics: EngagementMetrics): number {
 
 /**
  * Determine engagement level based on overall score AND frequency-adjusted thresholds.
- * Organizations that were frequent contributors get flagged sooner when they go quiet.
+ * Simplified to 4 levels: active, at_risk, dormant, new
  */
 function determineEngagementLevel(
   score: number,
@@ -304,21 +301,14 @@ function determineEngagementLevel(
     return 'dormant';
   }
   
-  // Cap engagement level based on how overdue they are
-  // If they're significantly overdue, they can't be "engaged" regardless of historical score
-  if (overdueMultiplier >= 2.0) {
-    // 2x+ overdue: cap at "low"
-    if (score >= 40) return 'low';
-  } else if (overdueMultiplier >= 1.5) {
-    // 1.5x+ overdue: cap at "moderate"  
-    if (score >= 60) return 'moderate';
+  // Simplified levels: active (score >= 50) or at_risk (score < 50 or overdue)
+  // If significantly overdue, they're at_risk regardless of historical score
+  if (overdueMultiplier >= 1.5) {
+    return 'at_risk';
   }
 
-  // Score-based levels (for orgs that are reasonably on schedule)
-  if (score >= 80) return 'highly_engaged';
-  if (score >= 60) return 'engaged';
-  if (score >= 40) return 'moderate';
-  if (score >= 25) return 'low';
+  // Score-based levels
+  if (score >= 50) return 'active';
   return 'at_risk';
 }
 
@@ -352,8 +342,8 @@ function determineOutreachPriority(
     return 'low';
   }
 
-  // Highly engaged partners don't need outreach
-  if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') {
+  // Active partners don't need urgent outreach
+  if (engagementLevel === 'active') {
     return 'low';
   }
 
@@ -548,9 +538,6 @@ function generateRecommendedActions(
         reason: 'Engagement is declining - prevent becoming dormant',
         priority: 'high'
       });
-      break;
-
-    case 'low':
       actions.push({
         action: 'Schedule follow-up to discuss future events',
         reason: 'Organization shows potential but needs nurturing',
@@ -573,7 +560,12 @@ function generateRecommendedActions(
       }
       break;
 
-    case 'moderate':
+    case 'active':
+      actions.push({
+        action: 'Consider for ambassador or partnership program',
+        reason: 'Strong engagement - potential for deeper partnership',
+        priority: 'low'
+      });
       if (scores.frequency < 50) {
         actions.push({
           action: 'Propose recurring event schedule',
@@ -581,15 +573,6 @@ function generateRecommendedActions(
           priority: 'normal'
         });
       }
-      break;
-
-    case 'engaged':
-    case 'highly_engaged':
-      actions.push({
-        action: 'Consider for ambassador or partnership program',
-        reason: 'Strong engagement - potential for deeper partnership',
-        priority: 'low'
-      });
       break;
   }
 
@@ -635,7 +618,7 @@ function determineProgramSuitability(
   }
 
   // Ambassador program
-  if (engagementLevel === 'highly_engaged' || engagementLevel === 'engaged') {
+  if (engagementLevel === 'active') {
     programs.push({
       program: 'Partner Ambassador Program',
       score: Math.round(scores.overall),
@@ -999,10 +982,7 @@ export async function getGroupInsightsSummary(): Promise<GroupInsightsSummary> {
 
   // Calculate distribution
   const engagementDistribution = {
-    highlyEngaged: 0,
-    engaged: 0,
-    moderate: 0,
-    low: 0,
+    active: 0,
     atRisk: 0,
     dormant: 0,
     new: 0
@@ -1020,10 +1000,7 @@ export async function getGroupInsightsSummary(): Promise<GroupInsightsSummary> {
   engagements.forEach(eng => {
     // Count engagement levels
     switch (eng.engagementLevel) {
-      case 'highly_engaged': engagementDistribution.highlyEngaged++; break;
-      case 'engaged': engagementDistribution.engaged++; break;
-      case 'moderate': engagementDistribution.moderate++; break;
-      case 'low': engagementDistribution.low++; break;
+      case 'active': engagementDistribution.active++; break;
       case 'at_risk': engagementDistribution.atRisk++; break;
       case 'dormant': engagementDistribution.dormant++; break;
       case 'new': engagementDistribution.new++; break;
@@ -1058,7 +1035,7 @@ export async function getGroupInsightsSummary(): Promise<GroupInsightsSummary> {
 
   // Get top performers (highest engagement)
   const topPerformers = engagements
-    .filter(eng => eng.engagementLevel === 'highly_engaged' || eng.engagementLevel === 'engaged')
+    .filter(eng => eng.engagementLevel === 'active')
     .sort((a, b) => b.scores.overall - a.scores.overall)
     .slice(0, 10);
 
