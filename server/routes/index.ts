@@ -131,6 +131,17 @@ export function createMainRoutes(deps: RouterDependencies) {
   const authRouter = createAuthRouter();
   router.use('/api/auth', authRouter);
 
+  // ========================================================================
+  // PASSWORD RESET - MUST be registered early (before authenticated routes)
+  // These are public endpoints that don't require authentication
+  // ========================================================================
+  const passwordResetRouter = createPasswordResetRouter(deps);
+  router.use(
+    '/api',
+    ...createPublicMiddleware(),
+    passwordResetRouter
+  );
+
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
     isAuthenticated: deps.isAuthenticated,
@@ -941,14 +952,6 @@ export function createMainRoutes(deps: RouterDependencies) {
     dataManagementRouter
   );
   router.use('/api/data-management', createErrorHandler('data-management'));
-
-  // Password reset
-  const passwordResetRouter = createPasswordResetRouter(deps);
-  router.use(
-    '/api',
-    ...createPublicMiddleware(),
-    passwordResetRouter
-  );
 
   // Message notifications
   const messageNotificationsRouter = createMessageNotificationsRouter(deps);
