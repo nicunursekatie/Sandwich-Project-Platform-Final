@@ -67,6 +67,9 @@ import {
   ChevronRight,
   ArrowUpRight,
   ArrowDownRight,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
   Info,
   Lightbulb,
   Phone,
@@ -521,8 +524,42 @@ export default function GroupsInsightsDashboard() {
   const [engagementFilter, setEngagementFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('overall');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  // Column sorting: null means default/no sort, then cycles through asc -> desc -> null
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+
+  // Handle column header click for sorting
+  const handleColumnSort = (column: string) => {
+    if (sortColumn !== column) {
+      // New column: start with ascending
+      setSortColumn(column);
+      setSortOrder('asc');
+    } else if (sortOrder === 'asc') {
+      // Same column, was ascending: switch to descending
+      setSortOrder('desc');
+    } else if (sortOrder === 'desc') {
+      // Same column, was descending: clear sort (back to default)
+      setSortColumn(null);
+      setSortOrder(null);
+    } else {
+      // Was null, start ascending
+      setSortOrder('asc');
+    }
+  };
+
+  // Get sort icon for column header
+  const getSortIcon = (column: string) => {
+    if (sortColumn !== column) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 text-muted-foreground/50" />;
+    }
+    if (sortOrder === 'asc') {
+      return <ArrowUp className="h-4 w-4 ml-1 text-primary" />;
+    }
+    if (sortOrder === 'desc') {
+      return <ArrowDown className="h-4 w-4 ml-1 text-primary" />;
+    }
+    return <ArrowUpDown className="h-4 w-4 ml-1 text-muted-foreground/50" />;
+  };
 
   // Fetch insights summary
   const { data: summary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery<GroupInsightsSummary>({
@@ -538,16 +575,14 @@ export default function GroupsInsightsDashboard() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch all scores with filters
+  // Fetch all scores with filters (sorting is done client-side for column header clicks)
   const { data: scoresData, isLoading: scoresLoading, refetch: refetchScores } = useQuery<{
     total: number;
     organizations: OrganizationEngagement[];
   }>({
-    queryKey: ['/api/group-engagement/scores', sortBy, sortOrder, engagementFilter, priorityFilter, categoryFilter],
+    queryKey: ['/api/group-engagement/scores', engagementFilter, priorityFilter, categoryFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.set('sortBy', sortBy);
-      params.set('sortOrder', sortOrder);
       if (engagementFilter !== 'all') params.set('engagementLevel', engagementFilter);
       if (priorityFilter !== 'all') params.set('outreachPriority', priorityFilter);
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
@@ -564,17 +599,79 @@ export default function GroupsInsightsDashboard() {
 
   const isLoading = authLoading || summaryLoading || scoresLoading;
 
-  // Filter organizations by search
+  // Filter and sort organizations
   const filteredOrganizations = useMemo(() => {
     if (!scoresData?.organizations) return [];
-    if (!searchQuery) return scoresData.organizations;
 
-    const query = searchQuery.toLowerCase();
-    return scoresData.organizations.filter(org =>
-      org.organizationName.toLowerCase().includes(query) ||
-      (org.category && org.category.toLowerCase().includes(query))
-    );
-  }, [scoresData, searchQuery]);
+    // First filter by search
+    let result = scoresData.organizations;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(org =>
+        org.organizationName.toLowerCase().includes(query) ||
+        (org.category && org.category.toLowerCase().includes(query))
+      );
+    }
+
+    // Then sort if a column is selected
+    if (sortColumn && sortOrder) {
+      result = [...result].sort((a, b) => {
+        let aVal: string | number | null = null;
+        let bVal: string | number | null = null;
+
+        switch (sortColumn) {
+          case 'organization':
+            aVal = a.organizationName.toLowerCase();
+            bVal = b.organizationName.toLowerCase();
+            break;
+          case 'score':
+            aVal = a.scores.overall;
+            bVal = b.scores.overall;
+            break;
+          case 'level':
+            // Sort by engagement level order
+            const levelOrder = ['highly_engaged', 'engaged', 'moderate', 'low', 'at_risk', 'dormant', 'new'];
+            aVal = levelOrder.indexOf(a.engagementLevel);
+            bVal = levelOrder.indexOf(b.engagementLevel);
+            break;
+          case 'priority':
+            // Sort by priority order
+            const priorityOrder = ['urgent', 'high', 'normal', 'low'];
+            aVal = priorityOrder.indexOf(a.outreachPriority);
+            bVal = priorityOrder.indexOf(b.outreachPriority);
+            break;
+          case 'sandwiches':
+            aVal = a.metrics.totalSandwiches;
+            bVal = b.metrics.totalSandwiches;
+            break;
+          case 'lastEvent':
+            // Sort by days since last event (null = never = highest number)
+            aVal = getDaysSinceLastEvent(a.metrics) ?? 99999;
+            bVal = getDaysSinceLastEvent(b.metrics) ?? 99999;
+            break;
+          default:
+            return 0;
+        }
+
+        if (aVal === null && bVal === null) return 0;
+        if (aVal === null) return 1;
+        if (bVal === null) return -1;
+
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          const comparison = aVal.localeCompare(bVal);
+          return sortOrder === 'asc' ? comparison : -comparison;
+        }
+
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+        }
+
+        return 0;
+      });
+    }
+
+    return result;
+  }, [scoresData, searchQuery, sortColumn, sortOrder]);
 
   // Chart data for engagement distribution
   const engagementChartData = useMemo(() => {
@@ -866,33 +963,6 @@ export default function GroupsInsightsDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
-
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="overall">Overall Score</SelectItem>
-                      <SelectItem value="recency">Recency</SelectItem>
-                      <SelectItem value="frequency">Frequency</SelectItem>
-                      <SelectItem value="volume">Volume</SelectItem>
-                      <SelectItem value="name">Name</SelectItem>
-                      <SelectItem value="lastEvent">Last Event</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    aria-label={sortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'}
-                  >
-                    {sortOrder === 'asc' ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -903,12 +973,60 @@ export default function GroupsInsightsDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Organization</TableHead>
-                      <TableHead>Score</TableHead>
-                      <TableHead>Level</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead className="text-right">Sandwiches</TableHead>
-                      <TableHead className="text-right">Last Event</TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('organization')}
+                      >
+                        <div className="flex items-center">
+                          Organization
+                          {getSortIcon('organization')}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('score')}
+                      >
+                        <div className="flex items-center">
+                          Score
+                          {getSortIcon('score')}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('level')}
+                      >
+                        <div className="flex items-center">
+                          Level
+                          {getSortIcon('level')}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('priority')}
+                      >
+                        <div className="flex items-center">
+                          Priority
+                          {getSortIcon('priority')}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('sandwiches')}
+                      >
+                        <div className="flex items-center justify-end">
+                          Sandwiches
+                          {getSortIcon('sandwiches')}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('lastEvent')}
+                      >
+                        <div className="flex items-center justify-end">
+                          Last Event
+                          {getSortIcon('lastEvent')}
+                        </div>
+                      </TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
