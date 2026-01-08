@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 import { logger } from '@/lib/logger';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { SmartSearch } from '@/components/SmartSearch';
+import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
+import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
 
 export default function SimpleNav({
   navigationItems,
@@ -179,6 +181,34 @@ export default function SimpleNav({
       }
     };
 
+    // Map nav item IDs to onboarding steps
+    const getOnboardingStep = (itemId: string): OnboardingStep | null => {
+      switch (itemId) {
+        case 'gmail-inbox':
+          return 'gmail-badge';
+        case 'chat':
+          return 'team-chat-badge';
+        case 'suggestions':
+          return 'suggestions-badge';
+        case 'event-reminders':
+          return 'event-reminders-badge';
+        case 'inbox-consolidated':
+          return 'project-threads-intro';
+        case 'holding-zone':
+          return 'holding-zone-intro';
+        default:
+          return null;
+      }
+    };
+
+    // Track if we've shown the first badge intro
+    const { shouldShowStep, completeStep } = useOnboarding();
+    const [hasShownFirstBadge, setHasShownFirstBadge] = useState(false);
+
+    // Find the first item with a badge to show the intro tooltip
+    const firstItemWithBadge = filteredNavigationItems.find(item => getBadgeCount(item.id) > 0);
+    const showNavBadgeIntro = firstItemWithBadge && shouldShowStep('nav-badge-intro') && !hasShownFirstBadge;
+
     return (
       <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
         {/* AI-Powered Smart Search */}
@@ -323,12 +353,34 @@ export default function SimpleNav({
                 <>
                   <span className="flex-1 text-left font-medium">{item.label}</span>
                   {badgeCount > 0 && (
-                    <Badge
-                      variant="destructive"
-                      className="ml-auto h-5 min-w-[20px] text-xs"
-                    >
-                      {badgeCount > 99 ? '99+' : badgeCount}
-                    </Badge>
+                    <>
+                      {/* Show intro tooltip on first badge user sees */}
+                      {showNavBadgeIntro && item.id === firstItemWithBadge?.id ? (
+                        <OnboardingTooltip
+                          step="nav-badge-intro"
+                          position="right"
+                          showWhen={true}
+                          delay={1500}
+                          onComplete={() => {
+                            setHasShownFirstBadge(true);
+                          }}
+                        >
+                          <Badge
+                            variant="destructive"
+                            className="ml-auto h-5 min-w-[20px] text-xs animate-pulse"
+                          >
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </Badge>
+                        </OnboardingTooltip>
+                      ) : (
+                        <Badge
+                          variant="destructive"
+                          className="ml-auto h-5 min-w-[20px] text-xs"
+                        >
+                          {badgeCount > 99 ? '99+' : badgeCount}
+                        </Badge>
+                      )}
+                    </>
                   )}
                   {hasChildren && (
                     <div className="ml-2">
