@@ -48,6 +48,17 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
   - **Root cause**: PUT/PATCH routes spread `req.body` directly, so undefined/empty address fields overwrote existing data with null
   - **Fix**: Both PUT and PATCH routes now preserve `address`, `homeAddress`, `latitude`, `longitude` fields when they're undefined or empty string in the request
   - **Key file**: `server/routes/drivers.ts` (lines 320-328 for PUT, lines 387-395 for PATCH)
+  
+  **EVENT SCHEDULING FORM RACE CONDITION FIX (Jan 2026):**
+  - **Issue**: EventSchedulingForm could submit with empty/default values, overwriting existing event data (notes, planning notes, etc.)
+  - **Root cause 1**: Form initialized with empty defaults BEFORE useEffect populated data from eventRequest prop. If user clicked submit before React re-rendered, empty values were sent.
+  - **Root cause 2**: Form always sent ALL fields on every save, converting empty strings to `null` via `field || null` pattern. This overwrote existing data even for untouched fields.
+  - **Fix 1**: Added `formInitialized` state to track when form data is properly loaded. Submit is blocked until initialized.
+  - **Fix 2**: Reset `formInitialized` to `false` at START of useEffect (before repopulating), not just when dialog closes. This handles switching between events while dialog stays mounted.
+  - **Fix 3**: Modified `performSubmit` to only send fields that have actually changed from original values stored in `originalFormDataRef`.
+  - **Fix 4**: Added `normalizeDateForCompare()` helper to handle date format differences (originalFormDataRef stores YYYY-MM-DD, eventData uses ISO format). Extracts YYYY-MM-DD portion for comparison.
+  - **Key file**: `client/src/components/event-requests/EventSchedulingForm.tsx`
+  - **Critical pattern**: When updating existing records, always compare current values with original values and only send changed fields to prevent unintended data overwrites.
 - **Database Configuration**: Centralized database URL selection in `server/db-url.ts` based on `NODE_ENV` (development/production) to connect to appropriate Neon branches. Critical rule: Avoid `.returning()` on update operations with Neon serverless; always use an explicit fetch after update pattern.
   
   **MIGRATION PATTERN (Jan 2026):**

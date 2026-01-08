@@ -171,6 +171,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [actualSandwichMode, setActualSandwichMode] = useState<'total' | 'types'>('total');
   const [attendeeMode, setAttendeeMode] = useState<'total' | 'breakdown'>('total');
   
+  // Track when form data has been properly initialized from eventRequest
+  // This prevents race condition where form submits before useEffect populates data
+  const [formInitialized, setFormInitialized] = useState(false);
+  
   // Store original form data to detect changes and preserve existing data
   const originalFormDataRef = useRef<typeof formData | null>(null);
   const [showContactInfo, setShowContactInfo] = useState(false);
@@ -232,6 +236,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // Initialize form with existing data when dialog opens
   useEffect(() => {
     if (dialogOpen) {
+      // CRITICAL: Reset formInitialized immediately when starting to load new data
+      // This prevents race condition when switching between events while dialog stays mounted
+      setFormInitialized(false);
+      
       const existingSandwichTypes = eventRequest?.sandwichTypes ? 
         (typeof eventRequest?.sandwichTypes === 'string' ? 
           JSON.parse(eventRequest.sandwichTypes) : eventRequest?.sandwichTypes) : [];
@@ -433,7 +441,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           followUpNotes: (eventRequest as any)?.followUpNotes || '',
           assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
         };
+        // Mark form as initialized after original data is stored
+        // This prevents race condition where form submits before useEffect populates data
+        setFormInitialized(true);
       }, 0);
+    } else {
+      // Dialog closed - reset initialization state
+      setFormInitialized(false);
     }
   }, [isVisible, isOpen, eventRequest, mode]);
 
@@ -598,6 +612,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   };
 
   const performSubmit = async (skipSpeakerWarning = false) => {
+    // CRITICAL: Prevent submission if form is not initialized
+    // This prevents race condition where form submits with empty default values
+    // before useEffect populates data from eventRequest
+    if (eventRequest && !formInitialized) {
+      logger.error('❌ Form submission blocked: form not initialized yet');
+      toast({
+        title: 'Please wait',
+        description: 'Form is still loading. Please try again in a moment.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     // Warning: Events with >500 sandwiches usually need a speaker
     let totalRelevantSandwiches = 0;
     
@@ -783,11 +810,80 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
       
+      // CRITICAL: Only send fields that have actually changed from original values
+      // This prevents overwriting existing data with null/empty values when user
+      // only modified a few fields (e.g., just changing status)
+      const filteredEventData: any = {};
+      const original = originalFormDataRef.current;
+      
+      // Status change always needs to be sent (core operation)
+      if (eventData.status !== undefined) {
+        filteredEventData.status = eventData.status;
+      }
+      
+      // For schedule mode, always send scheduledEventDate when it exists
+      if (mode === 'schedule' && eventData.scheduledEventDate !== undefined) {
+        filteredEventData.scheduledEventDate = eventData.scheduledEventDate;
+      }
+      
+      // Helper to normalize date strings for comparison
+      // originalFormDataRef stores YYYY-MM-DD but eventData has ISO format
+      const normalizeDateForCompare = (value: any): string | null => {
+        if (!value) return null;
+        if (typeof value !== 'string') return String(value);
+        // Extract YYYY-MM-DD from ISO string or use as-is
+        const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+        return match ? match[1] : value;
+      };
+      
+      // Helper to check if a value has meaningfully changed
+      const hasChanged = (key: string, newValue: any) => {
+        if (!original) return true; // No original to compare, send everything
+        const originalValue = (original as any)[key];
+        
+        // Handle array comparison (including date arrays like backupDates)
+        if (Array.isArray(newValue) && Array.isArray(originalValue)) {
+          // Normalize date strings in arrays before comparison
+          const normalizedNew = newValue.map(v => normalizeDateForCompare(v));
+          const normalizedOrig = originalValue.map(v => normalizeDateForCompare(v));
+          return JSON.stringify(normalizedNew) !== JSON.stringify(normalizedOrig);
+        }
+        
+        // Handle date fields specifically - compare normalized dates
+        const dateFields = ['desiredEventDate', 'eventDate', 'scheduledEventDate', 'toolkitSentDate',
+          'socialMediaPostRequestedDate', 'socialMediaPostCompletedDate', 'actualSandwichCountRecordedDate',
+          'followUpOneDayDate', 'followUpOneMonthDate'];
+        if (dateFields.includes(key)) {
+          return normalizeDateForCompare(newValue) !== normalizeDateForCompare(originalValue);
+        }
+        
+        // Handle null/empty string equivalence (both mean "no value")
+        const normalizedNew = newValue === '' || newValue === null ? null : newValue;
+        const normalizedOrig = originalValue === '' || originalValue === null ? null : originalValue;
+        
+        return normalizedNew !== normalizedOrig;
+      };
+      
+      // Include only fields that have actually changed
+      Object.keys(eventData).forEach(key => {
+        if (key === 'status' || key === 'scheduledEventDate') return; // Already handled
+        
+        // Map eventData keys to formData keys where they differ
+        const formDataKey = key === 'desiredEventDate' ? 'eventDate' :
+                          key === 'estimatedSandwichCount' ? 'totalSandwichCount' : key;
+        
+        if (hasChanged(formDataKey, eventData[key])) {
+          filteredEventData[key] = eventData[key];
+        }
+      });
+      
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
-      // Update existing event request
+      logger.log('  - Filtered data (changed fields only):', filteredEventData);
+      
+      // Update existing event request with only changed fields
       updateEventRequestMutation.mutate({
         id: eventRequest.id,
-        data: eventData,
+        data: filteredEventData,
       });
     } else {
       logger.log('➕ Calling CREATE mutation for new event');
