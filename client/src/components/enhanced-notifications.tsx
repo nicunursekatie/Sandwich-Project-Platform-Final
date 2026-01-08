@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { 
-  Bell, 
-  MessageCircle, 
-  AlertCircle, 
-  CheckCircle, 
-  Info, 
+import {
+  Bell,
+  MessageCircle,
+  AlertCircle,
+  CheckCircle,
+  Info,
   Star,
-  X, 
-  Archive, 
-  ExternalLink, 
+  X,
+  Archive,
+  ExternalLink,
   Calendar,
   Users,
   Settings,
@@ -38,6 +38,8 @@ import { cn } from '@/lib/utils';
 import { NotificationActionButton } from './NotificationActionButton';
 import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
+import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
+import { useOnboarding } from '@/hooks/useOnboarding';
 
 interface Notification {
   id: number;
@@ -108,6 +110,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     categories: [] as string[],
     priorities: [] as string[],
   });
+
+  // Onboarding tooltip state
+  const { shouldShowStep, completeStep } = useOnboarding();
 
   // Connect to Socket.IO for real-time notification updates
   const { connected: socketConnected } = useNotificationSocket();
@@ -260,31 +265,53 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   // Combined count includes both system notifications and chat messages
   const totalUnreadCount = systemUnreadCount + (streamChatUnread || 0);
 
+  // Check if we should show the notifications onboarding tooltip
+  const showNotificationsTooltip = totalUnreadCount > 0 &&
+    !shouldShowStep('nav-badge-intro') && // Don't show until nav intro is done
+    shouldShowStep('notifications-badge');
+
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="relative h-9 w-9 p-0"
-          data-testid="button-notifications-enhanced"
-          aria-label={`Notifications ${totalUnreadCount > 0 ? `(${totalUnreadCount} unread)` : ''}`}
-          aria-expanded={isOpen}
-          aria-haspopup="menu"
-        >
-          <Bell className="h-4 w-4" aria-hidden="true" />
-          {totalUnreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-              data-testid="badge-notification-count"
-              aria-label={`${totalUnreadCount} unread notifications`}
-            >
-              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
-            </Badge>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+    <DropdownMenu open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      // Complete the onboarding step when user opens notifications
+      if (open && showNotificationsTooltip) {
+        completeStep('notifications-badge');
+      }
+    }}>
+      <OnboardingTooltip
+        step="notifications-badge"
+        position="bottom"
+        showWhen={showNotificationsTooltip && !isOpen}
+        delay={2500}
+        completeOnChildClick={true}
+      >
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "relative h-9 w-9 p-0",
+              showNotificationsTooltip && "animate-pulse"
+            )}
+            data-testid="button-notifications-enhanced"
+            aria-label={`Notifications ${totalUnreadCount > 0 ? `(${totalUnreadCount} unread)` : ''}`}
+            aria-expanded={isOpen}
+            aria-haspopup="menu"
+          >
+            <Bell className="h-4 w-4" aria-hidden="true" />
+            {totalUnreadCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                data-testid="badge-notification-count"
+                aria-label={`${totalUnreadCount} unread notifications`}
+              >
+                {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+              </Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+      </OnboardingTooltip>
 
       <DropdownMenuContent
         align="end"
