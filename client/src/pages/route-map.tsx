@@ -37,6 +37,17 @@ const highlightedIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Default blue marker icon (explicit to avoid undefined issues)
+const defaultIcon = new L.Icon({
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 // Map controller component to handle zoom/pan
 function MapController({ center, zoom }: { center: [number, number] | null; zoom: number }) {
   const map = useMap();
@@ -428,7 +439,7 @@ export default function RouteMapView() {
               <Marker
                 key={contact.id}
                 position={[parseFloat(contact.latitude), parseFloat(contact.longitude)]}
-                icon={selectedHostId === contact.id ? highlightedIcon : undefined}
+                icon={selectedHostId === contact.id ? highlightedIcon : defaultIcon}
                 eventHandlers={{
                   click: () => {
                     setSelectedHostId(contact.id);
