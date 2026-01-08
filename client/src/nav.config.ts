@@ -266,6 +266,16 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
   {
+    id: 'route-map',
+    label: 'Host Map',
+    icon: Route,
+    href: 'route-map',
+    permission: PERMISSIONS.NAV_HOSTS,
+    group: 'logistics',
+    parentId: 'maps',
+    isSubItem: true,
+  },
+  {
     id: 'projects',
     label: 'Projects',
     icon: ListTodo,
