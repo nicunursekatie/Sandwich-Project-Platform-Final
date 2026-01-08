@@ -1,8 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from './button';
-import { useOnboarding, OnboardingStep, onboardingContent } from '@/hooks/useOnboarding';
+import {
+  useOnboarding,
+  OnboardingStep,
+  onboardingContent,
+} from '@/hooks/useOnboarding';
 import { cn } from '@/lib/utils';
 
 interface OnboardingTooltipProps {
@@ -30,7 +34,7 @@ export function OnboardingTooltip({
   delay = 500,
   className,
   onComplete,
-  completeOnChildClick = true
+  completeOnChildClick = true,
 }: OnboardingTooltipProps) {
   const { shouldShowStep, completeStep } = useOnboarding();
   const [isVisible, setIsVisible] = useState(false);
@@ -42,15 +46,15 @@ export function OnboardingTooltip({
   // Calculate tooltip position based on trigger element
   const updatePosition = useCallback(() => {
     if (!wrapperRef.current) return;
-    
+
     const rect = wrapperRef.current.getBoundingClientRect();
     const tooltipWidth = 256; // w-64 = 16rem = 256px
     const tooltipHeight = 140; // approximate height
-    const gap = 8; // spacing between trigger and tooltip
-    
+    const gap = 8; // spacing from trigger
+
     let top = 0;
     let left = 0;
-    
+
     switch (position) {
       case 'top':
         top = rect.top - tooltipHeight - gap;
@@ -70,7 +74,6 @@ export function OnboardingTooltip({
         left = rect.right + gap;
         break;
     }
-    
     // Keep tooltip within viewport bounds
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -87,7 +90,6 @@ export function OnboardingTooltip({
     if (top + tooltipHeight > viewportHeight - padding) {
       top = viewportHeight - tooltipHeight - padding;
     }
-    
     setTooltipPosition({ top, left });
   }, [position]);
 
@@ -111,11 +113,11 @@ export function OnboardingTooltip({
   // Update position on scroll/resize
   useEffect(() => {
     if (!isVisible) return;
-    
+
     const handleUpdate = () => updatePosition();
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
-    
+
     return () => {
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
@@ -140,84 +142,86 @@ export function OnboardingTooltip({
   // Arrow position classes (relative to tooltip)
   const arrowClasses = {
     top: 'top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-primary',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-primary',
+    bottom:
+      'bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-primary',
     left: 'left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-primary',
-    right: 'right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-primary'
+    right:
+      'right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-primary',
   };
 
-  const tooltipContent = isVisible && createPortal(
-    <div
-      className={cn(
-        'fixed z-[9999] w-64 transition-all duration-200 pointer-events-auto',
-        hasAnimatedIn
-          ? 'opacity-100 scale-100'
-          : 'opacity-0 scale-95'
-      )}
-      style={{
-        top: tooltipPosition.top,
-        left: tooltipPosition.left,
-      }}
-      role="tooltip"
-      aria-live="polite"
-    >
-      {/* Tooltip card */}
-      <div className="relative bg-primary text-primary-foreground rounded-lg shadow-lg overflow-hidden">
-        {/* Animated gradient border effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse opacity-50" />
-
-        {/* Content */}
-        <div className="relative p-3">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" />
-              <span className="font-semibold text-sm">{content.title}</span>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDismiss();
-              }}
-              className="text-primary-foreground/70 hover:text-primary-foreground transition-colors p-0.5 -m-0.5"
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Message */}
-          <p className="text-xs text-primary-foreground/90 mb-3 leading-relaxed">
-            {content.message}
-          </p>
-
-          {/* Action button */}
-          {content.action && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="w-full h-7 text-xs font-medium"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDismiss();
-              }}
-            >
-              {content.action}
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Arrow */}
+  const tooltipContent =
+    isVisible &&
+    createPortal(
       <div
         className={cn(
-          'absolute w-0 h-0 border-[6px]',
-          arrowClasses[position]
+          'fixed z-[9999] w-64 transition-all duration-200 pointer-events-auto',
+          hasAnimatedIn ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         )}
-      />
-    </div>,
-    document.body
-  );
+        style={{
+          top: tooltipPosition.top,
+          left: tooltipPosition.left,
+        }}
+        role="tooltip"
+        aria-live="polite"
+      >
+        {/* Tooltip card */}
+        <div className="relative bg-primary text-primary-foreground rounded-lg shadow-xl overflow-hidden border border-primary-foreground/20">
+          {/* Animated gradient border effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse opacity-50" />
+
+          {/* Content */}
+          <div className="relative p-3">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" />
+                <span className="font-semibold text-sm">{content.title}</span>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
+                className="text-primary-foreground/70 hover:text-primary-foreground transition-colors p-0.5 -m-0.5"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Message */}
+            <p className="text-xs text-primary-foreground/90 mb-3 leading-relaxed">
+              {content.message}
+            </p>
+
+            {/* Action button */}
+            {content.action && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="w-full h-7 text-xs font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDismiss();
+                }}
+              >
+                {content.action}
+                <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Arrow */}
+        <div
+          className={cn(
+            'absolute w-0 h-0 border-[6px]',
+            arrowClasses[position]
+          )}
+        />
+      </div>,
+      document.body
+    );
 
   return (
     <div
@@ -238,7 +242,11 @@ interface BadgeHintProps {
   className?: string;
 }
 
-export function BadgeHint({ step, showWhen = true, className }: BadgeHintProps) {
+export function BadgeHint({
+  step,
+  showWhen = true,
+  className,
+}: BadgeHintProps) {
   const { shouldShowStep, completeStep } = useOnboarding();
   const [isVisible, setIsVisible] = useState(false);
 
@@ -276,7 +284,7 @@ export function BadgeHint({ step, showWhen = true, className }: BadgeHintProps) 
 // Pulsing attention indicator
 export function AttentionPulse({
   active = true,
-  className
+  className,
 }: {
   active?: boolean;
   className?: string;
@@ -284,10 +292,9 @@ export function AttentionPulse({
   if (!active) return null;
 
   return (
-    <span className={cn(
-      'absolute -right-0.5 -top-0.5 flex h-2 w-2',
-      className
-    )}>
+    <span
+      className={cn('absolute -right-0.5 -top-0.5 flex h-2 w-2', className)}
+    >
       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75" />
       <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500" />
     </span>
