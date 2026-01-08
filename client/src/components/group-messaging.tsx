@@ -758,7 +758,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  {(currentUser?.role === 'super_admin' || selectedGroup.userRole === 'admin' || selectedGroup.userRole === 'moderator' || selectedGroup.userRole === 'member') && (
+                  {(currentUser?.role === 'super_admin' || currentUser?.permissions?.includes(PERMISSIONS.CHAT_GROUP_ADD_MEMBERS) || selectedGroup.userRole === 'admin' || selectedGroup.userRole === 'moderator' || selectedGroup.userRole === 'member') && (
                     <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="outline">
@@ -993,8 +993,8 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                           Admin
                         </Badge>
                       )}
-                      {/* Platform super admin or group admin can manage members */}
-                      {(currentUser?.role === 'super_admin' || selectedGroup?.userRole === 'admin' || selectedGroup?.userRole === 'moderator') && (
+                      {/* Show member management dropdown if user has any management permissions */}
+                      {(currentUser?.role === 'super_admin' || currentUser?.permissions?.includes(PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS) || selectedGroup?.userRole === 'admin' || selectedGroup?.userRole === 'moderator') && (
                         <div className="flex items-center gap-1">
                           {/* Role Management Dropdown */}
                           <DropdownMenu>
@@ -1004,39 +1004,45 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {member.role === 'member' ? (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    if (confirm(`Promote ${member.firstName} ${member.lastName} to group admin?`)) {
-                                      promoteMemberMutation.mutate({
-                                        groupId: selectedGroup.id,
-                                        userId: member.userId,
-                                        role: 'admin'
-                                      });
-                                    }
-                                  }}
-                                  disabled={promoteMemberMutation.isPending}
-                                >
-                                  <Crown className="h-3 w-3 mr-2" />
-                                  Promote to Admin
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    if (confirm(`Demote ${member.firstName} ${member.lastName} to regular member?`)) {
-                                      promoteMemberMutation.mutate({
-                                        groupId: selectedGroup.id,
-                                        userId: member.userId,
-                                        role: 'member'
-                                      });
-                                    }
-                                  }}
-                                  disabled={promoteMemberMutation.isPending}
-                                >
-                                  <Crown className="h-3 w-3 mr-2" />
-                                  Demote to Member
-                                </DropdownMenuItem>
+                              {/* Promote/Demote options - only for super_admin or group admin/moderator */}
+                              {(currentUser?.role === 'super_admin' || selectedGroup?.userRole === 'admin' || selectedGroup?.userRole === 'moderator') && (
+                                <>
+                                  {member.role === 'member' ? (
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        if (confirm(`Promote ${member.firstName} ${member.lastName} to group admin?`)) {
+                                          promoteMemberMutation.mutate({
+                                            groupId: selectedGroup.id,
+                                            userId: member.userId,
+                                            role: 'admin'
+                                          });
+                                        }
+                                      }}
+                                      disabled={promoteMemberMutation.isPending}
+                                    >
+                                      <Crown className="h-3 w-3 mr-2" />
+                                      Promote to Admin
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        if (confirm(`Demote ${member.firstName} ${member.lastName} to regular member?`)) {
+                                          promoteMemberMutation.mutate({
+                                            groupId: selectedGroup.id,
+                                            userId: member.userId,
+                                            role: 'member'
+                                          });
+                                        }
+                                      }}
+                                      disabled={promoteMemberMutation.isPending}
+                                    >
+                                      <Crown className="h-3 w-3 mr-2" />
+                                      Demote to Member
+                                    </DropdownMenuItem>
+                                  )}
+                                </>
                               )}
+                              {/* Remove Member option - for super_admin, CHAT_GROUP_REMOVE_MEMBERS permission, or group admin/moderator */}
                               <DropdownMenuItem 
                                 onClick={() => {
                                   if (confirm(`Remove ${member.firstName} ${member.lastName} from this group?`)) {
@@ -1062,8 +1068,8 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
               </div>
             </div>
 
-            {/* Add Members Section (Platform super admin or any group member can add) */}
-            {(currentUser?.role === 'super_admin' || selectedGroup?.userRole === 'admin' || selectedGroup?.userRole === 'moderator' || selectedGroup?.userRole === 'member') && (
+            {/* Add Members Section (Any group member, super admin, or users with CHAT_GROUP_ADD_MEMBERS permission) */}
+            {(currentUser?.role === 'super_admin' || currentUser?.permissions?.includes(PERMISSIONS.CHAT_GROUP_ADD_MEMBERS) || selectedGroup?.userRole === 'admin' || selectedGroup?.userRole === 'moderator' || selectedGroup?.userRole === 'member') && (
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <UserPlus className="h-4 w-4" />

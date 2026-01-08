@@ -4335,7 +4335,7 @@ export const organizationEngagementScores = pgTable('organization_engagement_sco
   averageEventInterval: integer('average_event_interval'), // Average days between events
 
   // AI-generated insights and recommendations
-  engagementLevel: varchar('engagement_level').notNull().default('unknown'), // 'highly_engaged', 'engaged', 'moderate', 'low', 'at_risk', 'dormant', 'new'
+  engagementLevel: varchar('engagement_level').notNull().default('unknown'), // 'active', 'at_risk', 'dormant', 'new'
   outreachPriority: varchar('outreach_priority').default('normal'), // 'urgent', 'high', 'normal', 'low'
   recommendedActions: jsonb('recommended_actions').default('[]'), // Array of suggested actions
   insights: jsonb('insights').default('[]'), // Array of AI-generated insights

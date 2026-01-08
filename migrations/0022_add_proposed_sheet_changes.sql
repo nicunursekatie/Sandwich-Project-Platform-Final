@@ -42,9 +42,19 @@ CREATE TABLE IF NOT EXISTS "proposed_sheet_changes" (
   "updated_at" TIMESTAMP DEFAULT NOW() NOT NULL
 );
 
+--> statement-breakpoint
+
 -- Index for quick lookup of pending changes
 CREATE INDEX IF NOT EXISTS "idx_proposed_sheet_changes_status" ON "proposed_sheet_changes" ("status");
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS "idx_proposed_sheet_changes_event" ON "proposed_sheet_changes" ("event_request_id");
+
+--> statement-breakpoint
+
 CREATE INDEX IF NOT EXISTS "idx_proposed_sheet_changes_proposed_at" ON "proposed_sheet_changes" ("proposed_at");
+
+--> statement-breakpoint
 
 COMMENT ON TABLE "proposed_sheet_changes" IS 'Safety gate for app-to-sheet writes. All changes proposed by the app are queued here for human review before being written to Google Sheets.';

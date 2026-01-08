@@ -265,6 +265,61 @@ export function requirePermission(permission: string) {
 }
 
 /**
+ * Permission-based authorization middleware factory that accepts multiple permissions
+ * Creates middleware that checks if user has at least one of the specified permissions
+ */
+export function requireAnyPermission(...permissions: string[]) {
+  return async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    // Skip permission check in development mode
+    if (process.env.APP_ENV === 'development') {
+      return next();
+    }
+
+    const user = req.user || req.session?.user;
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'Authentication required',
+        code: 'AUTH_REQUIRED',
+      });
+    }
+
+    // Super admins have all permissions
+    if (user.role === 'super_admin') {
+      return next();
+    }
+
+    // Check if user has any of the required permissions
+    const userPermissions = user.permissions || [];
+    if (
+      Array.isArray(userPermissions) &&
+      permissions.some(perm => userPermissions.includes(perm))
+    ) {
+      return next();
+    }
+
+    // Check role-based permissions (legacy support)
+    if (user.role === 'admin') {
+      // Admins have most permissions by default
+      return next();
+    }
+
+    logger.log(
+      `❌ PERMISSION DENIED: ${user.email} lacks any of permissions ${permissions.join(', ')}`
+    );
+    return res.status(403).json({
+      message: 'Permission denied',
+      code: 'PERMISSION_DENIED',
+      required: permissions,
+    });
+  };
+}
+
+/**
  * Role-based authorization middleware factory
  * Creates middleware that checks if user has one of the specified roles
  */

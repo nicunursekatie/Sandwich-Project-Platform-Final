@@ -5,14 +5,22 @@
 ALTER TABLE event_requests 
 ADD COLUMN IF NOT EXISTS driver_instructions TEXT;
 
+--> statement-breakpoint
+
 ALTER TABLE event_requests 
 ADD COLUMN IF NOT EXISTS volunteer_instructions TEXT;
+
+--> statement-breakpoint
 
 ALTER TABLE event_requests 
 ADD COLUMN IF NOT EXISTS speaker_instructions TEXT;
 
+--> statement-breakpoint
+
 ALTER TABLE event_requests 
 ADD COLUMN IF NOT EXISTS instructions_last_updated_at TIMESTAMP;
+
+--> statement-breakpoint
 
 ALTER TABLE event_requests 
 ADD COLUMN IF NOT EXISTS instructions_last_updated_by VARCHAR(255);

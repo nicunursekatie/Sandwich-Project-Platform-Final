@@ -143,6 +143,8 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.CHAT_RECIPIENT, label: 'Recipient Chat', icon: Building },
       { permission: PERMISSIONS.CHAT_DIRECT, label: 'Direct Messages', icon: MessageCircle },
       { permission: PERMISSIONS.CHAT_GROUP, label: 'Group Chats', icon: Users },
+      { permission: PERMISSIONS.CHAT_GROUP_ADD_MEMBERS, label: 'Add Members to Groups', icon: Users },
+      { permission: PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS, label: 'Remove Members from Groups', icon: Users },
     ],
   },
   'Event Capabilities': {
@@ -172,6 +174,7 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.COLLECTIONS_EDIT_ALL, label: 'Edit All Collections', icon: ClipboardList },
       { permission: PERMISSIONS.PROJECTS_EDIT_ALL, label: 'Edit All Projects', icon: ListTodo },
       { permission: PERMISSIONS.WORK_LOGS_EDIT_ALL, label: 'Edit All Work Logs', icon: ClipboardList },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL, label: 'Edit All Calendar Items', icon: Calendar },
       { permission: PERMISSIONS.EXPENSES_APPROVE, label: 'Approve Expenses', icon: Receipt },
       { permission: PERMISSIONS.DOCUMENTS_MANAGE, label: 'Manage Documents', icon: FileText },
       { permission: PERMISSIONS.DATA_EXPORT, label: 'Export Data', icon: FileText },

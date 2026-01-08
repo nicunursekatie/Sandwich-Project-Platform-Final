@@ -187,6 +187,8 @@ export const PERMISSIONS = {
   CHAT_CORE_TEAM: 'CHAT_CORE_TEAM',
   CHAT_DIRECT: 'CHAT_DIRECT',
   CHAT_GROUP: 'CHAT_GROUP',
+  CHAT_GROUP_ADD_MEMBERS: 'CHAT_GROUP_ADD_MEMBERS', // Add members to group chats
+  CHAT_GROUP_REMOVE_MEMBERS: 'CHAT_GROUP_REMOVE_MEMBERS', // Remove members from group chats
 
   // KUDOS - Kudos system
   KUDOS_SEND: 'KUDOS_SEND',
@@ -233,7 +235,8 @@ export const PERMISSIONS = {
 
   // YEARLY_CALENDAR - TSP Yearly Calendar planning
   YEARLY_CALENDAR_VIEW: 'YEARLY_CALENDAR_VIEW', // View yearly calendar
-  YEARLY_CALENDAR_EDIT: 'YEARLY_CALENDAR_EDIT', // Add/edit/delete calendar items
+  YEARLY_CALENDAR_EDIT: 'YEARLY_CALENDAR_EDIT', // Add calendar items and edit/delete own items
+  YEARLY_CALENDAR_EDIT_ALL: 'YEARLY_CALENDAR_EDIT_ALL', // Edit/delete any calendar item (not just own)
 
   // MEETINGS - Meeting management
   MEETINGS_VIEW: 'MEETINGS_VIEW',
