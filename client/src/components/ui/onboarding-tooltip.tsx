@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from './button';
 import { useOnboarding, OnboardingStep, onboardingContent } from '@/hooks/useOnboarding';
@@ -34,8 +35,76 @@ export function OnboardingTooltip({
   const { shouldShowStep, completeStep } = useOnboarding();
   const [isVisible, setIsVisible] = useState(false);
   const [hasAnimatedIn, setHasAnimatedIn] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const content = onboardingContent[step];
+
+  // Calculate tooltip position based on trigger element
+  const updatePosition = () => {
+    if (!wrapperRef.current || !isVisible) return;
+
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const tooltipWidth = 256; // w-64 = 16rem = 256px
+    const tooltipHeight = 140; // approximate height
+    const gap = 8; // spacing from trigger
+
+    let top = 0;
+    let left = 0;
+
+    switch (position) {
+      case 'top':
+        top = rect.top - tooltipHeight - gap;
+        left = rect.left + rect.width / 2 - tooltipWidth / 2;
+        break;
+      case 'bottom':
+        top = rect.bottom + gap;
+        left = rect.left + rect.width / 2 - tooltipWidth / 2;
+        break;
+      case 'left':
+        top = rect.top + rect.height / 2 - tooltipHeight / 2;
+        left = rect.left - tooltipWidth - gap;
+        break;
+      case 'right':
+      default:
+        top = rect.top + rect.height / 2 - tooltipHeight / 2;
+        left = rect.right + gap;
+        break;
+    }
+
+    // Keep tooltip within viewport bounds
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Horizontal bounds
+    if (left < 10) left = 10;
+    if (left + tooltipWidth > viewportWidth - 10) {
+      left = viewportWidth - tooltipWidth - 10;
+    }
+
+    // Vertical bounds
+    if (top < 10) top = 10;
+    if (top + tooltipHeight > viewportHeight - 10) {
+      top = viewportHeight - tooltipHeight - 10;
+    }
+
+    setTooltipPosition({ top, left });
+  };
+
+  // Update position when visible or on scroll/resize
+  useLayoutEffect(() => {
+    if (isVisible) {
+      updatePosition();
+
+      const handleUpdate = () => updatePosition();
+      window.addEventListener('scroll', handleUpdate, true);
+      window.addEventListener('resize', handleUpdate);
+
+      return () => {
+        window.removeEventListener('scroll', handleUpdate, true);
+        window.removeEventListener('resize', handleUpdate);
+      };
+    }
+  }, [isVisible, position]);
 
   // Show tooltip after delay if step hasn't been completed
   useEffect(() => {
@@ -68,20 +137,20 @@ export function OnboardingTooltip({
     }
   };
 
-  // Position classes for the tooltip
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2'
-  };
-
-  // Arrow position classes
-  const arrowClasses = {
-    top: 'top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-primary',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-primary',
-    left: 'left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-primary',
-    right: 'right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-primary'
+  // Arrow styles based on position
+  const getArrowStyles = () => {
+    const base = 'absolute w-0 h-0 border-[6px]';
+    switch (position) {
+      case 'top':
+        return `${base} top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-primary`;
+      case 'bottom':
+        return `${base} bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-primary`;
+      case 'left':
+        return `${base} left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-primary`;
+      case 'right':
+      default:
+        return `${base} right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-primary`;
+    }
   };
 
   return (
@@ -92,20 +161,23 @@ export function OnboardingTooltip({
     >
       {children}
 
-      {isVisible && (
+      {isVisible && createPortal(
         <div
           className={cn(
-            'absolute z-[100] w-64 transition-all duration-200',
-            positionClasses[position],
+            'fixed z-[9999] w-64 transition-all duration-200 pointer-events-auto',
             hasAnimatedIn
               ? 'opacity-100 scale-100'
               : 'opacity-0 scale-95'
           )}
+          style={{
+            top: tooltipPosition.top,
+            left: tooltipPosition.left,
+          }}
           role="tooltip"
           aria-live="polite"
         >
           {/* Tooltip card */}
-          <div className="relative bg-primary text-primary-foreground rounded-lg shadow-lg overflow-hidden">
+          <div className="relative bg-primary text-primary-foreground rounded-lg shadow-xl overflow-hidden border border-primary-foreground/20">
             {/* Animated gradient border effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse opacity-50" />
 
@@ -153,13 +225,9 @@ export function OnboardingTooltip({
           </div>
 
           {/* Arrow */}
-          <div
-            className={cn(
-              'absolute w-0 h-0 border-[6px]',
-              arrowClasses[position]
-            )}
-          />
-        </div>
+          <div className={getArrowStyles()} />
+        </div>,
+        document.body
       )}
     </div>
   );
