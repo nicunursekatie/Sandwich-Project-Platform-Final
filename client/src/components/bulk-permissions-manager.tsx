@@ -143,6 +143,8 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.CHAT_RECIPIENT, label: 'Recipient Chat', icon: Building },
       { permission: PERMISSIONS.CHAT_DIRECT, label: 'Direct Messages', icon: MessageCircle },
       { permission: PERMISSIONS.CHAT_GROUP, label: 'Group Chats', icon: Users },
+      { permission: PERMISSIONS.CHAT_GROUP_ADD_MEMBERS, label: 'Add Members to Groups', icon: Users },
+      { permission: PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS, label: 'Remove Members from Groups', icon: Users },
     ],
   },
   'Event Capabilities': {
