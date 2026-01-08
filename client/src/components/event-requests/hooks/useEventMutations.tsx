@@ -83,9 +83,11 @@ export const useEventMutations = () => {
       logger.log('Updated event:', updatedEvent);
       logger.log('Variables:', variables);
 
+      const orgName = updatedEvent?.organizationName || 'Event';
       toast({
-        title: 'Event request updated',
-        description: 'The event request has been successfully updated.',
+        title: '✓ Changes Saved Successfully',
+        description: `Your changes to "${orgName}" have been saved to the database.`,
+        duration: 8000,
       });
 
       // Invalidate all event request queries to refresh UI
@@ -102,13 +104,25 @@ export const useEventMutations = () => {
     },
     onError: (error: any) => {
       logger.error('Update event request error:', error);
+      
+      // Check for network errors
+      const isNetworkError = error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError') ||
+                            error?.message?.includes('network');
+      
+      let errorTitle = 'Save Failed';
+      let errorDescription = error?.message || error?.details || 'Failed to update event request. Please check your data and try again.';
+      
+      if (isNetworkError) {
+        errorTitle = 'Connection Error';
+        errorDescription = 'Could not save changes. Please check your internet connection and try again.';
+      }
+      
       toast({
-        title: 'Update Failed',
-        description:
-          error?.message ||
-          error?.details ||
-          'Failed to update event request. Please check your data and try again.',
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
+        duration: 10000,
       });
     },
   });
@@ -126,9 +140,11 @@ export const useEventMutations = () => {
       logger.log('=== CREATE EVENT SUCCESS HANDLER ===');
       logger.log('Created event:', data);
       
+      const orgName = data?.organizationName || 'New event';
       toast({
-        title: 'Event request created',
-        description: 'The new event request has been successfully created.',
+        title: '✓ Event Created Successfully',
+        description: `"${orgName}" has been created and saved to the database.`,
+        duration: 8000,
       });
 
       // Invalidate all event request queries to refresh UI
@@ -140,13 +156,25 @@ export const useEventMutations = () => {
     },
     onError: (error: any) => {
       logger.error('Create event request error:', error);
+      
+      // Check for network errors
+      const isNetworkError = error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError') ||
+                            error?.message?.includes('network');
+      
+      let errorTitle = 'Creation Failed';
+      let errorDescription = error?.message || error?.details || 'Failed to create event request. Please check your data and try again.';
+      
+      if (isNetworkError) {
+        errorTitle = 'Connection Error';
+        errorDescription = 'Could not create event. Please check your internet connection and try again.';
+      }
+      
       toast({
-        title: 'Creation Failed',
-        description:
-          error?.message ||
-          error?.details ||
-          'Failed to create event request. Please check your data and try again.',
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
+        duration: 10000,
       });
     },
   });

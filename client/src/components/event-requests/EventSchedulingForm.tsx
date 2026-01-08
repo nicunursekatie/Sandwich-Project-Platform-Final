@@ -786,9 +786,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         markMlkDayMutation.mutate({ id: updatedEvent.id, isMlkDayEvent: true });
       }
       const isEditMode = mode === 'edit';
+      const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
       toast({
-        title: isEditMode ? 'Event updated successfully' : 'Event scheduled successfully',
-        description: isEditMode ? 'The event details have been updated.' : 'The event has been moved to scheduled status with all details.',
+        title: isEditMode ? '✓ Changes Saved Successfully' : '✓ Event Scheduled Successfully',
+        description: isEditMode 
+          ? `Your changes to "${orgName}" have been saved to the database.` 
+          : `"${orgName}" has been scheduled and saved.`,
+        duration: 8000,
       });
       // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
@@ -804,13 +808,32 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                         error?.message?.includes('EVENT_NOT_FOUND') ||
                         error?.message?.includes('not found');
       
+      // Check for network errors
+      const isNetworkError = error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError') ||
+                            error?.message?.includes('network');
+      
       const isEditMode = mode === 'edit';
+      const orgName = eventRequest?.organizationName || formData.organizationName || 'this event';
+      
+      let errorTitle = 'Save Failed';
+      let errorDescription = isEditMode ? 'Failed to update event.' : 'Failed to schedule event.';
+      
+      if (isNotFound) {
+        errorTitle = 'Event Not Found';
+        errorDescription = 'The event request was not found. It may have been deleted. Please refresh the page and try again.';
+      } else if (isNetworkError) {
+        errorTitle = 'Connection Error';
+        errorDescription = `Could not save changes to "${orgName}". Please check your internet connection and try again. Your changes are saved locally and can be recovered.`;
+      } else {
+        errorDescription = `Failed to save changes to "${orgName}". Please try again. If the problem persists, your changes are saved locally.`;
+      }
+      
       toast({
-        title: isNotFound ? 'Event Not Found' : 'Error',
-        description: isNotFound
-          ? 'The event request was not found. It may have been deleted. Please refresh the page and try again.'
-          : (isEditMode ? 'Failed to update event.' : 'Failed to schedule event.'),
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
+        duration: 10000,
       });
     },
   });
@@ -830,9 +853,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       if (pendingMlkDayDecision === true && response?.id) {
         markMlkDayMutation.mutate({ id: response.id, isMlkDayEvent: true });
       }
+      const orgName = formData.organizationName || 'New event';
       toast({
-        title: 'Event created successfully',
-        description: 'The new event request has been created.',
+        title: '✓ Event Created Successfully',
+        description: `"${orgName}" has been created and saved to the database.`,
+        duration: 8000,
       });
       // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
@@ -840,12 +865,29 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onClose();
       setPendingMlkDayDecision(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logger.error('❌ CREATE MUTATION ERROR:', error);
+      
+      // Check for network errors
+      const isNetworkError = error?.message?.includes('Failed to fetch') ||
+                            error?.message?.includes('NetworkError') ||
+                            error?.message?.includes('network');
+      
+      const orgName = formData.organizationName || 'this event';
+      
+      let errorTitle = 'Creation Failed';
+      let errorDescription = `Failed to create "${orgName}". Please try again.`;
+      
+      if (isNetworkError) {
+        errorTitle = 'Connection Error';
+        errorDescription = `Could not create "${orgName}". Please check your internet connection and try again. Your form data is saved locally.`;
+      }
+      
       toast({
-        title: 'Error',
-        description: 'Failed to create event.',
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
+        duration: 10000,
       });
     },
   });
