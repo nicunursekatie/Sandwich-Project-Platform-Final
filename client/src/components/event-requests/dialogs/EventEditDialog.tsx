@@ -324,10 +324,16 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
   const [assignedSpeakerIds, setAssignedSpeakerIds] = useState<string[]>([]);
   const [assignedVolunteerIds, setAssignedVolunteerIds] = useState<string[]>([]);
   const [assignedVanDriverId, setAssignedVanDriverId] = useState<string | null>(null);
+  const [assignedRecipientIds, setAssignedRecipientIds] = useState<string[]>([]);
 
   // Fetch users for TSP contact dropdown
   const { data: usersBasic = [] } = useQuery<any[]>({
     queryKey: ['/api/users/basic'],
+  });
+
+  // Fetch recipients for delivery destination dropdown
+  const { data: recipients = [] } = useQuery<any[]>({
+    queryKey: ['/api/recipients'],
   });
 
   // Populate form when event changes
@@ -347,6 +353,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       setAssignedSpeakerIds(getSpeakerIds(event));
       setAssignedVolunteerIds(getVolunteerIds(event));
       setAssignedVanDriverId(event.assignedVanDriverId || null);
+      setAssignedRecipientIds(parsePostgresArray((event as any).assignedRecipientIds));
     }
   }, [event]);
 
@@ -487,6 +494,12 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       updates.assignedVanDriverId = assignedVanDriverId;
     }
 
+    // Planned recipients (where sandwiches are going)
+    const originalRecipientIds = parsePostgresArray((event as any)?.assignedRecipientIds);
+    if (JSON.stringify(assignedRecipientIds.sort()) !== JSON.stringify(originalRecipientIds.sort())) {
+      updates.assignedRecipientIds = assignedRecipientIds;
+    }
+
     if (Object.keys(updates).length === 0) {
       console.log('[EventEditDialog] No changes detected, closing dialog');
       toast({
@@ -504,8 +517,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             Edit Event Details
             <Badge variant="outline" className="ml-2">
@@ -514,7 +527,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 min-h-0 pr-4">
           <Tabs defaultValue="logistics" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="logistics">
@@ -692,6 +705,79 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                   </Button>
                 )}
               </div>
+
+              <Separator />
+
+              {/* Planned Recipients - Where are the sandwiches going */}
+              <div className="space-y-3">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Planned Recipients
+                  {assignedRecipientIds.length > 0 && (
+                    <Badge variant="secondary">{assignedRecipientIds.length} selected</Badge>
+                  )}
+                </h4>
+                <p className="text-xs text-gray-500">Select where the sandwiches from this event will be delivered</p>
+
+                {/* Selected recipients - detailed list */}
+                {assignedRecipientIds.length > 0 ? (
+                  <div className="space-y-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    {assignedRecipientIds.map(recipientId => {
+                      const recipient = recipients.find((r: any) => String(r.id) === recipientId);
+                      return (
+                        <div key={recipientId} className="flex items-center justify-between bg-white p-2 rounded border">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{recipient?.name || `Recipient #${recipientId}`}</span>
+                            {recipient?.region && (
+                              <span className="text-xs text-gray-500">{recipient.region}</span>
+                            )}
+                            {recipient?.address && (
+                              <span className="text-xs text-gray-400">{recipient.address}</span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAssignedRecipientIds(prev => prev.filter(id => id !== recipientId))}
+                            className="ml-2 p-1 hover:bg-red-100 rounded-full text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300 text-center text-sm text-gray-500">
+                    No recipients assigned yet. Use the dropdown below to add one.
+                  </div>
+                )}
+
+                {/* Recipient selector */}
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value && !assignedRecipientIds.includes(value)) {
+                      setAssignedRecipientIds(prev => [...prev, value]);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Add a recipient..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recipients
+                      .filter((r: any) => r.status === 'active' && !assignedRecipientIds.includes(String(r.id)))
+                      .map((r: any) => (
+                        <SelectItem key={r.id} value={String(r.id)}>
+                          <div className="flex flex-col">
+                            <span>{r.name}</span>
+                            {r.region && <span className="text-xs text-gray-500">{r.region}</span>}
+                          </div>
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </TabsContent>
 
             <TabsContent value="staffing" className="space-y-6 mt-4">
@@ -794,7 +880,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
           </Tabs>
         </ScrollArea>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

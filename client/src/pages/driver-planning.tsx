@@ -310,6 +310,32 @@ const createDriverIcon = (color: string) => {
   });
 };
 
+// Host+Driver combo: Circle with inner triangle (for people who are both hosts and drivers)
+const createHostDriverIcon = (hostColor: string, driverColor: string) => {
+  const size = 26;
+  const html = `
+    <div style="
+      position: relative;
+      width: ${size}px;
+      height: ${size}px;
+    ">
+      <svg viewBox="0 0 26 26" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer circle (host) -->
+        <circle cx="13" cy="13" r="11" fill="${hostColor}" stroke="white" stroke-width="2"/>
+        <!-- Inner triangle (driver) -->
+        <path d="M13 6L19 18H7L13 6Z" fill="${driverColor}" stroke="white" stroke-width="1.5"/>
+      </svg>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker host-driver-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
 // Volunteers/Speakers: Star shape
 const createVolunteerIcon = (color: string) => {
   const size = 22;
@@ -354,6 +380,7 @@ const hostFocusedIcon = createHostIcon(colors.hostFocused);
 const recipientIcon = createRecipientIcon(colors.recipient);
 const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
 const driverIcon = createDriverIcon(colors.driver);
+const hostDriverIcon = createHostDriverIcon(colors.host, colors.driver); // Combined icon for host+driver
 const volunteerIcon = createVolunteerIcon(colors.volunteer);
 
 // Format time to 12-hour format
@@ -827,6 +854,55 @@ export default function DriverPlanningDashboard() {
   // Check if user has edit permission
   const canEditEvents = user && hasPermission(user as UserForPermissions, PERMISSIONS.EVENT_REQUESTS_EDIT);
 
+  // Effective selected event: either custom location (as virtual event) or real selected event
+  // This allows the quick location lookup to reuse all the nearby entity calculations
+  // NOTE: Must be defined before handleItemClick which references it
+  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
+    if (customLocation) {
+      return {
+        id: -1,
+        organizationName: customLocation.address,
+        organizationCategory: null,
+        department: null,
+        firstName: null,
+        lastName: null,
+        email: null,
+        phone: null,
+        eventAddress: customLocation.address,
+        latitude: customLocation.latitude,
+        longitude: customLocation.longitude,
+        desiredEventDate: null,
+        scheduledEventDate: null,
+        status: 'custom',
+        estimatedSandwichCount: null,
+        tspContactAssigned: null,
+        tspContact: null,
+        customTspContact: null,
+        eventStartTime: null,
+        eventEndTime: null,
+        driversNeeded: null,
+        assignedDriverIds: null,
+        assignedRecipientIds: null,
+        tentativeDriverIds: null,
+        speakersNeeded: null,
+        assignedSpeakerIds: null,
+        volunteersNeeded: null,
+        assignedVolunteerIds: null,
+        driverDetails: null,
+        speakerDetails: null,
+        volunteerDetails: null,
+        sandwichTypes: null,
+        pickupTime: null,
+        pickupTimeWindow: null,
+        selfTransport: null,
+        vanDriverNeeded: null,
+        assignedVanDriverId: null,
+        isDhlVan: null,
+      };
+    }
+    return selectedEvent;
+  }, [customLocation, selectedEvent]);
+
   // Handle clicking on a host/recipient to show driving route from selected event
   const handleItemClick = async (item: FocusedMapItem) => {
     // Toggle off if clicking the same item again
@@ -838,8 +914,8 @@ export default function DriverPlanningDashboard() {
 
     setFocusedItem(item);
 
-    // Only fetch route if we have a selected event with coordinates
-    if (!selectedEvent?.latitude || !selectedEvent?.longitude) {
+    // Only fetch route if we have a selected event or custom location with coordinates
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
       setDrivingRoute(null);
       return;
     }
@@ -855,10 +931,10 @@ export default function DriverPlanningDashboard() {
 
     setIsLoadingRoute(true);
     try {
-      const departureTime = getEventDepartureTime(selectedEvent);
+      const departureTime = getEventDepartureTime(effectiveSelectedEvent);
       const routeData = await fetchDrivingRoute(
-        parseFloat(selectedEvent.latitude),
-        parseFloat(selectedEvent.longitude),
+        parseFloat(effectiveSelectedEvent.latitude),
+        parseFloat(effectiveSelectedEvent.longitude),
         parseFloat(item.latitude),
         parseFloat(item.longitude),
         departureTime,
@@ -877,8 +953,8 @@ export default function DriverPlanningDashboard() {
           duration: routeData.duration,
           durationInTraffic: routeData.durationInTraffic,
           fromEvent: {
-            lat: parseFloat(selectedEvent.latitude),
-            lng: parseFloat(selectedEvent.longitude),
+            lat: parseFloat(effectiveSelectedEvent.latitude),
+            lng: parseFloat(effectiveSelectedEvent.longitude),
           },
           toItem: {
             lat: parseFloat(item.latitude),
@@ -923,9 +999,9 @@ export default function DriverPlanningDashboard() {
   }, [selectedEvent?.id]);
 
   // Fetch driver-to-event route when only driver is selected (no destination yet)
-  // This shows the route from driver's home to the event location
+  // This shows the route from driver's home to the event/custom location
   useEffect(() => {
-    if (!selectedDriver || selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
+    if (!selectedDriver || selectedDestination || !effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
       // Don't fetch if: no driver, or destination is set (full trip will handle it), or no event coords
       return;
     }
@@ -933,9 +1009,9 @@ export default function DriverPlanningDashboard() {
     const fetchDriverToEventRoute = async () => {
       setIsLoadingRoute(true);
       try {
-        const eventLat = parseFloat(selectedEvent.latitude!);
-        const eventLng = parseFloat(selectedEvent.longitude!);
-        const departureTime = getEventDepartureTime(selectedEvent);
+        const eventLat = parseFloat(effectiveSelectedEvent.latitude!);
+        const eventLng = parseFloat(effectiveSelectedEvent.longitude!);
+        const departureTime = getEventDepartureTime(effectiveSelectedEvent);
 
         const routeData = await fetchDrivingRoute(
           parseFloat(selectedDriver.latitude),
@@ -971,11 +1047,11 @@ export default function DriverPlanningDashboard() {
     };
 
     fetchDriverToEventRoute();
-  }, [selectedDriver, selectedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
+  }, [selectedDriver, selectedDestination, effectiveSelectedEvent?.latitude, effectiveSelectedEvent?.longitude]);
 
   // Fetch full trip route when both driver and destination are selected
   useEffect(() => {
-    if (!selectedDriver || !selectedDestination || !selectedEvent?.latitude || !selectedEvent?.longitude) {
+    if (!selectedDriver || !selectedDestination || !effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
       setFullTripRoute(null);
       return;
     }
@@ -984,9 +1060,9 @@ export default function DriverPlanningDashboard() {
       setIsLoadingFullTrip(true);
       try {
         // We already checked these exist in the condition above
-        const eventLat = parseFloat(selectedEvent.latitude!);
-        const eventLng = parseFloat(selectedEvent.longitude!);
-        const departureTime = getEventDepartureTime(selectedEvent);
+        const eventLat = parseFloat(effectiveSelectedEvent.latitude!);
+        const eventLng = parseFloat(effectiveSelectedEvent.longitude!);
+        const departureTime = getEventDepartureTime(effectiveSelectedEvent);
 
         // Fetch leg 1: Driver home -> Event (using predictive traffic for event time)
         const leg1 = await fetchDrivingRoute(
@@ -1045,7 +1121,7 @@ export default function DriverPlanningDashboard() {
     };
 
     fetchFullTrip();
-  }, [selectedDriver, selectedDestination, selectedEvent?.latitude, selectedEvent?.longitude]);
+  }, [selectedDriver, selectedDestination, effectiveSelectedEvent?.latitude, effectiveSelectedEvent?.longitude]);
 
   // Update event mutation
   const updateEventMutation = useMutation({
@@ -1480,54 +1556,6 @@ export default function DriverPlanningDashboard() {
     );
   }, [activeDrivers]);
 
-  // Effective selected event: either custom location (as virtual event) or real selected event
-  // This allows the quick location lookup to reuse all the nearby entity calculations
-  const effectiveSelectedEvent = useMemo((): EventMapData | null => {
-    if (customLocation) {
-      return {
-        id: -1,
-        organizationName: customLocation.address,
-        organizationCategory: null,
-        department: null,
-        firstName: null,
-        lastName: null,
-        email: null,
-        phone: null,
-        eventAddress: customLocation.address,
-        latitude: customLocation.latitude,
-        longitude: customLocation.longitude,
-        desiredEventDate: null,
-        scheduledEventDate: null,
-        status: 'custom',
-        estimatedSandwichCount: null,
-        tspContactAssigned: null,
-        tspContact: null,
-        customTspContact: null,
-        eventStartTime: null,
-        eventEndTime: null,
-        driversNeeded: null,
-        assignedDriverIds: null,
-        assignedRecipientIds: null,
-        tentativeDriverIds: null,
-        speakersNeeded: null,
-        assignedSpeakerIds: null,
-        volunteersNeeded: null,
-        assignedVolunteerIds: null,
-        driverDetails: null,
-        speakerDetails: null,
-        volunteerDetails: null,
-        sandwichTypes: null,
-        pickupTime: null,
-        pickupTimeWindow: null,
-        selfTransport: null,
-        vanDriverNeeded: null,
-        assignedVanDriverId: null,
-        isDhlVan: null,
-      };
-    }
-    return selectedEvent;
-  }, [customLocation, selectedEvent]);
-
   // Handle quick location lookup geocoding
   const handleQuickLookup = async () => {
     if (!quickLookupAddress.trim()) return;
@@ -1556,8 +1584,8 @@ export default function DriverPlanningDashboard() {
       clearTripPlanningState();
       setCustomLocation({
         address: data.address || quickLookupAddress.trim(),
-        latitude: data.latitude,
-        longitude: data.longitude,
+        latitude: String(data.latitude),
+        longitude: String(data.longitude),
       });
       setShowQuickLookup(false);
 
@@ -1582,6 +1610,19 @@ export default function DriverPlanningDashboard() {
     setCustomLocation(null);
     setQuickLookupAddress('');
     clearTripPlanningState();
+  };
+
+  // Handle selecting an event (clears custom location if set)
+  const handleSelectEvent = (event: EventMapData) => {
+    if (selectedEvent?.id !== event.id) {
+      clearTripPlanningState();
+    }
+    // Clear custom location when selecting a real event
+    if (customLocation) {
+      setCustomLocation(null);
+      setQuickLookupAddress('');
+    }
+    setSelectedEvent(event);
   };
 
   // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
@@ -1683,11 +1724,12 @@ export default function DriverPlanningDashboard() {
   }, [selectedEvent, recipientMapData]);
 
   const nonDesignatedNearbyRecipients = useMemo(() => {
-    if (!selectedEvent) return [];
+    // For custom locations, show all nearby recipients (no designated ones)
+    if (!effectiveSelectedEvent) return [];
     if (designatedRecipients.length === 0) return nearbyRecipients;
     const designatedIds = new Set(designatedRecipients.map((r) => r.id));
     return nearbyRecipients.filter((r) => !designatedIds.has(r.id));
-  }, [selectedEvent, designatedRecipients, nearbyRecipients]);
+  }, [effectiveSelectedEvent, designatedRecipients, nearbyRecipients]);
 
   // Assigned driver(s) explicitly assigned on the event (if any)
   // Returns full DriverCandidate objects for drivers with valid coordinates
@@ -1809,7 +1851,7 @@ export default function DriverPlanningDashboard() {
   // Also filter to only van-approved drivers when vanDriverNeeded is true
   const nearbyDrivers = useMemo(() => {
     const assignedIds = new Set(assignedDrivers.map(d => d.id));
-    const vanNeeded = selectedEvent?.vanDriverNeeded;
+    const vanNeeded = effectiveSelectedEvent?.vanDriverNeeded;
     return nearbyDriversAll.filter(({ driver }) => {
       // Exclude already-assigned drivers
       if (assignedIds.has(driver.id)) return false;
@@ -1817,7 +1859,7 @@ export default function DriverPlanningDashboard() {
       if (vanNeeded && !driver.vanApproved) return false;
       return true;
     });
-  }, [nearbyDriversAll, assignedDrivers, selectedEvent?.vanDriverNeeded]);
+  }, [nearbyDriversAll, assignedDrivers, effectiveSelectedEvent?.vanDriverNeeded]);
 
   // Compute volunteers/speakers assigned to visible events with geocoded locations
   // Shows volunteers that are assigned to ANY visible event (not just selected)
@@ -1890,10 +1932,15 @@ export default function DriverPlanningDashboard() {
   designatedRecipientsRef.current = designatedRecipients;
 
   // Auto-populate trip planning with pre-assigned driver/recipient when event is selected
-  // Only depends on selectedEvent.id to avoid timeout cancellation when memos recompute
+  // Depends on selectedEvent.id and driver data being loaded
   useEffect(() => {
     if (!selectedEvent) {
       lastAutoPopulatedEventId.current = null;
+      return;
+    }
+
+    // Wait for driver candidates to load before auto-populating
+    if (driverCandidatesLoading) {
       return;
     }
 
@@ -1908,9 +1955,9 @@ export default function DriverPlanningDashboard() {
       const currentAssignedDrivers = assignedDriversRef.current;
       const currentDesignatedRecipients = designatedRecipientsRef.current;
 
-      // Auto-populate driver if there's exactly one assigned driver with coordinates
-      // (If multiple, let user pick which one to preview)
-      if (currentAssignedDrivers.length === 1) {
+      // Auto-populate driver if there are assigned drivers with coordinates
+      // Select the first one to show the route immediately
+      if (currentAssignedDrivers.length >= 1) {
         const driver = currentAssignedDrivers[0];
         setSelectedDriver({
           id: driver.id,
@@ -1931,10 +1978,10 @@ export default function DriverPlanningDashboard() {
           longitude: recipient.longitude!,
         });
       }
-    }, 50);
+    }, 100);
 
     return () => clearTimeout(timeout);
-  }, [selectedEvent?.id]);
+  }, [selectedEvent?.id, driverCandidatesLoading]);
 
   const getTspContactLabel = (event: EventMapData): string | null => {
     const parts = [event.customTspContact, event.tspContactAssigned, event.tspContact]
@@ -2357,8 +2404,11 @@ export default function DriverPlanningDashboard() {
                         : 'hover:shadow-md hover:bg-white'
                     }`}
                     onClick={() => {
-                      if (!isSelected) clearTripPlanningState();
-                      setSelectedEvent(isSelected ? null : event);
+                      if (isSelected) {
+                        setSelectedEvent(null);
+                      } else {
+                        handleSelectEvent(event);
+                      }
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
                     }}
@@ -2604,7 +2654,7 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={selectedEvent}
+              selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -2615,26 +2665,28 @@ export default function DriverPlanningDashboard() {
             />
 
             {/* Event markers - when an event is selected, only show events on the same date */}
+            {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              const isSelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  icon={isSelected ? selectedEventIcon : eventIcon}
                   eventHandlers={{
-                    click: () => {
-                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                      setSelectedEvent(event);
-                    }
+                    click: () => handleSelectEvent(event)
                   }}
                 >
                   <Tooltip
-                    permanent
+                    permanent={isSelected}
                     direction="top"
                     offset={[0, -35]}
-                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    className={isSelected
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    }
                   >
                     <span className="truncate max-w-[120px] block">
                       {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
@@ -2759,8 +2811,8 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {/* Nearby recipient markers when event selected */}
-            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
+            {/* Nearby recipient markers when event or custom location selected */}
+            {effectiveSelectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -2824,6 +2876,43 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             )}
+
+            {/* Nearby driver markers (triangles) when event or custom location selected */}
+            {/* Show drivers and volunteers (who are flagged as drivers), not hosts - hosts show as green circles */}
+            {effectiveSelectedEvent && nearbyDriversAll
+              .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id && (driver.source === 'driver' || driver.source === 'volunteer'))
+              .slice(0, 15)
+              .map(({ driver, distance }) => (
+              <Marker
+                key={`driver-${driver.id}`}
+                position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
+                icon={driverIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-yellow-50 !border-yellow-300 !text-yellow-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {driver.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <h3 className="font-semibold text-yellow-700 text-sm flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {driver.name}
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      {driver.hostLocation || driver.homeAddress || 'Driver location'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">{distance.toFixed(1)} miles away</p>
+                    {driver.vanApproved && (
+                      <p className="text-xs text-green-600 mt-1">Van Approved</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
 
             {/* Driving route polyline (single leg preview) */}
             {drivingRoute && drivingRoute.coordinates.length > 0 && !fullTripRoute && (
@@ -3363,7 +3452,7 @@ export default function DriverPlanningDashboard() {
                 </svg>
                 <span>Selected Event</span>
               </div>
-              {selectedEvent && (
+              {effectiveSelectedEvent && (
                 <>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
@@ -3376,6 +3465,13 @@ export default function DriverPlanningDashboard() {
                   <div className="flex items-center gap-2">
                     <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
                     <span>Driver (triangle)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                      <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
+                    </svg>
+                    <span>Host+Driver</span>
                   </div>
                   <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
                     <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
@@ -3393,7 +3489,7 @@ export default function DriverPlanningDashboard() {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#007E8C]" />
-                {selectedEvent ? 'Suggested Drivers' : 'Select an Event'}
+                {effectiveSelectedEvent ? (customLocation ? 'Nearby Drivers' : 'Suggested Drivers') : 'Select an Event'}
               </h2>
               {selectedEvent && canEditEvents && (
                 <Button
@@ -3407,19 +3503,19 @@ export default function DriverPlanningDashboard() {
                 </Button>
               )}
             </div>
-            {selectedEvent && (
+            {effectiveSelectedEvent && (
               <p className="text-xs text-gray-600 mt-1">
-                For: {selectedEvent.organizationName}
+                For: {effectiveSelectedEvent.organizationName}
               </p>
             )}
           </div>
 
           <ScrollArea className="flex-1">
-            {!selectedEvent ? (
+            {!effectiveSelectedEvent ? (
               <div className="p-6 text-center text-gray-500">
                 <Truck className="w-16 h-16 mx-auto mb-3 opacity-20" />
                 <p className="text-sm font-medium">No event selected</p>
-                <p className="text-xs mt-1">Click an event from the list to see suggested drivers and nearby hosts</p>
+                <p className="text-xs mt-1">Click an event from the list or use Quick Location Lookup to see nearby drivers and hosts</p>
               </div>
             ) : (
               <div className="p-3 space-y-4">
@@ -4164,8 +4260,11 @@ export default function DriverPlanningDashboard() {
                         : 'hover:shadow-md hover:bg-white'
                     }`}
                     onClick={() => {
-                      if (!isSelected) clearTripPlanningState();
-                      setSelectedEvent(isSelected ? null : event);
+                      if (isSelected) {
+                        setSelectedEvent(null);
+                      } else {
+                        handleSelectEvent(event);
+                      }
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
                     }}
@@ -4250,7 +4349,7 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={selectedEvent}
+              selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -4259,26 +4358,28 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              const isSelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  icon={isSelected ? selectedEventIcon : eventIcon}
                   eventHandlers={{
-                    click: () => {
-                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                      setSelectedEvent(event);
-                    }
+                    click: () => handleSelectEvent(event)
                   }}
                 >
                   <Tooltip
-                    permanent
+                    permanent={isSelected}
                     direction="top"
                     offset={[0, -35]}
-                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    className={isSelected
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    }
                   >
                     <span className="truncate max-w-[120px] block">
                       {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
@@ -4403,9 +4504,10 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             )}
-            {/* Show all driver candidates with geocoded coordinates */}
+            {/* Show driver candidates with geocoded coordinates (drivers + volunteers, not hosts) */}
+            {/* Hosts show as green circles via nearbyHosts */}
             {driverCandidates
-              .filter((driver) => driver.latitude && driver.longitude)
+              .filter((driver) => driver.latitude && driver.longitude && (driver.source === 'driver' || driver.source === 'volunteer'))
               .map((driver) => (
               <Marker
                 key={`driver-${driver.id}`}
@@ -4598,7 +4700,7 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={selectedEvent}
+              selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -4607,18 +4709,19 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
+              const isSelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
-                  icon={selectedEvent?.id === event.id ? selectedEventIcon : eventIcon}
+                  icon={isSelected ? selectedEventIcon : eventIcon}
                   eventHandlers={{
                     click: () => {
-                      if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                      setSelectedEvent(event);
+                      handleSelectEvent(event);
                       // Expand events list to show details (don't use Sheet overlay)
                       setMobileEventsCollapsed(false);
                       setMobileFullscreenMap(false);
@@ -4626,10 +4729,13 @@ export default function DriverPlanningDashboard() {
                   }}
                 >
                   <Tooltip
-                    permanent
+                    permanent={isSelected}
                     direction="top"
                     offset={[0, -35]}
-                    className="!bg-[#007E8C]/90 !border-[#007E8C] !text-white !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    className={isSelected
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
+                    }
                   >
                     <span className="truncate max-w-[100px] block">
                       {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
@@ -4927,13 +5033,13 @@ export default function DriverPlanningDashboard() {
               data-testid="btn-toggle-events-panel"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                {selectedEvent ? (
+                {effectiveSelectedEvent ? (
                   <>
                     <Users className="w-5 h-5 text-[#007E8C] flex-shrink-0" />
                     <span className="font-semibold text-sm truncate">
                       {mobileEventsCollapsed
-                        ? (selectedEvent.organizationName?.substring(0, 20) || 'Event Details') + '...'
-                        : 'Event Details'
+                        ? (effectiveSelectedEvent.organizationName?.substring(0, 20) || 'Location Details') + '...'
+                        : (customLocation ? 'Location Details' : 'Event Details')
                       }
                     </span>
                   </>
@@ -4945,7 +5051,7 @@ export default function DriverPlanningDashboard() {
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                {!mobileEventsCollapsed && !selectedEvent && (
+                {!mobileEventsCollapsed && !effectiveSelectedEvent && (
                   <Select value={weeksAhead} onValueChange={setWeeksAhead}>
                     <SelectTrigger className="w-28 h-7 text-xs" onClick={(e) => e.stopPropagation()}>
                       <SelectValue />
@@ -4968,7 +5074,7 @@ export default function DriverPlanningDashboard() {
             </button>
 
             {/* Filter Toggles - Only show when viewing events list (not event details) */}
-            {!mobileEventsCollapsed && !selectedEvent && (
+            {!mobileEventsCollapsed && !effectiveSelectedEvent && (
               <div className="px-3 py-2 border-b bg-gray-50 space-y-2">
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <input
@@ -4994,8 +5100,8 @@ export default function DriverPlanningDashboard() {
             {/* Mobile Content Area - Either Events List OR Event Details */}
             {!mobileEventsCollapsed && (
               <ScrollArea className="flex-1">
-                {/* Event Details View - When an event is selected */}
-                {selectedEvent ? (
+                {/* Event Details View - When an event or custom location is selected */}
+                {effectiveSelectedEvent ? (
                   <div className="p-3 space-y-4">
                     {/* Back Button & Header */}
                     <div className="flex items-center gap-3 pb-2 border-b">
@@ -5005,6 +5111,7 @@ export default function DriverPlanningDashboard() {
                         className="h-9 px-2"
                         onClick={() => {
                           setSelectedEvent(null);
+                          setCustomLocation(null);
                           setShowAllHosts(false);
                           setShowAllRecipients(false);
                         }}
@@ -5014,10 +5121,10 @@ export default function DriverPlanningDashboard() {
                       </Button>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm text-gray-900 break-words">
-                          {selectedEvent.organizationName || 'Unknown Organization'}
+                          {effectiveSelectedEvent.organizationName || (customLocation ? 'Custom Location' : 'Unknown Organization')}
                         </h3>
                       </div>
-                      {canEditEvents && (
+                      {canEditEvents && selectedEvent && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -5030,7 +5137,8 @@ export default function DriverPlanningDashboard() {
                       )}
                     </div>
 
-                    {/* Event Info */}
+                    {/* Event Info - Only show for real events, not custom locations */}
+                    {selectedEvent && (
                     <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
@@ -5076,8 +5184,10 @@ export default function DriverPlanningDashboard() {
                         </div>
                       )}
                     </div>
+                    )}
 
-                    {/* Assignments */}
+                    {/* Assignments - Only show for real events */}
+                    {selectedEvent && (
                     <div className="bg-white rounded-lg border p-3 space-y-2">
                       <div className="text-sm font-semibold text-gray-700">Assignments</div>
                       <div className="text-xs text-gray-600">
@@ -5137,6 +5247,7 @@ export default function DriverPlanningDashboard() {
                         <div className="text-sm text-gray-500">No assignments yet.</div>
                       )}
                     </div>
+                    )}
 
                     {/* Nearby Hosts */}
                     <div>
@@ -5261,6 +5372,8 @@ export default function DriverPlanningDashboard() {
                                 <span className="font-medium break-words">{driver.name}</span>
                                 <span className="text-yellow-700 flex-shrink-0 ml-2">{distance.toFixed(1)} mi</span>
                               </div>
+                              {/* Only show assignment buttons for real events, not custom locations */}
+                              {selectedEvent && (
                               <div className="flex items-center gap-2 mt-2">
                                 <Button
                                   size="sm"
@@ -5295,6 +5408,7 @@ export default function DriverPlanningDashboard() {
                                   {hasDriver(selectedEvent, String(driver.id)) ? 'Confirmed' : 'Confirm'}
                                 </Button>
                               </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -5323,8 +5437,7 @@ export default function DriverPlanningDashboard() {
                           key={event.id}
                           className="p-3 cursor-pointer transition-all active:scale-[0.98] hover:shadow-md active:bg-gray-50"
                           onClick={() => {
-                            if (selectedEvent?.id !== event.id) clearTripPlanningState();
-                            setSelectedEvent(event);
+                            handleSelectEvent(event);
                             setShowAllHosts(false);
                             setShowAllRecipients(false);
                           }}
