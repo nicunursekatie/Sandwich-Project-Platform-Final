@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+=======
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+>>>>>>> 04e25c512 (Make tooltips visible outside of the navigation bar container)
 import { createPortal } from 'react-dom';
 import { X, Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from './button';
@@ -40,6 +44,7 @@ export function OnboardingTooltip({
   const content = onboardingContent[step];
 
   // Calculate tooltip position based on trigger element
+<<<<<<< HEAD
   const updatePosition = () => {
     if (!wrapperRef.current || !isVisible) return;
 
@@ -51,6 +56,19 @@ export function OnboardingTooltip({
     let top = 0;
     let left = 0;
 
+=======
+  const updatePosition = useCallback(() => {
+    if (!wrapperRef.current) return;
+    
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const tooltipWidth = 256; // w-64 = 16rem = 256px
+    const tooltipHeight = 120; // approximate height
+    const gap = 8; // spacing between trigger and tooltip
+    
+    let top = 0;
+    let left = 0;
+    
+>>>>>>> 04e25c512 (Make tooltips visible outside of the navigation bar container)
     switch (position) {
       case 'top':
         top = rect.top - tooltipHeight - gap;
@@ -70,6 +88,7 @@ export function OnboardingTooltip({
         left = rect.right + gap;
         break;
     }
+<<<<<<< HEAD
 
     // Keep tooltip within viewport bounds
     const viewportWidth = window.innerWidth;
@@ -105,6 +124,16 @@ export function OnboardingTooltip({
       };
     }
   }, [isVisible, position]);
+=======
+    
+    // Keep tooltip within viewport bounds
+    const padding = 8;
+    left = Math.max(padding, Math.min(left, window.innerWidth - tooltipWidth - padding));
+    top = Math.max(padding, Math.min(top, window.innerHeight - tooltipHeight - padding));
+    
+    setTooltipPosition({ top, left });
+  }, [position]);
+>>>>>>> 04e25c512 (Make tooltips visible outside of the navigation bar container)
 
   // Show tooltip after delay if step hasn't been completed
   useEffect(() => {
@@ -114,13 +143,28 @@ export function OnboardingTooltip({
     }
 
     const timer = setTimeout(() => {
+      updatePosition();
       setIsVisible(true);
       // Trigger animation after a small delay
       setTimeout(() => setHasAnimatedIn(true), 50);
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [step, shouldShowStep, showWhen, delay]);
+  }, [step, shouldShowStep, showWhen, delay, updatePosition]);
+
+  // Update position on scroll/resize
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const handleUpdate = () => updatePosition();
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+    
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [isVisible, updatePosition]);
 
   const handleDismiss = () => {
     setHasAnimatedIn(false);
@@ -137,6 +181,7 @@ export function OnboardingTooltip({
     }
   };
 
+<<<<<<< HEAD
   // Arrow styles based on position
   const getArrowStyles = () => {
     const base = 'absolute w-0 h-0 border-[6px]';
@@ -151,7 +196,89 @@ export function OnboardingTooltip({
       default:
         return `${base} right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-primary`;
     }
+=======
+  // Arrow position classes (relative to tooltip)
+  const arrowClasses = {
+    top: 'top-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-b-transparent border-t-primary',
+    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-l-transparent border-r-transparent border-t-transparent border-b-primary',
+    left: 'left-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-r-transparent border-l-primary',
+    right: 'right-full top-1/2 -translate-y-1/2 border-t-transparent border-b-transparent border-l-transparent border-r-primary'
+>>>>>>> 04e25c512 (Make tooltips visible outside of the navigation bar container)
   };
+
+  const tooltipContent = isVisible && createPortal(
+    <div
+      className={cn(
+        'fixed z-[9999] w-64 transition-all duration-200 pointer-events-auto',
+        hasAnimatedIn
+          ? 'opacity-100 scale-100'
+          : 'opacity-0 scale-95'
+      )}
+      style={{
+        top: tooltipPosition.top,
+        left: tooltipPosition.left,
+      }}
+      role="tooltip"
+      aria-live="polite"
+    >
+      {/* Tooltip card */}
+      <div className="relative bg-primary text-primary-foreground rounded-lg shadow-lg overflow-hidden">
+        {/* Animated gradient border effect */}
+        <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-primary animate-pulse opacity-50" />
+
+        {/* Content */}
+        <div className="relative p-3">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" />
+              <span className="font-semibold text-sm">{content.title}</span>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDismiss();
+              }}
+              className="text-primary-foreground/70 hover:text-primary-foreground transition-colors p-0.5 -m-0.5"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Message */}
+          <p className="text-xs text-primary-foreground/90 mb-3 leading-relaxed">
+            {content.message}
+          </p>
+
+          {/* Action button */}
+          {content.action && (
+            <Button
+              size="sm"
+              variant="secondary"
+              className="w-full h-7 text-xs font-medium"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDismiss();
+              }}
+            >
+              {content.action}
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Arrow */}
+      <div
+        className={cn(
+          'absolute w-0 h-0 border-[6px]',
+          arrowClasses[position]
+        )}
+      />
+    </div>,
+    document.body
+  );
 
   return (
     <div
@@ -160,6 +287,7 @@ export function OnboardingTooltip({
       onClick={handleChildClick}
     >
       {children}
+<<<<<<< HEAD
 
       {isVisible && createPortal(
         <div
@@ -229,6 +357,9 @@ export function OnboardingTooltip({
         </div>,
         document.body
       )}
+=======
+      {tooltipContent}
+>>>>>>> 04e25c512 (Make tooltips visible outside of the navigation bar container)
     </div>
   );
 }
