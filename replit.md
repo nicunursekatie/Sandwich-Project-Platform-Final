@@ -1,13 +1,5 @@
 ### Overview
-This full-stack application for The Sandwich Project nonprofit streamlines sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project aims to enhance data visibility, support organizational growth, and become a vital tool for food security initiatives, ultimately reducing food waste and hunger. The organizational annual goal is to collect 500,000 sandwiches.
-
-### Debugging Checklist (ALWAYS FOLLOW)
-When debugging any issue that involves data flow (auth, forms, API, database):
-1. **Grep for the core operation** - Find ALL places in the codebase where the key function is called (e.g., `bcrypt.hash`, `db.update`, date parsing, validation)
-2. **Verify consistent transformation** - Check that every entry point applies the same processing (trimming, formatting, validation)
-3. **Trace the full lifecycle** - Follow: input → processing → storage → retrieval → comparison/display
-4. **Check for centralized helpers** - If a service/utility exists for an operation, verify all code paths use it (not direct calls)
-5. **Don't stop at "route works"** - Surface-level access doesn't mean the data layer is consistent
+This full-stack application for The Sandwich Project nonprofit aims to streamline sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project enhances data visibility, supports organizational growth, and is a vital tool for food security initiatives, ultimately reducing food waste and hunger. The organizational annual goal is to collect 500,000 sandwiches.
 
 ### User Preferences
 Preferred communication style: Simple, everyday language.
@@ -24,67 +16,31 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 **UI/UX Decisions:**
 - Modern, compact design with white card backgrounds, colored left borders for status, warm paper tone page background, subtle shadows, and a strong tonal hierarchy.
 - Operational monitoring uses Wednesday-Tuesday week boundaries.
-- Visualizations for collection trends include two-line charts (individual vs group sandwiches) and summary cards.
+- Visualizations include two-line charts for collection trends and summary cards.
 - Purple markers for recipients on maps (distinct from blue events, green hosts).
 - "Nearby Recipients" section in right panel showing recipients within 15 miles of selected event.
 
 **Technical Implementations & Feature Specifications:**
-- **Authentication & Permissions**: Role-based access control, granular permissions, session management, password security, and active user enforcement. `APP_ENV` and `NODE_ENV` environment variables control authentication mode for development vs. production, with `REPLIT_DEPLOYMENT=1` forcing full authentication in deployed environments. Inactive users are blocked from protected routes via middleware, with an allowlist for public authentication-related routes.
-  
-  **CRITICAL PASSWORD HANDLING RULE:**
-  - **NEVER** call `bcrypt.hash()` or `bcrypt.compare()` directly in route handlers
-  - **ALWAYS** use `authService.hashPassword()` and `authService.verifyPassword()` from `server/services/auth.service.ts`
-  - **Why**: The auth service trims passwords before hashing/comparing. Direct bcrypt calls skip trimming, causing hash mismatches when users copy/paste passwords with whitespace
-  - **Key files**: `server/services/auth.service.ts` (centralized methods), `server/routes/password-reset.ts` (must use authService)
-  
-  **SUPER ADMIN BYPASS FIX (Dec 2024):**
-  - **Issue**: Super admin users weren't getting all permissions because `role` was stripped when `/api/auth/user` fetched fresh user data from storage
-  - **Root cause**: Storage layer didn't always return `role`, so `checkPermission` received `role: undefined` and the super_admin bypass at line 62-71 in `unified-auth-utils.ts` failed
-  - **Fix**: `/api/auth/user` now explicitly includes `role: userRole` using fallback `freshUser.role ?? req.user.role`
-  - **Key file**: `server/routes/auth/index.ts` (lines 228-241)
-  
-  **DRIVER ADDRESS PRESERVATION FIX (Jan 2026):**
-  - **Issue**: Driver addresses were being erased when making partial updates (status toggle, notes, etc.)
-  - **Root cause**: PUT/PATCH routes spread `req.body` directly, so undefined/empty address fields overwrote existing data with null
-  - **Fix**: Both PUT and PATCH routes now preserve `address`, `homeAddress`, `latitude`, `longitude` fields when they're undefined or empty string in the request
-  - **Key file**: `server/routes/drivers.ts` (lines 320-328 for PUT, lines 387-395 for PATCH)
-  
-  **EVENT SCHEDULING FORM RACE CONDITION FIX (Jan 2026):**
-  - **Issue**: EventSchedulingForm could submit with empty/default values, overwriting existing event data (notes, planning notes, etc.)
-  - **Root cause 1**: Form initialized with empty defaults BEFORE useEffect populated data from eventRequest prop. If user clicked submit before React re-rendered, empty values were sent.
-  - **Root cause 2**: Form always sent ALL fields on every save, converting empty strings to `null` via `field || null` pattern. This overwrote existing data even for untouched fields.
-  - **Fix 1**: Added `formInitialized` state to track when form data is properly loaded. Submit is blocked until initialized.
-  - **Fix 2**: Reset `formInitialized` to `false` at START of useEffect (before repopulating), not just when dialog closes. This handles switching between events while dialog stays mounted.
-  - **Fix 3**: Modified `performSubmit` to only send fields that have actually changed from original values stored in `originalFormDataRef`.
-  - **Fix 4**: Added `normalizeDateForCompare()` helper to handle date format differences (originalFormDataRef stores YYYY-MM-DD, eventData uses ISO format). Extracts YYYY-MM-DD portion for comparison.
-  - **Key file**: `client/src/components/event-requests/EventSchedulingForm.tsx`
-  - **Critical pattern**: When updating existing records, always compare current values with original values and only send changed fields to prevent unintended data overwrites.
-- **Database Configuration**: Centralized database URL selection in `server/db-url.ts` based on `NODE_ENV` (development/production) to connect to appropriate Neon branches. Critical rule: Avoid `.returning()` on update operations with Neon serverless; always use an explicit fetch after update pattern.
-  
-  **MIGRATION PATTERN (Jan 2026):**
-  - **Issue**: Neon serverless driver rejects multi-statement SQL in a single prepared statement
-  - **Solution**: Use `--> statement-breakpoint` markers between SQL statements in migration files
-  - **How it works**: `server/migrate.ts` splits on this marker and executes each statement separately
-  - **Key files**: All `.sql` files in `migrations/` directory should use this pattern for multi-statement migrations
+- **Authentication & Permissions**: Role-based access control, granular permissions, session management, password security, and active user enforcement. Environment variables (`APP_ENV`, `NODE_ENV`, `REPLIT_DEPLOYMENT`) control authentication modes. Inactive users are blocked from protected routes. Password hashing and verification must use `authService.hashPassword()` and `authService.verifyPassword()` to ensure proper trimming and prevent hash mismatches.
+- **Database Configuration**: Centralized database URL selection. Neon serverless requires `--> statement-breakpoint` markers for multi-statement SQL migrations and avoids `.returning()` on update operations.
 - **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
-- **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS via Twilio, and dashboard notifications. All outgoing emails are BCC'd to `katie@thesandwichproject.org`.
+- **Messaging & Notifications**: Email (SendGrid) with all outgoing emails BCC'd to `katie@thesandwichproject.org`, Socket.IO chat, SMS via Twilio, and dashboard notifications.
 - **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool. Event impact reports only count actual `sandwichCollections` records.
-- **Event Requests Management System**: Tracks requests, handles duplicate detection, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, performs comprehensive intake validation, and features interactive Leaflet maps with AI Intake and Scheduling Assistants, including van conflict detection.
-- **Real-Time Collaboration System**: Multi-user collaboration using a single Socket.IO instance for synchronization, presence tracking, field-level locking, threaded comments, and edit revision history.
+- **Event Requests Management System**: Tracks requests, handles duplicate detection, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, performs comprehensive intake validation, and features interactive Leaflet maps with AI Intake and Scheduling Assistants, including van conflict detection. Includes auto-save to localStorage with recovery options for `EventSchedulingForm`.
+- **Real-Time Collaboration System**: Multi-user collaboration using a single Socket.IO instance for synchronization, presence tracking, field-level locking, threaded comments, and edit revision history. Consolidated into a unified comment system using `event_collaboration_comments`.
 - **User Activity Logging System**: Comprehensive tracking of authenticated user actions.
 - **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
 - **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment. Recipients are geocoded and displayed.
-- **Automated Reminders**: 24-hour volunteer reminder system via cron job with configurable email/SMS delivery channels. Supports role-specific instructions (driver, volunteer, speaker) that are included in reminder emails and SMS messages. The `event_requests` table has `driver_instructions`, `volunteer_instructions`, and `speaker_instructions` columns that can be edited from the ScheduledCard UI.
-- **Unified Comment System (Jan 2026)**: Consolidated from dual systems (EventMessageThread + CommentThread) to single collaboration comments system. All event comments now use `event_collaboration_comments` table with CommentThread component. Legacy messages migrated via `scripts/migrate-messages-to-comments.ts`.
-- **TSP Contact Follow-up Notifications (Jan 2026)**: Automated reminder system for TSP contacts. Runs twice daily (8 AM and 4 PM ET) and sends friendly notifications when: (1) events are approaching (within 7 days) but still in 'in_progress' status, or (2) toolkit was sent 2+ BUSINESS DAYS ago with no follow-up. Weekend-aware: toolkit reminders skip Saturday/Sunday runs and use business day calculation (e.g., Friday toolkit → Tuesday reminder). Uses SMS for users with SMS consent enabled, email otherwise. Tracked in `tsp_contact_followups` table to prevent duplicate notifications. Key files: `server/services/tsp-contact-followup-service.ts`, cron job in `server/services/cron-jobs.ts`.
-- **SMS Alert Configuration System**: Users can opt-in to SMS notifications. Event reminders support SMS delivery; other alert types are "Coming Soon" for SMS but support email.
+- **Automated Reminders**: 24-hour volunteer reminder system via cron job with configurable email/SMS delivery channels, supporting role-specific instructions.
+- **TSP Contact Follow-up Notifications**: Automated reminder system for TSP contacts, running twice daily, for events approaching 'in_progress' status and toolkit follow-ups (weekend-aware). Uses SMS or email.
+- **SMS Alert Configuration System**: Users can opt-in to SMS notifications, with event reminders supporting SMS.
 - **TSP Holding Zone**: Inbox-style system for long-term ideas/tasks with categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system.
-- **Guided Tours & Onboarding System**: Interactive, permission-based step-by-step tours for new users, covering all major features, defined in `client/src/lib/tourDefinitions.ts`.
+- **Guided Tours & Onboarding System**: Interactive, permission-based step-by-step tours for new users, covering all major features.
 - **Error Handling & Logging**: Robust error handling with `lazyWithRetry` and improved production-safe logging.
-- **Timezone Management**: Ensures accurate storage and display of user-entered times, strictly adhering to `timeZone: 'America/New_York'` and using utility functions to prevent timezone conversion issues. Critical rule: Never use `new Date(dateString)` directly on date-only strings; always use provided `date-utils.ts` helpers.
-- **Google Sheets Sync**: Background service with comprehensive monitoring and alerts for sync status. Features triple deduplication (SHA-256 hash, legacy hash, fallback) and message backfill.
+- **Timezone Management**: Ensures accurate storage and display of user-entered times, adhering to `America/New_York` and using utility functions to prevent conversion issues.
+- **Google Sheets Sync**: Background service with comprehensive monitoring, alerts, triple deduplication, and message backfill.
 - **React Query Cache Management**: Uses `queryClient.refetchQueries` in mutation success handlers for immediate UI updates.
-- **Organization Merge System**: Admin tool to merge duplicate organizations, including similarity scoring, merge preview, and batch updates. Note on `db.execute()`: results are QueryResult objects, access data via `.rows`.
+- **Organization Merge System**: Admin tool to merge duplicate organizations, including similarity scoring, merge preview, and batch updates.
 - **Email Template Customization System**: Allows admins to customize key text sections of follow-up HTML emails via a dedicated UI, with content stored in `email_template_sections` and supporting placeholders.
 
 ### External Dependencies
@@ -99,4 +55,4 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **File Uploads**: `multer`
 - **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
 - **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
-- **SMS**: `twilio` (using Replit Twilio integration)
+- **SMS**: `twilio`

@@ -194,9 +194,273 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [hasRecoveredData, setHasRecoveredData] = useState(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+
+  // Auto-save key based on event ID (or 'new' for create mode)
+  const getAutoSaveKey = useCallback(() => {
+    const eventId = eventRequest?.id || 'new';
+    return `tsp-event-form-autosave-${eventId}`;
+  }, [eventRequest?.id]);
+
+  // Clear auto-saved data for current event
+  const clearAutoSave = useCallback(() => {
+    try {
+      localStorage.removeItem(getAutoSaveKey());
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, [getAutoSaveKey]);
+
+  // Save form data to localStorage with debounce
+  const saveToLocalStorage = useCallback(() => {
+    if (!formInitialized) return;
+    try {
+      const saveData = {
+        formData,
+        sandwichMode,
+        actualSandwichMode,
+        attendeeMode,
+        savedAt: new Date().toISOString(),
+        eventId: eventRequest?.id || null,
+      };
+      localStorage.setItem(getAutoSaveKey(), JSON.stringify(saveData));
+    } catch (e) {
+      // Ignore localStorage errors (quota exceeded, etc.)
+    }
+  }, [formData, sandwichMode, actualSandwichMode, attendeeMode, formInitialized, getAutoSaveKey, eventRequest?.id]);
+
+  // Track whether to skip recovery on next initialization
+  const skipRecoveryRef = useRef(false);
+  
+  // Discard recovered data and reload from server
+  const discardRecoveredData = useCallback(() => {
+    // Clear auto-saved data
+    clearAutoSave();
+    setHasRecoveredData(false);
+    
+    // Set flag to skip recovery on re-init
+    skipRecoveryRef.current = true;
+    
+    // Close and reopen triggers re-initialization without recovery
+    // Since we can't easily trigger useEffect again, we'll manually reload from eventRequest
+    if (!eventRequest) return;
+    
+    // Parse sandwich types from server
+    const existingSandwichTypes = eventRequest?.sandwichTypes ? 
+      (typeof eventRequest?.sandwichTypes === 'string' ? 
+        JSON.parse(eventRequest.sandwichTypes) : eventRequest?.sandwichTypes) : [];
+    const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
+    const hasRangeData = (eventRequest as any)?.estimatedSandwichCountMin && (eventRequest as any)?.estimatedSandwichCountMax;
+    const totalCount = eventRequest?.estimatedSandwichCount || 0;
+    const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ? 
+      (typeof eventRequest?.actualSandwichTypes === 'string' ? 
+        JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
+    const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
+
+    setFormData({
+      eventDate: formatDateForInput(eventRequest.desiredEventDate),
+      backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
+      eventStartTime: eventRequest?.eventStartTime || '',
+      eventEndTime: eventRequest?.eventEndTime || '',
+      pickupTime: eventRequest?.pickupTime || '',
+      pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+      pickupDate: (() => {
+        const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+        return pickupDT ? pickupDT.split('T')[0] : '';
+      })(),
+      pickupTimeSeparate: (() => {
+        const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+        return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+      })(),
+      eventAddress: eventRequest?.eventAddress || '',
+      deliveryDestination: eventRequest?.deliveryDestination || '',
+      holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
+      overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
+      overnightPickupTime: eventRequest?.overnightPickupTime || '',
+      sandwichTypes: existingSandwichTypes,
+      hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
+      driversNeeded: eventRequest?.driversNeeded || 0,
+      selfTransport: eventRequest?.selfTransport || false,
+      vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+      speakersNeeded: eventRequest?.speakersNeeded || 0,
+      volunteersNeeded: eventRequest?.volunteersNeeded || 0,
+      tspContact: eventRequest?.tspContact || '',
+      customTspContact: (eventRequest as any)?.customTspContact || '',
+      message: (eventRequest as any)?.message || '',
+      schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
+      planningNotes: (eventRequest as any)?.planningNotes || '',
+      nextAction: (eventRequest as any)?.nextAction || '',
+      totalSandwichCount: totalCount,
+      estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
+      estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
+      rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
+      volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+      estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
+      adultCount: (eventRequest as any)?.adultCount || 0,
+      childrenCount: (eventRequest as any)?.childrenCount || 0,
+      firstName: eventRequest?.firstName || '',
+      lastName: eventRequest?.lastName || '',
+      email: eventRequest?.email || '',
+      phone: eventRequest?.phone || '',
+      organizationName: eventRequest?.organizationName || '',
+      department: eventRequest?.department || '',
+      organizationCategory: (eventRequest as any)?.organizationCategory || '',
+      schoolClassification: (eventRequest as any)?.schoolClassification || '',
+      backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
+      backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
+      backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
+      backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
+      backupContactRole: (eventRequest as any)?.backupContactRole || '',
+      previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
+      speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+      speakerDuration: (eventRequest as any)?.speakerDuration || '',
+      deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+      deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
+      assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+      isDhlVan: (eventRequest as any)?.isDhlVan || false,
+      status: eventRequest?.status || 'new',
+      toolkitSent: eventRequest?.toolkitSent || false,
+      toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
+      toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+      socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
+      socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
+      socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
+      socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
+      socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
+      actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
+      actualSandwichTypes: existingActualSandwichTypes,
+      actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
+      actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
+      followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
+      followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
+      followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
+      followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
+      followUpNotes: (eventRequest as any)?.followUpNotes || '',
+      assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
+    });
+    
+    setSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
+    setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
+    const hasAttendeeBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
+    setAttendeeMode(hasAttendeeBreakdown ? 'breakdown' : 'total');
+    setShowCompletedDetails(eventRequest?.status === 'completed');
+    
+    // Update originalFormDataRef to match server data for proper change detection
+    originalFormDataRef.current = {
+      eventDate: formatDateForInput(eventRequest.desiredEventDate),
+      backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
+      eventStartTime: eventRequest?.eventStartTime || '',
+      eventEndTime: eventRequest?.eventEndTime || '',
+      pickupTime: eventRequest?.pickupTime || '',
+      pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+      pickupDate: (() => {
+        const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+        return pickupDT ? pickupDT.split('T')[0] : '';
+      })(),
+      pickupTimeSeparate: (() => {
+        const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+        return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+      })(),
+      eventAddress: eventRequest?.eventAddress || '',
+      deliveryDestination: eventRequest?.deliveryDestination || '',
+      holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
+      overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
+      overnightPickupTime: eventRequest?.overnightPickupTime || '',
+      sandwichTypes: existingSandwichTypes,
+      hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
+      driversNeeded: eventRequest?.driversNeeded || 0,
+      selfTransport: eventRequest?.selfTransport || false,
+      vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+      speakersNeeded: eventRequest?.speakersNeeded || 0,
+      volunteersNeeded: eventRequest?.volunteersNeeded || 0,
+      tspContact: eventRequest?.tspContact || '',
+      customTspContact: (eventRequest as any)?.customTspContact || '',
+      message: (eventRequest as any)?.message || '',
+      schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
+      planningNotes: (eventRequest as any)?.planningNotes || '',
+      nextAction: (eventRequest as any)?.nextAction || '',
+      totalSandwichCount: totalCount,
+      estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
+      estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
+      rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
+      volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+      estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
+      adultCount: (eventRequest as any)?.adultCount || 0,
+      childrenCount: (eventRequest as any)?.childrenCount || 0,
+      firstName: eventRequest?.firstName || '',
+      lastName: eventRequest?.lastName || '',
+      email: eventRequest?.email || '',
+      phone: eventRequest?.phone || '',
+      organizationName: eventRequest?.organizationName || '',
+      department: eventRequest?.department || '',
+      organizationCategory: (eventRequest as any)?.organizationCategory || '',
+      schoolClassification: (eventRequest as any)?.schoolClassification || '',
+      backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
+      backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
+      backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
+      backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
+      backupContactRole: (eventRequest as any)?.backupContactRole || '',
+      previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
+      speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+      speakerDuration: (eventRequest as any)?.speakerDuration || '',
+      deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+      deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
+      assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+      isDhlVan: (eventRequest as any)?.isDhlVan || false,
+      status: eventRequest?.status || 'new',
+      toolkitSent: eventRequest?.toolkitSent || false,
+      toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
+      toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+      socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
+      socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
+      socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
+      socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
+      socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
+      actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
+      actualSandwichTypes: existingActualSandwichTypes,
+      actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
+      actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
+      followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
+      followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
+      followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
+      followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
+      followUpNotes: (eventRequest as any)?.followUpNotes || '',
+      assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
+    };
+    
+    // Ensure form remains initialized for auto-save to continue working
+    setFormInitialized(true);
+    
+    toast({
+      title: 'Changes discarded',
+      description: 'Form has been reset to the last saved version.',
+    });
+  }, [eventRequest, clearAutoSave, toast]);
+
+  // Auto-save effect - debounce saves to localStorage when form data changes
+  useEffect(() => {
+    if (!dialogOpen || !formInitialized) return;
+    
+    // Clear any pending save
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Debounce save - wait 1 second after last change
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      saveToLocalStorage();
+    }, 1000);
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [dialogOpen, formInitialized, formData, sandwichMode, actualSandwichMode, attendeeMode, saveToLocalStorage]);
 
   // Initialize collaboration hook only for existing events (not in create mode)
   // Pass null for new events - the hook safely handles this by disabling collaboration features
@@ -239,23 +503,77 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // CRITICAL: Reset formInitialized immediately when starting to load new data
       // This prevents race condition when switching between events while dialog stays mounted
       setFormInitialized(false);
+      setHasRecoveredData(false);
       
+      // Use local variable since state update is async
+      let recoveredFromStorage = false;
+      
+      // Check for auto-saved data first (unless explicitly skipping recovery)
+      const shouldSkipRecovery = skipRecoveryRef.current;
+      skipRecoveryRef.current = false; // Reset the flag
+      
+      try {
+        const savedDataStr = !shouldSkipRecovery ? localStorage.getItem(getAutoSaveKey()) : null;
+        if (savedDataStr) {
+          const savedData = JSON.parse(savedDataStr);
+          // Verify saved data is for this event (or both are new events)
+          const savedEventId = savedData.eventId;
+          const currentEventId = eventRequest?.id || null;
+          
+          if (savedEventId === currentEventId) {
+            // Check if saved data is less than 24 hours old
+            const savedAt = new Date(savedData.savedAt);
+            const now = new Date();
+            const hoursSinceSave = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+            
+            if (hoursSinceSave < 24) {
+              // Restore saved form data
+              setFormData(savedData.formData);
+              if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
+              if (savedData.actualSandwichMode) setActualSandwichMode(savedData.actualSandwichMode);
+              if (savedData.attendeeMode) setAttendeeMode(savedData.attendeeMode);
+              setHasRecoveredData(true);
+              recoveredFromStorage = true;
+              
+              // Auto-expand completed details if needed
+              setShowCompletedDetails(savedData.formData?.status === 'completed');
+              
+              // Show toast notification
+              toast({
+                title: 'Form data recovered',
+                description: 'Your unsaved changes have been restored. Click "Discard" to start fresh.',
+              });
+              
+              // CRITICAL: Mark form as initialized after recovery so auto-save continues working
+              // This runs in next tick to ensure state updates are batched properly
+              setTimeout(() => {
+                setFormInitialized(true);
+              }, 10);
+            } else {
+              // Clear old auto-save data
+              clearAutoSave();
+            }
+          }
+        }
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Parse sandwich types from server for originalFormDataRef
       const existingSandwichTypes = eventRequest?.sandwichTypes ? 
         (typeof eventRequest?.sandwichTypes === 'string' ? 
           JSON.parse(eventRequest.sandwichTypes) : eventRequest?.sandwichTypes) : [];
-      
-      // Determine mode based on existing data
       const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
       const hasRangeData = (eventRequest as any)?.estimatedSandwichCountMin && (eventRequest as any)?.estimatedSandwichCountMax;
       const totalCount = eventRequest?.estimatedSandwichCount || 0;
-      
       const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ? 
         (typeof eventRequest?.actualSandwichTypes === 'string' ? 
           JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
-      
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
-
-      setFormData({
+      
+      // If no recovered data, populate from eventRequest
+      if (!recoveredFromStorage) {
+        setFormData({
         eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
         backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
         eventStartTime: eventRequest?.eventStartTime || '',
@@ -346,18 +664,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
       });
       
-      // Set mode based on existing data
-      setSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
-      setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
+        // Set mode based on existing data
+        setSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
+        setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
 
-      // Set attendee mode based on whether adult/children breakdown exists
-      const hasAttendeeBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
-      setAttendeeMode(hasAttendeeBreakdown ? 'breakdown' : 'total');
+        // Set attendee mode based on whether adult/children breakdown exists
+        const hasAttendeeBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
+        setAttendeeMode(hasAttendeeBreakdown ? 'breakdown' : 'total');
 
-      // Auto-expand Completed Event Details section if event is completed
-      setShowCompletedDetails(eventRequest?.status === 'completed');
+        // Auto-expand Completed Event Details section if event is completed
+        setShowCompletedDetails(eventRequest?.status === 'completed');
+      }
       
       // Store original form data to detect changes later (preserve existing data)
+      // This always runs from server data for proper change detection
       // Use setTimeout to ensure formData state has been set
       setTimeout(() => {
         originalFormDataRef.current = {
@@ -449,7 +769,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Dialog closed - reset initialization state
       setFormInitialized(false);
     }
-  }, [isVisible, isOpen, eventRequest, mode]);
+  }, [isVisible, isOpen, eventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
@@ -457,6 +777,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     retry: false,
     networkMode: 'always',
     onSuccess: (updatedEvent: any) => {
+      // Clear auto-saved data on successful submission
+      clearAutoSave();
+      setHasRecoveredData(false);
+      
       // Mark as MLK Day if user decided to
       if (pendingMlkDayDecision === true && updatedEvent?.id) {
         markMlkDayMutation.mutate({ id: updatedEvent.id, isMlkDayEvent: true });
@@ -498,6 +822,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     },
     onSuccess: (response) => {
       logger.log('✅ CREATE MUTATION SUCCESS: Response:', response);
+      // Clear auto-saved data on successful submission
+      clearAutoSave();
+      setHasRecoveredData(false);
+      
       // Mark as MLK Day if user decided to
       if (pendingMlkDayDecision === true && response?.id) {
         markMlkDayMutation.mutate({ id: response.id, isMlkDayEvent: true });
@@ -1129,6 +1457,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             )}
           </div>
         </DialogHeader>
+
+        {/* Auto-save Recovery Banner */}
+        {hasRecoveredData && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between" data-testid="autosave-recovery-banner">
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-amber-600" />
+              <span className="text-sm text-amber-800">
+                Unsaved changes were recovered from your previous session.
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={discardRecoveredData}
+              className="text-amber-700 border-amber-300 hover:bg-amber-100"
+              data-testid="discard-recovered-data-btn"
+            >
+              Discard
+            </Button>
+          </div>
+        )}
 
         {/* Progress Indicator */}
         <div className="bg-slate-50 rounded-lg p-3 border">
