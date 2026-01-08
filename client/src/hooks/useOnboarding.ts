@@ -112,48 +112,48 @@ export const onboardingContent: Record<OnboardingStep, { title: string; message:
     action: 'Got it!'
   },
   'team-chat-badge': {
-    title: 'New team messages',
-    message: 'Your team has sent messages! Click here to join the conversation.',
-    action: 'View messages'
+    title: 'Team Chat',
+    message: 'Real-time messaging with your team! You have unread messages waiting. Jump in to collaborate.',
+    action: 'Open chat'
   },
   'gmail-badge': {
-    title: 'Unread emails',
-    message: 'You have unread emails in your connected inbox. Click to review them.',
-    action: 'Check inbox'
+    title: 'Gmail Inbox',
+    message: 'Your connected Gmail inbox has new emails. Stay on top of communications without leaving the app.',
+    action: 'Check emails'
   },
   'notifications-badge': {
-    title: 'New notifications',
-    message: 'Important updates are waiting for you here. Click to see what\'s new!',
-    action: 'View notifications'
+    title: 'Notifications',
+    message: 'System alerts, mentions, and updates appear here. Don\'t miss important activity!',
+    action: 'View all'
   },
   'event-reminders-badge': {
-    title: 'Upcoming reminders',
-    message: 'You have event reminders that need your attention.',
+    title: 'Event Reminders',
+    message: 'Upcoming events you\'ve subscribed to. Review and prepare for what\'s coming up!',
     action: 'See reminders'
   },
   'suggestions-badge': {
-    title: 'New suggestions',
-    message: 'Team members have shared suggestions with you. Check them out!',
+    title: 'Suggestions Inbox',
+    message: 'Team members and volunteers have submitted ideas or feedback. Review and respond!',
     action: 'View suggestions'
   },
   'action-center-intro': {
     title: 'Your Action Center',
-    message: 'This is where you\'ll find tasks and items that need your attention, prioritized by importance.',
+    message: 'Tasks and items that need your attention, prioritized by importance. Start here each day!',
     action: 'Explore'
   },
   'smart-search-intro': {
     title: 'Smart Search',
-    message: 'Use AI-powered search to quickly find anything - events, people, documents, and more.',
+    message: 'AI-powered search to quickly find anything - events, people, documents, and more.',
     action: 'Try it'
   },
   'holding-zone-intro': {
     title: 'Holding Zone',
-    message: 'Items that need review or approval appear here. Stay on top of pending requests!',
+    message: 'Items awaiting review or approval. Requests, applications, and pending items live here.',
     action: 'Got it'
   },
   'project-threads-intro': {
     title: 'Project Threads',
-    message: 'Keep discussions organized by project. All related conversations in one place.',
+    message: 'Email-style threads organized by project. Keep discussions focused and easy to find!',
     action: 'Explore'
   }
 };

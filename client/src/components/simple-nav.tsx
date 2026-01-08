@@ -373,12 +373,40 @@ export default function SimpleNav({
                           </Badge>
                         </OnboardingTooltip>
                       ) : (
-                        <Badge
-                          variant="destructive"
-                          className="ml-auto h-5 min-w-[20px] text-xs"
-                        >
-                          {badgeCount > 99 ? '99+' : badgeCount}
-                        </Badge>
+                        /* After intro is done, show feature-specific tooltips */
+                        (() => {
+                          const featureStep = getOnboardingStep(item.id);
+                          const showFeatureTooltip = featureStep &&
+                            !shouldShowStep('nav-badge-intro') &&
+                            shouldShowStep(featureStep);
+
+                          if (showFeatureTooltip && featureStep) {
+                            return (
+                              <OnboardingTooltip
+                                step={featureStep}
+                                position="right"
+                                showWhen={true}
+                                delay={2000}
+                              >
+                                <Badge
+                                  variant="destructive"
+                                  className="ml-auto h-5 min-w-[20px] text-xs animate-pulse"
+                                >
+                                  {badgeCount > 99 ? '99+' : badgeCount}
+                                </Badge>
+                              </OnboardingTooltip>
+                            );
+                          }
+
+                          return (
+                            <Badge
+                              variant="destructive"
+                              className="ml-auto h-5 min-w-[20px] text-xs"
+                            >
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </Badge>
+                          );
+                        })()
                       )}
                     </>
                   )}
