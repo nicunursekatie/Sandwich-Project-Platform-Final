@@ -9,7 +9,7 @@ import {
   type InsertYearlyCalendarItem,
 } from '../../shared/schema';
 import { logger } from '../middleware/logger';
-import { requirePermission } from '../middleware/auth';
+import { requirePermission, requireAnyPermission } from '../middleware/auth';
 import { PERMISSIONS } from '../../shared/auth-utils';
 import type { AuthenticatedRequest } from '../types/express';
 
@@ -225,7 +225,7 @@ yearlyCalendarRouter.post(
 // PATCH /api/yearly-calendar/:id - Update calendar item
 yearlyCalendarRouter.patch(
   '/:id',
-  requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT),
+  requireAnyPermission(PERMISSIONS.YEARLY_CALENDAR_EDIT, PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -256,6 +256,18 @@ yearlyCalendarRouter.patch(
 
       if (!existingItem) {
         return res.status(404).json({ error: 'Calendar item not found' });
+      }
+
+      // Check ownership - users can only edit their own items unless they have YEARLY_CALENDAR_EDIT_ALL
+      // Compare as strings to handle type differences (DB stores string, auth may supply number)
+      const isOwner = String(existingItem.createdBy) === String(req.user.id);
+      const userPermissions = req.user.permissions || [];
+      const canEditAll = userPermissions.includes(PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL) || 
+                         req.user.role === 'super_admin' || 
+                         req.user.role === 'admin';
+      
+      if (!isOwner && !canEditAll) {
+        return res.status(403).json({ error: 'You can only edit your own calendar items' });
       }
 
       // If marking as completed, set completedBy and completedAt
@@ -305,7 +317,7 @@ yearlyCalendarRouter.patch(
 // DELETE /api/yearly-calendar/:id - Delete calendar item
 yearlyCalendarRouter.delete(
   '/:id',
-  requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT),
+  requireAnyPermission(PERMISSIONS.YEARLY_CALENDAR_EDIT, PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -328,6 +340,18 @@ yearlyCalendarRouter.delete(
 
       if (!existingItem) {
         return res.status(404).json({ error: 'Calendar item not found' });
+      }
+
+      // Check ownership - users can only delete their own items unless they have YEARLY_CALENDAR_EDIT_ALL
+      // Compare as strings to handle type differences (DB stores string, auth may supply number)
+      const isOwner = String(existingItem.createdBy) === String(req.user.id);
+      const userPermissions = req.user.permissions || [];
+      const canEditAll = userPermissions.includes(PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL) || 
+                         req.user.role === 'super_admin' || 
+                         req.user.role === 'admin';
+      
+      if (!isOwner && !canEditAll) {
+        return res.status(403).json({ error: 'You can only delete your own calendar items' });
       }
 
       await db.delete(yearlyCalendarItems).where(eq(yearlyCalendarItems.id, itemId));

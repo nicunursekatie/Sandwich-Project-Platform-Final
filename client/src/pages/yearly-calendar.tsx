@@ -214,11 +214,21 @@ export default function YearlyCalendar() {
   const [formWeekOfMonth, setFormWeekOfMonth] = useState<number>(1);
   const [formRecurrenceEndDate, setFormRecurrenceEndDate] = useState<string>('');
 
-  // Permission checks
+  // Permission checks - use YEARLY_CALENDAR permissions
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canView = userPermissions.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
-  const canSubmit = userPermissions.includes('SUBMIT_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
-  const canManage = userPermissions.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
+  const canView = userPermissions.includes('YEARLY_CALENDAR_VIEW') || user?.role === 'admin' || user?.role === 'super_admin';
+  const canAdd = userPermissions.includes('YEARLY_CALENDAR_EDIT') || user?.role === 'admin' || user?.role === 'super_admin';
+  const canEditAll = userPermissions.includes('YEARLY_CALENDAR_EDIT_ALL') || user?.role === 'admin' || user?.role === 'super_admin';
+  
+  // Check if user can edit/delete a specific item (own items or has EDIT_ALL permission)
+  const canEditItem = (item: YearlyCalendarItem) => {
+    if (user?.role === 'super_admin' || user?.role === 'admin') return true;
+    if (canEditAll) return true;
+    // Users with YEARLY_CALENDAR_EDIT can edit/delete their own items
+    // Compare as strings to handle both string and number types
+    if (userPermissions.includes('YEARLY_CALENDAR_EDIT') && String(item.createdBy) === String(user?.id)) return true;
+    return false;
+  };
 
   // Fetch calendar items for selected year
   const { data: items = [], isLoading } = useQuery<YearlyCalendarItem[]>({
@@ -637,7 +647,7 @@ export default function YearlyCalendar() {
             <Filter className="h-4 w-4 mr-2" />
             {showTrackedItems ? 'Hide' : 'Show'} School Breaks
           </Button>
-          {canManage && (
+          {canEditAll && (
             <Button
               variant="outline"
               onClick={() => setIsImportDialogOpen(true)}
@@ -646,7 +656,7 @@ export default function YearlyCalendar() {
               Import School Breaks
             </Button>
           )}
-          {canSubmit && (
+          {canAdd && (
             <Button
               onClick={() => {
                 // Reset form state for new item
@@ -950,7 +960,7 @@ export default function YearlyCalendar() {
                             </div>
                           </div>
                         </div>
-                        {canManage && (
+                        {canEditItem(item) && (
                           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                             <Button
                               size="sm"
