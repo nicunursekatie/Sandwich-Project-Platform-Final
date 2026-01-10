@@ -9,14 +9,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Phone } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Phone, Home, Calendar } from 'lucide-react';
 import type { User } from '@/types/user';
 
 interface SMSDialogProps {
   user: User | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateSMS: (userId: string, phoneNumber: string, enabled: boolean) => void;
+  onUpdateSMS: (userId: string, phoneNumber: string, enabled: boolean, campaignType?: 'hosts' | 'events') => void;
   isPending?: boolean;
 }
 
@@ -28,22 +29,24 @@ export function SMSDialog({
   isPending = false,
 }: SMSDialogProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [campaignType, setCampaignType] = useState<'hosts' | 'events'>('hosts');
 
   useEffect(() => {
     if (user) {
       setPhoneNumber(user.metadata?.smsConsent?.displayPhone || '');
+      setCampaignType(user.metadata?.smsConsent?.campaignType || 'hosts');
     }
   }, [user]);
 
   const handleEnable = () => {
     if (user && phoneNumber) {
-      onUpdateSMS(user.id, phoneNumber, true);
+      onUpdateSMS(user.id, phoneNumber, true, campaignType);
     }
   };
 
   const handleDisable = () => {
     if (user) {
-      onUpdateSMS(user.id, '', false);
+      onUpdateSMS(user.id, '', false, campaignType);
     }
   };
 
@@ -101,6 +104,11 @@ export function SMSDialog({
                     Method: {user.metadata.smsConsent.confirmationMethod === 'admin_override' ? 'Admin override' : 'Verification code'}
                   </p>
                 )}
+                {user?.metadata?.smsConsent?.campaignType && (
+                  <p className="text-xs text-gray-400">
+                    Campaign: {user.metadata.smsConsent.campaignType === 'hosts' ? 'Collection Reminders' : 'Event Notifications'}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -116,6 +124,36 @@ export function SMSDialog({
               <p className="text-xs text-gray-500 mt-1">
                 Required for SMS notifications. Include area code.
               </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Notification Type</Label>
+              <RadioGroup
+                value={campaignType}
+                onValueChange={(value) => setCampaignType(value as 'hosts' | 'events')}
+                className="space-y-2"
+              >
+                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                  <RadioGroupItem value="hosts" id="campaign-hosts" />
+                  <Label htmlFor="campaign-hosts" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Home className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="font-medium">Collection Reminders</p>
+                      <p className="text-xs text-gray-500">Weekly reminders about sandwich collection submissions</p>
+                    </div>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                  <RadioGroupItem value="events" id="campaign-events" />
+                  <Label htmlFor="campaign-events" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Calendar className="h-4 w-4 text-purple-600" />
+                    <div>
+                      <p className="font-medium">Event Notifications</p>
+                      <p className="text-xs text-gray-500">Reminders about volunteer events and assignments</p>
+                    </div>
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
           </div>
         </div>

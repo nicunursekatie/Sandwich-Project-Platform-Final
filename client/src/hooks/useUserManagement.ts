@@ -181,10 +181,12 @@ export function useUserManagement() {
       userId,
       phoneNumber,
       enabled,
+      campaignType,
     }: {
       userId: string;
       phoneNumber?: string;
       enabled: boolean;
+      campaignType?: 'hosts' | 'events';
     }) => {
       const currentUsers = queryClient.getQueryData(['/api/users']) as any[];
       const currentUser = currentUsers?.find((u: any) => u.id === userId);
@@ -211,8 +213,8 @@ export function useUserManagement() {
           confirmationMethod: 'admin_override', // Mark as admin-managed
           optInDate: new Date().toISOString(),
           consent: true,
-          // Preserve campaignType if it exists, otherwise default to 'hosts'
-          campaignType: existingSmsConsent.campaignType || 'hosts',
+          // Use provided campaignType, or preserve existing, or default to 'hosts'
+          campaignType: campaignType || existingSmsConsent.campaignType || 'hosts',
         };
       } else {
         smsConsent = {
@@ -222,8 +224,8 @@ export function useUserManagement() {
           status: 'not_opted_in', // Set explicit status to match user-facing status
           optOutDate: new Date().toISOString(),
           consent: false,
-          // Preserve campaignType when disabling
-          campaignType: existingSmsConsent.campaignType,
+          // Preserve campaignType when disabling (use provided if given)
+          campaignType: campaignType || existingSmsConsent.campaignType,
         };
       }
 
