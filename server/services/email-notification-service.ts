@@ -1,6 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
-import { users, eventRequests } from '@shared/schema';
+import { users, eventRequests, eventCollaborationComments } from '@shared/schema';
 import { eq, or, like, sql, inArray } from 'drizzle-orm';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
@@ -879,7 +879,8 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     commenterFirstName: string,
     commenterId: string,
     commentContent: string,
-    commentCreatedAt: Date
+    commentCreatedAt: Date,
+    parentCommentId?: number
   ): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
       logger.log('SendGrid not configured - skipping event comment notification');
@@ -897,6 +898,28 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       if (!event) {
         logger.warn(`Event ${eventId} not found - cannot send comment notification`);
         return false;
+      }
+
+      // If this is a reply, fetch the original comment (must belong to the same event for security)
+      let originalComment: { content: string; userName: string } | null = null;
+      if (parentCommentId) {
+        const [parent] = await db
+          .select({
+            content: eventCollaborationComments.content,
+            userName: eventCollaborationComments.userName,
+          })
+          .from(eventCollaborationComments)
+          .where(
+            and(
+              eq(eventCollaborationComments.id, parentCommentId),
+              eq(eventCollaborationComments.eventRequestId, eventId)
+            )
+          )
+          .limit(1);
+        
+        if (parent) {
+          originalComment = parent;
+        }
       }
 
       // Collect all TSP contact user IDs (primary + additional contacts)
@@ -969,10 +992,42 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           ? commentContent.substring(0, 500) + '...'
           : commentContent;
 
+        // Truncate original comment if it's a reply
+        const displayOriginalComment = originalComment && originalComment.content.length > 300
+          ? originalComment.content.substring(0, 300) + '...'
+          : originalComment?.content;
+
+        // Determine subject and header based on whether it's a reply
+        const isReply = !!originalComment;
+        const emailSubject = isReply
+          ? `${commenterFirstName} replied to a comment on ${organizationName} - The Sandwich Project`
+          : `New comment on ${organizationName} event - The Sandwich Project`;
+        const emailHeader = isReply ? '↩️ New Reply on Event' : '💬 New Comment on Event';
+        const commentAction = isReply ? 'replied' : 'commented';
+
+        // Build original comment HTML section (only shown for replies)
+        const originalCommentHtml = isReply ? `
+                  <div style="background: #f5f5f5; padding: 12px; border-left: 4px solid #999; margin: 15px 0; font-size: 13px;">
+                    <div style="color: #666; font-size: 12px; margin-bottom: 6px;">
+                      <strong>${originalComment.userName}</strong> wrote:
+                    </div>
+                    <div style="color: #555; font-style: italic;">
+                      "${displayOriginalComment}"
+                    </div>
+                  </div>
+        ` : '';
+
+        // Build original comment text section (only shown for replies)
+        const originalCommentText = isReply ? `
+In reply to ${originalComment.userName}'s comment:
+"${displayOriginalComment}"
+
+${commenterFirstName} replied on ${formattedCommentTime}:` : `${commenterFirstName} commented on ${formattedCommentTime}:`;
+
         const msg = {
           to: userEmail,
           from: 'katie@thesandwichproject.org',
-          subject: `New comment on ${organizationName} event - The Sandwich Project`,
+          subject: emailSubject,
           html: `
             <!DOCTYPE html>
             <html>
@@ -992,20 +1047,22 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
             <body>
               <div class="container">
                 <div class="header">
-                  <h1>💬 New Comment on Event</h1>
+                  <h1>${emailHeader}</h1>
                 </div>
                 <div class="content">
                   <p>Hello ${userName}!</p>
-                  <p>A new comment has been added to an event you're assigned to:</p>
+                  <p>${isReply ? `<strong>${commenterFirstName}</strong> replied to a comment on an event you're assigned to:` : 'A new comment has been added to an event you\'re assigned to:'}</p>
 
                   <div class="event-details">
                     <strong>Organization:</strong> ${organizationName}<br>
                     <strong>Event Date:</strong> ${formattedEventDate}
                   </div>
 
+                  ${originalCommentHtml}
+
                   <div class="comment-box">
                     <div class="comment-meta">
-                      <strong>${commenterFirstName}</strong> commented on ${formattedCommentTime}:
+                      <strong>${commenterFirstName}</strong> ${commentAction} on ${formattedCommentTime}:
                     </div>
                     "${displayComment}"
                   </div>
@@ -1022,12 +1079,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           text: `
 Hello ${userName}!
 
-A new comment has been added to an event you're assigned to:
+${isReply ? `${commenterFirstName} replied to a comment on an event you're assigned to:` : 'A new comment has been added to an event you\'re assigned to:'}
 
 Organization: ${organizationName}
 Event Date: ${formattedEventDate}
 
-${commenterFirstName} commented on ${formattedCommentTime}:
+${originalCommentText}
 "${displayComment}"
 
 View event details and respond: ${eventUrl}
@@ -1053,7 +1110,8 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
               commenterFirstName,
               organizationName,
               commentContent,
-              eventUrl
+              eventUrl,
+              originalComment || undefined
             );
             logger.log(`Event comment SMS sent to ${smsConsent.phoneNumber} for event ${eventId} (skipped email)`);
           } catch (smsError) {

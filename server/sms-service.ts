@@ -1381,7 +1381,8 @@ export async function sendEventCommentSMS(
   commenterName: string,
   organizationName: string,
   commentPreview: string,
-  appUrl?: string
+  appUrl?: string,
+  originalComment?: { userName: string; content: string }
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
 
@@ -1394,12 +1395,21 @@ export async function sendEventCommentSMS(
 
   try {
     // Truncate comment preview if too long (keep SMS under 160 chars ideally)
-    const maxPreviewLength = 50;
+    const maxPreviewLength = originalComment ? 40 : 50;
     const truncatedPreview = commentPreview.length > maxPreviewLength
       ? commentPreview.substring(0, maxPreviewLength) + '...'
       : commentPreview;
 
-    const message = `Hi ${recipientName}! 💬 ${commenterName} commented on ${organizationName}: "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+    let message: string;
+    if (originalComment) {
+      // This is a reply - include context about original comment
+      const originalPreview = originalComment.content.length > 30
+        ? originalComment.content.substring(0, 30) + '...'
+        : originalComment.content;
+      message = `Hi ${recipientName}! ↩️ ${commenterName} replied to "${originalPreview}": "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+    } else {
+      message = `Hi ${recipientName}! 💬 ${commenterName} commented on ${organizationName}: "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+    }
 
     const result = await provider.sendSMS({
       to: phoneNumber,
