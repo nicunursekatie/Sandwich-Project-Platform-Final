@@ -33,7 +33,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment. Recipients are geocoded and displayed.
 - **Automated Reminders**: 24-hour volunteer reminder system via cron job with configurable email/SMS delivery channels, supporting role-specific instructions.
 - **TSP Contact Follow-up Notifications**: Automated reminder system for TSP contacts, running twice daily, for events approaching 'in_progress' status and toolkit follow-ups (weekend-aware). Uses SMS or email.
-- **SMS Alert Configuration System**: Users can opt-in to SMS notifications, with event reminders supporting SMS.
+- **SMS Alert Configuration System**: Users can opt-in to SMS notifications, with event reminders supporting SMS. SMS opt-in supports two campaign types: `'hosts'` (weekly collection reminders) and `'events'` (event coordination notifications). Weekly collection reminders (`sendSMSReminder`) only send to users who opted in to the 'hosts' campaign; users who opted in only for 'events' do not receive collection reminders. For backwards compatibility, users who opted in before campaign types existed (no `campaignType` field) are included in 'hosts' reminders.
 - **TSP Holding Zone**: Inbox-style system for long-term ideas/tasks with categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system.
 - **Guided Tours & Onboarding System**: Interactive, permission-based step-by-step tours for new users, covering all major features.
 - **Error Handling & Logging**: Robust error handling with `lazyWithRetry` and improved production-safe logging.
