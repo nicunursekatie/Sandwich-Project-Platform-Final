@@ -189,7 +189,8 @@ export function createEventCollaborationRouter(deps: RouterDependencies) {
         commenterFirstName,
         req.user.id,
         validatedData.content,
-        new Date()
+        new Date(),
+        validatedData.parentCommentId
       ).catch(err => {
         logger.error('[Event Collaboration] Error sending comment notification:', err);
       });

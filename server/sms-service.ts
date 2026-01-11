@@ -70,23 +70,32 @@ export async function sendSMSReminder(
     // Import storage to get users who have opted in to SMS
     const { storage } = await import('./storage');
 
-    // Get all users who have confirmed SMS opt-in
+    // Get all users who have confirmed SMS opt-in for the 'hosts' campaign (collection reminders)
     const allUsers = await storage.getAllUsers();
     const optedInUsers = allUsers.filter((user) => {
       const metadata = getUserMetadata(user);
       const smsConsent = metadata.smsConsent;
-      // Only include users with confirmed status and enabled flag
-      return (
+      // Only include users with confirmed status, enabled flag, and 'hosts' campaign type
+      // Users without a campaignType are included for backwards compatibility (they opted in before campaign types were added)
+      const isConfirmedAndEnabled = 
         smsConsent?.status === 'confirmed' &&
         smsConsent.enabled &&
-        smsConsent.phoneNumber
-      );
+        smsConsent.phoneNumber;
+      
+      // Only send collection reminders to users who opted in for 'hosts' campaign
+      // or users who opted in before campaign types existed (no campaignType field)
+      const isHostsCampaign = !smsConsent?.campaignType || smsConsent.campaignType === 'hosts';
+      
+      return isConfirmedAndEnabled && isHostsCampaign;
     });
 
     if (optedInUsers.length === 0) {
+      // No users opted in for collection reminders - this is a normal condition, not an error
+      // Return success to prevent unnecessary monitoring alerts when all opt-ins are for 'events' only
+      logger.info(`ℹ️ No users opted in to SMS collection reminders (hosts campaign) for ${hostLocation} - skipping`);
       return {
-        success: false,
-        message: `No users have opted in to SMS reminders yet`,
+        success: true,
+        message: `No users have opted in to SMS collection reminders (hosts campaign) - no reminders sent`,
       };
     }
 
@@ -125,7 +134,7 @@ export async function sendSMSReminder(
         });
 
         logger.log(
-          `✅ SMS sent to ${user.email} (${phoneNumber}) for ${hostLocation}`
+          `✅ Collection reminder SMS sent to ${user.email} (${phoneNumber}) for ${hostLocation} [hosts campaign]`
         );
 
         // MONITORING: Notify admin of SMS send
@@ -1372,7 +1381,8 @@ export async function sendEventCommentSMS(
   commenterName: string,
   organizationName: string,
   commentPreview: string,
-  appUrl?: string
+  appUrl?: string,
+  originalComment?: { userName: string; content: string }
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
 
@@ -1385,12 +1395,21 @@ export async function sendEventCommentSMS(
 
   try {
     // Truncate comment preview if too long (keep SMS under 160 chars ideally)
-    const maxPreviewLength = 50;
+    const maxPreviewLength = originalComment ? 40 : 50;
     const truncatedPreview = commentPreview.length > maxPreviewLength
       ? commentPreview.substring(0, maxPreviewLength) + '...'
       : commentPreview;
 
-    const message = `Hi ${recipientName}! 💬 ${commenterName} commented on ${organizationName}: "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+    let message: string;
+    if (originalComment) {
+      // This is a reply - include context about original comment
+      const originalPreview = originalComment.content.length > 30
+        ? originalComment.content.substring(0, 30) + '...'
+        : originalComment.content;
+      message = `Hi ${recipientName}! ↩️ ${commenterName} replied to "${originalPreview}": "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+    } else {
+      message = `Hi ${recipientName}! 💬 ${commenterName} commented on ${organizationName}: "${truncatedPreview}" ${appUrl ? `View: ${appUrl}` : ''}`;
+    }
 
     const result = await provider.sendSMS({
       to: phoneNumber,
