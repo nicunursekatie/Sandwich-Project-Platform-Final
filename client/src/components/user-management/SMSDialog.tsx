@@ -9,15 +9,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Phone, Home, Calendar } from 'lucide-react';
 import type { User } from '@/types/user';
+
+type CampaignType = 'hosts' | 'events';
 
 interface SMSDialogProps {
   user: User | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateSMS: (userId: string, phoneNumber: string, enabled: boolean, campaignType?: 'hosts' | 'events') => void;
+  onUpdateSMS: (userId: string, phoneNumber: string, enabled: boolean, campaignTypes?: CampaignType[]) => void;
   isPending?: boolean;
 }
 
@@ -29,30 +31,62 @@ export function SMSDialog({
   isPending = false,
 }: SMSDialogProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [campaignType, setCampaignType] = useState<'hosts' | 'events'>('hosts');
+  const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>(['hosts']);
 
   useEffect(() => {
     if (user) {
       setPhoneNumber(user.metadata?.smsConsent?.displayPhone || '');
-      setCampaignType(user.metadata?.smsConsent?.campaignType || 'hosts');
+      const existingTypes = user.metadata?.smsConsent?.campaignTypes;
+      const existingType = user.metadata?.smsConsent?.campaignType;
+      
+      if (existingTypes && Array.isArray(existingTypes)) {
+        setCampaignTypes(existingTypes);
+      } else if (existingType) {
+        setCampaignTypes([existingType]);
+      } else {
+        setCampaignTypes(['hosts']);
+      }
     }
   }, [user]);
 
+  const toggleCampaignType = (type: CampaignType) => {
+    setCampaignTypes(prev => {
+      if (prev.includes(type)) {
+        return prev.filter(t => t !== type);
+      } else {
+        return [...prev, type];
+      }
+    });
+  };
+
   const handleEnable = () => {
-    if (user && phoneNumber) {
-      onUpdateSMS(user.id, phoneNumber, true, campaignType);
+    if (user && phoneNumber && campaignTypes.length > 0) {
+      onUpdateSMS(user.id, phoneNumber, true, campaignTypes);
     }
   };
 
   const handleDisable = () => {
     if (user) {
-      onUpdateSMS(user.id, '', false, campaignType);
+      onUpdateSMS(user.id, '', false, campaignTypes);
     }
   };
 
   const handleClose = () => {
     setPhoneNumber('');
     onOpenChange(false);
+  };
+
+  const getCampaignDisplay = () => {
+    const existingTypes = user?.metadata?.smsConsent?.campaignTypes;
+    const existingType = user?.metadata?.smsConsent?.campaignType;
+    
+    if (existingTypes && Array.isArray(existingTypes) && existingTypes.length > 0) {
+      const labels = existingTypes.map(t => t === 'hosts' ? 'Collection Reminders' : 'Event Notifications');
+      return labels.join(' & ');
+    } else if (existingType) {
+      return existingType === 'hosts' ? 'Collection Reminders' : 'Event Notifications';
+    }
+    return 'Not set';
   };
 
   return (
@@ -104,9 +138,9 @@ export function SMSDialog({
                     Method: {user.metadata.smsConsent.confirmationMethod === 'admin_override' ? 'Admin override' : 'Verification code'}
                   </p>
                 )}
-                {user?.metadata?.smsConsent?.campaignType && (
+                {user?.metadata?.smsConsent?.enabled && (
                   <p className="text-xs text-gray-400">
-                    Campaign: {user.metadata.smsConsent.campaignType === 'hosts' ? 'Collection Reminders' : 'Event Notifications'}
+                    Campaigns: {getCampaignDisplay()}
                   </p>
                 )}
               </div>
@@ -127,14 +161,17 @@ export function SMSDialog({
             </div>
 
             <div className="space-y-3">
-              <Label>Notification Type</Label>
-              <RadioGroup
-                value={campaignType}
-                onValueChange={(value) => setCampaignType(value as 'hosts' | 'events')}
-                className="space-y-2"
-              >
-                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                  <RadioGroupItem value="hosts" id="campaign-hosts" />
+              <Label>Notification Types (select one or both)</Label>
+              <div className="space-y-2">
+                <div 
+                  className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer ${campaignTypes.includes('hosts') ? 'border-blue-300 bg-blue-50' : ''}`}
+                  onClick={() => toggleCampaignType('hosts')}
+                >
+                  <Checkbox 
+                    id="campaign-hosts" 
+                    checked={campaignTypes.includes('hosts')}
+                    onCheckedChange={() => toggleCampaignType('hosts')}
+                  />
                   <Label htmlFor="campaign-hosts" className="flex items-center gap-2 cursor-pointer flex-1">
                     <Home className="h-4 w-4 text-blue-600" />
                     <div>
@@ -143,8 +180,15 @@ export function SMSDialog({
                     </div>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                  <RadioGroupItem value="events" id="campaign-events" />
+                <div 
+                  className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer ${campaignTypes.includes('events') ? 'border-purple-300 bg-purple-50' : ''}`}
+                  onClick={() => toggleCampaignType('events')}
+                >
+                  <Checkbox 
+                    id="campaign-events" 
+                    checked={campaignTypes.includes('events')}
+                    onCheckedChange={() => toggleCampaignType('events')}
+                  />
                   <Label htmlFor="campaign-events" className="flex items-center gap-2 cursor-pointer flex-1">
                     <Calendar className="h-4 w-4 text-purple-600" />
                     <div>
@@ -153,7 +197,10 @@ export function SMSDialog({
                     </div>
                   </Label>
                 </div>
-              </RadioGroup>
+              </div>
+              {campaignTypes.length === 0 && (
+                <p className="text-xs text-red-500">Please select at least one notification type</p>
+              )}
             </div>
           </div>
         </div>
@@ -162,7 +209,7 @@ export function SMSDialog({
             <Button
               variant="outline"
               onClick={handleEnable}
-              disabled={isPending || !phoneNumber}
+              disabled={isPending || !phoneNumber || campaignTypes.length === 0}
               className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
             >
               <Phone className="h-4 w-4 mr-2" />

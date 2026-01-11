@@ -2,6 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 
+type CampaignType = 'hosts' | 'events';
+
 export function useUserManagement() {
   const { toast } = useToast();
 
@@ -18,10 +20,7 @@ export function useUserManagement() {
       return apiRequest('PATCH', `/api/users/${userId}`, { role, permissions });
     },
     onSuccess: () => {
-      // Invalidate users list
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      // CRITICAL: Also invalidate auth/user so permission changes take effect immediately
-      // This ensures users see permission changes without having to log out/in
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Updated',
@@ -49,7 +48,6 @@ export function useUserManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      // Invalidate auth/user so status changes take effect immediately
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Status Updated',
@@ -134,7 +132,6 @@ export function useUserManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
-      // Invalidate auth/user so role/status changes take effect immediately
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Updated',
@@ -181,12 +178,12 @@ export function useUserManagement() {
       userId,
       phoneNumber,
       enabled,
-      campaignType,
+      campaignTypes,
     }: {
       userId: string;
       phoneNumber?: string;
       enabled: boolean;
-      campaignType?: 'hosts' | 'events';
+      campaignTypes?: CampaignType[];
     }) => {
       const currentUsers = queryClient.getQueryData(['/api/users']) as any[];
       const currentUser = currentUsers?.find((u: any) => u.id === userId);
@@ -204,28 +201,34 @@ export function useUserManagement() {
           ? phoneNumber
           : `+1${phoneNumber.replace(/\D/g, '')}`;
         
+        const newCampaignTypes = campaignTypes && campaignTypes.length > 0 
+          ? campaignTypes 
+          : existingSmsConsent.campaignTypes || existingSmsConsent.campaignType 
+            ? [existingSmsConsent.campaignType] 
+            : ['hosts'];
+        
         smsConsent = {
           enabled: true,
           phoneNumber: formattedPhone,
           displayPhone: phoneNumber,
-          status: 'confirmed', // Set explicit status to match user-facing status
+          status: 'confirmed',
           confirmedAt: new Date().toISOString(),
-          confirmationMethod: 'admin_override', // Mark as admin-managed
+          confirmationMethod: 'admin_override',
           optInDate: new Date().toISOString(),
           consent: true,
-          // Use provided campaignType, or preserve existing, or default to 'hosts'
-          campaignType: campaignType || existingSmsConsent.campaignType || 'hosts',
+          campaignTypes: newCampaignTypes,
+          campaignType: newCampaignTypes[0],
         };
       } else {
         smsConsent = {
           enabled: false,
           phoneNumber: null,
           displayPhone: null,
-          status: 'not_opted_in', // Set explicit status to match user-facing status
+          status: 'not_opted_in',
           optOutDate: new Date().toISOString(),
           consent: false,
-          // Preserve campaignType when disabling (use provided if given)
-          campaignType: campaignType || existingSmsConsent.campaignType,
+          campaignTypes: campaignTypes || existingSmsConsent.campaignTypes,
+          campaignType: existingSmsConsent.campaignType,
         };
       }
 
