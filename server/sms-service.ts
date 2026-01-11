@@ -71,6 +71,7 @@ export async function sendSMSReminder(
     const { storage } = await import('./storage');
 
     // Get all users who have confirmed SMS opt-in for the 'hosts' campaign (collection reminders)
+    // Users are manually marked/approved for host reminders when they opt in for 'hosts' campaign
     const allUsers = await storage.getAllUsers();
     const optedInUsers = allUsers.filter((user) => {
       const metadata = getUserMetadata(user);
@@ -84,6 +85,7 @@ export async function sendSMSReminder(
       
       // Only send collection reminders to users who opted in for 'hosts' campaign
       // or users who opted in before campaign types existed (no campaignType field)
+      // Users are manually approved when they opt in for the 'hosts' campaign
       const isHostsCampaign = !smsConsent?.campaignType || smsConsent.campaignType === 'hosts';
       
       return isConfirmedAndEnabled && isHostsCampaign;

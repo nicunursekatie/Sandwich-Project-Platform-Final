@@ -690,8 +690,13 @@ export default function GmailStyleInbox() {
 
     // Mark as read if not already read
     if (!message.isRead) {
-      // For all messages, use the regular mark-as-read endpoint
-      markAsReadMutation.mutate([message.id]);
+      // Check if this is a kudos message - use kudos-specific endpoint
+      if ((message as any).messageType === 'kudos') {
+        markKudosAsRead(message.id);
+      } else {
+        // For regular emails, use the email mark-as-read endpoint
+        markAsReadMutation.mutate([message.id]);
+      }
     }
   };
 
