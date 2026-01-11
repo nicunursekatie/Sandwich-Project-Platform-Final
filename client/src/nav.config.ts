@@ -138,6 +138,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'workspace',
   },
   {
+    id: 'kudos',
+    label: 'Kudos',
+    icon: Trophy,
+    href: 'kudos',
+    permission: PERMISSIONS.KUDOS_VIEW,
+    group: 'workspace',
+  },
+  {
     id: 'team-board',
     label: 'Holding Zone',
     icon: StickyNote,

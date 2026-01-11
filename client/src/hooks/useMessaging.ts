@@ -15,6 +15,7 @@ interface UnreadCounts {
   core_team: number;
   direct: number;
   groups: number;
+  kudos: number;
   total: number;
   // Add context-specific counts
   suggestion: number;
@@ -73,6 +74,7 @@ export function useMessaging() {
       core_team: 0,
       direct: 0,
       groups: 0,
+      kudos: 0,
       total: 0,
       suggestion: 0,
       project: 0,
@@ -95,6 +97,7 @@ export function useMessaging() {
           core_team: 0,
           direct: 0,
           groups: 0,
+          kudos: 0,
           total: 0,
           suggestion: 0,
           project: 0,
@@ -127,6 +130,7 @@ export function useMessaging() {
           core_team: 0,
           direct: 0,
           groups: 0,
+          kudos: 0,
           total: 0,
           suggestion: 0,
           project: 0,

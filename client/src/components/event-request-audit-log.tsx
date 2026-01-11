@@ -80,8 +80,8 @@ export function EventRequestAuditLog({
 }: EventRequestAuditLogProps) {
   const { user: currentUser } = useAuth();
   // If viewing a specific event, show all history by default (use a large number like 8760 = 1 year)
-  // If viewing general audit log, show last 24 hours
-  const [timeFilter, setTimeFilter] = useState(eventId ? '8760' : '24');
+  // If viewing general audit log, show last week by default (more useful for admin panel)
+  const [timeFilter, setTimeFilter] = useState(eventId ? '8760' : '168');
   const [actionFilter, setActionFilter] = useState('all');
   const [userFilter, setUserFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
