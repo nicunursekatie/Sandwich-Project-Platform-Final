@@ -50,6 +50,9 @@ interface Message {
   read?: boolean;
   readAt?: string;
   attachments?: string; // JSON string of MessageAttachment[]
+  replyToMessageId?: number | null;
+  replyToContent?: string | null;
+  replyToSender?: string | null;
 }
 
 // Helper to format file size
@@ -317,6 +320,26 @@ export default function MessagingInbox() {
                 {/* Message Content */}
                 <ScrollArea className="flex-1">
                   <div className="prose max-w-none">
+                    {/* Show original message if this is a reply */}
+                    {selectedMessage.replyToMessageId && selectedMessage.replyToContent && (
+                      <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="text-xs text-gray-500 mb-2 font-medium">
+                          Original message
+                        </div>
+                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          {selectedMessage.replyToSender && (
+                            <div className="text-sm font-semibold text-gray-700 mb-2">
+                              {selectedMessage.replyToSender}
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {selectedMessage.replyToContent}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Reply content */}
                     <div className="whitespace-pre-wrap text-gray-800">
                       {selectedMessage.content}
                     </div>

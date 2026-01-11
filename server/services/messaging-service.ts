@@ -84,6 +84,29 @@ export class MessagingService {
         ? sender[0].displayName || sender[0].email || 'Unknown User'
         : 'Unknown User';
 
+      // If this is a reply, get the original message content
+      let replyToMessageId: number | null = null;
+      let replyToContent: string | null = null;
+      let replyToSender: string | null = null;
+
+      if (parentMessageId) {
+        const [originalMessage] = await db
+          .select({
+            id: messages.id,
+            content: messages.content,
+            sender: messages.sender,
+          })
+          .from(messages)
+          .where(eq(messages.id, parentMessageId))
+          .limit(1);
+
+        if (originalMessage) {
+          replyToMessageId = originalMessage.id;
+          replyToContent = originalMessage.content;
+          replyToSender = originalMessage.sender;
+        }
+      }
+
       // Create the message
       const [message] = await db
         .insert(messages)
@@ -96,6 +119,9 @@ export class MessagingService {
           contextId,
           contextTitle,
           attachments: attachments ? JSON.stringify(attachments) : null,
+          replyToMessageId,
+          replyToContent,
+          replyToSender,
         })
         .returning();
 
@@ -862,6 +888,9 @@ export class MessagingService {
           createdAt: messages.createdAt,
           editedAt: messages.editedAt,
           editedContent: messages.editedContent,
+          replyToMessageId: messages.replyToMessageId,
+          replyToContent: messages.replyToContent,
+          replyToSender: messages.replyToSender,
           senderName: users.displayName,
           senderEmail: users.email,
           read: messageRecipients.read,
@@ -979,6 +1008,9 @@ export class MessagingService {
           createdAt: messages.createdAt,
           editedAt: messages.editedAt,
           editedContent: messages.editedContent,
+          replyToMessageId: messages.replyToMessageId,
+          replyToContent: messages.replyToContent,
+          replyToSender: messages.replyToSender,
           senderName: users.displayName,
           senderEmail: users.email,
           read: messageRecipients.read,

@@ -56,9 +56,14 @@ const CustomMessage = () => {
   
   // Check if this is the current user's message
   const isOwnMessage = message?.user?.id === `user_${user?.id}`;
+  const currentUserId = user?.id ? `user_${user.id}` : null;
   
   // Get read receipts - Stream Chat tracks reads in readBy array
-  const readers = readBy || [];
+  // Filter out the sender from the readers array (sender should not count as a reader)
+  const allReaders = readBy || [];
+  const readers = currentUserId
+    ? allReaders.filter((reader: any) => reader.user?.id !== currentUserId)
+    : allReaders;
   const hasReaders = readers.length > 0;
 
   // Get channel member count to determine if all have read
