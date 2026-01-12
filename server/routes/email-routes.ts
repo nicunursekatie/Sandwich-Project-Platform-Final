@@ -150,23 +150,27 @@ export function createEmailRouter(deps: RouterDependencies) {
 
     logger.log(`[Email API] Updating email ${emailId} status:`, updates);
 
-    // Check if this is a kudo ID instead of an email ID
+    // Check if this is a kudos message by looking up the messageId in kudosTracking
+    // Kudos returned to client have id = messages.id (the messageId), not kudosTracking.id
     const kudoCheck = await db
       .select({
+        id: kudosTracking.id,
         messageId: kudosTracking.messageId,
         recipientId: kudosTracking.recipientId,
       })
       .from(kudosTracking)
-      .where(eq(kudosTracking.id, emailId))
+      .where(eq(kudosTracking.messageId, emailId))
       .limit(1);
 
     let actualEmailId = emailId;
+    let isKudos = false;
 
     if (kudoCheck.length > 0) {
-      // This is a kudo ID, get the actual message ID
+      // This ID corresponds to a kudos message
+      isKudos = true;
       actualEmailId = kudoCheck[0].messageId;
       logger.log(
-        `[Email API] Kudo ${emailId} corresponds to message ${actualEmailId}`
+        `[Email API] ID ${emailId} is a kudos message (kudosTracking.id=${kudoCheck[0].id})`
       );
 
       // Verify user is the recipient of this kudo
@@ -175,14 +179,23 @@ export function createEmailRouter(deps: RouterDependencies) {
           .status(403)
           .json({ message: 'Not authorized to update this kudo' });
       }
+      
+      // For kudos, use the messaging service to mark as read (kudos are in messages table, not emailMessages)
+      if (updates.isRead) {
+        const { messagingService } = await import('../services/messaging-service');
+        const success = await messagingService.markMessageRead(user.id, actualEmailId);
+        if (!success) {
+          return res
+            .status(404)
+            .json({ message: 'Kudos not found or already read' });
+        }
+        return res.json({ success: true });
+      }
+      // For other updates on kudos, we don't support them
+      return res.json({ success: true });
     }
 
-    if (!actualEmailId) {
-      return res
-        .status(404)
-        .json({ message: 'No corresponding message found for this kudo' });
-    }
-
+    // For regular emails, use the email service
     const success = await emailService.updateEmailStatus(
       actualEmailId,
       user.id,
