@@ -860,44 +860,64 @@ export default function HostsManagementConsolidated() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* Location Information */}
-            <div className="flex items-start text-sm text-slate-600">
-              <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-              <div className="space-y-1">
-                <div className="text-slate-700 font-medium">Location:</div>
-                {editingHost?.id === host.id ? (
-                  <Input
-                    value={editingHost.address || ''}
-                    onChange={(e) =>
-                      setEditingHost({
-                        ...editingHost,
-                        address: e.target.value,
-                      })
-                    }
-                    placeholder="Add location address..."
-                    className="text-sm"
-                  />
-                ) : (
-                  <div className="text-slate-600">
-                    {host.address ||
-                      (canEdit ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto p-0 text-left justify-start text-slate-500 hover:text-slate-700"
-                          onClick={() => setEditingHost(host)}
-                        >
-                          Add location address...
-                        </Button>
-                      ) : (
-                        <span className="text-slate-400 italic">
-                          Location information not available
-                        </span>
-                      ))}
-                  </div>
-                )}
+            {/* Location Information - Display as larger badges */}
+            {editingHost?.id === host.id ? (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-slate-700">Location Address:</div>
+                <Input
+                  value={editingHost.address || ''}
+                  onChange={(e) =>
+                    setEditingHost({
+                      ...editingHost,
+                      address: e.target.value,
+                    })
+                  }
+                  placeholder="Add location address..."
+                  className="text-sm"
+                />
               </div>
-            </div>
+            ) : host.address ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                  Location
+                </div>
+                <Badge 
+                  variant="outline" 
+                  className="text-sm font-semibold px-3 py-1.5 bg-slate-50 text-slate-700 border-slate-300 w-full justify-start text-left"
+                >
+                  {host.address}
+                </Badge>
+              </div>
+            ) : canEdit ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                  Location
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-2 text-left justify-start text-slate-500 hover:text-slate-700 border border-dashed border-slate-300 w-full"
+                  onClick={() => setEditingHost(host)}
+                >
+                  Add location address...
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                  Location
+                </div>
+                <Badge 
+                  variant="outline" 
+                  className="text-sm px-3 py-1.5 bg-slate-50 text-slate-400 border-slate-200 w-full justify-start text-left italic"
+                >
+                  Location information not available
+                </Badge>
+              </div>
+            )}
 
             {/* Display contacts */}
             {host.contacts && host.contacts.length > 0 && (
