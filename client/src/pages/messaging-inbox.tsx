@@ -106,6 +106,17 @@ export default function MessagingInbox() {
     },
   });
 
+  // Fetch replies for selected message (thread view)
+  const { data: repliesData = [] } = useQuery({
+    queryKey: ['/api/messaging', selectedMessage?.id, 'replies'],
+    queryFn: async () => {
+      if (!selectedMessage?.id) return [];
+      const response = await apiRequest('GET', `/api/messaging/${selectedMessage.id}/replies`);
+      return response.replies || [];
+    },
+    enabled: !!selectedMessage?.id,
+  });
+
   const messages = activeTab === 'all' ? allMessagesData || [] : unreadMessagesData || [];
   const isLoading = activeTab === 'all' ? loadingAll : loadingUnread;
 
@@ -339,10 +350,48 @@ export default function MessagingInbox() {
                       </div>
                     )}
                     
-                    {/* Reply content */}
-                    <div className="whitespace-pre-wrap text-gray-800">
-                      {selectedMessage.content}
+                    {/* Original message content */}
+                    <div className="mb-6 pb-6 border-b border-gray-200">
+                      <div className="whitespace-pre-wrap text-gray-800">
+                        {selectedMessage.content}
+                      </div>
                     </div>
+
+                    {/* Thread: Show all replies */}
+                    {repliesData.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="text-sm font-semibold text-gray-700 mb-3">
+                          Replies ({repliesData.length})
+                        </div>
+                        {repliesData.map((reply: Message) => (
+                          <div
+                            key={reply.id}
+                            className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback className="bg-gray-300 text-gray-600 text-xs">
+                                    {getInitials(reply.senderName)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {reply.senderName}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {new Date(reply.createdAt).toLocaleString()}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-700 whitespace-pre-wrap mt-2">
+                              {reply.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Attachments */}
                     {parseAttachments(selectedMessage.attachments).length > 0 && (

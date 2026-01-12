@@ -74,4 +74,26 @@ router.get('/context/:contextType/:contextId', isAuthenticated, async (req: Auth
   }
 });
 
+// Get replies to a message (thread view)
+router.get('/:messageId/replies', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    if (isNaN(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
+    const replies = await messagingService.getMessageReplies(messageId, user.id);
+
+    res.json({ replies });
+  } catch (error) {
+    logger.error('[Messaging API] Error fetching message replies:', error);
+    res.status(500).json({ message: 'Failed to fetch replies' });
+  }
+});
+
 export default router;

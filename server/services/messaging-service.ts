@@ -1101,6 +1101,47 @@ export class MessagingService {
   }
 
   /**
+   * Get all replies to a message (thread view)
+   */
+  async getMessageReplies(messageId: number, userId: string): Promise<MessageWithSender[]> {
+    try {
+      const replies = await db
+        .select({
+          id: messages.id,
+          senderId: messages.senderId,
+          content: messages.content,
+          contextType: messages.contextType,
+          contextId: messages.contextId,
+          createdAt: messages.createdAt,
+          editedAt: messages.editedAt,
+          editedContent: messages.editedContent,
+          replyToMessageId: messages.replyToMessageId,
+          replyToContent: messages.replyToContent,
+          replyToSender: messages.replyToSender,
+          senderName: users.displayName,
+          senderEmail: users.email,
+        })
+        .from(messages)
+        .leftJoin(users, eq(messages.senderId, users.id))
+        .where(eq(messages.replyToMessageId, messageId))
+        .orderBy(messages.createdAt);
+
+      return replies.map((msg) => ({
+        ...msg,
+        senderName:
+          msg.senderName ||
+          msg.senderEmail ||
+          `User ${msg.senderId}` ||
+          'Unknown User',
+        read: false, // Replies are shown in thread, read status not relevant here
+      }));
+    } catch (error) {
+      logger.error('Failed to get message replies:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Trigger notifications for a message
    */
   private async triggerNotifications(
