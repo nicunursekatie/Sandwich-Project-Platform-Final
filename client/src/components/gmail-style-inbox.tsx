@@ -902,9 +902,11 @@ export default function GmailStyleInbox() {
   // Add this helper function near other helpers
   const markKudosAsRead = async (kudoId: number) => {
     try {
-      // Use the existing PATCH /:id route which handles kudos by checking kudosTracking table
-      await apiRequest('PATCH', `/api/emails/${kudoId}`, { isRead: true });
+      // Use the POST /:messageId/read route which properly handles kudos via messagingService
+      await apiRequest('POST', `/api/emails/${kudoId}/read`);
+      // Invalidate both kudos query and main inbox query (which merges kudos)
       queryClient.invalidateQueries({ queryKey: ['/api/emails/kudos'] });
+      queryClient.invalidateQueries({ queryKey: [apiBase, activeFolder] });
     } catch (error) {
       logger.error('Failed to mark kudos as read', error);
     }
