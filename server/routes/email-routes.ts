@@ -173,8 +173,8 @@ export function createEmailRouter(deps: RouterDependencies) {
         `[Email API] ID ${emailId} is a kudos message (kudosTracking.id=${kudoCheck[0].id})`
       );
 
-      // Verify user is the recipient of this kudo
-      if (kudoCheck[0].recipientId !== user.id) {
+      // Verify user is the recipient of this kudo (compare as strings since recipientId is text)
+      if (String(kudoCheck[0].recipientId) !== String(user.id)) {
         return res
           .status(403)
           .json({ message: 'Not authorized to update this kudo' });
@@ -183,7 +183,8 @@ export function createEmailRouter(deps: RouterDependencies) {
       // For kudos, use the messaging service to mark as read (kudos are in messages table, not emailMessages)
       if (updates.isRead) {
         const { messagingService } = await import('../services/messaging-service');
-        const success = await messagingService.markMessageRead(user.id, actualEmailId);
+        // Ensure userId is string as messageRecipients.recipientId is a text field
+        const success = await messagingService.markMessageRead(String(user.id), actualEmailId);
         if (!success) {
           return res
             .status(404)
