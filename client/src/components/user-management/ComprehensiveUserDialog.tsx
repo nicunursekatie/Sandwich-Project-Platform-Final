@@ -461,7 +461,7 @@ export function ComprehensiveUserDialog({
           user={user as User}
           open={showSMSDialog}
           onOpenChange={setShowSMSDialog}
-          onUpdateSMS={(userId, phoneNumber, enabled, campaignType) => {
+          onUpdateSMS={(userId, phoneNumber, enabled, campaignTypes) => {
             if (onManageSMS) {
               onManageSMS(user as User);
             }

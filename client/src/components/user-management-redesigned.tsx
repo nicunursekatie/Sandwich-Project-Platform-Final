@@ -241,7 +241,7 @@ export default function UserManagementFinal() {
     );
   };
 
-  const handleUpdateSMS = (userId: string, phoneNumber: string, enabled: boolean, campaignType?: 'hosts' | 'events') => {
+  const handleUpdateSMS = (userId: string, phoneNumber: string, enabled: boolean, campaignTypes?: ('hosts' | 'events')[]) => {
     if (enabled && !phoneNumber) {
       toast({
         title: 'Phone Number Required',
@@ -252,7 +252,7 @@ export default function UserManagementFinal() {
     }
 
     updateSMSConsentMutation.mutate(
-      { userId, phoneNumber, enabled, campaignType },
+      { userId, phoneNumber, enabled, campaignTypes },
       {
         onSuccess: () => {
           setShowSMSDialog(false);
