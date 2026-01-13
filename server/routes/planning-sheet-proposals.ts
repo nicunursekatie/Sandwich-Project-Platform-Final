@@ -7,10 +7,7 @@ import {
   PLANNING_SHEET_COLUMNS,
 } from '../planning-sheet-sync-service';
 import { logger } from '../utils/production-safe-logger';
-
-interface AuthenticatedRequest extends Request {
-  user?: { id: string; email?: string; role?: string };
-}
+import type { AuthenticatedRequest } from '../types/express';
 
 export function createPlanningSheetProposalsRouter(
   isAuthenticated: (req: Request, res: Response, next: () => void) => void,
@@ -214,6 +211,51 @@ export function createPlanningSheetProposalsRouter(
   });
 
   /**
+   * POST /api/planning-sheet-proposals/push-event/:eventId
+   * Push an event directly to the Planning Sheet (no proposal workflow)
+   * User sees preview first, then pushes immediately
+   *
+   * NOTE: This route MUST come before /:id to avoid "push-event" being caught as an id
+   */
+  router.post('/push-event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      const parsedEventId = Number.parseInt(eventId, 10);
+      if (Number.isNaN(parsedEventId) || parsedEventId <= 0) {
+        return res.status(400).json({ error: 'Invalid event id' });
+      }
+
+      const service = getPlanningSheetService();
+      if (!service) {
+        return res.status(500).json({ error: 'Planning Sheet service not configured' });
+      }
+
+      // Push directly to sheet
+      const result = await service.pushEventDirectly(parsedEventId, userId);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: result.message,
+          rowIndex: result.rowIndex,
+          isUpdate: result.isUpdate
+        });
+      } else {
+        res.status(400).json({ success: false, error: result.message });
+      }
+    } catch (error) {
+      logger.error('Error pushing event to sheet:', error);
+      res.status(500).json({ error: 'Failed to push to Planning Sheet' });
+    }
+  });
+
+  /**
    * GET /api/planning-sheet-proposals/sheet/read
    * Read current data from the Planning Sheet (for comparison/debugging)
    *
@@ -342,11 +384,11 @@ export function createPlanningSheetProposalsRouter(
         return res.status(500).json({ error: 'Planning Sheet service not configured' });
       }
 
-      const results: Array<{ id: string; success: boolean; error?: string; [key: string]: any }> = [];
+      const results: Array<{ id: string; success: boolean; error?: string; message?: string }> = [];
       for (const id of proposalIds) {
         try {
           const result = await service.rejectProposal(id, userId, notes);
-          results.push({ id, success: true, ...result });
+          results.push({ id, success: result.success, message: result.message });
         } catch (err: any) {
           logger.error('Error rejecting proposal in batch operation:', { id, error: err });
           results.push({

@@ -17,9 +17,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { FileSpreadsheet, Check, Loader2, ChevronDown, ChevronUp, AlertTriangle, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { FileSpreadsheet, Check, Loader2, ChevronDown, ChevronUp, AlertTriangle, AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 
-interface ProposeToSheetButtonProps {
+interface PushToSheetButtonProps {
   eventId: number;
   organizationName: string;
   variant?: 'default' | 'ghost' | 'outline';
@@ -56,105 +56,105 @@ const COLUMN_LABELS: Record<number, string> = {
   25: 'Waiting On',
 };
 
-export function ProposeToSheetButton({
+// Keep ProposeToSheetButton as an alias for backward compatibility
+export { PushToSheetButton as ProposeToSheetButton };
+
+export function PushToSheetButton({
   eventId,
   organizationName,
   variant = 'ghost',
   size = 'sm',
   className = '',
-}: ProposeToSheetButtonProps) {
+}: PushToSheetButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
+  const [showExistingFields, setShowExistingFields] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: existingProposal, isLoading: proposalLoading, refetch: refetchProposal } = useQuery({
-    queryKey: ['planning-sheet-proposals', 'event', eventId],
-    queryFn: async () => {
-      const res = await fetch(`/api/planning-sheet-proposals?status=pending`);
-      if (!res.ok) return null;
-      const proposals = await res.json();
-      const match = proposals.find((p: any) => p.eventRequestId === eventId);
-      return match || null;
-    },
-    staleTime: 30000,
-  });
-
-  const { data: previewData, isLoading: previewLoading } = useQuery({
+  // Fetch preview data when dialog opens
+  const { data: previewData, isLoading: previewLoading, refetch: refetchPreview } = useQuery({
     queryKey: ['planning-sheet-preview', eventId],
     queryFn: async () => {
       const res = await fetch(`/api/planning-sheet-proposals/preview/${eventId}`);
       if (!res.ok) throw new Error('Failed to load preview');
       return res.json();
     },
-    enabled: showDialog && !existingProposal,
+    enabled: showDialog,
   });
 
-  const proposeMutation = useMutation({
+  // Direct push mutation - skips the proposal system entirely
+  const pushMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/planning-sheet-proposals/propose-event/${eventId}`, {
+      const res = await fetch(`/api/planning-sheet-proposals/push-event/${eventId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: 'Event ready for scheduling sheet' }),
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || 'Failed to create proposal');
+        throw new Error(error.error || 'Failed to push to sheet');
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['planning-sheet-proposals'] });
-      refetchProposal();
+    onSuccess: (data) => {
+      toast({
+        title: 'Successfully pushed to Planning Sheet!',
+        description: data.isUpdate
+          ? `Updated row ${data.rowIndex} in the Planning Sheet.`
+          : `Added new row ${data.rowIndex} to the Planning Sheet.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['planning-sheet-preview', eventId] });
+      setShowDialog(false);
     },
     onError: (error: Error) => {
       toast({
-        title: 'Failed to create proposal',
+        title: 'Failed to push to sheet',
         description: error.message,
         variant: 'destructive',
       });
     },
   });
 
-  const withdrawMutation = useMutation({
-    mutationFn: async (proposalId: number) => {
-      const res = await fetch(`/api/planning-sheet-proposals/${proposalId}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: 'Withdrawn by user' }),
-      });
-      if (!res.ok) throw new Error('Failed to withdraw proposal');
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({ title: 'Proposal withdrawn' });
-      queryClient.invalidateQueries({ queryKey: ['planning-sheet-proposals'] });
-      refetchProposal();
-      setShowDialog(false);
-    },
-  });
-
-  const hasPendingProposal = !!existingProposal;
-
   const getKeyFields = (rawData: string[]) => [
     { label: 'Date', value: rawData[0] },
     { label: 'Group', value: rawData[2] },
     { label: 'Staffing', value: rawData[9] },
-    { label: 'Sandwiches', value: rawData[10] },
+    { label: 'Est. Sandwiches', value: rawData[10] },
     { label: 'Contact', value: rawData[15] },
   ].filter(f => f.value);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending Review</Badge>;
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+  const hasExistingRow = previewData?.existingSheetRow;
+  const hasPotentialDuplicates = previewData?.potentialMatches?.length > 0;
+
+  // Compare values to highlight what's changing
+  const getFieldComparison = (idx: number, newValue: string, existingRow: any) => {
+    if (!existingRow) return null;
+
+    const fieldMap: Record<number, string> = {
+      0: 'date',
+      2: 'groupName',
+      3: 'eventStartTime',
+      4: 'eventEndTime',
+      5: 'pickUpTime',
+      9: 'staffing',
+      10: 'estimateSandwiches',
+      11: 'deliOrPbj',
+      12: 'finalSandwiches',
+      15: 'contactName',
+      16: 'email',
+      17: 'phone',
+      18: 'tspContact',
+      19: 'address',
+      20: 'recipientHost',
+    };
+
+    const fieldKey = fieldMap[idx];
+    if (!fieldKey) return null;
+
+    const oldValue = existingRow[fieldKey] || '';
+    if (oldValue === newValue) return null;
+
+    return { oldValue, newValue };
   };
 
   return (
@@ -165,221 +165,208 @@ export function ProposeToSheetButton({
             size={size}
             variant={variant}
             onClick={() => setShowDialog(true)}
-            className={`${hasPendingProposal ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'} ${className}`}
-            data-testid="button-propose-to-sheet"
+            className={`text-blue-600 hover:text-blue-700 hover:bg-blue-50 ${className}`}
+            data-testid="button-push-to-sheet"
           >
             <FileSpreadsheet className="w-4 h-4" />
-            {hasPendingProposal && <span className="ml-1 w-2 h-2 bg-yellow-500 rounded-full" />}
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {hasPendingProposal ? 'View pending proposal' : 'Propose to Planning Sheet'}
+          Push to Planning Sheet
         </TooltipContent>
       </Tooltip>
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5" />
-              {hasPendingProposal ? 'Proposal Status' : 'Propose to Planning Sheet'}
+              <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+              Push to Planning Sheet
             </DialogTitle>
             <DialogDescription>
-              {hasPendingProposal 
-                ? 'This event has a pending proposal for the Planning Sheet.'
-                : 'Review the data that will be proposed for the Planning Sheet.'}
+              Review exactly what will be added to the Planning Sheet, then push when ready.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium">{organizationName}</h3>
-              {hasPendingProposal && getStatusBadge(existingProposal.status)}
+              <h3 className="font-semibold text-lg">{organizationName}</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => refetchPreview()}
+                disabled={previewLoading}
+              >
+                <RefreshCw className={`w-4 h-4 mr-1 ${previewLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </div>
 
-            {hasPendingProposal ? (
+            {previewLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-500">Loading preview...</span>
+              </div>
+            ) : previewData?.rawData ? (
               <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-green-800 font-medium mb-2">
-                    <CheckCircle className="w-5 h-5" />
-                    Proposal Created Successfully
-                  </div>
-                  <p className="text-sm text-green-700">
-                    Your proposal is awaiting review. A team member will approve or reject it before any changes are made to the Planning Sheet.
-                  </p>
-                </div>
-
-                {existingProposal.proposedRowData && (
-                  <div className="space-y-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowAllFields(!showAllFields)}
-                      className="text-xs"
-                    >
-                      {showAllFields ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
-                      {showAllFields ? 'Hide proposed data' : 'View proposed data'}
-                    </Button>
-
-                    {showAllFields && (
-                      <div className="bg-gray-50 p-4 rounded space-y-2 max-h-64 overflow-y-auto">
-                        {(typeof existingProposal.proposedRowData === 'string' 
-                          ? JSON.parse(existingProposal.proposedRowData) 
-                          : existingProposal.proposedRowData
-                        ).map((value: string, idx: number) => (
-                          value && (
-                            <div key={idx} className="flex border-b border-gray-200 pb-1 text-sm">
-                              <span className="font-medium text-gray-600 w-40 flex-shrink-0">
-                                {COLUMN_LABELS[idx] || `Column ${idx}`}
-                              </span>
-                              <span className="text-gray-900">{value}</span>
-                            </div>
-                          )
+                {/* Action summary banner */}
+                {hasExistingRow ? (
+                  <Alert className="bg-amber-50 border-amber-300">
+                    <RefreshCw className="h-4 w-4 text-amber-600" />
+                    <AlertTitle className="text-amber-800">This will UPDATE an existing row</AlertTitle>
+                    <AlertDescription className="text-amber-700">
+                      Row {previewData.existingSheetRow.rowIndex} already exists for this event.
+                      Pushing will overwrite the existing data with the values shown below.
+                    </AlertDescription>
+                  </Alert>
+                ) : hasPotentialDuplicates ? (
+                  <Alert className="bg-yellow-50 border-yellow-300">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertTitle className="text-yellow-800">Possible duplicates detected</AlertTitle>
+                    <AlertDescription className="text-yellow-700">
+                      <p className="mb-2">Similar rows found in the sheet. This will add a NEW row:</p>
+                      <div className="space-y-1 text-sm">
+                        {previewData.potentialMatches.map((match: any, i: number) => (
+                          <div key={i} className="bg-yellow-100 px-2 py-1 rounded">
+                            Row {match.rowIndex}: <strong>{match.groupName}</strong> - {match.date}
+                          </div>
                         ))}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="bg-green-50 border-green-300">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-800">Adding a new row</AlertTitle>
+                    <AlertDescription className="text-green-700">
+                      No existing row found for this event. A new row will be added to the Planning Sheet.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Show existing data if updating */}
+                {hasExistingRow && (
+                  <div className="border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setShowExistingFields(!showExistingFields)}
+                      className="w-full flex items-center justify-between px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
+                    >
+                      <span className="font-medium text-gray-700">Current data in sheet (Row {previewData.existingSheetRow.rowIndex})</span>
+                      {showExistingFields ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    {showExistingFields && (
+                      <div className="p-4 bg-gray-50 space-y-2 text-sm">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                          <div><strong>Date:</strong> {previewData.existingSheetRow.date || '-'}</div>
+                          <div><strong>Group:</strong> {previewData.existingSheetRow.groupName || '-'}</div>
+                          <div><strong>Start:</strong> {previewData.existingSheetRow.eventStartTime || '-'}</div>
+                          <div><strong>End:</strong> {previewData.existingSheetRow.eventEndTime || '-'}</div>
+                          <div><strong>Pickup:</strong> {previewData.existingSheetRow.pickUpTime || '-'}</div>
+                          <div><strong>Staffing:</strong> {previewData.existingSheetRow.staffing || '-'}</div>
+                          <div><strong>Est. Sandwiches:</strong> {previewData.existingSheetRow.estimateSandwiches || '-'}</div>
+                          <div><strong>Type:</strong> {previewData.existingSheetRow.deliOrPbj || '-'}</div>
+                          <div><strong>Contact:</strong> {previewData.existingSheetRow.contactName || '-'}</div>
+                          <div><strong>TSP Contact:</strong> {previewData.existingSheetRow.tspContact || '-'}</div>
+                          <div className="col-span-2"><strong>Address:</strong> {previewData.existingSheetRow.address || '-'}</div>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500">
-                  Created: {new Date(existingProposal.proposedAt).toLocaleString()}
+                {/* What will be pushed - key fields summary */}
+                <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ArrowRight className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium text-blue-800">
+                      {hasExistingRow ? 'New values to write:' : 'Data to add:'}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {getKeyFields(previewData.rawData).map((field, i) => (
+                      <span key={i} className="text-sm bg-white px-3 py-1.5 rounded border border-blue-200 shadow-sm">
+                        <strong className="text-blue-700">{field.label}:</strong>{' '}
+                        <span className="text-gray-800">{field.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Full field list */}
+                <div className="border rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setShowAllFields(!showAllFields)}
+                    className="w-full flex items-center justify-between px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors"
+                  >
+                    <span className="font-medium text-gray-700">View all {previewData.rawData.filter(Boolean).length} fields</span>
+                    {showAllFields ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                  {showAllFields && (
+                    <div className="p-4 space-y-2 max-h-64 overflow-y-auto">
+                      {previewData.rawData.map((value: string, idx: number) => {
+                        if (!value && !hasExistingRow) return null;
+
+                        const comparison = hasExistingRow ? getFieldComparison(idx, value, previewData.existingSheetRow) : null;
+                        const isChanged = comparison !== null;
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`flex border-b border-gray-200 pb-2 text-sm ${isChanged ? 'bg-yellow-50 -mx-2 px-2 py-1 rounded' : ''}`}
+                          >
+                            <span className="font-medium text-gray-600 w-40 flex-shrink-0">
+                              {COLUMN_LABELS[idx] || `Column ${idx}`}
+                              {isChanged && <Badge className="ml-2 text-[10px] bg-yellow-200 text-yellow-800">Changed</Badge>}
+                            </span>
+                            <div className="flex-1">
+                              {isChanged && comparison ? (
+                                <div className="space-y-1">
+                                  <div className="text-red-600 line-through text-xs">{comparison.oldValue || '(empty)'}</div>
+                                  <div className="text-green-700 font-medium">{value || '(empty)'}</div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-900">{value || <span className="text-gray-400">(empty)</span>}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
-              <>
-                {previewLoading || proposalLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-                  </div>
-                ) : previewData?.rawData ? (
-                  <div className="space-y-4">
-                    {previewData.existingSheetRow && (
-                      <div className="space-y-3">
-                        <Alert className="bg-blue-50 border-blue-200">
-                          <FileSpreadsheet className="h-4 w-4 text-blue-600" />
-                          <AlertTitle className="text-blue-800">Current spreadsheet data (Row {previewData.existingSheetRow.rowIndex})</AlertTitle>
-                          <AlertDescription className="text-blue-700">
-                            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                              <div><strong>Group:</strong> {previewData.existingSheetRow.groupName || '-'}</div>
-                              <div><strong>Date:</strong> {previewData.existingSheetRow.date || '-'}</div>
-                              <div><strong>Start:</strong> {previewData.existingSheetRow.eventStartTime || '-'}</div>
-                              <div><strong>End:</strong> {previewData.existingSheetRow.eventEndTime || '-'}</div>
-                              <div><strong>Pickup:</strong> {previewData.existingSheetRow.pickUpTime || '-'}</div>
-                              <div><strong>Staffing:</strong> {previewData.existingSheetRow.staffing || '-'}</div>
-                              <div><strong>Est. Sandwiches:</strong> {previewData.existingSheetRow.estimateSandwiches || '-'}</div>
-                              <div><strong>Type:</strong> {previewData.existingSheetRow.deliOrPbj || '-'}</div>
-                              <div><strong>Contact:</strong> {previewData.existingSheetRow.contactName || '-'}</div>
-                              <div><strong>TSP Contact:</strong> {previewData.existingSheetRow.tspContact || '-'}</div>
-                              <div className="col-span-2"><strong>Address:</strong> {previewData.existingSheetRow.address || '-'}</div>
-                            </div>
-                          </AlertDescription>
-                        </Alert>
-                        <Alert variant="destructive" className="bg-orange-50 border-orange-200">
-                          <AlertTriangle className="h-4 w-4 text-orange-600" />
-                          <AlertTitle className="text-orange-800">This will update the existing row</AlertTitle>
-                          <AlertDescription className="text-orange-700">
-                            Creating a proposal will replace the data shown above with the proposed values below.
-                          </AlertDescription>
-                        </Alert>
-                      </div>
-                    )}
-
-                    {!previewData.existingSheetRow && previewData.potentialMatches?.length > 0 && (
-                      <Alert className="bg-yellow-50 border-yellow-200">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                        <AlertTitle className="text-yellow-800">Possible duplicates found</AlertTitle>
-                        <AlertDescription className="text-yellow-700">
-                          <div className="mt-2 space-y-1">
-                            {previewData.potentialMatches.map((match: any, i: number) => (
-                              <div key={i} className="text-xs">
-                                Row {match.rowIndex}: {match.groupName} - {match.date}
-                              </div>
-                            ))}
-                          </div>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      {getKeyFields(previewData.rawData).map((field, i) => (
-                        <span key={i} className="text-sm bg-gray-100 px-2 py-1 rounded">
-                          <strong>{field.label}:</strong> {field.value}
-                        </span>
-                      ))}
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowAllFields(!showAllFields)}
-                      className="text-xs"
-                    >
-                      {showAllFields ? <ChevronUp className="w-3 h-3 mr-1" /> : <ChevronDown className="w-3 h-3 mr-1" />}
-                      {showAllFields ? 'Hide all fields' : 'Show all fields'}
-                    </Button>
-
-                    {showAllFields && (
-                      <div className="bg-gray-50 p-4 rounded space-y-2 max-h-64 overflow-y-auto">
-                        {previewData.rawData.map((value: string, idx: number) => (
-                          value && (
-                            <div key={idx} className="flex border-b border-gray-200 pb-1 text-sm">
-                              <span className="font-medium text-gray-600 w-40 flex-shrink-0">
-                                {COLUMN_LABELS[idx] || `Column ${idx}`}
-                              </span>
-                              <span className="text-gray-900">{value}</span>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-gray-500 text-center py-4">
-                    Unable to load preview data
-                  </div>
-                )}
-              </>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Unable to load preview</AlertTitle>
+                <AlertDescription>
+                  Could not fetch the event data. Please try again or contact support.
+                </AlertDescription>
+              </Alert>
             )}
           </div>
 
-          <DialogFooter className="gap-2">
-            {hasPendingProposal ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => withdrawMutation.mutate(existingProposal.id)}
-                  disabled={withdrawMutation.isPending}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                >
-                  {withdrawMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4 mr-2" />
-                  )}
-                  Withdraw Proposal
-                </Button>
-                <Button onClick={() => setShowDialog(false)}>
-                  Done
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setShowDialog(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => proposeMutation.mutate()}
-                  disabled={proposeMutation.isPending}
-                >
-                  {proposeMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Check className="w-4 h-4 mr-2" />
-                  )}
-                  Create Proposal
-                </Button>
-              </>
-            )}
+          <DialogFooter className="gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => pushMutation.mutate()}
+              disabled={pushMutation.isPending || previewLoading || !previewData?.rawData}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {pushMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Pushing...
+                </>
+              ) : (
+                <>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  {hasExistingRow ? 'Update Row' : 'Add to Sheet'}
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -734,6 +734,75 @@ export class PlanningSheetSyncService {
   }
 
   /**
+   * Push an event directly to the Planning Sheet (no proposal workflow)
+   * This is a direct write - user sees preview first, then pushes immediately
+   */
+  async pushEventDirectly(
+    eventId: number,
+    userId: string
+  ): Promise<{ success: boolean; message: string; rowIndex?: number; isUpdate?: boolean }> {
+    try {
+      await this.ensureInitialized();
+
+      // Get the row data for this event
+      const rowData = await this.eventToSheetRow(eventId);
+      if (!rowData) {
+        return { success: false, message: 'Could not generate row data for this event' };
+      }
+
+      // Check if row already exists for this event
+      const existingRow = await this.findMatchingRow(eventId);
+
+      if (existingRow) {
+        // Update existing row
+        const range = `${this.worksheetName}!A${existingRow.rowIndex}:Z${existingRow.rowIndex}`;
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.spreadsheetId,
+          range,
+          valueInputOption: 'USER_ENTERED',
+          resource: { values: [rowData] },
+        });
+
+        logger.log(`[PlanningSheet] User ${userId} updated row ${existingRow.rowIndex} for event ${eventId}`);
+        return {
+          success: true,
+          message: `Updated row ${existingRow.rowIndex} in Planning Sheet`,
+          rowIndex: existingRow.rowIndex,
+          isUpdate: true
+        };
+      } else {
+        // Append new row
+        const response = await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.spreadsheetId,
+          range: `${this.worksheetName}!A:Z`,
+          valueInputOption: 'USER_ENTERED',
+          insertDataOption: 'INSERT_ROWS',
+          resource: { values: [rowData] },
+        });
+
+        // Extract the row number from the response
+        const updatedRange = response.data.updates?.updatedRange || '';
+        const rowMatch = updatedRange.match(/(\d+)$/);
+        const newRowIndex = rowMatch ? parseInt(rowMatch[1]) : undefined;
+
+        logger.log(`[PlanningSheet] User ${userId} added new row ${newRowIndex} for event ${eventId}`);
+        return {
+          success: true,
+          message: `Added new row ${newRowIndex || ''} to Planning Sheet`,
+          rowIndex: newRowIndex,
+          isUpdate: false
+        };
+      }
+    } catch (error) {
+      logger.error(`[PlanningSheet] Error pushing event ${eventId}:`, error);
+      return {
+        success: false,
+        message: `Failed to push to sheet: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
    * Find a row in the Planning Sheet that matches an event
    * Used to determine if we should create a new row or update existing
    */
