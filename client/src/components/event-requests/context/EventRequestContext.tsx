@@ -125,6 +125,8 @@ interface EventRequestContextType {
   setIsEditingAssignment: (editing: boolean) => void;
   editingAssignmentPersonId: string | null;
   setEditingAssignmentPersonId: (id: string | null) => void;
+  isVanDriverAssignment: boolean;
+  setIsVanDriverAssignment: (isVan: boolean) => void;
 
   // Schedule call state
   scheduleCallDate: string;
@@ -408,6 +410,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [isEditingAssignment, setIsEditingAssignment] = useState(false);
   const [editingAssignmentPersonId, setEditingAssignmentPersonId] = useState<string | null>(null);
+  const [isVanDriverAssignment, setIsVanDriverAssignment] = useState(false);
 
   // Schedule call state
   const [scheduleCallDate, setScheduleCallDate] = useState('');
@@ -759,6 +762,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setIsEditingAssignment,
     editingAssignmentPersonId,
     setEditingAssignmentPersonId,
+    isVanDriverAssignment,
+    setIsVanDriverAssignment,
 
     // Schedule call
     scheduleCallDate,
@@ -832,8 +837,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,
     aiIntakeAssistantEventRequest, postponementEventRequest, intakeCallEventRequest,
     nextActionEventRequest, nextActionMode,
-    // Assignment state (5)
-    assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment, editingAssignmentPersonId,
+    // Assignment state (6)
+    assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment, editingAssignmentPersonId, isVanDriverAssignment,
     // Schedule call & follow-up (3)
     scheduleCallDate, scheduleCallTime, followUpNotes,
     // Inline editing (3)

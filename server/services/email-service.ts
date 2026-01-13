@@ -18,7 +18,14 @@ export interface EmailMessage {
   isArchived: boolean;
   isTrashed: boolean;
   isDraft: boolean;
-  // REMOVED: parentMessageId - No threading functionality
+  parentMessageId: number | null; // Reference to parent message for threading
+  // Parent message content (included when fetching replies)
+  parentMessage?: {
+    id: number;
+    senderName: string;
+    content: string;
+    createdAt: Date | null;
+  } | null;
   contextType: string | null;
   contextId: string | null;
   contextTitle: string | null;
@@ -175,7 +182,36 @@ export class EmailService {
         .orderBy(desc(emailMessages.createdAt))
         .limit(50);
 
-      return results as EmailMessage[];
+      // Fetch parent messages for any replies
+      const parentIds = results
+        .map((r: any) => r.parentMessageId)
+        .filter((id: number | null): id is number => id !== null);
+
+      let parentMessagesMap: Map<number, { id: number; senderName: string; content: string; createdAt: Date | null }> = new Map();
+
+      if (parentIds.length > 0) {
+        const parentMessages = await db
+          .select({
+            id: emailMessages.id,
+            senderName: emailMessages.senderName,
+            content: emailMessages.content,
+            createdAt: emailMessages.createdAt,
+          })
+          .from(emailMessages)
+          .where(inArray(emailMessages.id, parentIds));
+
+        parentMessages.forEach((pm) => {
+          parentMessagesMap.set(pm.id, pm);
+        });
+      }
+
+      // Attach parent message data to results
+      const enrichedResults = results.map((msg: any) => ({
+        ...msg,
+        parentMessage: msg.parentMessageId ? parentMessagesMap.get(msg.parentMessageId) || null : null,
+      }));
+
+      return enrichedResults as EmailMessage[];
     } catch (error) {
       logger.error(`Failed to get emails for folder ${folder}:`, error);
       throw error;
@@ -183,7 +219,7 @@ export class EmailService {
   }
 
   /**
-   * Send a new email - SIMPLIFIED (No threading)
+   * Send a new email
    * Always saves internal message, attempts SendGrid notification but doesn't fail if it's unavailable
    */
   async sendEmail(data: {
@@ -197,7 +233,7 @@ export class EmailService {
     recipientEmail: string;
     subject: string;
     content: string;
-    // REMOVED: parentMessageId - No threading functionality
+    parentMessageId?: number | null; // Reference to parent message for threading/replies
     contextType?: string;
     contextId?: string;
     contextTitle?: string;
@@ -219,7 +255,7 @@ export class EmailService {
           recipientEmail: data.recipientEmail,
           subject: data.subject,
           content: data.content,
-          // REMOVED: parentMessageId field - No threading
+          parentMessageId: data.parentMessageId || null, // Store reference to parent message
           contextType: data.contextType || null,
           contextId: data.contextId || null,
           contextTitle: data.contextTitle || null,

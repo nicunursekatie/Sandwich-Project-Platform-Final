@@ -297,7 +297,7 @@ export const MyAssignmentsTab: React.FC = () => {
               setInlineSandwichTypes(prev => prev.filter((_, i) => i !== index));
             }}
             resolveUserName={resolveUserName}
-            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+            openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
             handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
             handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
@@ -346,7 +346,7 @@ export const MyAssignmentsTab: React.FC = () => {
               setShowLogContactDialog(true);
             }}
             resolveUserName={resolveUserName}
-            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+            openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
             handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
             handleSelfSignup={(type) => handleSelfSignup(request.id, type)}

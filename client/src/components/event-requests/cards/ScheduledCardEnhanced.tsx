@@ -126,7 +126,7 @@ interface ScheduledCardEnhancedProps {
   removeInlineSandwichType: (index: number) => void;
   resolveUserName: (id: string) => string;
   resolveRecipientName?: (id: string) => string;
-  openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer') => void;
+  openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer', isVanDriver?: boolean) => void;
   handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
   canEdit?: boolean;
 }
@@ -2003,118 +2003,141 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </Button>
                     )}
                   </div>
-                ) : (driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) ? (
-                  <div className="pb-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
-                    {isEditingThisCard && editingField === 'driversNeeded' ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <Car className="w-4 h-4 text-[#236383]" />
-                        <Input
-                          type="number"
-                          value={editingValue}
-                          onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-7 w-16 text-sm"
-                          min="0"
-                          placeholder="0"
-                        />
-                        <span className="text-sm text-[#236383]">needed</span>
-                        <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
-                          <Save className="w-3 h-3" aria-hidden="true" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
-                          <X className="w-3 h-3" aria-hidden="true" />
-                        </Button>
+                ) : (driverNeeded > 0 || request.vanDriverNeeded || (isEditingThisCard && editingField === 'driversNeeded')) ? (
+                  <div className="pb-3 border-b border-gray-200 space-y-3">
+                    {/* Van Driver Section - Show if vanDriverNeeded is true */}
+                    {request.vanDriverNeeded && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                            <Truck className="w-5 h-5 text-amber-600" />
+                            Van Driver
+                            {request.assignedVanDriverId || request.isDhlVan ? ' (Assigned)' : ' (Needed)'}
+                          </span>
+                          {canEdit && !request.assignedVanDriverId && !request.isDhlVan && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => {
+                                // Open assignment dialog for van driver
+                                openAssignmentDialog('driver', true);
+                              }} 
+                              className="h-7 bg-amber-600 hover:bg-amber-700 text-white" 
+                              aria-label="Assign van driver"
+                            >
+                              <Truck className="w-3 h-3" aria-hidden="true" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          {request.assignedVanDriverId && (
+                            <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
+                              <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
+                                {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
+                              </span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          {request.isDhlVan && (
+                            <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
+                              <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
+                                DHL Van 🚚
+                              </span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => toggleDhlVan(false)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          {!request.assignedVanDriverId && !request.isDhlVan && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 font-medium">
+                              <Truck className="w-3 h-3 mr-1" />Van driver needed
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <>
-                        <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                          {request.vanDriverNeeded ? (
-                            <>
-                              <Truck className="w-5 h-5 text-amber-600" />
-                              Van Driver Needed {driverNeeded > 0 ? `(${driverAssigned}/${driverNeeded})` : ''}
-                            </>
+                    )}
+
+                    {/* Regular Drivers Section - Show if driversNeeded > 0 */}
+                    {(driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          {isEditingThisCard && editingField === 'driversNeeded' ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <Car className="w-4 h-4 text-[#236383]" />
+                              <Input
+                                type="number"
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                className="h-7 w-16 text-sm"
+                                min="0"
+                                placeholder="0"
+                              />
+                              <span className="text-sm text-[#236383]">needed</span>
+                              <Button size="sm" onClick={saveEdit} className="h-6 px-2 bg-[#007E8C] text-white" aria-label="Save">
+                                <Save className="w-3 h-3" aria-hidden="true" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
+                                <X className="w-3 h-3" aria-hidden="true" />
+                              </Button>
+                            </div>
                           ) : (
                             <>
-                              <Car className="w-5 h-5" />
-                              {driverNeeded > 0 ? `Drivers (${driverAssigned}/${driverNeeded})` : 'Drivers'}
+                              <span className="text-base font-bold text-gray-900 flex items-center gap-1">
+                                <Car className="w-5 h-5" />
+                                {driverNeeded > 0 ? `Drivers (${parsePostgresArray(request.assignedDriverIds).length}/${driverNeeded})` : 'Drivers'}
+                              </span>
+                              {canEdit && driverNeeded > 0 && (
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => openAssignmentDialog('driver')} 
+                                  className="h-7 bg-[#007E8C] text-white" 
+                                  aria-label="Add driver"
+                                >
+                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                </Button>
+                              )}
                             </>
                           )}
-                        </span>
-                        {canEdit && (
-                          <div className="flex items-center gap-2">
-                            {driverNeeded > 0 && (
-                              <Button 
-                                size="sm" 
-                                onClick={() => openAssignmentDialog('driver')} 
-                                className={request.vanDriverNeeded 
-                                  ? "h-7 bg-amber-600 hover:bg-amber-700 text-white" 
-                                  : "h-7 bg-[#007E8C] text-white"} 
-                                aria-label={request.vanDriverNeeded ? "Add van driver" : "Add driver"}
-                              >
-                                {request.vanDriverNeeded ? (
-                                  <Truck className="w-3 h-3" aria-hidden="true" />
-                                ) : (
-                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
-                                )}
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </>
+                        </div>
+                        <div className="space-y-1">
+                          {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                            <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', id)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          {parsePostgresArray(request.assignedDriverIds).length === 0 && driverNeeded > 0 && (
+                            <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium">
+                              <Car className="w-3 h-3 mr-1" />None assigned
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     )}
-                    </div>
-                    <div className="space-y-1">
-                      {parsePostgresArray(request.assignedDriverIds).map((id) => (
-                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('driver', id)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {request.assignedVanDriverId && (
-                        <div className="flex items-start gap-2 bg-[#007E8C]/20 rounded px-3 py-1.5 border-2 border-[#007E8C]/40 min-w-0">
-                          <span className="text-base font-bold text-[#007E8C] flex-1 min-w-0 break-words leading-tight">
-                            {resolveUserName(request.assignedVanDriverId)} 🚐 (Van)
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('driver', request.assignedVanDriverId!)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {request.isDhlVan && (
-                        <div className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border-2 border-amber-300 min-w-0">
-                          <span className="text-base font-bold text-amber-900 flex-1 min-w-0 break-words leading-tight">
-                            DHL Van 🚚
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => toggleDhlVan(false)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                      {driverAssigned === 0 && <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium"><Car className="w-3 h-3 mr-1" />None assigned</Badge>}
-                    </div>
                   </div>
                 ) : canEdit ? (
                   <div className="flex items-center justify-end py-0.5 gap-1 pb-3 border-b border-gray-200">

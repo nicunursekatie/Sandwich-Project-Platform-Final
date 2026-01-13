@@ -162,6 +162,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setAssignmentEventId,
     selectedAssignees,
     setSelectedAssignees,
+    isVanDriverAssignment,
+    setIsVanDriverAssignment,
 
     // Selected events
     selectedEventRequest,
@@ -1068,6 +1070,7 @@ const EventRequestsManagementContent: React.FC = () => {
             setAssignmentType(null);
             setAssignmentEventId(null);
             setSelectedAssignees([]);
+            setIsVanDriverAssignment(false);
           }}
           assignmentType={assignmentType}
           selectedAssignees={selectedAssignees}
@@ -1103,50 +1106,82 @@ const EventRequestsManagementContent: React.FC = () => {
             let updateData: any = {};
 
             if (assignmentType === 'driver') {
-              // Get existing drivers and merge with new ones
-              const existingDrivers = currentEvent.assignedDriverIds || [];
-              const existingDriverDetails = currentEvent.driverDetails || {};
-
-              // Merge new drivers with existing ones (avoiding duplicates)
-              const allDriverIds = [...new Set([...existingDrivers, ...assignees])];
-              updateData.assignedDriverIds = allDriverIds;
-
-              // Build driver details object, preserving existing details
-              const driverDetails: any = { ...existingDriverDetails };
-              allDriverIds.forEach(driverId => {
-                // Only add new details if they don't exist yet
-                if (!driverDetails[driverId]) {
-                // Check if it's a numeric driver ID
-                const isNumericId = /^\d+$/.test(driverId);
-
-                let driverName = driverId; // fallback to ID if name not found
-
-                if (isNumericId) {
-                  // It's a traditional driver ID - look it up in the drivers array
-                  const driver = (drivers ?? []).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
-                  if (driver) {
-                    driverName = driver.name;
-                    logger.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
+              // Helper to parse PostgreSQL arrays
+              const parsePostgresArray = (arr: any): string[] => {
+                if (!arr) return [];
+                if (Array.isArray(arr)) return arr.map(String).filter((item) => item && item.trim());
+                if (typeof arr === 'string') {
+                  if (arr === '{}' || arr === '') return [];
+                  const cleaned = arr.replace(/^{|}$/g, '');
+                  if (!cleaned) return [];
+                  if (cleaned.includes('"')) {
+                    const matches = cleaned.match(/"[^"]*"|[^",]+/g);
+                    return matches ? matches.map(item => item.replace(/"/g, '').trim()).filter(item => item) : [];
                   } else {
-                    logger.warn(`Driver not found in loaded drivers: ID=${driverId}`);
-                    // Keep the ID as-is, it will show as "Driver #350" in the UI
-                  }
-                } else {
-                  // It's a user ID - look it up in the users array
-                  const foundUser = (users ?? []).find((u: any) => u.id === driverId);
-                  if (foundUser) {
-                    driverName = `${foundUser.firstName} ${foundUser.lastName}`.trim();
+                    return cleaned.split(',').map(item => item.trim()).filter(item => item);
                   }
                 }
+                return [];
+              };
 
-                  driverDetails[driverId] = {
-                    name: driverName,
-                    assignedAt: new Date().toISOString(),
-                    assignedBy: user?.id || 'system'
-                  };
+              // Check if this is a van driver assignment using the flag from context
+              // The flag is set when the van driver button is clicked
+              const isVanDriver = isVanDriverAssignment;
+
+              if (isVanDriver) {
+                // Assign as van driver
+                updateData.assignedVanDriverId = assignees[0];
+                // Also set vanDriverNeeded to true if not already set
+                if (!currentEvent.vanDriverNeeded) {
+                  updateData.vanDriverNeeded = true;
                 }
-              });
-              updateData.driverDetails = driverDetails;
+              } else {
+                // Regular driver assignment
+                // Get existing drivers and merge with new ones
+                const existingDrivers = currentEvent.assignedDriverIds || [];
+                const existingDriverDetails = currentEvent.driverDetails || {};
+
+                // Merge new drivers with existing ones (avoiding duplicates)
+                const allDriverIds = [...new Set([...existingDrivers, ...assignees])];
+                updateData.assignedDriverIds = allDriverIds;
+
+                // Build driver details object, preserving existing details
+                const driverDetails: any = { ...existingDriverDetails };
+                allDriverIds.forEach(driverId => {
+                  // Only add new details if they don't exist yet
+                  if (!driverDetails[driverId]) {
+                  // Check if it's a numeric driver ID
+                  const isNumericId = /^\d+$/.test(driverId);
+
+                  let driverName = driverId; // fallback to ID if name not found
+
+                  if (isNumericId) {
+                    // It's a traditional driver ID - look it up in the drivers array
+                    const driver = (drivers ?? []).find((d: any) => d.id.toString() === driverId || d.id === parseInt(driverId));
+                    if (driver) {
+                      driverName = driver.name;
+                      logger.log(`Found driver: ID=${driverId}, Name=${driver.name}`);
+                    } else {
+                      logger.warn(`Driver not found in loaded drivers: ID=${driverId}`);
+                      // Keep the ID as-is, it will show as "Driver #350" in the UI
+                    }
+                  } else {
+                    // It's a user ID - look it up in the users array
+                    const foundUser = (users ?? []).find((u: any) => u.id === driverId);
+                    if (foundUser) {
+                      driverName = `${foundUser.firstName} ${foundUser.lastName}`.trim();
+                    }
+                  }
+
+                    driverDetails[driverId] = {
+                      name: driverName,
+                      assignedAt: new Date().toISOString(),
+                      assignedBy: user?.id || 'system'
+                    };
+                  }
+                });
+                updateData.driverDetails = driverDetails;
+              }
 
             } else if (assignmentType === 'speaker') {
               // Get existing speakers and merge with new ones

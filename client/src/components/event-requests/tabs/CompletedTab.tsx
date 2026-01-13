@@ -172,7 +172,7 @@ export const CompletedTab: React.FC = () => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);
             }}
-            openAssignmentDialog={(type) => openAssignmentDialog(request.id, type)}
+            openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
             handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
             handleSelfSignup={(type) => handleSelfSignup(request.id, type)}

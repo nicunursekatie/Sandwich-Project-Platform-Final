@@ -24,6 +24,7 @@ export const useEventAssignments = () => {
     setIsEditingAssignment,
     setEditingAssignmentPersonId,
     setSelectedAssignees,
+    setIsVanDriverAssignment,
   } = useEventRequestContext();
 
   // Helper function to safely parse PostgreSQL arrays
@@ -235,13 +236,15 @@ export const useEventAssignments = () => {
   // Open assignment dialog
   const openAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer' | 'recipient'
+    type: 'driver' | 'speaker' | 'volunteer' | 'recipient',
+    isVanDriver: boolean = false
   ) => {
     setAssignmentEventId(eventId);
     setAssignmentType(type);
     setIsEditingAssignment(false);
     setEditingAssignmentPersonId(null);
     setSelectedAssignees([]);
+    setIsVanDriverAssignment(isVanDriver);
     setShowAssignmentDialog(true);
   };
 

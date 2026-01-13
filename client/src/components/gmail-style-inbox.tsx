@@ -91,7 +91,7 @@ interface Message {
   senderName: string;
   conversationId: number;
   createdAt: string;
-  // Email fields for Gmail-style inbox (NO THREADING)
+  // Email fields for Gmail-style inbox
   senderId?: string;
   senderEmail?: string;
   recipientId?: string;
@@ -103,7 +103,14 @@ interface Message {
   isArchived?: boolean;
   isTrashed?: boolean;
   isDraft?: boolean;
-  // REMOVED: parentMessageId - No threading functionality
+  // Threading - reference to parent message for replies
+  parentMessageId?: number | null;
+  parentMessage?: {
+    id: number;
+    senderName: string;
+    content: string;
+    createdAt: Date | null;
+  } | null;
   readAt?: string;
   contextType?: string;
   contextId?: string;
@@ -190,7 +197,6 @@ export default function GmailStyleInbox() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMessageListCollapsed, setIsMessageListCollapsed] = useState(false);
   const [screenSize, setScreenSize] = useState('desktop');
-  const [showOldKudos, setShowOldKudos] = useState(false);
 
   // Responsive behavior with comprehensive breakpoint strategy
   useEffect(() => {
@@ -260,12 +266,6 @@ export default function GmailStyleInbox() {
   });
   
   logger.log(`[Compose] Users loaded: ${users.length}, Loading: ${isLoadingUsers}, Error: ${usersError}`);
-
-  // Add this after other useQuery hooks at the top of the component
-  const { data: kudos = [] } = useQuery<any[]>({
-    queryKey: ['/api/emails/kudos'],
-    queryFn: () => apiRequest('GET', '/api/emails/kudos'),
-  });
 
   // Use email system for Gmail inbox
   const apiBase = '/api/emails';
@@ -392,14 +392,14 @@ export default function GmailStyleInbox() {
     },
   });
 
-  // Reply mutation - simple email reply without threading
+  // Reply mutation - email reply with threading support
   const replyMutation = useMutation({
     mutationFn: async (replyData: any) => {
       if (!selectedMessage) {
         throw new Error('No message selected for reply');
       }
 
-      // Create simple reply email
+      // Create reply email with reference to parent message for threading
       const replyEmailData = {
         recipientId: selectedMessage.senderId,
         recipientName: selectedMessage.senderName,
@@ -409,9 +409,10 @@ export default function GmailStyleInbox() {
           : `Re: ${selectedMessage.subject || 'No Subject'}`,
         content: replyData.content,
         isDraft: false,
+        parentMessageId: selectedMessage.id, // Reference to the message being replied to
       };
 
-      logger.log('Sending reply:', replyEmailData);
+      logger.log('Sending reply with parentMessageId:', replyEmailData);
       return await apiRequest('POST', '/api/emails', replyEmailData);
     },
     onSuccess: () => {
@@ -810,10 +811,6 @@ export default function GmailStyleInbox() {
     }).length;
   };
 
-  const getKudosUnreadCount = () => {
-    return kudos.filter((k: any) => !k.read).length;
-  };
-
   const folders = [
     {
       id: 'inbox',
@@ -1100,196 +1097,6 @@ export default function GmailStyleInbox() {
               </div>
             )}
           </div>
-
-          {/* Kudos Section - Only show in inbox when user has permission */}
-          {activeFolder === 'inbox' &&
-            hasPermission(user, PERMISSIONS.KUDOS_VIEW) && (
-              <>
-                {/* Unread Kudos Section - Improved Responsiveness */}
-                {kudos && kudos.filter((k: any) => !k.isRead).length > 0 && (
-                  <div className="border-b bg-gradient-to-r from-yellow-50 to-orange-50 p-3 lg:p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Trophy className="h-4 w-4 lg:h-5 lg:w-5 text-yellow-600 flex-shrink-0" />
-                      <h3 className="text-base lg:text-lg font-bold text-yellow-800">
-                        🎉 New Kudos!
-                      </h3>
-                      <Badge className="bg-yellow-500 text-white text-xs">
-                        {kudos.filter((k: any) => !k.isRead).length}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2 max-h-32 lg:max-h-40 overflow-y-auto">
-                      {kudos
-                        .filter((k: any) => !k.isRead)
-                        .slice(0, 3)
-                        .map((kudo: any) => (
-                          <div
-                            key={kudo.id}
-                            onClick={() => {
-                              // Mark as read when clicked
-                              markKudosAsRead(kudo.id);
-
-                              // Create a message object that matches the expected format
-                              const kudosMessage = {
-                                id: kudo?.id,
-                                userId:
-                                  kudo?.userId ||
-                                  (user as any)?.id ||
-                                  'unknown',
-                                sender: kudo.sender,
-                                senderName: kudo.senderName,
-                                conversationId: kudo.conversationId || kudo.id,
-                                subject: `Kudos ${
-                                  kudo.projectTitle
-                                    ? `for ${kudo.projectTitle}`
-                                    : ''
-                                }`,
-                                content: kudo.message || kudo.content,
-                                createdAt: kudo.createdAt,
-                                isRead: true, // Mark as read immediately
-                                recipients: [],
-                                isKudos: true,
-                                contextType: kudo.contextType,
-                                projectTitle: kudo.projectTitle,
-                                entityName: kudo.entityName,
-                              };
-                              setSelectedMessage(kudosMessage);
-                              setActiveFolder('inbox');
-                            }}
-                            className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border-2 border-yellow-300 cursor-pointer hover:bg-yellow-50 hover:border-yellow-400 transition-colors animate-pulse"
-                          >
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Heart className="h-4 w-4 lg:h-5 lg:w-5 text-red-500" />
-                              <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs lg:text-sm font-bold text-gray-900">
-                                <span className="text-yellow-700 font-bold">
-                                  {kudo.senderName}
-                                </span>{' '}
-                                sent you kudos
-                                {kudo.projectTitle && (
-                                  <span className="text-gray-600">
-                                    {' '}
-                                    for "{kudo.projectTitle}"
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-xs text-gray-700 font-medium break-words">
-                                {kudo.message}
-                              </p>
-                            </div>
-                            <span className="text-xs text-yellow-600 flex-shrink-0 font-medium hidden sm:block">
-                              {formatDistanceToNow(new Date(kudo.createdAt), {
-                                addSuffix: true,
-                              })}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                    {kudos.filter((k: any) => !k.isRead).length > 3 && (
-                      <p className="text-xs text-yellow-700 mt-2 font-medium">
-                        + {kudos.filter((k: any) => !k.isRead).length - 3} more
-                        new kudos
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Old Kudos Section - Collapsible */}
-                {kudos && kudos.filter((k: any) => k.isRead).length > 0 && (
-                  <div className="border-b bg-gray-50 p-4">
-                    <button
-                      onClick={() => setShowOldKudos(!showOldKudos)}
-                      className="flex items-center gap-2 w-full text-left hover:bg-gray-100 p-2 rounded-lg transition-colors"
-                    >
-                      <Trophy className="h-4 w-4 text-gray-500" />
-                      <h4 className="text-sm font-medium text-gray-700">
-                        Old Kudos
-                      </h4>
-                      <Badge
-                        variant="outline"
-                        className="text-xs text-gray-500 border-gray-300"
-                      >
-                        {kudos.filter((k: any) => k.isRead).length}
-                      </Badge>
-                      <ChevronRight
-                        className={`h-4 w-4 text-gray-500 ml-auto transition-transform ${
-                          showOldKudos ? 'rotate-90' : ''
-                        }`}
-                      />
-                    </button>
-
-                    {showOldKudos && (
-                      <div className="mt-3 space-y-1 max-h-32 overflow-y-auto">
-                        {kudos
-                          .filter((k: any) => k.isRead)
-                          .slice(0, 5)
-                          .map((kudo: any) => (
-                            <div
-                              key={kudo.id}
-                              onClick={() => {
-                                const kudosMessage = {
-                                  id: kudo?.id,
-                                  userId:
-                                    kudo?.userId ||
-                                    (user as any)?.id ||
-                                    'unknown',
-                                  sender: kudo.sender,
-                                  senderName: kudo.senderName,
-                                  conversationId:
-                                    kudo.conversationId || kudo.id,
-                                  subject: `Kudos ${
-                                    kudo.projectTitle
-                                      ? `for ${kudo.projectTitle}`
-                                      : ''
-                                  }`,
-                                  content: kudo.message || kudo.content,
-                                  createdAt: kudo.createdAt,
-                                  isRead: kudo.isRead,
-                                  recipients: [],
-                                  isKudos: true,
-                                  contextType: kudo.contextType,
-                                  projectTitle: kudo.projectTitle,
-                                  entityName: kudo.entityName,
-                                };
-                                setSelectedMessage(kudosMessage);
-                                setActiveFolder('inbox');
-                              }}
-                              className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
-                            >
-                              <Heart className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-600 break-words">
-                                  <span className="font-medium">
-                                    {kudo.senderName}
-                                  </span>
-                                  {kudo.projectTitle && (
-                                    <span className="text-gray-500">
-                                      {' '}
-                                      • {kudo.projectTitle}
-                                    </span>
-                                  )}
-                                </p>
-                              </div>
-                              <span className="text-xs text-gray-400 flex-shrink-0">
-                                {formatDistanceToNow(new Date(kudo.createdAt), {
-                                  addSuffix: true,
-                                })}
-                              </span>
-                            </div>
-                          ))}
-                        {kudos.filter((k: any) => k.isRead).length > 5 && (
-                          <p className="text-xs text-gray-500 mt-2 text-center">
-                            + {kudos.filter((k: any) => k.isRead).length - 5}{' '}
-                            more
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
 
           {/* Message List - Show KudosInbox for kudos folder */}
           {activeFolder === 'kudos' ? (
@@ -1713,6 +1520,30 @@ export default function GmailStyleInbox() {
                         <div className="whitespace-pre-wrap">
                           {selectedMessage.content}
                         </div>
+
+                        {/* Display original message this is replying to */}
+                        {selectedMessage.parentMessage && (
+                          <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                            <div className="flex items-center gap-2 mb-2 text-sm text-blue-700 font-medium">
+                              <Reply className="h-4 w-4" />
+                              <span>In reply to message from {selectedMessage.parentMessage.senderName}</span>
+                              {selectedMessage.parentMessage.createdAt && (
+                                <span className="text-blue-500 text-xs ml-auto">
+                                  {(() => {
+                                    try {
+                                      return formatDistanceToNow(new Date(selectedMessage.parentMessage.createdAt), { addSuffix: true });
+                                    } catch {
+                                      return '';
+                                    }
+                                  })()}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-700 whitespace-pre-wrap bg-white p-3 rounded border border-blue-200">
+                              {selectedMessage.parentMessage.content}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Display attachments if present */}
                         {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (

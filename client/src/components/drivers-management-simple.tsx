@@ -882,20 +882,27 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="interestedInVanDriving">Interested in Driving the Van</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="temporarilyUnavailable"
-                        checked={newDriver.temporarilyUnavailable}
-                        onChange={(e) =>
-                          setNewDriver({
-                            ...newDriver,
-                            temporarilyUnavailable: e.target.checked,
-                          })
-                        }
-                        className="rounded border-gray-300"
-                      />
-                      <Label htmlFor="temporarilyUnavailable">Temporarily Unavailable</Label>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="temporarilyUnavailable"
+                          checked={newDriver.temporarilyUnavailable}
+                          onChange={(e) =>
+                            setNewDriver({
+                              ...newDriver,
+                              temporarilyUnavailable: e.target.checked,
+                            })
+                          }
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor="temporarilyUnavailable">Temporarily Unavailable</Label>
+                      </div>
+                      {newDriver.temporarilyUnavailable && (
+                        <p className="text-xs text-amber-600 ml-6">
+                          This driver won't appear in driver assignment lists, but will still be available for volunteer tasks.
+                        </p>
+                      )}
                     </div>
                     {newDriver.temporarilyUnavailable && (
                       <>
@@ -1448,20 +1455,27 @@ export default function DriversManagement() {
                 />
                 <Label htmlFor="edit-interestedInVanDriving">Interested in Driving the Van</Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-temporarilyUnavailable"
-                  checked={editingDriver.temporarilyUnavailable || false}
-                  onChange={(e) =>
-                    setEditingDriver({
-                      ...editingDriver,
-                      temporarilyUnavailable: e.target.checked,
-                    })
-                  }
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="edit-temporarilyUnavailable">Temporarily Unavailable</Label>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="edit-temporarilyUnavailable"
+                    checked={editingDriver.temporarilyUnavailable || false}
+                    onChange={(e) =>
+                      setEditingDriver({
+                        ...editingDriver,
+                        temporarilyUnavailable: e.target.checked,
+                      })
+                    }
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="edit-temporarilyUnavailable">Temporarily Unavailable</Label>
+                </div>
+                {editingDriver.temporarilyUnavailable && (
+                  <p className="text-xs text-amber-600 ml-6">
+                    This driver won't appear in driver assignment lists, but will still be available for volunteer tasks.
+                  </p>
+                )}
               </div>
               {editingDriver.temporarilyUnavailable && (
                 <>

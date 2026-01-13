@@ -25,6 +25,7 @@ interface Driver {
   name: string;
   email: string;
   phone: string;
+  temporarilyUnavailable?: boolean;
 }
 
 interface VolunteerSelectionModalProps {
@@ -274,8 +275,13 @@ export function VolunteerSelectionModal({
                               <div className="flex items-center space-x-3">
                                 <User className="w-4 h-4 text-gray-400" />
                                 <div>
-                                  <div className="font-medium">
+                                  <div className="font-medium flex items-center gap-2">
                                     {driver.name}
+                                    {driver.temporarilyUnavailable && (
+                                      <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                                        Volunteer only
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
                               </div>

@@ -119,6 +119,8 @@ function ComprehensivePersonSelector({
         if (!driver.isActive) return false;
         // Exclude busy or off-duty drivers
         if (driver.availability === 'busy' || driver.availability === 'off-duty') return false;
+        // Exclude temporarily unavailable drivers from driver assignments (they can still volunteer)
+        if (assignmentType === 'driver' && driver.temporarilyUnavailable) return false;
         // Filter for van-approved drivers when van driver is needed
         if (assignmentType === 'driver' && vanDriverNeeded) {
           return driver.vanApproved === true;
