@@ -435,12 +435,16 @@ export function createEmailRouter(deps: RouterDependencies) {
     // Import messaging service dynamically to avoid circular dependency
     const { messagingService } = await import('../services/messaging-service');
 
+    logger.log(`[Email API] Calling markMessageRead with userId=${String(user.id)}, messageId=${actualMessageId}`);
+
     // Mark the message as read in messageRecipients
     // Use string userId to match messageRecipients.recipientId type
     const success = await messagingService.markMessageRead(
       String(user.id),
       actualMessageId
     );
+
+    logger.log(`[Email API] markMessageRead returned: ${success}`);
 
     if (!success) {
       return res

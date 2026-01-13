@@ -203,6 +203,8 @@ export class MessagingService {
    */
   async markMessageRead(userId: string, messageId: number): Promise<boolean> {
     try {
+      logger.log(`[markMessageRead] Attempting to mark message ${messageId} as read for user ${userId}`);
+
       // First, check if the message exists and get sender info
       const messageInfo = await db
         .select({
@@ -213,19 +215,42 @@ export class MessagingService {
         .limit(1);
 
       if (messageInfo.length === 0) {
-        logger.log(`Message ${messageId} not found`);
+        logger.log(`[markMessageRead] Message ${messageId} not found in messages table`);
         return false;
       }
 
       const { senderId } = messageInfo[0];
+      logger.log(`[markMessageRead] Message ${messageId} has senderId: ${senderId}, current userId: ${userId}`);
 
       // If current user is the sender, don't update read status (sender messages are always "read")
       if (senderId === userId) {
         logger.log(
-          `User ${userId} is sender of message ${messageId} - no read update needed`
+          `[markMessageRead] User ${userId} is sender of message ${messageId} - no read update needed`
         );
         return true; // Return true since sender doesn't need to mark their own message as read
       }
+
+      // Check if recipient entry exists before updating
+      const recipientCheck = await db
+        .select({
+          id: messageRecipients.id,
+          recipientId: messageRecipients.recipientId,
+          messageId: messageRecipients.messageId,
+          read: messageRecipients.read,
+        })
+        .from(messageRecipients)
+        .where(eq(messageRecipients.messageId, messageId));
+
+      logger.log(`[markMessageRead] Found ${recipientCheck.length} messageRecipients entries for messageId ${messageId}:`,
+        JSON.stringify(recipientCheck.map(r => ({ id: r.id, recipientId: r.recipientId, read: r.read }))));
+
+      const matchingRecipient = recipientCheck.find(r => r.recipientId === userId);
+      if (!matchingRecipient) {
+        logger.log(`[markMessageRead] No messageRecipients entry found for userId ${userId} and messageId ${messageId}`);
+        return false;
+      }
+
+      logger.log(`[markMessageRead] Found matching recipient entry: id=${matchingRecipient.id}, currentRead=${matchingRecipient.read}`);
 
       // Only update if user is actually a recipient
       const result = await db
@@ -241,12 +266,25 @@ export class MessagingService {
           )
         );
 
-      logger.log(
-        `Marked message ${messageId} as read for recipient ${userId}`
-      );
+      logger.log(`[markMessageRead] UPDATE completed for message ${messageId}, recipient ${userId}`);
+
+      // Verify the update worked
+      const verifyCheck = await db
+        .select({ read: messageRecipients.read })
+        .from(messageRecipients)
+        .where(
+          and(
+            eq(messageRecipients.recipientId, userId),
+            eq(messageRecipients.messageId, messageId)
+          )
+        )
+        .limit(1);
+
+      logger.log(`[markMessageRead] Verification - read status is now: ${verifyCheck[0]?.read}`);
+
       return true;
     } catch (error) {
-      logger.error('Failed to mark message as read:', error);
+      logger.error('[markMessageRead] Failed to mark message as read:', error);
       return false;
     }
   }
@@ -764,6 +802,8 @@ export class MessagingService {
    */
   async getReceivedKudos(userId: string): Promise<any[]> {
     try {
+      logger.log(`[getReceivedKudos] Fetching kudos for userId: ${userId}`);
+
       // Get kudos tracking entries where this user is the recipient
       const kudosEntries = await db
         .select({
@@ -777,10 +817,25 @@ export class MessagingService {
         .where(eq(kudosTracking.recipientId, userId))
         .orderBy(desc(kudosTracking.sentAt));
 
+      logger.log(`[getReceivedKudos] Found ${kudosEntries.length} kudos entries`);
+
       // Get the actual messages with sender information and read status
       const kudosMessages = await Promise.all(
         kudosEntries.map(async (entry) => {
           try {
+            // First check messageRecipients directly to debug
+            const recipientRows = await db
+              .select({
+                id: messageRecipients.id,
+                recipientId: messageRecipients.recipientId,
+                read: messageRecipients.read,
+              })
+              .from(messageRecipients)
+              .where(eq(messageRecipients.messageId, entry.messageId!));
+
+            logger.log(`[getReceivedKudos] messageId ${entry.messageId} has ${recipientRows.length} recipient rows:`,
+              JSON.stringify(recipientRows.map(r => ({ id: r.id, recipientId: r.recipientId, read: r.read }))));
+
             const [messageResult] = await db
               .select({
                 id: messages.id,
@@ -804,6 +859,8 @@ export class MessagingService {
               )
               .where(eq(messages.id, entry.messageId!))
               .limit(1);
+
+            logger.log(`[getReceivedKudos] messageId ${entry.messageId} - isRead from join: ${messageResult?.isRead}`);
 
             if (!messageResult) return null;
 
