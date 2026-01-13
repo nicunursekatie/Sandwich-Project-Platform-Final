@@ -384,27 +384,42 @@ export function createEmailRouter(deps: RouterDependencies) {
       `[Email API] Marking message ${messageId} as read for user: ${user.email}`
     );
 
-    // First check if this is a kudo ID instead of a message ID
-    const kudoCheck = await db
+    // Check if this is a kudos message - first try matching by messageId (what client sends)
+    // The client receives kudos with id = messages.id from getReceivedKudos
+    let kudoCheck = await db
       .select({
+        kudosId: kudosTracking.id,
         messageId: kudosTracking.messageId,
         recipientId: kudosTracking.recipientId,
       })
       .from(kudosTracking)
-      .where(eq(kudosTracking.id, messageId))
+      .where(eq(kudosTracking.messageId, messageId))
       .limit(1);
+
+    // If not found by messageId, try by kudosTracking.id (legacy/fallback)
+    if (kudoCheck.length === 0) {
+      kudoCheck = await db
+        .select({
+          kudosId: kudosTracking.id,
+          messageId: kudosTracking.messageId,
+          recipientId: kudosTracking.recipientId,
+        })
+        .from(kudosTracking)
+        .where(eq(kudosTracking.id, messageId))
+        .limit(1);
+    }
 
     let actualMessageId = messageId;
 
     if (kudoCheck.length > 0) {
-      // This is a kudo ID, get the actual message ID
+      // This is a kudos message, get the actual message ID
       actualMessageId = kudoCheck[0].messageId;
       logger.log(
-        `[Email API] Kudo ${messageId} corresponds to message ${actualMessageId}`
+        `[Email API] Found kudos (kudosTracking.id=${kudoCheck[0].kudosId}) for message ${actualMessageId}`
       );
 
-      // Verify user is the recipient of this kudo
-      if (kudoCheck[0].recipientId !== user.id) {
+      // Verify user is the recipient of this kudo (compare as strings since recipientId is text)
+      if (String(kudoCheck[0].recipientId) !== String(user.id)) {
         return res
           .status(403)
           .json({ message: 'Not authorized to mark this kudo as read' });
@@ -421,8 +436,9 @@ export function createEmailRouter(deps: RouterDependencies) {
     const { messagingService } = await import('../services/messaging-service');
 
     // Mark the message as read in messageRecipients
+    // Use string userId to match messageRecipients.recipientId type
     const success = await messagingService.markMessageRead(
-      user.id,
+      String(user.id),
       actualMessageId
     );
 
