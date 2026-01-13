@@ -283,60 +283,13 @@ export default function GmailStyleInbox() {
         const formattedKudos = kudos.map((kudo: any) => ({
           ...kudo,
           messageType: 'kudos',
-          subject: `🏆 Kudos: ${kudo.entityName}`,
+          subject: `Kudos from ${kudo.senderName || 'a teammate'}`,
           senderName: kudo.senderName,
           isRead: kudo.isRead || false,
         }));
         
         logger.log(`Fetched ${formattedKudos.length} kudos`);
         return formattedKudos;
-      } else if (activeFolder === 'inbox') {
-        // For inbox, fetch both emails and kudos, then merge them
-        logger.log(`[Inbox] Fetching inbox messages for user: ${user?.email}`);
-        const [emailsResponse, kudosResponse] = await Promise.all([
-          apiRequest('GET', `/api/emails?folder=${activeFolder}`),
-          apiRequest('GET', '/api/emails/kudos')
-        ]);
-        
-        logger.log(`[Inbox] Raw emails response:`, emailsResponse);
-        logger.log(`[Inbox] Raw kudos response:`, kudosResponse);
-        
-        const emails = Array.isArray(emailsResponse) ? emailsResponse : emailsResponse.messages || [];
-        const kudos = Array.isArray(kudosResponse) ? kudosResponse : [];
-        
-        logger.log(`[Inbox] Parsed ${emails.length} emails, ${kudos.length} kudos`);
-        
-        // Format emails with message type
-        const formattedEmails = emails.map((email: any) => ({
-          ...email,
-          messageType: 'email',
-        }));
-        
-        // Format kudos with special styling info
-        const formattedKudos = kudos.map((kudo: any) => ({
-          ...kudo,
-          messageType: 'kudos',
-          subject: `🏆 Kudos: ${kudo.entityName || 'Your Work'}`,
-          senderName: kudo.senderName,
-          recipientName: user?.firstName + ' ' + user?.lastName || 'You',
-          isRead: kudo.isRead || false,
-        }));
-        
-        // Merge and sort by creation date (newest first)
-        const allMessages = [...formattedEmails, ...formattedKudos].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        
-        logger.log(
-          `[Inbox] Fetched ${emails.length} emails and ${kudos.length} kudos, merged into ${allMessages.length} total messages`
-        );
-        if (allMessages.length > 0) {
-          logger.log(`[Inbox] Sample message structure:`, JSON.stringify(allMessages[0], null, 2));
-          logger.log(`[Inbox] Message has id:`, allMessages[0].id);
-          logger.log(`[Inbox] Message has senderName:`, allMessages[0].senderName);
-          logger.log(`[Inbox] Message has content:`, allMessages[0].content?.substring(0, 50));
-        }
-        return allMessages;
       } else {
         // For other folders, only fetch regular emails
         logger.log(`[${activeFolder}] Fetching messages for folder: ${activeFolder}`);
