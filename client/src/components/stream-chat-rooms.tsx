@@ -227,7 +227,7 @@ const CHAT_ROOMS = [
   { id: 'events-committee', name: 'Events Committee', icon: Users, permission: 'CHAT_EVENTS_COMMITTEE' },
   { id: 'board-chat', name: 'Board Chat', icon: Users, permission: 'CHAT_BOARD' },
   { id: 'web-committee', name: 'Web Committee', icon: Users, permission: 'CHAT_WEB_COMMITTEE' },
-  { id: 'volunteer-management', name: 'Volunteer Management', icon: Users, permission: 'CHAT_VOLUNTEER_MANAGEMENT' },
+  { id: 'volunteer-management', name: 'Volunteer Chat', icon: Users, permission: 'CHAT_VOLUNTEER_MANAGEMENT' },
   { id: 'host', name: 'Host Chat', icon: Heart, permission: 'CHAT_HOST' },
   { id: 'driver', name: 'Driver Chat', icon: Truck, permission: 'CHAT_DRIVER' },
   { id: 'recipient', name: 'Recipient Chat', icon: MessageSquare, permission: 'CHAT_RECIPIENT' },

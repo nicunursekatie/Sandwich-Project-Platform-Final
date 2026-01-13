@@ -85,7 +85,7 @@ export function ChatSyncPanel() {
       'events-committee': 'Events Committee',
       'board-chat': 'Board Chat',
       'web-committee': 'Web Committee',
-      'volunteer-management': 'Volunteer Management',
+      'volunteer-management': 'Volunteer Chat',
       'host': 'Host Chat',
       'driver': 'Driver Chat',
       'recipient': 'Recipient Chat',

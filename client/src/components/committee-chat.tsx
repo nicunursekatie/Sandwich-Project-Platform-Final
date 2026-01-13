@@ -59,7 +59,7 @@ const committees = [
   },
   {
     id: 'volunteer_management',
-    name: 'Volunteer Management',
+    name: 'Volunteer Chat',
     description: 'Volunteer coordination and support',
     permission: 'CHAT_VOLUNTEER_MANAGEMENT',
   },

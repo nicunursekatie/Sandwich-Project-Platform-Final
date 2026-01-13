@@ -137,7 +137,7 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.CHAT_GRANTS_COMMITTEE, label: 'Grants Committee', icon: Users },
       { permission: PERMISSIONS.CHAT_EVENTS_COMMITTEE, label: 'Events Committee', icon: Calendar },
       { permission: PERMISSIONS.CHAT_WEB_COMMITTEE, label: 'Web Committee', icon: Users },
-      { permission: PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT, label: 'Volunteer Management', icon: Users },
+      { permission: PERMISSIONS.CHAT_VOLUNTEER_MANAGEMENT, label: 'Volunteer Chat', icon: Users },
       { permission: PERMISSIONS.CHAT_DRIVER, label: 'Driver Chat', icon: Car },
       { permission: PERMISSIONS.CHAT_HOST, label: 'Host Chat', icon: Building2 },
       { permission: PERMISSIONS.CHAT_RECIPIENT, label: 'Recipient Chat', icon: Building },
