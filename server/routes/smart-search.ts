@@ -12,6 +12,8 @@ import { safeAssign, validateNoPrototypePollution } from '../utils/object-utils'
 
 interface ExtendedSmartSearchQuery extends SmartSearchQuery {
   userPermissions?: string[];
+  userId?: string;
+  includeMessages?: boolean;
 }
 
 export function createSmartSearchRouter(searchService: SmartSearchService) {
@@ -19,7 +21,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
   /**
    * POST /api/smart-search/query
-   * Perform intelligent search
+   * Perform intelligent search (includes messages/emails)
    */
   router.post('/query', async (req, res) => {
     try {
@@ -29,7 +31,9 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
         query: req.body.query || '',
         limit: req.body.limit || 10,
         userRole: sessionUser?.role || 'user',
-        userPermissions: sessionUser?.permissions || []
+        userPermissions: sessionUser?.permissions || [],
+        userId: sessionUser?.id, // Include userId for message search
+        includeMessages: req.body.includeMessages !== false, // Default to true
       };
 
       if (!query.query.trim()) {
@@ -74,6 +78,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
   /**
    * POST /api/smart-search/fuzzy
    * Perform fast fuzzy search (for real-time autocomplete)
+   * Includes messages/emails when user is authenticated
    */
   router.post('/fuzzy', async (req, res) => {
     try {
@@ -81,9 +86,11 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const sessionUser = req.user as SessionUser | undefined;
       const query: ExtendedSmartSearchQuery = {
         query: req.body.query || '',
-        limit: req.body.limit || 5,
+        limit: req.body.limit || 8,
         userRole: sessionUser?.role || 'user',
-        userPermissions: sessionUser?.permissions || []
+        userPermissions: sessionUser?.permissions || [],
+        userId: sessionUser?.id, // Include userId for message search
+        includeMessages: req.body.includeMessages !== false, // Default to true
       };
 
       const results = await searchService.fuzzySearch(query);

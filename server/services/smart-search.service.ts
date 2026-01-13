@@ -23,6 +23,9 @@ import {
   SearchAnalytics,
   SearchTestResult
 } from '../types/smart-search';
+import { db } from '../db';
+import { messages, messageRecipients, emailMessages, users } from '@shared/schema';
+import { eq, or, ilike, and, desc, sql } from 'drizzle-orm';
 
 export class SmartSearchService {
   private index: SmartSearchIndex | null = null;
@@ -228,6 +231,169 @@ export class SmartSearchService {
   }
 
   /**
+   * Search messages and emails for a user
+   * Returns messages where the user is sender/recipient and content matches query
+   */
+  async searchMessages(query: SmartSearchQuery): Promise<SmartSearchResult[]> {
+    if (!query.userId || !query.query.trim()) {
+      return [];
+    }
+
+    const searchTerm = `%${query.query.toLowerCase()}%`;
+    const results: SmartSearchResult[] = [];
+
+    try {
+      // Search internal messages (Team Chat, DMs, etc.)
+      const internalMessages = await db
+        .select({
+          id: messages.id,
+          content: messages.content,
+          sender: messages.sender,
+          senderId: messages.senderId,
+          contextType: messages.contextType,
+          contextTitle: messages.contextTitle,
+          createdAt: messages.createdAt,
+          senderFirstName: users.firstName,
+          senderLastName: users.lastName,
+          senderDisplayName: users.displayName,
+          senderEmail: users.email,
+        })
+        .from(messages)
+        .leftJoin(users, eq(messages.senderId, users.id))
+        .innerJoin(
+          messageRecipients,
+          eq(messages.id, messageRecipients.messageId)
+        )
+        .where(
+          and(
+            or(
+              eq(messages.senderId, query.userId),
+              eq(messageRecipients.recipientId, query.userId)
+            ),
+            or(
+              ilike(messages.content, searchTerm),
+              ilike(messages.sender, searchTerm),
+              ilike(users.firstName || '', searchTerm),
+              ilike(users.lastName || '', searchTerm),
+              ilike(users.displayName || '', searchTerm)
+            )
+          )
+        )
+        .orderBy(desc(messages.createdAt))
+        .limit(10);
+
+      // Convert internal messages to SearchableFeature format
+      for (const msg of internalMessages) {
+        const senderName = msg.senderDisplayName ||
+          `${msg.senderFirstName || ''} ${msg.senderLastName || ''}`.trim() ||
+          msg.sender || 'Unknown';
+
+        const preview = msg.content?.substring(0, 100) + (msg.content && msg.content.length > 100 ? '...' : '');
+        const contextLabel = msg.contextType === 'direct' ? 'Direct Message' :
+          msg.contextTitle || msg.contextType || 'Message';
+
+        // Calculate match score
+        const q = query.query.toLowerCase();
+        let score = 0;
+        if (senderName.toLowerCase().includes(q)) score = 0.9;
+        else if (msg.content?.toLowerCase().includes(q)) score = 0.7;
+        else score = 0.5;
+
+        results.push({
+          feature: {
+            id: `message-${msg.id}`,
+            title: `Message from ${senderName}`,
+            description: preview || 'No content',
+            category: contextLabel,
+            route: `/dashboard?section=chat&messageId=${msg.id}`,
+            keywords: [senderName.toLowerCase(), msg.contextType || ''],
+            entityType: 'message',
+            entityId: msg.id,
+            previewText: preview,
+            senderName,
+            timestamp: msg.createdAt || undefined,
+          },
+          score,
+          matchType: 'fuzzy',
+        });
+      }
+
+      // Search email messages
+      const emails = await db
+        .select({
+          id: emailMessages.id,
+          subject: emailMessages.subject,
+          body: emailMessages.body,
+          senderName: emailMessages.senderName,
+          senderEmail: emailMessages.senderEmail,
+          recipientName: emailMessages.recipientName,
+          createdAt: emailMessages.createdAt,
+        })
+        .from(emailMessages)
+        .where(
+          and(
+            or(
+              eq(emailMessages.senderId, query.userId),
+              eq(emailMessages.recipientId, query.userId)
+            ),
+            or(
+              ilike(emailMessages.subject || '', searchTerm),
+              ilike(emailMessages.body || '', searchTerm),
+              ilike(emailMessages.senderName || '', searchTerm),
+              ilike(emailMessages.recipientName || '', searchTerm)
+            )
+          )
+        )
+        .orderBy(desc(emailMessages.createdAt))
+        .limit(10);
+
+      // Convert emails to SearchableFeature format
+      for (const email of emails) {
+        const preview = email.body?.substring(0, 100) + (email.body && email.body.length > 100 ? '...' : '');
+
+        // Calculate match score
+        const q = query.query.toLowerCase();
+        let score = 0;
+        if (email.senderName?.toLowerCase().includes(q)) score = 0.9;
+        else if (email.recipientName?.toLowerCase().includes(q)) score = 0.85;
+        else if (email.subject?.toLowerCase().includes(q)) score = 0.8;
+        else if (email.body?.toLowerCase().includes(q)) score = 0.6;
+        else score = 0.5;
+
+        results.push({
+          feature: {
+            id: `email-${email.id}`,
+            title: email.subject || 'No Subject',
+            description: `From: ${email.senderName || email.senderEmail} - ${preview || 'No content'}`,
+            category: 'Email',
+            route: `/dashboard?section=gmail-inbox&emailId=${email.id}`,
+            keywords: [
+              email.senderName?.toLowerCase() || '',
+              email.recipientName?.toLowerCase() || '',
+            ].filter(Boolean),
+            entityType: 'email',
+            entityId: email.id,
+            previewText: preview,
+            senderName: email.senderName || email.senderEmail || undefined,
+            timestamp: email.createdAt || undefined,
+          },
+          score,
+          matchType: 'fuzzy',
+        });
+      }
+
+      // Sort all results by score
+      results.sort((a, b) => b.score - a.score);
+
+      // Limit total results
+      return results.slice(0, query.limit || 10);
+    } catch (error) {
+      console.error('Error searching messages:', error);
+      return [];
+    }
+  }
+
+  /**
    * Perform fuzzy search (server-side, designed for fast/instant client responses)
    */
   async fuzzySearch(query: SmartSearchQuery): Promise<SmartSearchResult[]> {
@@ -285,6 +451,19 @@ export class SmartSearchService {
 
     // Sort by score descending
     results.sort((a, b) => b.score - a.score);
+
+    // If includeMessages is true and userId is provided, also search messages
+    if (query.includeMessages !== false && query.userId) {
+      try {
+        const messageResults = await this.searchMessages(query);
+        // Merge message results with feature results
+        results.push(...messageResults);
+        // Re-sort after merging
+        results.sort((a, b) => b.score - a.score);
+      } catch (error) {
+        console.error('Error including message search results:', error);
+      }
+    }
 
     // Apply limit
     return results.slice(0, query.limit || 10);

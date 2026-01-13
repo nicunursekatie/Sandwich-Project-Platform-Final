@@ -13,6 +13,12 @@ export interface SearchableFeature {
   keywords: string[];
   requiredPermissions?: string[];
   embedding?: number[];
+  // Extended fields for dynamic content (messages, etc.)
+  entityType?: 'feature' | 'message' | 'chat' | 'email';
+  entityId?: string | number;
+  previewText?: string;
+  senderName?: string;
+  timestamp?: Date;
 }
 
 export interface CommonQuestion {
@@ -30,6 +36,8 @@ export interface SmartSearchQuery {
   limit?: number;
   userRole?: string;
   userPermissions?: string[];
+  userId?: string; // For filtering messages/content the user has access to
+  includeMessages?: boolean; // Whether to search messages/emails
 }
 
 export interface SmartSearchResult {

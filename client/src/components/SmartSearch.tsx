@@ -13,7 +13,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'wouter';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Search, Command, ArrowRight, Sparkles, Loader2, X } from 'lucide-react';
+import { Search, Command, ArrowRight, Sparkles, Loader2, X, MessageSquare, Mail, User } from 'lucide-react';
 
 interface SearchableFeature {
   id: string;
@@ -24,6 +24,11 @@ interface SearchableFeature {
   action?: string;
   keywords: string[];
   requiredPermissions?: string[];
+  entityType?: 'feature' | 'message' | 'chat' | 'email';
+  entityId?: string | number;
+  previewText?: string;
+  senderName?: string;
+  timestamp?: string;
 }
 
 interface SmartSearchResult {
@@ -221,6 +226,42 @@ export function SmartSearch() {
     }
   };
 
+  // Get icon for result type
+  const getResultIcon = (feature: SearchableFeature) => {
+    switch (feature.entityType) {
+      case 'message':
+        return <MessageSquare className="w-5 h-5 text-blue-500" />;
+      case 'email':
+        return <Mail className="w-5 h-5 text-orange-500" />;
+      case 'chat':
+        return <MessageSquare className="w-5 h-5 text-green-500" />;
+      default:
+        return <Search className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  // Format timestamp for display
+  const formatTimestamp = (timestamp: string | undefined) => {
+    if (!timestamp) return null;
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 0) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else if (diffDays === 1) {
+        return 'Yesterday';
+      } else if (diffDays < 7) {
+        return date.toLocaleDateString([], { weekday: 'short' });
+      } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    } catch {
+      return null;
+    }
+  };
+
   return (
     <>
       {/* Trigger Button */}
@@ -285,7 +326,7 @@ export function SmartSearch() {
                 <div className="p-8 text-center text-gray-500">
                   <Command className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                   <p className="text-lg font-medium mb-1">What can I help you find?</p>
-                  <p className="text-sm">Try: "add a volunteer" or "view collections"</p>
+                  <p className="text-sm">Try: "Kim" to find messages, "add a volunteer", or "view collections"</p>
                 </div>
               )}
 
@@ -297,15 +338,37 @@ export function SmartSearch() {
                     index === selectedIndex ? 'bg-blue-50' : ''
                   }`}
                 >
-                  <div className="flex-1 text-left">
+                  {/* Icon based on result type */}
+                  <div className="flex-shrink-0 mt-0.5">
+                    {getResultIcon(result.feature)}
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-gray-900">{result.feature.title}</span>
+                      <span className="font-medium text-gray-900 truncate">{result.feature.title}</span>
                       {getMatchTypeBadge(result.matchType)}
+                      {/* Show timestamp for messages/emails */}
+                      {result.feature.timestamp && (
+                        <span className="text-xs text-gray-400 flex-shrink-0">
+                          {formatTimestamp(result.feature.timestamp)}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">{result.feature.description}</p>
+                    <p className="text-sm text-gray-600 mb-1 line-clamp-2">{result.feature.description}</p>
                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span className="px-2 py-0.5 bg-gray-100 rounded">{result.feature.category}</span>
-                      {result.matchedKeywords && result.matchedKeywords.length > 0 && (
+                      <span className={`px-2 py-0.5 rounded ${
+                        result.feature.entityType === 'message' ? 'bg-blue-50 text-blue-700' :
+                        result.feature.entityType === 'email' ? 'bg-orange-50 text-orange-700' :
+                        'bg-gray-100'
+                      }`}>
+                        {result.feature.category}
+                      </span>
+                      {result.feature.senderName && (
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {result.feature.senderName}
+                        </span>
+                      )}
+                      {result.matchedKeywords && result.matchedKeywords.length > 0 && !result.feature.entityType && (
                         <span>• Matched: {result.matchedKeywords.join(', ')}</span>
                       )}
                     </div>
