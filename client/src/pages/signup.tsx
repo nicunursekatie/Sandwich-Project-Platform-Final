@@ -434,18 +434,19 @@ export default function SignupPage() {
                             id={option}
                             checked={selectedAvailability.includes(option)}
                             onCheckedChange={(checked) => {
+                              let newAvailability: string[];
                               if (checked) {
-                                setSelectedAvailability([
+                                newAvailability = [
                                   ...selectedAvailability,
                                   option,
-                                ]);
+                                ];
                               } else {
-                                setSelectedAvailability(
-                                  selectedAvailability.filter(
-                                    (item) => item !== option
-                                  )
+                                newAvailability = selectedAvailability.filter(
+                                  (item) => item !== option
                                 );
                               }
+                              setSelectedAvailability(newAvailability);
+                              form.setValue('availability', newAvailability, { shouldValidate: true });
                             }}
                           />
                           <Label 
