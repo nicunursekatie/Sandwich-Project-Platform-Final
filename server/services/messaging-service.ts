@@ -802,7 +802,9 @@ export class MessagingService {
    */
   async getReceivedKudos(userId: string): Promise<any[]> {
     try {
-      logger.log(`[getReceivedKudos] Fetching kudos for userId: ${userId}`);
+      // Convert userId to string to handle numeric IDs from dev mode
+      const userIdStr = String(userId);
+      logger.log(`[getReceivedKudos] Fetching kudos for userId: ${userIdStr}`);
 
       // Get kudos tracking entries where this user is the recipient
       const kudosEntries = await db
@@ -814,7 +816,7 @@ export class MessagingService {
           createdAt: kudosTracking.sentAt,
         })
         .from(kudosTracking)
-        .where(eq(kudosTracking.recipientId, userId))
+        .where(eq(kudosTracking.recipientId, userIdStr))
         .orderBy(desc(kudosTracking.sentAt));
 
       logger.log(`[getReceivedKudos] Found ${kudosEntries.length} kudos entries`);
@@ -854,7 +856,7 @@ export class MessagingService {
                 messageRecipients,
                 and(
                   eq(messages.id, messageRecipients.messageId),
-                  eq(messageRecipients.recipientId, userId)
+                  eq(messageRecipients.recipientId, userIdStr)
                 )
               )
               .where(eq(messages.id, entry.messageId!))
