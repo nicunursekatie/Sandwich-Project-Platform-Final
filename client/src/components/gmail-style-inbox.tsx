@@ -899,16 +899,24 @@ export default function GmailStyleInbox() {
     messages: messages.slice(0, 3), // Log first 3 messages for debugging
   });
 
-  // Add this helper function near other helpers
+  // Mark a kudos as read via the messaging service endpoint
   const markKudosAsRead = async (kudoId: number) => {
     try {
+      logger.log(`[markKudosAsRead] Marking kudos ${kudoId} as read`);
       // Use the POST /:messageId/read route which properly handles kudos via messagingService
-      await apiRequest('POST', `/api/emails/${kudoId}/read`);
-      // Invalidate both kudos query and main inbox query (which merges kudos)
-      queryClient.invalidateQueries({ queryKey: ['/api/emails/kudos'] });
-      queryClient.invalidateQueries({ queryKey: [apiBase, activeFolder] });
+      const response = await apiRequest('POST', `/api/emails/${kudoId}/read`);
+      logger.log(`[markKudosAsRead] Server response:`, response);
+
+      // Invalidate all kudos-related queries and wait for them to complete
+      logger.log(`[markKudosAsRead] Invalidating queries...`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/emails/kudos'] }),
+        queryClient.invalidateQueries({ queryKey: [apiBase, activeFolder] }),
+        queryClient.invalidateQueries({ queryKey: [apiBase, 'inbox'] }),
+      ]);
+      logger.log(`[markKudosAsRead] Queries invalidated`);
     } catch (error) {
-      logger.error('Failed to mark kudos as read', error);
+      logger.error('[markKudosAsRead] Failed to mark kudos as read', error);
     }
   };
 
