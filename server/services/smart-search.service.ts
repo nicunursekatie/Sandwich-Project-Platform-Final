@@ -323,7 +323,7 @@ export class SmartSearchService {
         .select({
           id: emailMessages.id,
           subject: emailMessages.subject,
-          body: emailMessages.body,
+          content: emailMessages.content,
           senderName: emailMessages.senderName,
           senderEmail: emailMessages.senderEmail,
           recipientName: emailMessages.recipientName,
@@ -338,7 +338,7 @@ export class SmartSearchService {
             ),
             or(
               ilike(emailMessages.subject || '', searchTerm),
-              ilike(emailMessages.body || '', searchTerm),
+              ilike(emailMessages.content || '', searchTerm),
               ilike(emailMessages.senderName || '', searchTerm),
               ilike(emailMessages.recipientName || '', searchTerm)
             )
@@ -349,7 +349,7 @@ export class SmartSearchService {
 
       // Convert emails to SearchableFeature format
       for (const email of emails) {
-        const preview = email.body?.substring(0, 100) + (email.body && email.body.length > 100 ? '...' : '');
+        const preview = email.content?.substring(0, 100) + (email.content && email.content.length > 100 ? '...' : '');
 
         // Calculate match score
         const q = query.query.toLowerCase();
@@ -357,7 +357,7 @@ export class SmartSearchService {
         if (email.senderName?.toLowerCase().includes(q)) score = 0.9;
         else if (email.recipientName?.toLowerCase().includes(q)) score = 0.85;
         else if (email.subject?.toLowerCase().includes(q)) score = 0.8;
-        else if (email.body?.toLowerCase().includes(q)) score = 0.6;
+        else if (email.content?.toLowerCase().includes(q)) score = 0.6;
         else score = 0.5;
 
         results.push({
@@ -502,8 +502,9 @@ export class SmartSearchService {
       // Get or compute embedding for this feature
       let featureEmbedding = feature.embedding;
       if (!featureEmbedding) {
-        featureEmbedding = await this.getEmbedding(searchableText);
-        if (featureEmbedding) {
+        const computed = await this.getEmbedding(searchableText);
+        if (computed) {
+          featureEmbedding = computed;
           feature.embedding = featureEmbedding;
           embeddingsAdded = true;
         }
