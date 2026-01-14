@@ -74,11 +74,11 @@ function ComprehensivePersonSelector({
     queryKey: ['/api/users/for-assignments'],
   });
 
-  const { data: drivers = [], isLoading: driversLoading } = useQuery<any[]>({
+  const { data: drivers = [], isLoading: driversLoading, error: driversError } = useQuery<any[]>({
     queryKey: ['/api/drivers'],
   });
 
-  const { data: volunteers = [], isLoading: volunteersLoading } = useQuery<any[]>({
+  const { data: volunteers = [], isLoading: volunteersLoading, error: volunteersError } = useQuery<any[]>({
     queryKey: ['/api/volunteers'],
   });
 
@@ -87,6 +87,19 @@ function ComprehensivePersonSelector({
   });
 
   const isLoading = usersLoading || driversLoading || volunteersLoading || hostsLoading;
+
+  // Debug logging for driver/volunteer list issue
+  console.log('[AssignmentDialog] Query results:', {
+    usersCount: users.length,
+    driversCount: drivers.length,
+    volunteersCount: volunteers.length,
+    hostsWithContactsCount: hostsWithContacts.length,
+    isLoading,
+    driversLoading,
+    volunteersLoading,
+    driversError: driversError?.message || null,
+    volunteersError: volunteersError?.message || null
+  });
 
   // Extract all host contacts
   const hostContacts = hostsWithContacts.flatMap(host =>
@@ -173,6 +186,13 @@ function ComprehensivePersonSelector({
     acc[person.section].push(person);
     return acc;
   }, {} as Record<string, any[]>);
+
+  // Debug logging for sections
+  console.log('[AssignmentDialog] Final sections:', {
+    allPeopleCount: allPeople.length,
+    sections: Object.keys(groupedPeople),
+    sectionCounts: Object.fromEntries(Object.entries(groupedPeople).map(([k, v]) => [k, (v as any[]).length]))
+  });
 
   const togglePersonSelection = (personId: string) => {
     if (selectedPeople.includes(personId)) {
