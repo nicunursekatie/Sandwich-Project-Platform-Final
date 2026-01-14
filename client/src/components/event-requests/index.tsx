@@ -1099,6 +1099,7 @@ const EventRequestsManagementContent: React.FC = () => {
           assignmentType={assignmentType}
           selectedAssignees={selectedAssignees}
           setSelectedAssignees={setSelectedAssignees}
+          isVanDriverAssignment={isVanDriverAssignment}
           onAssign={async (assignees: string[]) => {
             if (!assignmentEventId || !assignmentType) return;
 

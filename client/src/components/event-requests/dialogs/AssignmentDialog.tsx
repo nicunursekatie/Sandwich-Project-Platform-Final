@@ -434,6 +434,7 @@ interface AssignmentDialogProps {
   selectedAssignees: string[];
   setSelectedAssignees: (assignees: string[]) => void;
   onAssign: (assignees: string[]) => void;
+  isVanDriverAssignment?: boolean;
 }
 
 export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
@@ -443,6 +444,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   selectedAssignees,
   setSelectedAssignees,
   onAssign,
+  isVanDriverAssignment = false,
 }) => {
   // Get context to find the event date
   const { assignmentEventId, eventRequests } = useEventRequestContext();
@@ -493,10 +495,10 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
             Assign {assignmentType ? assignmentType.charAt(0).toUpperCase() + assignmentType.slice(1) + 's' : 'People'}
           </DialogTitle>
           <DialogDescription className="text-gray-600 mt-2">
-            {assignmentType === 'driver' && currentEvent?.vanDriverNeeded ? (
+            {assignmentType === 'driver' && isVanDriverAssignment ? (
               <span className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-amber-600" />
-                Van driver needed - only showing van-approved drivers. Select a van-approved driver to assign.
+                Van driver assignment - only showing van-approved drivers. Select a van-approved driver to assign.
               </span>
             ) : (
               `Select people to assign as ${assignmentType ? assignmentType + 's' : 'people'} for this event. You can choose from team members, drivers, volunteers, and host contacts.`
@@ -525,7 +527,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           assignmentType={assignmentType}
           availabilitySlots={availabilitySlots}
           isLoadingAvailability={isLoadingAvailability}
-          vanDriverNeeded={currentEvent?.vanDriverNeeded || false}
+          vanDriverNeeded={isVanDriverAssignment}
         />
 
         <div className="flex justify-end space-x-2 pt-4 border-t border-[#007E8C]/10">
