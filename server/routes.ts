@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import express from 'express';
 import session from 'express-session';
+import type { Store } from 'express-session';
 import connectPg from 'connect-pg-simple';
 import { storage } from './storage-wrapper';
 import { createActivityLogger } from './middleware/activity-logger';
@@ -19,7 +20,7 @@ import { getDatabaseUrl } from './db-url';
  * To add new routes, see server/routes/index.ts
  */
 
-export async function registerRoutes(app: Express): Promise<any> {
+export async function registerRoutes(app: Express): Promise<Store> {
   // ==========================================================================
   // SESSION & COOKIE CONFIGURATION
   // ==========================================================================

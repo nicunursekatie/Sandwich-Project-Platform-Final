@@ -20,13 +20,15 @@ import {
   backgroundJobsTotal,
   backgroundJobDuration,
 } from './metrics';
+import type { Store } from 'express-session';
+import type { IStorage } from '../storage';
 import logger from '../utils/logger';
 
 /**
  * Track active user count
  * Call this periodically (e.g., every minute) to update active user gauge
  */
-export async function updateActiveUsersCount(storage: any): Promise<void> {
+export async function updateActiveUsersCount(_storage: IStorage): Promise<void> {
   try {
     // Get users active in last 5 minutes, 1 hour, and 24 hours
     const now = new Date();
@@ -34,13 +36,9 @@ export async function updateActiveUsersCount(storage: any): Promise<void> {
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // You'll need to implement these queries in your storage layer
-    // For now, we'll use placeholder values
-    // In production, query activity_logs or similar table
-
-    const users5min = await countActiveUsers(storage, fiveMinutesAgo);
-    const users1hour = await countActiveUsers(storage, oneHourAgo);
-    const users24hours = await countActiveUsers(storage, oneDayAgo);
+    const users5min = await countActiveUsers(fiveMinutesAgo);
+    const users1hour = await countActiveUsers(oneHourAgo);
+    const users24hours = await countActiveUsers(oneDayAgo);
 
     activeUsers.set({ timeframe: '5m' }, users5min);
     activeUsers.set({ timeframe: '1h' }, users1hour);
@@ -59,15 +57,18 @@ export async function updateActiveUsersCount(storage: any): Promise<void> {
 /**
  * Helper to count active users since a given time
  */
-async function countActiveUsers(storage: any, since: Date): Promise<number> {
+async function countActiveUsers(since: Date): Promise<number> {
   try {
-    // This should query your activity_logs table
-    // Placeholder implementation
-    if (storage.getActiveUsersSince) {
-      return await storage.getActiveUsersSince(since);
-    }
-    return 0;
+    const { db } = await import('../db');
+    const { sql } = await import('drizzle-orm');
+    const result = await db.execute(
+      sql`SELECT COUNT(DISTINCT user_id) as count FROM user_activity_logs WHERE created_at >= ${since}`
+    );
+    const rawCount = result.rows?.[0]?.count;
+    const parsedCount = Number.parseInt(String(rawCount ?? 0), 10);
+    return Number.isFinite(parsedCount) ? parsedCount : 0;
   } catch (error) {
+    logger.warn('Failed to count active users', { error });
     return 0;
   }
 }
@@ -147,7 +148,7 @@ export function trackAuthAttempt(method: 'local' | 'openid' | 'api_key', status:
  * Call this periodically to update the gauge
  * Note: sessionStore parameter is no longer used but kept for API compatibility
  */
-export async function updateActiveSessionsCount(_sessionStore?: any): Promise<void> {
+export async function updateActiveSessionsCount(_sessionStore?: Store): Promise<void> {
   try {
     // Import db here to avoid circular dependency issues
     const { db } = await import('../db');
@@ -274,7 +275,7 @@ export async function monitorBackgroundJob<T>(
  * Start periodic metrics updates
  * Call this once during server initialization
  */
-export function startMetricsUpdates(storage: any, sessionStore: any): void {
+export function startMetricsUpdates(storage: IStorage, sessionStore?: Store): void {
   // Update active users every minute
   const updateUsers = async () => {
     await updateActiveUsersCount(storage);

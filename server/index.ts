@@ -4,15 +4,16 @@
 // Note: OpenAPI extension removed due to platform compatibility issues
 
 import express, { type Request, Response, NextFunction } from 'express';
+import type { Store } from 'express-session';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import compression from 'compression';
 import { registerRoutes } from './routes';
 import { setupVite, serveStatic, log } from './vite';
 import { initializeDatabase } from './db-init';
+import type { IStorage } from './storage';
 import { setupSocketChat } from './socket-chat';
 import { setupSocketCollaboration } from './socket-collaboration';
-import { startBackgroundSync } from './background-sync-service';
 import { smartDeliveryService } from './services/notifications/smart-delivery';
 import logger, { createServiceLogger, logRequest } from './utils/logger.js';
 import {
@@ -332,7 +333,7 @@ async function bootstrap() {
           serverLogger.info('✅ Monitoring routes registered at /monitoring');
 
           // CRITICAL FIX: Register all API routes FIRST to prevent route interception
-          let sessionStore: any;
+          let sessionStore: Store | undefined;
           try {
             sessionStore = await registerRoutes(app);
             serverLogger.info('✅ API routes registered');
@@ -477,11 +478,13 @@ async function bootstrap() {
           logger.log({ message: '✓ Database initialization complete', level: 'info' });
 
           // Background Google Sheets sync re-enabled
-          const { storage } = await import('./storage-wrapper');
+          const { storage } = (await import('./storage-wrapper')) as {
+            storage: IStorage;
+          };
           const { startBackgroundSync } = await import(
             './background-sync-service'
           );
-          startBackgroundSync(storage as any); // TODO: Fix storage interface types
+          startBackgroundSync(storage);
           logger.log({ message: '✓ Background Google Sheets sync service started', level: 'info' });
 
           // Initialize cron jobs for scheduled tasks
@@ -491,7 +494,7 @@ async function bootstrap() {
 
           // Start periodic metrics updates (active users, sessions, etc.)
           if (sessionStore) {
-            startMetricsUpdates(storage as any, sessionStore);
+            startMetricsUpdates(storage, sessionStore);
             logger.info('Periodic metrics updates started');
           } else {
             logger.warn('Session store not available - skipping session metrics');
