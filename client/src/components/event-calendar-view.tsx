@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -410,6 +410,15 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     'completed',
     'cancelled',
   ]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Track screen size for responsive event display
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Get resolveUserName function for displaying assigned staff names
   const { resolveUserName } = useEventAssignments();
@@ -553,20 +562,20 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   return (
     <TooltipProvider>
     <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-3 text-2xl">
-            <CalendarIcon className="w-7 h-7" />
+      <CardHeader className="pb-2 sm:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl">
+            <CalendarIcon className="w-5 h-5 sm:w-7 sm:h-7" />
             Event Calendar
           </CardTitle>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filter Status
+                <Button variant="outline" size="sm" className="px-2 sm:px-3">
+                  <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Filter Status</span>
                   {statusFilters.length < 5 && (
-                    <Badge variant="secondary" className="ml-2">
+                    <Badge variant="secondary" className="ml-1 sm:ml-2 text-[10px] sm:text-xs">
                       {statusFilters.length}
                     </Badge>
                   )}
@@ -617,24 +626,25 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="default" onClick={goToToday} className="px-4 py-2">
+            <Button variant="outline" size="sm" onClick={goToToday} className="px-2 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm">
               Today
             </Button>
-            <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="w-10 h-10" aria-label="Go to previous month">
-              <ChevronLeft className="w-5 h-5" />
+            <Button variant="outline" size="icon" onClick={goToPreviousMonth} className="w-8 h-8 sm:w-10 sm:h-10" aria-label="Go to previous month">
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
-            <div className="flex-1 min-w-0 text-center font-bold text-base sm:text-lg truncate px-2">
-              {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}
+            <div className="flex-1 min-w-0 text-center font-bold text-sm sm:text-lg truncate px-1 sm:px-2">
+              <span className="sm:hidden">{MONTH_NAMES[currentDate.getMonth()].slice(0, 3)} {currentDate.getFullYear()}</span>
+              <span className="hidden sm:inline">{MONTH_NAMES[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
             </div>
-            <Button variant="outline" size="icon" onClick={goToNextMonth} className="w-10 h-10" aria-label="Go to next month">
-              <ChevronRight className="w-5 h-5" />
+            <Button variant="outline" size="icon" onClick={goToNextMonth} className="w-8 h-8 sm:w-10 sm:h-10" aria-label="Go to next month">
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        {/* Legend */}
-        <div className="mb-6 pb-4 border-b space-y-4">
+      <CardContent className="px-2 sm:px-6">
+        {/* Legend - hidden on mobile */}
+        <div className="hidden sm:block mb-6 pb-4 border-b space-y-4">
           {/* Status Legend */}
           <div className="flex flex-wrap gap-3 items-center">
             <span className="text-sm font-semibold text-gray-800">Status:</span>
@@ -712,14 +722,15 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
           {/* Day headers */}
           {DAYS_OF_WEEK.map((day) => (
             <div
               key={day}
-              className="p-2 text-center font-semibold text-sm text-gray-700 bg-gray-100 rounded"
+              className="p-1 sm:p-2 text-center font-semibold text-[10px] sm:text-sm text-gray-700 bg-gray-100 rounded"
             >
-              {day}
+              <span className="sm:hidden">{day.charAt(0)}</span>
+              <span className="hidden sm:inline">{day}</span>
             </div>
           ))}
 
@@ -736,7 +747,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
               <div
                 key={index}
                 className={cn(
-                  'min-h-[140px] border rounded-lg p-2',
+                  'min-h-[100px] sm:min-h-[140px] border rounded-md sm:rounded-lg p-1 sm:p-2',
                   isCurrentMonthDay
                     ? 'bg-white border-gray-200'
                     : 'bg-gray-50 border-gray-100',
@@ -808,9 +819,9 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                   )}
                 </div>
 
-                {/* Events for this day */}
-                <div className="space-y-1">
-                  {(isExpanded ? dayEvents : dayEvents.slice(0, 3)).map((event) => {
+                {/* Events for this day - 2 on mobile, 3 on desktop */}
+                <div className="space-y-0.5 sm:space-y-1">
+                  {(isExpanded ? dayEvents : dayEvents.slice(0, isMobile ? 2 : 3)).map((event) => {
                     const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
                     const assignedStaff = getAssignedStaffNames(event, resolveUserName);
@@ -821,34 +832,34 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                         key={event.id}
                         onClick={() => onEventClick?.(event)}
                         className={cn(
-                          'w-full text-left text-xs p-1.5 rounded border hover:shadow-md transition-shadow',
+                          'w-full text-left text-[10px] sm:text-xs p-1 sm:p-1.5 rounded border hover:shadow-md transition-shadow',
                           getStatusColor(event.status)
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-semibold mb-1 text-[14px] break-words leading-tight">
+                        <div className="font-semibold mb-0.5 sm:mb-1 text-[11px] sm:text-[14px] break-words leading-tight line-clamp-2">
                           {event.organizationName}
                         </div>
 
                         {/* Unfilled needs badges - prominent display */}
                         {(unfilledNeeds.needsSpeaker || unfilledNeeds.needsVolunteer || unfilledNeeds.needsDriver) && (
-                          <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                          <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 mb-0.5 sm:mb-1">
                             {unfilledNeeds.needsSpeaker && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">
-                                <Mic className="w-3 h-3" />
-                                {unfilledNeeds.speakersUnfilled > 1 ? `${unfilledNeeds.speakersUnfilled}` : ''}
+                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-purple-600 text-white">
+                                <Mic className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="hidden sm:inline">{unfilledNeeds.speakersUnfilled > 1 ? `${unfilledNeeds.speakersUnfilled}` : ''}</span>
                               </span>
                             )}
                             {unfilledNeeds.needsVolunteer && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600 text-white">
-                                <UserCheck className="w-3 h-3" />
-                                {unfilledNeeds.volunteersUnfilled > 1 ? `${unfilledNeeds.volunteersUnfilled}` : ''}
+                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-green-600 text-white">
+                                <UserCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="hidden sm:inline">{unfilledNeeds.volunteersUnfilled > 1 ? `${unfilledNeeds.volunteersUnfilled}` : ''}</span>
                               </span>
                             )}
                             {unfilledNeeds.needsDriver && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
-                                <Car className="w-3 h-3" />
-                                {unfilledNeeds.driversUnfilled > 1 ? `${unfilledNeeds.driversUnfilled}` : ''}
+                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-blue-600 text-white">
+                                <Car className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                                <span className="hidden sm:inline">{unfilledNeeds.driversUnfilled > 1 ? `${unfilledNeeds.driversUnfilled}` : ''}</span>
                               </span>
                             )}
                           </div>
@@ -884,9 +895,9 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           </div>
                         )}
 
-                        {/* Assigned staff names */}
+                        {/* Assigned staff names - hidden on mobile for space */}
                         {assignedStaff.length > 0 && (
-                          <div className="mt-1 space-y-0.5">
+                          <div className="hidden sm:block mt-1 space-y-0.5">
                             {assignedStaff.slice(0, 3).map((staff, idx) => (
                               <div key={idx} className="text-[10px] truncate flex items-center gap-1">
                                 <span>{staff.icon}</span>
@@ -899,9 +910,18 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           </div>
                         )}
 
-                        {/* Sandwich information - single icon with compact info */}
+                        {/* Sandwich information - compact on mobile, detailed on desktop */}
                         {sandwichInfo.length > 0 && (
-                          <div className="mt-1">
+                          <div className="mt-0.5 sm:mt-1">
+                            {/* Mobile: just icon + count */}
+                            <div className="flex sm:hidden items-center gap-0.5">
+                              <Sandwich className="w-3.5 h-3.5 text-[#fbad3f]" />
+                              <span className="text-[10px] font-semibold">
+                                {(sandwichInfo[0] as any).countText || sandwichInfo[0].count || ''}
+                              </span>
+                            </div>
+                            {/* Desktop: full details */}
+                            <div className="hidden sm:block">
                             {/* If we have sandwich types, show them with one icon */}
                             {sandwichInfo.some(info => info.showTypes) ? (
                               <div className="flex items-start gap-1">
@@ -949,6 +969,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                                 </span>
                               </div>
                             )}
+                            </div>
                           </div>
                         )}
 
@@ -960,17 +981,17 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                       </button>
                     );
                   })}
-                  {dayEvents.length > 3 && (
+                  {dayEvents.length > (isMobile ? 2 : 3) && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleDateExpansion(dateKey);
                       }}
-                      className="text-[10px] text-blue-600 hover:text-blue-800 text-center font-semibold mt-0.5 w-full hover:underline"
+                      className="text-[9px] sm:text-[10px] text-blue-600 hover:text-blue-800 text-center font-semibold mt-0.5 w-full hover:underline"
                     >
                       {isExpanded
-                        ? 'Show less'
-                        : `+${dayEvents.length - 3} more`}
+                        ? 'Less'
+                        : `+${dayEvents.length - (isMobile ? 2 : 3)} more`}
                     </button>
                   )}
                 </div>
