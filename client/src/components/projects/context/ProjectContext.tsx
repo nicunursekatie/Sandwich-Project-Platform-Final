@@ -210,6 +210,18 @@ export const ProjectProvider: React.FC<ProjectProviderProps> = ({ children }) =>
     setNewProject(initialNewProject);
   };
 
+  useEffect(() => {
+    const handleOpenCreate = () => {
+      resetNewProject();
+      setShowCreateDialog(true);
+    };
+
+    window.addEventListener('openProjectCreateDialog', handleOpenCreate);
+    return () => {
+      window.removeEventListener('openProjectCreateDialog', handleOpenCreate);
+    };
+  }, [resetNewProject, setShowCreateDialog]);
+
   const value: ProjectContextValue = {
     // Data
     projects,

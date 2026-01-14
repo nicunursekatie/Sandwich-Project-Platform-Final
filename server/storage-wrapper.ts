@@ -8,6 +8,8 @@ import type {
   InsertEventFieldLock,
   InsertEventEditRevision,
   InsertAvailabilitySlot,
+  EventRequest,
+  InsertEventRequest,
 } from '@shared/schema';
 
 class StorageWrapper implements IStorage {
@@ -1577,14 +1579,14 @@ class StorageWrapper implements IStorage {
     );
   }
 
-  async createEventRequest(insertEventRequest: any) {
+  async createEventRequest(insertEventRequest: InsertEventRequest) {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventRequest(insertEventRequest),
       () => this.fallbackStorage.createEventRequest(insertEventRequest)
     );
   }
 
-  async updateEventRequest(id: number, updates: any) {
+  async updateEventRequest(id: number, updates: Partial<EventRequest>) {
     return this.executeWithFallback(
       () => this.primaryStorage.updateEventRequest(id, updates),
       () => this.fallbackStorage.updateEventRequest(id, updates)

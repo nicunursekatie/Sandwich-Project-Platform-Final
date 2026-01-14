@@ -2,8 +2,8 @@
 // Provides unified search functionality across all system entities
 
 import { db } from '../../db';
-import { wishlistSuggestions, volunteers, recipients } from '@shared/schema';
-import { ilike, or, and, eq, inArray, gte, lte, desc } from 'drizzle-orm';
+import { wishlistSuggestions, volunteers, recipients, searchAnalytics } from '@shared/schema';
+import { ilike, or, and, eq, inArray, gte, lte, desc, sql } from 'drizzle-orm';
 import { SearchEngine, type SearchFilters, type SearchResult } from '../../search-engine';
 
 // Extended search filters
@@ -425,8 +425,25 @@ export class SearchService implements ISearchService {
    * In a production environment, this would track user searches
    */
   async getPopularSearches(limit: number = 10): Promise<string[]> {
-    // TODO: Implement search analytics tracking
-    // For now, return common search terms
+    try {
+      const popularQueries = await db
+        .select({
+          query: searchAnalytics.query,
+          count: sql<number>`count(*)`,
+        })
+        .from(searchAnalytics)
+        .where(sql`${searchAnalytics.query} <> ''`)
+        .groupBy(searchAnalytics.query)
+        .orderBy(desc(sql<number>`count(*)`))
+        .limit(limit);
+
+      if (popularQueries.length > 0) {
+        return popularQueries.map((row) => row.query);
+      }
+    } catch (error) {
+      console.error('Popular search analytics failed:', error);
+    }
+
     return [
       'sandwiches',
       'volunteers',

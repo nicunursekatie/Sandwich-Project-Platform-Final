@@ -159,6 +159,41 @@ export function SmartSearch() {
     }, 150);
   };
 
+  const triggerFeatureAction = useCallback((feature: SearchableFeature) => {
+    if (!feature.action) {
+      return;
+    }
+
+    if (feature.action === 'openAddDialog') {
+      const route = feature.route || '';
+
+      if (route.startsWith('/collections')) {
+        window.dispatchEvent(new Event('openCollectionForm'));
+        return;
+      }
+
+      if (route.startsWith('/event-requests')) {
+        window.dispatchEvent(new Event('openEventRequestCreateDialog'));
+        return;
+      }
+
+      if (route.startsWith('/projects')) {
+        window.dispatchEvent(new Event('openProjectCreateDialog'));
+        return;
+      }
+
+      if (route.includes('section=hosts')) {
+        window.dispatchEvent(new Event('openHostCreateDialog'));
+        return;
+      }
+
+      if (route.includes('section=volunteers')) {
+        window.dispatchEvent(new Event('openVolunteerCreateDialog'));
+        return;
+      }
+    }
+  }, []);
+
   // Navigate to selected result
   const navigateToResult = useCallback((result: SmartSearchResult) => {
     // Track analytics (non-blocking)
@@ -181,11 +216,12 @@ export function SmartSearch() {
     // Navigate to route
     setLocation(result.feature.route);
 
-    // TODO: If result has an action, trigger it (e.g., open a modal)
     if (result.feature.action) {
-      console.log('Action to trigger:', result.feature.action);
+      setTimeout(() => {
+        triggerFeatureAction(result.feature);
+      }, 200);
     }
-  }, [query, setLocation]);
+  }, [query, setLocation, triggerFeatureAction]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +70,29 @@ export default function VolunteerManagement() {
     isDriver: false,
     isSpeaker: false,
   });
+
+  useEffect(() => {
+    const handleOpenCreate = () => {
+      setEditingVolunteer(null);
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        notes: '',
+        availability: 'available',
+        isActive: true,
+        isDriver: false,
+        isSpeaker: false,
+      });
+      setShowAddDialog(true);
+    };
+
+    window.addEventListener('openVolunteerCreateDialog', handleOpenCreate);
+    return () => {
+      window.removeEventListener('openVolunteerCreateDialog', handleOpenCreate);
+    };
+  }, []);
 
   // Host designation state
   const [showHostDesignation, setShowHostDesignation] = useState(false);

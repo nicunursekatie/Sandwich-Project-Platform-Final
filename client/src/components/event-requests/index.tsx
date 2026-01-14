@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
@@ -270,6 +270,38 @@ const EventRequestsManagementContent: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const openManualEventRequest = useCallback(() => {
+    setShowScheduleCallDialog(false);
+    setShowOneDayFollowUpDialog(false);
+    setShowOneMonthFollowUpDialog(false);
+    setShowToolkitSentDialog(false);
+    setSelectedEventRequest(null);
+    setIsEditing(true);
+    setShowEventDetails(true);
+  }, [
+    setShowScheduleCallDialog,
+    setShowOneDayFollowUpDialog,
+    setShowOneMonthFollowUpDialog,
+    setShowToolkitSentDialog,
+    setSelectedEventRequest,
+    setIsEditing,
+    setShowEventDetails,
+  ]);
+
+  useEffect(() => {
+    const handleOpenCreate = () => {
+      openManualEventRequest();
+    };
+
+    window.addEventListener('openEventRequestCreateDialog', handleOpenCreate);
+    return () => {
+      window.removeEventListener(
+        'openEventRequestCreateDialog',
+        handleOpenCreate
+      );
+    };
+  }, [openManualEventRequest]);
   const { trackButtonClick, trackFormSubmit } = useAnalytics();
 
   // Track initial page load only once
@@ -589,15 +621,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 </button>
               )}
               <button
-                onClick={() => {
-                  setShowScheduleCallDialog(false);
-                  setShowOneDayFollowUpDialog(false);
-                  setShowOneMonthFollowUpDialog(false);
-                  setShowToolkitSentDialog(false);
-                  setSelectedEventRequest(null);
-                  setIsEditing(true);
-                  setShowEventDetails(true);
-                }}
+                onClick={openManualEventRequest}
                 className="premium-btn-outline text-sm"
                 data-testid="button-add-manual-event"
               >

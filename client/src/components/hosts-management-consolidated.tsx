@@ -1,4 +1,4 @@
-import { useState, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -165,6 +165,24 @@ export default function HostsManagementConsolidated() {
     status: 'active',
     notes: '',
   });
+
+  useEffect(() => {
+    const handleOpenCreate = () => {
+      setEditingHost(null);
+      setNewHost({
+        name: '',
+        address: '',
+        status: 'active',
+        notes: '',
+      });
+      setIsAddModalOpen(true);
+    };
+
+    window.addEventListener('openHostCreateDialog', handleOpenCreate);
+    return () => {
+      window.removeEventListener('openHostCreateDialog', handleOpenCreate);
+    };
+  }, []);
   const [newContact, setNewContact] = useState({
     name: '',
     role: '',

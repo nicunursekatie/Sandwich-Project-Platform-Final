@@ -30,6 +30,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 
 interface IntakeCallDialogProps {
   isOpen: boolean;
@@ -65,10 +67,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   eventRequest,
   onCallComplete,
 }) => {
+  const { toast } = useToast();
   const isMobile = useIsMobile();
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [itemAnswers, setItemAnswers] = useState<Record<string, string>>({});
   const [callNotes, setCallNotes] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Contact person info - auto-filled from event request, editable during call
   const [contactName, setContactName] = useState('');
@@ -143,20 +147,87 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     }
   };
 
-  const handleComplete = () => {
-    // TODO: Save itemAnswers, contact info, and callNotes to event request notes or contact log
-    // For now, we can log them or save to planning notes
-    console.log('Call completed with answers:', itemAnswers);
-    console.log('Contact info:', { contactName, contactPhone, contactEmail });
-    console.log('Call notes:', callNotes);
-    onCallComplete?.();
-    setCheckedItems(new Set());
-    setItemAnswers({});
-    setCallNotes('');
-    setContactName('');
-    setContactPhone('');
-    setContactEmail('');
-    onClose();
+  const handleComplete = async () => {
+    if (!eventRequest || isSaving) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const nowLabel = new Date().toLocaleString();
+      const answeredItems = checklistItems.filter((item) => {
+        const value = itemAnswers[item.id];
+        return value && value.trim().length > 0;
+      });
+
+      const summaryLines = [
+        `Intake call completed: ${nowLabel}`,
+        `Contact: ${contactName || 'N/A'} | ${contactPhone || 'N/A'} | ${contactEmail || 'N/A'}`,
+        ...answeredItems.map(
+          (item) => `- ${item.label}: ${itemAnswers[item.id].trim()}`
+        ),
+      ];
+
+      if (callNotes.trim()) {
+        summaryLines.push(`Notes: ${callNotes.trim()}`);
+      }
+
+      const summaryBlock = summaryLines.join('\n');
+      const existingNotes = eventRequest.planningNotes || '';
+      const updatedPlanningNotes = existingNotes
+        ? `${existingNotes}\n\n${summaryBlock}`
+        : summaryBlock;
+
+      const updates: Record<string, unknown> = {
+        planningNotes: updatedPlanningNotes,
+      };
+
+      const trimmedContactName = contactName.trim();
+      if (trimmedContactName) {
+        const [firstName, ...rest] = trimmedContactName.split(' ');
+        updates.firstName = firstName || null;
+        updates.lastName = rest.length ? rest.join(' ') : null;
+      }
+
+      if (contactPhone.trim()) {
+        updates.phone = contactPhone.trim();
+      }
+
+      if (contactEmail.trim()) {
+        updates.email = contactEmail.trim();
+      }
+
+      if (itemAnswers.event_address?.trim()) {
+        updates.eventAddress = itemAnswers.event_address.trim();
+      }
+
+      await apiRequest('PATCH', `/api/event-requests/${eventRequest.id}`, updates);
+
+      toast({
+        title: 'Intake call saved',
+        description: 'Notes and contact updates have been saved.',
+      });
+
+      onCallComplete?.();
+      setCheckedItems(new Set());
+      setItemAnswers({});
+      setCallNotes('');
+      setContactName('');
+      setContactPhone('');
+      setContactEmail('');
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Save failed',
+        description:
+          error?.message ||
+          'Unable to save intake call notes. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!eventRequest) return null;
@@ -658,14 +729,15 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} disabled={isSaving}>
               Close
             </Button>
             <Button
               onClick={handleComplete}
               className="bg-[#007E8C] hover:bg-[#236383] text-white"
+              disabled={isSaving}
             >
-              Mark Call Complete
+              {isSaving ? 'Saving...' : 'Mark Call Complete'}
             </Button>
           </div>
         </div>
