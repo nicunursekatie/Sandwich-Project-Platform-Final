@@ -1045,6 +1045,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Also clear any pending auto-save immediately
     clearAutoSave();
 
+    // DEBUG: Direct console.log for production debugging
+    console.log('🚀 [PROD DEBUG] PERFORM SUBMIT CALLED', {
+      eventRequestId: eventRequest?.id,
+      mode,
+      formInitialized,
+    });
+
     logger.log('🚀 PERFORM SUBMIT CALLED', {
       eventRequestId: eventRequest?.id,
       mode,
@@ -1052,15 +1059,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       skipSpeakerWarning,
       eventRequestExists: !!eventRequest,
     });
-    
+
     // CRITICAL: Prevent submission if form is not initialized
     // This prevents race condition where form submits with empty default values
     // before useEffect populates data from eventRequest
     if (eventRequest && !formInitialized) {
+      console.error('❌ [PROD DEBUG] Form submission blocked: form not initialized');
       logger.error('❌ Form submission blocked: form not initialized yet', {
         eventRequestId: eventRequest.id,
         formInitialized,
       });
+      setIsSubmitting(false); // Reset flag since we're returning early
       toast({
         title: 'Please wait',
         description: 'Form is still loading. Please try again in a moment.',
@@ -1068,7 +1077,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       });
       return;
     }
-    
+
+    console.log('✅ [PROD DEBUG] Form initialized check passed');
     logger.log('✅ Form initialized check passed');
     
     // Warning: Events with >500 sandwiches usually need a speaker
@@ -1367,17 +1377,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       // Update existing event request with only changed fields
       try {
+        console.log('🔴 [PROD DEBUG] CALLING MUTATION NOW...', {
+          id: eventRequest.id,
+          status: filteredEventData.status,
+          keys: Object.keys(filteredEventData),
+        });
         logger.log('🔴 CALLING MUTATION NOW...');
         updateEventRequestMutation.mutate({
           id: eventRequest.id,
           data: filteredEventData,
         });
+        console.log('✅ [PROD DEBUG] Mutation called successfully');
         logger.log('✅ Mutation called successfully');
       } catch (error) {
+        console.error('❌ [PROD DEBUG] ERROR CALLING MUTATION:', error);
         logger.error('❌ ERROR CALLING MUTATION:', error);
         throw error;
       }
     } else {
+      console.log('➕ [PROD DEBUG] Calling CREATE mutation for new event');
       logger.log('➕ Calling CREATE mutation for new event');
       // Create new event request
       createEventRequestMutation.mutate(eventData);
@@ -1386,7 +1404,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // DEBUG: Direct console.log for production debugging (logger is disabled in prod)
+    console.log('📝 [PROD DEBUG] HANDLE SUBMIT CALLED', {
+      eventRequestId: eventRequest?.id,
+      mode,
+      formDataEventDate: formData.eventDate,
+    });
+
     logger.log('📝 HANDLE SUBMIT CALLED', {
       eventRequestId: eventRequest?.id,
       mode,
@@ -1397,28 +1422,35 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     // Check if event is in MLK Day week and we haven't asked yet
     if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
+      console.log('⚠️ [PROD DEBUG] MLK Day dialog triggered');
       logger.log('⚠️ MLK Day dialog triggered');
       setShowMlkDayDialog(true);
       setMlkDayAsked(true);
       return; // Stop submission until user responds
     }
-    
+
+    console.log('✅ [PROD DEBUG] MLK Day check passed');
     logger.log('✅ MLK Day check passed');
 
     // Check for van conflicts if event needs van and hasn't been checked yet
     if (eventLikelyNeedsVan() && !vanConflictChecked) {
+      console.log('⚠️ [PROD DEBUG] Van conflict check triggered');
       logger.log('⚠️ Van conflict check triggered');
       const canProceed = await checkVanConflicts();
       if (!canProceed) {
+        console.log('❌ [PROD DEBUG] Van conflict check failed - blocking submission');
         logger.log('❌ Van conflict check failed - blocking submission');
         return; // Wait for user to acknowledge
       }
+      console.log('✅ [PROD DEBUG] Van conflict check passed');
       logger.log('✅ Van conflict check passed');
     } else {
+      console.log('✅ [PROD DEBUG] Van conflict check skipped');
       logger.log('✅ Van conflict check skipped');
     }
 
     // All checks passed, proceed with submission
+    console.log('✅ [PROD DEBUG] All pre-submit checks passed - calling performSubmit');
     logger.log('✅ All pre-submit checks passed - calling performSubmit');
     await performSubmit(false);
   };
