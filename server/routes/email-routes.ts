@@ -46,6 +46,9 @@ export function createEmailRouter(deps: RouterDependencies) {
         isStarred: email.isStarred,
         folder: folder,
         committee: email.contextType || 'email',
+        // Include parent message data for replies
+        parentMessageId: email.parentMessageId,
+        parentMessage: email.parentMessage,
       }));
 
       logger.log(
