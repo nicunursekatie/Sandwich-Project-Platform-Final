@@ -405,23 +405,23 @@ export const useEventFilters = () => {
         const customTspContact = request.customTspContact || '';
 
         const matchesTspContact =
-          tspContactName.toLowerCase().includes(searchLower) ||
-          additionalContact1Name.toLowerCase().includes(searchLower) ||
-          additionalContact2Name.toLowerCase().includes(searchLower) ||
-          customTspContact.toLowerCase().includes(searchLower);
+          (tspContactName && tspContactName.toLowerCase().includes(searchLower)) ||
+          (additionalContact1Name && additionalContact1Name.toLowerCase().includes(searchLower)) ||
+          (additionalContact2Name && additionalContact2Name.toLowerCase().includes(searchLower)) ||
+          (customTspContact && customTspContact.toLowerCase().includes(searchLower));
 
         // Check volunteers (drivers, speakers, general)
         const matchesVolunteer = eventHasVolunteerMatch(request, searchLower);
 
         matchesSearch =
-          (request.organizationName && request.organizationName
+          (request.organizationName && String(request.organizationName)
             .toLowerCase()
             .includes(searchLower)) ||
-          (request.department && request.department.toLowerCase().includes(searchLower)) ||
-          (request.firstName && request.firstName.toLowerCase().includes(searchLower)) ||
-          (request.lastName && request.lastName.toLowerCase().includes(searchLower)) ||
-          (request.email && request.email.toLowerCase().includes(searchLower)) ||
-          (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
+          (request.department && String(request.department).toLowerCase().includes(searchLower)) ||
+          (request.firstName && String(request.firstName).toLowerCase().includes(searchLower)) ||
+          (request.lastName && String(request.lastName).toLowerCase().includes(searchLower)) ||
+          (request.email && String(request.email).toLowerCase().includes(searchLower)) ||
+          (request.eventAddress && String(request.eventAddress).toLowerCase().includes(searchLower)) ||
           dateMatchesSearch(request.scheduledEventDate || request.desiredEventDate, debouncedSearchQuery) ||
           matchesTspContact ||
           matchesVolunteer;

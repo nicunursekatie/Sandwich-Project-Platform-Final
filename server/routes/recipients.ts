@@ -254,9 +254,29 @@ router.get(
     try {
       const recipients = await storage.getAllRecipients();
       
-      // Filter to only include recipients with coordinates
+      // Log recipients status for debugging
+      const totalRecipients = recipients.length;
+      const activeRecipients = recipients.filter((r: any) => r.status === 'active');
+      const activeWithAddress = activeRecipients.filter((r: any) => r.address && r.address.trim());
+      const activeWithCoords = activeRecipients.filter((r: any) => r.latitude && r.longitude);
+      const activeMissingCoords = activeWithAddress.filter((r: any) => !r.latitude || !r.longitude);
+      
+      logger.log(`📊 Recipients map endpoint stats:`, {
+        total: totalRecipients,
+        active: activeRecipients.length,
+        activeWithAddress: activeWithAddress.length,
+        activeWithCoords: activeWithCoords.length,
+        activeMissingCoords: activeMissingCoords.length,
+        missingCoordsIds: activeMissingCoords.map((r: any) => r.id).slice(0, 10), // First 10 for logging
+      });
+      
+      // Filter to only include recipients with coordinates and active status
       const mappableRecipients = recipients
-        .filter((r: any) => r.latitude && r.longitude && r.status === 'active')
+        .filter((r: any) => {
+          const hasCoords = r.latitude && r.longitude;
+          const isActive = r.status === 'active';
+          return hasCoords && isActive;
+        })
         .map((r: any) => ({
           id: r.id,
           name: r.name,

@@ -405,14 +405,22 @@ const validateSheetsApiKey = (req: any, res: any, next: any) => {
   const expectedKey = process.env.GOOGLE_SHEETS_API_KEY;
 
   if (!expectedKey) {
-    logger.error('GOOGLE_SHEETS_API_KEY environment variable not set');
+    logger.error('❌ GOOGLE_SHEETS_API_KEY environment variable not set');
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
   if (!apiKey || apiKey !== expectedKey) {
+    logger.warn('⚠️ Google Sheets import API key validation failed', {
+      hasApiKey: !!apiKey,
+      apiKeyPrefix: apiKey ? `${apiKey.substring(0, 4)}...` : 'missing',
+      expectedKeyPrefix: expectedKey ? `${expectedKey.substring(0, 4)}...` : 'missing',
+      matches: apiKey === expectedKey,
+      timestamp: new Date().toISOString(),
+    });
     return res.status(401).json({ error: 'Invalid or missing API key' });
   }
 
+  logger.info('✅ Google Sheets import API key validated successfully');
   next();
 };
 
@@ -422,10 +430,23 @@ const validateSheetsApiKey = (req: any, res: any, next: any) => {
 
 router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
   try {
+    // Log incoming request for debugging
+    logger.info('📥 Google Sheets import request received', {
+      timestamp: new Date().toISOString(),
+      hasBody: !!req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : [],
+      groupName: req.body?.['Group Name'],
+      date: req.body?.date,
+    });
+
     // Validate incoming data
     const validationResult = importFromSheetsSchema.safeParse(req.body);
 
     if (!validationResult.success) {
+      logger.error('❌ Google Sheets import validation failed', {
+        errors: validationResult.error.errors,
+        receivedData: req.body,
+      });
       return res.status(400).json({
         success: false,
         error: 'Validation failed',
@@ -434,6 +455,10 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
     }
 
     const data = validationResult.data;
+    logger.info('✅ Google Sheets import validation passed', {
+      groupName: data['Group Name'],
+      date: data.date,
+    });
 
     // Parse the date
     const eventDate = new Date(data.date);
@@ -474,13 +499,15 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
 
     if (existingEvents.length > 0) {
       const existing = existingEvents[0];
-      logger.warn(`Duplicate event detected: "${data['Group Name']}" on ${data.date}`, {
+      logger.warn(`⚠️ Duplicate event detected: "${data['Group Name']}" on ${data.date}`, {
         existingEventId: existing.id,
         existingStatus: existing.status,
         existingScheduledDate: existing.scheduledEventDate,
         existingDesiredDate: existing.desiredEventDate,
         existingDeletedAt: existing.deletedAt,
-        targetDate: data.date
+        targetDate: data.date,
+        isDeleted: !!existing.deletedAt,
+        isInactiveStatus: ['cancelled', 'declined', 'postponed'].includes(existing.status),
       });
       return res.status(409).json({
         success: false,
@@ -501,6 +528,11 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
         }
       });
     }
+    
+    logger.info('✅ No duplicate events found, proceeding with creation', {
+      groupName: data['Group Name'],
+      date: data.date,
+    });
 
     // Parse staffing column
     const staffing = parseStaffingColumn(data['Staffing']);
@@ -622,10 +654,25 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
     };
 
     // Create the event request
+    logger.info('📝 Creating event request from Google Sheets import', {
+      groupName: data['Group Name'],
+      date: data.date,
+      status,
+      externalId,
+    });
+    
     const createdEvent = await storage.createEventRequest(eventRequestData as any);
 
-    // Log the import
-    logger.info(`Google Sheets import: Created event request ${createdEvent.id} for "${data['Group Name']}" on ${data.date}`);
+    // Log the import with full details
+    logger.info(`✅ Google Sheets import: Created event request ${createdEvent.id} for "${data['Group Name']}" on ${data.date}`, {
+      eventId: createdEvent.id,
+      organizationName: createdEvent.organizationName,
+      status: createdEvent.status,
+      scheduledEventDate: createdEvent.scheduledEventDate,
+      desiredEventDate: createdEvent.desiredEventDate,
+      externalId: createdEvent.externalId,
+      createdAt: createdEvent.createdAt,
+    });
 
     // Emit real-time update to all connected clients
     emitEventRequestUpdate('event_request_created', createdEvent);
@@ -635,6 +682,13 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       eventId: createdEvent.id,
       message: `Event created successfully for "${data['Group Name']}"`,
       link: `/event-requests/${createdEvent.id}`,
+      event: {
+        id: createdEvent.id,
+        organizationName: createdEvent.organizationName,
+        status: createdEvent.status,
+        scheduledEventDate: createdEvent.scheduledEventDate,
+        desiredEventDate: createdEvent.desiredEventDate,
+      },
     });
   } catch (error) {
     logger.error('Google Sheets import error:', error);
@@ -2932,8 +2986,12 @@ router.put(
       ) {
         // Check required fields for NEW scheduled events
         const requiredFields = {
-          desiredEventDate:
-            processedUpdates.desiredEventDate || originalEvent.desiredEventDate,
+          // Accept either desiredEventDate or scheduledEventDate as the event date
+          eventDate:
+            processedUpdates.desiredEventDate || 
+            processedUpdates.scheduledEventDate ||
+            originalEvent.desiredEventDate ||
+            originalEvent.scheduledEventDate,
           eventAddress:
             processedUpdates.eventAddress || originalEvent.eventAddress,
           estimatedSandwichCount:
@@ -2942,7 +3000,9 @@ router.put(
         };
 
         const missingFields = [];
-        if (!requiredFields.desiredEventDate) missingFields.push('Event Date (desiredEventDate or scheduledEventDate)');
+        if (!requiredFields.eventDate) {
+          missingFields.push('Event Date (desiredEventDate or scheduledEventDate)');
+        }
         // Make Event Address and Estimated Sandwich Count optional for basic scheduled status
         // They can be filled in later during the workflow
 

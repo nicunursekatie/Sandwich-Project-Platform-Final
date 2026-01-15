@@ -53,14 +53,35 @@ interface EventEditDialogProps {
   onSaved?: () => void;
 }
 
-// Helper function to format time for input
+// Helper function to format time for input (converts to 24-hour HH:mm format)
 const formatTimeForInput = (time: string | null | undefined): string => {
   if (!time) return '';
+  
   // Already in HH:mm format
-  if (/^\d{2}:\d{2}$/.test(time)) return time;
+  if (/^\d{1,2}:\d{2}$/.test(time)) return time.padStart(5, '0');
+  
   // Has seconds
-  if (/^\d{2}:\d{2}:\d{2}$/.test(time)) return time.slice(0, 5);
-  return time;
+  if (/^\d{1,2}:\d{2}:\d{2}$/.test(time)) return time.slice(0, 5).padStart(5, '0');
+  
+  // Handle 12-hour format (e.g., "11:00 AM", "12:30 PM")
+  const match = time.trim().toUpperCase().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3];
+    
+    if (period === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }
+  
+  // If we can't parse it, return empty string to avoid HTML input errors
+  console.warn('Failed to format time for input:', time);
+  return '';
 };
 
 // Helper to parse PostgreSQL array format
