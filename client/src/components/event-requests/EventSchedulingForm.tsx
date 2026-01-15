@@ -195,6 +195,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -449,24 +450,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // Auto-save effect - debounce saves to localStorage when form data changes
   useEffect(() => {
-    if (!dialogOpen || !formInitialized) return;
-    
+    // CRITICAL: Don't auto-save if we're submitting or dialog is closed
+    if (!dialogOpen || !formInitialized || isSubmitting) return;
+
     // Clear any pending save
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
     }
-    
+
     // Debounce save - wait 1 second after last change
     autoSaveTimeoutRef.current = setTimeout(() => {
-      saveToLocalStorage();
+      // Double-check we're still not submitting when timeout fires
+      if (!isSubmitting) {
+        saveToLocalStorage();
+      }
     }, 1000);
-    
+
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [dialogOpen, formInitialized, formData, sandwichMode, actualSandwichMode, attendeeMode, saveToLocalStorage]);
+  }, [dialogOpen, formInitialized, formData, sandwichMode, actualSandwichMode, attendeeMode, saveToLocalStorage, isSubmitting]);
 
   // Initialize collaboration hook only for existing events (not in create mode)
   // Pass null for new events - the hook safely handles this by disabling collaboration features
@@ -798,13 +803,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     retry: false,
     networkMode: 'always',
     onSuccess: (updatedEvent: any) => {
+      // Reset submitting flag
+      setIsSubmitting(false);
+
       logger.log('✅ UPDATE MUTATION SUCCESS', {
         eventId: updatedEvent?.id,
         oldStatus: eventRequest?.status,
         newStatus: updatedEvent?.status,
         mode,
       });
-      
+
       // CRITICAL: Verify the status actually changed in the response
       if (mode === 'schedule' && updatedEvent?.status !== 'scheduled') {
         logger.error('❌ STATUS UPDATE FAILED!', {
@@ -822,7 +830,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       } else if (mode === 'schedule') {
         logger.info('✅ Status update confirmed in response:', updatedEvent?.status);
       }
-      
+
       // Clear auto-saved data on successful submission
       clearAutoSave();
       setHasRecoveredData(false);
@@ -848,6 +856,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setPendingMlkDayDecision(null);
     },
     onError: (error: any) => {
+      // Reset submitting flag
+      setIsSubmitting(false);
+
       logger.error('Update event request error:', error);
       
       // Check if it's a 404 (event not found) error
@@ -1029,6 +1040,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   };
 
   const performSubmit = async (skipSpeakerWarning = false) => {
+    // CRITICAL: Set submitting flag to prevent auto-save from running
+    setIsSubmitting(true);
+    // Also clear any pending auto-save immediately
+    clearAutoSave();
+
     logger.log('🚀 PERFORM SUBMIT CALLED', {
       eventRequestId: eventRequest?.id,
       mode,
