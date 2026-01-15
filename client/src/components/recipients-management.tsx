@@ -204,11 +204,22 @@ export default function RecipientsManagement() {
       logger.log('[CREATE RECIPIENT] Sending data:', recipient);
       return apiRequest('POST', '/api/recipients', recipient);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients/map'] }); // Invalidate map data too
       setIsAddModalOpen(false);
       addForm.resetForm();
-      toast({ title: 'Success', description: 'Recipient added successfully' });
+      
+      // Show geocoding status if address was provided
+      if (variables.address) {
+        toast({ 
+          title: 'Recipient added successfully',
+          description: 'Geocoding is in progress. The recipient will appear on the Driver Planning map once coordinates are ready (usually within a few seconds).',
+          duration: 6000,
+        });
+      } else {
+        toast({ title: 'Success', description: 'Recipient added successfully' });
+      }
     },
     onError: () => {
       toast({ title: 'Error', description: 'Failed to add recipient', variant: 'destructive' });
@@ -217,10 +228,21 @@ export default function RecipientsManagement() {
 
   const updateRecipientMutation = useMutation({
     mutationFn: ({ id, ...updates }: any) => apiRequest('PUT', `/api/recipients/${id}`, updates),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients/map'] }); // Invalidate map data too
       setEditingRecipient(null);
-      toast({ title: 'Success', description: 'Recipient updated successfully' });
+      
+      // Show geocoding status if address was changed
+      if (variables.address) {
+        toast({ 
+          title: 'Recipient updated successfully',
+          description: 'If the address changed, geocoding is in progress. The recipient location will update on the Driver Planning map once coordinates are ready (usually within a few seconds).',
+          duration: 6000,
+        });
+      } else {
+        toast({ title: 'Success', description: 'Recipient updated successfully' });
+      }
     },
     onError: () => {
       toast({ title: 'Error', description: 'Failed to update recipient', variant: 'destructive' });

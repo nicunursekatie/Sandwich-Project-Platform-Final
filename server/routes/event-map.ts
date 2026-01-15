@@ -54,6 +54,7 @@ router.get('/', async (req, res) => {
     const conditions = [
       isNotNull(eventRequests.eventAddress),
       ne(eventRequests.eventAddress, ''),
+      isNull(eventRequests.deletedAt), // Exclude soft-deleted events
     ];
 
     // Filter by status if provided
@@ -107,7 +108,18 @@ router.get('/', async (req, res) => {
       .from(eventRequests)
       .where(and(...conditions));
 
-    res.json(events);
+    // Deduplicate by ID (in case of any database-level duplicates)
+    const seenIds = new Set<number>();
+    const uniqueEvents = events.filter((event) => {
+      if (seenIds.has(event.id)) {
+        logger.warn(`Duplicate event ID ${event.id} detected in event-map endpoint`);
+        return false;
+      }
+      seenIds.add(event.id);
+      return true;
+    });
+
+    res.json(uniqueEvents);
   } catch (error) {
     logger.error('Error fetching event map data:', error);
     res.status(500).json({ 
