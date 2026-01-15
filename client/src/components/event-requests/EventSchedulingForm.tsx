@@ -982,11 +982,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   };
 
   const performSubmit = async (skipSpeakerWarning = false) => {
+    logger.log('🚀 PERFORM SUBMIT CALLED', {
+      eventRequestId: eventRequest?.id,
+      mode,
+      formInitialized,
+      skipSpeakerWarning,
+      eventRequestExists: !!eventRequest,
+    });
+    
     // CRITICAL: Prevent submission if form is not initialized
     // This prevents race condition where form submits with empty default values
     // before useEffect populates data from eventRequest
     if (eventRequest && !formInitialized) {
-      logger.error('❌ Form submission blocked: form not initialized yet');
+      logger.error('❌ Form submission blocked: form not initialized yet', {
+        eventRequestId: eventRequest.id,
+        formInitialized,
+      });
       toast({
         title: 'Please wait',
         description: 'Form is still loading. Please try again in a moment.',
@@ -994,6 +1005,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       });
       return;
     }
+    
+    logger.log('✅ Form initialized check passed');
     
     // Warning: Events with >500 sandwiches usually need a speaker
     let totalRelevantSandwiches = 0;
@@ -1028,9 +1041,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     
     // Show warning dialog if event has >500 sandwiches and no speakers, but allow proceeding
     if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
+      logger.log('⚠️ Speaker warning dialog triggered', {
+        totalRelevantSandwiches,
+        speakersNeeded: formData.speakersNeeded,
+      });
       setShowSpeakerWarningDialog(true);
       return; // Stop submission until user responds
     }
+    
+    logger.log('✅ Speaker warning check passed');
 
     // All fields are optional - no validation required
 
@@ -1249,12 +1268,52 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       logger.log('  - Filtered data (changed fields only):', filteredEventData);
+      logger.log('  - Original keys count:', Object.keys(filteredEventData).length);
+      
+      // CRITICAL: In schedule mode, always ensure status is 'scheduled' and scheduledEventDate is set
+      // This prevents cases where the form filters out the status change incorrectly
+      if (mode === 'schedule') {
+        logger.log('📅 Schedule mode detected - forcing status and date');
+        filteredEventData.status = 'scheduled';
+        if (eventData.scheduledEventDate) {
+          filteredEventData.scheduledEventDate = eventData.scheduledEventDate;
+        } else if (eventData.desiredEventDate) {
+          // If scheduledEventDate wasn't set but desiredEventDate exists, use it
+          filteredEventData.scheduledEventDate = eventData.desiredEventDate;
+        }
+        logger.log('  - Schedule mode: Forcing status=scheduled and scheduledEventDate:', filteredEventData.scheduledEventDate);
+      }
+      
+      // Ensure we have at least the status change if we're in schedule mode
+      if (mode === 'schedule' && Object.keys(filteredEventData).length === 0) {
+        logger.error('⚠️ CRITICAL: Filtered data is empty in schedule mode! Adding status anyway.');
+        filteredEventData.status = 'scheduled';
+        if (eventData.scheduledEventDate || eventData.desiredEventDate) {
+          filteredEventData.scheduledEventDate = eventData.scheduledEventDate || eventData.desiredEventDate;
+        }
+      }
+      
+      logger.log('🔴 FINAL DATA BEING SENT:', {
+        eventId: eventRequest.id,
+        mode,
+        data: filteredEventData,
+        keys: Object.keys(filteredEventData),
+        hasStatus: 'status' in filteredEventData,
+        statusValue: filteredEventData.status,
+      });
       
       // Update existing event request with only changed fields
-      updateEventRequestMutation.mutate({
-        id: eventRequest.id,
-        data: filteredEventData,
-      });
+      try {
+        logger.log('🔴 CALLING MUTATION NOW...');
+        updateEventRequestMutation.mutate({
+          id: eventRequest.id,
+          data: filteredEventData,
+        });
+        logger.log('✅ Mutation called successfully');
+      } catch (error) {
+        logger.error('❌ ERROR CALLING MUTATION:', error);
+        throw error;
+      }
     } else {
       logger.log('➕ Calling CREATE mutation for new event');
       // Create new event request
@@ -1264,21 +1323,40 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    logger.log('📝 HANDLE SUBMIT CALLED', {
+      eventRequestId: eventRequest?.id,
+      mode,
+      formDataEventDate: formData.eventDate,
+      mlkDayAsked,
+      vanConflictChecked,
+    });
 
     // Check if event is in MLK Day week and we haven't asked yet
     if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
+      logger.log('⚠️ MLK Day dialog triggered');
       setShowMlkDayDialog(true);
       setMlkDayAsked(true);
       return; // Stop submission until user responds
     }
+    
+    logger.log('✅ MLK Day check passed');
 
     // Check for van conflicts if event needs van and hasn't been checked yet
     if (eventLikelyNeedsVan() && !vanConflictChecked) {
+      logger.log('⚠️ Van conflict check triggered');
       const canProceed = await checkVanConflicts();
-      if (!canProceed) return; // Wait for user to acknowledge
+      if (!canProceed) {
+        logger.log('❌ Van conflict check failed - blocking submission');
+        return; // Wait for user to acknowledge
+      }
+      logger.log('✅ Van conflict check passed');
+    } else {
+      logger.log('✅ Van conflict check skipped');
     }
 
     // All checks passed, proceed with submission
+    logger.log('✅ All pre-submit checks passed - calling performSubmit');
     await performSubmit(false);
   };
 
