@@ -117,6 +117,12 @@ function ComprehensivePersonSelector({
     driverNameLookup.set(driver.id.toString(), driver.name || 'Unknown Driver');
   });
 
+  // Create lookup map for ALL host contacts (for name resolution of already-assigned host contacts)
+  const hostContactNameLookup = new Map<string, string>();
+  hostContacts.forEach((contact: any) => {
+    hostContactNameLookup.set(`host-contact-${contact.id}`, contact.displayName || contact.name || 'Unknown Contact');
+  });
+
   // Filter all people based on search term
   const allPeople = [
     ...users.map((user: any) => ({
@@ -216,7 +222,7 @@ function ComprehensivePersonSelector({
     }
   };
 
-  // Helper to get display name for any person ID (including already-assigned unavailable drivers)
+  // Helper to get display name for any person ID (including already-assigned unavailable drivers/contacts)
   const getPersonDisplayName = (personId: string) => {
     if (personId.startsWith('custom-')) {
       // Extract the custom name from the ID
@@ -229,6 +235,9 @@ function ComprehensivePersonSelector({
     // Fall back to driver lookup (for already-assigned unavailable drivers)
     const driverName = driverNameLookup.get(personId);
     if (driverName) return driverName;
+    // Fall back to host contact lookup (for already-assigned host contacts)
+    const hostContactName = hostContactNameLookup.get(personId);
+    if (hostContactName) return hostContactName;
     // Final fallback to personId
     return personId;
   };
