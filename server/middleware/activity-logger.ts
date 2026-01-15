@@ -6,113 +6,469 @@ interface ActivityLoggerOptions {
   storage: IStorage;
 }
 
-// Map routes to readable section names with detailed features
-const routeToSectionAndFeature: Record<
-  string,
-  { section: string; feature: string }
-> = {
-  '/api/sandwich-collections': {
-    section: 'Collections',
-    feature: 'Collection Management',
-  },
-  '/api/sandwich-collections/clean': {
-    section: 'Collections',
-    feature: 'Data Cleanup',
-  },
-  '/api/sandwich-collections/export': {
-    section: 'Collections',
-    feature: 'Data Export',
-  },
-  '/api/hosts': { section: 'Directory', feature: 'Host Management' },
-  '/api/recipients': { section: 'Directory', feature: 'Recipient Management' },
-  '/api/drivers': { section: 'Directory', feature: 'Driver Management' },
-  '/api/projects': { section: 'Projects', feature: 'Project Management' },
-  '/api/projects/assign-user': {
-    section: 'Projects',
-    feature: 'User Assignment',
-  },
-  '/api/meetings': { section: 'Meetings', feature: 'Meeting Management' },
-  '/api/meetings/agenda': { section: 'Meetings', feature: 'Agenda Management' },
-  '/api/messages': { section: 'Communication', feature: 'Messaging' },
-  '/api/conversations': { section: 'Communication', feature: 'Conversations' },
-  '/api/user-activity': { section: 'Analytics', feature: 'Activity Analytics' },
-  '/api/wishlist-suggestions': {
-    section: 'Wishlist',
-    feature: 'Wishlist Suggestions',
-  },
-  '/api/wishlist-activity': {
-    section: 'Wishlist',
-    feature: 'Wishlist Activity',
-  },
-  '/api/auth': { section: 'Authentication', feature: 'Login/Logout' },
-  '/api/reports': { section: 'Reports', feature: 'Report Generation' },
-  '/api/work-logs': { section: 'Work Log', feature: 'Time Tracking' },
-  '/api/announcements': { section: 'Admin', feature: 'Announcements' },
-  '/api/users': { section: 'Admin', feature: 'User Management' },
-  '/api/meeting-minutes': { section: 'Meetings', feature: 'Meeting Minutes' },
-  '/api/meeting-minutes/': {
-    section: 'Meetings',
-    feature: 'Meeting Documents',
-  },
-  '/api/emails': { section: 'Communication', feature: 'Email System' },
-  '/api/enhanced-user-activity': {
-    section: 'Analytics',
-    feature: 'User Analytics',
-  },
-  '/track': { section: 'Collections', feature: 'Collection Tracking' },
-  '/kudos': { section: 'Communication', feature: 'Kudos System' },
-};
+// Semantic activity rule - maps API endpoints to meaningful user actions
+interface ActivityRule {
+  section: string;
+  feature: string;
+  action: string;
+  details: string;
+  groupKey?: string; // For deduplication - same groupKey within window = single log
+  dedupeWindowMs?: number; // Time window for deduplication (default 60000 = 1 min)
+  methods?: string[]; // Only log for these HTTP methods (default: all)
+}
 
-// Map HTTP methods to readable actions with context
-const methodToActionDetails: Record<
-  string,
-  { action: string; description: string }
-> = {
-  GET: { action: 'View', description: 'Viewed content' },
-  POST: { action: 'Create', description: 'Created new item' },
-  PUT: { action: 'Update', description: 'Updated existing item' },
-  PATCH: { action: 'Update', description: 'Modified item' },
-  DELETE: { action: 'Delete', description: 'Deleted item' },
+// In-memory cache for activity deduplication
+// Key format: `${userId}:${groupKey}` -> timestamp of last log
+const activityDedupeCache = new Map<string, number>();
+
+// Clean up old entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  const maxAge = 5 * 60 * 1000; // 5 minutes
+  for (const [key, timestamp] of activityDedupeCache.entries()) {
+    if (now - timestamp > maxAge) {
+      activityDedupeCache.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
+// Semantic activity rules registry - maps API patterns to user-facing actions
+// Order matters: more specific patterns should come first
+const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
+  // Chat / Messaging
+  {
+    pattern: '/api/stream/credentials',
+    rule: {
+      section: 'Chat',
+      feature: 'Stream Chat',
+      action: 'Visit',
+      details: 'Opened the Chat feature',
+      groupKey: 'chat-visit',
+      dedupeWindowMs: 120000,
+    },
+  },
+  {
+    pattern: '/conversations/recent',
+    rule: {
+      section: 'Chat',
+      feature: 'Conversations',
+      action: 'View',
+      details: 'Viewed recent conversations',
+      groupKey: 'chat-visit',
+      dedupeWindowMs: 120000,
+    },
+  },
+  {
+    pattern: '/api/messaging',
+    rule: {
+      section: 'Chat',
+      feature: 'Messaging',
+      action: 'View',
+      details: 'Accessed messaging system',
+      groupKey: 'messaging-visit',
+      dedupeWindowMs: 60000,
+    },
+  },
+
+  // Event Requests
+  {
+    pattern: '/api/event-requests/status-counts',
+    rule: {
+      section: 'Event Requests',
+      feature: 'Dashboard',
+      action: 'View',
+      details: 'Viewed Event Requests dashboard',
+      groupKey: 'event-requests-dashboard',
+      dedupeWindowMs: 60000,
+    },
+  },
+  {
+    pattern: '/api/event-requests/list',
+    rule: {
+      section: 'Event Requests',
+      feature: 'Event List',
+      action: 'View',
+      details: 'Viewed event request list',
+      groupKey: 'event-requests-dashboard',
+      dedupeWindowMs: 60000,
+    },
+  },
+  {
+    pattern: '/api/event-requests/collaboration',
+    rule: {
+      section: 'Event Requests',
+      feature: 'Collaboration',
+      action: 'View',
+      details: 'Accessed real-time collaboration on events',
+      groupKey: 'event-collaboration',
+      dedupeWindowMs: 120000,
+    },
+  },
+  {
+    pattern: /\/api\/event-requests\/\d+\/toolkit-sent/,
+    rule: {
+      section: 'Event Requests',
+      feature: 'Event Management',
+      action: 'Update',
+      details: 'Marked event as scheduled (toolkit sent)',
+      methods: ['PATCH', 'POST'],
+    },
+  },
+  {
+    pattern: /\/api\/event-requests\/\d+/,
+    rule: {
+      section: 'Event Requests',
+      feature: 'Event Details',
+      action: 'View',
+      details: 'Viewed event request details',
+      groupKey: 'event-details',
+      dedupeWindowMs: 30000,
+      methods: ['GET'],
+    },
+  },
+
+  // Resources
+  {
+    pattern: '/resources/user/recent',
+    rule: {
+      section: 'Resources',
+      feature: 'Documents',
+      action: 'View',
+      details: 'Viewed recently accessed documents',
+      groupKey: 'resources-recent',
+      dedupeWindowMs: 120000,
+    },
+  },
+
+  // Directory - Hosts
+  {
+    pattern: '/api/hosts-with-contacts',
+    rule: {
+      section: 'Directory',
+      feature: 'Hosts',
+      action: 'View',
+      details: 'Viewed host directory',
+      groupKey: 'hosts-directory',
+      dedupeWindowMs: 60000,
+    },
+  },
+  {
+    pattern: '/api/hosts/map',
+    rule: {
+      section: 'Directory',
+      feature: 'Host Map',
+      action: 'View',
+      details: 'Viewed host locations on map',
+      groupKey: 'hosts-map',
+      dedupeWindowMs: 60000,
+    },
+  },
+  {
+    pattern: '/api/hosts',
+    rule: {
+      section: 'Directory',
+      feature: 'Hosts',
+      action: 'View',
+      details: 'Accessed host management',
+      groupKey: 'hosts-management',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Directory - Drivers
+  {
+    pattern: '/api/drivers',
+    rule: {
+      section: 'Directory',
+      feature: 'Drivers',
+      action: 'View',
+      details: 'Viewed driver directory',
+      groupKey: 'drivers-directory',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Directory - Recipients
+  {
+    pattern: '/api/recipients/map',
+    rule: {
+      section: 'Directory',
+      feature: 'Recipient Map',
+      action: 'View',
+      details: 'Viewed recipient locations on map',
+      groupKey: 'recipients-map',
+      dedupeWindowMs: 60000,
+    },
+  },
+  {
+    pattern: '/api/recipients',
+    rule: {
+      section: 'Directory',
+      feature: 'Recipients',
+      action: 'View',
+      details: 'Viewed recipient directory',
+      groupKey: 'recipients-directory',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Users / Admin
+  {
+    pattern: '/api/users/online',
+    rule: {
+      section: 'Platform',
+      feature: 'Online Status',
+      action: 'View',
+      details: 'Checked who is online',
+      groupKey: 'online-status',
+      dedupeWindowMs: 300000, // 5 min - this polls frequently
+    },
+  },
+
+  // Onboarding
+  {
+    pattern: '/api/onboarding',
+    rule: {
+      section: 'Onboarding',
+      feature: 'Progress',
+      action: 'View',
+      details: 'Checked onboarding progress',
+      groupKey: 'onboarding-check',
+      dedupeWindowMs: 300000,
+    },
+  },
+
+  // Event Reminders
+  {
+    pattern: '/api/event-reminders',
+    rule: {
+      section: 'Event Requests',
+      feature: 'Reminders',
+      action: 'View',
+      details: 'Viewed event reminders',
+      groupKey: 'event-reminders',
+      dedupeWindowMs: 120000,
+    },
+  },
+
+  // Collections
+  {
+    pattern: '/api/sandwich-collections/export',
+    rule: {
+      section: 'Collections',
+      feature: 'Export',
+      action: 'Export',
+      details: 'Exported sandwich collection data',
+    },
+  },
+  {
+    pattern: '/api/sandwich-collections',
+    rule: {
+      section: 'Collections',
+      feature: 'Collection Entry',
+      action: 'View',
+      details: 'Viewed sandwich collections',
+      groupKey: 'collections-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Projects
+  {
+    pattern: '/api/projects',
+    rule: {
+      section: 'Projects',
+      feature: 'Project Management',
+      action: 'View',
+      details: 'Viewed projects',
+      groupKey: 'projects-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Meetings
+  {
+    pattern: '/api/meetings',
+    rule: {
+      section: 'Meetings',
+      feature: 'Meeting Management',
+      action: 'View',
+      details: 'Viewed meetings',
+      groupKey: 'meetings-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Work Logs
+  {
+    pattern: '/api/work-logs',
+    rule: {
+      section: 'Work Log',
+      feature: 'Time Tracking',
+      action: 'View',
+      details: 'Viewed work logs',
+      groupKey: 'worklogs-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // TSP Holding Zone
+  {
+    pattern: '/api/holding-zone',
+    rule: {
+      section: 'Holding Zone',
+      feature: 'Ideas & Tasks',
+      action: 'View',
+      details: 'Viewed TSP Holding Zone',
+      groupKey: 'holding-zone-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Emails
+  {
+    pattern: '/api/emails',
+    rule: {
+      section: 'Communication',
+      feature: 'Email',
+      action: 'View',
+      details: 'Accessed email system',
+      groupKey: 'emails-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Kudos
+  {
+    pattern: '/api/kudos',
+    rule: {
+      section: 'Communication',
+      feature: 'Kudos',
+      action: 'View',
+      details: 'Viewed kudos messages',
+      groupKey: 'kudos-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+
+  // Driver Planning
+  {
+    pattern: '/api/driver-candidates',
+    rule: {
+      section: 'Driver Planning',
+      feature: 'Route Planning',
+      action: 'View',
+      details: 'Accessed driver planning tools',
+      groupKey: 'driver-planning',
+      dedupeWindowMs: 60000,
+    },
+  },
+
+  // Analytics
+  {
+    pattern: '/api/analytics',
+    rule: {
+      section: 'Analytics',
+      feature: 'Reports',
+      action: 'View',
+      details: 'Viewed analytics dashboard',
+      groupKey: 'analytics-view',
+      dedupeWindowMs: 60000,
+    },
+  },
+
+  // Reports
+  {
+    pattern: '/api/reports',
+    rule: {
+      section: 'Reports',
+      feature: 'Report Generation',
+      action: 'View',
+      details: 'Accessed reports',
+      groupKey: 'reports-view',
+      dedupeWindowMs: 60000,
+      methods: ['GET'],
+    },
+  },
+];
+
+// Paths to completely skip - these provide zero user insight
+const skipPaths = [
+  '/api/auth/user',
+  '/api/message-notifications',
+  '/api/emails/unread-count',
+  '/api/messaging/unread',
+  '/unread',
+  '/api/notifications/counts',
+  '/count',
+  '/stats',
+  '/kudos/unnotified',
+  '/api/online',
+  '/api/health',
+  '/api/ping',
+  '/socket.io',
+  '/api/dismissed-announcements',
+  '/api/activity-log',
+  '/api/activity-logs',
+  '/api/announcements/dismissed',
+];
+
+function matchActivityRule(path: string, method: string): ActivityRule | null {
+  for (const { pattern, rule } of activityRules) {
+    const matches =
+      typeof pattern === 'string'
+        ? path.includes(pattern)
+        : pattern.test(path);
+
+    if (matches) {
+      // Check if method is allowed
+      if (rule.methods && !rule.methods.includes(method)) {
+        continue;
+      }
+      return rule;
+    }
+  }
+  return null;
+}
+
+function shouldDedupe(userId: number, groupKey: string, windowMs: number): boolean {
+  const cacheKey = `${userId}:${groupKey}`;
+  const lastLog = activityDedupeCache.get(cacheKey);
+  const now = Date.now();
+
+  if (lastLog && now - lastLog < windowMs) {
+    return true; // Skip - within dedup window
+  }
+
+  activityDedupeCache.set(cacheKey, now);
+  return false;
+}
+
+// Map HTTP methods to readable actions for fallback
+const methodToAction: Record<string, { action: string; description: string }> = {
+  GET: { action: 'View', description: 'Viewed' },
+  POST: { action: 'Create', description: 'Created' },
+  PUT: { action: 'Update', description: 'Updated' },
+  PATCH: { action: 'Update', description: 'Updated' },
+  DELETE: { action: 'Delete', description: 'Deleted' },
 };
 
 export function createActivityLogger(options: ActivityLoggerOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    // Skip logging for endpoints that don't provide meaningful activity insight
-    const skipPaths = [
-      '/api/auth/user',
-      '/api/message-notifications',
-      '/api/emails/unread-count',
-      '/api/messaging/unread',
-      '/unread',
-      '/api/user-activity',
-      '/api/enhanced-user-activity',
-      '/api/notifications/counts',
-      '/count',
-      '/stats',
-      '/kudos/unnotified',
-      '/api/online',
-      '/api/health',
-      '/api/ping',
-      '/socket.io',
-      '/api/dismissed-announcements',
-      '/api/activity-log', // Skip - already logged by frontend
-      '/api/activity-logs',
-    ];
-
-    // Skip generic GET requests that are just page loads or data fetches
-    // Only log meaningful actions (creates, updates, deletes)
-    const isGenericView = req.method === 'GET' && (
-      req.path === '/' ||
-      req.path === '/dashboard' ||
-      req.path.startsWith('/api/announcements') ||
-      req.path.includes('/dismissed') ||
-      req.path.includes('/online')
-    );
-
+    // Skip OPTIONS and paths with zero insight value
     const shouldSkip =
-      skipPaths.some((path) => req.path.includes(path)) ||
       req.method === 'OPTIONS' ||
-      isGenericView;
+      skipPaths.some((path) => req.path.includes(path));
 
     if (shouldSkip) {
       return next();
@@ -123,280 +479,111 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
 
     // Override end method to log after response
     (res as any).end = function (this: Response, chunk?: any, encoding?: any) {
-      // Log the activity after response is sent
       setImmediate(async () => {
         try {
           const user = (req as any).user;
-          const sessionUser = (req as any).session?.user;
-
-          // Only log missing user context for API calls (not static assets)
-          if (!user?.id && req.path.startsWith('/api/')) {
-            logger.log(
-              `🚨 Activity Logger: No user context for ${req.method} ${req.path}`
-            );
-            logger.log(`   - req.user exists: ${!!user}`);
-            logger.log(`   - Session user exists: ${!!sessionUser}`);
-            logger.log(`   - Status code: ${res.statusCode}`);
-          }
 
           if (user?.id && res.statusCode < 400) {
-            // Determine section and feature from URL path
-            let section = 'General';
-            let feature = 'Unknown';
-            let page = req.path;
+            // Try to match a semantic activity rule
+            const rule = matchActivityRule(req.path, req.method);
 
-            // Find the best matching route with better pattern matching
-            for (const [route, details] of Object.entries(
-              routeToSectionAndFeature
-            )) {
-              if (req.path.startsWith(route)) {
-                section = details.section;
-                feature = details.feature;
-                break;
+            let section: string;
+            let feature: string;
+            let action: string;
+            let details: string;
+
+            if (rule) {
+              // Check deduplication
+              if (rule.groupKey && rule.dedupeWindowMs) {
+                if (shouldDedupe(user.id, rule.groupKey, rule.dedupeWindowMs)) {
+                  // Skip logging - already logged recently
+                  return originalEnd.call(this, chunk, encoding);
+                }
               }
-            }
 
-            // Enhanced fallback mapping for unmatched paths
-            if (feature === 'Unknown') {
-              if (req.path.includes('enhanced-user-activity')) {
-                section = 'Analytics';
-                feature = 'User Analytics';
-              } else if (req.path.includes('detailed-users')) {
-                section = 'Analytics';
-                feature = 'User Details';
-              } else if (req.path.includes('enhanced-stats')) {
-                section = 'Analytics';
-                feature = 'System Statistics';
-              } else if (req.path.includes('/logs')) {
-                section = 'Analytics';
-                feature = 'Activity Logs';
-              } else if (req.path.includes('/dashboard')) {
-                section = 'Dashboard';
-                feature = 'Dashboard Navigation';
-              } else if (req.path.includes('/user-management')) {
-                section = 'Admin';
-                feature = 'User Management';
-              } else if (req.path.includes('/event-requests') && req.path.includes('/toolkit-sent')) {
-                section = 'Event Requests';
-                feature = 'Toolkit Sent';
-              } else {
-                // Extract meaningful names from path
-                const pathParts = req.path
-                  .split('/')
-                  .filter((part) => part && part !== 'api');
-                if (pathParts.length > 0) {
-                  section =
-                    pathParts[0].charAt(0).toUpperCase() +
-                    pathParts[0].slice(1).replace('-', ' ');
-                  feature =
-                    pathParts.length > 1
-                      ? pathParts[1].charAt(0).toUpperCase() +
-                        pathParts[1].slice(1).replace('-', ' ')
-                      : section + ' Activity';
+              section = rule.section;
+              feature = rule.feature;
+              action = rule.action;
+              details = rule.details;
+            } else {
+              // Fallback for unmapped endpoints - generate meaningful description
+              const actionInfo = methodToAction[req.method] || { action: 'Access', description: 'Accessed' };
+              action = actionInfo.action;
+
+              // Extract section from path
+              const pathParts = req.path.split('/').filter((p) => p && p !== 'api');
+              
+              if (pathParts.length > 0) {
+                // Capitalize and format section name
+                const rawSection = pathParts[0].replace(/-/g, ' ');
+                section = rawSection.charAt(0).toUpperCase() + rawSection.slice(1);
+                
+                // Build meaningful feature name
+                if (pathParts.length > 1) {
+                  const rawFeature = pathParts[1].replace(/-/g, ' ');
+                  feature = rawFeature.charAt(0).toUpperCase() + rawFeature.slice(1);
                 } else {
-                  section = 'Platform';
-                  feature = 'Platform Navigation';
+                  feature = section;
                 }
-              }
-            }
-
-            // Special handling for dashboard sections with query parameters
-            if (req.path === '/' || req.path === '/dashboard') {
-              section = 'Dashboard';
-              const sectionParam = req.query.section as string;
-              if (sectionParam) {
-                switch (sectionParam) {
-                  case 'user-management':
-                    feature = 'User Management';
-                    break;
-                  case 'collections':
-                    feature = 'Collections Dashboard';
-                    break;
-                  case 'analytics':
-                    feature = 'Analytics Dashboard';
-                    break;
-                  case 'projects':
-                    feature = 'Projects Dashboard';
-                    break;
-                  default:
-                    feature = `Dashboard - ${sectionParam}`;
+                
+                // Build details based on action and section
+                if (action === 'Create') {
+                  details = `Created new ${section.toLowerCase()} entry`;
+                } else if (action === 'Update') {
+                  const idMatch = req.path.match(/\/(\d+)(?:\/|$)/);
+                  details = idMatch
+                    ? `Updated ${section.toLowerCase()} #${idMatch[1]}`
+                    : `Updated ${section.toLowerCase()} settings`;
+                } else if (action === 'Delete') {
+                  const idMatch = req.path.match(/\/(\d+)(?:\/|$)/);
+                  details = idMatch
+                    ? `Deleted ${section.toLowerCase()} #${idMatch[1]}`
+                    : `Deleted ${section.toLowerCase()} item`;
+                } else {
+                  details = `Viewed ${section.toLowerCase()}`;
                 }
               } else {
-                feature = 'Main Dashboard';
+                section = 'Platform';
+                feature = 'Navigation';
+                details = 'Navigated the platform';
               }
             }
 
-            // Determine action from method
-            const actionDetails = methodToActionDetails[req.method] || {
-              action: 'Unknown',
-              description: 'Unknown action',
-            };
+            // Update user's last active timestamp
+            await options.storage.updateUserLastActive(user.id);
 
-            // Build metadata with request details
+            // Build metadata
             const metadata: any = {
               url: req.originalUrl || req.url,
               method: req.method,
               statusCode: res.statusCode,
-              queryParams:
-                Object.keys(req.query).length > 0 ? req.query : undefined,
-              bodySize: req.get('content-length')
-                ? parseInt(req.get('content-length') || '0')
-                : undefined,
-              userAgent: req.get('User-Agent'),
-              referer: req.get('Referer'),
               timestamp: new Date().toISOString(),
             };
 
-            // Add specific details based on the endpoint
-            if (req.path.includes('/collections') && req.method === 'POST') {
-              metadata.itemType = 'sandwich_collection';
-            } else if (
-              req.path.includes('/projects') &&
-              req.method === 'POST'
-            ) {
-              metadata.itemType = 'project';
-            } else if (
-              req.path.includes('/messages') &&
-              req.method === 'POST'
-            ) {
-              metadata.itemType = 'message';
+            // Add query params if meaningful
+            if (Object.keys(req.query).length > 0) {
+              metadata.queryParams = req.query;
             }
 
-            // Generate meaningful activity details based on the action and endpoint
-            let activityDetails = actionDetails.description;
-
-            // Enhance details based on specific endpoints and actions
-            if (
-              actionDetails.action === 'Update' ||
-              actionDetails.action === 'Create'
-            ) {
-              if (
-                req.path.includes('/users') ||
-                req.path.includes('/user-management')
-              ) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated user account settings or permissions'
-                    : 'Created new user account';
-              } else if (req.path.includes('/projects')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated project details, status, or assignments'
-                    : 'Created new project';
-              } else if (req.path.includes('/collections')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated sandwich collection data or status'
-                    : 'Added new sandwich collection entry';
-              } else if (req.path.includes('/meetings')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated meeting details, agenda, or attendees'
-                    : 'Created new meeting';
-              } else if (req.path.includes('/hosts')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated host organization information or contacts'
-                    : 'Added new host organization';
-              } else if (req.path.includes('/recipients')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated recipient organization details or focus areas'
-                    : 'Added new recipient organization';
-              } else if (req.path.includes('/drivers')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated driver information or agreements'
-                    : 'Added new driver';
-              } else if (req.path.includes('/messages')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated or edited message content'
-                    : 'Sent new message';
-              } else if (req.path.includes('/announcements')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated announcement content or visibility'
-                    : 'Created new announcement';
-              } else if (req.path.includes('/suggestions')) {
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? 'Updated suggestion details or status'
-                    : 'Submitted new suggestion';
-              } else if (req.path.includes('/event-requests')) {
-                if (actionDetails.action === 'Update') {
-                  // Check if audit details were provided by the route handler
-                  if (res.locals?.eventRequestAuditDetails?.auditDetails) {
-                    const auditDetails =
-                      res.locals.eventRequestAuditDetails.auditDetails;
-                    metadata.auditDetails = auditDetails;
-                    const changedFields = Object.keys(auditDetails);
-                    activityDetails =
-                      changedFields.length > 0
-                        ? `Updated event request: ${changedFields.join(', ')}`
-                        : 'Updated event request details';
-                  } else {
-                    activityDetails = 'Updated event request details';
-                  }
-                } else {
-                  activityDetails = 'Submitted new event request';
-                }
-              } else if (req.path === '/' || req.path === '/dashboard') {
-                // Skip generic "Created new dashboard entry" - doesn't make sense
-                activityDetails = `Accessed ${feature.toLowerCase()}`;
-              } else {
-                // Generic fallback with more context
-                activityDetails =
-                  actionDetails.action === 'Update'
-                    ? `Updated ${feature.toLowerCase()} information`
-                    : `Created new ${feature.toLowerCase()} entry`;
-              }
-
-              // Add ID from URL if available for more specificity
-              const idMatch = req.path.match(/\/(\d+)$/);
-              if (idMatch) {
-                activityDetails += ` (ID: ${idMatch[1]})`;
-              }
-            } else if (actionDetails.action === 'View') {
-              if (req.path.includes('/dashboard')) {
-                activityDetails = `Viewed ${feature.toLowerCase()} dashboard`;
-              } else if (req.path.includes('/analytics')) {
-                activityDetails = `Accessed analytics and reports`;
-              } else if (req.path.includes('/user-management')) {
-                activityDetails = `Viewed user management interface`;
-              } else {
-                activityDetails = `Viewed ${feature.toLowerCase()} content`;
-              }
-            } else if (actionDetails.action === 'Delete') {
-              const idMatch = req.path.match(/\/(\d+)$/);
-              activityDetails = `Deleted ${feature.toLowerCase()}${idMatch ? ` (ID: ${idMatch[1]})` : ''}`;
-            }
-
-            // Update user's last active timestamp for online status tracking
-            await options.storage.updateUserLastActive(user.id);
-
-            // Create detailed activity log entry
+            // Create activity log entry
             await options.storage.logUserActivity({
               userId: user.id,
-              action: actionDetails.action,
+              action,
               section,
-              page,
+              page: req.path,
               feature,
-              details: activityDetails,
+              details,
               sessionId: (req as any).sessionID,
               ipAddress: req.ip,
               userAgent: req.get('User-Agent') || 'Unknown',
               metadata,
             });
-
-            // Activity logged silently
           }
         } catch (error) {
           logger.error('Error logging user activity:', error);
         }
       });
 
-      // Call original end method
       return originalEnd.call(this, chunk, encoding);
     };
 
