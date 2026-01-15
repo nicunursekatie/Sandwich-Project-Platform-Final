@@ -70,6 +70,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
+import { QuickScheduleButton } from '@/components/event-requests/QuickScheduleButton';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -1414,6 +1415,25 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p>Mark this event as scheduled</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Backup quick schedule button - bypasses form if main button has issues */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <QuickScheduleButton
+                    eventId={request.id}
+                    eventName={request.organizationName || 'Event'}
+                    currentStatus={request.status}
+                    scheduledDate={request.desiredEventDate}
+                    size="sm"
+                    variant="outline"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Quick schedule (bypass form)</p>
               </TooltipContent>
             </Tooltip>
 
