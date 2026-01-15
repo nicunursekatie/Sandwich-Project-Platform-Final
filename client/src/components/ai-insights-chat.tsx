@@ -205,7 +205,7 @@ export function AIInsightsChat({ dateRange }: AIInsightsChatProps) {
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
-      const response = await fetch('/api/impact-reports/ai-chat', {
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

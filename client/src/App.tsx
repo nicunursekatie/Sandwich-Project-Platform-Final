@@ -6,7 +6,6 @@ import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { initGA } from '../lib/analytics';
 import { useAnalytics } from '../hooks/use-analytics';
-import { useEnhancedTracking } from '../hooks/use-enhanced-tracking';
 
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -70,9 +69,6 @@ function Router() {
 
   // Track page views when routes change
   useAnalytics();
-
-  // Enhanced tracking for detailed user behavior analytics
-  useEnhancedTracking();
 
   if (isLoading) {
     return (

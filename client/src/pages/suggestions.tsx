@@ -199,7 +199,7 @@ export default function SuggestionsPortal() {
       });
       
       // Track the suggestion submission
-      trackFormSubmit('user suggestion', 'Feedback & Suggestions');
+      trackFormSubmit('user suggestion', 'Feedback & Suggestions', 'Suggestion Form', true);
     },
     onError: (error: any) => {
       toast({

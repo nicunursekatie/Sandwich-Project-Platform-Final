@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useActivityTracker } from './useActivityTracker';
 import { useUserActivityTracking } from './useUserActivityTracking';
-import { useEnhancedTracking } from '@/hooks/use-enhanced-tracking';
 import { logger } from '@/lib/logger';
 
 /**
@@ -141,7 +140,6 @@ export function useFormActivityTracking(
   // Use existing tracking hooks
   const { trackActivity, trackFormSubmit: trackSubmitBase } = useActivityTracker();
   const { trackFormSubmit: trackSubmitUser } = useUserActivityTracking();
-  const { trackFormSubmit: trackSubmitEnhanced } = useEnhancedTracking();
 
   // Track form state
   const [formState] = useState<FormMetrics>({
@@ -192,7 +190,6 @@ export function useFormActivityTracking(
       // Track in all systems
       trackSubmitBase(formName, section, feature, success);
       trackSubmitUser(formName, section, data?.recordId);
-      trackSubmitEnhanced(formName, section);
 
       // Track detailed metrics
       trackActivity({
@@ -215,7 +212,7 @@ export function useFormActivityTracking(
 
       logger.log(`[Form Tracking] Submitted: ${formName} (${timeSpent}s)`);
     },
-    [formName, section, feature, metadata, trackActivity, trackSubmitBase, trackSubmitUser, trackSubmitEnhanced]
+    [formName, section, feature, metadata, trackActivity, trackSubmitBase, trackSubmitUser]
   );
 
   // Track form error
