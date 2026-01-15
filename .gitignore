@@ -83,3 +83,23 @@ nul
 con
 prn
 aux
+# Backups and temp files
+backups/
+*.bak
+*.tmp
+*~
+*.log
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
