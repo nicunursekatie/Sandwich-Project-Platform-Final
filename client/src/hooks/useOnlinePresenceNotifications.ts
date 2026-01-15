@@ -32,7 +32,8 @@ export function useOnlinePresenceNotifications() {
     queryKey: ['/api/users/online'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/users/online');
-      return response;
+      // Ensure we always return an array, even if API returns an object or null
+      return Array.isArray(response) ? response : [];
     },
     refetchInterval: 30000, // Check every 30 seconds
     enabled: !!currentUser,
