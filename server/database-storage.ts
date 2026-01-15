@@ -4280,12 +4280,53 @@ export class DatabaseStorage implements IStorage {
 
   async restoreEventRequest(id: number): Promise<boolean> {
     // Restore a soft-deleted event request
+    // First, get the event to check if needs fields should be restored based on assignments
+    const event = await db
+      .select()
+      .from(eventRequests)
+      .where(eq(eventRequests.id, id))
+      .limit(1);
+    
+    if (event.length === 0) {
+      return false;
+    }
+    
+    const existingEvent = event[0];
+    const updateData: any = {
+      deletedAt: null,
+      deletedBy: null,
+    };
+    
+    // Auto-restore needs fields if assignments exist but needs are 0/null
+    // This prevents losing needs when an event is restored
+    if (existingEvent.assignedDriverIds && Array.isArray(existingEvent.assignedDriverIds) && existingEvent.assignedDriverIds.length > 0) {
+      const hasVanDriver = (existingEvent as any).assignedVanDriverId || (existingEvent as any).isDhlVan;
+      const totalAssignedDrivers = existingEvent.assignedDriverIds.length + (hasVanDriver ? 1 : 0);
+      if ((existingEvent.driversNeeded || 0) < totalAssignedDrivers) {
+        updateData.driversNeeded = totalAssignedDrivers;
+      }
+    }
+    
+    if (existingEvent.speakerDetails) {
+      const speakerDetails = typeof existingEvent.speakerDetails === 'string' 
+        ? JSON.parse(existingEvent.speakerDetails || '{}')
+        : existingEvent.speakerDetails;
+      const assignedSpeakerCount = Object.keys(speakerDetails || {}).length;
+      if (assignedSpeakerCount > 0 && (existingEvent.speakersNeeded || 0) < assignedSpeakerCount) {
+        updateData.speakersNeeded = assignedSpeakerCount;
+      }
+    }
+    
+    if (existingEvent.assignedVolunteerIds && Array.isArray(existingEvent.assignedVolunteerIds) && existingEvent.assignedVolunteerIds.length > 0) {
+      const assignedVolunteerCount = existingEvent.assignedVolunteerIds.length;
+      if ((existingEvent.volunteersNeeded || 0) < assignedVolunteerCount) {
+        updateData.volunteersNeeded = assignedVolunteerCount;
+      }
+    }
+    
     const result = await db
       .update(eventRequests)
-      .set({
-        deletedAt: null,
-        deletedBy: null,
-      })
+      .set(updateData)
       .where(eq(eventRequests.id, id));
     return (result.rowCount ?? 0) > 0;
   }

@@ -45,6 +45,7 @@ import {
   Loader2,
   Sparkles,
   Plus,
+  Check,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -2220,18 +2221,88 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
                           ? detailName
                           : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
+                        const isUnknown = displayName === 'Unknown Speaker';
+                        const editingFieldKey = `speaker-name-${id}`;
+                        const isEditing = isEditingThisCard && editingField === editingFieldKey;
+                        
                         return (
                           <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                            {canEdit && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRemoveAssignment('speaker', id)}
-                                className="h-5 w-5 p-0 text-red-600 shrink-0"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
+                            {isEditing ? (
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Input
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      const updatedSpeakerDetails = {
+                                        ...(request.speakerDetails || {}),
+                                        [id]: {
+                                          ...((request.speakerDetails as any)?.[id] || {}),
+                                          name: editingValue.trim() || null,
+                                        },
+                                      };
+                                      updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
+                                      cancelEdit();
+                                    } else if (e.key === 'Escape') {
+                                      cancelEdit();
+                                    }
+                                  }}
+                                  autoFocus
+                                  className="h-8 text-base font-bold text-[#236383] flex-1 min-w-0"
+                                  placeholder="Speaker name"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    const updatedSpeakerDetails = {
+                                      ...(request.speakerDetails || {}),
+                                      [id]: {
+                                        ...((request.speakerDetails as any)?.[id] || {}),
+                                        name: editingValue.trim() || null,
+                                      },
+                                    };
+                                    updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
+                                    cancelEdit();
+                                  }}
+                                  className="h-6 px-2 text-green-600 shrink-0"
+                                >
+                                  <Check className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={cancelEdit}
+                                  className="h-6 px-2 text-gray-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <>
+                                <span 
+                                  className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight cursor-pointer hover:underline"
+                                  onClick={() => canEdit && startEditing(editingFieldKey, displayName)}
+                                  title={canEdit ? "Click to edit speaker name" : undefined}
+                                >
+                                  {displayName}
+                                  {isUnknown && (
+                                    <span className="text-xs font-normal text-gray-500 ml-1" title={`Speaker ID: ${id}`}>
+                                      (ID: {id})
+                                    </span>
+                                  )}
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('speaker', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </div>
                         );
