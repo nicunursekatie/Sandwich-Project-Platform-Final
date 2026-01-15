@@ -20,7 +20,7 @@ import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';
-import { eq, desc, and, sql, gte, or, isNull, ne } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, or, isNull, ne, isNotNull } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
@@ -1590,12 +1590,24 @@ router.get(
     try {
       const searchQuery = (req.query.q as string || '').trim().toLowerCase();
       const statusParam = req.query.status as string | undefined;
+      const includeDeleted = req.query.includeDeleted === 'true';
 
       if (!searchQuery || searchQuery.length < 2) {
         return res.json([]);
       }
 
-      let eventRequests = await storage.getAllEventRequests();
+      // Get events - include deleted ones if requested
+      let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
+      if (includeDeleted) {
+        // Query directly from database to include deleted events
+        const allEvents = await db
+          .select()
+          .from(eventRequests)
+          .orderBy(desc(eventRequests.createdAt));
+        eventRequests = allEvents as any;
+      } else {
+        eventRequests = await storage.getAllEventRequests();
+      }
 
       // Filter by status first if provided
       if (statusParam && statusParam !== 'all') {
@@ -1672,9 +1684,11 @@ router.get(
         contactAttempts: event.contactAttempts,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
+        deletedAt: (event as any).deletedAt, // Include deletedAt when searching deleted events
+        deletedBy: (event as any).deletedBy, // Include deletedBy when searching deleted events
       }));
 
-      logger.info(`🔍 Search for "${searchQuery}" returned ${lightweightResults.length} results`);
+      logger.info(`🔍 Search for "${searchQuery}" ${includeDeleted ? '(including deleted)' : ''} returned ${lightweightResults.length} results`);
       res.json(lightweightResults);
     } catch (error) {
       logger.error('Failed to search event requests', error);
@@ -2928,17 +2942,18 @@ router.put(
         };
 
         const missingFields = [];
-        if (!requiredFields.desiredEventDate) missingFields.push('Event Date');
+        if (!requiredFields.desiredEventDate) missingFields.push('Event Date (desiredEventDate or scheduledEventDate)');
         // Make Event Address and Estimated Sandwich Count optional for basic scheduled status
         // They can be filled in later during the workflow
 
         if (missingFields.length > 0) {
           return res.status(400).json({
-            message: `Cannot mark event as scheduled. Missing required fields: ${missingFields.join(
+            message: `Cannot mark event as scheduled. Missing required field: ${missingFields.join(
               ', '
-            )}`,
+            )}. Please set an event date (desiredEventDate or scheduledEventDate) before scheduling.`,
             error: 'Missing required scheduling data',
             missingFields,
+            hint: 'Events must have a date (desiredEventDate or scheduledEventDate) to be scheduled. The Eagle Project event is missing this field.',
           });
         }
       } else if (processedUpdates.status === 'scheduled') {
