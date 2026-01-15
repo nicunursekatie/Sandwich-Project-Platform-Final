@@ -208,6 +208,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // Clear auto-saved data for current event
   const clearAutoSave = useCallback(() => {
+    // CRITICAL: Cancel any pending auto-save timeout to prevent race condition
+    // where auto-save fires AFTER we clear, re-creating the localStorage entry
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
     try {
       localStorage.removeItem(getAutoSaveKey());
     } catch (e) {
