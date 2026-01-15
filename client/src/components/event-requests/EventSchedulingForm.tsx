@@ -519,14 +519,29 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           // Verify saved data is for this event (or both are new events)
           const savedEventId = savedData.eventId;
           const currentEventId = eventRequest?.id || null;
-          
+
           if (savedEventId === currentEventId) {
             // Check if saved data is less than 24 hours old
             const savedAt = new Date(savedData.savedAt);
             const now = new Date();
             const hoursSinceSave = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
-            
-            if (hoursSinceSave < 24) {
+
+            // CRITICAL FIX: Check if the saved status differs from the server status
+            // If the status has changed on the server (e.g., event was scheduled successfully),
+            // discard the stale auto-save data to prevent showing outdated status
+            const savedStatus = savedData.formData?.status;
+            const serverStatus = eventRequest?.status;
+            const statusMismatch = savedStatus && serverStatus && savedStatus !== serverStatus;
+
+            if (statusMismatch) {
+              // Status changed on server - discard stale auto-save
+              logger.log('🗑️ Auto-save status mismatch - discarding stale data', {
+                savedStatus,
+                serverStatus,
+                eventId: currentEventId,
+              });
+              clearAutoSave();
+            } else if (hoursSinceSave < 24) {
               // Restore saved form data
               setFormData(savedData.formData);
               if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
@@ -534,16 +549,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               if (savedData.attendeeMode) setAttendeeMode(savedData.attendeeMode);
               setHasRecoveredData(true);
               recoveredFromStorage = true;
-              
+
               // Auto-expand completed details if needed
               setShowCompletedDetails(savedData.formData?.status === 'completed');
-              
+
               // Show toast notification
               toast({
                 title: 'Form data recovered',
                 description: 'Your unsaved changes have been restored. Click "Discard" to start fresh.',
               });
-              
+
               // CRITICAL: Mark form as initialized after recovery so auto-save continues working
               // This runs in next tick to ensure state updates are batched properly
               setTimeout(() => {
