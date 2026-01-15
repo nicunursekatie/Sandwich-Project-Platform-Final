@@ -4261,6 +4261,18 @@ export class DatabaseStorage implements IStorage {
     // DEBUG: Log result after save
     if (result) {
       logger.info(`[DB updateEventRequest] Event ${id} - After save, speakerDetails: ${JSON.stringify(result.speakerDetails)}`);
+      
+      // CRITICAL: Verify status update actually persisted
+      if (filteredData.status && result.status !== filteredData.status) {
+        logger.error(`[DB updateEventRequest] ⚠️ STATUS MISMATCH for Event ${id}!`);
+        logger.error(`[DB updateEventRequest] Expected status: "${filteredData.status}"`);
+        logger.error(`[DB updateEventRequest] Actual status from DB: "${result.status}"`);
+        logger.error(`[DB updateEventRequest] This indicates the UPDATE may have failed silently or been rolled back`);
+      } else if (filteredData.status) {
+        logger.info(`[DB updateEventRequest] ✅ Status update verified for Event ${id}: ${result.status}`);
+      }
+    } else {
+      logger.error(`[DB updateEventRequest] ⚠️ Event ${id} not found after update!`);
     }
 
     return result;

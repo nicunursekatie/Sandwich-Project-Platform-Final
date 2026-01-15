@@ -777,6 +777,31 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     retry: false,
     networkMode: 'always',
     onSuccess: (updatedEvent: any) => {
+      logger.log('✅ UPDATE MUTATION SUCCESS', {
+        eventId: updatedEvent?.id,
+        oldStatus: eventRequest?.status,
+        newStatus: updatedEvent?.status,
+        mode,
+      });
+      
+      // CRITICAL: Verify the status actually changed in the response
+      if (mode === 'schedule' && updatedEvent?.status !== 'scheduled') {
+        logger.error('❌ STATUS UPDATE FAILED!', {
+          expectedStatus: 'scheduled',
+          actualStatus: updatedEvent?.status,
+          eventId: updatedEvent?.id,
+          updatedEvent,
+        });
+        toast({
+          title: 'Warning',
+          description: `Event status may not have updated correctly. Expected 'scheduled' but got '${updatedEvent?.status}'. Please refresh and check.`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+      } else if (mode === 'schedule') {
+        logger.info('✅ Status update confirmed in response:', updatedEvent?.status);
+      }
+      
       // Clear auto-saved data on successful submission
       clearAutoSave();
       setHasRecoveredData(false);
@@ -795,6 +820,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         duration: 8000,
       });
       // Invalidate all event request queries to refresh UI
+      logger.log('🔄 Invalidating event request queries...');
       invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();

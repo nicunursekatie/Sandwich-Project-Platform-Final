@@ -2827,6 +2827,14 @@ router.patch(
         `Updated ${organizationName} (${contactName}): ${changesSummary}`
       );
 
+      // CRITICAL: Verify status update before sending response
+      logger.info(`[PATCH /:id] Response status: ${updatedEventRequest.status} (original: ${originalEvent.status})`);
+      if (processedUpdates.status && updatedEventRequest.status !== processedUpdates.status) {
+        logger.error(`[PATCH /:id] ⚠️ STATUS MISMATCH! Expected "${processedUpdates.status}" but response has "${updatedEventRequest.status}"`);
+      } else if (processedUpdates.status) {
+        logger.info(`[PATCH /:id] ✅ Status update confirmed in response: ${updatedEventRequest.status}`);
+      }
+
       res.json(updatedEventRequest);
     } catch (error: unknown) {
       const err = error as Error;
