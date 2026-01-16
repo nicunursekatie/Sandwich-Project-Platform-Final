@@ -11,3 +11,5 @@ export * from './types';
 export { ContactInfoSection } from './ContactInfoSection';
 export { BackupContactSection } from './BackupContactSection';
 export { CompletedEventSection } from './CompletedEventSection';
+export { SandwichPlanningSection } from './SandwichPlanningSection';
+export { ResourceRequirementsSection } from './ResourceRequirementsSection';

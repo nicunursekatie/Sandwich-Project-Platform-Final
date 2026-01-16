@@ -62,6 +62,8 @@ import {
   ContactInfoSection,
   BackupContactSection,
   CompletedEventSection,
+  SandwichPlanningSection,
+  ResourceRequirementsSection,
   type EventFormData,
 } from './form-sections';
 
@@ -1424,29 +1426,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     await performSubmit(false);
   };
 
-  const addSandwichType = () => {
-    setFormData(prev => ({
-      ...prev,
-      sandwichTypes: [...prev.sandwichTypes, { type: 'deli_turkey', quantity: 0 }]
-    }));
-  };
-
-  const updateSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      sandwichTypes: prev.sandwichTypes.map((item, i) => 
-        i === index ? { ...item, [field]: value } : item
-      )
-    }));
-  };
-
-  const removeSandwichType = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      sandwichTypes: prev.sandwichTypes.filter((_, i) => i !== index)
-    }));
-  };
-
+  // Note: Sandwich type handlers have been moved to SandwichPlanningSection component
   // Note: Actual sandwich type handlers have been moved to CompletedEventSection component
 
   // Handle date change confirmation
@@ -2021,176 +2001,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           </div>
 
-          {/* Sandwich Planning */}
-          <div className="space-y-4 border rounded-lg p-4 bg-white">
-            <div className="flex items-center gap-3 pb-2 border-b">
-              <Sandwich className="w-5 h-5 text-[#236383]" />
-              <span className="text-lg font-semibold text-[#236383]">Sandwich Planning</span>
-              {sectionStatus.sandwiches && <CheckCircle2 className="w-4 h-4 text-green-600" />}
-            </div>
-            
-            {/* Mode Selector */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={sandwichMode === 'total' ? 'default' : 'outline'}
-                onClick={() => setSandwichMode('total')}
-                className="text-xs"
-              >
-                Exact Count
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={sandwichMode === 'range' ? 'default' : 'outline'}
-                onClick={() => setSandwichMode('range')}
-                className="text-xs"
-              >
-                Range
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={sandwichMode === 'types' ? 'default' : 'outline'}
-                onClick={() => setSandwichMode('types')}
-                className="text-xs"
-              >
-                Specify Types
-              </Button>
-            </div>
-
-            {/* Total Count Mode */}
-            {sandwichMode === 'total' && (
-              <div className="space-y-2">
-                <Label htmlFor="totalSandwichCount">Total Number of Sandwiches</Label>
-                <Input
-                  id="totalSandwichCount"
-                  type="number"
-                  value={formData.totalSandwichCount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, totalSandwichCount: parseInt(e.target.value) || 0 }))}
-                  placeholder="Enter exact count (e.g., 550)"
-                  min="0"
-                  className="w-40"
-                />
-                <p className="text-sm text-[#236383]">
-                  Use this when you know the exact count.
-                </p>
-              </div>
-            )}
-
-            {/* Range Mode */}
-            {sandwichMode === 'range' && (
-              <div className="space-y-3">
-                <div>
-                  <Label>Estimated Sandwich Range</Label>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Input
-                      id="sandwichCountMin"
-                      type="number"
-                      value={formData.estimatedSandwichCountMin || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMin: parseInt(e.target.value) || 0 }))}
-                      placeholder="Min (e.g., 500)"
-                      min="0"
-                      className="w-32"
-                    />
-                    <span className="text-gray-500">to</span>
-                    <Input
-                      id="sandwichCountMax"
-                      type="number"
-                      value={formData.estimatedSandwichCountMax || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedSandwichCountMax: parseInt(e.target.value) || 0 }))}
-                      placeholder="Max (e.g., 700)"
-                      min="0"
-                      className="w-32"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="rangeSandwichType">Type (Optional)</Label>
-                  <Select
-                    value={formData.rangeSandwichType || undefined}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, rangeSandwichType: value === 'none' ? '' : value }))}
-                  >
-                    <SelectTrigger id="rangeSandwichType" className="w-48">
-                      <SelectValue placeholder="Select type..." />
-                    </SelectTrigger>
-                    <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                      <SelectItem value="none">No specific type</SelectItem>
-                      {SANDWICH_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="text-sm text-[#236383]">
-                  Use this when the final count isn't confirmed yet (e.g., 500-700 turkey sandwiches).
-                </p>
-              </div>
-            )}
-
-            {/* Specific Types Mode */}
-            {sandwichMode === 'types' && (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <Label>Sandwich Types & Quantities</Label>
-                  <Button type="button" onClick={addSandwichType} size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Type
-                  </Button>
-                </div>
-                
-                {formData.sandwichTypes.length === 0 ? (
-                  <div className="text-center py-4 text-[#007E8C] border-2 border-dashed border-[#236383]/30 rounded">
-                    <p>No sandwich types added yet. Click "Add Type" to get started.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {formData.sandwichTypes.map((sandwich, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 border rounded">
-                        <Select
-                          value={sandwich.type}
-                          onValueChange={(value) => updateSandwichType(index, 'type', value)}
-                        >
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                            {SANDWICH_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          placeholder="Quantity"
-                          value={sandwich.quantity}
-                          onChange={(e) => updateSandwichType(index, 'quantity', parseInt(e.target.value) || 0)}
-                          className="w-24"
-                          min="0"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeSandwichType(index)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
-                    <div className="text-sm text-[#236383] bg-[#e6f2f5] p-2 rounded">
-                      <strong>Total:</strong> {formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0)} sandwiches
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Sandwich Planning - Extracted Component */}
+          <SandwichPlanningSection
+            formData={formData as EventFormData}
+            setFormData={setFormData}
+            sandwichMode={sandwichMode}
+            setSandwichMode={setSandwichMode}
+            isComplete={sectionStatus.sandwiches}
+          />
 
           {/* Volunteer/Attendee Count (Optional) */}
           <div className="space-y-3">
@@ -2305,174 +2123,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </Select>
           </div>
 
-          {/* Resource Requirements */}
-          <div className="space-y-4 border rounded-lg p-4 bg-white">
-            <div className="flex items-center gap-3 pb-2 border-b">
-              <Car className="w-5 h-5 text-[#236383]" />
-              <span className="text-lg font-semibold text-[#236383]">Resource Requirements</span>
-              {sectionStatus.resources && <CheckCircle2 className="w-4 h-4 text-green-600" />}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Drivers */}
-            <div className="space-y-3">
-              <Label>Driver Requirements</Label>
-              <div className="space-y-2">
-                {/* Self-Transport Option */}
-                <div className="flex items-center space-x-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <input
-                    type="checkbox"
-                    id="selfTransport"
-                    checked={formData.selfTransport}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      selfTransport: e.target.checked,
-                      // Clear driver fields when self-transport is enabled
-                      driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
-                      vanDriverNeeded: e.target.checked ? false : prev.vanDriverNeeded,
-                      isDhlVan: e.target.checked ? false : prev.isDhlVan,
-                    }))}
-                  />
-                  <Label htmlFor="selfTransport" className="text-amber-800 font-medium">
-                    Organization Self-Transport
-                  </Label>
-                </div>
-                {formData.selfTransport && (
-                  <p className="text-sm text-amber-700 ml-6">
-                    The organization will transport sandwiches themselves (no TSP driver needed).
-                    Use the Delivery Destination field above to note where they're delivering.
-                  </p>
-                )}
+          {/* Resource Requirements - Extracted Component */}
+          <ResourceRequirementsSection
+            formData={formData as EventFormData}
+            setFormData={setFormData}
+            vanDrivers={vanDrivers}
+            isComplete={sectionStatus.resources}
+          />
 
-                {/* Driver fields - only show when NOT self-transport */}
-                {!formData.selfTransport && (
-                  <>
-                    <div>
-                      <Label htmlFor="driversNeeded">How many drivers needed?</Label>
-                      <Input
-                        id="driversNeeded"
-                        type="number"
-                        value={formData.driversNeeded}
-                        onChange={(e) => setFormData(prev => ({ ...prev, driversNeeded: parseInt(e.target.value) || 0 }))}
-                        min="0"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="vanDriverNeeded"
-                        checked={formData.vanDriverNeeded}
-                        onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked, isDhlVan: e.target.checked ? prev.isDhlVan : false }))}
-                      />
-                      <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
-                    </div>
-                  </>
-                )}
-                
-                {/* Van Driver Selection - Only show when van driver is needed and NOT self-transport */}
-                {formData.vanDriverNeeded && !formData.selfTransport && (
-                  <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <input
-                        type="checkbox"
-                        id="isDhlVan"
-                        checked={formData.isDhlVan}
-                        onChange={(e) => setFormData(prev => ({
-                          ...prev,
-                          isDhlVan: e.target.checked,
-                          assignedVanDriverId: e.target.checked ? '' : prev.assignedVanDriverId,
-                          vanDriverNeeded: e.target.checked ? true : prev.vanDriverNeeded,
-                        }))}
-                      />
-                      <Label htmlFor="isDhlVan">Use DHL van (external driver)</Label>
-                    </div>
-                    {formData.isDhlVan && (
-                      <p className="text-xs text-amber-700 mb-2">
-                        We will not assign an internal van driver. This still counts as the van being covered.
-                      </p>
-                    )}
-                    <Label htmlFor="assignedVanDriver">Select Van Driver (Optional)</Label>
-                    <Select
-                      value={formData.assignedVanDriverId || ''}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, assignedVanDriverId: value }))}
-                      disabled={formData.isDhlVan}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Choose a van-approved driver..." />
-                      </SelectTrigger>
-                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                        <SelectItem value="none">No driver assigned yet</SelectItem>
-                        {vanDrivers.map((driver) => (
-                          <SelectItem key={driver.id} value={driver.id.toString()}>
-                            {driver.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-orange-600 mt-1">
-                      If no driver is selected, the event card will show "Van Driver Needed"
-                    </p>
-                  </div>
-                )}
-
-              </div>
-            </div>
-
-            {/* Speakers and Volunteers */}
-            <div className="space-y-3">
-              <Label>Additional Resources</Label>
-              <div className="space-y-2">
-                <div>
-                  <Label htmlFor="speakersNeeded">How many speakers needed?</Label>
-                  <Input
-                    id="speakersNeeded"
-                    type="number"
-                    value={formData.speakersNeeded}
-                    onChange={(e) => setFormData(prev => ({ ...prev, speakersNeeded: parseInt(e.target.value) || 0 }))}
-                    min="0"
-                  />
-                </div>
-
-                {/* Speaker Details - Only show when speakers are needed */}
-                {formData.speakersNeeded > 0 && (
-                  <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
-                    <h4 className="font-medium text-purple-900">Speaker Details</h4>
-                    <div>
-                      <Label htmlFor="speakerAudienceType">Audience Type</Label>
-                      <Input
-                        id="speakerAudienceType"
-                        type="text"
-                        value={formData.speakerAudienceType || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, speakerAudienceType: e.target.value }))}
-                        placeholder="e.g., Elementary School, Adults, Mixed"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="speakerDuration">Duration</Label>
-                      <Input
-                        id="speakerDuration"
-                        type="text"
-                        value={formData.speakerDuration || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, speakerDuration: e.target.value }))}
-                        placeholder="e.g., 30 minutes, 1 hour"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <Label htmlFor="volunteersNeeded">How many volunteers needed?</Label>
-                  <Input
-                    id="volunteersNeeded"
-                    type="number"
-                    value={formData.volunteersNeeded}
-                    onChange={(e) => setFormData(prev => ({ ...prev, volunteersNeeded: parseInt(e.target.value) || 0 }))}
-                    min="0"
-                  />
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
           {/* TSP Contact Assignment */}
           <div>
             <div className="flex items-center gap-2 mb-2">

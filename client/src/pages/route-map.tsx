@@ -263,60 +263,69 @@ export default function LocationsMapView() {
     return recipients.filter(r => r.latitude && r.longitude && r.status === 'active');
   }, [recipients]);
 
-  // Filter hosts based on search
+  // Filter hosts based on search and add distance if searching address
   const filteredHosts = useMemo(() => {
-    if (!searchTerm.trim()) return hosts;
-    const search = searchTerm.toLowerCase();
-    return hosts.filter(contact =>
-      contact.contactName.toLowerCase().includes(search) ||
-      contact.hostLocationName.toLowerCase().includes(search) ||
-      contact.address?.toLowerCase().includes(search)
-    );
-  }, [hosts, searchTerm]);
+    let result = hosts;
 
-  // Filter recipients based on search
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter(contact =>
+        contact.contactName.toLowerCase().includes(search) ||
+        contact.hostLocationName.toLowerCase().includes(search) ||
+        contact.address?.toLowerCase().includes(search)
+      );
+    }
+
+    // Add distances and sort if there's a searched location
+    if (searchedLocation) {
+      return result
+        .map(h => ({
+          ...h,
+          distance: calculateDistance(
+            searchedLocation.latitude,
+            searchedLocation.longitude,
+            parseFloat(h.latitude),
+            parseFloat(h.longitude)
+          )
+        }))
+        .sort((a, b) => a.distance - b.distance);
+    }
+
+    return result.map(h => ({ ...h, distance: undefined as number | undefined }));
+  }, [hosts, searchTerm, searchedLocation]);
+
+  // Filter recipients based on search and add distance if searching address
   const filteredRecipients = useMemo(() => {
-    if (!searchTerm.trim()) return recipientsWithCoords;
-    const search = searchTerm.toLowerCase();
-    return recipientsWithCoords.filter(r =>
-      r.name.toLowerCase().includes(search) ||
-      r.address?.toLowerCase().includes(search) ||
-      r.region?.toLowerCase().includes(search)
-    );
-  }, [recipientsWithCoords, searchTerm]);
+    let result = recipientsWithCoords;
 
-  // Calculate nearby entities when address is searched
-  const nearbyEntities = useMemo(() => {
-    if (!searchedLocation) return { hosts: [], recipients: [] };
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter(r =>
+        r.name.toLowerCase().includes(search) ||
+        r.address?.toLowerCase().includes(search) ||
+        r.region?.toLowerCase().includes(search)
+      );
+    }
 
-    const nearbyHosts = hosts
-      .map(h => ({
-        ...h,
-        distance: calculateDistance(
-          searchedLocation.latitude,
-          searchedLocation.longitude,
-          parseFloat(h.latitude),
-          parseFloat(h.longitude)
-        )
-      }))
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 5);
+    // Add distances and sort if there's a searched location
+    if (searchedLocation) {
+      return result
+        .map(r => ({
+          ...r,
+          distance: calculateDistance(
+            searchedLocation.latitude,
+            searchedLocation.longitude,
+            parseFloat(r.latitude as string),
+            parseFloat(r.longitude as string)
+          )
+        }))
+        .sort((a, b) => a.distance - b.distance);
+    }
 
-    const nearbyRecipients = recipientsWithCoords
-      .map(r => ({
-        ...r,
-        distance: calculateDistance(
-          searchedLocation.latitude,
-          searchedLocation.longitude,
-          parseFloat(r.latitude as string),
-          parseFloat(r.longitude as string)
-        )
-      }))
-      .sort((a, b) => a.distance - b.distance)
-      .slice(0, 5);
-
-    return { hosts: nearbyHosts, recipients: nearbyRecipients };
-  }, [searchedLocation, hosts, recipientsWithCoords]);
+    return result.map(r => ({ ...r, distance: undefined as number | undefined }));
+  }, [recipientsWithCoords, searchTerm, searchedLocation]);
 
   // Calculate initial map center
   const initialMapCenter: [number, number] = useMemo(() => {
@@ -426,20 +435,53 @@ export default function LocationsMapView() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Locations Map</h1>
                 <p className="text-sm text-gray-600">
-                  {hosts.length} hosts, {recipientsWithCoords.length} recipients
+                  {showHosts ? hosts.length : 0} hosts, {showRecipients ? recipientsWithCoords.length : 0} recipients shown
                 </p>
               </div>
             </div>
 
+            {/* Address Search - prominently placed */}
+            <div className="flex-1 max-w-md">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    placeholder="Search any address..."
+                    value={addressSearchTerm}
+                    onChange={(e) => setAddressSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddressSearch()}
+                    className="pl-10 h-9"
+                  />
+                </div>
+                <Button
+                  onClick={handleAddressSearch}
+                  disabled={geocodeMutation.isPending || !addressSearchTerm.trim()}
+                  size="sm"
+                  className="h-9"
+                >
+                  {geocodeMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Navigation className="w-4 h-4" />
+                  )}
+                </Button>
+                {searchedLocation && (
+                  <Button variant="ghost" size="sm" onClick={clearSearch} className="h-9 px-2">
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
             {/* Visibility toggles */}
-            <div className="flex items-center gap-4 ml-auto">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="show-hosts"
                   checked={showHosts}
                   onCheckedChange={(checked) => setShowHosts(checked === true)}
                 />
-                <Label htmlFor="show-hosts" className="text-sm flex items-center gap-1">
+                <Label htmlFor="show-hosts" className="text-sm flex items-center gap-1 cursor-pointer">
                   <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                   Hosts
                 </Label>
@@ -450,7 +492,7 @@ export default function LocationsMapView() {
                   checked={showRecipients}
                   onCheckedChange={(checked) => setShowRecipients(checked === true)}
                 />
-                <Label htmlFor="show-recipients" className="text-sm flex items-center gap-1">
+                <Label htmlFor="show-recipients" className="text-sm flex items-center gap-1 cursor-pointer">
                   <span className="w-3 h-3 rounded-full bg-purple-500"></span>
                   Recipients
                 </Label>
@@ -471,18 +513,32 @@ export default function LocationsMapView() {
         >
           {isPanelOpen && (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
-              <TabsList className="grid w-full grid-cols-3 m-2 mr-4 flex-shrink-0">
+              {/* Searched Location Info - show at top when search is active */}
+              {searchedLocation && (
+                <div className="p-3 bg-green-50 border-b border-green-200 flex-shrink-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-green-800 flex items-center gap-1">
+                        <Navigation className="w-3 h-3" />
+                        Searched Location
+                      </div>
+                      <div className="text-sm text-green-700 mt-1 truncate">{searchedLocation.address}</div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={clearSearch} className="h-6 w-6 p-0 text-green-700 hover:text-green-900 hover:bg-green-100">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <TabsList className="grid w-full grid-cols-2 m-2 mr-4 flex-shrink-0">
                 <TabsTrigger value="hosts" className="text-xs">
                   <Building2 className="w-3 h-3 mr-1" />
-                  Hosts
+                  Hosts ({filteredHosts.length})
                 </TabsTrigger>
                 <TabsTrigger value="recipients" className="text-xs">
                   <Users className="w-3 h-3 mr-1" />
-                  Recipients
-                </TabsTrigger>
-                <TabsTrigger value="search" className="text-xs">
-                  <Navigation className="w-3 h-3 mr-1" />
-                  Search
+                  Recipients ({filteredRecipients.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -510,10 +566,19 @@ export default function LocationsMapView() {
                         onClick={() => handleHostClick(contact)}
                       >
                         <CardContent className="p-3">
-                          <div className="font-semibold text-gray-900 text-sm">{contact.contactName}</div>
-                          <div className="text-xs text-gray-600 flex items-center gap-1">
-                            <Building2 className="w-3 h-3" />
-                            {contact.hostLocationName}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-900 text-sm">{contact.contactName}</div>
+                              <div className="text-xs text-gray-600 flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
+                                {contact.hostLocationName}
+                              </div>
+                            </div>
+                            {contact.distance !== undefined && (
+                              <Badge variant="secondary" className="text-xs ml-2 shrink-0">
+                                {contact.distance.toFixed(1)} mi
+                              </Badge>
+                            )}
                           </div>
                           {contact.role && (
                             <Badge variant="outline" className="text-xs mt-1">{contact.role}</Badge>
@@ -555,10 +620,19 @@ export default function LocationsMapView() {
                         onClick={() => handleRecipientClick(recipient)}
                       >
                         <CardContent className="p-3">
-                          <div className="font-semibold text-gray-900 text-sm">{recipient.name}</div>
-                          {recipient.region && (
-                            <Badge variant="outline" className="text-xs mt-1">{recipient.region}</Badge>
-                          )}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-semibold text-gray-900 text-sm">{recipient.name}</div>
+                              {recipient.region && (
+                                <Badge variant="outline" className="text-xs mt-1">{recipient.region}</Badge>
+                              )}
+                            </div>
+                            {recipient.distance !== undefined && (
+                              <Badge variant="secondary" className="text-xs ml-2 shrink-0">
+                                {recipient.distance.toFixed(1)} mi
+                              </Badge>
+                            )}
+                          </div>
                           {recipient.address && (
                             <div className="text-xs text-gray-500 mt-1 truncate">📍 {recipient.address}</div>
                           )}
@@ -576,128 +650,6 @@ export default function LocationsMapView() {
                     )}
                   </div>
                 </ScrollArea>
-              </TabsContent>
-
-              {/* Address Search Tab */}
-              <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
-                <div className="p-3 border-b space-y-3 flex-shrink-0">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter an address..."
-                      value={addressSearchTerm}
-                      onChange={(e) => setAddressSearchTerm(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddressSearch()}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleAddressSearch}
-                      disabled={geocodeMutation.isPending || !addressSearchTerm.trim()}
-                      size="sm"
-                    >
-                      {geocodeMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Search className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {searchedLocation && (
-                    <div className="p-2 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="text-xs font-medium text-green-800">📍 Searched Location</div>
-                          <div className="text-sm text-green-700 mt-1">{searchedLocation.address}</div>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={clearSearch} className="h-6 w-6 p-0">
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {searchedLocation && (
-                  <ScrollArea className="flex-1 min-h-0">
-                    <div className="p-3 space-y-4">
-                      {/* Nearby Hosts */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1">
-                          <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-                          Nearest Hosts
-                        </h3>
-                        {nearbyEntities.hosts.length > 0 ? (
-                          <div className="space-y-2">
-                            {nearbyEntities.hosts.map(host => (
-                              <Card
-                                key={host.id}
-                                className="cursor-pointer hover:shadow-md transition-all"
-                                onClick={() => handleHostClick(host)}
-                              >
-                                <CardContent className="p-2">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <div className="font-medium text-sm">{host.contactName}</div>
-                                      <div className="text-xs text-gray-500">{host.hostLocationName}</div>
-                                    </div>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {host.distance.toFixed(1)} mi
-                                    </Badge>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-gray-500">No hosts with coordinates</p>
-                        )}
-                      </div>
-
-                      {/* Nearby Recipients */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1">
-                          <span className="w-3 h-3 rounded-full bg-purple-500"></span>
-                          Nearest Recipients
-                        </h3>
-                        {nearbyEntities.recipients.length > 0 ? (
-                          <div className="space-y-2">
-                            {nearbyEntities.recipients.map(recipient => (
-                              <Card
-                                key={recipient.id}
-                                className="cursor-pointer hover:shadow-md transition-all"
-                                onClick={() => handleRecipientClick(recipient)}
-                              >
-                                <CardContent className="p-2">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <div className="font-medium text-sm">{recipient.name}</div>
-                                      {recipient.region && (
-                                        <div className="text-xs text-gray-500">{recipient.region}</div>
-                                      )}
-                                    </div>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {recipient.distance.toFixed(1)} mi
-                                    </Badge>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-gray-500">No recipients with coordinates</p>
-                        )}
-                      </div>
-                    </div>
-                  </ScrollArea>
-                )}
-
-                {!searchedLocation && (
-                  <div className="flex-1 flex items-center justify-center p-4">
-                    <div className="text-center text-gray-500">
-                      <Navigation className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">Enter an address to see its location relative to hosts and recipients</p>
-                    </div>
-                  </div>
-                )}
               </TabsContent>
             </Tabs>
           )}
