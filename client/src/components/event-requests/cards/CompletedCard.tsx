@@ -649,10 +649,22 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     const regularDrivers = parsePostgresArray(request.assignedDriverIds);
     const drivers: { id: string; name: string }[] = regularDrivers.map(id => {
       const detailName = (request.driverDetails as Record<string, { name?: string }>)?.[id]?.name;
-      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
-      if (name.startsWith('custom-')) {
-        name = extractNameFromCustomId(name);
-      }
+      const isCustom = id.startsWith('custom-');
+      // Check if ID itself looks like a human name (not a system ID)
+      const idLooksLikeName = id &&
+        !id.startsWith('user_') &&
+        !id.startsWith('driver_') &&
+        !id.startsWith('driver-') &&
+        !id.startsWith('custom-') &&
+        !id.startsWith('host-contact-') &&
+        !/^\d+$/.test(id) &&
+        id.includes(' ');
+      const resolvedName = resolveUserName(id);
+      let name = (detailName && !/^\d+$/.test(detailName))
+        ? detailName
+        : isCustom
+          ? extractNameFromCustomId(id)
+          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
       return { id, name };
     });
 
@@ -674,10 +686,21 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
     const speakerIds = Object.keys(request.speakerDetails || {});
     return speakerIds.map(id => {
       const detailName = (request.speakerDetails as Record<string, { name?: string }>)?.[id]?.name;
-      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
-      if (name.startsWith('custom-')) {
-        name = extractNameFromCustomId(name);
-      }
+      const isCustom = id.startsWith('custom-');
+      // Check if ID itself looks like a human name (not a system ID)
+      const idLooksLikeName = id &&
+        !id.startsWith('user_') &&
+        !id.startsWith('driver_') &&
+        !id.startsWith('custom-') &&
+        !id.startsWith('host-contact-') &&
+        !/^\d+$/.test(id) &&
+        id.includes(' ');
+      const resolvedName = resolveUserName(id);
+      let name = (detailName && !/^\d+$/.test(detailName))
+        ? detailName
+        : isCustom
+          ? extractNameFromCustomId(id)
+          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
       return { id, name };
     });
   };
@@ -685,10 +708,21 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
   const getVolunteers = () => {
     const volunteerIds = parsePostgresArray(request.assignedVolunteerIds);
     return volunteerIds.map(id => {
-      let name = resolveUserName(id);
-      if (name.startsWith('custom-')) {
-        name = extractNameFromCustomId(name);
-      }
+      const isCustom = id.startsWith('custom-');
+      // Check if ID itself looks like a human name (not a system ID)
+      const idLooksLikeName = id &&
+        !id.startsWith('user_') &&
+        !id.startsWith('driver_') &&
+        !id.startsWith('volunteer_') &&
+        !id.startsWith('volunteer-') &&
+        !id.startsWith('custom-') &&
+        !id.startsWith('host-contact-') &&
+        !/^\d+$/.test(id) &&
+        id.includes(' ');
+      const resolvedName = resolveUserName(id);
+      let name = isCustom
+        ? extractNameFromCustomId(id)
+        : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
       return { id, name };
     });
   };
@@ -1876,10 +1910,22 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     const regularDrivers = parsePostgresArray(request.assignedDriverIds);
     const driversList: { id: string; name: string }[] = regularDrivers.map(id => {
       const detailName = (request.driverDetails as Record<string, { name?: string }>)?.[id]?.name;
-      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
-      if (name.startsWith('custom-')) {
-        name = extractNameFromCustomId(name);
-      }
+      const isCustom = id.startsWith('custom-');
+      // Check if ID itself looks like a human name (not a system ID)
+      const idLooksLikeName = id &&
+        !id.startsWith('user_') &&
+        !id.startsWith('driver_') &&
+        !id.startsWith('driver-') &&
+        !id.startsWith('custom-') &&
+        !id.startsWith('host-contact-') &&
+        !/^\d+$/.test(id) &&
+        id.includes(' ');
+      const resolvedName = resolveUserName(id);
+      let name = (detailName && !/^\d+$/.test(detailName))
+        ? detailName
+        : isCustom
+          ? extractNameFromCustomId(id)
+          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
       return { id, name };
     });
 
@@ -1905,10 +1951,21 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
     const speakerIds = Object.keys(request.speakerDetails || {});
     return speakerIds.map(id => {
       const detailName = (request.speakerDetails as Record<string, { name?: string }>)?.[id]?.name;
-      let name = (detailName && !/^\d+$/.test(detailName)) ? detailName : resolveUserName(id);
-      if (name.startsWith('custom-')) {
-        name = extractNameFromCustomId(name);
-      }
+      const isCustom = id.startsWith('custom-');
+      // Check if ID itself looks like a human name (not a system ID)
+      const idLooksLikeName = id &&
+        !id.startsWith('user_') &&
+        !id.startsWith('driver_') &&
+        !id.startsWith('custom-') &&
+        !id.startsWith('host-contact-') &&
+        !/^\d+$/.test(id) &&
+        id.includes(' ');
+      const resolvedName = resolveUserName(id);
+      let name = (detailName && !/^\d+$/.test(detailName))
+        ? detailName
+        : isCustom
+          ? extractNameFromCustomId(id)
+          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
       return { id, name };
     });
   };
@@ -1916,10 +1973,21 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const getVolunteers = () => {
     const volunteerIds = parsePostgresArray(request.assignedVolunteerIds);
     return volunteerIds.map(id => {
-      let name = resolveUserName(id);
-      if (name.startsWith('custom-')) {
-        name = extractNameFromCustomId(name);
-      }
+      const isCustom = id.startsWith('custom-');
+      // Check if ID itself looks like a human name (not a system ID)
+      const idLooksLikeName = id &&
+        !id.startsWith('user_') &&
+        !id.startsWith('driver_') &&
+        !id.startsWith('volunteer_') &&
+        !id.startsWith('volunteer-') &&
+        !id.startsWith('custom-') &&
+        !id.startsWith('host-contact-') &&
+        !/^\d+$/.test(id) &&
+        id.includes(' ');
+      const resolvedName = resolveUserName(id);
+      let name = isCustom
+        ? extractNameFromCustomId(id)
+        : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
       return { id, name };
     });
   };

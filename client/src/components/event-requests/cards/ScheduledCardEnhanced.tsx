@@ -546,7 +546,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       const assignedDriverIds = parsePostgresArray(request.assignedDriverIds);
       const driversNeededCount = request.driversNeeded || 0;
       assignedDriverIds.forEach(id => {
-        const name = extractCustomName(id) || resolveUserName(id);
+        const isCustom = id.startsWith('custom-');
+        const idLooksLikeName = id &&
+          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('driver-') &&
+          !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
+          !/^\d+$/.test(id) && id.includes(' ');
+        const resolvedName = resolveUserName(id);
+        const name = isCustom
+          ? extractCustomName(id)
+          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
         staffingParts.push(name ? `D: ${name}` : 'D');
       });
       // Add unfilled driver slots - include van driver and DHL van in fulfilled count
@@ -587,7 +595,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       const assignedVolunteerIds = parsePostgresArray(request.assignedVolunteerIds);
       const volunteersNeededCount = request.volunteersNeeded || 0;
       assignedVolunteerIds.forEach(id => {
-        const name = extractCustomName(id) || resolveUserName(id);
+        const isCustom = id.startsWith('custom-');
+        const idLooksLikeName = id &&
+          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('volunteer_') &&
+          !id.startsWith('volunteer-') && !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
+          !/^\d+$/.test(id) && id.includes(' ');
+        const resolvedName = resolveUserName(id);
+        const name = isCustom
+          ? extractCustomName(id)
+          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
         staffingParts.push(name ? `V: ${name}` : 'V');
       });
       // Add unfilled volunteer slots
@@ -2161,9 +2177,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           )}
                         </div>
                         <div className="space-y-1">
-                          {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                          {parsePostgresArray(request.assignedDriverIds).map((id) => {
+                            const isCustom = id.startsWith('custom-');
+                            // Check if the ID itself looks like a human name (not a system ID)
+                            const idLooksLikeName = id &&
+                              !id.startsWith('user_') &&
+                              !id.startsWith('driver_') &&
+                              !id.startsWith('driver-') &&
+                              !id.startsWith('custom-') &&
+                              !id.startsWith('host-contact-') &&
+                              !/^\d+$/.test(id) &&
+                              id.includes(' ');
+                            const resolvedName = resolveUserName(id);
+                            const displayName = isCustom
+                              ? extractCustomName(id)
+                              : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                            return (
                             <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
                               {canEdit && (
                                 <Button
                                   size="sm"
@@ -2175,7 +2206,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 </Button>
                               )}
                             </div>
-                          ))}
+                            );
+                          })}
                           {parsePostgresArray(request.assignedDriverIds).length === 0 && driverNeeded > 0 && (
                             <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium">
                               <Car className="w-3 h-3 mr-1" />None assigned
@@ -2262,10 +2294,24 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const isDetailNameJustId = detailName === id ||
                           detailName?.startsWith('host-contact-') ||
                           detailName?.startsWith('custom-');
-                        // Prioritize: speaker detail name > custom extracted name > recipient name > resolved user name > detail name as fallback
+
+                        // Check if the ID itself looks like a human name (not a system ID)
+                        // System IDs: user_xxx, driver_xxx, custom-xxx, host-contact-xxx, numeric, etc.
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') &&
+                          !id.startsWith('driver_') &&
+                          !id.startsWith('admin_') &&
+                          !id.startsWith('committee_') &&
+                          !id.startsWith('volunteer_') &&
+                          !id.startsWith('custom-') &&
+                          !id.startsWith('host-contact-') &&
+                          !/^\d+$/.test(id) &&
+                          id.includes(' '); // Names typically have spaces
+
+                        // Prioritize: detail name > custom extracted name > recipient name > resolved user name > ID as name (if looks like name) > fallback
                         const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
                           ? detailName
-                          : customName || recipientName || (userName !== id ? userName : detailName || 'Unknown Speaker');
+                          : customName || recipientName || (userName !== id ? userName : (idLooksLikeName ? id : detailName || 'Unknown Speaker'));
                         const isUnknown = displayName === 'Unknown Speaker';
                         const editingFieldKey = `speaker-name-${id}`;
                         const isEditing = isEditingThisCard && editingField === editingFieldKey;
@@ -2429,9 +2475,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       )}
                     </div>
                     <div className="space-y-1">
-                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
+                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => {
+                        const isCustom = id.startsWith('custom-');
+                        // Check if the ID itself looks like a human name (not a system ID)
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') &&
+                          !id.startsWith('driver_') &&
+                          !id.startsWith('volunteer_') &&
+                          !id.startsWith('volunteer-') &&
+                          !id.startsWith('custom-') &&
+                          !id.startsWith('host-contact-') &&
+                          !/^\d+$/.test(id) &&
+                          id.includes(' ');
+                        const resolvedName = resolveUserName(id);
+                        const displayName = isCustom
+                          ? extractCustomName(id)
+                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        return (
                         <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{extractCustomName(id) || resolveUserName(id)}</span>
+                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
                           {canEdit && (
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -2450,7 +2512,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </Tooltip>
                           )}
                         </div>
-                      ))}
+                        );
+                      })}
                       {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
                     </div>
                   </div>

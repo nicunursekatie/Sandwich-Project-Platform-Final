@@ -2046,9 +2046,21 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   )}
                   {parsePostgresArray(request.assignedDriverIds).map((driverId) => {
                     const isCustom = driverId.startsWith('custom-');
+                    // Check if ID looks like a human name (not a system ID)
+                    const idLooksLikeName = driverId &&
+                      !driverId.startsWith('user_') &&
+                      !driverId.startsWith('driver_') &&
+                      !driverId.startsWith('driver-') &&
+                      !driverId.startsWith('custom-') &&
+                      !driverId.startsWith('host-contact-') &&
+                      !/^\d+$/.test(driverId) &&
+                      driverId.includes(' ');
+                    const resolvedName = resolveUserName(driverId);
                     const displayName = isCustom
                       ? extractCustomName(driverId)
-                      : resolveUserName(driverId);
+                      : (resolvedName !== driverId
+                          ? resolvedName
+                          : (idLooksLikeName ? driverId : resolvedName));
                     return (
                       <Badge
                         key={driverId}
@@ -2102,9 +2114,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   {Object.entries(request.speakerDetails || {}).map(
                     ([speakerId, details]: [string, any]) => {
                       const isCustom = speakerId.startsWith('custom-');
-                      const displayName = isCustom
-                        ? extractCustomName(speakerId)
-                        : resolveUserName(speakerId);
+                      // Priority: details.name (stored name) > extractCustomName > resolveUserName > ID if it looks like a name
+                      const storedName = details?.name;
+                      const idLooksLikeName = speakerId &&
+                        !speakerId.startsWith('user_') &&
+                        !speakerId.startsWith('driver_') &&
+                        !speakerId.startsWith('custom-') &&
+                        !speakerId.startsWith('host-contact-') &&
+                        !/^\d+$/.test(speakerId) &&
+                        speakerId.includes(' ');
+                      const displayName = (storedName && storedName !== speakerId && !/^\d+$/.test(storedName))
+                        ? storedName
+                        : isCustom
+                          ? extractCustomName(speakerId)
+                          : (resolveUserName(speakerId) !== speakerId
+                              ? resolveUserName(speakerId)
+                              : (idLooksLikeName ? speakerId : storedName || speakerId));
                       return (
                         <Badge
                           key={speakerId}
@@ -2161,9 +2186,22 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                   {parsePostgresArray(request.assignedVolunteerIds).map(
                     (volunteerId) => {
                       const isCustom = volunteerId.startsWith('custom-');
+                      // Check if ID looks like a human name (not a system ID)
+                      const idLooksLikeName = volunteerId &&
+                        !volunteerId.startsWith('user_') &&
+                        !volunteerId.startsWith('driver_') &&
+                        !volunteerId.startsWith('volunteer_') &&
+                        !volunteerId.startsWith('volunteer-') &&
+                        !volunteerId.startsWith('custom-') &&
+                        !volunteerId.startsWith('host-contact-') &&
+                        !/^\d+$/.test(volunteerId) &&
+                        volunteerId.includes(' ');
+                      const resolvedName = resolveUserName(volunteerId);
                       const displayName = isCustom
                         ? extractCustomName(volunteerId)
-                        : resolveUserName(volunteerId);
+                        : (resolvedName !== volunteerId
+                            ? resolvedName
+                            : (idLooksLikeName ? volunteerId : resolvedName));
                       return (
                         <Badge
                           key={volunteerId}

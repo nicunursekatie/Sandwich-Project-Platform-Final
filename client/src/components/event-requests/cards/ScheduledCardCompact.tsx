@@ -404,11 +404,22 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
                   {driverNeeded > 0 && (
                     <div>
                       <span className="text-gray-600 font-medium">Drivers: </span>
-                      {parsePostgresArray(request.assignedDriverIds).map((id) => (
+                      {parsePostgresArray(request.assignedDriverIds).map((id) => {
+                        const isCustom = id.startsWith('custom-');
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('driver-') &&
+                          !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
+                          !/^\d+$/.test(id) && id.includes(' ');
+                        const resolvedName = resolveUserName(id);
+                        const displayName = isCustom
+                          ? (id.includes('-') ? id.split('-').slice(2).join('-').replace(/-/g, ' ') : id)
+                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        return (
                         <Badge key={id} variant="secondary" className="mr-1">
-                          {resolveUserName(id)}
+                          {displayName}
                         </Badge>
-                      ))}
+                        );
+                      })}
                       {request.assignedVanDriverId && (
                         <Badge variant="secondary" className="mr-1 bg-blue-100 text-blue-900 border-blue-300">
                           {resolveUserName(request.assignedVanDriverId)} (Van)
@@ -425,22 +436,46 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
                   {speakerNeeded > 0 && (
                     <div>
                       <span className="text-gray-600 font-medium">Speakers: </span>
-                      {Object.keys(request.speakerDetails || {}).map((id) => (
+                      {Object.keys(request.speakerDetails || {}).map((id) => {
+                        const detailName = (request.speakerDetails as Record<string, { name?: string }>)?.[id]?.name;
+                        const isCustom = id.startsWith('custom-');
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('custom-') &&
+                          !id.startsWith('host-contact-') && !/^\d+$/.test(id) && id.includes(' ');
+                        const resolvedName = resolveUserName(id);
+                        const displayName = (detailName && !/^\d+$/.test(detailName))
+                          ? detailName
+                          : isCustom
+                            ? (id.includes('-') ? id.split('-').slice(2).join('-').replace(/-/g, ' ') : id)
+                            : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        return (
                         <Badge key={id} variant="secondary" className="mr-1">
-                          {resolveUserName(id)}
+                          {displayName}
                         </Badge>
-                      ))}
+                        );
+                      })}
                       {speakerAssigned === 0 && <span className="text-gray-400 italic">None assigned</span>}
                     </div>
                   )}
                   {volunteerNeeded > 0 && (
                     <div>
                       <span className="text-gray-600 font-medium">Volunteers: </span>
-                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => (
+                      {parsePostgresArray(request.assignedVolunteerIds).map((id) => {
+                        const isCustom = id.startsWith('custom-');
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('volunteer_') &&
+                          !id.startsWith('volunteer-') && !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
+                          !/^\d+$/.test(id) && id.includes(' ');
+                        const resolvedName = resolveUserName(id);
+                        const displayName = isCustom
+                          ? (id.includes('-') ? id.split('-').slice(2).join('-').replace(/-/g, ' ') : id)
+                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        return (
                         <Badge key={id} variant="secondary" className="mr-1">
-                          {resolveUserName(id)}
+                          {displayName}
                         </Badge>
-                      ))}
+                        );
+                      })}
                       {volunteerAssigned === 0 && <span className="text-gray-400 italic">None assigned</span>}
                     </div>
                   )}
