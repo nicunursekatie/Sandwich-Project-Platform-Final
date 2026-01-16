@@ -191,6 +191,7 @@ export default function HostsManagementConsolidated() {
     address: '',
     hostLocation: '',
     isPrimary: false,
+    driverAgreementSigned: false,
     notes: '',
   });
 
@@ -1264,6 +1265,16 @@ export default function HostsManagementConsolidated() {
                 />
                 <Label htmlFor="main-contact-primary">Primary Contact</Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="main-contact-driver-agreement"
+                  checked={newContact.driverAgreementSigned}
+                  onCheckedChange={(checked) =>
+                    setNewContact({ ...newContact, driverAgreementSigned: checked })
+                  }
+                />
+                <Label htmlFor="main-contact-driver-agreement">Driver Agreement Signed</Label>
+              </div>
               <div>
                 <Label htmlFor="main-contact-notes">Notes</Label>
                 <Textarea
@@ -1825,6 +1836,27 @@ export default function HostsManagementConsolidated() {
                             </span>
                           </Label>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-contact-driver-agreement"
+                            checked={editingContact.driverAgreementSigned || false}
+                            onCheckedChange={(checked) => {
+                              setEditingContact({
+                                ...editingContact,
+                                driverAgreementSigned: checked,
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor="edit-contact-driver-agreement"
+                            className="text-sm"
+                          >
+                            Driver Agreement Signed
+                            <span className="block text-xs text-slate-500">
+                              Has this host signed the driver agreement form?
+                            </span>
+                          </Label>
+                        </div>
                       </div>
                     </div>
 
@@ -2096,6 +2128,21 @@ export default function HostsManagementConsolidated() {
                           />
                           <Label htmlFor="contact-primary">
                             Primary Contact
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="contact-driver-agreement"
+                            checked={newContact.driverAgreementSigned}
+                            onCheckedChange={(checked) =>
+                              setNewContact({
+                                ...newContact,
+                                driverAgreementSigned: checked,
+                              })
+                            }
+                          />
+                          <Label htmlFor="contact-driver-agreement">
+                            Driver Agreement Signed
                           </Label>
                         </div>
                         <div>
@@ -2401,27 +2448,50 @@ export default function HostsManagementConsolidated() {
                                           <h3 className="font-medium text-sm text-slate-700 mb-3">
                                             Contact Settings
                                           </h3>
-                                          <div className="flex items-center space-x-2">
-                                            <Switch
-                                              id="edit-contact-primary"
-                                              checked={editingContact.isPrimary || false}
-                                              onCheckedChange={(checked) => {
-                                                setEditingContact({
-                                                  ...editingContact,
-                                                  isPrimary: checked,
-                                                });
-                                              }}
-                                            />
-                                            <Label
-                                              htmlFor="edit-contact-primary"
-                                              className="text-sm"
-                                            >
-                                              Mark as Primary Contact
-                                              <span className="block text-xs text-slate-500">
-                                                Primary contacts are highlighted with a
-                                                star in the main view
-                                              </span>
-                                            </Label>
+                                          <div className="space-y-3">
+                                            <div className="flex items-center space-x-2">
+                                              <Switch
+                                                id="edit-contact-primary-hosts"
+                                                checked={editingContact.isPrimary || false}
+                                                onCheckedChange={(checked) => {
+                                                  setEditingContact({
+                                                    ...editingContact,
+                                                    isPrimary: checked,
+                                                  });
+                                                }}
+                                              />
+                                              <Label
+                                                htmlFor="edit-contact-primary-hosts"
+                                                className="text-sm"
+                                              >
+                                                Mark as Primary Contact
+                                                <span className="block text-xs text-slate-500">
+                                                  Primary contacts are highlighted with a
+                                                  star in the main view
+                                                </span>
+                                              </Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                              <Switch
+                                                id="edit-contact-driver-agreement-hosts"
+                                                checked={editingContact.driverAgreementSigned || false}
+                                                onCheckedChange={(checked) => {
+                                                  setEditingContact({
+                                                    ...editingContact,
+                                                    driverAgreementSigned: checked,
+                                                  });
+                                                }}
+                                              />
+                                              <Label
+                                                htmlFor="edit-contact-driver-agreement-hosts"
+                                                className="text-sm"
+                                              >
+                                                Driver Agreement Signed
+                                                <span className="block text-xs text-slate-500">
+                                                  Has this host signed the driver agreement form?
+                                                </span>
+                                              </Label>
+                                            </div>
                                           </div>
                                         </div>
 

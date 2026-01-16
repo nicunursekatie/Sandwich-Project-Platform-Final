@@ -997,6 +997,7 @@ export const hostContacts = pgTable('host_contacts', {
   isPrimary: boolean('is_primary').notNull().default(false),
   notes: text('notes'),
   hostLocation: text('host_location'), // Location name for grouping contacts
+  driverAgreementSigned: boolean('driver_agreement_signed').default(false), // Whether the host has signed the driver agreement
   weeklyActive: boolean('weekly_active').default(false), // Auto-updated from external site scrape every Monday
   lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
