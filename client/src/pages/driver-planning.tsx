@@ -859,6 +859,7 @@ export default function DriverPlanningDashboard() {
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
   const [showVolunteersSpeakers, setShowVolunteersSpeakers] = useState(false);
+  const [tripPlanningCollapsed, setTripPlanningCollapsed] = useState(false);
 
   // Quick Location Lookup state
   const [customLocation, setCustomLocation] = useState<{
@@ -3174,56 +3175,79 @@ export default function DriverPlanningDashboard() {
 
           {/* Partial selection info box - shows when driver OR destination is selected (but not both) */}
           {((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute && (
-            <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 z-[1000] min-w-[280px]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-800">Trip Planning</span>
+            <div className={`absolute bottom-4 left-4 bg-white rounded-xl shadow-lg z-[1000] transition-all duration-200 ${tripPlanningCollapsed ? 'w-auto' : 'min-w-[280px] p-4'}`}>
+              {tripPlanningCollapsed ? (
+                /* Collapsed state - just show a small expand button */
                 <button
-                  onClick={() => {
-                    // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
-                    const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
-                    const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
-                      designatedRecipients.some(r => r.id === selectedDestination.id);
-
-                    // Keep pre-assigned items, clear the rest
-                    if (!driverIsAssigned) setSelectedDriver(null);
-                    if (!destIsAssigned) setSelectedDestination(null);
-                    setDrivingRoute(null);
-                    setFocusedItem(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                  title="Clear non-assigned selections"
+                  onClick={() => setTripPlanningCollapsed(false)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl"
+                  title="Expand trip planning"
                 >
-                  <X className="w-4 h-4" />
+                  <Target className="w-4 h-4 text-[#007E8C]" />
+                  <span>Trip Planning</span>
+                  <ChevronUp className="w-4 h-4" />
                 </button>
-              </div>
+              ) : (
+                /* Expanded state */
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-800">Trip Planning</span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setTripPlanningCollapsed(true)}
+                        className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
+                        title="Minimize"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                          const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                          const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                            designatedRecipients.some(r => r.id === selectedDestination.id);
 
-              {/* Selected Driver */}
-              {selectedDriver && (
-                <div className="mb-3">
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                    <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-yellow-400" />
-                    <span className="font-medium">Driver Selected</span>
-                  </div>
-                  <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-amber-600" />
-                      <span className="text-sm font-medium text-gray-800">{selectedDriver.name}</span>
-                      {assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && (
-                        <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                          Assigned
-                        </span>
-                      )}
+                          // Keep pre-assigned items, clear the rest
+                          if (!driverIsAssigned) setSelectedDriver(null);
+                          if (!destIsAssigned) setSelectedDestination(null);
+                          setDrivingRoute(null);
+                          setFocusedItem(null);
+                        }}
+                        className="text-gray-400 hover:text-red-500 p-1 hover:bg-gray-100 rounded"
+                        title="Clear selections"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => setSelectedDriver(null)}
-                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                      title="Unselect driver"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
                   </div>
-                </div>
-              )}
+
+                  {/* Selected Driver */}
+                  {selectedDriver && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+                        <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-yellow-400" />
+                        <span className="font-medium">Driver Selected</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-gray-800">{selectedDriver.name}</span>
+                          {assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && (
+                            <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                              Assigned
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setSelectedDriver(null)}
+                          className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                          title="Unselect driver"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
               {/* Selected Destination */}
               {selectedDestination && (
@@ -3377,6 +3401,8 @@ export default function DriverPlanningDashboard() {
               >
                 Clear Selection
               </button>
+                </>
+              )}
             </div>
           )}
 

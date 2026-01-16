@@ -130,6 +130,10 @@ interface ScheduledCardEnhancedProps {
   openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer', isVanDriver?: boolean) => void;
   handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
   canEdit?: boolean;
+  // Next Action handlers
+  onAddNextAction?: () => void;
+  onEditNextAction?: () => void;
+  onCompleteNextAction?: () => void;
 }
 
 const parsePostgresArray = (arr: unknown): string[] => {
@@ -198,6 +202,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   openAssignmentDialog,
   handleRemoveAssignment,
   canEdit = true,
+  onAddNextAction,
+  onEditNextAction,
+  onCompleteNextAction,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
@@ -1303,15 +1310,53 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </TooltipProvider>
 
         {/* Next Action - Prominent display for intake tracking */}
-        {request.nextAction && (
+        {request.nextAction ? (
           <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-              <div>
-                <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
-                <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                  <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+                </div>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                {onEditNextAction && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onEditNextAction}
+                    className="h-7 w-7 p-0 text-amber-700 hover:bg-amber-100"
+                    title="Edit action"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+                {onCompleteNextAction && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onCompleteNextAction}
+                    className="h-7 w-7 p-0 text-green-600 hover:bg-green-100"
+                    title="Complete action"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </Button>
+                )}
               </div>
             </div>
+          </div>
+        ) : onAddNextAction && (
+          <div className="mb-4 flex justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onAddNextAction}
+              className="h-7 text-xs text-amber-700 hover:bg-amber-50"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Action
+            </Button>
           </div>
         )}
 

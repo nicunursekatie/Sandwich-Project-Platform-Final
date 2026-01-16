@@ -104,6 +104,10 @@ export const ScheduledTab: React.FC = () => {
     setLogContactEventRequest,
     setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
+    // Next Action dialog state
+    setShowNextActionDialog,
+    setNextActionEventRequest,
+    setNextActionMode,
 
     // Inline editing states - IMPORTANT for scheduled tab
     editingScheduledId,
@@ -613,6 +617,21 @@ export const ScheduledTab: React.FC = () => {
                 openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
                 handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
                 canEdit={true}
+                onAddNextAction={() => {
+                  setNextActionEventRequest(request);
+                  setNextActionMode('add');
+                  setShowNextActionDialog(true);
+                }}
+                onEditNextAction={() => {
+                  setNextActionEventRequest(request);
+                  setNextActionMode('edit');
+                  setShowNextActionDialog(true);
+                }}
+                onCompleteNextAction={() => {
+                  setNextActionEventRequest(request);
+                  setNextActionMode('complete');
+                  setShowNextActionDialog(true);
+                }}
               />
               </div>
             ))}
