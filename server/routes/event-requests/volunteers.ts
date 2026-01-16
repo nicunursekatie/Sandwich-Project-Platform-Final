@@ -1,7 +1,11 @@
 /**
- * Volunteer management routes for event requests
+ * Event Requests - Volunteer Management Routes
+ *
+ * Handles volunteer signup, management, and assignment for events.
+ * Split from event-requests-legacy.ts for better organization.
  */
-import { Router } from 'express';
+
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../../storage-wrapper';
 import { insertEventVolunteerSchema } from '@shared/schema';
@@ -10,6 +14,23 @@ import { logger } from '../../middleware/logger';
 import type { AuthenticatedRequest } from '../../types/express';
 
 const router = Router();
+
+// Enhanced logging function for activity tracking
+const logActivity = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  permission: string,
+  message: string,
+  metadata?: Record<string, unknown>
+) => {
+  if (metadata) {
+    res.locals.eventRequestAuditDetails = metadata;
+  }
+};
+
+// ============================================================================
+// Event Volunteers Routes
+// ============================================================================
 
 // Get all event volunteers for a specific event
 router.get('/:eventId/volunteers', isAuthenticated, async (req, res) => {
@@ -51,7 +72,8 @@ router.post('/:eventId/volunteers', isAuthenticated, async (req, res) => {
     });
 
     // Check if user is already signed up for this event with the same role
-    const existingVolunteers = await storage.getEventVolunteersByEventId(eventId);
+    const existingVolunteers =
+      await storage.getEventVolunteersByEventId(eventId);
     const alreadySignedUp = existingVolunteers.find(
       (v) => v.volunteerUserId === userId && v.role === volunteerData.role
     );
@@ -63,6 +85,13 @@ router.post('/:eventId/volunteers', isAuthenticated, async (req, res) => {
     }
 
     const newVolunteer = await storage.createEventVolunteer(volunteerData);
+
+    await logActivity(
+      req,
+      res,
+      'volunteer_signup',
+      `Signed up as ${volunteerData.role} for event: ${eventId}`
+    );
 
     res.status(201).json(newVolunteer);
   } catch (error) {
@@ -96,6 +125,13 @@ router.patch('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Volunteer assignment not found' });
     }
 
+    await logActivity(
+      req,
+      res,
+      'volunteer_update',
+      `Updated volunteer assignment: ${volunteerId}`
+    );
+
     res.json(updatedVolunteer);
   } catch (error) {
     logger.error('Error updating event volunteer:', error);
@@ -117,6 +153,13 @@ router.delete('/volunteers/:volunteerId', isAuthenticated, async (req, res) => {
     if (!deleted) {
       return res.status(404).json({ error: 'Volunteer assignment not found' });
     }
+
+    await logActivity(
+      req,
+      res,
+      'volunteer_removal',
+      `Removed volunteer assignment: ${volunteerId}`
+    );
 
     res.json({ success: true });
   } catch (error) {
@@ -145,12 +188,26 @@ router.get('/my-volunteers', isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'User authentication required' });
     }
 
-    const myVolunteers = await storage.getEventVolunteersByUserId(userId);
-    res.json(myVolunteers);
+    const userVolunteers = await storage.getEventVolunteersByUserId(userId);
+
+    // Enrich with event details
+    const enrichedVolunteers = await Promise.all(
+      userVolunteers.map(async (volunteer) => {
+        const eventRequest = await storage.getEventRequestById(
+          volunteer.eventRequestId
+        );
+        return {
+          ...volunteer,
+          eventRequest,
+        };
+      })
+    );
+
+    res.json(enrichedVolunteers);
   } catch (error) {
-    logger.error('Error fetching user volunteer signups:', error);
-    res.status(500).json({ error: 'Failed to fetch your volunteer signups' });
+    logger.error('Error fetching user volunteers:', error);
+    res.status(500).json({ error: 'Failed to fetch volunteer signups' });
   }
 });
 
-export { router as volunteersRouter };
+export default router;

@@ -1,10 +1,15 @@
 /**
- * AI-powered routes for event requests
- * - Date suggestion
+ * Event Requests - AI Assistant Routes
+ *
+ * Handles AI-powered features for event requests including:
+ * - Date suggestions
  * - Intake assistance
  * - Event categorization
+ *
+ * Split from event-requests-legacy.ts for better organization.
  */
-import { Router } from 'express';
+
+import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
@@ -13,6 +18,23 @@ import { logger } from '../../middleware/logger';
 import type { AuthenticatedRequest } from '../../types/express';
 
 const router = Router();
+
+// Enhanced logging function for activity tracking
+const logActivity = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  permission: string,
+  message: string,
+  metadata?: Record<string, unknown>
+) => {
+  if (metadata) {
+    res.locals.eventRequestAuditDetails = metadata;
+  }
+};
+
+// ============================================================================
+// AI Assistant Routes
+// ============================================================================
 
 // AI Date Suggestion - Analyze possible dates and suggest optimal scheduling
 router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
@@ -50,6 +72,15 @@ router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
     // Import and call AI scheduling assistant with flexibility options
     const { suggestOptimalEventDate } = await import('../../services/ai-scheduling');
     const suggestion = await suggestOptimalEventDate(eventRequest, scheduledEvents, flexibilityOptions);
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI assistant to analyze dates for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName, flexibility: flexibilityOptions }
+    );
 
     res.json(suggestion);
   } catch (error: unknown) {
@@ -91,6 +122,15 @@ router.post('/:id/ai-intake-assist', isAuthenticated, async (req, res) => {
     // Import and call AI intake assistant
     const { analyzeEventRequest } = await import('../../services/ai-intake-assistant');
     const analysis = await analyzeEventRequest(eventRequest, scheduledEvents);
+
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI intake assistant for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName }
+    );
 
     res.json(analysis);
   } catch (error: unknown) {
@@ -136,6 +176,7 @@ router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
     });
 
     // Update the event request with categorization
+    // The categorization object structure matches the schema definition exactly
     await storage.updateEventRequest(eventId, {
       autoCategories: {
         eventType: categorization.eventType,
@@ -151,6 +192,15 @@ router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
       updatedAt: new Date(),
     });
 
+    // Log activity
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_VIEW',
+      `Used AI categorization for event request: ${eventId}`,
+      { organizationName: eventRequest.organizationName, eventType: categorization.eventType }
+    );
+
     res.json(categorization);
   } catch (error: unknown) {
     const err = error as Error;
@@ -162,4 +212,4 @@ router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
   }
 });
 
-export { router as aiRouter };
+export default router;

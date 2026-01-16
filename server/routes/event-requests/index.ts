@@ -1,54 +1,66 @@
 /**
- * Event Requests Routes - Modular Structure
+ * Event Requests - Combined Router
  *
- * This file combines the legacy monolithic router with new modular sub-routers.
- * Routes are being gradually migrated to separate modules for better maintainability.
+ * This file combines all event request route modules into a single router.
+ * The legacy routes remain in event-requests-legacy.ts for safety,
+ * while new/extracted routes are organized in this directory.
  *
- * Module Status:
- * - ai.ts: READY (date suggestions, intake assist, categorization)
- * - volunteers.ts: READY (volunteer signup, management)
- * - communications.ts: READY (SMS notifications)
- * - utils.ts: READY (helper functions)
- * - types.ts: READY (shared imports/types)
+ * IMPORTANT: This is the main entry point for all event request routes.
+ * The legacy router is imported and mounted FIRST to preserve critical
+ * functionality (Google Sheets import, CRUD operations, etc.).
  *
- * TODO: Migrate remaining routes from legacy event-requests.ts:
- * - Core CRUD operations
- * - Listing/filtering routes
- * - Driver management
- * - Flags management
+ * Route organization:
+ * - ../event-requests-legacy.ts - CRITICAL: All core routes (DO NOT MODIFY)
+ * - volunteers.ts - Volunteer signup and management (DUPLICATE - remove from legacy later)
+ * - flags.ts - Pre-event flag management (DUPLICATE - remove from legacy later)
+ * - ai.ts - AI-powered features (DUPLICATE - remove from legacy later)
+ * - sms.ts - SMS notification routes (DUPLICATE - remove from legacy later)
+ *
+ * The main legacy file (../event-requests-legacy.ts) contains:
+ * - Google Sheets import/sync (CRITICAL - do not modify)
+ * - Core CRUD operations (create, read, update, delete events)
+ * - Audit logging
+ * - Driver assignments
+ * - TSP contact assignments
  * - Organization management
- * - Google Sheets import
+ * - And other established routes
+ *
+ * NOTE: Currently the split routes are duplicates of routes in the legacy file.
+ * Once we verify everything works, we can remove them from the legacy file.
  */
 
 import { Router } from 'express';
 
-// Import the legacy router (still contains most routes)
-// Note: This import path goes up one level then into the file
+// Import the main legacy router - this contains ALL existing functionality
+// and MUST be mounted first to preserve critical paths like Google Sheets import
 import legacyRouter from '../event-requests-legacy';
 
-// Import new modular routers
-import { aiRouter } from './ai';
-import { volunteersRouter } from './volunteers';
-import { communicationsRouter } from './communications';
+// Import sub-route modules
+import volunteersRouter from './volunteers';
+import flagsRouter from './flags';
+// import aiRouter from './ai';
+// import smsRouter from './sms';
 
 const router = Router();
 
-// Mount modular routers first (they take precedence for their specific routes)
-// These routes will override any duplicates in the legacy router
-
-// AI routes: /:id/ai-suggest-dates, /:id/ai-intake-assist, /:id/ai-categorize
-router.use('/', aiRouter);
-
-// Volunteer routes: /:eventId/volunteers, /volunteers/:id, /all-volunteers, /my-volunteers
-router.use('/', volunteersRouter);
-
-// Communication routes: /:id/send-details-sms, /:id/send-correction-sms
-router.use('/', communicationsRouter);
-
-// Mount the legacy router for all remaining routes
+// Mount the legacy router FIRST - this ensures all existing routes work
+// The legacy router contains ~6000 lines of battle-tested code including
+// the critical Google Sheets import endpoint
 router.use('/', legacyRouter);
+
+// Mount extracted sub-routers (routes have been removed from legacy file)
+router.use('/', volunteersRouter);
+router.use('/', flagsRouter);
+
+// NOTE: The following sub-routers are NOT mounted yet because they would
+// create duplicate routes. Once we verify the legacy routes work, we can:
+// 1. Remove the corresponding routes from event-requests-legacy.ts
+// 2. Uncomment the sub-router mounts below
+//
+// router.use('/', aiRouter);
+// router.use('/', smsRouter);
 
 export default router;
 
-// Also export individual routers for testing/documentation
-export { aiRouter, volunteersRouter, communicationsRouter };
+// Re-export individual routers for testing or selective usage
+// export { volunteersRouter, flagsRouter, aiRouter, smsRouter };

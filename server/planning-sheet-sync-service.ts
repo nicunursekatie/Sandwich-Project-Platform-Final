@@ -240,6 +240,11 @@ export class PlanningSheetSyncService {
     this.worksheetName = worksheetName;
   }
 
+  private getSheetRange(a1Range: string) {
+    const safeSheetName = this.worksheetName.replace(/'/g, "''");
+    return `'${safeSheetName}'!${a1Range}`;
+  }
+
   private async ensureInitialized() {
     if (!this.sheets) {
       await this.initializeAuth();
@@ -308,7 +313,7 @@ export class PlanningSheetSyncService {
 
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range: `${this.worksheetName}!A2:Z`, // Skip header row
+      range: this.getSheetRange('A2:Z'), // Skip header row
     });
 
     const rows = response.data.values || [];
@@ -666,7 +671,7 @@ export class PlanningSheetSyncService {
     // Append the row to the sheet
     await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.spreadsheetId,
-      range: `${this.worksheetName}!A:Z`,
+      range: this.getSheetRange('A:Z'),
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: { values: [rowData] },
@@ -691,7 +696,7 @@ export class PlanningSheetSyncService {
     }
 
     const columnLetter = String.fromCharCode(65 + columnIndex); // A=0, B=1, etc.
-    const range = `${this.worksheetName}!${columnLetter}${proposal.targetRowIndex}`;
+    const range = this.getSheetRange(`${columnLetter}${proposal.targetRowIndex}`);
 
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,
@@ -755,7 +760,7 @@ export class PlanningSheetSyncService {
 
       if (existingRow) {
         // Update existing row
-        const range = `${this.worksheetName}!A${existingRow.rowIndex}:Z${existingRow.rowIndex}`;
+        const range = this.getSheetRange(`A${existingRow.rowIndex}:Z${existingRow.rowIndex}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
           range,
@@ -774,7 +779,7 @@ export class PlanningSheetSyncService {
         // Append new row
         const response = await this.sheets.spreadsheets.values.append({
           spreadsheetId: this.spreadsheetId,
-          range: `${this.worksheetName}!A:Z`,
+          range: this.getSheetRange('A:Z'),
           valueInputOption: 'USER_ENTERED',
           insertDataOption: 'INSERT_ROWS',
           resource: { values: [rowData] },
@@ -848,6 +853,7 @@ export class PlanningSheetSyncService {
  */
 export function getPlanningSheetService(): PlanningSheetSyncService | null {
   const sheetId = process.env.PLANNING_SHEET_ID;
+  const worksheetName = process.env.PLANNING_SHEET_WORKSHEET_NAME || 'Schedule';
   if (!sheetId) {
     logger.warn('PLANNING_SHEET_ID not configured');
     return null;
@@ -858,5 +864,5 @@ export function getPlanningSheetService(): PlanningSheetSyncService | null {
     return null;
   }
 
-  return new PlanningSheetSyncService(sheetId);
+  return new PlanningSheetSyncService(sheetId, worksheetName);
 }

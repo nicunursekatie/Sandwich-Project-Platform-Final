@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import {
-  MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft
+  MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft,
+  Users, Package, Loader2, X, Navigation
 } from 'lucide-react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
@@ -15,9 +16,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
-import { PERMISSIONS } from '@shared/auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
+import { useToast } from '@/hooks/use-toast';
+import type { Recipient } from '@shared/schema';
 
 // Fix Leaflet default marker icon issue in bundled apps
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -27,8 +32,9 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Custom highlighted marker icon
-const highlightedIcon = new L.Icon({
+// Custom marker icons
+// Red marker for highlighted hosts
+const highlightedHostIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   iconSize: [25, 41],
@@ -37,8 +43,18 @@ const highlightedIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Default blue marker icon (explicit to avoid undefined issues)
-const defaultIcon = new L.Icon({
+// Orange marker for highlighted recipients (stands out from purple)
+const highlightedRecipientIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Blue marker for hosts
+const hostIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -48,8 +64,51 @@ const defaultIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
-// Map controller component to handle zoom/pan
-function MapController({ center, zoom }: { center: [number, number] | null; zoom: number }) {
+// Purple marker for recipients
+const recipientIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Green marker for searched address
+const searchIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Haversine formula for distance calculation (returns miles)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Map controller component to handle zoom/pan and open popups
+function MapController({
+  center,
+  zoom,
+  selectedId,
+  markerRefs
+}: {
+  center: [number, number] | null;
+  zoom: number;
+  selectedId: string | null;
+  markerRefs: React.MutableRefObject<Map<string, L.Marker>>;
+}) {
   const map = useMap();
   const isMountedRef = useRef(true);
 
@@ -61,33 +120,38 @@ function MapController({ center, zoom }: { center: [number, number] | null; zoom
   }, []);
 
   useEffect(() => {
-    // Check if map is fully initialized by verifying it has the internal _leaflet_events property
-    // This prevents errors when the map is being unmounted or not yet ready
     if (!isMountedRef.current) return;
-    
+
     if (center && map) {
-      // Check if map is fully initialized
       const mapInstance = map as any;
       if (!mapInstance._leaflet_events || !mapInstance._container) {
-        // Map not ready yet, skip this update
         return;
       }
 
       try {
         map.setView(center, zoom, { animate: true, duration: 0.5 });
+
+        // After the map finishes moving, open the popup for the selected marker
+        if (selectedId) {
+          setTimeout(() => {
+            const marker = markerRefs.current.get(selectedId);
+            if (marker) {
+              marker.openPopup();
+            }
+          }, 600); // Wait for animation to complete
+        }
       } catch (error) {
-        // Silently ignore errors if map is being destroyed
         if (isMountedRef.current) {
           console.warn('Map interaction error:', error);
         }
       }
     }
-  }, [center, zoom, map]);
+  }, [center, zoom, map, selectedId, markerRefs]);
 
   return null;
 }
 
-// Map click handler component using proper react-leaflet event handling
+// Map click handler
 function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
   useMapEvents({
     click: () => {
@@ -109,66 +173,202 @@ interface HostContactMapData {
   phone: string | null;
 }
 
-export default function RouteMapView() {
-  const { user } = useAuth();
-  const { trackView, trackSearch } = useActivityTracker();
+interface SearchedLocation {
+  address: string;
+  latitude: number;
+  longitude: number;
+}
+
+export default function LocationsMapView() {
+  const { toast } = useToast();
+  const { trackView } = useActivityTracker();
   const [searchTerm, setSearchTerm] = useState('');
+  const [addressSearchTerm, setAddressSearchTerm] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(true);
-  const [selectedHostId, setSelectedHostId] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState('hosts');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState(10);
+  const [showHosts, setShowHosts] = useState(true);
+  const [showRecipients, setShowRecipients] = useState(true);
+  const [searchedLocation, setSearchedLocation] = useState<SearchedLocation | null>(null);
+
+  // Refs for marker instances to enable programmatic popup opening
+  const markerRefs = useRef<Map<string, L.Marker>>(new Map());
 
   useEffect(() => {
     trackView(
       'Maps',
       'Maps',
-      'Host Map',
-      'User accessed host map'
+      'Locations Map',
+      'User accessed combined locations map'
     );
   }, [trackView]);
 
   // Check permissions
-  const { canView } = useResourcePermissions('HOSTS');
+  const { canView: canViewHosts } = useResourcePermissions('HOSTS');
+  const { canView: canViewRecipients } = useResourcePermissions('RECIPIENTS');
 
   // Fetch host contacts with coordinates
-  const { data: hosts = [], isLoading, error } = useQuery<HostContactMapData[]>({
+  const { data: hosts = [], isLoading: hostsLoading } = useQuery<HostContactMapData[]>({
     queryKey: ['/api/hosts/map'],
-    enabled: canView,
+    enabled: canViewHosts,
   });
 
-  // Filter host contacts based on search
+  // Fetch recipients
+  const { data: recipients = [], isLoading: recipientsLoading } = useQuery<Recipient[]>({
+    queryKey: ['/api/recipients'],
+    enabled: canViewRecipients,
+  });
+
+  // Geocode address mutation
+  const geocodeMutation = useMutation({
+    mutationFn: async (address: string) => {
+      const response = await fetch('/api/event-map/geocode-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ address }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to geocode address');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setSearchedLocation({
+        address: addressSearchTerm,
+        latitude: data.latitude,
+        longitude: data.longitude,
+      });
+      setMapCenter([data.latitude, data.longitude]);
+      setMapZoom(14);
+      toast({
+        title: 'Address found',
+        description: `Located: ${addressSearchTerm}`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Address not found',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Filter recipients with coordinates
+  const recipientsWithCoords = useMemo(() => {
+    return recipients.filter(r => r.latitude && r.longitude && r.status === 'active');
+  }, [recipients]);
+
+  // Filter hosts based on search
   const filteredHosts = useMemo(() => {
     if (!searchTerm.trim()) return hosts;
-    
     const search = searchTerm.toLowerCase();
-    return hosts.filter(contact => 
+    return hosts.filter(contact =>
       contact.contactName.toLowerCase().includes(search) ||
       contact.hostLocationName.toLowerCase().includes(search) ||
       contact.address?.toLowerCase().includes(search)
     );
   }, [hosts, searchTerm]);
 
-  // Calculate initial map center based on host contacts
-  const initialMapCenter: [number, number] = useMemo(() => {
-    if (filteredHosts.length === 0) return [33.7490, -84.3880]; // Atlanta default
+  // Filter recipients based on search
+  const filteredRecipients = useMemo(() => {
+    if (!searchTerm.trim()) return recipientsWithCoords;
+    const search = searchTerm.toLowerCase();
+    return recipientsWithCoords.filter(r =>
+      r.name.toLowerCase().includes(search) ||
+      r.address?.toLowerCase().includes(search) ||
+      r.region?.toLowerCase().includes(search)
+    );
+  }, [recipientsWithCoords, searchTerm]);
 
-    const avgLat = filteredHosts.reduce((sum, contact) => sum + parseFloat(contact.latitude), 0) / filteredHosts.length;
-    const avgLng = filteredHosts.reduce((sum, contact) => sum + parseFloat(contact.longitude), 0) / filteredHosts.length;
+  // Calculate nearby entities when address is searched
+  const nearbyEntities = useMemo(() => {
+    if (!searchedLocation) return { hosts: [], recipients: [] };
+
+    const nearbyHosts = hosts
+      .map(h => ({
+        ...h,
+        distance: calculateDistance(
+          searchedLocation.latitude,
+          searchedLocation.longitude,
+          parseFloat(h.latitude),
+          parseFloat(h.longitude)
+        )
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 5);
+
+    const nearbyRecipients = recipientsWithCoords
+      .map(r => ({
+        ...r,
+        distance: calculateDistance(
+          searchedLocation.latitude,
+          searchedLocation.longitude,
+          parseFloat(r.latitude as string),
+          parseFloat(r.longitude as string)
+        )
+      }))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 5);
+
+    return { hosts: nearbyHosts, recipients: nearbyRecipients };
+  }, [searchedLocation, hosts, recipientsWithCoords]);
+
+  // Calculate initial map center
+  const initialMapCenter: [number, number] = useMemo(() => {
+    const allLocations = [
+      ...hosts.map(h => ({ lat: parseFloat(h.latitude), lng: parseFloat(h.longitude) })),
+      ...recipientsWithCoords.map(r => ({ lat: parseFloat(r.latitude as string), lng: parseFloat(r.longitude as string) }))
+    ];
+
+    if (allLocations.length === 0) return [33.7490, -84.3880]; // Atlanta default
+
+    const avgLat = allLocations.reduce((sum, loc) => sum + loc.lat, 0) / allLocations.length;
+    const avgLng = allLocations.reduce((sum, loc) => sum + loc.lng, 0) / allLocations.length;
 
     return [avgLat, avgLng];
-  }, [filteredHosts]);
+  }, [hosts, recipientsWithCoords]);
 
-  // Handle host card click - zoom to host location
+  // Handle host click
   const handleHostClick = (contact: HostContactMapData) => {
     const lat = parseFloat(contact.latitude);
     const lng = parseFloat(contact.longitude);
-    setSelectedHostId(contact.id);
+    setSelectedId(`host-${contact.id}`);
     setMapCenter([lat, lng]);
-    setMapZoom(15); // Zoom in closer
+    setMapZoom(15);
   };
 
-  // Permission check
-  if (!canView) {
+  // Handle recipient click
+  const handleRecipientClick = (recipient: Recipient) => {
+    if (!recipient.latitude || !recipient.longitude) return;
+    const lat = parseFloat(recipient.latitude as string);
+    const lng = parseFloat(recipient.longitude as string);
+    setSelectedId(`recipient-${recipient.id}`);
+    setMapCenter([lat, lng]);
+    setMapZoom(15);
+  };
+
+  // Handle address search
+  const handleAddressSearch = () => {
+    if (!addressSearchTerm.trim()) return;
+    geocodeMutation.mutate(addressSearchTerm.trim());
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchedLocation(null);
+    setAddressSearchTerm('');
+  };
+
+  const isLoading = hostsLoading || recipientsLoading;
+  const hasNoData = hosts.length === 0 && recipientsWithCoords.length === 0;
+
+  // Permission check - need at least one
+  if (!canViewHosts && !canViewRecipients) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
         <Card className="max-w-md mx-4">
@@ -178,12 +378,8 @@ export default function RouteMapView() {
                 <AlertCircle className="w-8 h-8 text-red-600" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Access Denied
-                </h2>
-                <p className="text-gray-600">
-                  You don't have permission to view the host location map.
-                </p>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+                <p className="text-gray-600">You don't have permission to view locations.</p>
               </div>
             </div>
           </CardContent>
@@ -212,69 +408,6 @@ export default function RouteMapView() {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <Card className="max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  Error Loading Map
-                </h2>
-                <p className="text-gray-600">
-                  Failed to load host locations. Please try again later.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // No hosts with coordinates
-  if (hosts.length === 0) {
-    return (
-      <div className="h-screen flex flex-col">
-        <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-              <MapPin className="w-6 h-6 text-[#007E8C]" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Host Locations Map</h1>
-              <p className="text-gray-600">No host locations available</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-          <Card className="max-w-md mx-4">
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                  <MapPin className="w-8 h-8 text-gray-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                    No Locations Found
-                  </h2>
-                  <p className="text-gray-600">
-                    No host locations have coordinates set yet. Add coordinates to hosts to see them on the map.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen flex flex-col">
       {/* Header */}
@@ -282,7 +415,7 @@ export default function RouteMapView() {
         <div className="max-w-7xl mx-auto">
           <PageBreadcrumbs segments={[
             { label: 'Operations' },
-            { label: 'Host Map' }
+            { label: 'Locations Map' }
           ]} />
 
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -291,22 +424,36 @@ export default function RouteMapView() {
                 <MapPin className="w-6 h-6 text-[#007E8C]" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Host Locations Map</h1>
-                <p className="text-sm text-gray-600">{hosts.length} location{hosts.length !== 1 ? 's' : ''} on map</p>
+                <h1 className="text-2xl font-bold text-gray-900">Locations Map</h1>
+                <p className="text-sm text-gray-600">
+                  {hosts.length} hosts, {recipientsWithCoords.length} recipients
+                </p>
               </div>
             </div>
-            
-            {/* Search */}
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search by name, location, or address..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search-hosts"
+
+            {/* Visibility toggles */}
+            <div className="flex items-center gap-4 ml-auto">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="show-hosts"
+                  checked={showHosts}
+                  onCheckedChange={(checked) => setShowHosts(checked === true)}
                 />
+                <Label htmlFor="show-hosts" className="text-sm flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                  Hosts
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="show-recipients"
+                  checked={showRecipients}
+                  onCheckedChange={(checked) => setShowRecipients(checked === true)}
+                />
+                <Label htmlFor="show-recipients" className="text-sm flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                  Recipients
+                </Label>
               </div>
             </div>
           </div>
@@ -315,95 +462,244 @@ export default function RouteMapView() {
 
       {/* Main Content: Side Panel + Map */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Host List Panel */}
-        <div 
+        {/* Side Panel */}
+        <div
           className={`
             ${isPanelOpen ? 'w-96' : 'w-0'}
             transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
           `}
-          data-testid="host-list-panel"
         >
           {isPanelOpen && (
-            <>
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <List className="w-5 h-5 text-[#007E8C]" />
-                  <h2 className="font-semibold text-gray-900">
-                    Host Locations ({filteredHosts.length})
-                  </h2>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
+              <TabsList className="grid w-full grid-cols-3 m-2 mr-4">
+                <TabsTrigger value="hosts" className="text-xs">
+                  <Building2 className="w-3 h-3 mr-1" />
+                  Hosts
+                </TabsTrigger>
+                <TabsTrigger value="recipients" className="text-xs">
+                  <Users className="w-3 h-3 mr-1" />
+                  Recipients
+                </TabsTrigger>
+                <TabsTrigger value="search" className="text-xs">
+                  <Navigation className="w-3 h-3 mr-1" />
+                  Search
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Hosts Tab */}
+              <TabsContent value="hosts" className="flex-1 flex flex-col overflow-hidden m-0">
+                <div className="p-3 border-b">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search hosts..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <ScrollArea className="flex-1">
-                <div className="p-3 space-y-3" data-testid="host-contact-list">
-                  {filteredHosts.map(contact => (
-                    <Card
-                      key={contact.id}
-                      className={`hover:shadow-md transition-all w-full cursor-pointer ${
-                        selectedHostId === contact.id
-                          ? 'ring-2 ring-[#007E8C] bg-teal-50'
-                          : ''
-                      }`}
-                      onClick={() => handleHostClick(contact)}
-                      data-testid={`card-host-${contact.id}`}
-                    >
-                      <CardContent className="p-3">
-                        <div className="space-y-2">
-                          <div>
-                            <div className="font-semibold text-gray-900 break-words">
-                              {contact.contactName}
-                            </div>
-                            <div className="text-sm text-gray-600 flex items-center gap-1">
-                              <Building2 className="w-3 h-3 flex-shrink-0" />
-                              <span className="break-words">{contact.hostLocationName}</span>
-                            </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-3 space-y-2">
+                    {filteredHosts.map(contact => (
+                      <Card
+                        key={contact.id}
+                        className={`cursor-pointer hover:shadow-md transition-all ${
+                          selectedId === `host-${contact.id}` ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                        }`}
+                        onClick={() => handleHostClick(contact)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="font-semibold text-gray-900 text-sm">{contact.contactName}</div>
+                          <div className="text-xs text-gray-600 flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {contact.hostLocationName}
                           </div>
-
                           {contact.role && (
-                            <Badge variant="outline" className="text-xs">
-                              {contact.role}
-                            </Badge>
+                            <Badge variant="outline" className="text-xs mt-1">{contact.role}</Badge>
                           )}
-
                           {contact.address && (
-                            <div className="text-xs text-gray-600 break-words">
-                              📍 {contact.address}
+                            <div className="text-xs text-gray-500 mt-1 truncate">📍 {contact.address}</div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredHosts.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">No hosts found</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              {/* Recipients Tab */}
+              <TabsContent value="recipients" className="flex-1 flex flex-col overflow-hidden m-0">
+                <div className="p-3 border-b">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search recipients..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9"
+                    />
+                  </div>
+                </div>
+                <ScrollArea className="flex-1">
+                  <div className="p-3 space-y-2">
+                    {filteredRecipients.map(recipient => (
+                      <Card
+                        key={recipient.id}
+                        className={`cursor-pointer hover:shadow-md transition-all ${
+                          selectedId === `recipient-${recipient.id}` ? 'ring-2 ring-purple-500 bg-purple-50' : ''
+                        }`}
+                        onClick={() => handleRecipientClick(recipient)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="font-semibold text-gray-900 text-sm">{recipient.name}</div>
+                          {recipient.region && (
+                            <Badge variant="outline" className="text-xs mt-1">{recipient.region}</Badge>
+                          )}
+                          {recipient.address && (
+                            <div className="text-xs text-gray-500 mt-1 truncate">📍 {recipient.address}</div>
+                          )}
+                          {recipient.estimatedWeeklySandwiches && (
+                            <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                              <Package className="w-3 h-3" />
+                              ~{recipient.estimatedWeeklySandwiches} sandwiches/week
                             </div>
                           )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredRecipients.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">No recipients found</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
 
-                          <div className="space-y-1 pt-2 border-t border-gray-100">
-                            {contact.phone && (
-                              <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Phone className="w-3 h-3 flex-shrink-0" />
-                                <a
-                                  href={`tel:${contact.phone}`}
-                                  className="hover:text-[#007E8C] break-all"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {contact.phone}
-                                </a>
-                              </div>
-                            )}
-                            {contact.email && (
-                              <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <Mail className="w-3 h-3 flex-shrink-0" />
-                                <a
-                                  href={`mailto:${contact.email}`}
-                                  className="hover:text-[#007E8C] break-all"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {contact.email}
-                                </a>
-                              </div>
-                            )}
-                          </div>
+              {/* Address Search Tab */}
+              <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden m-0">
+                <div className="p-3 border-b space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter an address..."
+                      value={addressSearchTerm}
+                      onChange={(e) => setAddressSearchTerm(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddressSearch()}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleAddressSearch}
+                      disabled={geocodeMutation.isPending || !addressSearchTerm.trim()}
+                      size="sm"
+                    >
+                      {geocodeMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {searchedLocation && (
+                    <div className="p-2 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-xs font-medium text-green-800">📍 Searched Location</div>
+                          <div className="text-sm text-green-700 mt-1">{searchedLocation.address}</div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <Button variant="ghost" size="sm" onClick={clearSearch} className="h-6 w-6 p-0">
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </ScrollArea>
-            </>
+
+                {searchedLocation && (
+                  <ScrollArea className="flex-1">
+                    <div className="p-3 space-y-4">
+                      {/* Nearby Hosts */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                          Nearest Hosts
+                        </h3>
+                        {nearbyEntities.hosts.length > 0 ? (
+                          <div className="space-y-2">
+                            {nearbyEntities.hosts.map(host => (
+                              <Card
+                                key={host.id}
+                                className="cursor-pointer hover:shadow-md transition-all"
+                                onClick={() => handleHostClick(host)}
+                              >
+                                <CardContent className="p-2">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="font-medium text-sm">{host.contactName}</div>
+                                      <div className="text-xs text-gray-500">{host.hostLocationName}</div>
+                                    </div>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {host.distance.toFixed(1)} mi
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500">No hosts with coordinates</p>
+                        )}
+                      </div>
+
+                      {/* Nearby Recipients */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-1">
+                          <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                          Nearest Recipients
+                        </h3>
+                        {nearbyEntities.recipients.length > 0 ? (
+                          <div className="space-y-2">
+                            {nearbyEntities.recipients.map(recipient => (
+                              <Card
+                                key={recipient.id}
+                                className="cursor-pointer hover:shadow-md transition-all"
+                                onClick={() => handleRecipientClick(recipient)}
+                              >
+                                <CardContent className="p-2">
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <div className="font-medium text-sm">{recipient.name}</div>
+                                      {recipient.region && (
+                                        <div className="text-xs text-gray-500">{recipient.region}</div>
+                                      )}
+                                    </div>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {recipient.distance.toFixed(1)} mi
+                                    </Badge>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500">No recipients with coordinates</p>
+                        )}
+                      </div>
+                    </div>
+                  </ScrollArea>
+                )}
+
+                {!searchedLocation && (
+                  <div className="flex-1 flex items-center justify-center p-4">
+                    <div className="text-center text-gray-500">
+                      <Navigation className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">Enter an address to see its location relative to hosts and recipients</p>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </div>
 
@@ -414,73 +710,63 @@ export default function RouteMapView() {
           className="absolute top-1/2 transform -translate-y-1/2 z-[1000] rounded-r-lg rounded-l-none shadow-md transition-all duration-300"
           style={{ left: isPanelOpen ? '384px' : '0' }}
           onClick={() => setIsPanelOpen(!isPanelOpen)}
-          data-testid="button-toggle-panel"
         >
           {isPanelOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </Button>
 
         {/* Map */}
-        <div className="flex-1 relative" data-testid="host-map-container">
+        <div className="flex-1 relative">
           <MapContainer
             center={initialMapCenter}
             zoom={10}
             className="h-full w-full"
-            data-testid="map-container"
           >
-            <MapController center={mapCenter} zoom={mapZoom} />
-            <MapClickHandler onMapClick={() => setSelectedHostId(null)} />
+            <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} markerRefs={markerRefs} />
+            <MapClickHandler onMapClick={() => setSelectedId(null)} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Host Contact Markers */}
-            {filteredHosts.map(contact => (
+            {/* Host Markers */}
+            {showHosts && filteredHosts.map(contact => (
               <Marker
-                key={contact.id}
+                key={`host-${contact.id}`}
                 position={[parseFloat(contact.latitude), parseFloat(contact.longitude)]}
-                icon={selectedHostId === contact.id ? highlightedIcon : defaultIcon}
-                eventHandlers={{
-                  click: () => {
-                    setSelectedHostId(contact.id);
-                  },
+                icon={selectedId === `host-${contact.id}` ? highlightedHostIcon : hostIcon}
+                ref={(ref) => {
+                  if (ref) {
+                    markerRefs.current.set(`host-${contact.id}`, ref);
+                  }
                 }}
-                data-testid={`marker-host-${contact.id}`}
+                eventHandlers={{
+                  click: () => setSelectedId(`host-${contact.id}`),
+                }}
               >
                 <Popup>
-                  <div className="p-2 min-w-0 w-48 sm:min-w-[200px]">
-                    <div className="font-semibold text-[#007E8C] mb-1">
-                      {contact.contactName}
-                    </div>
+                  <div className="p-2 min-w-[180px]">
+                    <div className="font-semibold text-blue-600 mb-1">{contact.contactName}</div>
                     <div className="text-sm text-gray-600 mb-2">
                       <Building2 className="inline w-3 h-3 mr-1" />
                       {contact.hostLocationName}
                     </div>
                     {contact.role && (
-                      <Badge variant="outline" className="mb-2 text-xs">
-                        {contact.role}
-                      </Badge>
+                      <Badge variant="outline" className="mb-2 text-xs">{contact.role}</Badge>
                     )}
                     {contact.address && (
-                      <div className="text-xs text-gray-600 mb-2">
-                        {contact.address}
-                      </div>
+                      <div className="text-xs text-gray-600 mb-2">{contact.address}</div>
                     )}
                     <div className="space-y-1 pt-2 border-t border-gray-200">
                       {contact.phone && (
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Phone className="w-3 h-3" />
-                          <a href={`tel:${contact.phone}`} className="hover:text-[#007E8C]">
-                            {contact.phone}
-                          </a>
+                          <a href={`tel:${contact.phone}`} className="hover:text-blue-600">{contact.phone}</a>
                         </div>
                       )}
                       {contact.email && (
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <Mail className="w-3 h-3" />
-                          <a href={`mailto:${contact.email}`} className="hover:text-[#007E8C]">
-                            {contact.email}
-                          </a>
+                          <a href={`mailto:${contact.email}`} className="hover:text-blue-600">{contact.email}</a>
                         </div>
                       )}
                     </div>
@@ -488,18 +774,84 @@ export default function RouteMapView() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Recipient Markers */}
+            {showRecipients && filteredRecipients.map(recipient => (
+              <Marker
+                key={`recipient-${recipient.id}`}
+                position={[parseFloat(recipient.latitude as string), parseFloat(recipient.longitude as string)]}
+                icon={selectedId === `recipient-${recipient.id}` ? highlightedRecipientIcon : recipientIcon}
+                ref={(ref) => {
+                  if (ref) {
+                    markerRefs.current.set(`recipient-${recipient.id}`, ref);
+                  }
+                }}
+                eventHandlers={{
+                  click: () => setSelectedId(`recipient-${recipient.id}`),
+                }}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <div className="font-semibold text-purple-600 mb-1">{recipient.name}</div>
+                    {recipient.region && (
+                      <Badge variant="outline" className="mb-2 text-xs">{recipient.region}</Badge>
+                    )}
+                    {recipient.address && (
+                      <div className="text-xs text-gray-600 mb-2">{recipient.address}</div>
+                    )}
+                    {recipient.estimatedWeeklySandwiches && (
+                      <div className="text-xs text-gray-600 mb-2">
+                        <Package className="inline w-3 h-3 mr-1" />
+                        ~{recipient.estimatedWeeklySandwiches} sandwiches/week
+                      </div>
+                    )}
+                    {recipient.phone && (
+                      <div className="flex items-center gap-1 text-xs text-gray-600 pt-2 border-t border-gray-200">
+                        <Phone className="w-3 h-3" />
+                        <a href={`tel:${recipient.phone}`} className="hover:text-purple-600">{recipient.phone}</a>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Searched Location Marker */}
+            {searchedLocation && (
+              <Marker
+                position={[searchedLocation.latitude, searchedLocation.longitude]}
+                icon={searchIcon}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <div className="font-semibold text-green-600 mb-1">Searched Location</div>
+                    <div className="text-sm text-gray-600">{searchedLocation.address}</div>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
           </MapContainer>
 
-          {/* Filtered Results Info */}
-          {searchTerm && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] pointer-events-none">
-              <div className="bg-white shadow-lg rounded-lg px-4 py-2 border border-gray-200">
-                <p className="text-sm text-gray-600">
-                  Showing {filteredHosts.length} of {hosts.length} location{hosts.length !== 1 ? 's' : ''}
-                </p>
+          {/* Legend */}
+          <div className="absolute bottom-4 right-4 z-[1000] bg-white rounded-lg shadow-lg p-3 border">
+            <div className="text-xs font-semibold text-gray-700 mb-2">Legend</div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                <span>Hosts ({hosts.length})</span>
               </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                <span>Recipients ({recipientsWithCoords.length})</span>
+              </div>
+              {searchedLocation && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                  <span>Search Result</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

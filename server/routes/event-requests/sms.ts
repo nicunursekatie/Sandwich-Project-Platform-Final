@@ -1,6 +1,10 @@
 /**
- * Communication routes for event requests (SMS, Email)
+ * Event Requests - SMS Notification Routes
+ *
+ * Handles sending event details and corrections via SMS to volunteers.
+ * Split from event-requests-legacy.ts for better organization.
  */
+
 import { Router, Response } from 'express';
 import { storage } from '../../storage-wrapper';
 import { requirePermission } from '../../middleware/auth';
@@ -10,7 +14,7 @@ import type { AuthenticatedRequest } from '../../types/express';
 
 const router = Router();
 
-// Helper for logging activity
+// Enhanced logging function for activity tracking
 const logActivity = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -22,6 +26,10 @@ const logActivity = async (
     res.locals.eventRequestAuditDetails = metadata;
   }
 };
+
+// ============================================================================
+// SMS Notification Routes
+// ============================================================================
 
 // Send event details via SMS to selected users
 router.post('/:id/send-details-sms', isAuthenticated, requirePermission('EVENT_REQUESTS_VIEW'), async (req, res) => {
@@ -60,7 +68,7 @@ router.post('/:id/send-details-sms', isAuthenticated, requirePermission('EVENT_R
         continue;
       }
 
-      // Verify SMS consent
+      // Verify SMS consent - only send to users who have confirmed opt-in
       const smsConsent = (user.metadata as any)?.smsConsent;
       if (!smsConsent || smsConsent.status !== 'confirmed' || !smsConsent.enabled || !smsConsent.phoneNumber) {
         results.push({
@@ -124,7 +132,7 @@ Thank you for volunteering!`;
         results.push({
           userId: user.id,
           userName: user.displayName || user.email,
-          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'),
+          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Mask phone for privacy
           success: result.success,
           messageId: result.messageId,
         });
@@ -138,8 +146,10 @@ Thank you for volunteering!`;
       }
     }
 
+    // Count successes
     const successCount = results.filter(r => r.success).length;
 
+    // Log activity
     await logActivity(
       req,
       res,
@@ -176,11 +186,13 @@ router.post('/:id/send-correction-sms', isAuthenticated, requirePermission('EVEN
       return res.status(400).json({ message: 'Please provide a correction message' });
     }
 
+    // Get event details
     const event = await storage.getEventRequestById(id);
     if (!event) {
       return res.status(404).json({ message: 'Event request not found' });
     }
 
+    // Import SMS service
     const { SMSProviderFactory } = await import('../../sms-providers/provider-factory');
     const factory = SMSProviderFactory.getInstance();
     const smsProvider = factory.getProvider();
@@ -189,6 +201,7 @@ router.post('/:id/send-correction-sms', isAuthenticated, requirePermission('EVEN
       return res.status(500).json({ message: 'SMS service not configured' });
     }
 
+    // Get users and their phone numbers
     const users = await Promise.all(
       userIds.map(userId => storage.getUserById(userId))
     );
@@ -200,6 +213,7 @@ router.post('/:id/send-correction-sms', isAuthenticated, requirePermission('EVEN
         continue;
       }
 
+      // Verify SMS consent - only send to users who have confirmed opt-in
       const smsConsent = (user.metadata as any)?.smsConsent;
       if (!smsConsent || smsConsent.status !== 'confirmed' || !smsConsent.enabled || !smsConsent.phoneNumber) {
         results.push({
@@ -213,6 +227,7 @@ router.post('/:id/send-correction-sms', isAuthenticated, requirePermission('EVEN
 
       const phoneNumber = smsConsent.phoneNumber;
 
+      // Build correction SMS message
       const message = `🥪 The Sandwich Project - CORRECTION
 
 ${customMessage.trim()}
@@ -228,7 +243,7 @@ We apologize for any confusion!`;
         results.push({
           userId: user.id,
           userName: user.displayName || user.email,
-          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'),
+          phone: phoneNumber.replace(/\d(?=\d{4})/g, '*'), // Mask phone for privacy
           success: result.success,
           messageId: result.messageId,
         });
@@ -242,8 +257,10 @@ We apologize for any confusion!`;
       }
     }
 
+    // Count successes
     const successCount = results.filter(r => r.success).length;
 
+    // Log activity
     await logActivity(
       req,
       res,
@@ -266,4 +283,4 @@ We apologize for any confusion!`;
   }
 });
 
-export { router as communicationsRouter };
+export default router;
