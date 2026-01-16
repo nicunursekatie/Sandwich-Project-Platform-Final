@@ -2,7 +2,7 @@ import { Router, type Response } from 'express';
 import { db } from '../db';
 import { logger } from '../middleware/logger';
 import OpenAI from 'openai';
-import { userActivityLogs } from '@shared/schema';
+import { userActivityLogs, authoritativeWeeklyCollections } from '@shared/schema';
 import { sql, desc, and, gte } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../types/express';
 
@@ -52,6 +52,93 @@ function getCollectionSandwichCount(collection: any): number {
     total += collection.group2Count || 0;
   }
   return total;
+}
+
+// Helper function to fetch and format historical collection data for AI context
+// This provides the authoritative historical trends that enable seasonal analysis
+async function getHistoricalCollectionsContext(): Promise<string> {
+  try {
+    const authoritativeData = await db.select().from(authoritativeWeeklyCollections);
+
+    if (authoritativeData.length === 0) {
+      return '';
+    }
+
+    // Group by week of year to identify seasonal patterns
+    const weeklyPatterns: Record<number, { totalSandwiches: number; weekCount: number; years: Set<number> }> = {};
+    const yearlyTotals: Record<number, number> = {};
+    const locationTotals: Record<string, number> = {};
+
+    authoritativeData.forEach(record => {
+      // Weekly patterns (for seasonality analysis)
+      const weekNum = record.weekOfYear;
+      if (!weeklyPatterns[weekNum]) {
+        weeklyPatterns[weekNum] = { totalSandwiches: 0, weekCount: 0, years: new Set() };
+      }
+      weeklyPatterns[weekNum].totalSandwiches += record.sandwiches;
+      weeklyPatterns[weekNum].weekCount++;
+      weeklyPatterns[weekNum].years.add(record.year);
+
+      // Yearly totals
+      if (!yearlyTotals[record.year]) {
+        yearlyTotals[record.year] = 0;
+      }
+      yearlyTotals[record.year] += record.sandwiches;
+
+      // Location totals
+      if (!locationTotals[record.location]) {
+        locationTotals[record.location] = 0;
+      }
+      locationTotals[record.location] += record.sandwiches;
+    });
+
+    // Calculate average sandwiches per week for each week of year
+    const weeklyAverages = Object.entries(weeklyPatterns)
+      .map(([week, data]) => ({
+        week: parseInt(week),
+        avgSandwiches: Math.round(data.totalSandwiches / data.weekCount),
+        yearsOfData: data.years.size
+      }))
+      .sort((a, b) => a.week - b.week);
+
+    // Find historically low and high weeks
+    const sortedByAvg = [...weeklyAverages].sort((a, b) => a.avgSandwiches - b.avgSandwiches);
+    const lowWeeks = sortedByAvg.slice(0, 10);
+    const highWeeks = sortedByAvg.slice(-10).reverse();
+
+    return `
+
+### Historical Data (Authoritative Source: 2020-2025)
+This is verified historical data from Scott's tracking system, providing accurate trend analysis.
+
+#### Yearly Totals (Verified)
+${Object.entries(yearlyTotals)
+  .sort(([a], [b]) => parseInt(a) - parseInt(b))
+  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches`)
+  .join('\n')}
+
+#### Weekly Seasonal Patterns (Historical Averages by Week of Year)
+These are the average sandwiches collected per week, based on ${Math.max(...weeklyAverages.map(w => w.yearsOfData))} years of data:
+
+**Historically LOW collection weeks (prepare for reduced volume):**
+${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
+
+**Historically HIGH collection weeks (expect increased volume):**
+${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
+
+#### Top Host Locations (All-Time Historical)
+${Object.entries(locationTotals)
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 15)
+  .map(([location, total]) => `- ${location}: ${total.toLocaleString()} sandwiches`)
+  .join('\n')}
+
+Note: Week numbers follow ISO standard (Week 1 starts first week of January). Use this historical data to predict seasonal trends and identify which upcoming weeks are typically low or high for collections.
+`;
+  } catch (err) {
+    logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
+    return '';
+  }
 }
 
 // Format raw data from component into AI-readable context
@@ -378,24 +465,107 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
     .slice(0, 6)
     .reverse();
 
+  // Fetch authoritative historical data for complete context
+  // This is Scott's verified data from 2020-2024 and 2025 through Aug 6
+  let historicalContext = '';
+  try {
+    const authoritativeData = await db.select().from(authoritativeWeeklyCollections);
+
+    if (authoritativeData.length > 0) {
+      // Group by week of year to identify seasonal patterns
+      const weeklyPatterns: Record<number, { totalSandwiches: number; weekCount: number; years: Set<number> }> = {};
+      const yearlyTotals: Record<number, number> = {};
+      const locationTotals: Record<string, number> = {};
+
+      authoritativeData.forEach(record => {
+        // Weekly patterns (for seasonality analysis)
+        const weekNum = record.weekOfYear;
+        if (!weeklyPatterns[weekNum]) {
+          weeklyPatterns[weekNum] = { totalSandwiches: 0, weekCount: 0, years: new Set() };
+        }
+        weeklyPatterns[weekNum].totalSandwiches += record.sandwiches;
+        weeklyPatterns[weekNum].weekCount++;
+        weeklyPatterns[weekNum].years.add(record.year);
+
+        // Yearly totals
+        if (!yearlyTotals[record.year]) {
+          yearlyTotals[record.year] = 0;
+        }
+        yearlyTotals[record.year] += record.sandwiches;
+
+        // Location totals
+        if (!locationTotals[record.location]) {
+          locationTotals[record.location] = 0;
+        }
+        locationTotals[record.location] += record.sandwiches;
+      });
+
+      // Calculate average sandwiches per week for each week of year
+      const weeklyAverages = Object.entries(weeklyPatterns)
+        .map(([week, data]) => ({
+          week: parseInt(week),
+          avgSandwiches: Math.round(data.totalSandwiches / data.weekCount),
+          yearsOfData: data.years.size
+        }))
+        .sort((a, b) => a.week - b.week);
+
+      // Find historically low and high weeks
+      const sortedByAvg = [...weeklyAverages].sort((a, b) => a.avgSandwiches - b.avgSandwiches);
+      const lowWeeks = sortedByAvg.slice(0, 10);
+      const highWeeks = sortedByAvg.slice(-10).reverse();
+
+      historicalContext = `
+
+### Historical Data (Authoritative Source: 2020-2025)
+This is verified historical data from Scott's tracking system, providing accurate trend analysis.
+
+#### Yearly Totals (Verified)
+${Object.entries(yearlyTotals)
+  .sort(([a], [b]) => parseInt(a) - parseInt(b))
+  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches`)
+  .join('\n')}
+
+#### Weekly Seasonal Patterns (Historical Averages by Week of Year)
+These are the average sandwiches collected per week, based on ${Math.max(...weeklyAverages.map(w => w.yearsOfData))} years of data:
+
+**Historically LOW collection weeks (prepare for reduced volume):**
+${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
+
+**Historically HIGH collection weeks (expect increased volume):**
+${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
+
+#### Top Host Locations (All-Time Historical)
+${Object.entries(locationTotals)
+  .sort(([, a], [, b]) => b - a)
+  .slice(0, 15)
+  .map(([location, total]) => `- ${location}: ${total.toLocaleString()} sandwiches`)
+  .join('\n')}
+
+Note: Week numbers follow ISO standard (Week 1 starts first week of January). Use this historical data to predict seasonal trends and identify which upcoming weeks are typically low or high for collections.
+`;
+    }
+  } catch (err) {
+    logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
+  }
+
   return `
 ## Sandwich Collection Data Summary
 ${componentContext}
-### Overall Metrics
-- Total Collections: ${collections.length}
-- Total Sandwiches Collected: ${totalSandwiches.toLocaleString()}
+### Current Collection Log Metrics
+- Total Collections in Log: ${collections.length}
+- Total Sandwiches in Log: ${totalSandwiches.toLocaleString()}
 - Average Sandwiches Per Collection: ${avgCollectionSize}
 - Number of Active Host Locations: ${Object.keys(hostStats).length}
 
-### Collections by Month (Recent 6 Months)
+### Collections by Month (Recent 6 Months from Collection Log)
 ${recentMonths.map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`).join('\n')}
 
-### All-Time Monthly Data
+### All-Time Monthly Data (from Collection Log)
 ${Object.entries(monthlyStats)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
-
+${historicalContext}
 Note: Individual sandwich collections are typically logged on Wednesday or Thursday (weekly collection day is Wednesday). Day-of-week analysis is not meaningful for individual collections.
 `;
 }
@@ -1867,6 +2037,13 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
       // Component provided its actual data - use it directly
       dataSummary = formatRawDataForAI(contextType, contextData);
       logger.info('Using component-provided raw data for AI context', { contextType });
+
+      // For collections context, also append historical data for trend analysis
+      if (contextType === 'collections' || contextType === 'impact-reports') {
+        const historicalData = await getHistoricalCollectionsContext();
+        dataSummary += historicalData;
+        logger.info('Appended historical collections data to AI context');
+      }
     } else {
       // Fallback: Build context from database (legacy behavior)
       logger.info('No raw data provided, falling back to database query', { contextType });
