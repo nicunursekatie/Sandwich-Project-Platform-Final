@@ -2065,10 +2065,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </Button>
                     )}
                   </div>
-                ) : (driverNeeded > 0 || request.vanDriverNeeded || (isEditingThisCard && editingField === 'driversNeeded')) ? (
+                ) : (driverNeeded > 0 || request.vanDriverNeeded || request.assignedVanDriverId || request.isDhlVan || (isEditingThisCard && editingField === 'driversNeeded')) ? (
                   <div className="pb-3 border-b border-gray-200 space-y-3">
-                    {/* Van Driver Section - Show if vanDriverNeeded is true */}
-                    {request.vanDriverNeeded && (
+                    {/* Van Driver Section - Show if vanDriverNeeded is true OR van driver is already assigned */}
+                    {(request.vanDriverNeeded || request.assignedVanDriverId || request.isDhlVan) && (
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-base font-bold text-gray-900 flex items-center gap-1">
@@ -2125,7 +2125,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               )}
                             </div>
                           )}
-                          {!request.assignedVanDriverId && !request.isDhlVan && (
+                          {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 font-medium">
                               <Truck className="w-3 h-3 mr-1" />Van driver needed
                             </Badge>
