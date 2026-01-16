@@ -93,6 +93,7 @@ import {
   RecipientAllocationDisplay,
   type RecipientAllocation,
 } from '../RecipientAllocationEditor';
+import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
@@ -366,6 +367,7 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showRecipientAllocationDialog, setShowRecipientAllocationDialog] = useState(false);
+  const [isEditingRecipientAllocations, setIsEditingRecipientAllocations] = useState(false);
 
   // Event Instructions section state
   const [isInstructionsExpanded, setIsInstructionsExpanded] = useState(false);
@@ -1872,19 +1874,47 @@ export const ScheduledCard: React.FC<ScheduledCardProps> = ({
                 <Building className="w-4 h-4 text-[#236383]" />
                 <span className="text-base font-medium text-[#236383] min-w-0 sm:min-w-[100px]">Recipients:</span>
               </div>
-              {canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowRecipientAllocationDialog(true)}
-                  className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
-                >
-                  <Edit2 className="w-3 h-3 mr-1" />
-                  Edit
-                </Button>
+              {canEdit && !isEditingRecipientAllocations && (
+                <div className="flex items-center gap-1">
+                  {/* Show "Set Counts" button if multiple recipients assigned */}
+                  {request.assignedRecipientIds && request.assignedRecipientIds.length > 1 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setIsEditingRecipientAllocations(true)}
+                      className="h-6 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 transition-colors"
+                    >
+                      <Package className="w-3 h-3 mr-1" />
+                      Set Counts
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowRecipientAllocationDialog(true)}
+                    className="h-6 px-2 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                  >
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                </div>
               )}
             </div>
-            {isEditingThisCard && editingField === 'assignedRecipientIds' ? (
+
+            {/* Inline Allocation Editor */}
+            {isEditingRecipientAllocations && request.assignedRecipientIds && request.assignedRecipientIds.length > 0 ? (
+              <div className="ml-8">
+                <InlineRecipientAllocationEditor
+                  eventId={request.id}
+                  assignedRecipientIds={request.assignedRecipientIds}
+                  currentAllocations={(request as any).recipientAllocations as RecipientAllocation[] | null}
+                  estimatedSandwichCount={request.estimatedSandwichCount}
+                  resolveRecipientName={resolveRecipientName}
+                  onCancel={() => setIsEditingRecipientAllocations(false)}
+                  onSave={() => setIsEditingRecipientAllocations(false)}
+                />
+              </div>
+            ) : isEditingThisCard && editingField === 'assignedRecipientIds' ? (
               <div className="ml-8 space-y-2">
                 <MultiRecipientSelector
                   value={(() => {
