@@ -161,6 +161,11 @@ export default function DriversManagement() {
     unavailableNote: '',
     unavailableUntil: '',
     unavailableFollowUp: '',
+    // Enhanced availability fields
+    availabilityStatus: 'available',
+    unavailableStartDate: '',
+    checkInDate: '',
+    unavailableReason: '',
     coolerStatus: '',
     agreementInDatabase: false,
     neverFullyOnboarded: false,
@@ -200,13 +205,22 @@ export default function DriversManagement() {
       );
     }
 
-    // Apply status filter (active, inactive, or temporarily unavailable)
+    // Apply status filter (active, inactive, temporarily unavailable, or needs check-in)
     if (statusFilter === 'active') {
-      filtered = filtered.filter((driver) => driver.isActive === true && !driver.temporarilyUnavailable);
+      filtered = filtered.filter((driver) => driver.isActive === true && !driver.temporarilyUnavailable && (driver as any).availabilityStatus !== 'pending_checkin');
     } else if (statusFilter === 'inactive') {
-      filtered = filtered.filter((driver) => driver.isActive === false);
+      filtered = filtered.filter((driver) => driver.isActive === false || (driver as any).availabilityStatus === 'inactive');
     } else if (statusFilter === 'temp_unavailable') {
-      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true);
+      filtered = filtered.filter((driver) => driver.temporarilyUnavailable === true || (driver as any).availabilityStatus === 'unavailable');
+    } else if (statusFilter === 'needs_checkin') {
+      // Show drivers who need check-in: either availabilityStatus is pending_checkin, or checkInDate has passed
+      const now = new Date();
+      filtered = filtered.filter((driver) => {
+        const driverAny = driver as any;
+        if (driverAny.availabilityStatus === 'pending_checkin') return true;
+        if (driverAny.checkInDate && new Date(driverAny.checkInDate) <= now) return true;
+        return false;
+      });
     }
 
     // Apply agreement filter (signed, signed + located, no agreement)
@@ -309,6 +323,11 @@ export default function DriversManagement() {
       unavailableNote: '',
       unavailableUntil: '',
       unavailableFollowUp: '',
+      // Enhanced availability fields
+      availabilityStatus: 'available',
+      unavailableStartDate: '',
+      checkInDate: '',
+      unavailableReason: '',
       coolerStatus: '',
       agreementInDatabase: false,
       neverFullyOnboarded: false,
@@ -882,78 +901,125 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="interestedInVanDriving">Interested in Driving the Van</Label>
                     </div>
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="temporarilyUnavailable"
-                          checked={newDriver.temporarilyUnavailable}
-                          onChange={(e) =>
+                    {/* Enhanced Availability Status System */}
+                    <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                      <div>
+                        <Label htmlFor="availabilityStatus">Availability Status</Label>
+                        <Select
+                          value={newDriver.availabilityStatus || 'available'}
+                          onValueChange={(value) =>
                             setNewDriver({
                               ...newDriver,
-                              temporarilyUnavailable: e.target.checked,
+                              availabilityStatus: value,
+                              // Auto-set temporarilyUnavailable for backwards compatibility
+                              temporarilyUnavailable: value === 'unavailable' || value === 'pending_checkin',
                             })
                           }
-                          className="rounded border-gray-300"
-                        />
-                        <Label htmlFor="temporarilyUnavailable">Temporarily Unavailable</Label>
-                      </div>
-                      {newDriver.temporarilyUnavailable && (
-                        <p className="text-xs text-amber-600 ml-6">
-                          This driver won't appear in driver assignment lists, but will still be available for volunteer tasks.
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="available">
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-green-500" />
+                                Available
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="unavailable">
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-red-500" />
+                                Unavailable
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="pending_checkin">
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                                Needs Check-in
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="inactive">
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-gray-400" />
+                                Inactive (Retired)
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {newDriver.availabilityStatus === 'available' && 'Driver can be scheduled for events'}
+                          {newDriver.availabilityStatus === 'unavailable' && 'Driver won\'t appear in assignment lists'}
+                          {newDriver.availabilityStatus === 'pending_checkin' && 'Driver needs to be contacted to confirm availability'}
+                          {newDriver.availabilityStatus === 'inactive' && 'Driver is no longer volunteering'}
                         </p>
+                      </div>
+
+                      {(newDriver.availabilityStatus === 'unavailable' || newDriver.availabilityStatus === 'pending_checkin') && (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label htmlFor="unavailableStartDate">Becomes Unavailable On</Label>
+                              <Input
+                                id="unavailableStartDate"
+                                type="date"
+                                value={newDriver.unavailableStartDate}
+                                onChange={(e) =>
+                                  setNewDriver({ ...newDriver, unavailableStartDate: e.target.value })
+                                }
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">Leave blank if already unavailable</p>
+                            </div>
+                            <div>
+                              <Label htmlFor="checkInDate">Check-in Date</Label>
+                              <Input
+                                id="checkInDate"
+                                type="date"
+                                value={newDriver.checkInDate}
+                                onChange={(e) =>
+                                  setNewDriver({ ...newDriver, checkInDate: e.target.value })
+                                }
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">When to reach out</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="unavailableReason">Reason for Unavailability</Label>
+                            <Select
+                              value={newDriver.unavailableReason || ''}
+                              onValueChange={(value) =>
+                                setNewDriver({ ...newDriver, unavailableReason: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select reason..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="medical">Medical / Health</SelectItem>
+                                <SelectItem value="travel">Travel / Out of Town</SelectItem>
+                                <SelectItem value="work">Work Conflict</SelectItem>
+                                <SelectItem value="family">Family Obligations</SelectItem>
+                                <SelectItem value="personal">Personal / Other</SelectItem>
+                                <SelectItem value="seasonal">Seasonal Break</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="unavailableNote">Additional Notes</Label>
+                            <Textarea
+                              id="unavailableNote"
+                              value={newDriver.unavailableNote}
+                              onChange={(e) =>
+                                setNewDriver({ ...newDriver, unavailableNote: e.target.value })
+                              }
+                              placeholder="Any additional details..."
+                              rows={2}
+                            />
+                          </div>
+                        </>
                       )}
                     </div>
-                    {newDriver.temporarilyUnavailable && (
-                      <>
-                        <div>
-                          <Label htmlFor="unavailableFollowUp">Follow-up Preference</Label>
-                          <Select
-                            value={newDriver.unavailableFollowUp}
-                            onValueChange={(value) =>
-                              setNewDriver({ ...newDriver, unavailableFollowUp: value })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="How should we follow up?" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="will_reach_out">I'll reach out when I'm ready</SelectItem>
-                              <SelectItem value="check_back">Check back in with me in a few months</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="unavailableUntil">Available Again On</Label>
-                          <Input
-                            id="unavailableUntil"
-                            type="date"
-                            value={newDriver.unavailableUntil}
-                            onChange={(e) =>
-                              setNewDriver({
-                                ...newDriver,
-                                unavailableUntil: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="unavailableNote">Unavailability Note</Label>
-                          <Textarea
-                            id="unavailableNote"
-                            value={newDriver.unavailableNote}
-                            onChange={(e) =>
-                              setNewDriver({
-                                ...newDriver,
-                                unavailableNote: e.target.value,
-                              })
-                            }
-                            placeholder="Reason for temporary unavailability"
-                            rows={2}
-                          />
-                        </div>
-                      </>
-                    )}
                     <div>
                       <Label htmlFor="notes">Notes</Label>
                       <Textarea
@@ -1063,6 +1129,12 @@ export default function DriversManagement() {
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="temp_unavailable">Temporarily Unavailable</SelectItem>
+                    <SelectItem value="needs_checkin">
+                      <span className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        Needs Check-in
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1144,7 +1216,7 @@ export default function DriversManagement() {
           <div className="text-sm text-slate-600">
             Showing {filteredDrivers.length} of {drivers.length} drivers
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
-            {statusFilter !== 'all' && <span> • {statusFilter === 'temp_unavailable' ? 'Temporarily Unavailable' : statusFilter === 'active' ? 'Active' : 'Inactive'}</span>}
+            {statusFilter !== 'all' && <span> • {statusFilter === 'temp_unavailable' ? 'Temporarily Unavailable' : statusFilter === 'active' ? 'Active' : statusFilter === 'needs_checkin' ? 'Needs Check-in' : 'Inactive'}</span>}
             {agreementFilter !== 'all' && <span> • {agreementFilter === 'signed' ? 'Agreement Signed' : agreementFilter === 'signed_and_located' ? 'Signed + Located' : 'No Agreement'}</span>}
             {vanFilter !== 'all' && <span> • {vanFilter === 'approved' ? 'Van Approved' : vanFilter === 'approved_and_willing' ? 'Approved + Willing' : 'Van Interest'}</span>}
             {driverTypeFilter !== 'all' && <span> • {driverTypeFilter === 'weekly' ? 'Weekly Driver' : 'Event Driver'}</span>}
@@ -1455,78 +1527,135 @@ export default function DriversManagement() {
                 />
                 <Label htmlFor="edit-interestedInVanDriving">Interested in Driving the Van</Label>
               </div>
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="edit-temporarilyUnavailable"
-                    checked={editingDriver.temporarilyUnavailable || false}
-                    onChange={(e) =>
+              {/* Enhanced Availability Status System */}
+              <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                <div>
+                  <Label htmlFor="edit-availabilityStatus">Availability Status</Label>
+                  <Select
+                    value={(editingDriver as any).availabilityStatus || 'available'}
+                    onValueChange={(value) =>
                       setEditingDriver({
                         ...editingDriver,
-                        temporarilyUnavailable: e.target.checked,
-                      })
+                        availabilityStatus: value,
+                        // Auto-set temporarilyUnavailable for backwards compatibility
+                        temporarilyUnavailable: value === 'unavailable' || value === 'pending_checkin',
+                      } as any)
                     }
-                    className="rounded border-gray-300"
-                  />
-                  <Label htmlFor="edit-temporarilyUnavailable">Temporarily Unavailable</Label>
-                </div>
-                {editingDriver.temporarilyUnavailable && (
-                  <p className="text-xs text-amber-600 ml-6">
-                    This driver won't appear in driver assignment lists, but will still be available for volunteer tasks.
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-green-500" />
+                          Available
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="unavailable">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          Unavailable
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="pending_checkin">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          Needs Check-in
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="inactive">
+                        <span className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          Inactive (Retired)
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {(editingDriver as any).availabilityStatus === 'available' && 'Driver can be scheduled for events'}
+                    {(editingDriver as any).availabilityStatus === 'unavailable' && 'Driver won\'t appear in assignment lists'}
+                    {(editingDriver as any).availabilityStatus === 'pending_checkin' && 'Driver needs to be contacted to confirm availability'}
+                    {(editingDriver as any).availabilityStatus === 'inactive' && 'Driver is no longer volunteering'}
+                    {!(editingDriver as any).availabilityStatus && 'Driver can be scheduled for events'}
                   </p>
+                </div>
+
+                {((editingDriver as any).availabilityStatus === 'unavailable' || (editingDriver as any).availabilityStatus === 'pending_checkin') && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="edit-unavailableStartDate">Becomes Unavailable On</Label>
+                        <Input
+                          id="edit-unavailableStartDate"
+                          type="date"
+                          value={(editingDriver as any).unavailableStartDate ? new Date((editingDriver as any).unavailableStartDate).toISOString().split('T')[0] : ''}
+                          onChange={(e) =>
+                            setEditingDriver({
+                              ...editingDriver,
+                              unavailableStartDate: e.target.value ? new Date(e.target.value) : null,
+                            } as any)
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Leave blank if already unavailable</p>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-checkInDate">Check-in Date</Label>
+                        <Input
+                          id="edit-checkInDate"
+                          type="date"
+                          value={(editingDriver as any).checkInDate ? new Date((editingDriver as any).checkInDate).toISOString().split('T')[0] : ''}
+                          onChange={(e) =>
+                            setEditingDriver({
+                              ...editingDriver,
+                              checkInDate: e.target.value ? new Date(e.target.value) : null,
+                            } as any)
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">When to reach out</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-unavailableReason">Reason for Unavailability</Label>
+                      <Select
+                        value={(editingDriver as any).unavailableReason || ''}
+                        onValueChange={(value) =>
+                          setEditingDriver({ ...editingDriver, unavailableReason: value } as any)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select reason..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="medical">Medical / Health</SelectItem>
+                          <SelectItem value="travel">Travel / Out of Town</SelectItem>
+                          <SelectItem value="work">Work Conflict</SelectItem>
+                          <SelectItem value="family">Family Obligations</SelectItem>
+                          <SelectItem value="personal">Personal / Other</SelectItem>
+                          <SelectItem value="seasonal">Seasonal Break</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-unavailableNote">Additional Notes</Label>
+                      <Textarea
+                        id="edit-unavailableNote"
+                        value={editingDriver.unavailableNote || ''}
+                        onChange={(e) =>
+                          setEditingDriver({
+                            ...editingDriver,
+                            unavailableNote: e.target.value,
+                          })
+                        }
+                        placeholder="Any additional details..."
+                        rows={2}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
-              {editingDriver.temporarilyUnavailable && (
-                <>
-                  <div>
-                    <Label htmlFor="edit-unavailableFollowUp">Follow-up Preference</Label>
-                    <Select
-                      value={editingDriver.unavailableFollowUp || ''}
-                      onValueChange={(value) =>
-                        setEditingDriver({ ...editingDriver, unavailableFollowUp: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="How should we follow up?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="will_reach_out">I'll reach out when I'm ready</SelectItem>
-                        <SelectItem value="check_back">Check back in with me in a few months</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-unavailableUntil">Available Again On</Label>
-                    <Input
-                      id="edit-unavailableUntil"
-                      type="date"
-                      value={editingDriver.unavailableUntil ? new Date(editingDriver.unavailableUntil).toISOString().split('T')[0] : ''}
-                      onChange={(e) =>
-                        setEditingDriver({
-                          ...editingDriver,
-                          unavailableUntil: e.target.value ? new Date(e.target.value) : null,
-                        })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-unavailableNote">Unavailability Note</Label>
-                    <Textarea
-                      id="edit-unavailableNote"
-                      value={editingDriver.unavailableNote || ''}
-                      onChange={(e) =>
-                        setEditingDriver({
-                          ...editingDriver,
-                          unavailableNote: e.target.value,
-                        })
-                      }
-                      placeholder="Reason for temporary unavailability"
-                      rows={2}
-                    />
-                  </div>
-                </>
-              )}
               <div>
                 <Label htmlFor="edit-notes">Notes</Label>
                 <Textarea

@@ -8,8 +8,8 @@ import cron from 'node-cron';
 import { scrapeHostAvailability } from './host-availability-scraper';
 import { createServiceLogger, logError } from '../utils/logger';
 import { db } from '../db';
-import { eventVolunteers, eventRequests, users } from '@shared/schema';
-import { and, eq, isNull, sql, or, inArray } from 'drizzle-orm';
+import { eventVolunteers, eventRequests, users, drivers } from '@shared/schema';
+import { and, eq, isNull, sql, or, inArray, lte, isNotNull } from 'drizzle-orm';
 import { EmailNotificationService } from './email-notification-service';
 import { sendEventReminderSMS } from '../sms-service';
 import { getEventNotificationPreferences, getUserMetadata, getUserPhoneNumber } from '@shared/types';
@@ -867,6 +867,108 @@ async function generateMonthlyImpactReport(): Promise<{
 }
 
 /**
+ * Transition driver availability statuses based on dates
+ * - Moves drivers to 'unavailable' when unavailableStartDate arrives
+ * - Moves drivers to 'pending_checkin' when checkInDate arrives
+ * Runs daily to automatically update driver statuses
+ */
+export async function transitionDriverAvailabilityStatuses(): Promise<{
+  driversTransitioned: number;
+  driversNeedingCheckin: number;
+  errors: number;
+  timestamp: Date;
+}> {
+  const now = new Date();
+  let driversTransitioned = 0;
+  let driversNeedingCheckin = 0;
+  let errors = 0;
+
+  try {
+    // Get the start of today for date comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 1. Transition drivers from 'available' to 'unavailable' where unavailableStartDate has arrived
+    const driversToMakeUnavailable = await db
+      .select()
+      .from(drivers)
+      .where(
+        and(
+          sql`${drivers.availabilityStatus} = 'available' OR ${drivers.availabilityStatus} IS NULL`,
+          isNotNull(drivers.unavailableStartDate),
+          lte(drivers.unavailableStartDate, today)
+        )
+      );
+
+    for (const driver of driversToMakeUnavailable) {
+      try {
+        await db
+          .update(drivers)
+          .set({
+            availabilityStatus: 'unavailable',
+            temporarilyUnavailable: true,
+            updatedAt: new Date(),
+          })
+          .where(eq(drivers.id, driver.id));
+
+        driversTransitioned++;
+        cronLogger.info(`Transitioned driver ${driver.id} (${driver.name}) to 'unavailable' - start date was ${driver.unavailableStartDate}`);
+      } catch (error) {
+        errors++;
+        cronLogger.error(`Error transitioning driver ${driver.id} to unavailable:`, error);
+      }
+    }
+
+    // 2. Transition drivers from 'unavailable' to 'pending_checkin' where checkInDate has arrived
+    const driversNeedingCheckinList = await db
+      .select()
+      .from(drivers)
+      .where(
+        and(
+          eq(sql`${drivers.availabilityStatus}`, 'unavailable'),
+          isNotNull(drivers.checkInDate),
+          lte(drivers.checkInDate, today)
+        )
+      );
+
+    for (const driver of driversNeedingCheckinList) {
+      try {
+        await db
+          .update(drivers)
+          .set({
+            availabilityStatus: 'pending_checkin',
+            updatedAt: new Date(),
+          })
+          .where(eq(drivers.id, driver.id));
+
+        driversNeedingCheckin++;
+        cronLogger.info(`Transitioned driver ${driver.id} (${driver.name}) to 'pending_checkin' - check-in date was ${driver.checkInDate}`);
+      } catch (error) {
+        errors++;
+        cronLogger.error(`Error transitioning driver ${driver.id} to pending_checkin:`, error);
+      }
+    }
+
+    cronLogger.info('Driver availability status transition completed', {
+      driversToUnavailable: driversTransitioned,
+      driversToPendingCheckin: driversNeedingCheckin,
+      totalErrors: errors,
+    });
+
+  } catch (error) {
+    cronLogger.error('Error in transitionDriverAvailabilityStatuses:', error);
+    throw error;
+  }
+
+  return {
+    driversTransitioned,
+    driversNeedingCheckin,
+    errors,
+    timestamp: now,
+  };
+}
+
+/**
  * Initialize all cron jobs
  */
 export function initializeCronJobs() {
@@ -1072,6 +1174,39 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Driver availability status transition - runs daily at 12:10 AM
+  // Transitions drivers to unavailable when unavailableStartDate arrives
+  // Transitions drivers to pending_checkin when checkInDate arrives
+  // Cron format: minute hour day-of-month month day-of-week
+  // '10 0 * * *' = At 12:10 AM every day
+  const driverAvailabilityJob = cron.schedule('10 0 * * *', async () => {
+    cronLogger.info('Running driver availability status transition...');
+    try {
+      const result = await transitionDriverAvailabilityStatuses();
+      cronLogger.info('Driver availability transition completed', {
+        driversTransitioned: result.driversTransitioned,
+        driversNeedingCheckin: result.driversNeedingCheckin,
+        errors: result.errors,
+        timestamp: result.timestamp,
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running driver availability transition cron job',
+        undefined,
+        { jobType: 'driver-availability-transition' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Driver availability transition job scheduled successfully', {
+    schedule: 'Daily at 12:10 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1080,6 +1215,7 @@ export function initializeCronJobs() {
     autoCompleteJob,
     pastDateNotificationJob,
     tspFollowupJob,
+    driverAvailabilityJob,
   };
 }
 
@@ -1094,5 +1230,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.autoCompleteJob.stop();
   jobs.pastDateNotificationJob.stop();
   jobs.tspFollowupJob.stop();
+  jobs.driverAvailabilityJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

@@ -888,6 +888,15 @@ export const drivers = pgTable('drivers', {
   unavailableUntil: timestamp('unavailable_until'),
   // Follow-up preference when unavailable: 'will_reach_out' or 'check_back'
   unavailableFollowUp: text('unavailable_follow_up'),
+  // Enhanced availability system
+  // availabilityStatus: 'available', 'unavailable', 'pending_checkin', 'inactive'
+  availabilityStatus: text('availability_status').default('available'),
+  // Date when driver should become unavailable (for scheduling future unavailability)
+  unavailableStartDate: timestamp('unavailable_start_date'),
+  // Date when admin should check in with driver to see if they're ready to return
+  checkInDate: timestamp('check_in_date'),
+  // Reason for unavailability (e.g., "medical", "travel", "personal", "work conflict")
+  unavailableReason: text('unavailable_reason'),
   // Cooler status: 'has_tsp_coolers', 'would_hold_tsp_coolers', 'would_buy_coolers', 'has_own_coolers', 'cannot_hold_coolers', or null
   coolerStatus: text('cooler_status'),
   agreementInDatabase: boolean('agreement_in_database').notNull().default(false),
