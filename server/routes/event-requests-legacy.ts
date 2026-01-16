@@ -4210,8 +4210,13 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
           const metadata = assignedUser.metadata as any || {};
           const smsConsent = metadata.smsConsent || {};
           
+          // Check for 'events' campaign - support both old single campaignType and new campaignTypes array
+          const hasEventsConsent = 
+            smsConsent.campaignType === 'events' || 
+            (Array.isArray(smsConsent.campaignTypes) && smsConsent.campaignTypes.includes('events'));
+          
           // Only send SMS if user has confirmed SMS opt-in for the 'events' campaign
-          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && smsConsent.campaignType === 'events') {
+          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && hasEventsConsent) {
             const { sendTspContactAssignmentSMS } = await import('../sms-service');
             const smsResult = await sendTspContactAssignmentSMS(
               smsConsent.phoneNumber,
@@ -4225,6 +4230,8 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
             } else {
               logger.warn(`⚠️ TSP contact assignment SMS failed: ${smsResult.message}`);
             }
+          } else if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && !hasEventsConsent) {
+            logger.log(`ℹ️ User ${assignedUser.email} has SMS enabled but not opted into 'events' campaign - skipping TSP contact SMS`);
           }
         }
       } catch (error) {

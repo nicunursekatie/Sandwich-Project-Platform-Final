@@ -439,7 +439,29 @@ export default function AlertPreferences() {
             <>
               <CheckCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                <strong>SMS notifications active</strong> - You're receiving text alerts at {userSMSStatus?.phoneNumber}
+                <div>
+                  <strong>SMS notifications active</strong> - You're receiving text alerts at {userSMSStatus?.phoneNumber}
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {userSMSStatus?.hostsOptedIn && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Collection Reminders
+                    </Badge>
+                  )}
+                  {userSMSStatus?.eventsOptedIn && (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Event Notifications
+                    </Badge>
+                  )}
+                  {!userSMSStatus?.hostsOptedIn && !userSMSStatus?.eventsOptedIn && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-300">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      No campaign selected - go to SMS Setup
+                    </Badge>
+                  )}
+                </div>
               </AlertDescription>
             </>
           ) : isPendingConfirmation ? (
@@ -1249,6 +1271,8 @@ export default function AlertPreferences() {
 }
 
 // SMS Setup Section Component
+type CampaignType = 'hosts' | 'events';
+
 function SMSSetupSection({
   userSMSStatus,
   isLoading
@@ -1260,9 +1284,53 @@ function SMSSetupSection({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [consent, setConsent] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
+  
+  // Initialize campaign types from user status
+  const [campaignTypes, setCampaignTypes] = useState<CampaignType[]>(() => {
+    if (userSMSStatus?.campaignTypes && Array.isArray(userSMSStatus.campaignTypes)) {
+      return userSMSStatus.campaignTypes;
+    }
+    if (userSMSStatus?.campaignType) {
+      return [userSMSStatus.campaignType];
+    }
+    return ['hosts'];
+  });
 
   const isAlreadyOptedIn = userSMSStatus?.hasConfirmedOptIn;
   const isPendingConfirmation = userSMSStatus?.isPendingConfirmation;
+  
+  // Toggle campaign type
+  const toggleCampaignType = (type: CampaignType) => {
+    setCampaignTypes(prev => {
+      if (prev.includes(type)) {
+        // Don't allow removing if it's the only one
+        if (prev.length === 1) return prev;
+        return prev.filter(t => t !== type);
+      } else {
+        return [...prev, type];
+      }
+    });
+  };
+
+  // Update campaign types mutation
+  const updateCampaignsMutation = useMutation({
+    mutationFn: (types: CampaignType[]) =>
+      apiRequest('PATCH', '/api/users/sms-campaigns', { campaignTypes: types }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/sms-status'] });
+      toast({
+        title: 'Preferences updated',
+        description: "Your SMS notification preferences have been saved.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update preferences.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // SMS opt-in mutation
   const optInMutation = useMutation({
@@ -1391,26 +1459,67 @@ function SMSSetupSection({
               </AlertDescription>
             </Alert>
 
-            <div className="bg-muted p-4 rounded-lg">
-              <h4 className="font-medium mb-2 flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                What you'll receive:
-              </h4>
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                <li>- Event reminders before volunteer shifts</li>
-                <li>- Weekly sandwich collection reminders</li>
-                <li>- TSP contact assignment notifications</li>
-              </ul>
+            {/* Campaign Type Selection */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">What notifications do you want to receive?</Label>
+              <div className="space-y-2">
+                <div 
+                  className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer ${campaignTypes.includes('hosts') ? 'border-blue-300 bg-blue-50' : ''}`}
+                  onClick={() => toggleCampaignType('hosts')}
+                >
+                  <Checkbox 
+                    id="campaign-hosts" 
+                    checked={campaignTypes.includes('hosts')}
+                    onCheckedChange={() => toggleCampaignType('hosts')}
+                  />
+                  <Label htmlFor="campaign-hosts" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="font-medium">Collection Reminders</p>
+                      <p className="text-xs text-gray-500">Weekly reminders about sandwich collection submissions</p>
+                    </div>
+                  </Label>
+                </div>
+                <div 
+                  className={`flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer ${campaignTypes.includes('events') ? 'border-purple-300 bg-purple-50' : ''}`}
+                  onClick={() => toggleCampaignType('events')}
+                >
+                  <Checkbox 
+                    id="campaign-events" 
+                    checked={campaignTypes.includes('events')}
+                    onCheckedChange={() => toggleCampaignType('events')}
+                  />
+                  <Label htmlFor="campaign-events" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Calendar className="h-4 w-4 text-purple-600" />
+                    <div>
+                      <p className="font-medium">Event Notifications</p>
+                      <p className="text-xs text-gray-500">TSP contact assignments, event reminders & updates</p>
+                    </div>
+                  </Label>
+                </div>
+              </div>
+              {campaignTypes.length === 0 && (
+                <p className="text-xs text-red-500">Please select at least one notification type</p>
+              )}
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => optOutMutation.mutate()}
-              disabled={optOutMutation.isPending}
-              className="w-full"
-            >
-              {optOutMutation.isPending ? 'Unsubscribing...' : 'Unsubscribe from SMS'}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => updateCampaignsMutation.mutate(campaignTypes)}
+                disabled={updateCampaignsMutation.isPending || campaignTypes.length === 0}
+                className="flex-1 btn-tsp-primary"
+              >
+                {updateCampaignsMutation.isPending ? 'Saving...' : 'Save Preferences'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => optOutMutation.mutate()}
+                disabled={optOutMutation.isPending}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                {optOutMutation.isPending ? 'Unsubscribing...' : 'Unsubscribe'}
+              </Button>
+            </div>
           </div>
         ) : isPendingConfirmation ? (
           // Pending verification
