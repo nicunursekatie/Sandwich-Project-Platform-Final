@@ -54,8 +54,6 @@ import { RecipientSelector } from '@/components/ui/recipient-selector';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { logger } from '@/lib/logger';
-import { isInMlkDayWeek } from '@/lib/mlk-day-utils';
-import { MlkDayDialog } from '@/components/event-requests/MlkDayDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { PresenceAvatars, FieldLockIndicator } from '@/components/collaboration';
@@ -183,9 +181,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showDateConfirmation, setShowDateConfirmation] = useState(false);
   const [pendingDateChange, setPendingDateChange] = useState('');
   const [isMessageEditable, setIsMessageEditable] = useState(false);
-  const [showMlkDayDialog, setShowMlkDayDialog] = useState(false);
-  const [mlkDayAsked, setMlkDayAsked] = useState(false);
-  const [pendingMlkDayDecision, setPendingMlkDayDecision] = useState<boolean | null>(null);
   const [showVanConflictDialog, setShowVanConflictDialog] = useState(false);
   const [vanConflictDetails, setVanConflictDetails] = useState<{
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
@@ -834,11 +829,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Clear auto-saved data on successful submission
       clearAutoSave();
       setHasRecoveredData(false);
-      
-      // Mark as MLK Day if user decided to
-      if (pendingMlkDayDecision === true && updatedEvent?.id) {
-        markMlkDayMutation.mutate({ id: updatedEvent.id, isMlkDayEvent: true });
-      }
+
       const isEditMode = mode === 'edit';
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
       toast({
@@ -853,7 +844,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
-      setPendingMlkDayDecision(null);
     },
     onError: (error: any) => {
       // Reset submitting flag
@@ -906,11 +896,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Clear auto-saved data on successful submission
       clearAutoSave();
       setHasRecoveredData(false);
-      
-      // Mark as MLK Day if user decided to
-      if (pendingMlkDayDecision === true && response?.id) {
-        markMlkDayMutation.mutate({ id: response.id, isMlkDayEvent: true });
-      }
+
       const orgName = formData.organizationName || 'New event';
       toast({
         title: '✓ Event Created Successfully',
@@ -921,7 +907,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
-      setPendingMlkDayDecision(null);
     },
     onError: (error: any) => {
       logger.error('❌ CREATE MUTATION ERROR:', error);
@@ -968,15 +953,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: 'Failed to delete event.',
         variant: 'destructive',
       });
-    },
-  });
-
-  // Mutation to mark event as MLK Day event
-  const markMlkDayMutation = useMutation({
-    mutationFn: ({ id, isMlkDayEvent }: { id: number; isMlkDayEvent: boolean }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}/mlk-day`, { isMlkDayEvent }),
-    onSuccess: () => {
-      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -1416,21 +1392,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       eventRequestId: eventRequest?.id,
       mode,
       formDataEventDate: formData.eventDate,
-      mlkDayAsked,
       vanConflictChecked,
     });
-
-    // Check if event is in MLK Day week and we haven't asked yet
-    if (formData.eventDate && isInMlkDayWeek(formData.eventDate) && !mlkDayAsked && !eventRequest?.isMlkDayEvent) {
-      console.log('⚠️ [PROD DEBUG] MLK Day dialog triggered');
-      logger.log('⚠️ MLK Day dialog triggered');
-      setShowMlkDayDialog(true);
-      setMlkDayAsked(true);
-      return; // Stop submission until user responds
-    }
-
-    console.log('✅ [PROD DEBUG] MLK Day check passed');
-    logger.log('✅ MLK Day check passed');
 
     // Check for van conflicts if event needs van and hasn't been checked yet
     if (eventLikelyNeedsVan() && !vanConflictChecked) {
@@ -1511,21 +1474,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const handleDateChangeCancellation = () => {
     setShowDateConfirmation(false);
-  };
-
-  // MLK Day dialog handlers
-  const handleMlkDayMark = () => {
-    setPendingMlkDayDecision(true);
-    setShowMlkDayDialog(false);
-    // Re-trigger submission with MLK Day decision made
-    handleSubmit(new Event('submit') as any);
-  };
-
-  const handleMlkDaySkip = () => {
-    setPendingMlkDayDecision(false);
-    setShowMlkDayDialog(false);
-    // Re-trigger submission with MLK Day decision made
-    handleSubmit(new Event('submit') as any);
   };
 
   // For create mode, we can work with null eventRequest
@@ -3374,15 +3322,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* MLK Day Dialog */}
-      <MlkDayDialog
-        isOpen={showMlkDayDialog}
-        onClose={() => setShowMlkDayDialog(false)}
-        onMarkAsMLK={handleMlkDayMark}
-        onSkip={handleMlkDaySkip}
-        eventDate={formData.eventDate}
-      />
 
       {/* Van Conflict Warning Dialog */}
       <AlertDialog open={showVanConflictDialog} onOpenChange={setShowVanConflictDialog}>

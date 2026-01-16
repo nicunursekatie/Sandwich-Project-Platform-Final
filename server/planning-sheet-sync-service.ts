@@ -853,7 +853,7 @@ export class PlanningSheetSyncService {
  */
 export function getPlanningSheetService(): PlanningSheetSyncService | null {
   const sheetId = process.env.PLANNING_SHEET_ID;
-  const worksheetName = process.env.PLANNING_SHEET_WORKSHEET_NAME || 'Schedule';
+  const worksheetName = process.env.PLANNING_SHEET_WORKSHEET_NAME || '2026 Groups';
   if (!sheetId) {
     logger.warn('PLANNING_SHEET_ID not configured');
     return null;
