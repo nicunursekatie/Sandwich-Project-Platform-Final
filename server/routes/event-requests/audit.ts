@@ -14,7 +14,7 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { isAuthenticated } from '../../auth';
 import { and, or, eq, desc, sql } from 'drizzle-orm';
 import { logger } from '../../middleware/logger';
-import { safeJsonParse } from '../../utils/safe-json-parse';
+import { safeJsonParse } from '../../utils/safe-json';
 
 const router = Router();
 
