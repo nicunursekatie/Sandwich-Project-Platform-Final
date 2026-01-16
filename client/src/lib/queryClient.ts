@@ -149,9 +149,9 @@ export const getQueryFn: <T>(options: {
   };
 
 /**
- * Invalidate all event request related queries.
+ * Invalidate and refetch all event request related queries.
  * Use this after any mutation that modifies event request data to ensure
- * the UI refreshes with the latest data.
+ * the UI refreshes with the latest data immediately.
  *
  * This handles the query key mismatch between different query patterns:
  * - /api/event-requests (legacy)
@@ -159,16 +159,16 @@ export const getQueryFn: <T>(options: {
  * - /api/event-requests/status-counts (tab badge counts)
  */
 export function invalidateEventRequestQueries(qc: QueryClient) {
-  // Invalidate all queries that start with /api/event-requests
-  qc.invalidateQueries({
+  // Use refetchQueries to force immediate refresh, not just mark as stale
+  qc.refetchQueries({
     predicate: (query) => {
       const key = query.queryKey;
       if (!Array.isArray(key) || typeof key[0] !== 'string') return false;
       return key[0].startsWith('/api/event-requests');
     },
   });
-  // Also invalidate event map since it depends on event data
-  qc.invalidateQueries({ queryKey: ['/api/event-map'] });
+  // Also refetch event map since it depends on event data
+  qc.refetchQueries({ queryKey: ['/api/event-map'] });
 }
 
 export const queryClient = new QueryClient({
