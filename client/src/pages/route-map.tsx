@@ -470,8 +470,8 @@ export default function LocationsMapView() {
           `}
         >
           {isPanelOpen && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
-              <TabsList className="grid w-full grid-cols-3 m-2 mr-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
+              <TabsList className="grid w-full grid-cols-3 m-2 mr-4 flex-shrink-0">
                 <TabsTrigger value="hosts" className="text-xs">
                   <Building2 className="w-3 h-3 mr-1" />
                   Hosts
@@ -487,8 +487,8 @@ export default function LocationsMapView() {
               </TabsList>
 
               {/* Hosts Tab */}
-              <TabsContent value="hosts" className="flex-1 flex flex-col overflow-hidden m-0">
-                <div className="p-3 border-b">
+              <TabsContent value="hosts" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+                <div className="p-3 border-b flex-shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
@@ -499,7 +499,7 @@ export default function LocationsMapView() {
                     />
                   </div>
                 </div>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
                   <div className="p-3 space-y-2">
                     {filteredHosts.map(contact => (
                       <Card
@@ -532,8 +532,8 @@ export default function LocationsMapView() {
               </TabsContent>
 
               {/* Recipients Tab */}
-              <TabsContent value="recipients" className="flex-1 flex flex-col overflow-hidden m-0">
-                <div className="p-3 border-b">
+              <TabsContent value="recipients" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+                <div className="p-3 border-b flex-shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
@@ -544,7 +544,7 @@ export default function LocationsMapView() {
                     />
                   </div>
                 </div>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
                   <div className="p-3 space-y-2">
                     {filteredRecipients.map(recipient => (
                       <Card
@@ -579,8 +579,8 @@ export default function LocationsMapView() {
               </TabsContent>
 
               {/* Address Search Tab */}
-              <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden m-0">
-                <div className="p-3 border-b space-y-3">
+              <TabsContent value="search" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+                <div className="p-3 border-b space-y-3 flex-shrink-0">
                   <div className="flex gap-2">
                     <Input
                       placeholder="Enter an address..."
@@ -617,7 +617,7 @@ export default function LocationsMapView() {
                 </div>
 
                 {searchedLocation && (
-                  <ScrollArea className="flex-1">
+                  <ScrollArea className="flex-1 min-h-0">
                     <div className="p-3 space-y-4">
                       {/* Nearby Hosts */}
                       <div>
