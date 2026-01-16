@@ -88,6 +88,8 @@ import {
 import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event-flags';
 import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
+import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
+import type { RecipientAllocation } from '../RecipientAllocationEditor';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -213,6 +215,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
+  const [showAllocationEditor, setShowAllocationEditor] = useState(false);
   const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
   const [showFlagsDialog, setShowFlagsDialog] = useState(false);
 
@@ -1732,15 +1735,52 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </Button>
                           </div>
                         </div>
+                      ) : showAllocationEditor ? (
+                        <InlineRecipientAllocationEditor
+                          eventId={request.id}
+                          assignedRecipientIds={parsePostgresArray(request.assignedRecipientIds)}
+                          currentAllocations={request.recipientAllocations as RecipientAllocation[] | null | undefined}
+                          estimatedSandwichCount={request.estimatedTotalSandwiches || request.sandwichCount}
+                          resolveRecipientName={(id) => ({
+                            name: getRecipientName ? getRecipientName(id) : id,
+                            type: 'recipient'
+                          })}
+                          onCancel={() => setShowAllocationEditor(false)}
+                          onSave={() => setShowAllocationEditor(false)}
+                        />
                       ) : (
                         <div className="space-y-1">
-                          {parsePostgresArray(request.assignedRecipientIds).map((id) => (
-                            <div key={id} className="bg-white/60 rounded px-3 py-1.5 border border-[#FBAD3F]/30">
-                              <span className="text-base font-semibold text-gray-900">
-                                {getRecipientName ? getRecipientName(id) : id}
-                              </span>
-                            </div>
-                          ))}
+                          {parsePostgresArray(request.assignedRecipientIds).map((id) => {
+                            // Find allocation for this recipient
+                            const allocations = request.recipientAllocations as RecipientAllocation[] | null | undefined;
+                            const allocation = allocations?.find(a => a.recipientId === id);
+                            return (
+                              <div key={id} className="bg-white/60 rounded px-3 py-1.5 border border-[#FBAD3F]/30 flex items-center justify-between">
+                                <span className="text-base font-semibold text-gray-900">
+                                  {getRecipientName ? getRecipientName(id) : id}
+                                </span>
+                                {allocation && allocation.sandwichCount > 0 && (
+                                  <Badge variant="outline" className="bg-white text-[#236383] border-[#236383]/30 text-xs">
+                                    {allocation.sandwichCount} sandwiches
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {/* Button to edit allocations */}
+                          {canEdit && parsePostgresArray(request.assignedRecipientIds).length > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setShowAllocationEditor(true)}
+                              className="w-full h-7 mt-2 text-[#007E8C] hover:bg-[#007E8C]/10 border border-dashed border-[#007E8C]/30"
+                            >
+                              <Edit2 className="w-3 h-3 mr-1" />
+                              {(request.recipientAllocations as RecipientAllocation[] | null | undefined)?.some(a => a.sandwichCount > 0)
+                                ? 'Edit Allocations'
+                                : 'Set Sandwich Allocations'}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
