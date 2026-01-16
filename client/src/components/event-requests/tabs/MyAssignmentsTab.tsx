@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -6,7 +6,7 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NewRequestCard } from '../cards/NewRequestCard';
-import { ScheduledCard } from '../cards/ScheduledCard';
+import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { CompletedCard } from '../cards/CompletedCard';
 import { InProcessCard } from '../cards/InProcessCard';
 import { DeclinedCard } from '../cards/DeclinedCard';
@@ -27,7 +27,7 @@ export const MyAssignmentsTab: React.FC = () => {
   const isMobile = useIsMobile();
   const { filterRequestsByStatus } = useEventFilters();
   const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
-  const { 
+  const {
     handleStatusChange,
     openAssignmentDialog,
     openEditAssignmentDialog,
@@ -38,6 +38,9 @@ export const MyAssignmentsTab: React.FC = () => {
     resolveUserName,
     resolveRecipientName,
   } = useEventAssignments();
+
+  // State for confirmation checkbox when editing dates (needed for ScheduledCardEnhanced)
+  const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
 
   const {
     isLoading,
@@ -80,6 +83,12 @@ export const MyAssignmentsTab: React.FC = () => {
     setInlineTotalCount,
     inlineSandwichTypes,
     setInlineSandwichTypes,
+    inlineRangeMin,
+    setInlineRangeMin,
+    inlineRangeMax,
+    setInlineRangeMax,
+    inlineRangeType,
+    setInlineRangeType,
 
     // Completed editing
     editingCompletedId,
@@ -87,6 +96,38 @@ export const MyAssignmentsTab: React.FC = () => {
     completedEdit,
     setCompletedEdit,
   } = useEventRequestContext();
+
+  // Helper functions for ScheduledCardEnhanced
+  const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet', currentValue: boolean) => {
+    updateEventRequestMutation.mutate({
+      id,
+      data: { [field]: !currentValue },
+    });
+  };
+
+  const addInlineSandwichType = () => {
+    setInlineSandwichTypes((prev: Array<{ type: string; quantity: number }>) => [...prev, { type: 'turkey', quantity: 0 }]);
+  };
+
+  const updateInlineSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
+    setInlineSandwichTypes((prev: Array<{ type: string; quantity: number }>) =>
+      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const removeInlineSandwichType = (index: number) => {
+    setInlineSandwichTypes((prev: Array<{ type: string; quantity: number }>) => prev.filter((_, i) => i !== index));
+  };
+
+  const saveTimes = (id: number, data: any) => {
+    updateEventRequestMutation.mutate({
+      id,
+      data,
+    });
+    setEditingScheduledId(null);
+    setEditingField(null);
+    setEditingValue('');
+  };
 
   const myAssignments = filterRequestsByStatus('my_assignments');
 
@@ -220,18 +261,28 @@ export const MyAssignmentsTab: React.FC = () => {
 
       case 'scheduled':
         return (
-          <ScheduledCard
-            {...commonProps}
+          <ScheduledCardEnhanced
+            request={request}
             editingField={editingField}
             editingValue={editingValue}
             isEditingThisCard={editingScheduledId === request.id}
             inlineSandwichMode={inlineSandwichMode}
             inlineTotalCount={inlineTotalCount}
             inlineSandwichTypes={inlineSandwichTypes}
-            inlineRangeMin={0}
-            inlineRangeMax={0}
-            inlineRangeType=""
-            onStatusChange={(status) => handleStatusChange(request.id, status)}
+            inlineRangeMin={inlineRangeMin}
+            inlineRangeMax={inlineRangeMax}
+            inlineRangeType={inlineRangeType}
+            isSaving={updateEventRequestMutation.isPending || updateScheduledFieldMutation.isPending}
+            onEdit={() => {
+              setSelectedEventRequest(request);
+              setIsEditing(true);
+              setShowEventDetails(true);
+            }}
+            onDelete={() => deleteEventRequestMutation.mutate(request.id)}
+            onContact={() => {
+              setContactEventRequest(request);
+              setShowContactOrganizerDialog(true);
+            }}
             onFollowUp={() => {
               setSelectedEventRequest(request);
               setShowOneDayFollowUpDialog(true);
@@ -271,39 +322,38 @@ export const MyAssignmentsTab: React.FC = () => {
               setEditingValue('');
             }}
             setEditingValue={setEditingValue}
-            saveTimes={(data) => {
-              updateEventRequestMutation.mutate({
-                id: request.id,
-                data,
-              });
-              setEditingScheduledId(null);
-              setEditingField(null);
-              setEditingValue('');
-            }}
+            saveTimes={(data) => saveTimes(request.id, data)}
+            tempIsConfirmed={tempIsConfirmed}
+            setTempIsConfirmed={setTempIsConfirmed}
+            quickToggleBoolean={(field, value) => quickToggleBoolean(request.id, field, value)}
             setInlineSandwichMode={setInlineSandwichMode}
             setInlineTotalCount={setInlineTotalCount}
-            setInlineRangeMin={() => {}}
-            setInlineRangeMax={() => {}}
-            setInlineRangeType={() => {}}
-            addInlineSandwichType={() => {
-              setInlineSandwichTypes(prev => [...prev, { type: 'turkey', quantity: 0 }]);
-            }}
-            updateInlineSandwichType={(index, field, value) => {
-              setInlineSandwichTypes(prev => prev.map((item, i) =>
-                i === index ? { ...item, [field]: value } : item
-              ));
-            }}
-            removeInlineSandwichType={(index) => {
-              setInlineSandwichTypes(prev => prev.filter((_, i) => i !== index));
-            }}
+            setInlineRangeMin={setInlineRangeMin}
+            setInlineRangeMax={setInlineRangeMax}
+            setInlineRangeType={setInlineRangeType}
+            addInlineSandwichType={addInlineSandwichType}
+            updateInlineSandwichType={updateInlineSandwichType}
+            removeInlineSandwichType={removeInlineSandwichType}
             resolveUserName={resolveUserName}
+            resolveRecipientName={resolveRecipientName}
             openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
-            openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}
             handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
-            handleSelfSignup={(type) => handleSelfSignup(request.id, type)}
-            canSelfSignup={canSelfSignup}
-            isUserSignedUp={isUserSignedUp}
             canEdit={true}
+            onAddNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('add');
+              setShowNextActionDialog(true);
+            }}
+            onEditNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('edit');
+              setShowNextActionDialog(true);
+            }}
+            onCompleteNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('complete');
+              setShowNextActionDialog(true);
+            }}
           />
         );
 
