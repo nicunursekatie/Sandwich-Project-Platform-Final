@@ -14,16 +14,20 @@
  * - flags.ts - Pre-event flag management
  * - ai.ts - AI-powered features (date suggestions, categorization)
  * - sms.ts - SMS notification routes
+ * - organizations.ts - Organization management and duplicate checking
+ * - sync.ts - Google Sheets sync routes (not import)
+ * - audit.ts - Audit log retrieval
+ * - conflicts.ts - Conflict detection and returning org checks
  *
  * The legacy file (../event-requests-legacy.ts) still contains:
- * - Google Sheets import/sync (CRITICAL)
+ * - Google Sheets IMPORT endpoint (CRITICAL)
  * - Core CRUD operations (create, read, update, delete events)
- * - Audit logging
  * - Driver assignments
  * - TSP contact assignments
- * - Organization management
  * - Toolkit management
- * - And other established routes
+ * - Status changes (MLK Day, postpone, etc.)
+ * - Recipient management
+ * - Email sending
  */
 
 import { Router } from 'express';
@@ -36,6 +40,10 @@ import volunteersRouter from './volunteers';
 import flagsRouter from './flags';
 import aiRouter from './ai';
 import smsRouter from './sms';
+import organizationsRouter from './organizations';
+import syncRouter from './sync';
+import auditRouter from './audit';
+import conflictsRouter from './conflicts';
 
 const router = Router();
 
@@ -48,8 +56,21 @@ router.use('/', volunteersRouter);
 router.use('/', flagsRouter);
 router.use('/', aiRouter);
 router.use('/', smsRouter);
+router.use('/', organizationsRouter);
+router.use('/', syncRouter);
+router.use('/', auditRouter);
+router.use('/', conflictsRouter);
 
 export default router;
 
 // Re-export individual routers for testing or selective usage
-export { volunteersRouter, flagsRouter, aiRouter, smsRouter };
+export {
+  volunteersRouter,
+  flagsRouter,
+  aiRouter,
+  smsRouter,
+  organizationsRouter,
+  syncRouter,
+  auditRouter,
+  conflictsRouter,
+};
