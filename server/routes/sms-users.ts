@@ -95,6 +95,18 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
     const hasConfirmedOptIn = status === 'confirmed' && smsConsent.enabled;
     const isPendingConfirmation = status === 'pending_confirmation';
     
+    // Get campaign types - support both old single campaignType and new campaignTypes array
+    let campaignTypes: string[] = [];
+    if (Array.isArray(smsConsent.campaignTypes) && smsConsent.campaignTypes.length > 0) {
+      campaignTypes = smsConsent.campaignTypes;
+    } else if (smsConsent.campaignType) {
+      campaignTypes = [smsConsent.campaignType];
+    }
+    
+    // Check for specific campaign opt-ins
+    const hostsOptedIn = hasConfirmedOptIn && campaignTypes.includes('hosts');
+    const eventsOptedIn = hasConfirmedOptIn && campaignTypes.includes('events');
+    
     res.json({
       hasOptedIn: hasConfirmedOptIn,
       phoneNumber: smsConsent.phoneNumber || null,
@@ -103,7 +115,10 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
       hasConfirmedOptIn: hasConfirmedOptIn,
       confirmedAt: smsConsent.confirmedAt || null,
       confirmationMethod: smsConsent.confirmationMethod || null,
-      campaignType: smsConsent.campaignType || null,
+      campaignType: smsConsent.campaignType || null, // Legacy single type
+      campaignTypes: campaignTypes, // New array format
+      hostsOptedIn: hostsOptedIn,
+      eventsOptedIn: eventsOptedIn,
     });
   } catch (error) {
     logger.error('Error getting SMS status:', error);
@@ -243,6 +258,76 @@ router.post('/users/sms-opt-out', isAuthenticated, async (req, res) => {
     logger.error('Error processing SMS opt-out:', error);
     res.status(500).json({
       error: 'Failed to opt out of SMS reminders',
+      message: (error as Error).message,
+    });
+  }
+});
+
+/**
+ * Update SMS campaign types for already confirmed users
+ */
+const updateCampaignsSchema = z.object({
+  campaignTypes: z.array(z.enum(['hosts', 'events'])).min(1, 'At least one campaign type is required'),
+});
+
+router.patch('/users/sms-campaigns', isAuthenticated, async (req, res) => {
+  try {
+    const { campaignTypes } = updateCampaignsSchema.parse(req.body);
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const user = await storage.getUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const metadata = user.metadata as any || {};
+    const smsConsent = metadata.smsConsent || {};
+    
+    // Verify user has confirmed SMS opt-in
+    if (smsConsent.status !== 'confirmed' || !smsConsent.enabled) {
+      return res.status(400).json({ 
+        error: 'You must first confirm SMS opt-in before updating campaign preferences' 
+      });
+    }
+
+    // Update campaign types
+    const updatedMetadata = {
+      ...metadata,
+      smsConsent: {
+        ...smsConsent,
+        campaignTypes: campaignTypes,
+        campaignType: campaignTypes[0], // Keep legacy field in sync
+        campaignsUpdatedAt: new Date().toISOString(),
+      },
+    };
+
+    await storage.updateUser(userId, { metadata: updatedMetadata });
+
+    logger.log(`✅ SMS campaign types updated for user ${user.email}: ${campaignTypes.join(', ')}`);
+
+    res.json({
+      success: true,
+      message: 'SMS campaign preferences updated',
+      campaignTypes: campaignTypes,
+      hostsOptedIn: campaignTypes.includes('hosts'),
+      eventsOptedIn: campaignTypes.includes('events'),
+    });
+  } catch (error) {
+    logger.error('Error updating SMS campaigns:', error);
+    
+    if ((error as any).name === 'ZodError') {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: (error as any).errors,
+      });
+    }
+    
+    res.status(500).json({
+      error: 'Failed to update SMS campaign preferences',
       message: (error as Error).message,
     });
   }
