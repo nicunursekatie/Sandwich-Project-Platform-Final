@@ -66,6 +66,7 @@ import {
   ResourceRequirementsSection,
   type EventFormData,
 } from './form-sections';
+import { FIELD_MAPPINGS, isUiOnlyField } from './fieldConfig';
 
 /**
  * Intelligent merge of cached form data with current server data.
@@ -1271,6 +1272,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           : null,
       isDhlVan: formData.selfTransport ? false : !!formData.isDhlVan,
       // Toolkit information
+      toolkitSent: formData.toolkitSent || false,
       toolkitStatus: formData.toolkitStatus || null,
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
     };
@@ -1416,13 +1418,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         if (key === 'status' || key === 'scheduledEventDate') return; // Already handled
         
         // Map eventData keys to formData keys where they differ
-        // CRITICAL: All field name mismatches between server (eventData) and client (formData) must be mapped here
-        const serverToFormKeyMap: Record<string, string> = {
-          desiredEventDate: 'eventDate',
-          estimatedSandwichCount: 'totalSandwichCount',
-          estimatedSandwichRangeType: 'rangeSandwichType',
-        };
-        const formDataKey = serverToFormKeyMap[key] || key;
+        // CRITICAL: Use centralized field mapping from fieldConfig.ts
+        const formDataKey = (FIELD_MAPPINGS.serverToClient as Record<string, string>)[key] || key;
         
         if (hasChanged(formDataKey, eventData[key])) {
           filteredEventData[key] = eventData[key];
