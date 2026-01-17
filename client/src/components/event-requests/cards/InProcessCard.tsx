@@ -1305,18 +1305,18 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         </div>
 
         {/* Notes & Requirements Section */}
-        {(request.notes || request.schedulingNotes || request.planningNotes || request.additionalRequirements) && (
+        {(request.message || request.schedulingNotes || request.planningNotes || request.additionalRequirements) && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Notes & Requirements
             </h3>
             <div className="space-y-3">
-              {request.notes && (
+              {request.message && (
                 <div>
                   <p className="text-sm font-medium mb-1">Initial Request Notes:</p>
                   <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
-                    {request.notes}
+                    {request.message}
                   </p>
                 </div>
               )}

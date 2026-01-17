@@ -363,9 +363,9 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
           </div>
 
           {/* Notes */}
-          {request.notes && (
+          {request.message && (
             <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-sm text-gray-600">{request.notes}</p>
+              <p className="text-sm text-gray-600">{request.message}</p>
             </div>
           )}
         </div>

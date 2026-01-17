@@ -67,6 +67,193 @@ import {
   type EventFormData,
 } from './form-sections';
 
+/**
+ * Intelligent merge of cached form data with current server data.
+ *
+ * This function preserves:
+ * 1. User's intentional changes (cached value differs from original cached server value)
+ * 2. Server updates (current server value differs from original cached server value)
+ *
+ * When both user and server changed the same field (conflict), server wins
+ * but we track these conflicts for user notification.
+ *
+ * @param cachedFormData - Form data saved to localStorage
+ * @param originalServerData - Server data at time of caching (also saved to localStorage)
+ * @param currentServerData - Current server data (freshly loaded)
+ * @returns { mergedData, conflicts, serverUpdates }
+ */
+function intelligentMergeFormData(
+  cachedFormData: Record<string, any>,
+  originalServerData: Record<string, any> | null | undefined,
+  currentServerData: Record<string, any>
+): {
+  mergedData: Record<string, any>;
+  conflicts: string[];
+  serverUpdates: string[];
+  userChangesPreserved: string[];
+} {
+  const mergedData: Record<string, any> = { ...currentServerData };
+  const conflicts: string[] = [];
+  const serverUpdates: string[] = [];
+  const userChangesPreserved: string[] = [];
+
+  // If we don't have original server data, fall back to using cached data
+  // (for backwards compatibility with old cache format)
+  if (!originalServerData) {
+    logger.log('⚠️ No original server data in cache - using cached form data directly');
+    return {
+      mergedData: cachedFormData,
+      conflicts: [],
+      serverUpdates: [],
+      userChangesPreserved: Object.keys(cachedFormData),
+    };
+  }
+
+  // Helper to compare values (handles null/undefined/empty string equivalence)
+  const valuesEqual = (a: any, b: any): boolean => {
+    // Normalize null/undefined/empty string to null for comparison
+    const normalizeValue = (v: any) => {
+      if (v === null || v === undefined || v === '') return null;
+      if (typeof v === 'object') return JSON.stringify(v);
+      return v;
+    };
+    return normalizeValue(a) === normalizeValue(b);
+  };
+
+  // Process each field in the cached form data
+  for (const key of Object.keys(cachedFormData)) {
+    const cachedValue = cachedFormData[key];
+    const originalValue = originalServerData[key];
+    const currentValue = currentServerData[key];
+
+    const userChangedField = !valuesEqual(cachedValue, originalValue);
+    const serverChangedField = !valuesEqual(currentValue, originalValue);
+
+    if (userChangedField && serverChangedField) {
+      // CONFLICT: Both user and server changed this field
+      // Server wins, but track the conflict
+      conflicts.push(key);
+      mergedData[key] = currentValue;
+      logger.log(`🔀 Conflict on "${key}": user had "${cachedValue}", server has "${currentValue}" - using server value`);
+    } else if (userChangedField) {
+      // User changed this field, server didn't - preserve user's change
+      userChangesPreserved.push(key);
+      mergedData[key] = cachedValue;
+      logger.log(`✏️ Preserving user change on "${key}": "${cachedValue}"`);
+    } else if (serverChangedField) {
+      // Server changed this field, user didn't - use server's update
+      serverUpdates.push(key);
+      mergedData[key] = currentValue;
+      logger.log(`📥 Using server update on "${key}": "${currentValue}"`);
+    }
+    // If neither changed, currentServerData already has the right value
+  }
+
+  return { mergedData, conflicts, serverUpdates, userChangesPreserved };
+}
+
+/**
+ * Build form data object from an EventRequest.
+ * This is used both for initial form population and for intelligent merge.
+ */
+function buildFormDataFromEventRequest(
+  eventRequest: EventRequest | null,
+  formatDateForInput: (date: any) => string,
+  getPickupDateTimeForInput: (pickupDateTime: any, pickupTime: any, eventDate: string) => string,
+  parsePostgresArray: (value: any) => string[]
+): Record<string, any> {
+  // Parse sandwich types
+  const existingSandwichTypes = eventRequest?.sandwichTypes ?
+    (typeof eventRequest?.sandwichTypes === 'string' ?
+      JSON.parse(eventRequest.sandwichTypes) : eventRequest?.sandwichTypes) : [];
+  const totalCount = eventRequest?.estimatedSandwichCount || 0;
+  const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ?
+    (typeof eventRequest?.actualSandwichTypes === 'string' ?
+      JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
+
+  return {
+    eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+    backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
+    eventStartTime: eventRequest?.eventStartTime || '',
+    eventEndTime: eventRequest?.eventEndTime || '',
+    pickupTime: eventRequest?.pickupTime || '',
+    pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+    pickupDate: (() => {
+      const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+      return pickupDT ? pickupDT.split('T')[0] : '';
+    })(),
+    pickupTimeSeparate: (() => {
+      const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+      return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
+    })(),
+    eventAddress: eventRequest?.eventAddress || '',
+    deliveryDestination: eventRequest?.deliveryDestination || '',
+    holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
+    overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
+    overnightPickupTime: eventRequest?.overnightPickupTime || '',
+    sandwichTypes: existingSandwichTypes,
+    hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
+    driversNeeded: eventRequest?.driversNeeded || 0,
+    selfTransport: eventRequest?.selfTransport || false,
+    vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+    speakersNeeded: eventRequest?.speakersNeeded || 0,
+    volunteersNeeded: eventRequest?.volunteersNeeded || 0,
+    tspContact: eventRequest?.tspContact || '',
+    customTspContact: (eventRequest as any)?.customTspContact || '',
+    message: (eventRequest as any)?.message || '',
+    schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
+    planningNotes: (eventRequest as any)?.planningNotes || '',
+    nextAction: (eventRequest as any)?.nextAction || '',
+    totalSandwichCount: totalCount,
+    estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
+    estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
+    rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
+    volunteerCount: (eventRequest as any)?.volunteerCount || 0,
+    estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
+    adultCount: (eventRequest as any)?.adultCount || 0,
+    childrenCount: (eventRequest as any)?.childrenCount || 0,
+    firstName: eventRequest?.firstName || '',
+    lastName: eventRequest?.lastName || '',
+    email: eventRequest?.email || '',
+    phone: eventRequest?.phone || '',
+    organizationName: eventRequest?.organizationName || '',
+    department: eventRequest?.department || '',
+    organizationCategory: (eventRequest as any)?.organizationCategory || '',
+    schoolClassification: (eventRequest as any)?.schoolClassification || '',
+    backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
+    backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
+    backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
+    backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
+    backupContactRole: (eventRequest as any)?.backupContactRole || '',
+    previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
+    speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
+    speakerDuration: (eventRequest as any)?.speakerDuration || '',
+    deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
+    deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
+    assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
+    isDhlVan: (eventRequest as any)?.isDhlVan || false,
+    status: eventRequest?.status || 'new',
+    toolkitSent: eventRequest?.toolkitSent || false,
+    toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
+    toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+    socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
+    socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
+    socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
+    socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
+    socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
+    actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
+    actualSandwichTypes: existingActualSandwichTypes,
+    actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
+    actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
+    followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
+    followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
+    followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
+    followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
+    followUpNotes: (eventRequest as any)?.followUpNotes || '',
+    assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
+  };
+}
+
 // Event Scheduling Form Component
 interface EventSchedulingFormProps {
   eventRequest: EventRequest | null;
@@ -226,6 +413,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [getAutoSaveKey]);
 
   // Save form data to localStorage with debounce
+  // CRITICAL: Also save the original server values so we can perform intelligent merge on recovery
   const saveToLocalStorage = useCallback(() => {
     if (!formInitialized) return;
     try {
@@ -236,6 +424,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         attendeeMode,
         savedAt: new Date().toISOString(),
         eventId: eventRequest?.id || null,
+        // Store original server values at time of caching for intelligent merge
+        originalServerData: originalFormDataRef.current,
       };
       localStorage.setItem(getAutoSaveKey(), JSON.stringify(saveData));
     } catch (e) {
@@ -521,7 +711,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       // Use local variable since state update is async
       let recoveredFromStorage = false;
-      
+      // Track merged original data for intelligent merge recovery
+      let mergedOriginalFormDataRef: Record<string, any> | null = null;
+
       // Check for auto-saved data first (unless explicitly skipping recovery)
       const shouldSkipRecovery = skipRecoveryRef.current;
       skipRecoveryRef.current = false; // Reset the flag
@@ -556,21 +748,61 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               });
               clearAutoSave();
             } else if (hoursSinceSave < 24) {
-              // Restore saved form data
-              setFormData(savedData.formData);
+              // INTELLIGENT MERGE: Combine cached user changes with server updates
+              // Build current server data
+              const currentServerData = buildFormDataFromEventRequest(
+                eventRequest,
+                formatDateForInput,
+                getPickupDateTimeForInput,
+                parsePostgresArray
+              );
+
+              // Perform intelligent merge
+              const { mergedData, conflicts, serverUpdates, userChangesPreserved } = intelligentMergeFormData(
+                savedData.formData,
+                savedData.originalServerData, // May be undefined for old cache format
+                currentServerData
+              );
+
+              // Apply merged data
+              setFormData(mergedData as any);
               if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
               if (savedData.actualSandwichMode) setActualSandwichMode(savedData.actualSandwichMode);
               if (savedData.attendeeMode) setAttendeeMode(savedData.attendeeMode);
               setHasRecoveredData(true);
               recoveredFromStorage = true;
 
-              // Auto-expand completed details if needed
-              setShowCompletedDetails(savedData.formData?.status === 'completed');
+              // Also update originalFormDataRef to the merged result
+              // This ensures hasChanged() compares against the correct baseline
+              mergedOriginalFormDataRef = mergedData;
 
-              // Show toast notification
-              toast({
-                title: 'Form data recovered',
-                description: 'Your unsaved changes have been restored. Click "Discard" to start fresh.',
+              // Auto-expand completed details if needed
+              setShowCompletedDetails(mergedData.status === 'completed');
+
+              // Show appropriate toast notification based on merge results
+              if (conflicts.length > 0) {
+                toast({
+                  title: '⚠️ Changes merged with conflicts',
+                  description: `Your changes were recovered, but ${conflicts.length} field(s) were updated by others and will use the server values: ${conflicts.slice(0, 3).join(', ')}${conflicts.length > 3 ? '...' : ''}`,
+                  duration: 10000,
+                });
+              } else if (serverUpdates.length > 0 && userChangesPreserved.length > 0) {
+                toast({
+                  title: '✓ Changes merged successfully',
+                  description: `Your ${userChangesPreserved.length} unsaved change(s) were preserved, and ${serverUpdates.length} server update(s) were applied.`,
+                  duration: 6000,
+                });
+              } else if (userChangesPreserved.length > 0) {
+                toast({
+                  title: 'Form data recovered',
+                  description: 'Your unsaved changes have been restored. Click "Discard" to start fresh.',
+                });
+              }
+
+              logger.log('📋 Intelligent merge complete', {
+                userChangesPreserved: userChangesPreserved.length,
+                serverUpdates: serverUpdates.length,
+                conflicts: conflicts.length,
               });
 
               // CRITICAL: Mark form as initialized after recovery so auto-save continues working
@@ -600,99 +832,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
       
-      // If no recovered data, populate from eventRequest
+      // If no recovered data, populate from eventRequest using the helper function
       if (!recoveredFromStorage) {
-        setFormData({
-        eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
-        backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
-        eventStartTime: eventRequest?.eventStartTime || '',
-        eventEndTime: eventRequest?.eventEndTime || '',
-        pickupTime: eventRequest?.pickupTime || '',
-        pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
-        pickupDate: (() => {
-          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
-          return pickupDT ? pickupDT.split('T')[0] : '';
-        })(),
-        pickupTimeSeparate: (() => {
-          const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
-          return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
-        })(),
-        eventAddress: eventRequest?.eventAddress || '',
-        deliveryDestination: eventRequest?.deliveryDestination || '',
-        holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
-        overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
-        overnightPickupTime: eventRequest?.overnightPickupTime || '',
-        sandwichTypes: existingSandwichTypes,
-        hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
-        driversNeeded: eventRequest?.driversNeeded || 0,
-        selfTransport: eventRequest?.selfTransport || false,
-        vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
-        speakersNeeded: eventRequest?.speakersNeeded || 0,
-        volunteersNeeded: eventRequest?.volunteersNeeded || 0,
-        tspContact: eventRequest?.tspContact || '',
-        customTspContact: (eventRequest as any)?.customTspContact || '',
-        message: (eventRequest as any)?.message || '',
-        schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
-        planningNotes: (eventRequest as any)?.planningNotes || '',
-        nextAction: (eventRequest as any)?.nextAction || '',
-        totalSandwichCount: totalCount,
-        estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
-        estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
-        rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
-        volunteerCount: (eventRequest as any)?.volunteerCount || 0,
-        estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
-        adultCount: (eventRequest as any)?.adultCount || 0,
-        childrenCount: (eventRequest as any)?.childrenCount || 0,
-        // Contact information fields
-        firstName: eventRequest?.firstName || '',
-        lastName: eventRequest?.lastName || '',
-        email: eventRequest?.email || '',
-        phone: eventRequest?.phone || '',
-        organizationName: eventRequest?.organizationName || '',
-        department: eventRequest?.department || '',
-        organizationCategory: (eventRequest as any)?.organizationCategory || '',
-        schoolClassification: (eventRequest as any)?.schoolClassification || '',
-        // Backup contact fields
-        backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
-        backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
-        backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
-        backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
-        backupContactRole: (eventRequest as any)?.backupContactRole || '',
-        // Previously hosted flag
-        previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
-        // Speaker details
-        speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
-        speakerDuration: (eventRequest as any)?.speakerDuration || '',
-        // Delivery details for overnight holding
-        deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
-        deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
-        // Van driver assignment
-        assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
-        isDhlVan: (eventRequest as any)?.isDhlVan || false,
-        // Status
-        status: eventRequest?.status || 'new',
-        // Toolkit status
-        toolkitSent: eventRequest?.toolkitSent || false,
-        toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
-        toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
-        // Completed event tracking fields
-        socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
-        socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
-        socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
-        socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
-        socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
-        actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
-        actualSandwichTypes: existingActualSandwichTypes,
-        actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
-        actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
-        followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
-        followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
-        followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
-        followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
-        followUpNotes: (eventRequest as any)?.followUpNotes || '',
-        assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
-      });
-      
+        const serverFormData = buildFormDataFromEventRequest(
+          eventRequest,
+          formatDateForInput,
+          getPickupDateTimeForInput,
+          parsePostgresArray
+        );
+        setFormData(serverFormData as any);
+
         // Set mode based on existing data
         setSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
         setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
@@ -706,91 +855,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
       
       // Store original form data to detect changes later (preserve existing data)
-      // This always runs from server data for proper change detection
-      // Use setTimeout to ensure formData state has been set
+      // CRITICAL FIX: When we recovered from localStorage with intelligent merge,
+      // use the merged data as the baseline for change detection.
+      // Otherwise, use fresh server data.
+      //
+      // RACE CONDITION PROTECTION:
+      // We use setTimeout(0) to ensure React's state updates for formData have completed.
+      // IMPORTANT: originalFormDataRef.current MUST be set BEFORE setFormInitialized(true)
+      // because form submission checks formInitialized and expects originalFormDataRef to be ready.
       setTimeout(() => {
-        originalFormDataRef.current = {
-          eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
-          backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
-          eventStartTime: eventRequest?.eventStartTime || '',
-          eventEndTime: eventRequest?.eventEndTime || '',
-          pickupTime: eventRequest?.pickupTime || '',
-          pickupDateTime: getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
-          pickupDate: (() => {
-            const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
-            return pickupDT ? pickupDT.split('T')[0] : '';
-          })(),
-          pickupTimeSeparate: (() => {
-            const pickupDT = getPickupDateTimeForInput((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
-            return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
-          })(),
-          eventAddress: eventRequest?.eventAddress || '',
-          deliveryDestination: eventRequest?.deliveryDestination || '',
-          holdingOvernight: !!(eventRequest?.overnightHoldingLocation),
-          overnightHoldingLocation: eventRequest?.overnightHoldingLocation || '',
-          overnightPickupTime: eventRequest?.overnightPickupTime || '',
-          sandwichTypes: existingSandwichTypes,
-          hasRefrigeration: eventRequest?.hasRefrigeration?.toString() || '',
-          driversNeeded: eventRequest?.driversNeeded || 0,
-          selfTransport: eventRequest?.selfTransport || false,
-          vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
-          speakersNeeded: eventRequest?.speakersNeeded || 0,
-          volunteersNeeded: eventRequest?.volunteersNeeded || 0,
-          tspContact: eventRequest?.tspContact || '',
-          customTspContact: (eventRequest as any)?.customTspContact || '',
-          message: (eventRequest as any)?.message || '',
-          schedulingNotes: (eventRequest as any)?.schedulingNotes || '',
-          planningNotes: (eventRequest as any)?.planningNotes || '',
-          nextAction: (eventRequest as any)?.nextAction || '',
-          totalSandwichCount: totalCount,
-          estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
-          estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
-          rangeSandwichType: (eventRequest as any)?.estimatedSandwichRangeType || '',
-          volunteerCount: (eventRequest as any)?.volunteerCount || 0,
-          estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
-          adultCount: (eventRequest as any)?.adultCount || 0,
-          childrenCount: (eventRequest as any)?.childrenCount || 0,
-          firstName: eventRequest?.firstName || '',
-          lastName: eventRequest?.lastName || '',
-          email: eventRequest?.email || '',
-          phone: eventRequest?.phone || '',
-          organizationName: eventRequest?.organizationName || '',
-          department: eventRequest?.department || '',
-          organizationCategory: (eventRequest as any)?.organizationCategory || '',
-          schoolClassification: (eventRequest as any)?.schoolClassification || '',
-          backupContactFirstName: (eventRequest as any)?.backupContactFirstName || '',
-          backupContactLastName: (eventRequest as any)?.backupContactLastName || '',
-          backupContactEmail: (eventRequest as any)?.backupContactEmail || '',
-          backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
-          backupContactRole: (eventRequest as any)?.backupContactRole || '',
-          previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
-          speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
-          speakerDuration: (eventRequest as any)?.speakerDuration || '',
-          deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
-          deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
-          assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
-          isDhlVan: (eventRequest as any)?.isDhlVan || false,
-          status: eventRequest?.status || 'new',
-          toolkitSent: eventRequest?.toolkitSent || false,
-          toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
-          toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
-          socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
-          socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
-          socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
-          socialMediaPostCompletedDate: (eventRequest as any)?.socialMediaPostCompletedDate ? formatDateForInput((eventRequest as any).socialMediaPostCompletedDate) : '',
-          socialMediaPostNotes: (eventRequest as any)?.socialMediaPostNotes || '',
-          actualSandwichCount: (eventRequest as any)?.actualSandwichCount || 0,
-          actualSandwichTypes: existingActualSandwichTypes,
-          actualSandwichCountRecordedDate: (eventRequest as any)?.actualSandwichCountRecordedDate ? formatDateForInput((eventRequest as any).actualSandwichCountRecordedDate) : '',
-          actualSandwichCountRecordedBy: (eventRequest as any)?.actualSandwichCountRecordedBy || '',
-          followUpOneDayCompleted: (eventRequest as any)?.followUpOneDayCompleted || false,
-          followUpOneDayDate: (eventRequest as any)?.followUpOneDayDate ? formatDateForInput((eventRequest as any).followUpOneDayDate) : '',
-          followUpOneMonthCompleted: (eventRequest as any)?.followUpOneMonthCompleted || false,
-          followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
-          followUpNotes: (eventRequest as any)?.followUpNotes || '',
-          assignedRecipientIds: parsePostgresArray((eventRequest as any)?.assignedRecipientIds),
-        };
-        // Mark form as initialized after original data is stored
+        if (mergedOriginalFormDataRef) {
+          // Use the merged data as baseline - this ensures hasChanged() compares
+          // against what the user is actually seeing in the form
+          originalFormDataRef.current = mergedOriginalFormDataRef as typeof formData;
+          logger.log('📋 Using merged data as originalFormDataRef baseline');
+        } else {
+          // No merge happened - use fresh server data
+          originalFormDataRef.current = buildFormDataFromEventRequest(
+            eventRequest,
+            formatDateForInput,
+            getPickupDateTimeForInput,
+            parsePostgresArray
+          ) as typeof formData;
+        }
+        // Mark form as initialized AFTER original data is stored
         // This prevents race condition where form submits before useEffect populates data
         setFormInitialized(true);
       }, 0);
@@ -1261,6 +1349,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // only modified a few fields (e.g., just changing status)
       const filteredEventData: any = {};
       const original = originalFormDataRef.current;
+
+      // Safety check: ensure originalFormDataRef was properly initialized
+      // This should never happen if formInitialized check passed, but adds defense-in-depth
+      if (!original) {
+        logger.error('❌ originalFormDataRef.current is null - this indicates a race condition');
+        toast({
+          title: 'Please wait',
+          description: 'Form is still initializing. Please try again.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
       
       // Status change always needs to be sent (core operation)
       if (eventData.status !== undefined) {
@@ -1315,8 +1416,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         if (key === 'status' || key === 'scheduledEventDate') return; // Already handled
         
         // Map eventData keys to formData keys where they differ
-        const formDataKey = key === 'desiredEventDate' ? 'eventDate' :
-                          key === 'estimatedSandwichCount' ? 'totalSandwichCount' : key;
+        // CRITICAL: All field name mismatches between server (eventData) and client (formData) must be mapped here
+        const serverToFormKeyMap: Record<string, string> = {
+          desiredEventDate: 'eventDate',
+          estimatedSandwichCount: 'totalSandwichCount',
+          estimatedSandwichRangeType: 'rangeSandwichType',
+        };
+        const formDataKey = serverToFormKeyMap[key] || key;
         
         if (hasChanged(formDataKey, eventData[key])) {
           filteredEventData[key] = eventData[key];
