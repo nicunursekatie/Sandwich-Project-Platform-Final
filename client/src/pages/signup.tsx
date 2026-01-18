@@ -261,11 +261,8 @@ export default function SignupPage() {
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>
-                            Send me text alerts about volunteer opportunities and updates
+                            Yes, send me text message updates from The Sandwich Project
                           </FormLabel>
-                          <p className="text-sm text-muted-foreground">
-                            Get notified about upcoming events and sandwich collections via SMS
-                          </p>
                         </div>
                       </FormItem>
                     )}
