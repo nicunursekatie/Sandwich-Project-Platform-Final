@@ -77,6 +77,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       subject,
       content,
       isDraft,
+      parentMessageId,
       contextType,
       contextId,
       contextTitle,
@@ -123,7 +124,7 @@ export function createEmailRouter(deps: RouterDependencies) {
       recipientEmail: recipientEmail || user.email,
       subject,
       content: content || '', // Default to empty string for attachment-only messages
-      // Threading removed
+      parentMessageId: parentMessageId || null, // Reference to parent message for threading
       contextType: contextType || null,
       contextId: contextId || null,
       contextTitle: contextTitle || null,
