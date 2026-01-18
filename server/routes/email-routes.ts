@@ -276,6 +276,7 @@ export function createEmailRouter(deps: RouterDependencies) {
         subject: email.subject,
         createdAt: email.createdAt,
         isRead: email.isRead,
+        readAt: email.readAt,
         parentMessageId: email.parentMessageId,
         attachments: email.attachments,
       }));

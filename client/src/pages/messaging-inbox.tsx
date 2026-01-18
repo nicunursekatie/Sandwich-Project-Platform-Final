@@ -26,6 +26,7 @@ import {
   File,
   Download,
   ExternalLink,
+  Eye,
 } from 'lucide-react';
 import { MessageContextBadge } from '@/components/message-context-badge';
 import { logger } from '@/lib/logger';
@@ -400,6 +401,16 @@ export default function MessagingInbox() {
                                 <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                                   <Paperclip className="w-3 h-3" />
                                   <span>{parseAttachments(threadMsg.attachments).length} attachment{parseAttachments(threadMsg.attachments).length > 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+
+                              {/* Show read status */}
+                              {threadMsg.read && threadMsg.readAt && (
+                                <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                                  <Eye className="w-3 h-3" />
+                                  <span>
+                                    Read {formatDistanceToNow(new Date(threadMsg.readAt), { addSuffix: true })}
+                                  </span>
                                 </div>
                               )}
                             </div>

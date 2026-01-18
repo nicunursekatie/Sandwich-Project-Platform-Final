@@ -19,6 +19,7 @@ import { logger } from '../utils/production-safe-logger';
 export interface MessageWithSender extends Message {
   senderName?: string;
   senderEmail?: string;
+  readAt?: Date | null;
 }
 
 export interface ConversationSummary {
@@ -1290,6 +1291,21 @@ export class MessagingService {
           .limit(1);
 
         if (msg.length > 0) {
+          // Get read status for this user
+          const recipientStatus = await db
+            .select({
+              read: messageRecipients.read,
+              readAt: messageRecipients.readAt,
+            })
+            .from(messageRecipients)
+            .where(
+              and(
+                eq(messageRecipients.messageId, msgId),
+                eq(messageRecipients.recipientId, userId)
+              )
+            )
+            .limit(1);
+
           threadMessages.push({
             ...msg[0],
             senderName:
@@ -1297,7 +1313,8 @@ export class MessagingService {
               msg[0].senderEmail ||
               `User ${msg[0].senderId}` ||
               'Unknown User',
-            read: false,
+            read: recipientStatus[0]?.read || false,
+            readAt: recipientStatus[0]?.readAt || null,
           });
 
           // Find all replies

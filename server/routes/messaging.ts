@@ -169,21 +169,31 @@ router.post('/kudos/send', isAuthenticated, async (req: AuthenticatedRequest, re
       entityName,
     } = req.body;
 
-    if (!recipientId || !contextType || !contextId || !entityName) {
-      return res.status(400).json({ 
-        message: 'recipientId, contextType, contextId, and entityName are required' 
+    // For 'general' kudos, contextId and entityName are optional
+    const isGeneralKudos = contextType === 'general';
+
+    if (!recipientId || !contextType) {
+      return res.status(400).json({
+        message: 'recipientId and contextType are required'
       });
     }
 
-    logger.log(`[Messaging API] Sending kudos from ${user.email} to ${recipientId}`);
+    // For non-general kudos, contextId and entityName are required
+    if (!isGeneralKudos && (!contextId || !entityName)) {
+      return res.status(400).json({
+        message: 'contextId and entityName are required for non-general kudos'
+      });
+    }
+
+    logger.log(`[Messaging API] Sending kudos from ${user.email} to ${recipientId}, type: ${contextType}`);
 
     const result = await messagingService.sendKudos({
       senderId: user.id,
       recipientId,
       content,
       contextType,
-      contextId,
-      entityName,
+      contextId: contextId || `general-${Date.now()}`, // Generate unique ID for general kudos
+      entityName: entityName || 'General Recognition',
     });
 
     res.json(result);

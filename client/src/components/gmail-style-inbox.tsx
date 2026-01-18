@@ -46,6 +46,7 @@ import {
   Loader2,
   Video,
   MessageSquare,
+  Eye,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -1602,6 +1603,22 @@ export default function GmailStyleInbox() {
                                     <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
                                       <Paperclip className="h-3 w-3" />
                                       <span>{threadMsg.attachments.length} attachment{threadMsg.attachments.length > 1 ? 's' : ''}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Show read status */}
+                                  {(threadMsg as any).isRead && (threadMsg as any).readAt && (
+                                    <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                                      <Eye className="h-3 w-3" />
+                                      <span>
+                                        Read {(() => {
+                                          try {
+                                            return formatDistanceToNow(new Date((threadMsg as any).readAt), { addSuffix: true });
+                                          } catch {
+                                            return '';
+                                          }
+                                        })()}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
