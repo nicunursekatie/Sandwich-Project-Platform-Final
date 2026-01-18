@@ -217,7 +217,14 @@ export default function HostsManagementConsolidated() {
 
   // Filtered and searched hosts
   const filteredHosts = useMemo(() => {
-    let filtered = hostsWithContacts;
+    // First, filter out contacts with 'volunteer' role from each host
+    // These contacts should only appear in Volunteer Management, not Host Management
+    let filtered = hostsWithContacts.map((host) => ({
+      ...host,
+      contacts: host.contacts.filter(
+        (contact) => contact.role?.toLowerCase() !== 'volunteer'
+      ),
+    }));
 
     // Apply search filter
     if (searchTerm) {
@@ -818,16 +825,24 @@ export default function HostsManagementConsolidated() {
   }
 
   // Filter hosts by status and contact count
-  const visibleHosts = hostsWithContacts.filter((host) => {
-    // Always hide "hidden" hosts
-    if (host.status === 'hidden') return false;
+  // Also exclude contacts with 'volunteer' role for display consistency
+  const visibleHosts = hostsWithContacts
+    .map((host) => ({
+      ...host,
+      contacts: host.contacts.filter(
+        (contact) => contact.role?.toLowerCase() !== 'volunteer'
+      ),
+    }))
+    .filter((host) => {
+      // Always hide "hidden" hosts
+      if (host.status === 'hidden') return false;
 
-    // Optionally hide hosts with no contacts
-    if (hideEmptyHosts && (!host.contacts || host.contacts.length === 0))
-      return false;
+      // Optionally hide hosts with no contacts (after filtering out volunteers)
+      if (hideEmptyHosts && (!host.contacts || host.contacts.length === 0))
+        return false;
 
-    return true;
-  });
+      return true;
+    });
 
   const activeHosts = visibleHosts.filter((host) => host.status === 'active');
   const inactiveHosts = visibleHosts.filter(
