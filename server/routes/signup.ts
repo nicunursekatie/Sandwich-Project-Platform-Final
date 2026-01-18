@@ -6,24 +6,154 @@ import { users } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { getDefaultPermissionsForRole, PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
+import { generateVerificationCode, sendConfirmationSMS } from '../sms-service';
 
 const router = Router();
+
+// In-memory store for signup SMS verification (temporary until user is created)
+const signupSmsVerifications = new Map<string, {
+  code: string;
+  phone: string;
+  expiry: Date;
+  verified: boolean;
+}>();
+
+// Clean up expired verifications every 5 minutes
+setInterval(() => {
+  const now = new Date();
+  for (const [key, value] of signupSmsVerifications.entries()) {
+    if (value.expiry < now) {
+      signupSmsVerifications.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
 
 const signupSchema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().min(10),
-  address: z.string().min(5),
-  city: z.string().min(2),
-  state: z.string().min(2),
-  zipCode: z.string().min(5),
-  role: z.enum(['volunteer', 'host', 'driver', 'coordinator']),
-  availability: z.array(z.string()).min(1),
-  interests: z.array(z.string()).optional(),
-  emergencyContact: z.string().min(5),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  optInTextAlerts: z.boolean().optional(),
+  smsVerified: z.boolean().optional(),
   agreeToTerms: z.boolean().refine((val) => val === true),
   agreeToBackground: z.boolean().optional(),
+});
+
+// Send SMS verification for signup (no auth required)
+router.post('/auth/signup/send-sms-verification', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    // Clean and format phone number
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    const formattedPhone = cleanPhone.length === 10 ? `+1${cleanPhone}` : cleanPhone;
+
+    // Validate phone number format (basic US phone number validation)
+    if (!/^\+1\d{10}$/.test(formattedPhone)) {
+      return res.status(400).json({ 
+        error: 'Invalid phone number format. Please enter a valid US phone number.' 
+      });
+    }
+
+    // Generate verification code
+    const verificationCode = generateVerificationCode();
+    
+    // Send confirmation SMS
+    const result = await sendConfirmationSMS(formattedPhone, verificationCode);
+    
+    if (!result.success) {
+      return res.status(500).json({
+        error: 'Failed to send verification SMS',
+        message: result.message,
+      });
+    }
+
+    // Store verification info (keyed by phone number)
+    signupSmsVerifications.set(formattedPhone, {
+      code: verificationCode,
+      phone: formattedPhone,
+      expiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+      verified: false,
+    });
+
+    logger.log(`📱 SMS verification code sent to ${formattedPhone} for signup`);
+
+    res.json({
+      success: true,
+      message: 'Verification code sent! Please enter the code to confirm your phone number.',
+      phone: formattedPhone,
+    });
+  } catch (error) {
+    logger.error('Error sending signup SMS verification:', error);
+    res.status(500).json({
+      error: 'Failed to send verification SMS',
+      message: (error as Error).message,
+    });
+  }
+});
+
+// Verify SMS code for signup (no auth required)
+router.post('/auth/signup/verify-sms-code', async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    
+    if (!phone || !code) {
+      return res.status(400).json({ error: 'Phone number and verification code are required' });
+    }
+
+    // Clean and format phone number
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    const formattedPhone = cleanPhone.length === 10 ? `+1${cleanPhone}` : cleanPhone;
+
+    // Get stored verification
+    const verification = signupSmsVerifications.get(formattedPhone);
+    
+    if (!verification) {
+      return res.status(400).json({ 
+        error: 'No verification pending for this phone number. Please request a new code.' 
+      });
+    }
+
+    // Check if expired
+    if (verification.expiry < new Date()) {
+      signupSmsVerifications.delete(formattedPhone);
+      return res.status(400).json({ 
+        error: 'Verification code has expired. Please request a new code.' 
+      });
+    }
+
+    // Check code
+    if (verification.code !== code.trim()) {
+      return res.status(400).json({ error: 'Invalid verification code. Please try again.' });
+    }
+
+    // Mark as verified and clear the code to prevent reuse
+    verification.verified = true;
+    verification.code = ''; // Clear code after successful verification
+    signupSmsVerifications.set(formattedPhone, verification);
+
+    logger.log(`✅ SMS verification successful for ${formattedPhone} during signup`);
+
+    res.json({
+      success: true,
+      message: 'Phone number verified successfully!',
+      verified: true,
+    });
+  } catch (error) {
+    logger.error('Error verifying signup SMS code:', error);
+    res.status(500).json({
+      error: 'Failed to verify code',
+      message: (error as Error).message,
+    });
+  }
 });
 
 router.post('/auth/signup', async (req, res) => {
@@ -43,6 +173,35 @@ router.post('/auth/signup', async (req, res) => {
       });
     }
 
+    // Check if SMS was verified (if they opted in)
+    let smsConsentData: any = null;
+    if (validatedData.optInTextAlerts) {
+      // Clean and format phone number
+      const cleanPhone = validatedData.phone.replace(/[^\d+]/g, '');
+      const formattedPhone = cleanPhone.length === 10 ? `+1${cleanPhone}` : cleanPhone;
+      
+      // Verify the SMS was actually verified - REQUIRE verification if opting in
+      const verification = signupSmsVerifications.get(formattedPhone);
+      if (!verification?.verified) {
+        return res.status(400).json({
+          message: 'Phone verification required. Please verify your phone number to opt in to text alerts.',
+        });
+      }
+      
+      smsConsentData = {
+        status: 'confirmed',
+        phoneNumber: formattedPhone,
+        enabled: true,
+        confirmedAt: new Date().toISOString(),
+        confirmationMethod: 'verification_code',
+        campaignTypes: ['hosts', 'events'], // Opt into both campaign types
+        consentTimestamp: new Date().toISOString(),
+        consentVersion: '1.0',
+      };
+      // Clean up the verification
+      signupSmsVerifications.delete(formattedPhone);
+    }
+
     // Create user account with registration data using direct database insert
     const userId =
       'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -56,31 +215,32 @@ router.post('/auth/signup', async (req, res) => {
         email: validatedData.email,
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
-        role: validatedData.role,
+        phoneNumber: validatedData.phone,
+        role: 'volunteer', // Default role for new signups
         permissions: [] as any, // Cast to any to avoid type issues
         isActive: false, // Requires approval
+        wantsTextAlerts: validatedData.optInTextAlerts && validatedData.smsVerified,
         metadata: {
           registrationData: validatedData,
           status: 'pending_approval',
           registrationDate: new Date().toISOString(),
+          ...(smsConsentData && { smsConsent: smsConsentData }),
         } as any, // Cast to any for metadata
       } as any)
       .returning();
     logger.log('User created successfully:', newUser);
 
     // Store registration details in a simple format for admin review
+    const addressParts = [validatedData.address, validatedData.city, validatedData.state, validatedData.zipCode]
+      .filter(Boolean)
+      .join(', ');
     logger.log(`
 === NEW USER REGISTRATION ===
 Name: ${validatedData.firstName} ${validatedData.lastName}
 Email: ${validatedData.email}
 Phone: ${validatedData.phone}
-Role: ${validatedData.role}
-Address: ${validatedData.address}, ${validatedData.city}, ${
-      validatedData.state
-    } ${validatedData.zipCode}
-Availability: ${validatedData.availability.join(', ')}
-Interests: ${validatedData.interests?.join(', ') || 'None specified'}
-Emergency Contact: ${validatedData.emergencyContact}
+Address: ${addressParts || 'Not provided'}
+SMS Alerts: ${smsConsentData ? 'Opted in and verified' : 'Not opted in'}
 Terms Agreed: ${validatedData.agreeToTerms}
 Background Check Consent: ${validatedData.agreeToBackground || false}
 Registration Date: ${new Date().toISOString()}

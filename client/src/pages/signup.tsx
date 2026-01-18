@@ -23,7 +23,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Users, CheckCircle } from 'lucide-react';
+import { Users, CheckCircle, Loader2, Phone } from 'lucide-react';
 import { Link } from 'wouter';
 
 const signupSchema = z.object({
@@ -36,6 +36,7 @@ const signupSchema = z.object({
   state: z.string().optional(),
   zipCode: z.string().optional(),
   optInTextAlerts: z.boolean().optional(),
+  smsVerified: z.boolean().optional(),
   agreeToTerms: z
     .boolean()
     .refine(
@@ -49,6 +50,8 @@ type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [smsVerificationState, setSmsVerificationState] = useState<'idle' | 'sending' | 'pending' | 'verified'>('idle');
+  const [verificationCode, setVerificationCode] = useState('');
   const { toast } = useToast();
 
   const form = useForm<SignupForm>({
@@ -63,8 +66,51 @@ export default function SignupPage() {
       state: '',
       zipCode: '',
       optInTextAlerts: false,
+      smsVerified: false,
       agreeToTerms: false,
       agreeToBackground: false,
+    },
+  });
+
+  const sendVerificationMutation = useMutation({
+    mutationFn: async (phone: string) => {
+      return await apiRequest('/api/auth/signup/send-sms-verification', 'POST', { phone });
+    },
+    onSuccess: () => {
+      setSmsVerificationState('pending');
+      toast({
+        title: 'Verification Code Sent',
+        description: 'Please check your phone and enter the 6-digit code.',
+      });
+    },
+    onError: (error: any) => {
+      setSmsVerificationState('idle');
+      toast({
+        title: 'Failed to Send Code',
+        description: error.message || 'Could not send verification code. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const verifyCodeMutation = useMutation({
+    mutationFn: async ({ phone, code }: { phone: string; code: string }) => {
+      return await apiRequest('/api/auth/signup/verify-sms-code', 'POST', { phone, code });
+    },
+    onSuccess: () => {
+      setSmsVerificationState('verified');
+      form.setValue('smsVerified', true);
+      toast({
+        title: 'Phone Verified',
+        description: 'Your phone number has been verified successfully!',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Verification Failed',
+        description: error.message || 'Invalid code. Please try again.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -91,7 +137,43 @@ export default function SignupPage() {
     },
   });
 
+  const handleSendVerification = () => {
+    const phone = form.getValues('phone');
+    if (!phone || phone.length < 10) {
+      toast({
+        title: 'Phone Number Required',
+        description: 'Please enter a valid phone number first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setSmsVerificationState('sending');
+    sendVerificationMutation.mutate(phone);
+  };
+
+  const handleVerifyCode = () => {
+    const phone = form.getValues('phone');
+    if (!verificationCode || verificationCode.length < 6) {
+      toast({
+        title: 'Invalid Code',
+        description: 'Please enter the 6-digit verification code.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    verifyCodeMutation.mutate({ phone, code: verificationCode });
+  };
+
   const onSubmit = (data: SignupForm) => {
+    // Block submission if opted in to text alerts but not verified
+    if (data.optInTextAlerts && smsVerificationState !== 'verified') {
+      toast({
+        title: 'Phone Verification Required',
+        description: 'Please verify your phone number to receive text alerts.',
+        variant: 'destructive',
+      });
+      return;
+    }
     signupMutation.mutate(data);
   };
 
@@ -248,25 +330,108 @@ export default function SignupPage() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="optInTextAlerts"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-blue-50">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            Yes, send me text message updates from The Sandwich Project
-                          </FormLabel>
-                        </div>
-                      </FormItem>
+                  <div className="rounded-md border p-4 bg-blue-50 space-y-3">
+                    <FormField
+                      control={form.control}
+                      name="optInTextAlerts"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                if (!checked) {
+                                  setSmsVerificationState('idle');
+                                  setVerificationCode('');
+                                  form.setValue('smsVerified', false);
+                                }
+                              }}
+                              disabled={smsVerificationState === 'verified'}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>
+                              Yes, send me text message updates from The Sandwich Project
+                            </FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {form.watch('optInTextAlerts') && smsVerificationState === 'idle' && (
+                      <div className="pl-7">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleSendVerification}
+                          disabled={sendVerificationMutation.isPending}
+                          className="bg-brand-primary hover:bg-brand-primary-dark"
+                        >
+                          {sendVerificationMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <Phone className="mr-2 h-4 w-4" />
+                              Send Verification Code
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          We'll send a code to verify your phone number
+                        </p>
+                      </div>
                     )}
-                  />
+
+                    {form.watch('optInTextAlerts') && smsVerificationState === 'pending' && (
+                      <div className="pl-7 space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            placeholder="Enter 6-digit code"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            className="w-40"
+                            maxLength={6}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleVerifyCode}
+                            disabled={verifyCodeMutation.isPending || verificationCode.length < 6}
+                            className="bg-brand-primary hover:bg-brand-primary-dark"
+                          >
+                            {verifyCodeMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              'Verify'
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Check your phone for a 6-digit code
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleSendVerification}
+                          className="text-xs text-brand-primary hover:underline"
+                          disabled={sendVerificationMutation.isPending}
+                        >
+                          Resend code
+                        </button>
+                      </div>
+                    )}
+
+                    {form.watch('optInTextAlerts') && smsVerificationState === 'verified' && (
+                      <div className="pl-7 flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="text-sm font-medium">Phone number verified!</span>
+                      </div>
+                    )}
+                  </div>
 
                   <FormField
                     control={form.control}
