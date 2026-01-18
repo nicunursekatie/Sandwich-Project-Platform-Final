@@ -1428,21 +1428,36 @@ export const insertAgendaSectionSchema = createInsertSchema(
 export const insertDriverAgreementSchema = createInsertSchema(
   driverAgreements
 ).omit({ id: true, submittedAt: true });
-export const insertDriverSchema = createInsertSchema(drivers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+
+// Helper for nullable timestamp fields that can come as string, Date, or null
+const nullableTimestampField = z
+  .union([
+    z.string().transform((val) => (val === '' ? null : new Date(val))),
+    z.date(),
+    z.null(),
+  ])
+  .optional();
+
+export const insertDriverSchema = createInsertSchema(drivers)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    // Convert all timestamp fields from string to Date or null
+    unavailableUntil: nullableTimestampField,
+    unavailableStartDate: nullableTimestampField,
+    checkInDate: nullableTimestampField,
+    geocodedAt: nullableTimestampField,
+  });
 export const insertDriverVehicleSchema = createInsertSchema(driverVehicles).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
-export const insertVolunteerSchema = createInsertSchema(volunteers).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertVolunteerSchema = createInsertSchema(volunteers)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    // Convert all timestamp fields from string to Date or null
+    geocodedAt: nullableTimestampField,
+  });
 export const insertHostSchema = createInsertSchema(hosts)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -1455,11 +1470,14 @@ export const insertHostSchema = createInsertSchema(hosts)
         'Host name cannot be empty or just whitespace'
       ),
   });
-export const insertHostContactSchema = createInsertSchema(hostContacts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertHostContactSchema = createInsertSchema(hostContacts)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    // Convert all timestamp fields from string to Date or null
+    geocodedAt: nullableTimestampField,
+    lastScraped: nullableTimestampField,
+  });
+
 export const insertRecipientSchema = createInsertSchema(recipients)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -1471,14 +1489,11 @@ export const insertRecipientSchema = createInsertSchema(recipients)
         z.null(),
       ])
       .optional(),
-    // Convert contractSignedDate from string to Date or null
-    contractSignedDate: z
-      .union([
-        z.string().transform((val) => (val === '' ? null : new Date(val))),
-        z.date(),
-        z.null(),
-      ])
-      .optional(),
+    // Convert all timestamp fields from string to Date or null
+    contractSignedDate: nullableTimestampField,
+    sharedPostDate: nullableTimestampField,
+    partnershipStartDate: nullableTimestampField,
+    geocodedAt: nullableTimestampField,
   });
 export const insertRecipientTspContactSchema = createInsertSchema(
   recipientTspContacts
@@ -1712,10 +1727,12 @@ export const notifications = pgTable('notifications', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true,
-});
+export const insertNotificationSchema = createInsertSchema(notifications)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    // Convert expiresAt from string to Date or null
+    expiresAt: nullableTimestampField,
+  });
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
@@ -2822,7 +2839,7 @@ export const insertEventReminderSchema = createInsertSchema(eventReminders)
   .extend({
     dueDate: z.union([
       z.date(),
-      z.string().transform((str) => (str ? new Date(str) : new Date())),
+      z.string().transform((str) => (str && str !== '' ? new Date(str) : new Date())),
     ]),
   });
 
