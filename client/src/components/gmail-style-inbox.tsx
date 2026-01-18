@@ -45,6 +45,7 @@ import {
   File,
   Loader2,
   Video,
+  MessageSquare,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -317,6 +318,19 @@ export default function GmailStyleInbox() {
   const { data: drafts = [] } = useQuery<Draft[]>({
     queryKey: ['/api/drafts'],
     enabled: activeFolder === 'drafts',
+  });
+
+  // Fetch full thread when a message is selected
+  const { data: threadMessages = [] } = useQuery<Message[]>({
+    queryKey: ['/api/emails', selectedMessage?.id, 'thread'],
+    queryFn: async () => {
+      if (!selectedMessage?.id) return [];
+      // Only fetch thread for emails with parentMessageId (replies)
+      // or regular emails to get any replies they have
+      const response = await apiRequest('GET', `/api/emails/${selectedMessage.id}/thread`);
+      return Array.isArray(response) ? response : [];
+    },
+    enabled: !!selectedMessage?.id && (selectedMessage as any)?.messageType !== 'kudos',
   });
 
   // Helper to invalidate email-related queries efficiently
@@ -1517,35 +1531,91 @@ export default function GmailStyleInbox() {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className="whitespace-pre-wrap">
-                          {selectedMessage.content}
-                        </div>
+                        {/* Full Thread View - Show all messages in conversation */}
+                        {threadMessages.length > 1 ? (
+                          <div className="space-y-4">
+                            {/* Thread header */}
+                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 pb-2 border-b border-gray-200">
+                              <MessageSquare className="h-4 w-4" />
+                              <span>Conversation Thread ({threadMessages.length} messages)</span>
+                            </div>
 
-                        {/* Display original message this is replying to */}
-                        {selectedMessage.parentMessage && (
-                          <div className="mt-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                            <div className="flex items-center gap-2 mb-2 text-sm text-blue-700 font-medium">
-                              <Reply className="h-4 w-4" />
-                              <span>In reply to message from {selectedMessage.parentMessage.senderName}</span>
-                              {selectedMessage.parentMessage.createdAt && (
-                                <span className="text-blue-500 text-xs ml-auto">
-                                  {(() => {
-                                    try {
-                                      return formatDistanceToNow(new Date(selectedMessage.parentMessage.createdAt), { addSuffix: true });
-                                    } catch {
-                                      return '';
-                                    }
-                                  })()}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-700 whitespace-pre-wrap bg-white p-3 rounded border border-blue-200">
-                              {selectedMessage.parentMessage.content}
-                            </div>
+                            {/* All messages in thread */}
+                            {threadMessages.map((threadMsg, index) => {
+                              const isCurrentMessage = threadMsg.id === selectedMessage.id;
+                              const isLatestMessage = index === threadMessages.length - 1;
+
+                              return (
+                                <div
+                                  key={threadMsg.id}
+                                  className={`p-4 rounded-lg border ${
+                                    isCurrentMessage
+                                      ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200'
+                                      : 'bg-gray-50 border-gray-200'
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Avatar className="h-7 w-7">
+                                        <AvatarFallback className={`text-xs ${isCurrentMessage ? 'bg-amber-200 text-amber-800' : 'bg-gray-200 text-gray-600'}`}>
+                                          {threadMsg.senderName
+                                            ?.split(' ')
+                                            .map((n: string) => n[0])
+                                            .join('')
+                                            .toUpperCase() || 'U'}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <span className={`text-sm font-semibold ${isCurrentMessage ? 'text-amber-900' : 'text-gray-800'}`}>
+                                          {threadMsg.senderName}
+                                        </span>
+                                        {isCurrentMessage && (
+                                          <Badge className="ml-2 text-xs bg-amber-100 text-amber-700 border-amber-300">
+                                            Current
+                                          </Badge>
+                                        )}
+                                        {index === 0 && (
+                                          <Badge variant="outline" className="ml-2 text-xs text-gray-500">
+                                            Original
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <span className="text-xs text-gray-500">
+                                      {(() => {
+                                        try {
+                                          return threadMsg.createdAt
+                                            ? formatDistanceToNow(new Date(threadMsg.createdAt), { addSuffix: true })
+                                            : '';
+                                        } catch {
+                                          return '';
+                                        }
+                                      })()}
+                                    </span>
+                                  </div>
+                                  <div className={`text-sm whitespace-pre-wrap ${isCurrentMessage ? 'text-gray-900' : 'text-gray-700'}`}>
+                                    {threadMsg.content}
+                                  </div>
+
+                                  {/* Show attachments for each message */}
+                                  {threadMsg.attachments && threadMsg.attachments.length > 0 && (
+                                    <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                                      <Paperclip className="h-3 w-3" />
+                                      <span>{threadMsg.attachments.length} attachment{threadMsg.attachments.length > 1 ? 's' : ''}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Single message view (no thread or only one message) */
+                          <div className="whitespace-pre-wrap">
+                            {selectedMessage.content}
                           </div>
                         )}
 
-                        {/* Display attachments if present */}
+                        {/* Display attachments for current message if present */}
                         {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
                           <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                             <div className="flex items-center gap-2 mb-3">

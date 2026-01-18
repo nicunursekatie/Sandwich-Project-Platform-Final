@@ -552,8 +552,83 @@ export class EmailService {
     }
   }
 
-  // THREADING FUNCTIONALITY REMOVED as requested
-  // Email system now provides simple flat message list without threading complexity
+  /**
+   * Get full thread chain for an email (all ancestors and descendants)
+   * This walks up the parent chain and down through replies to build the complete thread
+   */
+  async getEmailThread(
+    emailId: number,
+    userId: string
+  ): Promise<EmailMessage[]> {
+    try {
+      // First, find the root of this thread by walking up the parent chain
+      let rootId = emailId;
+      let currentEmail = await this.getEmailById(emailId, userId);
+
+      if (!currentEmail) {
+        return [];
+      }
+
+      // Walk up to find the root (oldest message in thread)
+      while (currentEmail?.parentMessageId) {
+        const parentEmail = await this.getEmailById(currentEmail.parentMessageId, userId);
+        if (parentEmail) {
+          rootId = parentEmail.id;
+          currentEmail = parentEmail;
+        } else {
+          break;
+        }
+      }
+
+      // Now collect all messages in the thread starting from root
+      const threadMessages: EmailMessage[] = [];
+      const processedIds = new Set<number>();
+
+      // Helper function to recursively get all descendants
+      const collectThreadMessages = async (messageId: number) => {
+        if (processedIds.has(messageId)) return;
+        processedIds.add(messageId);
+
+        const message = await this.getEmailById(messageId, userId);
+        if (message) {
+          threadMessages.push(message);
+
+          // Find all replies to this message
+          const replies = await db
+            .select()
+            .from(emailMessages)
+            .where(
+              and(
+                eq(emailMessages.parentMessageId, messageId),
+                or(
+                  eq(emailMessages.senderId, userId),
+                  eq(emailMessages.recipientId, userId)
+                )
+              )
+            )
+            .orderBy(emailMessages.createdAt);
+
+          for (const reply of replies) {
+            await collectThreadMessages(reply.id);
+          }
+        }
+      };
+
+      await collectThreadMessages(rootId);
+
+      // Sort by creation date (oldest first for thread view)
+      threadMessages.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      return threadMessages;
+    } catch (error) {
+      logger.error('Failed to get email thread:', error);
+      throw error;
+    }
+  }
 
   /**
    * Search emails

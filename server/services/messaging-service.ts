@@ -1201,6 +1201,135 @@ export class MessagingService {
   }
 
   /**
+   * Get full message thread (all ancestors and descendants)
+   * This walks up the parent chain and down through replies to build the complete thread
+   */
+  async getMessageThread(messageId: number, userId: string): Promise<MessageWithSender[]> {
+    try {
+      // First, get the current message
+      const currentMessage = await db
+        .select({
+          id: messages.id,
+          senderId: messages.senderId,
+          content: messages.content,
+          contextType: messages.contextType,
+          contextId: messages.contextId,
+          createdAt: messages.createdAt,
+          replyToMessageId: messages.replyToMessageId,
+          replyToContent: messages.replyToContent,
+          replyToSender: messages.replyToSender,
+          senderName: users.displayName,
+          senderEmail: users.email,
+        })
+        .from(messages)
+        .leftJoin(users, eq(messages.senderId, users.id))
+        .where(eq(messages.id, messageId))
+        .limit(1);
+
+      if (currentMessage.length === 0) {
+        return [];
+      }
+
+      // Walk up to find the root message
+      let rootId = messageId;
+      let currentMsg = currentMessage[0];
+
+      while (currentMsg.replyToMessageId) {
+        const parentMessage = await db
+          .select({
+            id: messages.id,
+            senderId: messages.senderId,
+            content: messages.content,
+            contextType: messages.contextType,
+            contextId: messages.contextId,
+            createdAt: messages.createdAt,
+            replyToMessageId: messages.replyToMessageId,
+            replyToContent: messages.replyToContent,
+            replyToSender: messages.replyToSender,
+            senderName: users.displayName,
+            senderEmail: users.email,
+          })
+          .from(messages)
+          .leftJoin(users, eq(messages.senderId, users.id))
+          .where(eq(messages.id, currentMsg.replyToMessageId))
+          .limit(1);
+
+        if (parentMessage.length > 0) {
+          rootId = parentMessage[0].id;
+          currentMsg = parentMessage[0];
+        } else {
+          break;
+        }
+      }
+
+      // Collect all messages in thread starting from root
+      const threadMessages: MessageWithSender[] = [];
+      const processedIds = new Set<number>();
+
+      const collectMessages = async (msgId: number) => {
+        if (processedIds.has(msgId)) return;
+        processedIds.add(msgId);
+
+        const msg = await db
+          .select({
+            id: messages.id,
+            senderId: messages.senderId,
+            content: messages.content,
+            contextType: messages.contextType,
+            contextId: messages.contextId,
+            createdAt: messages.createdAt,
+            replyToMessageId: messages.replyToMessageId,
+            replyToContent: messages.replyToContent,
+            replyToSender: messages.replyToSender,
+            senderName: users.displayName,
+            senderEmail: users.email,
+          })
+          .from(messages)
+          .leftJoin(users, eq(messages.senderId, users.id))
+          .where(eq(messages.id, msgId))
+          .limit(1);
+
+        if (msg.length > 0) {
+          threadMessages.push({
+            ...msg[0],
+            senderName:
+              msg[0].senderName ||
+              msg[0].senderEmail ||
+              `User ${msg[0].senderId}` ||
+              'Unknown User',
+            read: false,
+          });
+
+          // Find all replies
+          const replies = await db
+            .select({ id: messages.id })
+            .from(messages)
+            .where(eq(messages.replyToMessageId, msgId))
+            .orderBy(messages.createdAt);
+
+          for (const reply of replies) {
+            await collectMessages(reply.id);
+          }
+        }
+      };
+
+      await collectMessages(rootId);
+
+      // Sort by creation date (oldest first)
+      threadMessages.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+
+      return threadMessages;
+    } catch (error) {
+      logger.error('Failed to get message thread:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Trigger notifications for a message
    */
   private async triggerNotifications(

@@ -106,7 +106,18 @@ export default function MessagingInbox() {
     },
   });
 
-  // Fetch replies for selected message (thread view)
+  // Fetch full thread for selected message (all messages in conversation)
+  const { data: threadData = [] } = useQuery({
+    queryKey: ['/api/messaging', selectedMessage?.id, 'thread'],
+    queryFn: async () => {
+      if (!selectedMessage?.id) return [];
+      const response = await apiRequest('GET', `/api/messaging/${selectedMessage.id}/thread`);
+      return response.thread || [];
+    },
+    enabled: !!selectedMessage?.id,
+  });
+
+  // Fetch replies for selected message (for backward compatibility)
   const { data: repliesData = [] } = useQuery({
     queryKey: ['/api/messaging', selectedMessage?.id, 'replies'],
     queryFn: async () => {
@@ -331,34 +342,81 @@ export default function MessagingInbox() {
                 {/* Message Content */}
                 <ScrollArea className="flex-1">
                   <div className="prose max-w-none">
-                    {/* Show original message if this is a reply */}
-                    {selectedMessage.replyToMessageId && selectedMessage.replyToContent && (
-                      <div className="mb-6 pb-6 border-b border-gray-200">
-                        <div className="text-xs text-gray-500 mb-2 font-medium">
-                          Original message
+                    {/* Full Thread View - Show all messages in conversation */}
+                    {threadData.length > 1 ? (
+                      <div className="space-y-4">
+                        {/* Thread header */}
+                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 pb-2 border-b border-gray-200">
+                          <MessageSquare className="w-4 h-4" />
+                          <span>Conversation Thread ({threadData.length} messages)</span>
                         </div>
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          {selectedMessage.replyToSender && (
-                            <div className="text-sm font-semibold text-gray-700 mb-2">
-                              {selectedMessage.replyToSender}
+
+                        {/* All messages in thread */}
+                        {threadData.map((threadMsg: Message, index: number) => {
+                          const isCurrentMessage = threadMsg.id === selectedMessage.id;
+
+                          return (
+                            <div
+                              key={threadMsg.id}
+                              className={`p-4 rounded-lg border ${
+                                isCurrentMessage
+                                  ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
+                                  : 'bg-gray-50 border-gray-200'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7">
+                                    <AvatarFallback className={`text-xs ${isCurrentMessage ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-600'}`}>
+                                      {getInitials(threadMsg.senderName)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <span className={`text-sm font-semibold ${isCurrentMessage ? 'text-blue-900' : 'text-gray-800'}`}>
+                                      {threadMsg.senderName}
+                                    </span>
+                                    {isCurrentMessage && (
+                                      <Badge className="ml-2 text-xs bg-blue-100 text-blue-700 border-blue-300">
+                                        Current
+                                      </Badge>
+                                    )}
+                                    {index === 0 && (
+                                      <Badge variant="outline" className="ml-2 text-xs text-gray-500">
+                                        Original
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  {formatDistanceToNow(new Date(threadMsg.createdAt), { addSuffix: true })}
+                                </span>
+                              </div>
+                              <div className={`text-sm whitespace-pre-wrap ${isCurrentMessage ? 'text-gray-900' : 'text-gray-700'}`}>
+                                {threadMsg.content}
+                              </div>
+
+                              {/* Show attachments indicator for each message */}
+                              {parseAttachments(threadMsg.attachments).length > 0 && (
+                                <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
+                                  <Paperclip className="w-3 h-3" />
+                                  <span>{parseAttachments(threadMsg.attachments).length} attachment{parseAttachments(threadMsg.attachments).length > 1 ? 's' : ''}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                            {selectedMessage.replyToContent}
-                          </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* Single message view (no thread) */
+                      <div className="mb-6 pb-6 border-b border-gray-200">
+                        <div className="whitespace-pre-wrap text-gray-800">
+                          {selectedMessage.content}
                         </div>
                       </div>
                     )}
-                    
-                    {/* Original message content */}
-                    <div className="mb-6 pb-6 border-b border-gray-200">
-                      <div className="whitespace-pre-wrap text-gray-800">
-                        {selectedMessage.content}
-                      </div>
-                    </div>
 
-                    {/* Thread: Show all replies */}
-                    {repliesData.length > 0 && (
+                    {/* Show replies if there are any (fallback for messages without full thread) */}
+                    {threadData.length <= 1 && repliesData.length > 0 && (
                       <div className="space-y-4">
                         <div className="text-sm font-semibold text-gray-700 mb-3">
                           Replies ({repliesData.length})

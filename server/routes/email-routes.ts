@@ -245,6 +245,48 @@ export function createEmailRouter(deps: RouterDependencies) {
   }
 });
 
+// Get full thread for an email (all messages in conversation)
+  router.get('/:id/thread', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      if (!user?.id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const emailId = parseInt(req.params.id);
+      if (isNaN(emailId)) {
+        return res.status(400).json({ message: 'Invalid email ID' });
+      }
+
+      logger.log(`[Email API] Getting thread for email ${emailId}, user: ${user.email}`);
+
+      const threadMessages = await emailService.getEmailThread(emailId, user.id);
+
+      // Format messages for client
+      const formattedThread = threadMessages.map((email) => ({
+        id: email.id,
+        senderId: email.senderId,
+        senderName: email.senderName,
+        senderEmail: email.senderEmail,
+        recipientId: email.recipientId,
+        recipientName: email.recipientName,
+        recipientEmail: email.recipientEmail,
+        content: email.content,
+        subject: email.subject,
+        createdAt: email.createdAt,
+        isRead: email.isRead,
+        parentMessageId: email.parentMessageId,
+        attachments: email.attachments,
+      }));
+
+      logger.log(`[Email API] Found ${formattedThread.length} messages in thread`);
+      res.json(formattedThread);
+    } catch (error) {
+      logger.error('[Email API] Error fetching thread:', error);
+      res.status(500).json({ message: 'Failed to fetch thread' });
+    }
+  });
+
 // Get unread email count
   router.get('/unread-count', isAuthenticated, async (req: any, res) => {
   try {

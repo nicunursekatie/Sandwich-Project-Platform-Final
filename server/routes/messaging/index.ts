@@ -96,4 +96,28 @@ router.get('/:messageId/replies', isAuthenticated, async (req: AuthenticatedRequ
   }
 });
 
+// Get full thread for a message (all ancestors and descendants)
+router.get('/:messageId/thread', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const messageId = parseInt(req.params.messageId);
+    if (isNaN(messageId)) {
+      return res.status(400).json({ message: 'Invalid message ID' });
+    }
+
+    logger.log(`[Messaging API] Getting thread for message ${messageId}`);
+    const threadMessages = await messagingService.getMessageThread(messageId, user.id);
+
+    logger.log(`[Messaging API] Found ${threadMessages.length} messages in thread`);
+    res.json({ thread: threadMessages });
+  } catch (error) {
+    logger.error('[Messaging API] Error fetching message thread:', error);
+    res.status(500).json({ message: 'Failed to fetch thread' });
+  }
+});
+
 export default router;
