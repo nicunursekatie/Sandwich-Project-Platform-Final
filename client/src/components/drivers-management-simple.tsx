@@ -174,6 +174,10 @@ export default function DriversManagement() {
     notes: '',
   });
 
+  // State for vehicle management in new driver form
+  const [newDriverVehicles, setNewDriverVehicles] = useState<Array<{ make: string; model: string; coolerCapacity: string }>>([]);
+  const [newDriverVehicleInput, setNewDriverVehicleInput] = useState({ make: '', model: '', coolerCapacity: '' });
+
   // State for vehicle management in edit mode
   const [editingDriverVehicles, setEditingDriverVehicles] = useState<DriverVehicle[]>([]);
   const [newVehicle, setNewVehicle] = useState({ make: '', model: '', coolerCapacity: '' });
@@ -253,9 +257,26 @@ export default function DriversManagement() {
 
   // Add driver mutation
   const addDriverMutation = useMutation({
-    mutationFn: (driverData: any) =>
-      apiRequest('POST', '/api/drivers', driverData),
-    onSuccess: () => {
+    mutationFn: async (driverData: any) => {
+      const createdDriver = await apiRequest('POST', '/api/drivers', driverData);
+      return createdDriver;
+    },
+    onSuccess: async (createdDriver: Driver) => {
+      // If there are vehicles to add, create them for the new driver
+      if (newDriverVehicles.length > 0) {
+        try {
+          for (const vehicle of newDriverVehicles) {
+            await apiRequest('POST', `/api/drivers/${createdDriver.id}/vehicles`, {
+              make: vehicle.make,
+              model: vehicle.model,
+              coolerCapacity: vehicle.coolerCapacity ? parseInt(vehicle.coolerCapacity) : null,
+            });
+          }
+        } catch (error) {
+          logger.error('Failed to add vehicles to new driver', error);
+          toast({ title: 'Driver added but failed to add some vehicles', variant: 'destructive' });
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/drivers'] });
       setIsAddModalOpen(false);
       resetNewDriver();
@@ -335,6 +356,9 @@ export default function DriversManagement() {
       interestedInVanDriving: false,
       notes: '',
     });
+    // Reset vehicle state for new driver form
+    setNewDriverVehicles([]);
+    setNewDriverVehicleInput({ make: '', model: '', coolerCapacity: '' });
   };
 
   // Fetch vehicles when editing a driver
@@ -1035,6 +1059,74 @@ export default function DriversManagement() {
                         rows={3}
                       />
                     </div>
+
+                    {/* Vehicles Section for New Driver */}
+                    <div className="border-t pt-4 mt-4">
+                      <Label className="text-base font-semibold">Vehicles</Label>
+                      <p className="text-sm text-muted-foreground mb-3">Add vehicle make, model, and cooler capacity (optional)</p>
+
+                      {/* Staged vehicles to be added */}
+                      {newDriverVehicles.length > 0 && (
+                        <div className="space-y-2 mb-3">
+                          {newDriverVehicles.map((vehicle, index) => (
+                            <div key={index} className="flex items-center justify-between bg-muted p-2 rounded">
+                              <div className="flex items-center gap-2">
+                                <Car className="w-4 h-4" />
+                                <span className="font-medium">{vehicle.make} {vehicle.model}</span>
+                                {vehicle.coolerCapacity && (
+                                  <Badge variant="outline">{vehicle.coolerCapacity} coolers</Badge>
+                                )}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setNewDriverVehicles(prev => prev.filter((_, i) => i !== index))}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add new vehicle form */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input
+                          placeholder="Make"
+                          value={newDriverVehicleInput.make}
+                          onChange={(e) => setNewDriverVehicleInput({ ...newDriverVehicleInput, make: e.target.value })}
+                        />
+                        <Input
+                          placeholder="Model"
+                          value={newDriverVehicleInput.model}
+                          onChange={(e) => setNewDriverVehicleInput({ ...newDriverVehicleInput, model: e.target.value })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Coolers"
+                          value={newDriverVehicleInput.coolerCapacity}
+                          onChange={(e) => setNewDriverVehicleInput({ ...newDriverVehicleInput, coolerCapacity: e.target.value })}
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          if (newDriverVehicleInput.make && newDriverVehicleInput.model) {
+                            setNewDriverVehicles(prev => [...prev, { ...newDriverVehicleInput }]);
+                            setNewDriverVehicleInput({ make: '', model: '', coolerCapacity: '' });
+                          } else {
+                            toast({ title: 'Please enter make and model', variant: 'destructive' });
+                          }
+                        }}
+                        disabled={!newDriverVehicleInput.make || !newDriverVehicleInput.model}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Vehicle
+                      </Button>
+                    </div>
+
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"

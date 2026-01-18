@@ -263,12 +263,17 @@ export function createDriversRouter(deps: RouterDependencies) {
     try {
       // Convert date strings to Date objects for timestamp fields
       const createData = { ...req.body };
-      if (createData.unavailableUntil && typeof createData.unavailableUntil === 'string') {
-        createData.unavailableUntil = new Date(createData.unavailableUntil);
-      }
-      if (createData.unavailableUntil === '') {
-        createData.unavailableUntil = null;
-      }
+
+      // Handle all timestamp fields consistently
+      const timestampFields = ['unavailableUntil', 'unavailableStartDate', 'checkInDate'];
+      timestampFields.forEach(field => {
+        if (createData[field] && typeof createData[field] === 'string') {
+          createData[field] = new Date(createData[field]);
+        }
+        if (createData[field] === '') {
+          createData[field] = null;
+        }
+      });
 
       const validatedData = insertDriverSchema.parse(createData);
       const driver = await storage.createDriver(validatedData);
