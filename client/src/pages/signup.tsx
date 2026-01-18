@@ -268,6 +268,20 @@ export default function SignupPage() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main Street" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
@@ -311,20 +325,6 @@ export default function SignupPage() {
                       )}
                     />
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main Street" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
               )}
 
