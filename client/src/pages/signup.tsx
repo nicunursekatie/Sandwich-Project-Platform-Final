@@ -43,7 +43,6 @@ const signupSchema = z.object({
       (val) => val === true,
       'You must agree to the terms and conditions'
     ),
-  agreeToBackground: z.boolean().optional(),
 });
 
 type SignupForm = z.infer<typeof signupSchema>;
@@ -68,7 +67,6 @@ export default function SignupPage() {
       optInTextAlerts: false,
       smsVerified: false,
       agreeToTerms: false,
-      agreeToBackground: false,
     },
   });
 
@@ -535,27 +533,6 @@ export default function SignupPage() {
                             Project
                           </FormLabel>
                           <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="agreeToBackground"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            I consent to a background check (required for
-                            certain volunteer roles)
-                          </FormLabel>
                         </div>
                       </FormItem>
                     )}

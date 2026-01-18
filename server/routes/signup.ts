@@ -40,7 +40,6 @@ const signupSchema = z.object({
   optInTextAlerts: z.boolean().optional(),
   smsVerified: z.boolean().optional(),
   agreeToTerms: z.boolean().refine((val) => val === true),
-  agreeToBackground: z.boolean().optional(),
 });
 
 // Send SMS verification for signup (no auth required)
@@ -242,7 +241,6 @@ Phone: ${validatedData.phone}
 Address: ${addressParts || 'Not provided'}
 SMS Alerts: ${smsConsentData ? 'Opted in and verified' : 'Not opted in'}
 Terms Agreed: ${validatedData.agreeToTerms}
-Background Check Consent: ${validatedData.agreeToBackground || false}
 Registration Date: ${new Date().toISOString()}
 =============================
     `);
