@@ -31,10 +31,11 @@ const signupSchema = z.object({
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
   phone: z.string().min(10, 'Please enter a valid phone number'),
-  address: z.string().min(5, 'Please enter your address'),
-  city: z.string().min(2, 'Please enter your city'),
-  state: z.string().min(2, 'Please enter your state'),
-  zipCode: z.string().min(5, 'Please enter a valid ZIP code'),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  optInTextAlerts: z.boolean().optional(),
   agreeToTerms: z
     .boolean()
     .refine(
@@ -61,6 +62,7 @@ export default function SignupPage() {
       city: '',
       state: '',
       zipCode: '',
+      optInTextAlerts: false,
       agreeToTerms: false,
       agreeToBackground: false,
     },
@@ -246,13 +248,36 @@ export default function SignupPage() {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="optInTextAlerts"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-blue-50">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Send me text alerts about volunteer opportunities and updates
+                          </FormLabel>
+                          <p className="text-sm text-muted-foreground">
+                            Get notified about upcoming events and sandwich collections via SMS
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                       control={form.control}
                       name="city"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>City</FormLabel>
+                          <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                           <FormControl>
                             <Input placeholder="Your city" {...field} />
                           </FormControl>
@@ -266,7 +291,7 @@ export default function SignupPage() {
                       name="state"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>State</FormLabel>
+                          <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                           <FormControl>
                             <Input placeholder="State" {...field} />
                           </FormControl>
@@ -280,7 +305,7 @@ export default function SignupPage() {
                       name="zipCode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>ZIP Code</FormLabel>
+                          <FormLabel>ZIP Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                           <FormControl>
                             <Input placeholder="12345" {...field} />
                           </FormControl>
@@ -295,7 +320,7 @@ export default function SignupPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Address</FormLabel>
+                        <FormLabel>Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                         <FormControl>
                           <Input placeholder="123 Main Street" {...field} />
                         </FormControl>
