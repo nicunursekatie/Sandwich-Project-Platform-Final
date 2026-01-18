@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -20,18 +19,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Users, Mail, Phone, MapPin, Shield, CheckCircle } from 'lucide-react';
+import { Users, CheckCircle } from 'lucide-react';
 import { Link } from 'wouter';
 
 const signupSchema = z.object({
@@ -43,14 +35,6 @@ const signupSchema = z.object({
   city: z.string().min(2, 'Please enter your city'),
   state: z.string().min(2, 'Please enter your state'),
   zipCode: z.string().min(5, 'Please enter a valid ZIP code'),
-  role: z.enum(['volunteer', 'host', 'driver', 'coordinator']),
-  availability: z
-    .array(z.string())
-    .min(1, 'Please select at least one availability option'),
-  interests: z.array(z.string()).optional(),
-  emergencyContact: z
-    .string()
-    .min(5, 'Please provide emergency contact information'),
   agreeToTerms: z
     .boolean()
     .refine(
@@ -62,54 +46,8 @@ const signupSchema = z.object({
 
 type SignupForm = z.infer<typeof signupSchema>;
 
-const availabilityOptions = [
-  'Monday Morning',
-  'Monday Afternoon',
-  'Monday Evening',
-  'Tuesday Morning',
-  'Tuesday Afternoon',
-  'Tuesday Evening',
-  'Wednesday Morning',
-  'Wednesday Afternoon',
-  'Wednesday Evening',
-  'Thursday Morning',
-  'Thursday Afternoon',
-  'Thursday Evening',
-  'Friday Morning',
-  'Friday Afternoon',
-  'Friday Evening',
-  'Saturday Morning',
-  'Saturday Afternoon',
-  'Saturday Evening',
-  'Sunday Morning',
-  'Sunday Afternoon',
-  'Sunday Evening',
-  'Weekends Only',
-  'Weekdays Only',
-  'Flexible Schedule',
-];
-
-const interestOptions = [
-  'Food Collection',
-  'Food Distribution',
-  'Transportation/Driving',
-  'Event Requests',
-  'Administrative Support',
-  'Marketing/Outreach',
-  'Technology Support',
-  'Fundraising',
-  'Community Partnerships',
-  'Volunteer Coordination',
-  'Data Management',
-  'Special Events',
-];
-
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedAvailability, setSelectedAvailability] = useState<string[]>(
-    []
-  );
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const { toast } = useToast();
 
   const form = useForm<SignupForm>({
@@ -123,10 +61,6 @@ export default function SignupPage() {
       city: '',
       state: '',
       zipCode: '',
-      role: 'volunteer',
-      availability: [],
-      interests: [],
-      emergencyContact: '',
       agreeToTerms: false,
       agreeToBackground: false,
     },
@@ -142,7 +76,7 @@ export default function SignupPage() {
         description:
           'Welcome to The Sandwich Project! Please check your email for next steps.',
       });
-      setCurrentStep(4); // Success step
+      setCurrentStep(3); // Success step
     },
     onError: (error: any) => {
       toast({
@@ -156,16 +90,11 @@ export default function SignupPage() {
   });
 
   const onSubmit = (data: SignupForm) => {
-    const formData = {
-      ...data,
-      availability: selectedAvailability,
-      interests: selectedInterests,
-    };
-    signupMutation.mutate(formData);
+    signupMutation.mutate(data);
   };
 
   const nextStep = () => {
-    if (currentStep < 3) {
+    if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -176,7 +105,7 @@ export default function SignupPage() {
     }
   };
 
-  if (currentStep === 4) {
+  if (currentStep === 3) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
@@ -220,11 +149,11 @@ export default function SignupPage() {
             Join The Sandwich Project
           </CardTitle>
           <CardDescription className="text-lg">
-            Help us fight hunger in our community - Step {currentStep} of 3
+            Help us fight hunger in our community - Step {currentStep} of 2
           </CardDescription>
           <div className="flex justify-center mt-4">
             <div className="flex space-x-2">
-              {[1, 2, 3].map((step) => (
+              {[1, 2].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -377,147 +306,8 @@ export default function SignupPage() {
                 </div>
               )}
 
-              {/* Step 2: Role and Availability */}
+              {/* Step 2: Terms and Conditions */}
               {currentStep === 2 && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Shield className="w-5 h-5 text-brand-primary" />
-                    <h3 className="text-xl font-semibold">
-                      Your Role & Availability
-                    </h3>
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="role"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>How would you like to help?</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select your preferred role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="volunteer">
-                              General Volunteer
-                            </SelectItem>
-                            <SelectItem value="host">Host Location</SelectItem>
-                            <SelectItem value="driver">
-                              Driver/Transportation
-                            </SelectItem>
-                            <SelectItem value="coordinator">
-                              Team Coordinator
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div>
-                    <Label className="text-sm font-medium">
-                      When are you available? (Select all that apply)
-                    </Label>
-                    <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                      {availabilityOptions.map((option) => (
-                        <div
-                          key={option}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={option}
-                            checked={selectedAvailability.includes(option)}
-                            onCheckedChange={(checked) => {
-                              let newAvailability: string[];
-                              if (checked) {
-                                newAvailability = [
-                                  ...selectedAvailability,
-                                  option,
-                                ];
-                              } else {
-                                newAvailability = selectedAvailability.filter(
-                                  (item) => item !== option
-                                );
-                              }
-                              setSelectedAvailability(newAvailability);
-                              form.setValue('availability', newAvailability, { shouldValidate: true });
-                            }}
-                          />
-                          <Label 
-                            htmlFor={option} 
-                            className="text-sm break-words leading-tight"
-                            title={option}
-                          >
-                            {option}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium">
-                      Areas of Interest (Optional)
-                    </Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                      {interestOptions.map((interest) => (
-                        <div
-                          key={interest}
-                          className="flex items-center space-x-2"
-                        >
-                          <Checkbox
-                            id={interest}
-                            checked={selectedInterests.includes(interest)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedInterests([
-                                  ...selectedInterests,
-                                  interest,
-                                ]);
-                              } else {
-                                setSelectedInterests(
-                                  selectedInterests.filter(
-                                    (item) => item !== interest
-                                  )
-                                );
-                              }
-                            }}
-                          />
-                          <Label htmlFor={interest} className="text-sm">
-                            {interest}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="emergencyContact"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Emergency Contact Information</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Name and phone number of emergency contact"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-
-              {/* Step 3: Terms and Conditions */}
-              {currentStep === 3 && (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-2 mb-4">
                     <CheckCircle className="w-5 h-5 text-brand-primary" />
@@ -606,7 +396,7 @@ export default function SignupPage() {
                   Previous
                 </Button>
 
-                {currentStep < 3 ? (
+                {currentStep < 2 ? (
                   <Button type="button" onClick={nextStep}>
                     Next
                   </Button>
