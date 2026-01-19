@@ -18,6 +18,11 @@ export interface EngagementMetrics {
   firstEventDate: Date | null;
   averageEventInterval: number | null;
   eventDates: Date[];
+  // New fields for better frequency analysis
+  typicalEventInterval: number | null;  // Median interval (more robust than average)
+  frequencyPattern: 'monthly' | 'quarterly' | 'semi-annual' | 'annual' | 'irregular' | 'one-time' | 'none';
+  daysOverdue: number | null;  // How many days past their typical interval
+  overduePercent: number | null;  // Percentage overdue (100% = 2x their interval)
 }
 
 export interface EngagementScores {
@@ -98,6 +103,68 @@ export interface GroupInsightsSummary {
 function daysBetween(date1: Date, date2: Date): number {
   const diffTime = Math.abs(date2.getTime() - date1.getTime());
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * Calculate median of an array of numbers (more robust than average for intervals)
+ */
+function calculateMedian(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * Calculate intervals between consecutive event dates
+ */
+function calculateIntervals(eventDates: Date[]): number[] {
+  if (eventDates.length < 2) return [];
+  const sortedDates = [...eventDates].sort((a, b) => a.getTime() - b.getTime());
+  const intervals: number[] = [];
+  for (let i = 1; i < sortedDates.length; i++) {
+    intervals.push(daysBetween(sortedDates[i-1], sortedDates[i]));
+  }
+  return intervals;
+}
+
+/**
+ * Determine the frequency pattern based on median interval
+ */
+function determineFrequencyPattern(
+  medianInterval: number | null,
+  totalEvents: number
+): 'monthly' | 'quarterly' | 'semi-annual' | 'annual' | 'irregular' | 'one-time' | 'none' {
+  if (totalEvents === 0) return 'none';
+  if (totalEvents === 1) return 'one-time';
+  if (medianInterval === null) return 'irregular';
+
+  // Monthly: 15-45 days
+  if (medianInterval >= 15 && medianInterval <= 45) return 'monthly';
+  // Quarterly: 60-120 days
+  if (medianInterval >= 60 && medianInterval <= 120) return 'quarterly';
+  // Semi-annual: 150-210 days
+  if (medianInterval >= 150 && medianInterval <= 210) return 'semi-annual';
+  // Annual: 300-450 days
+  if (medianInterval >= 300 && medianInterval <= 450) return 'annual';
+
+  return 'irregular';
+}
+
+/**
+ * Get human-readable label for frequency pattern
+ */
+function getFrequencyPatternLabel(pattern: string): string {
+  const labels: Record<string, string> = {
+    'monthly': 'Monthly',
+    'quarterly': 'Quarterly',
+    'semi-annual': 'Semi-Annual',
+    'annual': 'Annual',
+    'irregular': 'Irregular',
+    'one-time': 'One-Time',
+    'none': 'No Events'
+  };
+  return labels[pattern] || pattern;
 }
 
 /**
@@ -389,32 +456,96 @@ function generateInsights(
   engagementLevel: OrganizationEngagement['engagementLevel']
 ): EngagementInsight[] {
   const insights: EngagementInsight[] = [];
-  const wasRegular = wasRegularContributor(metrics);
   const daysSinceLastEvent = metrics.daysSinceLastEvent;
-  const overdueMultiplier = calculateOverdueMultiplier(metrics);
-  const expectedInterval = calculateExpectedInterval(metrics);
+  const pattern = metrics.frequencyPattern;
+  const typicalInterval = metrics.typicalEventInterval;
+  const daysOverdue = metrics.daysOverdue;
+  const overduePercent = metrics.overduePercent;
 
-  // Dynamic drop-off insights based on their typical frequency
-  if (wasRegular && daysSinceLastEvent !== null && overdueMultiplier > 0) {
-    const expectedDays = Math.round(expectedInterval);
-    const frequencyLabel = expectedDays <= 30 ? 'monthly' : 
-                           expectedDays <= 90 ? 'quarterly' : 
-                           expectedDays <= 180 ? 'semi-annual' : 'yearly';
-    
-    if (overdueMultiplier >= 1.2 && overdueMultiplier < 1.75) {
+  // Use actual frequency pattern for better insights
+  const patternLabel = getFrequencyPatternLabel(pattern);
+
+  // ============================================
+  // ANNUAL PARTNER ANNIVERSARY ALERTS
+  // ============================================
+  if (pattern === 'annual' && metrics.lastEventDate && daysSinceLastEvent !== null) {
+    const lastEventDate = new Date(metrics.lastEventDate);
+    const anniversaryMonth = lastEventDate.toLocaleDateString('en-US', { month: 'long' });
+    const daysUntilAnniversary = typicalInterval ? (typicalInterval - daysSinceLastEvent) : (365 - daysSinceLastEvent);
+
+    // 1-2 months before anniversary - time to reach out
+    if (daysUntilAnniversary >= 30 && daysUntilAnniversary <= 60) {
       insights.push({
-        type: 'warning',
-        title: 'Becoming Overdue',
-        description: `This ${frequencyLabel} contributor is ${Math.round((overdueMultiplier - 1) * 100)}% past their typical event interval. Reach out now before they go cold.`,
+        type: 'opportunity',
+        title: 'Annual Event Planning Time',
+        description: `This group typically hosts an annual event in ${anniversaryMonth}. Now is a good time to reach out about planning their next event (~${Math.round(daysUntilAnniversary / 7)} weeks out).`,
         priority: 1
       });
-    } else if (overdueMultiplier >= 1.75 && overdueMultiplier < 2.5) {
+    }
+    // Past their anniversary - overdue
+    else if (daysUntilAnniversary < 0 && daysOverdue && daysOverdue > 30) {
       insights.push({
         type: 'warning',
-        title: 'Significantly Overdue',
-        description: `This ${frequencyLabel} contributor hasn't had an event in ${daysSinceLastEvent} days (typically every ${expectedDays} days). Schedule a check-in soon.`,
-        priority: 2
+        title: 'Missed Annual Event Window',
+        description: `This group's annual event (usually in ${anniversaryMonth}) is ${Math.abs(Math.round(daysUntilAnniversary / 7))} weeks overdue. Check in to see if they want to schedule.`,
+        priority: 1
       });
+    }
+  }
+
+  // ============================================
+  // FREQUENCY-BASED DROP-OFF ALERTS
+  // ============================================
+  if (pattern !== 'none' && pattern !== 'one-time' && pattern !== 'irregular') {
+    // Groups with established patterns who are becoming overdue
+    if (overduePercent !== null && daysOverdue !== null && typicalInterval !== null) {
+
+      // Monthly partners: Alert when 20-75% overdue (about 1-3 weeks late)
+      if (pattern === 'monthly' && overduePercent >= 20 && overduePercent < 75) {
+        insights.push({
+          type: 'warning',
+          title: 'Monthly Partner Overdue',
+          description: `This monthly partner is ${daysOverdue} days past their typical event interval (every ~${Math.round(typicalInterval)} days). Reach out now.`,
+          priority: 1
+        });
+      }
+      // Monthly partners: Seriously overdue
+      else if (pattern === 'monthly' && overduePercent >= 75) {
+        insights.push({
+          type: 'warning',
+          title: 'Monthly Partner At Risk',
+          description: `This monthly partner hasn't had an event in ${daysSinceLastEvent} days (usually every ~${Math.round(typicalInterval)} days). Urgent outreach needed.`,
+          priority: 1
+        });
+      }
+
+      // Quarterly partners: Alert when 25-75% overdue
+      else if (pattern === 'quarterly' && overduePercent >= 25 && overduePercent < 75) {
+        insights.push({
+          type: 'warning',
+          title: 'Quarterly Partner Overdue',
+          description: `This quarterly partner is ${daysOverdue} days past their typical event interval. Consider reaching out.`,
+          priority: 2
+        });
+      }
+      else if (pattern === 'quarterly' && overduePercent >= 75) {
+        insights.push({
+          type: 'warning',
+          title: 'Quarterly Partner At Risk',
+          description: `This quarterly partner hasn't had an event in ${daysSinceLastEvent} days (usually every ~${Math.round(typicalInterval)} days). Schedule a check-in.`,
+          priority: 1
+        });
+      }
+
+      // Semi-annual partners
+      else if (pattern === 'semi-annual' && overduePercent >= 30) {
+        insights.push({
+          type: 'warning',
+          title: 'Semi-Annual Partner Overdue',
+          description: `This semi-annual partner is ${daysOverdue} days past their typical event interval.`,
+          priority: 2
+        });
+      }
     }
   }
 
@@ -590,6 +721,7 @@ function generateRecommendedActions(
 
 /**
  * Determine program suitability based on organization profile
+ * Now uses actual frequency patterns instead of generic scores
  */
 function determineProgramSuitability(
   metrics: EngagementMetrics,
@@ -598,13 +730,36 @@ function determineProgramSuitability(
   category: string | null
 ): ProgramSuitability[] {
   const programs: ProgramSuitability[] = [];
+  const pattern = metrics.frequencyPattern;
+  const typicalInterval = metrics.typicalEventInterval;
 
-  // Regular scheduling program
-  if (scores.frequency >= 50 && scores.completion >= 70) {
+  // Monthly events program - ONLY for groups with ACTUAL monthly patterns
+  if (pattern === 'monthly' && scores.completion >= 70) {
     programs.push({
       program: 'Regular Monthly Events',
+      score: Math.min(100, Math.round(scores.consistency + 20)),
+      reason: `Actually holds events every ~${Math.round(typicalInterval || 30)} days with good completion rate`
+    });
+  }
+
+  // Quarterly events program - for groups with quarterly patterns
+  if (pattern === 'quarterly' && scores.completion >= 60) {
+    programs.push({
+      program: 'Quarterly Events Partner',
       score: Math.round((scores.frequency + scores.completion) / 2),
-      reason: 'Consistent history makes them ideal for recurring events'
+      reason: `Holds events every ~${Math.round(typicalInterval || 90)} days`
+    });
+  }
+
+  // Annual events program - for groups with annual patterns
+  if (pattern === 'annual') {
+    const anniversary = metrics.lastEventDate
+      ? new Date(metrics.lastEventDate).toLocaleDateString('en-US', { month: 'long' })
+      : 'unknown month';
+    programs.push({
+      program: 'Annual Event Partner',
+      score: 70,
+      reason: `Typically holds annual event (last was in ${anniversary})`
     });
   }
 
@@ -618,7 +773,7 @@ function determineProgramSuitability(
   }
 
   // Ambassador program
-  if (engagementLevel === 'active') {
+  if (engagementLevel === 'active' && metrics.totalEvents >= 3) {
     programs.push({
       program: 'Partner Ambassador Program',
       score: Math.round(scores.overall),
@@ -626,12 +781,15 @@ function determineProgramSuitability(
     });
   }
 
-  // Re-engagement program
+  // Re-engagement program - for dormant partners with established patterns
   if (engagementLevel === 'dormant' && metrics.totalEvents >= 2) {
+    const wasFrequent = pattern === 'monthly' || pattern === 'quarterly';
     programs.push({
       program: 'Partner Re-engagement Initiative',
-      score: 80,
-      reason: 'Prior relationship worth re-establishing'
+      score: wasFrequent ? 90 : 70,
+      reason: wasFrequent
+        ? `Previously active ${pattern} partner - high priority to re-engage`
+        : 'Prior relationship worth re-establishing'
     });
   }
 
@@ -803,14 +961,27 @@ async function gatherOrganizationMetrics(
   const daysSinceFirstEvent = firstEventDate ? daysBetween(firstEventDate, now) : null;
   const daysSinceLastEvent = lastEventDate ? daysBetween(lastEventDate, now) : null;
 
-  // Calculate average interval between events
-  let averageEventInterval: number | null = null;
-  if (uniqueDates.length >= 2) {
-    let totalInterval = 0;
-    for (let i = 1; i < uniqueDates.length; i++) {
-      totalInterval += daysBetween(uniqueDates[i-1], uniqueDates[i]);
-    }
-    averageEventInterval = Math.round(totalInterval / (uniqueDates.length - 1));
+  // Calculate intervals between events
+  const intervals = calculateIntervals(uniqueDates);
+  const averageEventInterval = intervals.length > 0
+    ? Math.round(intervals.reduce((a, b) => a + b, 0) / intervals.length)
+    : null;
+
+  // Calculate median interval (more robust than average for outliers)
+  const typicalEventInterval = calculateMedian(intervals);
+
+  // Determine frequency pattern based on actual intervals
+  const frequencyPattern = determineFrequencyPattern(typicalEventInterval, totalEvents);
+
+  // Calculate how overdue they are based on their typical interval
+  let daysOverdue: number | null = null;
+  let overduePercent: number | null = null;
+
+  if (typicalEventInterval !== null && daysSinceLastEvent !== null) {
+    daysOverdue = Math.max(0, daysSinceLastEvent - typicalEventInterval);
+    overduePercent = typicalEventInterval > 0
+      ? Math.round((daysSinceLastEvent / typicalEventInterval - 1) * 100)
+      : null;
   }
 
   // Get display name and category from first request
@@ -832,6 +1003,10 @@ async function gatherOrganizationMetrics(
     lastEventDate,
     firstEventDate,
     averageEventInterval,
+    typicalEventInterval,
+    frequencyPattern,
+    daysOverdue,
+    overduePercent,
     eventDates: uniqueDates
   };
 }
@@ -896,6 +1071,10 @@ export async function calculateOrganizationEngagement(
       lastEventDate: metrics.lastEventDate,
       firstEventDate: metrics.firstEventDate,
       averageEventInterval: metrics.averageEventInterval,
+      typicalEventInterval: metrics.typicalEventInterval,
+      frequencyPattern: metrics.frequencyPattern,
+      daysOverdue: metrics.daysOverdue,
+      overduePercent: metrics.overduePercent,
       eventDates: metrics.eventDates
     },
     engagementLevel,
