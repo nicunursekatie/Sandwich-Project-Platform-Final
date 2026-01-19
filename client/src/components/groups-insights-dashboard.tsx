@@ -75,6 +75,12 @@ import {
   Phone,
   Mail,
   Star,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  CalendarClock,
+  Filter,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -492,28 +498,107 @@ function OrganizationDetailDialog({
   );
 }
 
+// Get overdue status indicator
+const getOverdueIndicator = (metrics: EngagementMetrics) => {
+  const pattern = metrics.frequencyPattern;
+  const overduePercent = metrics.overduePercent;
+
+  // No indicator for groups without established patterns
+  if (pattern === 'none' || pattern === 'one-time' || pattern === 'irregular') {
+    return null;
+  }
+
+  if (overduePercent === null || overduePercent < 20) {
+    return (
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="flex items-center gap-1 text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>On track</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (overduePercent < 50) {
+    return (
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="flex items-center gap-1 text-amber-500">
+            <Clock className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>{metrics.daysOverdue} days overdue - check in soon</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (overduePercent < 100) {
+    return (
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="flex items-center gap-1 text-orange-500">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>{metrics.daysOverdue} days overdue - needs outreach</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger>
+        <div className="flex items-center gap-1 text-red-600">
+          <AlertCircle className="h-4 w-4" />
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{metrics.daysOverdue} days overdue - urgent outreach needed</TooltipContent>
+    </Tooltip>
+  );
+};
+
+// Get the most important insight for inline display
+const getTopInsight = (insights: EngagementInsight[]): EngagementInsight | null => {
+  if (!insights || insights.length === 0) return null;
+  // Return highest priority (lowest number) warning or opportunity
+  const actionable = insights.filter(i => i.type === 'warning' || i.type === 'opportunity');
+  if (actionable.length > 0) {
+    return actionable.sort((a, b) => a.priority - b.priority)[0];
+  }
+  return insights[0];
+};
+
 // Organization row component
 function OrganizationRow({
   organization,
-  onClick
+  onClick,
+  showInsight = false
 }: {
   organization: OrganizationEngagement;
   onClick: () => void;
+  showInsight?: boolean;
 }) {
   const metrics = organization.metrics;
   const pattern = metrics.frequencyPattern || 'none';
-  const isOverdue = metrics.overduePercent !== null && metrics.overduePercent > 20;
+  const overdueIndicator = getOverdueIndicator(metrics);
+  const topInsight = showInsight ? getTopInsight(organization.insights) : null;
 
   return (
     <TableRow
-      className="cursor-pointer hover:bg-muted/50"
+      className={cn(
+        "cursor-pointer hover:bg-muted/50",
+        organization.outreachPriority === 'urgent' && "bg-red-50/50",
+        organization.outreachPriority === 'high' && "bg-orange-50/30"
+      )}
       onClick={onClick}
     >
       <TableCell>
         <div className="flex items-center gap-2">
-          <div className={cn("w-2 h-2 rounded-full", getEngagementLevelColor(organization.engagementLevel))} />
-          <div>
-            <div className="font-medium">{organization.organizationName}</div>
+          <div className={cn("w-2 h-2 rounded-full shrink-0", getEngagementLevelColor(organization.engagementLevel))} />
+          <div className="min-w-0">
+            <div className="font-medium truncate">{organization.organizationName}</div>
             {organization.category && (
               <div className="text-xs text-muted-foreground">{getCategoryLabel(organization.category)}</div>
             )}
@@ -537,17 +622,15 @@ function OrganizationRow({
       </TableCell>
       <TableCell>
         <div className="flex flex-col items-start gap-1">
-          <Badge variant="outline" className={cn("text-xs", getFrequencyPatternColor(pattern))}>
-            {getFrequencyPatternLabel(pattern)}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={cn("text-xs", getFrequencyPatternColor(pattern))}>
+              {getFrequencyPatternLabel(pattern)}
+            </Badge>
+            {overdueIndicator}
+          </div>
           {metrics.typicalEventInterval && (
             <span className="text-xs text-muted-foreground">
               every {formatInterval(metrics.typicalEventInterval)}
-            </span>
-          )}
-          {isOverdue && metrics.daysOverdue && metrics.daysOverdue > 0 && (
-            <span className="text-xs text-red-600 font-medium">
-              {metrics.daysOverdue} days overdue
             </span>
           )}
         </div>
@@ -558,6 +641,21 @@ function OrganizationRow({
       <TableCell className="text-right">
         {formatDaysAgo(getDaysSinceLastEvent(organization.metrics))}
       </TableCell>
+      {showInsight && (
+        <TableCell className="max-w-[200px]">
+          {topInsight && (
+            <div className={cn(
+              "text-xs px-2 py-1 rounded truncate",
+              topInsight.type === 'warning' && 'bg-red-100 text-red-700',
+              topInsight.type === 'opportunity' && 'bg-amber-100 text-amber-700',
+              topInsight.type === 'positive' && 'bg-green-100 text-green-700',
+              topInsight.type === 'info' && 'bg-blue-100 text-blue-700',
+            )}>
+              {topInsight.title}
+            </div>
+          )}
+        </TableCell>
+      )}
       <TableCell>
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </TableCell>
@@ -574,9 +672,27 @@ export default function GroupsInsightsDashboard() {
   const [engagementFilter, setEngagementFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [frequencyFilter, setFrequencyFilter] = useState<string>('all');
+  const [overdueFilter, setOverdueFilter] = useState<string>('all');
   // Column sorting: null means default/no sort, then cycles through asc -> desc -> null
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+
+  // Reset all filters
+  const resetFilters = () => {
+    setSearchQuery('');
+    setEngagementFilter('all');
+    setPriorityFilter('all');
+    setCategoryFilter('all');
+    setFrequencyFilter('all');
+    setOverdueFilter('all');
+    setSortColumn(null);
+    setSortOrder(null);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || engagementFilter !== 'all' || priorityFilter !== 'all' ||
+    categoryFilter !== 'all' || frequencyFilter !== 'all' || overdueFilter !== 'all';
 
   // Handle column header click for sorting
   const handleColumnSort = (column: string) => {
@@ -653,14 +769,38 @@ export default function GroupsInsightsDashboard() {
   const filteredOrganizations = useMemo(() => {
     if (!scoresData?.organizations) return [];
 
-    // First filter by search
     let result = scoresData.organizations;
+
+    // Filter by search
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(org =>
         org.organizationName.toLowerCase().includes(query) ||
         (org.category && org.category.toLowerCase().includes(query))
       );
+    }
+
+    // Filter by frequency pattern
+    if (frequencyFilter !== 'all') {
+      result = result.filter(org => org.metrics.frequencyPattern === frequencyFilter);
+    }
+
+    // Filter by overdue status
+    if (overdueFilter !== 'all') {
+      result = result.filter(org => {
+        const overduePercent = org.metrics.overduePercent;
+        const pattern = org.metrics.frequencyPattern;
+        // Skip groups with no established pattern
+        if (pattern === 'none' || pattern === 'one-time' || pattern === 'irregular') {
+          return overdueFilter === 'not_applicable';
+        }
+        if (overdueFilter === 'not_applicable') return false;
+        if (overdueFilter === 'on_track') return overduePercent === null || overduePercent < 20;
+        if (overdueFilter === 'slightly_overdue') return overduePercent !== null && overduePercent >= 20 && overduePercent < 50;
+        if (overdueFilter === 'overdue') return overduePercent !== null && overduePercent >= 50 && overduePercent < 100;
+        if (overdueFilter === 'very_overdue') return overduePercent !== null && overduePercent >= 100;
+        return true;
+      });
     }
 
     // Then sort if a column is selected
@@ -709,6 +849,11 @@ export default function GroupsInsightsDashboard() {
             // Sort by days since last event (null = never = highest number)
             aVal = getDaysSinceLastEvent(a.metrics) ?? 99999;
             bVal = getDaysSinceLastEvent(b.metrics) ?? 99999;
+            break;
+          case 'overdue':
+            // Sort by overdue percentage (null = 0, higher = more overdue)
+            aVal = a.metrics.overduePercent ?? -1;
+            bVal = b.metrics.overduePercent ?? -1;
             break;
           default:
             return 0;
@@ -968,7 +1113,8 @@ export default function GroupsInsightsDashboard() {
             {/* Filters */}
             <Card className="mb-4">
               <CardContent className="pt-4">
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-3">
+                  {/* Search */}
                   <div className="flex-1 min-w-[200px]">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -981,34 +1127,125 @@ export default function GroupsInsightsDashboard() {
                     </div>
                   </div>
 
+                  {/* Engagement Level */}
                   <Select value={engagementFilter} onValueChange={setEngagementFilter}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Engagement Level" />
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Level" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Levels</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="at_risk">At Risk</SelectItem>
-                      <SelectItem value="dormant">Dormant</SelectItem>
-                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="active">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          Active
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="at_risk">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-orange-500" />
+                          At Risk
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dormant">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-500" />
+                          Dormant
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="new">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          New
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
 
+                  {/* Priority */}
                   <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Priority" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Priorities</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                          Urgent
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="high">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-3 w-3 text-orange-500" />
+                          High
+                        </div>
+                      </SelectItem>
                       <SelectItem value="normal">Normal</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
                     </SelectContent>
                   </Select>
 
+                  {/* Frequency Pattern - NEW */}
+                  <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Patterns</SelectItem>
+                      <SelectItem value="monthly">
+                        <Badge variant="outline" className="text-xs bg-green-100 text-green-700">Monthly</Badge>
+                      </SelectItem>
+                      <SelectItem value="quarterly">
+                        <Badge variant="outline" className="text-xs bg-blue-100 text-blue-700">Quarterly</Badge>
+                      </SelectItem>
+                      <SelectItem value="semi-annual">
+                        <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700">Semi-Annual</Badge>
+                      </SelectItem>
+                      <SelectItem value="annual">
+                        <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700">Annual</Badge>
+                      </SelectItem>
+                      <SelectItem value="irregular">Irregular</SelectItem>
+                      <SelectItem value="one-time">One-Time</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Overdue Status - NEW */}
+                  <Select value={overdueFilter} onValueChange={setOverdueFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Overdue Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="on_track">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-3 w-3 text-green-500" />
+                          On Track
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="slightly_overdue">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3 text-amber-500" />
+                          Slightly Overdue
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="overdue">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="h-3 w-3 text-orange-500" />
+                          Overdue
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="very_overdue">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                          Very Overdue
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Category */}
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-[140px]">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1018,7 +1255,23 @@ export default function GroupsInsightsDashboard() {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  {/* Reset Filters Button */}
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={resetFilters} className="h-10">
+                      <RotateCcw className="h-4 w-4 mr-1" />
+                      Reset
+                    </Button>
+                  )}
                 </div>
+
+                {/* Active filters summary */}
+                {hasActiveFilters && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                    <Filter className="h-4 w-4" />
+                    <span>Showing {filteredOrganizations.length} of {scoresData?.organizations?.length || 0} organizations</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1133,10 +1386,30 @@ export default function GroupsInsightsDashboard() {
                   Organizations Needing Attention
                 </CardTitle>
                 <CardDescription>
-                  These organizations have urgent or high priority for outreach
+                  These organizations have urgent or high priority for outreach based on their engagement patterns
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Quick stats for attention tab */}
+                {summary && (summary.outreachPriorities.urgent > 0 || summary.outreachPriorities.high > 0) && (
+                  <div className="flex gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
+                    {summary.outreachPriorities.urgent > 0 && (
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-5 w-5 text-red-500" />
+                        <span className="font-semibold text-red-600">{summary.outreachPriorities.urgent} urgent</span>
+                        <span className="text-sm text-muted-foreground">- need immediate outreach</span>
+                      </div>
+                    )}
+                    {summary.outreachPriorities.high > 0 && (
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-orange-500" />
+                        <span className="font-semibold text-orange-600">{summary.outreachPriorities.high} high priority</span>
+                        <span className="text-sm text-muted-foreground">- schedule follow-up</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1148,6 +1421,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Frequency</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
+                      <TableHead>Key Insight</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1160,13 +1434,16 @@ export default function GroupsInsightsDashboard() {
                           setSelectedOrg(org);
                           setDialogOpen(true);
                         }}
+                        showInsight={true}
                       />
                     ))}
                   </TableBody>
                 </Table>
                 {(!summary?.needsAttention || summary.needsAttention.length === 0) && (
                   <div className="text-center py-8 text-muted-foreground">
-                    No organizations currently need urgent attention
+                    <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-500 opacity-50" />
+                    <p className="font-medium">All caught up!</p>
+                    <p className="text-sm">No organizations currently need urgent attention</p>
                   </div>
                 )}
               </CardContent>

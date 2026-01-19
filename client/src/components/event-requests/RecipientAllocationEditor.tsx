@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Trash2, Building, Search, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Building, Search, Loader2, Check, Star } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
@@ -54,24 +54,13 @@ export function RecipientAllocationEditor({
   const queryClient = useQueryClient();
   const [allocations, setAllocations] = useState<RecipientAllocation[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAllRecipients, setShowAllRecipients] = useState(false);
 
   // Fetch recipients
   const { data: recipients = [], isLoading: recipientsLoading, error: recipientsError } = useQuery<any[]>({
     queryKey: ['/api/recipients'],
     staleTime: 5 * 60 * 1000, // 5 minutes - reduce unnecessary refetches
   });
-
-  // Debug: Log recipients fetch status when dialog opens
-  useEffect(() => {
-    if (open) {
-      console.log('[RecipientAllocationEditor] Dialog opened. Recipients:', {
-        count: recipients.length,
-        loading: recipientsLoading,
-        error: recipientsError,
-        sampleNames: recipients.slice(0, 3).map((r: any) => r.name),
-      });
-    }
-  }, [open, recipients, recipientsLoading, recipientsError]);
 
   // Initialize allocations from current data
   useEffect(() => {
@@ -81,18 +70,44 @@ export function RecipientAllocationEditor({
       } else {
         setAllocations([]);
       }
+      setSearchTerm('');
+      setShowAllRecipients(false);
     }
   }, [open, currentAllocations]);
 
-  // Filter recipients based on search
-  const filteredRecipients = recipients.filter((recipient) => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      recipient.name?.toLowerCase().includes(searchLower) ||
-      recipient.contactName?.toLowerCase().includes(searchLower)
-    );
-  });
+  // Get IDs of already-assigned recipients
+  const assignedIds = useMemo(() =>
+    new Set(allocations.map(a => a.recipientId)),
+    [allocations]
+  );
+
+  // Filter and sort recipients - show unassigned first, then filter by search
+  const { filteredRecipients, availableRecipients } = useMemo(() => {
+    // Sort: active recipients first, then alphabetically
+    const sorted = [...recipients].sort((a, b) => {
+      // Active status first
+      if (a.status === 'active' && b.status !== 'active') return -1;
+      if (b.status === 'active' && a.status !== 'active') return 1;
+      // Then alphabetically
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    // Available = not already assigned
+    const available = sorted.filter(r => !assignedIds.has(r.id.toString()));
+
+    // Apply search filter if searching
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const filtered = available.filter(recipient =>
+        recipient.name?.toLowerCase().includes(searchLower) ||
+        recipient.contactName?.toLowerCase().includes(searchLower) ||
+        recipient.address?.toLowerCase().includes(searchLower)
+      );
+      return { filteredRecipients: filtered, availableRecipients: available };
+    }
+
+    return { filteredRecipients: available, availableRecipients: available };
+  }, [recipients, assignedIds, searchTerm]);
 
   // Calculate total allocated
   const totalAllocated = allocations.reduce((sum, a) => sum + (a.sandwichCount || 0), 0);
