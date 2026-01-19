@@ -804,6 +804,36 @@ function MapController({
   return null;
 }
 
+function MapResizeObserver() {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    if (!container || typeof ResizeObserver === 'undefined') {
+      map.invalidateSize();
+      return;
+    }
+
+    let frame: number | null = null;
+    const observer = new ResizeObserver(() => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        map.invalidateSize();
+        frame = null;
+      });
+    });
+
+    observer.observe(container);
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [map]);
+
+  return null;
+}
+
 // Generate SMS message for driver outreach
 type SMSDriver = { id: string | number; name: string; phone?: string | null };
 
@@ -850,6 +880,7 @@ export default function DriverPlanningDashboard() {
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [showAllNearbyDrivers, setShowAllNearbyDrivers] = useState(false);
+  const [driverSearch, setDriverSearch] = useState('');
   const [assigningDriverId, setAssigningDriverId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
@@ -1406,11 +1437,121 @@ export default function DriverPlanningDashboard() {
     return '';
   };
 
+  const extractNumericId = (raw: string): number | null => {
+    const value = String(raw || '').trim();
+    if (!value) return null;
+    if (/^\d+$/.test(value)) return Number(value);
+    if (value.includes(':')) {
+      const tail = value.split(':').pop();
+      if (tail && /^\d+$/.test(tail)) return Number(tail);
+    }
+    if (value.includes('_')) {
+      const tail = value.split('_').pop();
+      if (tail && /^\d+$/.test(tail)) return Number(tail);
+    }
+    if (value.includes('-')) {
+      const tail = value.split('-').pop();
+      if (tail && /^\d+$/.test(tail)) return Number(tail);
+    }
+    return null;
+  };
+
+  const stripRecipientPrefix = (raw: string): string => {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    if (value.startsWith('custom:')) return value.replace('custom:', '').trim();
+    if (value.startsWith('custom-')) return value.replace(/^custom-/, '').replace(/-/g, ' ').trim();
+    if (value.includes(':')) {
+      const [type, ...rest] = value.split(':');
+      if (['recipient', 'host', 'host-contact'].includes(type)) {
+        return rest.join(':').trim();
+      }
+    }
+    if (value.startsWith('recipient-') || value.startsWith('recipient_')) {
+      return value.replace(/^recipient[-_]/, '').trim();
+    }
+    return value;
+  };
+
+  const normalizeRecipientToken = (raw: string): string => {
+    const stripped = stripRecipientPrefix(raw);
+    if (!stripped) return '';
+    if (/^\d+$/.test(stripped)) return '';
+    return stripped.trim().toLowerCase();
+  };
+
+  const normalizeDriverIdVariants = (raw: string): string[] => {
+    const base = String(raw || '').trim();
+    if (!base) return [];
+    const variants = new Set<string>([base]);
+    if (base.startsWith('driver_')) {
+      variants.add(`driver-${base.slice('driver_'.length)}`);
+      variants.add(base.slice('driver_'.length));
+    }
+    if (base.startsWith('driver:')) {
+      const tail = base.slice('driver:'.length);
+      variants.add(`driver-${tail}`);
+      variants.add(tail);
+    }
+    if (base.startsWith('user_')) {
+      variants.add(base.slice('user_'.length));
+    }
+    if (base.startsWith('user:')) {
+      variants.add(base.slice('user:'.length));
+    }
+    if (base.startsWith('admin_')) {
+      variants.add(base.slice('admin_'.length));
+    }
+    if (base.startsWith('admin:')) {
+      variants.add(base.slice('admin:'.length));
+    }
+    if (base.startsWith('committee_')) {
+      variants.add(base.slice('committee_'.length));
+    }
+    if (base.startsWith('committee:')) {
+      variants.add(base.slice('committee:'.length));
+    }
+    if (base.startsWith('volunteer_')) {
+      variants.add(`volunteer-${base.slice('volunteer_'.length)}`);
+      variants.add(base.slice('volunteer_'.length));
+    }
+    if (base.startsWith('volunteer:')) {
+      const tail = base.slice('volunteer:'.length);
+      variants.add(`volunteer-${tail}`);
+      variants.add(tail);
+    }
+    if (base.startsWith('speaker_')) {
+      variants.add(`speaker-${base.slice('speaker_'.length)}`);
+      variants.add(base.slice('speaker_'.length));
+    }
+    if (base.startsWith('speaker:')) {
+      const tail = base.slice('speaker:'.length);
+      variants.add(`speaker-${tail}`);
+      variants.add(tail);
+    }
+    if (base.includes('_')) {
+      const tail = base.split('_').pop();
+      if (tail) {
+        variants.add(tail);
+        variants.add(`driver-${tail}`);
+      }
+    }
+    if (base.includes('-')) {
+      const tail = base.split('-').pop();
+      if (tail) variants.add(tail);
+    }
+    return Array.from(variants);
+  };
+
   const resolveUserName = (id: string): string => {
     const custom = extractCustomName(id);
     if (custom) return custom;
-    const name = usersById.get(id);
-    return name || id;
+    const variants = normalizeDriverIdVariants(id);
+    for (const variant of variants) {
+      const name = usersById.get(variant);
+      if (name) return name;
+    }
+    return id;
   };
 
   // Filter events to upcoming scheduled events within selected weeks
@@ -1734,16 +1875,16 @@ export default function DriverPlanningDashboard() {
 
   // Designated recipient(s) explicitly assigned on the event (if any)
   const designatedRecipients = useMemo(() => {
-    const assigned = selectedEvent?.assignedRecipientIds || [];
+    const assigned = parsePostgresArrayLike(selectedEvent?.assignedRecipientIds);
     if (!selectedEvent || assigned.length === 0) return [];
 
     const numericIds = assigned
-      .map((v) => Number(v))
-      .filter((n) => Number.isFinite(n));
+      .map((v) => extractNumericId(v))
+      .filter((n): n is number => Number.isFinite(n));
 
     const normalizedNames = assigned
-      .map((v) => (v || '').trim().toLowerCase())
-      .filter((v) => v.length > 0 && Number.isNaN(Number(v)));
+      .map((v) => normalizeRecipientToken(v))
+      .filter((v) => v.length > 0);
 
     const matches = recipientMapData.filter((r) => {
       if (!r.latitude || !r.longitude) return false;
@@ -1782,6 +1923,7 @@ export default function DriverPlanningDashboard() {
       if (!id) continue;
 
       let candidate: DriverCandidate | undefined;
+      const variants = normalizeDriverIdVariants(id);
 
       // 1) host=contact-X format (host contact assigned as driver)
       // Use normalized ID format `host-{id}` to match API driver-candidates endpoint
@@ -1823,53 +1965,63 @@ export default function DriverPlanningDashboard() {
 
       // 3) driver candidate IDs (driver-12 / host-3 / volunteer-9)
       if (!candidate) {
-        candidate = candidateById.get(id);
+        for (const variant of variants) {
+          candidate = candidateById.get(variant);
+          if (candidate) break;
+        }
       }
 
       // 4) numeric IDs (plain "12") -> try driver-{id}
-      if (!candidate && /^\d+$/.test(id)) {
-        candidate = candidateById.get(`driver-${id}`);
-        // Also try looking up in activeDrivers and constructing a candidate
-        if (!candidate) {
-          const driver = driverByNumericId.get(id);
-          if (driver && driver.latitude && driver.longitude) {
-            candidate = {
-              id: `driver-${driver.id}`,
-              source: 'driver',
-              name: driver.name,
-              email: driver.email,
-              phone: driver.phone,
-              latitude: driver.latitude,
-              longitude: driver.longitude,
-              area: driver.area,
-              vanApproved: driver.vanApproved,
-              vehicleType: driver.vehicleType,
-              hostLocation: driver.hostLocation,
-            };
+      if (!candidate) {
+        const numericId = extractNumericId(id);
+        if (numericId !== null) {
+          const numericStr = String(numericId);
+          candidate = candidateById.get(`driver-${numericStr}`);
+          if (!candidate) {
+            const driver = driverByNumericId.get(numericStr);
+            if (driver && driver.latitude && driver.longitude) {
+              candidate = {
+                id: `driver-${driver.id}`,
+                source: 'driver',
+                name: driver.name,
+                email: driver.email,
+                phone: driver.phone,
+                latitude: driver.latitude,
+                longitude: driver.longitude,
+                area: driver.area,
+                vanApproved: driver.vanApproved,
+                vehicleType: driver.vehicleType,
+                hostLocation: driver.hostLocation,
+              };
+            }
           }
         }
       }
 
       // 5) prefixed numeric IDs -> extract tail and lookup
-      if (!candidate && id.includes('-')) {
-        const tail = id.split('-').pop();
-        if (tail && /^\d+$/.test(tail)) {
-          const driver = driverByNumericId.get(tail);
-          if (driver && driver.latitude && driver.longitude) {
-            candidate = {
-              id: `driver-${driver.id}`,
-              source: 'driver',
-              name: driver.name,
-              email: driver.email,
-              phone: driver.phone,
-              latitude: driver.latitude,
-              longitude: driver.longitude,
-              area: driver.area,
-              vanApproved: driver.vanApproved,
-              vehicleType: driver.vehicleType,
-              hostLocation: driver.hostLocation,
-            };
+      if (!candidate) {
+        for (const variant of variants) {
+          if (!variant.includes('-')) continue;
+          const tail = variant.split('-').pop();
+          if (tail && /^\d+$/.test(tail)) {
+            const driver = driverByNumericId.get(tail);
+            if (driver && driver.latitude && driver.longitude) {
+              candidate = {
+                id: `driver-${driver.id}`,
+                source: 'driver',
+                name: driver.name,
+                email: driver.email,
+                phone: driver.phone,
+                latitude: driver.latitude,
+                longitude: driver.longitude,
+                area: driver.area,
+                vanApproved: driver.vanApproved,
+                vehicleType: driver.vehicleType,
+                hostLocation: driver.hostLocation,
+              };
+            }
           }
+          if (candidate) break;
         }
       }
 
@@ -1895,6 +2047,28 @@ export default function DriverPlanningDashboard() {
       return true;
     });
   }, [nearbyDriversAll, assignedDrivers, effectiveSelectedEvent?.vanDriverNeeded]);
+
+  const driverSearchTerm = driverSearch.trim().toLowerCase();
+  const driverSearchResults = useMemo(() => {
+    if (!driverSearchTerm) return null;
+    const assignedIds = new Set(assignedDrivers.map(d => d.id));
+    const vanNeeded = effectiveSelectedEvent?.vanDriverNeeded;
+    return nearbyDriversAll.filter(({ driver }) => {
+      if (assignedIds.has(driver.id)) return false;
+      if (vanNeeded && !driver.vanApproved) return false;
+      const haystack = [
+        driver.name,
+        driver.hostLocation,
+        driver.area,
+        driver.routeDescription,
+        driver.homeAddress,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(driverSearchTerm);
+    });
+  }, [driverSearchTerm, assignedDrivers, nearbyDriversAll, effectiveSelectedEvent?.vanDriverNeeded]);
 
   // Compute volunteers/speakers assigned to visible events with geocoded locations
   // Shows volunteers that are assigned to ANY visible event (not just selected)
@@ -2049,6 +2223,7 @@ export default function DriverPlanningDashboard() {
     const labels = ids.map((raw) => {
       const id = String(raw).trim();
       if (!id) return '';
+      const variants = normalizeDriverIdVariants(id);
 
       // 1) custom name formats
       const custom = extractCustomName(id);
@@ -2069,26 +2244,34 @@ export default function DriverPlanningDashboard() {
       }
 
       // 4) user IDs (common across event-request staffing)
-      const userName = usersById.get(id);
-      if (userName) return userName;
+      for (const variant of variants) {
+        const userName = usersById.get(variant);
+        if (userName) return userName;
+      }
 
       // 5) driver candidate IDs (driver-12 / host-3 / volunteer-9)
-      const candidate = candidateById.get(id);
-      if (candidate) return candidate.name;
+      for (const variant of variants) {
+        const candidate = candidateById.get(variant);
+        if (candidate) return candidate.name;
+      }
 
       // 6) numeric IDs (plain "12") -> drivers table
-      if (/^\d+$/.test(id)) {
-        const driver = driverByNumericId.get(id);
+      const numericId = extractNumericId(id);
+      if (numericId !== null) {
+        const numericStr = String(numericId);
+        const driver = driverByNumericId.get(numericStr);
         if (driver?.name) return driver.name;
-        const asCandidate = candidateById.get(`driver-${id}`);
+        const asCandidate = candidateById.get(`driver-${numericStr}`);
         if (asCandidate) return asCandidate.name;
       }
 
       // 7) prefixed numeric IDs -> drivers table
-      const tail = id.includes('-') ? id.split('-').pop() : null;
-      if (tail && /^\d+$/.test(tail)) {
-        const driver = driverByNumericId.get(tail);
-        if (driver?.name) return driver.name;
+      for (const variant of variants) {
+        const tail = variant.includes('-') ? variant.split('-').pop() : null;
+        if (tail && /^\d+$/.test(tail)) {
+          const driver = driverByNumericId.get(tail);
+          if (driver?.name) return driver.name;
+        }
       }
 
       return id;
@@ -2108,15 +2291,27 @@ export default function DriverPlanningDashboard() {
       .map((raw) => {
         const id = String(raw).trim();
         if (!id) return '';
+        const variants = normalizeDriverIdVariants(id);
 
         const custom = extractCustomName(id);
         if (custom) return custom;
 
-        const userName = usersById.get(id);
-        if (userName) return userName;
+        for (const variant of variants) {
+          const userName = usersById.get(variant);
+          if (userName) return userName;
+        }
 
-        const candidate = candidateById.get(id);
-        if (candidate) return candidate.name;
+        for (const variant of variants) {
+          const candidate = candidateById.get(variant);
+          if (candidate) return candidate.name;
+        }
+
+        const numericId = extractNumericId(id);
+        if (numericId !== null) {
+          const numericStr = String(numericId);
+          const userName = usersById.get(numericStr);
+          if (userName) return userName;
+        }
 
         return id;
       })
@@ -2136,15 +2331,27 @@ export default function DriverPlanningDashboard() {
       .map((raw) => {
         const id = String(raw).trim();
         if (!id) return '';
+        const variants = normalizeDriverIdVariants(id);
 
         const custom = extractCustomName(id);
         if (custom) return custom;
 
-        const userName = usersById.get(id);
-        if (userName) return userName;
+        for (const variant of variants) {
+          const userName = usersById.get(variant);
+          if (userName) return userName;
+        }
 
-        const candidate = candidateById.get(id);
-        if (candidate) return candidate.name;
+        for (const variant of variants) {
+          const candidate = candidateById.get(variant);
+          if (candidate) return candidate.name;
+        }
+
+        const numericId = extractNumericId(id);
+        if (numericId !== null) {
+          const numericStr = String(numericId);
+          const userName = usersById.get(numericStr);
+          if (userName) return userName;
+        }
 
         return id;
       })
@@ -2155,21 +2362,27 @@ export default function DriverPlanningDashboard() {
   };
 
   const getDesignatedRecipientLabel = (event: EventMapData): string | null => {
-    const assigned = event.assignedRecipientIds || [];
+    const assigned = parsePostgresArrayLike(event.assignedRecipientIds);
     if (assigned.length === 0) return null;
 
-    const numericIds = assigned
-      .map((v) => Number(v))
-      .filter((n) => Number.isFinite(n));
-
-    const names = recipientMapData
-      .filter((r) => numericIds.includes(r.id))
-      .map((r) => r.name)
+    const names = assigned
+      .map((raw) => {
+        const numericId = extractNumericId(raw);
+        if (numericId !== null) {
+          const recipient = recipientMapData.find((r) => r.id === numericId);
+          if (recipient?.name) return recipient.name;
+        }
+        const normalizedName = normalizeRecipientToken(raw);
+        if (normalizedName) {
+          const match = recipientMapData.find((r) => (r.name || '').trim().toLowerCase() === normalizedName);
+          if (match?.name) return match.name;
+        }
+        return stripRecipientPrefix(raw);
+      })
       .filter(Boolean);
 
-    if (names.length > 0) return Array.from(new Set(names)).join(', ');
-    // Fallback: show whatever was stored
-    return assigned.filter(Boolean).join(', ');
+    const deduped = Array.from(new Set(names));
+    return deduped.length > 0 ? deduped.join(', ') : null;
   };
 
   // Copy SMS to clipboard
@@ -2699,6 +2912,7 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            <MapResizeObserver />
 
             {/* Event markers - when an event is selected, only show events on the same date */}
             {/* Only show permanent labels for selected event; others show labels on hover */}
@@ -3038,145 +3252,9 @@ export default function DriverPlanningDashboard() {
             ))}
           </MapContainer>
 
-          {/* Full trip info box - shows when both driver and destination are selected */}
-          {fullTripRoute && selectedDriver && selectedDestination && (
-            <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 z-[1000] min-w-[280px]">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-800">Full Trip Route</span>
-                <button
-                  onClick={() => {
-                    // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
-                    const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
-                    const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
-                      designatedRecipients.some(r => r.id === selectedDestination.id);
-
-                    // Keep pre-assigned items, clear the rest
-                    if (!driverIsAssigned) setSelectedDriver(null);
-                    if (!destIsAssigned) setSelectedDestination(null);
-                    setFullTripRoute(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                  title="Clear non-assigned selections"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Leg 1: Driver to Event */}
-              <div className="mb-3">
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                  <Home className="w-3.5 h-3.5 text-amber-600" />
-                  <span className="font-medium">{selectedDriver.name}</span>
-                  <Navigation className="w-3 h-3 text-gray-400" />
-                  <span>Event</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
-                    <Truck className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-medium text-gray-700">{(fullTripRoute.leg1.distance / 1609.34).toFixed(1)} mi</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
-                    <Clock className="w-4 h-4 text-amber-600" />
-                    <span className="text-sm font-medium text-gray-700">
-                      {(() => {
-                        const dur = formatDuration(fullTripRoute.leg1.duration, fullTripRoute.leg1.durationInTraffic);
-                        return dur.hasTraffic ? (
-                          <span className="flex items-center gap-1">
-                            {dur.text} min
-                            <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
-                          </span>
-                        ) : `~${dur.text} min`;
-                      })()}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-[10px] text-gray-400 mt-1 italic">
-                  {fullTripRoute.leg1.durationInTraffic ? 'Traffic estimate for event time' : 'Estimate from driver\'s home'}
-                </div>
-              </div>
-
-              {/* Leg 2: Event to Destination */}
-              <div className="mb-3">
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Event</span>
-                  <Navigation className="w-3 h-3 text-gray-400" />
-                  <span className="font-medium">{selectedDestination.name}</span>
-                </div>
-                <div className="flex gap-2">
-                  <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
-                    <Truck className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-700">{(fullTripRoute.leg2.distance / 1609.34).toFixed(1)} mi</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
-                    <Clock className="w-4 h-4 text-purple-600" />
-                    <span className="text-sm font-medium text-gray-700">
-                      {(() => {
-                        const dur = formatDuration(fullTripRoute.leg2.duration, fullTripRoute.leg2.durationInTraffic);
-                        return dur.hasTraffic ? (
-                          <span className="flex items-center gap-1">
-                            {dur.text} min
-                            <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
-                          </span>
-                        ) : `~${dur.text} min`;
-                      })()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Total */}
-              <div className="border-t pt-2 mt-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Total trip:</span>
-                  <span className="font-semibold text-gray-800">
-                    {((fullTripRoute.leg1.distance + fullTripRoute.leg2.distance) / 1609.34).toFixed(1)} mi,{' '}
-                    {(() => {
-                      const totalDuration = fullTripRoute.leg1.duration + fullTripRoute.leg2.duration;
-                      const totalTrafficDuration = (fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg1.duration) +
-                                                   (fullTripRoute.leg2.durationInTraffic || fullTripRoute.leg2.duration);
-                      const hasTraffic = fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic;
-                      if (hasTraffic && totalTrafficDuration > totalDuration) {
-                        return `${Math.round(totalTrafficDuration / 60)} min`;
-                      }
-                      return `~${Math.round(totalDuration / 60)} min`;
-                    })()}
-                  </span>
-                </div>
-                {(fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic) && (
-                  <div className="text-[10px] text-green-600 mt-0.5 text-right">✓ Includes traffic estimate</div>
-                )}
-              </div>
-
-              {isLoadingFullTrip && (
-                <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Calculating routes...
-                </div>
-              )}
-
-              <button
-                onClick={() => {
-                  // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
-                  const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
-                  const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
-                    designatedRecipients.some(r => r.id === selectedDestination.id);
-
-                  // Keep pre-assigned items, clear the rest
-                  if (!driverIsAssigned) setSelectedDriver(null);
-                  if (!destIsAssigned) setSelectedDestination(null);
-                  setFullTripRoute(null);
-                }}
-                className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                Clear Trip
-              </button>
-            </div>
-          )}
-
           {/* Partial selection info box - shows when driver OR destination is selected (but not both) */}
           {((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute && (
-            <div className={`absolute bottom-4 left-4 bg-white rounded-xl shadow-lg z-[1000] transition-all duration-200 ${tripPlanningCollapsed ? 'w-auto' : 'min-w-[280px] p-4'}`}>
+            <div className={`hidden bg-white rounded-xl shadow-lg z-[1000] transition-all duration-200 ${tripPlanningCollapsed ? 'w-auto' : 'min-w-[280px] p-4'}`}>
               {tripPlanningCollapsed ? (
                 /* Collapsed state - just show a small expand button */
                 <button
@@ -3409,7 +3487,7 @@ export default function DriverPlanningDashboard() {
 
           {/* Single route info box - shows when previewing a route (no full trip, no partial selection) */}
           {drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination && (
-            <div className="absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 z-[1000] min-w-[220px]">
+            <div className="hidden bg-white rounded-xl shadow-lg p-4 z-[1000] min-w-[220px]">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-gray-800">Route Preview</span>
                 <button
@@ -3500,49 +3578,418 @@ export default function DriverPlanningDashboard() {
           </div>
 
           <div className="border-t bg-white px-4 py-3">
-            <div className="bg-white rounded-lg shadow-sm border p-3 inline-block" data-testid="driver-planning-legend">
-              <div className="text-xs font-semibold mb-2">Legend</div>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
-                  </svg>
-                  <span>Event</span>
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="bg-white rounded-lg shadow-sm border p-3 inline-block" data-testid="driver-planning-legend">
+                <div className="text-xs font-semibold mb-2">Legend</div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                    </svg>
+                    <span>Event</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                    </svg>
+                    <span>Selected Event</span>
+                  </div>
+                  {effectiveSelectedEvent && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
+                        <span>Host (circle)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
+                        <span>Recipient (diamond)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
+                        <span>Driver (triangle)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                          <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
+                        </svg>
+                        <span>Host+Driver</span>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
+                        <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
+                        <span>Selected = orange</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
-                  </svg>
-                  <span>Selected Event</span>
-                </div>
-                {effectiveSelectedEvent && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
-                      <span>Host (circle)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                      <span>Recipient (diamond)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
-                      <span>Driver (triangle)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
-                        <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
-                      </svg>
-                      <span>Host+Driver</span>
-                    </div>
-                    <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
-                      <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-                      <span>Selected = orange</span>
-                    </div>
-                  </>
-                )}
               </div>
+
+              {fullTripRoute && selectedDriver && selectedDestination && (
+                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-800">Full Trip Route</span>
+                    <button
+                      onClick={() => {
+                        // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                        const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                        const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                          designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                        // Keep pre-assigned items, clear the rest
+                        if (!driverIsAssigned) setSelectedDriver(null);
+                        if (!destIsAssigned) setSelectedDestination(null);
+                        setFullTripRoute(null);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
+                      title="Clear non-assigned selections"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Leg 1: Driver to Event */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+                      <Home className="w-3.5 h-3.5 text-amber-600" />
+                      <span className="font-medium">{selectedDriver.name}</span>
+                      <Navigation className="w-3 h-3 text-gray-400" />
+                      <span>Event</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
+                        <Truck className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm font-medium text-gray-700">{(fullTripRoute.leg1.distance / 1609.34).toFixed(1)} mi</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
+                        <Clock className="w-4 h-4 text-amber-600" />
+                        <span className="text-sm font-medium text-gray-700">
+                          {(() => {
+                            const dur = formatDuration(fullTripRoute.leg1.duration, fullTripRoute.leg1.durationInTraffic);
+                            return dur.hasTraffic ? (
+                              <span className="flex items-center gap-1">
+                                {dur.text} min
+                                <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                              </span>
+                            ) : `~${dur.text} min`;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-1 italic">
+                      {fullTripRoute.leg1.durationInTraffic ? 'Traffic estimate for event time' : 'Estimate from driver\'s home'}
+                    </div>
+                  </div>
+
+                  {/* Leg 2: Event to Destination */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Event</span>
+                      <Navigation className="w-3 h-3 text-gray-400" />
+                      <span className="font-medium">{selectedDestination.name}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
+                        <Truck className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm font-medium text-gray-700">{(fullTripRoute.leg2.distance / 1609.34).toFixed(1)} mi</span>
+                      </div>
+                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
+                        <Clock className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm font-medium text-gray-700">
+                          {(() => {
+                            const dur = formatDuration(fullTripRoute.leg2.duration, fullTripRoute.leg2.durationInTraffic);
+                            return dur.hasTraffic ? (
+                              <span className="flex items-center gap-1">
+                                {dur.text} min
+                                <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                              </span>
+                            ) : `~${dur.text} min`;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">Total trip:</span>
+                      <span className="font-semibold text-gray-800">
+                        {((fullTripRoute.leg1.distance + fullTripRoute.leg2.distance) / 1609.34).toFixed(1)} mi,{' '}
+                        {(() => {
+                          const totalDuration = fullTripRoute.leg1.duration + fullTripRoute.leg2.duration;
+                          const totalTrafficDuration = (fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg1.duration) +
+                                                       (fullTripRoute.leg2.durationInTraffic || fullTripRoute.leg2.duration);
+                          const hasTraffic = fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic;
+                          if (hasTraffic && totalTrafficDuration > totalDuration) {
+                            return `${Math.round(totalTrafficDuration / 60)} min`;
+                          }
+                          return `~${Math.round(totalDuration / 60)} min`;
+                        })()}
+                      </span>
+                    </div>
+                    {(fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic) && (
+                      <div className="text-[10px] text-green-600 mt-0.5 text-right">✓ Includes traffic estimate</div>
+                    )}
+                  </div>
+
+                  {isLoadingFullTrip && (
+                    <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Calculating routes...
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                      const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                      const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                        designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                      // Keep pre-assigned items, clear the rest
+                      if (!driverIsAssigned) setSelectedDriver(null);
+                      if (!destIsAssigned) setSelectedDestination(null);
+                      setFullTripRoute(null);
+                    }}
+                    className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Clear Trip
+                  </button>
+                </div>
+              )}
+
+              {((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute && (
+                <div className={`bg-white rounded-xl shadow-sm border transition-all duration-200 ${tripPlanningCollapsed ? 'p-2 w-auto' : 'min-w-[280px] p-4'}`}>
+                  {tripPlanningCollapsed ? (
+                    /* Collapsed state - just show a small expand button */
+                    <button
+                      onClick={() => setTripPlanningCollapsed(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl"
+                      title="Expand trip planning"
+                    >
+                      <Target className="w-4 h-4 text-[#007E8C]" />
+                      <span>Trip Planning</span>
+                      <ChevronUp className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    /* Expanded state */
+                    <>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-semibold text-gray-800">Trip Planning</span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setTripPlanningCollapsed(true)}
+                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
+                            title="Minimize"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
+                              const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                              const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                                designatedRecipients.some(r => r.id === selectedDestination.id);
+
+                              // Keep pre-assigned items, clear the rest
+                              if (!driverIsAssigned) setSelectedDriver(null);
+                              if (!destIsAssigned) setSelectedDestination(null);
+                              setDrivingRoute(null);
+                              setFocusedItem(null);
+                            }}
+                            className="text-gray-400 hover:text-red-500 p-1 hover:bg-gray-100 rounded"
+                            title="Clear selections"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Selected Driver */}
+                      {selectedDriver && (
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+                            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-yellow-400" />
+                            <span className="font-medium">Driver Selected</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <Truck className="w-4 h-4 text-amber-600" />
+                              <span className="text-sm font-medium text-gray-800">{selectedDriver.name}</span>
+                              {assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && (
+                                <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                  Assigned
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => setSelectedDriver(null)}
+                              className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                              title="Unselect driver"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Selected Destination */}
+                      {selectedDestination && (
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
+                            <div className="w-2.5 h-2.5 bg-purple-500 rotate-45" style={{ borderRadius: '1px' }} />
+                            <span className="font-medium">Destination Selected</span>
+                          </div>
+                          <div className="flex items-center justify-between bg-purple-50 rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-purple-600" />
+                              <span className="text-sm font-medium text-gray-800">{selectedDestination.name}</span>
+                              {selectedDestination.type === 'recipient' &&
+                                designatedRecipients.some(r => r.id === selectedDestination.id) && (
+                                  <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                    Designated
+                                  </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => setSelectedDestination(null)}
+                              className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                              title="Unselect destination"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Route Preview */}
+                      {drivingRoute && (
+                        <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                          <div className="text-xs text-blue-700 font-medium mb-1">Route Preview</div>
+                          <div className="flex gap-3 text-sm">
+                            <span className="flex items-center gap-1">
+                              <Truck className="w-3.5 h-3.5 text-blue-600" />
+                              {(drivingRoute.distance / 1609.34).toFixed(1)} mi
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-blue-600" />
+                              {(() => {
+                                const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                                return dur.hasTraffic ? (
+                                  <span className="flex items-center gap-1">
+                                    {dur.text} min
+                                    {dur.trafficDelay && dur.trafficDelay > 0 && (
+                                      <span className="text-[10px] text-red-500">+{dur.trafficDelay}</span>
+                                    )}
+                                  </span>
+                                ) : `~${dur.text} min`;
+                              })()}
+                            </span>
+                          </div>
+                          {drivingRoute.durationInTraffic && (
+                            <div className="text-[10px] text-green-600 mt-1">✓ Includes traffic estimate</div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="text-xs text-gray-500">
+                        {selectedDriver && !selectedDestination && 'Select a destination to see full trip route.'}
+                        {!selectedDriver && selectedDestination && 'Select a driver to see full trip route.'}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination && (
+                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[220px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-800">Route Preview</span>
+                    <button
+                      onClick={() => {
+                        setDrivingRoute(null);
+                        setFocusedItem(null);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
+                      title="Close route"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
+                      <Truck className="w-5 h-5 text-blue-600" />
+                      <span className="text-base font-medium text-gray-800">{(drivingRoute.distance / 1609.34).toFixed(1)} miles</span>
+                    </div>
+                    <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
+                      <Clock className="w-5 h-5 text-blue-600" />
+                      <span className="text-base font-medium text-gray-800">
+                        {(() => {
+                          const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                          return dur.hasTraffic ? (
+                            <span className="flex items-center gap-1">
+                              {dur.text} min drive
+                              {dur.trafficDelay && dur.trafficDelay > 0 && (
+                                <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
+                              )}
+                            </span>
+                          ) : `${dur.text} min drive`;
+                        })()}
+                      </span>
+                    </div>
+                    {drivingRoute.durationInTraffic && (
+                      <div className="text-xs text-green-600 text-center">✓ Includes traffic estimate</div>
+                    )}
+                  </div>
+                  {isLoadingRoute && (
+                    <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading route...
+                    </div>
+                  )}
+
+                  {/* Select button for previewed item */}
+                  {focusedItem && (
+                    <button
+                      onClick={() => {
+                        if (focusedItem.type === 'driver') {
+                          setSelectedDriver({
+                            id: String(focusedItem.id),
+                            name: focusedItem.name || 'Driver',
+                            latitude: focusedItem.latitude,
+                            longitude: focusedItem.longitude,
+                          });
+                        } else {
+                          setSelectedDestination({
+                            type: focusedItem.type,
+                            id: focusedItem.id as number,
+                            name: focusedItem.name || (focusedItem.type === 'host' ? 'Host' : 'Recipient'),
+                            latitude: focusedItem.latitude,
+                            longitude: focusedItem.longitude,
+                          });
+                        }
+                        setDrivingRoute(null);
+                        setFocusedItem(null);
+                      }}
+                      className="w-full mt-3 px-3 py-2 text-sm font-medium text-white bg-[#007E8C] hover:bg-[#006670] rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      Select {focusedItem.type === 'driver' ? 'Driver' : 'Destination'}
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setDrivingRoute(null);
+                      setFocusedItem(null);
+                    }}
+                    className="w-full mt-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    Close Preview
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -3684,6 +4131,12 @@ export default function DriverPlanningDashboard() {
                         Calculating full trip route...
                       </div>
                     )}
+                  </div>
+                )}
+
+                {driverSearchResults && driverSearchResults.length === 0 && (
+                  <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
+                    No drivers match your search.
                   </div>
                 )}
 
@@ -3974,6 +4427,17 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
+                {/* Driver Search */}
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Find a driver</div>
+                  <Input
+                    value={driverSearch}
+                    onChange={(e) => setDriverSearch(e.target.value)}
+                    placeholder="Search drivers by name or location..."
+                    className="h-8 text-xs"
+                  />
+                </div>
+
                 {/* Assigned Drivers - Show first if any */}
                 {assignedDrivers.length > 0 && (
                   <div className="space-y-2">
@@ -4069,15 +4533,19 @@ export default function DriverPlanningDashboard() {
                 )}
 
                 {/* Suggested Drivers - Other nearby options */}
-                {nearbyDrivers.length > 0 && (
+                {((driverSearchResults && driverSearchResults.length > 0) || nearbyDrivers.length > 0) && (
                   <div className="space-y-2">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                      {assignedDrivers.length > 0 ? 'Other nearby drivers' : 'Closest drivers'}
+                      {driverSearchResults
+                        ? `Search results (${driverSearchResults.length})`
+                        : assignedDrivers.length > 0
+                          ? 'Other nearby drivers'
+                          : 'Closest drivers'}
                       {selectedEvent?.vanDriverNeeded && (
                         <span className="text-[10px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Van Approved Only</span>
                       )}
                     </h3>
-                    {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
+                    {(showAllNearbyDrivers ? (driverSearchResults || nearbyDrivers) : (driverSearchResults || nearbyDrivers).slice(0, 5)).map(({ driver, distance }) => (
                       <Card
                         key={driver.id}
                         className={`p-3 transition-colors ${
@@ -4239,14 +4707,14 @@ export default function DriverPlanningDashboard() {
                         )}
                       </Card>
                     ))}
-                    {nearbyDrivers.length > 5 && (
+                    {(driverSearchResults || nearbyDrivers).length > 5 && (
                       <button
                         onClick={() => setShowAllNearbyDrivers(!showAllNearbyDrivers)}
                         className="w-full text-xs text-purple-700 hover:text-purple-900 font-medium py-1"
                       >
                         {showAllNearbyDrivers
                           ? 'Show top 5'
-                          : `View ${nearbyDrivers.length - 5} more drivers`}
+                          : `View ${(driverSearchResults || nearbyDrivers).length - 5} more drivers`}
                       </button>
                     )}
                   </div>
@@ -4422,6 +4890,7 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -4773,6 +5242,7 @@ export default function DriverPlanningDashboard() {
               drivingRoute={drivingRoute}
               fullTripRoute={fullTripRoute}
             />
+            <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {eventsToShowOnMap.map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -5888,18 +6358,33 @@ export default function DriverPlanningDashboard() {
                   </div>
                 )}
 
+                {/* Driver Search */}
+                <div className="mb-3 space-y-1">
+                  <div className="text-[11px] font-semibold text-gray-700 uppercase tracking-wide">Find a driver</div>
+                  <Input
+                    value={driverSearch}
+                    onChange={(e) => setDriverSearch(e.target.value)}
+                    placeholder="Search drivers by name or location..."
+                    className="h-8 text-xs"
+                  />
+                </div>
+
                 {/* Nearby Drivers with Distance */}
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2 flex-wrap">
                     <Truck className="w-4 h-4 text-[#007E8C]" />
-                    {assignedDrivers.length > 0 ? 'Other Nearby Drivers' : 'Closest Drivers'} ({nearbyDrivers.length})
+                    {driverSearchResults
+                      ? `Search results (${driverSearchResults.length})`
+                      : assignedDrivers.length > 0
+                        ? `Other Nearby Drivers (${nearbyDrivers.length})`
+                        : `Closest Drivers (${nearbyDrivers.length})`}
                     {selectedEvent?.vanDriverNeeded && (
                       <span className="text-[10px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Van Approved Only</span>
                     )}
                   </h3>
-                  {nearbyDrivers.length > 0 ? (
+                  {(driverSearchResults && driverSearchResults.length > 0) || nearbyDrivers.length > 0 ? (
                     <div className="space-y-2">
-                      {(showAllNearbyDrivers ? nearbyDrivers : nearbyDrivers.slice(0, 5)).map(({ driver, distance }) => (
+                      {(showAllNearbyDrivers ? (driverSearchResults || nearbyDrivers) : (driverSearchResults || nearbyDrivers).slice(0, 5)).map(({ driver, distance }) => (
                         <Card
                           key={driver.id}
                           className={`p-3 transition-colors ${
@@ -6032,12 +6517,14 @@ export default function DriverPlanningDashboard() {
                           </div>
                         </Card>
                       ))}
-                      {nearbyDrivers.length > 5 && (
+                      {(driverSearchResults || nearbyDrivers).length > 5 && (
                         <button
                           onClick={() => setShowAllNearbyDrivers(!showAllNearbyDrivers)}
                           className="w-full text-sm text-[#007E8C] font-medium py-2"
                         >
-                          {showAllNearbyDrivers ? 'Show top 5' : `View ${nearbyDrivers.length - 5} more drivers`}
+                          {showAllNearbyDrivers
+                            ? 'Show top 5'
+                            : `View ${(driverSearchResults || nearbyDrivers).length - 5} more drivers`}
                         </button>
                       )}
                     </div>
@@ -6049,6 +6536,12 @@ export default function DriverPlanningDashboard() {
                     </div>
                   )}
                 </div>
+
+                {driverSearchResults && driverSearchResults.length === 0 && (
+                  <div className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg text-center">
+                    No drivers match your search.
+                  </div>
+                )}
 
                 {/* Drivers needing location */}
                 {driversWithoutLocation.length > 0 && (

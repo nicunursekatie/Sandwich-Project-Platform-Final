@@ -8,9 +8,9 @@
  */
 
 type EventWithAssignments = {
-  driverDetails?: Record<string, any> | null;
-  speakerDetails?: Record<string, any> | null;
-  volunteerDetails?: Record<string, any> | null;
+  driverDetails?: Record<string, any> | string | null;
+  speakerDetails?: Record<string, any> | string | null;
+  volunteerDetails?: Record<string, any> | string | null;
   assignedVanDriverId?: string | null;
   isDhlVan?: boolean | null;
   // Legacy arrays (still populated but no longer source of truth)
@@ -19,12 +19,35 @@ type EventWithAssignments = {
   assignedVolunteerIds?: string[] | null;
 };
 
+function parseDetails(details?: Record<string, any> | string | null): Record<string, any> | null {
+  if (!details) return null;
+  if (typeof details === 'string') {
+    try {
+      const parsed = JSON.parse(details);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, any>;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  if (typeof details === 'object' && !Array.isArray(details)) {
+    return details;
+  }
+  return null;
+}
+
 /**
  * Get all driver IDs from the event (excluding van driver)
  */
 export function getDriverIds(event: EventWithAssignments): string[] {
-  if (!event.driverDetails) return [];
-  return Object.keys(event.driverDetails);
+  const parsed = parseDetails(event.driverDetails);
+  if (parsed) return Object.keys(parsed);
+  if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
+    return event.assignedDriverIds;
+  }
+  return [];
 }
 
 /**
@@ -62,8 +85,12 @@ export function getDriverDetail(event: EventWithAssignments, personId: string): 
  * Get all speaker IDs from the event
  */
 export function getSpeakerIds(event: EventWithAssignments): string[] {
-  if (!event.speakerDetails) return [];
-  return Object.keys(event.speakerDetails);
+  const parsed = parseDetails(event.speakerDetails);
+  if (parsed) return Object.keys(parsed);
+  if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
+    return event.assignedSpeakerIds;
+  }
+  return [];
 }
 
 /**
@@ -91,8 +118,12 @@ export function getSpeakerDetail(event: EventWithAssignments, personId: string):
  * Get all volunteer IDs from the event
  */
 export function getVolunteerIds(event: EventWithAssignments): string[] {
-  if (!event.volunteerDetails) return [];
-  return Object.keys(event.volunteerDetails);
+  const parsed = parseDetails(event.volunteerDetails);
+  if (parsed) return Object.keys(parsed);
+  if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
+    return event.assignedVolunteerIds;
+  }
+  return [];
 }
 
 /**
