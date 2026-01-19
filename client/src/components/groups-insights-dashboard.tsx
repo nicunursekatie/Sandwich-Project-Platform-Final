@@ -491,6 +491,9 @@ function OrganizationRow({
         {getPriorityBadge(organization.outreachPriority)}
       </TableCell>
       <TableCell className="text-right">
+        {organization.metrics.totalEvents}
+      </TableCell>
+      <TableCell className="text-right">
         {organization.metrics.totalSandwiches.toLocaleString()}
       </TableCell>
       <TableCell className="text-right">
@@ -627,6 +630,10 @@ export default function GroupsInsightsDashboard() {
             const priorityOrder = ['urgent', 'high', 'normal', 'low'];
             aVal = priorityOrder.indexOf(a.outreachPriority);
             bVal = priorityOrder.indexOf(b.outreachPriority);
+            break;
+          case 'events':
+            aVal = a.metrics.totalEvents;
+            bVal = b.metrics.totalEvents;
             break;
           case 'sandwiches':
             aVal = a.metrics.totalSandwiches;
@@ -993,6 +1000,15 @@ export default function GroupsInsightsDashboard() {
                       </TableHead>
                       <TableHead
                         className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('events')}
+                      >
+                        <div className="flex items-center justify-end">
+                          # Events
+                          {getSortIcon('events')}
+                        </div>
+                      </TableHead>
+                      <TableHead
+                        className="text-right cursor-pointer hover:bg-muted/50 select-none"
                         onClick={() => handleColumnSort('sandwiches')}
                       >
                         <div className="flex items-center justify-end">
@@ -1053,6 +1069,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Score</TableHead>
                       <TableHead>Level</TableHead>
                       <TableHead>Priority</TableHead>
+                      <TableHead className="text-right"># Events</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
                       <TableHead></TableHead>
@@ -1099,6 +1116,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Score</TableHead>
                       <TableHead>Level</TableHead>
                       <TableHead>Priority</TableHead>
+                      <TableHead className="text-right"># Events</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
                       <TableHead></TableHead>
@@ -1145,6 +1163,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Score</TableHead>
                       <TableHead>Level</TableHead>
                       <TableHead>Priority</TableHead>
+                      <TableHead className="text-right"># Events</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
                       <TableHead></TableHead>
