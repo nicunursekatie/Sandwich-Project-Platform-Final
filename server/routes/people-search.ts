@@ -11,6 +11,7 @@ import {
   contacts
 } from '@shared/schema';
 import { ilike, or, sql } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 const router = Router();
 
@@ -347,7 +348,7 @@ router.get('/search', async (req, res) => {
 
     res.json({ results: limitedResults });
   } catch (error) {
-    console.error('People search error:', error);
+    logger.error('People search error:', error);
     res.status(500).json({ error: 'Failed to search people' });
   }
 });

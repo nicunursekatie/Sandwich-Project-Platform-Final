@@ -26,6 +26,7 @@ import {
   sentryErrorHandler,
   initializeSentry,
 } from './monitoring';
+import { getAppBaseUrl } from './config/constants';
 
 const app = express();
 const serverLogger = createServiceLogger('server');
@@ -196,11 +197,9 @@ async function bootstrap() {
     });
 
     // Dynamic PWA manifest with correct production URL
-    app.get('/manifest.json', (_req: Request, res: Response) => {
-      const productionUrl = 'https://sandwich-project-platform-final-katielong2316.replit.app';
-      const devUrl = `https://${process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'}`;
-      const isProduction = process.env.NODE_ENV === 'production';
-      const baseUrl = isProduction ? productionUrl : devUrl;
+    app.get('/manifest.json', (req: Request, res: Response) => {
+      // Use centralized URL function for consistent URL generation
+      const baseUrl = getAppBaseUrl(req);
 
       res.setHeader('Content-Type', 'application/manifest+json');
       res.json({

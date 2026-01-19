@@ -8,6 +8,7 @@ import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { db } from '../db';
 import { transformDriverForApi, createErrorResponse } from '@shared/types';
+import { RATE_LIMITS, normalizeAddressForGeocoding } from '../config/constants';
 
 // Get driver's address for geocoding - only use actual addresses, not zone/area guesses
 // Checks both 'address' (UI field) and 'homeAddress' (legacy field)
@@ -16,12 +17,8 @@ function getDriverAddressForGeocoding(driver: Driver): string | null {
   const address = (driver.address?.trim()) || (driver.homeAddress?.trim());
   if (!address) return null;
 
-  // Add regional context if missing to improve geocoding accuracy
-  if (!address.match(/,\s*(GA|Georgia)/i) && !address.match(/USA|United States/i)) {
-    return `${address}, Georgia, USA`;
-  }
-
-  return address;
+  // Use centralized address normalization for consistent geocoding
+  return normalizeAddressForGeocoding(address);
 }
 
 // Check if driver has an address (for filtering)
@@ -29,10 +26,10 @@ function driverHasAddress(driver: Driver): boolean {
   return !!(driver.address?.trim() || driver.homeAddress?.trim());
 }
 
-// Rate limits by geocoding service
-const RATE_LIMITS = {
-  google: 200,        // Google allows 50 req/sec, we use 200ms to be safe
-  openstreetmap: 1100 // OpenStreetMap requires 1 req/sec max
+// Rate limits by geocoding service - use centralized config
+const SERVICE_RATE_LIMITS = {
+  google: RATE_LIMITS.GOOGLE_GEOCODING,
+  openstreetmap: RATE_LIMITS.OPENSTREETMAP,
 };
 
 export function createDriversRouter(deps: RouterDependencies) {
@@ -566,7 +563,7 @@ export function createDriversRouter(deps: RouterDependencies) {
 
         // Rate limit based on which service was used last
         if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, RATE_LIMITS[lastSource]));
+          await new Promise((resolve) => setTimeout(resolve, SERVICE_RATE_LIMITS[lastSource]));
         }
 
         const address = getDriverAddressForGeocoding(driver);
@@ -666,7 +663,7 @@ export function createDriversRouter(deps: RouterDependencies) {
 
         // Rate limit based on which service was used last
         if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, RATE_LIMITS[lastSource]));
+          await new Promise((resolve) => setTimeout(resolve, SERVICE_RATE_LIMITS[lastSource]));
         }
 
         const geocodeResult = await geocodeAddress(address);

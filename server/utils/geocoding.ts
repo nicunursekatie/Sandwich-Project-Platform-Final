@@ -1,4 +1,5 @@
 import { logger } from './production-safe-logger';
+import { RATE_LIMITS } from '../config/constants';
 
 export type GeocodingResult = {
   latitude: string;
@@ -119,10 +120,10 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
   }
 }
 
-// Rate limits by service
-const RATE_LIMITS = {
-  google: 200,        // Google allows 50 req/sec, we use 200ms to be safe
-  openstreetmap: 1100 // OpenStreetMap requires 1 req/sec max
+// Rate limits by service - use centralized config
+const SERVICE_RATE_LIMITS = {
+  google: RATE_LIMITS.GOOGLE_GEOCODING,
+  openstreetmap: RATE_LIMITS.OPENSTREETMAP,
 };
 
 /**
@@ -146,7 +147,7 @@ export async function geocodeAddresses(addresses: string[]): Promise<GeocodingRe
 
     // Rate limit between requests based on the service that was actually used
     if (i < addresses.length - 1) {
-      const delayMs = RATE_LIMITS[lastSource];
+      const delayMs = SERVICE_RATE_LIMITS[lastSource];
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
