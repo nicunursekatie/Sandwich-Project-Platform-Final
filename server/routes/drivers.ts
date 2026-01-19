@@ -7,6 +7,7 @@ import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
 import { db } from '../db';
+import { transformDriverForApi, createErrorResponse } from '@shared/types';
 
 // Get driver's address for geocoding - only use actual addresses, not zone/area guesses
 // Checks both 'address' (UI field) and 'homeAddress' (legacy field)
@@ -41,11 +42,13 @@ export function createDriversRouter(deps: RouterDependencies) {
   // Get all drivers
   router.get('/', isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const drivers = await storage.getAllDrivers();
-      res.json(drivers);
+      const allDrivers = await storage.getAllDrivers();
+      // Transform drivers to use canonical field names (isSpeaker instead of willingToSpeak)
+      const transformedDrivers = allDrivers.map((d) => transformDriverForApi(d));
+      res.json(transformedDrivers);
     } catch (error) {
       logger.error('Failed to get drivers', error);
-      res.status(500).json({ message: 'Failed to get drivers' });
+      res.status(500).json(createErrorResponse('Failed to get drivers', 'INTERNAL_ERROR'));
     }
   });
 

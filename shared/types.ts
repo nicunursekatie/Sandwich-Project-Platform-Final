@@ -200,7 +200,7 @@ export function getEventNotificationPreferences(
   user: DrizzleUser | User | null | undefined
 ): EventNotificationPreferences {
   const metadata = getUserMetadata(user);
-  
+
   // Return user's preferences if they exist
   if (metadata.eventNotificationPreferences) {
     return metadata.eventNotificationPreferences;
@@ -215,4 +215,331 @@ export function getEventNotificationPreferences(
     secondaryReminderHours: 1,
     secondaryReminderType: 'email',
   };
+}
+
+// ============================================================================
+// STANDARDIZED API RESPONSE TYPES
+// ============================================================================
+
+/**
+ * Standard error codes for API responses
+ */
+export type ApiErrorCode =
+  | 'VALIDATION_ERROR'
+  | 'NOT_FOUND'
+  | 'UNAUTHORIZED'
+  | 'FORBIDDEN'
+  | 'CONFLICT'
+  | 'INTERNAL_ERROR'
+  | 'BAD_REQUEST'
+  | 'RATE_LIMITED'
+  | 'SERVICE_UNAVAILABLE';
+
+/**
+ * Standardized API response envelope
+ * All API endpoints should return this format for consistency
+ */
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+  code?: ApiErrorCode;
+  /** Optional metadata (pagination, timing, etc.) */
+  meta?: {
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    hasMore?: boolean;
+    timestamp?: string;
+  };
+}
+
+/**
+ * Success response helper type
+ */
+export interface ApiSuccessResponse<T> extends ApiResponse<T> {
+  success: true;
+  data: T;
+}
+
+/**
+ * Error response helper type
+ */
+export interface ApiErrorResponse extends ApiResponse<never> {
+  success: false;
+  error: string;
+  code: ApiErrorCode;
+}
+
+/**
+ * Create a standardized success response
+ */
+export function createSuccessResponse<T>(
+  data: T,
+  message?: string,
+  meta?: ApiResponse['meta']
+): ApiSuccessResponse<T> {
+  return {
+    success: true,
+    data,
+    ...(message && { message }),
+    ...(meta && { meta }),
+  };
+}
+
+/**
+ * Create a standardized error response
+ */
+export function createErrorResponse(
+  error: string,
+  code: ApiErrorCode = 'INTERNAL_ERROR',
+  message?: string
+): ApiErrorResponse {
+  return {
+    success: false,
+    error,
+    code,
+    ...(message && { message }),
+  };
+}
+
+// ============================================================================
+// FIELD MAPPING UTILITIES
+// Handles consistency between legacy and canonical field names
+// ============================================================================
+
+/**
+ * Canonical field names - these are the AUTHORITATIVE field names
+ * that should be used throughout the application
+ */
+export const CANONICAL_FIELDS = {
+  // read status: canonical name is 'isRead'
+  READ_STATUS: 'isRead',
+  // focus areas: canonical name is 'focusAreas' (array)
+  FOCUS_AREAS: 'focusAreas',
+  // speaker status: canonical name is 'isSpeaker'
+  SPEAKER_STATUS: 'isSpeaker',
+} as const;
+
+/**
+ * Legacy field mappings - maps old field names to canonical names
+ */
+export const LEGACY_FIELD_MAPPINGS = {
+  // Database field -> API field
+  read: 'isRead',
+  focusArea: 'focusAreas',
+  willingToSpeak: 'isSpeaker',
+} as const;
+
+/**
+ * Message with standardized field names for API responses
+ */
+export interface StandardMessage {
+  id: number;
+  conversationId?: number | null;
+  userId: string;
+  senderId: string;
+  content: string;
+  sender?: string | null;
+  contextType?: string | null;
+  contextId?: string | null;
+  contextTitle?: string | null;
+  /** Standardized read status (replaces legacy 'read' field) */
+  isRead: boolean;
+  editedAt?: Date | null;
+  editedContent?: string | null;
+  deletedAt?: Date | null;
+  deletedBy?: string | null;
+  replyToMessageId?: number | null;
+  replyToContent?: string | null;
+  replyToSender?: string | null;
+  attachments?: MessageAttachment[] | null;
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
+}
+
+/**
+ * Standardized attachment type
+ * Use this instead of text or text[] for attachments
+ */
+export interface MessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+/**
+ * Recipient with standardized field names for API responses
+ */
+export interface StandardRecipient {
+  id: number;
+  name: string;
+  contactName?: string | null;
+  phone: string;
+  email?: string | null;
+  website?: string | null;
+  instagramHandle?: string | null;
+  address?: string | null;
+  region?: string | null;
+  preferences?: string | null;
+  weeklyEstimate?: number | null;
+  /** Standardized focus areas (replaces legacy 'focusArea' field) */
+  focusAreas: string[];
+  status: string;
+  contactPersonName?: string | null;
+  contactPersonPhone?: string | null;
+  contactPersonEmail?: string | null;
+  contactPersonRole?: string | null;
+  // ... other fields as needed
+}
+
+/**
+ * Driver with standardized field names for API responses
+ */
+export interface StandardDriver {
+  id: number;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  /** Standardized speaker status (replaces legacy 'willingToSpeak' field) */
+  isSpeaker: boolean;
+  // ... other fields as needed
+}
+
+/**
+ * Volunteer with standardized field names for API responses
+ */
+export interface StandardVolunteer {
+  id: number;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  /** Standardized speaker status */
+  isSpeaker: boolean;
+  isDriver: boolean;
+  // ... other fields as needed
+}
+
+// ============================================================================
+// FIELD TRANSFORMATION FUNCTIONS
+// Use these when reading from/writing to database to ensure consistency
+// ============================================================================
+
+/**
+ * Transform a database message to standardized API format
+ * Converts 'read' to 'isRead' and parses attachments
+ */
+export function transformMessageForApi<T extends { read?: boolean; attachments?: string | null }>(
+  dbMessage: T
+): Omit<T, 'read' | 'attachments'> & { isRead: boolean; attachments: MessageAttachment[] | null } {
+  const { read, attachments, ...rest } = dbMessage;
+
+  // Parse attachments if stored as JSON string
+  let parsedAttachments: MessageAttachment[] | null = null;
+  if (attachments) {
+    try {
+      parsedAttachments = typeof attachments === 'string'
+        ? JSON.parse(attachments)
+        : attachments;
+    } catch {
+      parsedAttachments = null;
+    }
+  }
+
+  return {
+    ...rest,
+    isRead: read ?? false,
+    attachments: parsedAttachments,
+  } as Omit<T, 'read' | 'attachments'> & { isRead: boolean; attachments: MessageAttachment[] | null };
+}
+
+/**
+ * Transform a standardized message back to database format
+ * Converts 'isRead' to 'read' and stringifies attachments
+ */
+export function transformMessageForDb<T extends { isRead?: boolean; attachments?: MessageAttachment[] | null }>(
+  apiMessage: T
+): Omit<T, 'isRead' | 'attachments'> & { read: boolean; attachments: string | null } {
+  const { isRead, attachments, ...rest } = apiMessage;
+
+  return {
+    ...rest,
+    read: isRead ?? false,
+    attachments: attachments ? JSON.stringify(attachments) : null,
+  } as Omit<T, 'isRead' | 'attachments'> & { read: boolean; attachments: string | null };
+}
+
+/**
+ * Transform a database recipient to standardized API format
+ * Converts 'focusArea' to 'focusAreas' array
+ */
+export function transformRecipientForApi<T extends { focusArea?: string | null; focusAreas?: string[] | null }>(
+  dbRecipient: T
+): Omit<T, 'focusArea'> & { focusAreas: string[] } {
+  const { focusArea, focusAreas, ...rest } = dbRecipient;
+
+  // Prefer focusAreas array, fall back to single focusArea
+  let standardizedFocusAreas: string[] = [];
+  if (Array.isArray(focusAreas) && focusAreas.length > 0) {
+    standardizedFocusAreas = focusAreas;
+  } else if (focusArea && typeof focusArea === 'string' && focusArea.trim()) {
+    standardizedFocusAreas = [focusArea];
+  }
+
+  return {
+    ...rest,
+    focusAreas: standardizedFocusAreas,
+  } as Omit<T, 'focusArea'> & { focusAreas: string[] };
+}
+
+/**
+ * Transform a database driver to standardized API format
+ * Converts 'willingToSpeak' to 'isSpeaker'
+ */
+export function transformDriverForApi<T extends { willingToSpeak?: boolean }>(
+  dbDriver: T
+): Omit<T, 'willingToSpeak'> & { isSpeaker: boolean } {
+  const { willingToSpeak, ...rest } = dbDriver;
+
+  return {
+    ...rest,
+    isSpeaker: willingToSpeak ?? false,
+  } as Omit<T, 'willingToSpeak'> & { isSpeaker: boolean };
+}
+
+/**
+ * Transform a standardized driver back to database format
+ * Converts 'isSpeaker' to 'willingToSpeak'
+ */
+export function transformDriverForDb<T extends { isSpeaker?: boolean }>(
+  apiDriver: T
+): Omit<T, 'isSpeaker'> & { willingToSpeak: boolean } {
+  const { isSpeaker, ...rest } = apiDriver;
+
+  return {
+    ...rest,
+    willingToSpeak: isSpeaker ?? false,
+  } as Omit<T, 'isSpeaker'> & { willingToSpeak: boolean };
+}
+
+/**
+ * Generic field transformer for bulk operations
+ * Maps legacy field names to canonical names in an object
+ */
+export function normalizeFieldNames<T extends Record<string, unknown>>(
+  obj: T,
+  mappings: Record<string, string> = LEGACY_FIELD_MAPPINGS
+): T {
+  const result = { ...obj };
+
+  for (const [legacyName, canonicalName] of Object.entries(mappings)) {
+    if (legacyName in result && !(canonicalName in result)) {
+      (result as Record<string, unknown>)[canonicalName] = result[legacyName];
+      delete (result as Record<string, unknown>)[legacyName];
+    }
+  }
+
+  return result;
 }

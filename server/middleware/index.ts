@@ -8,6 +8,14 @@
  * import { requirePermission, sanitizeMiddleware, requestLogger } from '../middleware';
  */
 
+import type { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import {
+  createErrorResponse,
+  ApiErrorCode,
+  ApiResponse,
+  createSuccessResponse,
+} from '../../shared/types';
+
 // Import functions for use within this file
 import { requestLogger, errorLogger, logger } from './logger';
 import { sanitizeMiddleware, sanitizeHtml, sanitizeText } from './sanitizer';
@@ -128,30 +136,94 @@ export function validateRequest(
   schema: any,
   target: 'body' | 'params' | 'query' = 'body'
 ) {
-  return (req: any, res: any, next: any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req[target];
       const validated = schema.parse(data);
       req[target] = validated;
       next();
     } catch (error: any) {
-      res.status(400).json({
-        error: 'Validation failed',
-        details: error.errors || error.message,
-      });
+      const response = createErrorResponse(
+        'Validation failed',
+        'VALIDATION_ERROR',
+        error.errors?.[0]?.message || error.message
+      );
+      res.status(400).json(response);
     }
   };
+}
+
+/**
+ * Custom error class with status code and error code support
+ */
+export class ApiError extends Error {
+  status: number;
+  code: ApiErrorCode;
+
+  constructor(message: string, status: number = 500, code: ApiErrorCode = 'INTERNAL_ERROR') {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+
+  static badRequest(message: string): ApiError {
+    return new ApiError(message, 400, 'BAD_REQUEST');
+  }
+
+  static notFound(message: string): ApiError {
+    return new ApiError(message, 404, 'NOT_FOUND');
+  }
+
+  static unauthorized(message: string): ApiError {
+    return new ApiError(message, 401, 'UNAUTHORIZED');
+  }
+
+  static forbidden(message: string): ApiError {
+    return new ApiError(message, 403, 'FORBIDDEN');
+  }
+
+  static conflict(message: string): ApiError {
+    return new ApiError(message, 409, 'CONFLICT');
+  }
+
+  static validationError(message: string): ApiError {
+    return new ApiError(message, 400, 'VALIDATION_ERROR');
+  }
+}
+
+/**
+ * Map HTTP status codes to API error codes
+ */
+function getErrorCodeFromStatus(status: number): ApiErrorCode {
+  switch (status) {
+    case 400:
+      return 'BAD_REQUEST';
+    case 401:
+      return 'UNAUTHORIZED';
+    case 403:
+      return 'FORBIDDEN';
+    case 404:
+      return 'NOT_FOUND';
+    case 409:
+      return 'CONFLICT';
+    case 429:
+      return 'RATE_LIMITED';
+    case 503:
+      return 'SERVICE_UNAVAILABLE';
+    default:
+      return 'INTERNAL_ERROR';
+  }
 }
 
 /**
  * Error handling middleware for specific route modules
  *
  * Provides consistent error formatting and logging for feature-specific routes
+ * Now uses the standardized ApiResponse format
  */
-export function createErrorHandler(moduleId: string) {
-  return (error: any, req: any, res: any, next: any) => {
-    // Use imported logger
-    // Use originalUrl to get the full path, not just the relative one
+export function createErrorHandler(moduleId: string): ErrorRequestHandler {
+  return (error: any, req: Request, res: Response, _next: NextFunction) => {
     const fullPath = req.originalUrl || req.url;
 
     logger.error(`${moduleId} error: ${error.message}`, error, {
@@ -159,14 +231,100 @@ export function createErrorHandler(moduleId: string) {
       url: fullPath,
     });
 
-    // Don't expose internal errors in production
     const isDevelopment = process.env.NODE_ENV === 'development';
+    const status = error.status || 500;
+    const code: ApiErrorCode = error.code || getErrorCodeFromStatus(status);
 
-    res.status(error.status || 500).json({
-      error: `${moduleId} error`,
-      message: isDevelopment ? error.message : 'Something went wrong',
-      ...(isDevelopment && { stack: error.stack }),
+    const response = createErrorResponse(
+      isDevelopment ? error.message : `${moduleId} error`,
+      code,
+      isDevelopment ? error.stack : undefined
+    );
+
+    res.status(status).json(response);
+  };
+}
+
+/**
+ * Global error handler middleware
+ *
+ * Should be registered last in the middleware chain to catch all unhandled errors.
+ * Uses the standardized ApiResponse format for consistent error responses.
+ */
+export function globalErrorHandler(): ErrorRequestHandler {
+  return (error: any, req: Request, res: Response, _next: NextFunction) => {
+    const fullPath = req.originalUrl || req.url;
+
+    // Log error with context
+    logger.error(`Global error handler: ${error.message}`, error, {
+      method: req.method,
+      url: fullPath,
+      stack: error.stack,
     });
+
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const status = error.status || 500;
+    const code: ApiErrorCode = error.code || getErrorCodeFromStatus(status);
+
+    const response = createErrorResponse(
+      isDevelopment ? error.message : 'An unexpected error occurred',
+      code
+    );
+
+    // Prevent sending response if headers already sent
+    if (res.headersSent) {
+      return;
+    }
+
+    res.status(status).json(response);
+  };
+}
+
+/**
+ * Response helper middleware
+ *
+ * Adds helper methods to the response object for consistent API responses.
+ * Call this middleware early in your route setup.
+ */
+export function responseHelpers() {
+  return (req: Request, res: Response, next: NextFunction) => {
+    // Add success response helper
+    (res as any).success = <T>(data: T, message?: string, meta?: ApiResponse['meta']) => {
+      res.json(createSuccessResponse(data, message, meta));
+    };
+
+    // Add error response helper
+    (res as any).apiError = (
+      error: string,
+      status: number = 500,
+      code?: ApiErrorCode,
+      message?: string
+    ) => {
+      const errorCode = code || getErrorCodeFromStatus(status);
+      res.status(status).json(createErrorResponse(error, errorCode, message));
+    };
+
+    // Add not found helper
+    (res as any).notFound = (message: string = 'Resource not found') => {
+      res.status(404).json(createErrorResponse(message, 'NOT_FOUND'));
+    };
+
+    // Add bad request helper
+    (res as any).badRequest = (message: string = 'Bad request') => {
+      res.status(400).json(createErrorResponse(message, 'BAD_REQUEST'));
+    };
+
+    // Add unauthorized helper
+    (res as any).unauthorized = (message: string = 'Unauthorized') => {
+      res.status(401).json(createErrorResponse(message, 'UNAUTHORIZED'));
+    };
+
+    // Add forbidden helper
+    (res as any).forbidden = (message: string = 'Forbidden') => {
+      res.status(403).json(createErrorResponse(message, 'FORBIDDEN'));
+    };
+
+    next();
   };
 }
 
@@ -183,3 +341,30 @@ export const corsConfig = {
 
 // Export types for TypeScript support
 export type { LogEntry } from './logger';
+
+// Export standardized API response utilities
+export {
+  createErrorResponse,
+  createSuccessResponse,
+  type ApiResponse,
+  type ApiErrorCode,
+  type ApiSuccessResponse,
+  type ApiErrorResponse,
+} from '../../shared/types';
+
+// Export extended Response type with helpers
+export interface ApiResponseMethods {
+  success: <T>(data: T, message?: string, meta?: ApiResponse['meta']) => void;
+  apiError: (error: string, status?: number, code?: ApiErrorCode, message?: string) => void;
+  notFound: (message?: string) => void;
+  badRequest: (message?: string) => void;
+  unauthorized: (message?: string) => void;
+  forbidden: (message?: string) => void;
+}
+
+// Extend Express Response type
+declare global {
+  namespace Express {
+    interface Response extends ApiResponseMethods {}
+  }
+}
