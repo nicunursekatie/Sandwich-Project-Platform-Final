@@ -1,4 +1,9 @@
 import { logger } from '../utils/production-safe-logger';
+import {
+  RATE_LIMITS,
+  GEOCODING_DEFAULTS,
+  normalizeAddressForGeocoding,
+} from '../config/constants';
 
 /**
  * Geocoding service using OpenStreetMap's Nominatim API
@@ -29,16 +34,13 @@ export async function geocodeLocation(location: string): Promise<GeocodeResult |
   }
 
   try {
-    // Add "Georgia, USA" to location queries that don't already have state info
-    // This helps improve geocoding accuracy for Atlanta-area locations
-    let searchQuery = location.trim();
-    if (!searchQuery.match(/,\s*(GA|Georgia)/i) && !searchQuery.match(/USA|United States/i)) {
-      searchQuery = `${searchQuery}, Georgia, USA`;
-    }
+    // Add default region to location queries that don't already have state info
+    // Uses centralized config for consistency across the application
+    const searchQuery = normalizeAddressForGeocoding(location);
 
     // Respect Nominatim's usage policy: 1 request per second maximum
     // Add a small delay to avoid hitting rate limits
-    await sleep(1100);
+    await sleep(RATE_LIMITS.OPENSTREETMAP);
 
     const url = new URL('https://nominatim.openstreetmap.org/search');
     url.searchParams.set('q', searchQuery);

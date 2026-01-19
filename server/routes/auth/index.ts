@@ -22,6 +22,7 @@ import type { AuthenticatedRequest, MaybeAuthenticatedRequest } from '../../type
 import { db } from '../../db';
 import { passwordResetTokens } from '@shared/schema';
 import { eq, and, gt, isNull } from 'drizzle-orm';
+import { getAppBaseUrl, DEFAULT_HOST } from '../../config/constants';
 
 export function createAuthRouter() {
   const router = Router();
@@ -492,28 +493,8 @@ export function createAuthRouter() {
 
       // Send password setup email
       try {
-        // Use the proper domain for setup links
-        let baseUrl;
-        if (process.env.RESET_BASE_URL) {
-          baseUrl = process.env.RESET_BASE_URL;
-        } else if (process.env.REPLIT_DEPLOYMENT) {
-          const domains = process.env.REPLIT_DOMAINS;
-          if (domains) {
-            baseUrl = `https://${domains.split(',')[0].trim()}`;
-          } else {
-            baseUrl = `https://${process.env.REPL_SLUG}.replit.app`;
-          }
-        } else {
-          const host = req.get('host') || 'localhost:5000';
-          const protocol = req.protocol || 'http';
-          if (process.env.REPLIT_DOMAINS) {
-            const devDomain = process.env.REPLIT_DOMAINS.split(',')[0].trim();
-            baseUrl = `https://${devDomain}`;
-          } else {
-            baseUrl = `${protocol}://${host}`;
-          }
-        }
-
+        // Use centralized URL function for setup links
+        const baseUrl = getAppBaseUrl(req);
         const setupLink = `${baseUrl}/set-password?token=${setupToken}`;
 
         // Use SendGrid for password setup emails
@@ -592,7 +573,7 @@ Fighting food insecurity one sandwich at a time
           logger.log(`
 🔧 DEVELOPMENT FALLBACK - Email failed, but setup link available:
 📧 Email: ${email}
-🔗 Setup Link: ${req.protocol}://${req.get('host') || 'localhost:5000'}/set-password?token=${setupToken}
+🔗 Setup Link: ${getAppBaseUrl(req)}/set-password?token=${setupToken}
 ⏰ Expires: ${expiresAt.toLocaleString()}
           `);
         }

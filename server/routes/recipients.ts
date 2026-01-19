@@ -15,6 +15,7 @@ import {
   createSuccessResponse,
   createErrorResponse,
 } from '@shared/types';
+import { RATE_LIMITS } from '../config/constants';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -330,8 +331,8 @@ router.post(
         
         for (const recipient of needsGeocoding) {
           try {
-            // Rate limit: 1 request per second for Nominatim
-            await new Promise(resolve => setTimeout(resolve, 1100));
+            // Rate limit: respect OpenStreetMap's usage policy
+            await new Promise(resolve => setTimeout(resolve, RATE_LIMITS.OPENSTREETMAP));
             
             const coords = await geocodeAddress(recipient.address!);
             if (coords) {
