@@ -55,6 +55,7 @@ import {
   dashboardDocuments,
   searchAnalytics,
   emailTemplateSections,
+  ambassadorCandidates,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -153,6 +154,9 @@ import {
   type EmailTemplateSection,
   type InsertEmailTemplateSection,
   type UpdateEmailTemplateSection,
+  type AmbassadorCandidate,
+  type InsertAmbassadorCandidate,
+  type UpdateAmbassadorCandidate,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -169,6 +173,7 @@ import {
   gte,
   lte,
   inArray,
+  notInArray,
   like,
   ilike,
 } from 'drizzle-orm';
@@ -5231,5 +5236,79 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailTemplateSections.id, id));
     // Neon serverless pattern: explicit fetch after update
     return await this.getEmailTemplateSectionById(id);
+  }
+
+  // ==================== Ambassador Candidates ====================
+
+  async getAllAmbassadorCandidates(): Promise<AmbassadorCandidate[]> {
+    return await db
+      .select()
+      .from(ambassadorCandidates)
+      .orderBy(desc(ambassadorCandidates.addedAt));
+  }
+
+  async getAmbassadorCandidatesByStatus(status: string): Promise<AmbassadorCandidate[]> {
+    return await db
+      .select()
+      .from(ambassadorCandidates)
+      .where(eq(ambassadorCandidates.status, status))
+      .orderBy(desc(ambassadorCandidates.addedAt));
+  }
+
+  async getAmbassadorCandidate(id: number): Promise<AmbassadorCandidate | undefined> {
+    const [candidate] = await db
+      .select()
+      .from(ambassadorCandidates)
+      .where(eq(ambassadorCandidates.id, id));
+    return candidate || undefined;
+  }
+
+  async getAmbassadorCandidateByCanonicalName(canonicalName: string): Promise<AmbassadorCandidate | undefined> {
+    const [candidate] = await db
+      .select()
+      .from(ambassadorCandidates)
+      .where(eq(ambassadorCandidates.canonicalName, canonicalName));
+    return candidate || undefined;
+  }
+
+  async createAmbassadorCandidate(data: InsertAmbassadorCandidate): Promise<AmbassadorCandidate> {
+    const [candidate] = await db
+      .insert(ambassadorCandidates)
+      .values(data)
+      .returning();
+    return candidate;
+  }
+
+  async updateAmbassadorCandidate(id: number, data: UpdateAmbassadorCandidate): Promise<AmbassadorCandidate | undefined> {
+    await db
+      .update(ambassadorCandidates)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(ambassadorCandidates.id, id));
+    return await this.getAmbassadorCandidate(id);
+  }
+
+  async deleteAmbassadorCandidate(id: number): Promise<boolean> {
+    const result = await db
+      .delete(ambassadorCandidates)
+      .where(eq(ambassadorCandidates.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getAmbassadorCandidatesWithFollowUpDue(): Promise<AmbassadorCandidate[]> {
+    const now = new Date();
+    return await db
+      .select()
+      .from(ambassadorCandidates)
+      .where(
+        and(
+          isNotNull(ambassadorCandidates.nextFollowUpDate),
+          lte(ambassadorCandidates.nextFollowUpDate, now),
+          notInArray(ambassadorCandidates.status, ['confirmed', 'declined'])
+        )
+      )
+      .orderBy(asc(ambassadorCandidates.nextFollowUpDate));
   }
 }

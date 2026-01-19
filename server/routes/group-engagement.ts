@@ -5,9 +5,11 @@ import {
   getGroupInsightsSummary,
   saveEngagementScores,
   OrganizationEngagement,
-  GroupInsightsSummary
+  GroupInsightsSummary,
+  getOrganizationEventHistory,
 } from '../services/group-engagement';
 import { logger } from '../utils/production-safe-logger';
+import { storage } from '../storage-wrapper';
 
 interface GroupEngagementDependencies {
   isAuthenticated: any;
@@ -520,6 +522,190 @@ export function createGroupEngagementRoutes(deps: GroupEngagementDependencies) {
     } catch (error) {
       logger.error('Error exporting engagement scores:', error);
       res.status(500).json({ message: 'Failed to export engagement scores' });
+    }
+  });
+
+  // ==================== Ambassador Candidate Routes ====================
+
+  /**
+   * GET /api/group-engagement/ambassadors
+   * Get all ambassador candidates
+   */
+  router.get('/ambassadors', deps.isAuthenticated, async (req, res) => {
+    try {
+      const { status } = req.query;
+      let candidates;
+      if (status && typeof status === 'string') {
+        candidates = await storage.getAmbassadorCandidatesByStatus(status);
+      } else {
+        candidates = await storage.getAllAmbassadorCandidates();
+      }
+      res.json(candidates);
+    } catch (error) {
+      logger.error('Error fetching ambassador candidates:', error);
+      res.status(500).json({ message: 'Failed to fetch ambassador candidates' });
+    }
+  });
+
+  /**
+   * GET /api/group-engagement/ambassadors/follow-up-due
+   * Get ambassador candidates with follow-up due
+   */
+  router.get('/ambassadors/follow-up-due', deps.isAuthenticated, async (req, res) => {
+    try {
+      const candidates = await storage.getAmbassadorCandidatesWithFollowUpDue();
+      res.json(candidates);
+    } catch (error) {
+      logger.error('Error fetching ambassador candidates with follow-up due:', error);
+      res.status(500).json({ message: 'Failed to fetch ambassador candidates' });
+    }
+  });
+
+  /**
+   * GET /api/group-engagement/ambassadors/:id
+   * Get a specific ambassador candidate
+   */
+  router.get('/ambassadors/:id', deps.isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const candidate = await storage.getAmbassadorCandidate(id);
+      if (!candidate) {
+        return res.status(404).json({ message: 'Ambassador candidate not found' });
+      }
+      res.json(candidate);
+    } catch (error) {
+      logger.error('Error fetching ambassador candidate:', error);
+      res.status(500).json({ message: 'Failed to fetch ambassador candidate' });
+    }
+  });
+
+  /**
+   * POST /api/group-engagement/ambassadors
+   * Add an organization as an ambassador candidate
+   */
+  router.post('/ambassadors', deps.isAuthenticated, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      const {
+        organizationName,
+        canonicalName,
+        category,
+        addedReason,
+        priority,
+        notes,
+        contactInfo,
+        engagementScoreAtAdd,
+        totalEventsAtAdd,
+        totalSandwichesAtAdd,
+      } = req.body;
+
+      if (!organizationName || !canonicalName) {
+        return res.status(400).json({ message: 'Organization name and canonical name are required' });
+      }
+
+      // Check if already exists
+      const existing = await storage.getAmbassadorCandidateByCanonicalName(canonicalName);
+      if (existing) {
+        return res.status(409).json({
+          message: 'This organization is already an ambassador candidate',
+          candidate: existing
+        });
+      }
+
+      const candidate = await storage.createAmbassadorCandidate({
+        organizationName,
+        canonicalName,
+        category,
+        addedBy: user?.id ? parseInt(user.id) : null,
+        addedReason,
+        priority: priority || 'normal',
+        notes,
+        contactInfo,
+        engagementScoreAtAdd,
+        totalEventsAtAdd,
+        totalSandwichesAtAdd,
+        status: 'identified',
+      });
+
+      logger.info(`Ambassador candidate added: ${organizationName} by user ${user?.email}`);
+      res.status(201).json(candidate);
+    } catch (error) {
+      logger.error('Error creating ambassador candidate:', error);
+      res.status(500).json({ message: 'Failed to create ambassador candidate' });
+    }
+  });
+
+  /**
+   * PATCH /api/group-engagement/ambassadors/:id
+   * Update an ambassador candidate
+   */
+  router.patch('/ambassadors/:id', deps.isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const user = (req as any).user;
+      const updates = req.body;
+
+      // Handle status changes
+      if (updates.status === 'confirmed' && !updates.confirmedAt) {
+        updates.confirmedAt = new Date();
+      }
+      if (updates.status === 'declined' && !updates.declinedAt) {
+        updates.declinedAt = new Date();
+      }
+
+      // Track contact attempts
+      if (updates.recordContact) {
+        delete updates.recordContact;
+        updates.lastContactedAt = new Date();
+        updates.lastContactedBy = user?.id ? parseInt(user.id) : null;
+      }
+
+      const candidate = await storage.updateAmbassadorCandidate(id, updates);
+      if (!candidate) {
+        return res.status(404).json({ message: 'Ambassador candidate not found' });
+      }
+
+      logger.info(`Ambassador candidate updated: ${candidate.organizationName} (ID: ${id})`);
+      res.json(candidate);
+    } catch (error) {
+      logger.error('Error updating ambassador candidate:', error);
+      res.status(500).json({ message: 'Failed to update ambassador candidate' });
+    }
+  });
+
+  /**
+   * DELETE /api/group-engagement/ambassadors/:id
+   * Remove an ambassador candidate
+   */
+  router.delete('/ambassadors/:id', deps.isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteAmbassadorCandidate(id);
+      if (!deleted) {
+        return res.status(404).json({ message: 'Ambassador candidate not found' });
+      }
+      logger.info(`Ambassador candidate deleted: ID ${id}`);
+      res.json({ message: 'Ambassador candidate removed' });
+    } catch (error) {
+      logger.error('Error deleting ambassador candidate:', error);
+      res.status(500).json({ message: 'Failed to delete ambassador candidate' });
+    }
+  });
+
+  // ==================== Event History Route ====================
+
+  /**
+   * GET /api/group-engagement/organization/:canonicalName/events
+   * Get event history for an organization
+   */
+  router.get('/organization/:canonicalName/events', deps.isAuthenticated, async (req, res) => {
+    try {
+      const { canonicalName } = req.params;
+      const eventHistory = await getOrganizationEventHistory(canonicalName);
+      res.json(eventHistory);
+    } catch (error) {
+      logger.error('Error fetching organization event history:', error);
+      res.status(500).json({ message: 'Failed to fetch organization event history' });
     }
   });
 

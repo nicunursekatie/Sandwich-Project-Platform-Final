@@ -4405,6 +4405,71 @@ export type OrganizationEngagementScore = typeof organizationEngagementScores.$i
 export type InsertOrganizationEngagementScore = z.infer<typeof insertOrganizationEngagementScoreSchema>;
 export type UpdateOrganizationEngagementScore = z.infer<typeof updateOrganizationEngagementScoreSchema>;
 
+// Ambassador Candidates - Track potential ambassador organizations for outreach
+export const ambassadorCandidates = pgTable('ambassador_candidates', {
+  id: serial('id').primaryKey(),
+
+  // Organization identification (links to engagement scores via canonical name)
+  organizationName: varchar('organization_name').notNull(),
+  canonicalName: varchar('canonical_name').notNull().unique(),
+  category: varchar('category'),
+
+  // Outreach tracking
+  status: varchar('status').notNull().default('identified'), // 'identified', 'contacted', 'in_discussion', 'confirmed', 'declined', 'on_hold'
+  priority: varchar('priority').default('normal'), // 'high', 'normal', 'low'
+
+  // Outreach history
+  addedBy: integer('added_by').references(() => users.id),
+  addedAt: timestamp('added_at').defaultNow().notNull(),
+  addedReason: text('added_reason'), // Why this org was added (e.g., "High engagement score", "Referred by X")
+
+  // Contact attempts
+  lastContactedAt: timestamp('last_contacted_at'),
+  lastContactedBy: integer('last_contacted_by').references(() => users.id),
+  contactMethod: varchar('contact_method'), // 'email', 'phone', 'in_person', 'event'
+  nextFollowUpDate: timestamp('next_follow_up_date'),
+
+  // Notes and context
+  notes: text('notes'),
+  contactInfo: jsonb('contact_info'), // { email, phone, contactName, etc. }
+
+  // Metrics snapshot at time of addition (for reference)
+  engagementScoreAtAdd: decimal('engagement_score_at_add', { precision: 5, scale: 2 }),
+  totalEventsAtAdd: integer('total_events_at_add'),
+  totalSandwichesAtAdd: integer('total_sandwiches_at_add'),
+
+  // Outcome tracking
+  outcomeNotes: text('outcome_notes'),
+  confirmedAt: timestamp('confirmed_at'),
+  declinedAt: timestamp('declined_at'),
+  declineReason: text('decline_reason'),
+
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_ambassador_canonical').on(table.canonicalName),
+  index('idx_ambassador_status').on(table.status),
+  index('idx_ambassador_priority').on(table.priority),
+  index('idx_ambassador_next_followup').on(table.nextFollowUpDate),
+]);
+
+export const insertAmbassadorCandidateSchema = createInsertSchema(ambassadorCandidates).omit({
+  id: true,
+  addedAt: true,
+  updatedAt: true,
+});
+
+export const updateAmbassadorCandidateSchema = createInsertSchema(ambassadorCandidates)
+  .omit({
+    id: true,
+    addedAt: true,
+    updatedAt: true,
+  })
+  .partial();
+
+export type AmbassadorCandidate = typeof ambassadorCandidates.$inferSelect;
+export type InsertAmbassadorCandidate = z.infer<typeof insertAmbassadorCandidateSchema>;
+export type UpdateAmbassadorCandidate = z.infer<typeof updateAmbassadorCandidateSchema>;
+
 // Email Template Sections - Customizable text sections for HTML email templates
 // Allows users to personalize key text areas while keeping HTML structure intact
 export const emailTemplateSections = pgTable('email_template_sections', {

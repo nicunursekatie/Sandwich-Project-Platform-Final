@@ -15,6 +15,7 @@ export interface NavItem {
   highlighted?: boolean; // Flag to highlight important menu items with special color
   topNav?: boolean; // Flag to indicate this item should appear in top nav instead of sidebar
   navigateAndExpand?: boolean; // Flag to indicate this parent item should navigate AND expand (not just expand)
+  external?: boolean; // Flag to indicate this opens as an external page (not inside dashboard)
 }
 
 export interface NavigationGroup {

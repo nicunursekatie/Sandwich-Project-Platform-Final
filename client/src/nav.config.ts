@@ -39,6 +39,7 @@ import {
   GitMerge,
   Zap,
   Target,
+  HandHeart,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -254,6 +255,16 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_DRIVER_PLANNING,
     group: 'logistics',
     highlighted: true,
+  },
+  {
+    id: 'volunteer-hub',
+    label: 'Volunteer Hub',
+    icon: HandHeart,
+    href: '/volunteer-hub',
+    permission: PERMISSIONS.NAV_VOLUNTEERS,
+    group: 'logistics',
+    highlighted: true,
+    external: true, // Opens as a separate page, not in dashboard
   },
   {
     id: 'maps',

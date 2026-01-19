@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -169,6 +170,54 @@ interface GroupInsightsSummary {
   newOpportunities: OrganizationEngagement[];
 }
 
+// Ambassador candidate types
+interface AmbassadorCandidate {
+  id: number;
+  organizationName: string;
+  canonicalName: string;
+  category: string | null;
+  status: 'identified' | 'contacted' | 'in_discussion' | 'confirmed' | 'declined' | 'on_hold';
+  priority: 'high' | 'normal' | 'low';
+  addedBy: number | null;
+  addedAt: string;
+  addedReason: string | null;
+  lastContactedAt: string | null;
+  lastContactedBy: number | null;
+  contactMethod: string | null;
+  nextFollowUpDate: string | null;
+  notes: string | null;
+  contactInfo: any;
+  engagementScoreAtAdd: string | null;
+  totalEventsAtAdd: number | null;
+  totalSandwichesAtAdd: number | null;
+  outcomeNotes: string | null;
+  confirmedAt: string | null;
+  declinedAt: string | null;
+  declineReason: string | null;
+  updatedAt: string;
+}
+
+// Event history types
+interface EventHistoryItem {
+  date: string;
+  source: 'event_request' | 'collection';
+  eventName: string | null;
+  sandwichCount: number;
+  status: string | null;
+  eventType: string | null;
+  address: string | null;
+  notes: string | null;
+  id: number | null;
+}
+
+interface OrganizationEventHistory {
+  canonicalName: string;
+  organizationName: string;
+  events: EventHistoryItem[];
+  totalEvents: number;
+  totalSandwiches: number;
+}
+
 // Helper functions
 const getEngagementLevelColor = (level: string): string => {
   switch (level) {
@@ -324,7 +373,7 @@ function ScoreDisplay({ label, score, color }: { label: string; score: number; c
   );
 }
 
-// Organization detail dialog
+// Organization detail dialog with event history and ambassador functionality
 function OrganizationDetailDialog({
   organization,
   open,
@@ -334,165 +383,364 @@ function OrganizationDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'events'>('overview');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch event history when the dialog is open
+  const { data: eventHistory, isLoading: eventsLoading } = useQuery<OrganizationEventHistory>({
+    queryKey: ['/api/group-engagement/organization', organization?.canonicalName, 'events'],
+    queryFn: async () => {
+      const response = await fetch(`/api/group-engagement/organization/${organization?.canonicalName}/events`);
+      if (!response.ok) throw new Error('Failed to fetch event history');
+      return response.json();
+    },
+    enabled: open && !!organization?.canonicalName,
+  });
+
+  // Check if already an ambassador candidate
+  const { data: ambassadorCandidates = [] } = useQuery<AmbassadorCandidate[]>({
+    queryKey: ['/api/group-engagement/ambassadors'],
+    enabled: open,
+  });
+
+  const isAmbassadorCandidate = ambassadorCandidates.some(
+    c => c.canonicalName === organization?.canonicalName
+  );
+
+  const existingCandidate = ambassadorCandidates.find(
+    c => c.canonicalName === organization?.canonicalName
+  );
+
+  // Add to ambassador list mutation
+  const addAmbassadorMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/group-engagement/ambassadors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organizationName: organization?.organizationName,
+          canonicalName: organization?.canonicalName,
+          category: organization?.category,
+          addedReason: `High engagement score (${Math.round(organization?.scores.overall || 0)}), recommended as ambassador candidate`,
+          priority: 'normal',
+          engagementScoreAtAdd: organization?.scores.overall,
+          totalEventsAtAdd: organization?.metrics.totalEvents,
+          totalSandwichesAtAdd: organization?.metrics.totalSandwiches,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to add ambassador');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Added to Ambassador List',
+        description: `${organization?.organizationName} has been added as an ambassador candidate.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/group-engagement/ambassadors'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add to ambassador list',
+        variant: 'destructive',
+      });
+    },
+  });
+
   if (!organization) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            {organization.organizationName}
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              {organization.organizationName}
+            </div>
+            {/* Ambassador button */}
+            {organization.engagementLevel === 'active' && organization.scores.overall >= 70 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isAmbassadorCandidate ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => !isAmbassadorCandidate && addAmbassadorMutation.mutate()}
+                    disabled={isAmbassadorCandidate || addAmbassadorMutation.isPending}
+                  >
+                    <Star className={cn("h-4 w-4 mr-1", isAmbassadorCandidate && "fill-amber-400 text-amber-400")} />
+                    {isAmbassadorCandidate ? 'Ambassador Candidate' : 'Add to Ambassador List'}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isAmbassadorCandidate
+                    ? `Status: ${existingCandidate?.status}`
+                    : 'Add this organization to your ambassador outreach list'}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-2">
+          <DialogDescription className="flex items-center gap-2 flex-wrap">
             {organization.category && (
               <Badge variant="outline">{getCategoryLabel(organization.category)}</Badge>
             )}
             {getEngagementLevelBadge(organization.engagementLevel)}
             {getPriorityBadge(organization.outreachPriority)}
+            <Badge variant="outline" className={cn("text-xs", getFrequencyPatternColor(organization.metrics.frequencyPattern))}>
+              {getFrequencyPatternLabel(organization.metrics.frequencyPattern)}
+            </Badge>
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Engagement Score */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Engagement Score
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="text-4xl font-bold">
-                  {Math.round(organization.scores.overall)}
-                </div>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  {getTrendIcon(organization.engagementTrend)}
-                  <span>{organization.engagementTrend}</span>
-                  {organization.trendPercentChange !== 0 && (
-                    <span>({organization.trendPercentChange > 0 ? '+' : ''}{organization.trendPercentChange}%)</span>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <ScoreDisplay label="Recency" score={organization.scores.recency} />
-                <ScoreDisplay label="Frequency" score={organization.scores.frequency} />
-                <ScoreDisplay label="Completion" score={organization.scores.completion} />
-                <ScoreDisplay label="Volume" score={organization.scores.volume} />
-                <ScoreDisplay label="Consistency" score={organization.scores.consistency} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Metrics */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Activity Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground">Total Events</div>
-                  <div className="text-xl font-semibold">{organization.metrics.totalEvents}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Completed Events</div>
-                  <div className="text-xl font-semibold">{organization.metrics.completedEvents}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Total Sandwiches</div>
-                  <div className="text-xl font-semibold">{organization.metrics.totalSandwiches.toLocaleString()}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground">Last Event</div>
-                  <div className="text-xl font-semibold">{formatDaysAgo(getDaysSinceLastEvent(organization.metrics))}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Insights */}
-          {organization.insights.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4" />
-                  Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {organization.insights.map((insight, idx) => (
-                    <div key={idx} className={cn(
-                      "p-3 rounded-lg border",
-                      insight.type === 'warning' && 'border-red-200 bg-red-50',
-                      insight.type === 'opportunity' && 'border-yellow-200 bg-yellow-50',
-                      insight.type === 'positive' && 'border-green-200 bg-green-50',
-                      insight.type === 'info' && 'border-blue-200 bg-blue-50',
-                    )}>
-                      <div className="font-medium">{insight.title}</div>
-                      <div className="text-sm text-muted-foreground">{insight.description}</div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Recommended Actions */}
-          {organization.recommendedActions.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Recommended Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {organization.recommendedActions.map((action, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border">
-                      {getPriorityBadge(action.priority)}
-                      <div>
-                        <div className="font-medium">{action.action}</div>
-                        <div className="text-sm text-muted-foreground">{action.reason}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Program Suitability */}
-          {organization.programSuitability.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Star className="h-4 w-4" />
-                  Program Suitability
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {organization.programSuitability.map((program, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 rounded-lg border">
-                      <div>
-                        <div className="font-medium">{program.program}</div>
-                        <div className="text-sm text-muted-foreground">{program.reason}</div>
-                      </div>
-                      <Badge variant="outline">{program.score}% match</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* Tab navigation */}
+        <div className="flex gap-2 border-b">
+          <Button
+            variant={activeTab === 'overview' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('overview')}
+          >
+            Overview
+          </Button>
+          <Button
+            variant={activeTab === 'events' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('events')}
+          >
+            <Calendar className="h-4 w-4 mr-1" />
+            Event History ({organization.metrics.totalEvents})
+          </Button>
         </div>
+
+        <ScrollArea className="flex-1 pr-4">
+          {activeTab === 'overview' ? (
+            <div className="space-y-6 py-4">
+              {/* Engagement Score */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Engagement Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="text-4xl font-bold">
+                      {Math.round(organization.scores.overall)}
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      {getTrendIcon(organization.engagementTrend)}
+                      <span>{organization.engagementTrend}</span>
+                      {organization.trendPercentChange !== 0 && (
+                        <span>({organization.trendPercentChange > 0 ? '+' : ''}{organization.trendPercentChange}%)</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <ScoreDisplay label="Recency" score={organization.scores.recency} />
+                    <ScoreDisplay label="Frequency" score={organization.scores.frequency} />
+                    <ScoreDisplay label="Completion" score={organization.scores.completion} />
+                    <ScoreDisplay label="Volume" score={organization.scores.volume} />
+                    <ScoreDisplay label="Consistency" score={organization.scores.consistency} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Metrics */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Activity Metrics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Total Events</div>
+                      <div className="text-xl font-semibold">{organization.metrics.totalEvents}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Completed Events</div>
+                      <div className="text-xl font-semibold">{organization.metrics.completedEvents}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Total Sandwiches</div>
+                      <div className="text-xl font-semibold">{organization.metrics.totalSandwiches.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Last Event</div>
+                      <div className="text-xl font-semibold">{formatDaysAgo(getDaysSinceLastEvent(organization.metrics))}</div>
+                    </div>
+                    {organization.metrics.typicalEventInterval && (
+                      <div>
+                        <div className="text-sm text-muted-foreground">Typical Interval</div>
+                        <div className="text-xl font-semibold">{formatInterval(organization.metrics.typicalEventInterval)}</div>
+                      </div>
+                    )}
+                    {organization.metrics.daysOverdue !== null && organization.metrics.daysOverdue > 0 && (
+                      <div>
+                        <div className="text-sm text-muted-foreground">Days Overdue</div>
+                        <div className="text-xl font-semibold text-red-600">{organization.metrics.daysOverdue}</div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Insights */}
+              {organization.insights.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4" />
+                      Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {organization.insights.map((insight, idx) => (
+                        <div key={idx} className={cn(
+                          "p-3 rounded-lg border",
+                          insight.type === 'warning' && 'border-red-200 bg-red-50',
+                          insight.type === 'opportunity' && 'border-yellow-200 bg-yellow-50',
+                          insight.type === 'positive' && 'border-green-200 bg-green-50',
+                          insight.type === 'info' && 'border-blue-200 bg-blue-50',
+                        )}>
+                          <div className="font-medium">{insight.title}</div>
+                          <div className="text-sm text-muted-foreground">{insight.description}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recommended Actions */}
+              {organization.recommendedActions.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Recommended Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {organization.recommendedActions.map((action, idx) => (
+                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border">
+                          {getPriorityBadge(action.priority)}
+                          <div>
+                            <div className="font-medium">{action.action}</div>
+                            <div className="text-sm text-muted-foreground">{action.reason}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Program Suitability */}
+              {organization.programSuitability.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Star className="h-4 w-4" />
+                      Program Suitability
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {organization.programSuitability.map((program, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div>
+                            <div className="font-medium">{program.program}</div>
+                            <div className="text-sm text-muted-foreground">{program.reason}</div>
+                          </div>
+                          <Badge variant="outline">{program.score}% match</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            /* Event History Tab */
+            <div className="py-4">
+              {eventsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : eventHistory?.events.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No event history found</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {/* Summary */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg mb-4">
+                    <span className="text-sm font-medium">
+                      {eventHistory?.totalEvents} events • {eventHistory?.totalSandwiches.toLocaleString()} total sandwiches
+                    </span>
+                  </div>
+
+                  {/* Event list */}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Sandwiches</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Source</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {eventHistory?.events.map((event, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">
+                            {new Date(event.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {event.sandwichCount.toLocaleString()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {event.status && (
+                              <Badge variant="outline" className={cn(
+                                event.status === 'completed' && 'bg-green-50 text-green-700',
+                                event.status === 'scheduled' && 'bg-blue-50 text-blue-700',
+                                event.status === 'cancelled' && 'bg-red-50 text-red-700',
+                              )}>
+                                {event.status}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-muted-foreground">
+                              {event.source === 'event_request' ? 'Event Request' : 'Collection Log'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
@@ -660,6 +908,346 @@ function OrganizationRow({
         <ChevronRight className="h-4 w-4 text-muted-foreground" />
       </TableCell>
     </TableRow>
+  );
+}
+
+// Ambassador status helpers
+const ambassadorStatusLabels: Record<string, string> = {
+  identified: 'Identified',
+  contacted: 'Contacted',
+  in_discussion: 'In Discussion',
+  confirmed: 'Confirmed',
+  declined: 'Declined',
+  on_hold: 'On Hold',
+};
+
+const ambassadorStatusColors: Record<string, string> = {
+  identified: 'bg-gray-100 text-gray-700 border-gray-200',
+  contacted: 'bg-blue-100 text-blue-700 border-blue-200',
+  in_discussion: 'bg-amber-100 text-amber-700 border-amber-200',
+  confirmed: 'bg-green-100 text-green-700 border-green-200',
+  declined: 'bg-red-100 text-red-700 border-red-200',
+  on_hold: 'bg-purple-100 text-purple-700 border-purple-200',
+};
+
+// Ambassador Candidates Tab Component
+function AmbassadorCandidatesTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingCandidate, setEditingCandidate] = useState<AmbassadorCandidate | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Fetch ambassador candidates
+  const { data: candidates = [], isLoading } = useQuery<AmbassadorCandidate[]>({
+    queryKey: ['/api/group-engagement/ambassadors'],
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: Partial<AmbassadorCandidate> }) => {
+      const response = await fetch(`/api/group-engagement/ambassadors/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) throw new Error('Failed to update');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Updated', description: 'Ambassador candidate updated successfully.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/group-engagement/ambassadors'] });
+      setEditDialogOpen(false);
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to update candidate', variant: 'destructive' });
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/group-engagement/ambassadors/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Removed', description: 'Ambassador candidate removed from list.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/group-engagement/ambassadors'] });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to remove candidate', variant: 'destructive' });
+    },
+  });
+
+  // Filter candidates
+  const filteredCandidates = statusFilter === 'all'
+    ? candidates
+    : candidates.filter(c => c.status === statusFilter);
+
+  // Group by status for summary
+  const statusCounts = candidates.reduce((acc, c) => {
+    acc[c.status] = (acc[c.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="cursor-pointer hover:border-primary" onClick={() => setStatusFilter('all')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold">{candidates.length}</div>
+            <div className="text-sm text-muted-foreground">Total Candidates</div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:border-primary" onClick={() => setStatusFilter('identified')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-gray-600">{statusCounts.identified || 0}</div>
+            <div className="text-sm text-muted-foreground">To Contact</div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:border-primary" onClick={() => setStatusFilter('in_discussion')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-amber-600">{statusCounts.in_discussion || 0}</div>
+            <div className="text-sm text-muted-foreground">In Discussion</div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:border-primary" onClick={() => setStatusFilter('confirmed')}>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-green-600">{statusCounts.confirmed || 0}</div>
+            <div className="text-sm text-muted-foreground">Confirmed</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filter */}
+      <div className="flex items-center gap-4">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="identified">Identified</SelectItem>
+            <SelectItem value="contacted">Contacted</SelectItem>
+            <SelectItem value="in_discussion">In Discussion</SelectItem>
+            <SelectItem value="confirmed">Confirmed</SelectItem>
+            <SelectItem value="declined">Declined</SelectItem>
+            <SelectItem value="on_hold">On Hold</SelectItem>
+          </SelectContent>
+        </Select>
+        {statusFilter !== 'all' && (
+          <Button variant="ghost" size="sm" onClick={() => setStatusFilter('all')}>
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Clear Filter
+          </Button>
+        )}
+      </div>
+
+      {/* Candidates List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-amber-500" />
+            Ambassador Candidates
+          </CardTitle>
+          <CardDescription>
+            Track and manage your ambassador outreach process
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filteredCandidates.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Star className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="font-medium">No ambassador candidates yet</p>
+              <p className="text-sm">Add top-performing organizations from the Top Performers tab</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Organization</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Score (When Added)</TableHead>
+                  <TableHead>Events</TableHead>
+                  <TableHead>Added</TableHead>
+                  <TableHead>Last Contact</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCandidates.map((candidate) => (
+                  <TableRow key={candidate.id}>
+                    <TableCell>
+                      <div className="font-medium">{candidate.organizationName}</div>
+                      {candidate.category && (
+                        <div className="text-xs text-muted-foreground">{getCategoryLabel(candidate.category)}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={ambassadorStatusColors[candidate.status]}>
+                        {ambassadorStatusLabels[candidate.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {candidate.engagementScoreAtAdd ? Math.round(parseFloat(candidate.engagementScoreAtAdd)) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {candidate.totalEventsAtAdd || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(candidate.addedAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {candidate.lastContactedAt
+                        ? new Date(candidate.lastContactedAt).toLocaleDateString()
+                        : <span className="text-muted-foreground">Never</span>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCandidate(candidate);
+                                setEditDialogOpen(true);
+                              }}
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Update Status / Log Contact</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                if (confirm('Remove this organization from the ambassador list?')) {
+                                  deleteMutation.mutate(candidate.id);
+                                }
+                              }}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Remove from List</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Ambassador Candidate</DialogTitle>
+            <DialogDescription>
+              {editingCandidate?.organizationName}
+            </DialogDescription>
+          </DialogHeader>
+          {editingCandidate && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={editingCandidate.status}
+                  onValueChange={(value) => setEditingCandidate({ ...editingCandidate, status: value as any })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="identified">Identified</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="in_discussion">In Discussion</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="declined">Declined</SelectItem>
+                    <SelectItem value="on_hold">On Hold</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Notes</label>
+                <Input
+                  value={editingCandidate.notes || ''}
+                  onChange={(e) => setEditingCandidate({ ...editingCandidate, notes: e.target.value })}
+                  placeholder="Add notes about outreach..."
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Next Follow-up Date</label>
+                <Input
+                  type="date"
+                  value={editingCandidate.nextFollowUpDate?.split('T')[0] || ''}
+                  onChange={(e) => setEditingCandidate({
+                    ...editingCandidate,
+                    nextFollowUpDate: e.target.value ? new Date(e.target.value).toISOString() : null
+                  })}
+                />
+              </div>
+
+              <div className="flex justify-between">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    updateMutation.mutate({
+                      id: editingCandidate.id,
+                      updates: {
+                        status: editingCandidate.status,
+                        notes: editingCandidate.notes,
+                        nextFollowUpDate: editingCandidate.nextFollowUpDate,
+                        recordContact: true, // This will update lastContactedAt
+                      } as any,
+                    });
+                  }}
+                  disabled={updateMutation.isPending}
+                >
+                  <Phone className="h-4 w-4 mr-1" />
+                  Log Contact & Save
+                </Button>
+                <Button
+                  onClick={() => {
+                    updateMutation.mutate({
+                      id: editingCandidate.id,
+                      updates: {
+                        status: editingCandidate.status,
+                        notes: editingCandidate.notes,
+                        nextFollowUpDate: editingCandidate.nextFollowUpDate,
+                      },
+                    });
+                  }}
+                  disabled={updateMutation.isPending}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -1107,6 +1695,10 @@ export default function GroupsInsightsDashboard() {
             <TabsTrigger value="new" className="text-blue-600">
               New Opportunities
             </TabsTrigger>
+            <TabsTrigger value="ambassadors" className="text-amber-600">
+              <Star className="h-4 w-4 mr-1" />
+              Ambassadors
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -1544,6 +2136,10 @@ export default function GroupsInsightsDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ambassadors">
+            <AmbassadorCandidatesTab />
           </TabsContent>
         </Tabs>
 

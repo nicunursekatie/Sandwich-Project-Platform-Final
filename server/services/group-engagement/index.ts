@@ -1322,3 +1322,147 @@ export async function saveEngagementScores(engagements: OrganizationEngagement[]
 
   logger.info('Finished saving engagement scores');
 }
+
+// ============================================================================
+// Event History for Organizations
+// ============================================================================
+
+export interface OrganizationEventHistoryItem {
+  date: Date;
+  source: 'event_request' | 'collection';
+  eventName: string | null;
+  sandwichCount: number;
+  status: string | null;
+  eventType: string | null;
+  address: string | null;
+  notes: string | null;
+  id: number | null;
+}
+
+export interface OrganizationEventHistory {
+  canonicalName: string;
+  organizationName: string;
+  events: OrganizationEventHistoryItem[];
+  totalEvents: number;
+  totalSandwiches: number;
+}
+
+/**
+ * Get detailed event history for an organization
+ */
+export async function getOrganizationEventHistory(
+  canonicalName: string
+): Promise<OrganizationEventHistory> {
+  const allRequests = await db.query.eventRequests.findMany();
+  const allCollections = await db.query.sandwichCollections.findMany();
+
+  const events: OrganizationEventHistoryItem[] = [];
+  let organizationName = canonicalName;
+
+  // Find matching event requests
+  const matchingRequests = allRequests.filter(req => {
+    const orgName = req.organizationName;
+    if (!orgName) return false;
+    const reqCanonical = canonicalizeOrgName(orgName);
+    if (reqCanonical === canonicalName) {
+      organizationName = orgName; // Use the actual display name
+      return true;
+    }
+    return false;
+  });
+
+  // Add event requests to the list
+  matchingRequests.forEach(req => {
+    const eventDate = req.scheduledEventDate || req.desiredEventDate;
+    if (eventDate) {
+      events.push({
+        date: new Date(eventDate),
+        source: 'event_request',
+        eventName: req.organizationName || null,
+        sandwichCount: req.estimatedSandwichCount || 0,
+        status: req.status || null,
+        eventType: req.eventType || null,
+        address: req.eventAddress || null,
+        notes: req.notesForScheduling || null,
+        id: req.id,
+      });
+    }
+  });
+
+  // Find matching collections
+  allCollections.forEach(collection => {
+    let matchedCount = 0;
+
+    // Check group1
+    if (collection.group1Name && canonicalizeOrgName(collection.group1Name) === canonicalName) {
+      if (!organizationName || organizationName === canonicalName) {
+        organizationName = collection.group1Name;
+      }
+      matchedCount = collection.group1Count || 0;
+    }
+
+    // Check group2
+    if (collection.group2Name && canonicalizeOrgName(collection.group2Name) === canonicalName) {
+      if (!organizationName || organizationName === canonicalName) {
+        organizationName = collection.group2Name;
+      }
+      matchedCount = collection.group2Count || 0;
+    }
+
+    // Check groupCollections
+    if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+      collection.groupCollections.forEach((group: any) => {
+        if (group.name && canonicalizeOrgName(group.name) === canonicalName) {
+          if (!organizationName || organizationName === canonicalName) {
+            organizationName = group.name;
+          }
+          matchedCount += group.count || 0;
+        }
+      });
+    }
+
+    if (matchedCount > 0 && collection.collectionDate) {
+      // Check if we already have an event request for this date
+      const eventDate = new Date(collection.collectionDate);
+      const existingEvent = events.find(e =>
+        e.date.toISOString().split('T')[0] === eventDate.toISOString().split('T')[0] &&
+        e.source === 'event_request'
+      );
+
+      if (existingEvent) {
+        // Update sandwich count from collection if it's higher
+        if (matchedCount > existingEvent.sandwichCount) {
+          existingEvent.sandwichCount = matchedCount;
+        }
+      } else {
+        // Add as a collection-only event
+        events.push({
+          date: eventDate,
+          source: 'collection',
+          eventName: organizationName,
+          sandwichCount: matchedCount,
+          status: 'completed',
+          eventType: null,
+          address: null,
+          notes: null,
+          id: collection.id,
+        });
+      }
+    }
+  });
+
+  // Sort by date descending (most recent first)
+  events.sort((a, b) => b.date.getTime() - a.date.getTime());
+
+  // Calculate totals
+  const totalEvents = events.length;
+  const totalSandwiches = events.reduce((sum, e) => sum + e.sandwichCount, 0);
+
+  return {
+    canonicalName,
+    organizationName,
+    events,
+    totalEvents,
+    totalSandwiches,
+  };
+}

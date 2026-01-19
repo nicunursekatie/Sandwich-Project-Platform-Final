@@ -85,6 +85,7 @@ import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
 import photoScannerRouter from './photo-scanner';
 import { createEmailTemplatesRouter } from './email-templates';
+import volunteerEventHubRouter from './volunteer-event-hub';
 
 // Import centralized middleware
 import {
@@ -811,6 +812,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     volunteersRouter
   );
   router.use('/api/volunteers', createErrorHandler('volunteers'));
+
+  // Volunteer Event Hub - self-service signup portal for volunteers
+  router.use(
+    '/api/volunteer-hub',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    volunteerEventHubRouter
+  );
+  router.use('/api/volunteer-hub', createErrorHandler('volunteer-hub'));
 
   // Hosts management
   const hostsRouter = createHostsRouter(deps);

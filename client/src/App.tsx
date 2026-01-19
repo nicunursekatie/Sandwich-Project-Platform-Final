@@ -130,6 +130,7 @@ function Router() {
   const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
   const EmailTemplatesAdmin = lazy(() => import('./pages/admin/email-templates'));
   const NotificationsPage = lazy(() => import('./pages/notifications'));
+  const VolunteerEventHub = lazy(() => import('./pages/volunteer-event-hub'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -449,6 +450,11 @@ function Router() {
         </Route>
         <Route path="/driver-planning">
           {() => <Dashboard initialSection="driver-planning" />}
+        </Route>
+        <Route path="/volunteer-hub">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <VolunteerEventHub />
+          </Suspense>
         </Route>
         <Route path="/event-reminders">
           {() => <Dashboard initialSection="event-reminders" />}
