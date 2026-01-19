@@ -6,6 +6,7 @@ import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateShort } from '@/lib/date-utils';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { ActivityFeed } from '@/components/activity-feed';
 
 interface TspContactStats {
   userId: string;
@@ -172,22 +173,30 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
-        <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">New</div>
-          <div className="text-2xl font-bold text-blue-600">{newCount}</div>
-          <div className="text-xs text-slate-500 mt-1">New requests</div>
+      {/* Summary Stats and Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Stats Cards */}
+        <div className="lg:col-span-2 grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4">
+          <div className="premium-card-flat p-4">
+            <div className="text-sm text-slate-600">New</div>
+            <div className="text-2xl font-bold text-blue-600">{newCount}</div>
+            <div className="text-xs text-slate-500 mt-1">New requests</div>
+          </div>
+          <div className="premium-card-flat p-4">
+            <div className="text-sm text-slate-600">In Process</div>
+            <div className="text-2xl font-bold text-yellow-600">{inProcessCount}</div>
+            <div className="text-xs text-slate-500 mt-1">Being worked on</div>
+          </div>
+          <div className="premium-card-flat p-4">
+            <div className="text-sm text-slate-600">Scheduled</div>
+            <div className="text-2xl font-bold text-green-600">{scheduledCount}</div>
+            <div className="text-xs text-slate-500 mt-1">Ready to go</div>
+          </div>
         </div>
-        <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">In Process</div>
-          <div className="text-2xl font-bold text-yellow-600">{inProcessCount}</div>
-          <div className="text-xs text-slate-500 mt-1">Being worked on</div>
-        </div>
-        <div className="premium-card-flat p-4">
-          <div className="text-sm text-slate-600">Scheduled</div>
-          <div className="text-2xl font-bold text-green-600">{scheduledCount}</div>
-          <div className="text-xs text-slate-500 mt-1">Ready to go</div>
+        
+        {/* Activity Feed */}
+        <div className="lg:col-span-1">
+          <ActivityFeed limit={15} hours={48} maxHeight="200px" />
         </div>
       </div>
 
