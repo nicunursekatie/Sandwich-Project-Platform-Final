@@ -98,6 +98,10 @@ interface EngagementMetrics {
   lastEventDate: string | null;
   firstEventDate: string | null;
   averageEventInterval: number | null;
+  typicalEventInterval: number | null;
+  frequencyPattern: 'monthly' | 'quarterly' | 'semi-annual' | 'annual' | 'irregular' | 'one-time' | 'none';
+  daysOverdue: number | null;
+  overduePercent: number | null;
 }
 
 interface EngagementInsight {
@@ -231,6 +235,40 @@ const formatDaysAgo = (days: number | null): string => {
   if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
   if (days < 365) return `${Math.floor(days / 30)} months ago`;
   return `${Math.floor(days / 365)} years ago`;
+};
+
+const getFrequencyPatternLabel = (pattern: string): string => {
+  const labels: Record<string, string> = {
+    'monthly': 'Monthly',
+    'quarterly': 'Quarterly',
+    'semi-annual': 'Semi-Annual',
+    'annual': 'Annual',
+    'irregular': 'Irregular',
+    'one-time': 'One-Time',
+    'none': 'No Events'
+  };
+  return labels[pattern] || pattern;
+};
+
+const getFrequencyPatternColor = (pattern: string): string => {
+  switch (pattern) {
+    case 'monthly': return 'bg-green-100 text-green-700 border-green-200';
+    case 'quarterly': return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'semi-annual': return 'bg-purple-100 text-purple-700 border-purple-200';
+    case 'annual': return 'bg-amber-100 text-amber-700 border-amber-200';
+    case 'irregular': return 'bg-gray-100 text-gray-700 border-gray-200';
+    case 'one-time': return 'bg-gray-100 text-gray-600 border-gray-200';
+    default: return 'bg-gray-100 text-gray-500 border-gray-200';
+  }
+};
+
+const formatInterval = (days: number | null): string => {
+  if (days === null) return 'N/A';
+  if (days < 7) return `${days} days`;
+  if (days < 30) return `~${Math.round(days / 7)} weeks`;
+  if (days < 90) return `~${Math.round(days / 30)} month${Math.round(days / 30) > 1 ? 's' : ''}`;
+  if (days < 365) return `~${Math.round(days / 30)} months`;
+  return `~${(days / 365).toFixed(1)} years`;
 };
 
 const getDaysSinceLastEvent = (metrics: EngagementMetrics): number | null => {
@@ -462,6 +500,10 @@ function OrganizationRow({
   organization: OrganizationEngagement;
   onClick: () => void;
 }) {
+  const metrics = organization.metrics;
+  const pattern = metrics.frequencyPattern || 'none';
+  const isOverdue = metrics.overduePercent !== null && metrics.overduePercent > 20;
+
   return (
     <TableRow
       className="cursor-pointer hover:bg-muted/50"
@@ -492,6 +534,23 @@ function OrganizationRow({
       </TableCell>
       <TableCell className="text-right">
         {organization.metrics.totalEvents}
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant="outline" className={cn("text-xs", getFrequencyPatternColor(pattern))}>
+            {getFrequencyPatternLabel(pattern)}
+          </Badge>
+          {metrics.typicalEventInterval && (
+            <span className="text-xs text-muted-foreground">
+              every {formatInterval(metrics.typicalEventInterval)}
+            </span>
+          )}
+          {isOverdue && metrics.daysOverdue && metrics.daysOverdue > 0 && (
+            <span className="text-xs text-red-600 font-medium">
+              {metrics.daysOverdue} days overdue
+            </span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-right">
         {organization.metrics.totalSandwiches.toLocaleString()}
@@ -634,6 +693,13 @@ export default function GroupsInsightsDashboard() {
           case 'events':
             aVal = a.metrics.totalEvents;
             bVal = b.metrics.totalEvents;
+            break;
+          case 'frequency':
+            // Sort by typical interval (lower = more frequent)
+            // Put null/irregular at the end
+            const patternOrder = ['monthly', 'quarterly', 'semi-annual', 'annual', 'irregular', 'one-time', 'none'];
+            aVal = patternOrder.indexOf(a.metrics.frequencyPattern || 'none');
+            bVal = patternOrder.indexOf(b.metrics.frequencyPattern || 'none');
             break;
           case 'sandwiches':
             aVal = a.metrics.totalSandwiches;
@@ -1008,6 +1074,15 @@ export default function GroupsInsightsDashboard() {
                         </div>
                       </TableHead>
                       <TableHead
+                        className="cursor-pointer hover:bg-muted/50 select-none"
+                        onClick={() => handleColumnSort('frequency')}
+                      >
+                        <div className="flex items-center">
+                          Frequency
+                          {getSortIcon('frequency')}
+                        </div>
+                      </TableHead>
+                      <TableHead
                         className="text-right cursor-pointer hover:bg-muted/50 select-none"
                         onClick={() => handleColumnSort('sandwiches')}
                       >
@@ -1070,6 +1145,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Level</TableHead>
                       <TableHead>Priority</TableHead>
                       <TableHead className="text-right"># Events</TableHead>
+                      <TableHead>Frequency</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
                       <TableHead></TableHead>
@@ -1117,6 +1193,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Level</TableHead>
                       <TableHead>Priority</TableHead>
                       <TableHead className="text-right"># Events</TableHead>
+                      <TableHead>Frequency</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
                       <TableHead></TableHead>
@@ -1164,6 +1241,7 @@ export default function GroupsInsightsDashboard() {
                       <TableHead>Level</TableHead>
                       <TableHead>Priority</TableHead>
                       <TableHead className="text-right"># Events</TableHead>
+                      <TableHead>Frequency</TableHead>
                       <TableHead className="text-right">Sandwiches</TableHead>
                       <TableHead className="text-right">Last Event</TableHead>
                       <TableHead></TableHead>

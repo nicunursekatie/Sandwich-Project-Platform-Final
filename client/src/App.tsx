@@ -129,6 +129,7 @@ function Router() {
   const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
   const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
   const EmailTemplatesAdmin = lazy(() => import('./pages/admin/email-templates'));
+  const NotificationsPage = lazy(() => import('./pages/notifications'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -382,6 +383,11 @@ function Router() {
           {() => <Dashboard initialSection="stream-messages" />}
         </Route>
         <Route path="/inbox">{() => <Dashboard initialSection="inbox" />}</Route>
+        <Route path="/notifications">
+          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
+            <NotificationsPage />
+          </Suspense>
+        </Route>
         <Route path="/suggestions">
           {() => <Dashboard initialSection="suggestions" />}
         </Route>
