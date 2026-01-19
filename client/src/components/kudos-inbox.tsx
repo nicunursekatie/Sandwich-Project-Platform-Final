@@ -49,6 +49,7 @@ export function KudosInbox() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [kudosMessage, setKudosMessage] = useState('');
+  const [markedAsReadIds, setMarkedAsReadIds] = useState<Set<number>>(new Set());
 
   const {
     data: kudosMessages = [],
@@ -98,7 +99,7 @@ export function KudosInbox() {
       return apiRequest('POST', '/api/messaging/kudos/mark-read', { kudosIds });
     },
     onSuccess: () => {
-      // Invalidate and refetch kudos to update read status
+      // Invalidate kudos to update read status
       queryClient.invalidateQueries({
         queryKey: ['/api/messaging/kudos/received'],
       });
@@ -106,7 +107,6 @@ export function KudosInbox() {
       queryClient.invalidateQueries({
         queryKey: ['/api/message-notifications/unread-counts'],
       });
-      refetch();
     },
     onError: (error) => {
       logger.error('Failed to mark kudos as read:', error);
@@ -117,19 +117,39 @@ export function KudosInbox() {
   useEffect(() => {
     if (!user || !kudosMessages || kudosMessages.length === 0) return;
 
-    const unreadKudos = kudosMessages.filter((k) => !k.read);
+    // Filter out kudos we've already marked as read in this session
+    const unreadKudos = kudosMessages.filter(
+      (k) => !k.read && !markedAsReadIds.has(k.id)
+    );
     if (unreadKudos.length === 0) return;
 
     // Mark as read after a short delay to ensure user is actually viewing
     const timeoutId = setTimeout(() => {
       const unreadIds = unreadKudos.map((k) => k.id);
+      // Track that we're marking these as read to prevent re-triggering
+      setMarkedAsReadIds((prev) => {
+        const newSet = new Set(prev);
+        unreadIds.forEach((id) => newSet.add(id));
+        return newSet;
+      });
       markKudosAsReadMutation.mutate(unreadIds);
     }, 1500); // 1.5 second delay
 
     return () => clearTimeout(timeoutId);
-  }, [kudosMessages, user, markKudosAsReadMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kudosMessages, user]);
 
   const unreadCount = kudosMessages.filter((k) => !k.read).length;
+
+  const handleMarkAsRead = (kudosId: number) => {
+    if (markedAsReadIds.has(kudosId)) return;
+    setMarkedAsReadIds((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(kudosId);
+      return newSet;
+    });
+    markKudosAsReadMutation.mutate([kudosId]);
+  };
 
   const handleSendKudos = () => {
     if (!selectedRecipient || !kudosMessage.trim()) return;
@@ -274,9 +294,10 @@ export function KudosInbox() {
         {kudosMessages.map((kudos) => (
           <Card
             key={kudos.id}
+            onClick={() => !kudos.read && handleMarkAsRead(kudos.id)}
             className={`transition-all duration-200 ${
               !kudos.read
-                ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 shadow-md'
+                ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200 shadow-md cursor-pointer hover:shadow-lg'
                 : 'bg-white hover:bg-gray-50'
             }`}
           >
@@ -333,7 +354,10 @@ export function KudosInbox() {
                         })}
                       </div>
                       {!kudos.read && (
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          <span className="text-[10px] text-yellow-600">Click to mark read</span>
+                        </div>
                       )}
                     </div>
                   </div>
