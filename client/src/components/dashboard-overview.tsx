@@ -485,7 +485,7 @@ export default function DashboardOverview({
               <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mt-4">
                 <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
                 <p className="premium-text-body-lg text-brand-primary font-medium text-center">
-                  Total sandwiches distributed since 2020
+                  Total sandwiches collected since 2020
                 </p>
                 <div className="w-2 h-2 bg-brand-light-blue rounded-full hidden sm:block"></div>
               </div>

@@ -2688,7 +2688,7 @@ export default function EventImpactReports() {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>Sandwiches by Category</CardTitle>
-                  <CardDescription>Total sandwiches distributed by organization type</CardDescription>
+                  <CardDescription>Total sandwiches made by organization type</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {processedData?.categoryChartData && processedData.categoryChartData.length > 0 ? (

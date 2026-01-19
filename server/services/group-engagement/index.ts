@@ -208,7 +208,7 @@ function calculateRecencyScore(metrics: EngagementMetrics): number {
 
 /**
  * Calculate volume score (0-100)
- * Based on total sandwiches distributed
+ * Based on total sandwiches made
  */
 function calculateVolumeScore(metrics: EngagementMetrics): number {
   const sandwiches = metrics.totalSandwiches;
@@ -580,7 +580,7 @@ function generateInsights(
     insights.push({
       type: 'positive',
       title: 'High Impact Partner',
-      description: `Has distributed ${metrics.totalSandwiches.toLocaleString()} sandwiches total.`,
+      description: `Has made ${metrics.totalSandwiches.toLocaleString()} sandwiches total.`,
       priority: 4
     });
   }
@@ -768,7 +768,7 @@ function determineProgramSuitability(
     programs.push({
       program: 'Large-Scale Events',
       score: Math.min(100, Math.round(scores.volume + 20)),
-      reason: 'Has capacity for high-volume distributions'
+      reason: 'Has capacity for high-volume sandwich making'
     });
   }
 
@@ -804,7 +804,7 @@ function determineProgramSuitability(
     programs.push({
       program: 'Faith Community Outreach',
       score: 70,
-      reason: 'Faith organizations often have community distribution networks'
+      reason: 'Faith organizations often have strong community volunteer networks'
     });
   } else if (category === 'corp' || category === 'small_medium_corp' || category === 'large_corp') {
     programs.push({
