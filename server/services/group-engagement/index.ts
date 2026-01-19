@@ -984,11 +984,34 @@ async function gatherOrganizationMetrics(
       : null;
   }
 
-  // Get display name and category from first request
-  const displayName = orgRequests[0]?.organizationName ||
-    orgCollections[0]?.group1Name ||
-    orgCollections[0]?.group2Name ||
-    canonicalName;
+  // Get display name and category - must match the canonical name source
+  let displayName: string = canonicalName;
+  
+  // First try event requests
+  if (orgRequests.length > 0 && orgRequests[0]?.organizationName) {
+    displayName = orgRequests[0].organizationName;
+  } else if (orgCollections.length > 0) {
+    // Find the correct display name from collections by checking which field matches
+    for (const collection of orgCollections) {
+      if (collection.group1Name && canonicalizeOrgName(collection.group1Name) === canonicalName) {
+        displayName = collection.group1Name;
+        break;
+      }
+      if (collection.group2Name && canonicalizeOrgName(collection.group2Name) === canonicalName) {
+        displayName = collection.group2Name;
+        break;
+      }
+      if (collection.groupCollections && Array.isArray(collection.groupCollections)) {
+        const matchingGroup = collection.groupCollections.find(
+          (group: any) => group.name && canonicalizeOrgName(group.name) === canonicalName
+        );
+        if (matchingGroup) {
+          displayName = matchingGroup.name;
+          break;
+        }
+      }
+    }
+  }
 
   const category = orgRequests[0]?.category || null;
 
