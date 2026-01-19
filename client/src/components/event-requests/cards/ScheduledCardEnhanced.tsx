@@ -1049,10 +1049,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             )}
 
             {missingInfo.length > 0 && (
-              <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] text-xs sm:text-sm font-medium animate-pulse">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                {missingInfo.length} Missing
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="bg-gradient-to-br from-[#A31C41] to-[#8B1538] text-white border border-[#A31C41] text-xs sm:text-sm font-medium animate-pulse cursor-help">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Missing: {missingInfo.join(', ')}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-medium mb-1">Missing Information:</p>
+                  <ul className="list-disc list-inside text-sm">
+                    {missingInfo.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
 

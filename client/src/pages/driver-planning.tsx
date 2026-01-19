@@ -2675,7 +2675,8 @@ export default function DriverPlanningDashboard() {
         </div>
 
         {/* Center Panel - Map */}
-        <div className="flex-1 relative" data-testid="driver-planning-map">
+        <div className="flex-1 flex flex-col" data-testid="driver-planning-map">
+          <div className="relative flex-1">
           <MapContainer
             center={mapCenter}
             zoom={10}
@@ -3496,49 +3497,52 @@ export default function DriverPlanningDashboard() {
             </div>
           )}
 
-          {/* Map legend */}
-          <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]" data-testid="driver-planning-legend">
-            <div className="text-xs font-semibold mb-2">Legend</div>
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center gap-2">
-                <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
-                </svg>
-                <span>Event</span>
+          </div>
+
+          <div className="border-t bg-white px-4 py-3">
+            <div className="bg-white rounded-lg shadow-sm border p-3 inline-block" data-testid="driver-planning-legend">
+              <div className="text-xs font-semibold mb-2">Legend</div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                  </svg>
+                  <span>Event</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                  </svg>
+                  <span>Selected Event</span>
+                </div>
+                {effectiveSelectedEvent && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
+                      <span>Host (circle)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
+                      <span>Recipient (diamond)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
+                      <span>Driver (triangle)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                        <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
+                      </svg>
+                      <span>Host+Driver</span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
+                      <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
+                      <span>Selected = orange</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
-                </svg>
-                <span>Selected Event</span>
-              </div>
-              {effectiveSelectedEvent && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
-                    <span>Host (circle)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                    <span>Recipient (diamond)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
-                    <span>Driver (triangle)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
-                      <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
-                    </svg>
-                    <span>Host+Driver</span>
-                  </div>
-                  <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
-                    <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-                    <span>Selected = orange</span>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>

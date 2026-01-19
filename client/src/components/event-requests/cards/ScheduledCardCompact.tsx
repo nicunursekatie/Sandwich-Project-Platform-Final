@@ -160,10 +160,22 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
                 </Badge>
               )}
               {missingInfo.length > 0 && (
-                <Badge className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30 shrink-0">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  {missingInfo.length} Missing
-                </Badge>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30 shrink-0 cursor-help">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      Missing: {missingInfo.join(', ')}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="font-medium mb-1">Missing Information:</p>
+                    <ul className="list-disc list-inside text-sm">
+                      {missingInfo.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
 
