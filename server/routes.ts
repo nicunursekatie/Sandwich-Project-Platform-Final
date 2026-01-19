@@ -131,6 +131,12 @@ export async function registerRoutes(app: Express): Promise<Store> {
     next();
   });
 
+  // CRITICAL: Signup routes MUST be registered BEFORE mainRoutes
+  // These are public endpoints that don't require authentication
+  // and need to match before authRouter can intercept them
+  const { signupRoutes } = await import('./routes/signup');
+  app.use('/api', signupRoutes);
+
   // Main modular routes (handles all API endpoints)
   const mainRoutes = createMainRoutes({
     isAuthenticated,
@@ -139,10 +145,6 @@ export async function registerRoutes(app: Express): Promise<Store> {
     storage,
   });
   app.use(mainRoutes);
-
-  // Signup routes (kept separate for unauthenticated access)
-  const { signupRoutes } = await import('./routes/signup');
-  app.use('/api', signupRoutes);
 
   // Catch-all handler for unknown API routes
   app.use('/api', (req, res, next) => {
