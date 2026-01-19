@@ -328,7 +328,7 @@ const markMessagesRead = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Conversation ID is required' });
     }
 
-    console.log(
+    logger.log(
       `Marking messages as read for user ${userId} in conversation ${conversationId}`
     );
 
@@ -351,7 +351,7 @@ const markMessagesRead = async (req: Request, res: Response) => {
 
     const markedCount = result.length;
 
-    console.log(`Marked ${markedCount} messages as read`);
+    logger.log(`Marked ${markedCount} messages as read`);
 
     res.json({ success: true, markedCount });
   } catch (error) {
@@ -370,7 +370,7 @@ const markAllRead = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    console.log(`Marking all messages as read for user ${userId}`);
+    logger.log(`Marking all messages as read for user ${userId}`);
 
     let totalMarkedCount = 0;
 
@@ -390,7 +390,7 @@ const markAllRead = async (req: Request, res: Response) => {
       .returning({ id: messageRecipients.id });
 
     totalMarkedCount += messageRecipientsResult.length;
-    console.log(`Marked ${messageRecipientsResult.length} formal messages as read`);
+    logger.log(`Marked ${messageRecipientsResult.length} formal messages as read`);
 
     // 2. Mark all email inbox messages as read (emailMessages)
     const emailMessagesResult = await db
@@ -410,7 +410,7 @@ const markAllRead = async (req: Request, res: Response) => {
       .returning({ id: emailMessages.id });
 
     totalMarkedCount += emailMessagesResult.length;
-    console.log(`Marked ${emailMessagesResult.length} email messages as read`);
+    logger.log(`Marked ${emailMessagesResult.length} email messages as read`);
 
     // 3. Mark all chat messages as read (chatMessageReads)
     const { chatMessageReads } = await import('../../shared/schema');
@@ -468,12 +468,12 @@ const markAllRead = async (req: Request, res: Response) => {
           }
         } catch (err) {
           // Silently handle duplicates - this is expected
-          console.log(`Message ${message.id} already marked as read for user ${userId}`);
+          logger.log(`Message ${message.id} already marked as read for user ${userId}`);
         }
       }
     }
 
-    console.log(`Total marked ${totalMarkedCount} messages as read`);
+    logger.log(`Total marked ${totalMarkedCount} messages as read`);
 
     res.json({ success: true, markedCount: totalMarkedCount });
   } catch (error) {

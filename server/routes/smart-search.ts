@@ -9,6 +9,7 @@ import type { SmartSearchQuery, SmartSearchResponse } from '../types/smart-searc
 import type { SessionUser } from '../types/express';
 import { storage } from '../storage';
 import { safeAssign, validateNoPrototypePollution } from '../utils/object-utils';
+import { logger } from '../utils/production-safe-logger';
 
 interface ExtendedSmartSearchQuery extends SmartSearchQuery {
   userPermissions?: string[];
@@ -70,7 +71,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
       res.json(response);
     } catch (error) {
-      console.error('Smart search error:', error);
+      logger.error('Smart search error:', error);
       res.status(500).json({ error: 'Search failed' });
     }
   });
@@ -103,7 +104,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
       res.json(response);
     } catch (error) {
-      console.error('Fuzzy search error:', error);
+      logger.error('Fuzzy search error:', error);
       res.status(500).json({ error: 'Search failed' });
     }
   });
@@ -117,7 +118,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const features = await searchService.getAllFeatures();
       res.json({ features });
     } catch (error) {
-      console.error('Get features error:', error);
+      logger.error('Get features error:', error);
       res.status(500).json({ error: 'Failed to get features' });
     }
   });
@@ -137,7 +138,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       await searchService.regenerateEmbeddings();
       res.json({ success: true, message: 'Embeddings regenerated successfully' });
     } catch (error) {
-      console.error('Regenerate embeddings error:', error);
+      logger.error('Regenerate embeddings error:', error);
       res.status(500).json({ error: 'Failed to regenerate embeddings' });
     }
   });
@@ -171,11 +172,11 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
       // Start regeneration in background
       searchService.regenerateEmbeddingsWithOptions(options)
-        .catch(err => console.error('Background regeneration error:', err));
+        .catch(err => logger.error('Background regeneration error:', err));
 
       res.json({ success: true, message: 'Regeneration started' });
     } catch (error) {
-      console.error('Regenerate embeddings error:', error);
+      logger.error('Regenerate embeddings error:', error);
       res.status(500).json({ error: 'Failed to start regeneration' });
     }
   });
@@ -194,7 +195,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const progress = searchService.getRegenerationProgress();
       res.json(progress);
     } catch (error) {
-      console.error('Get progress error:', error);
+      logger.error('Get progress error:', error);
       res.status(500).json({ error: 'Failed to get progress' });
     }
   });
@@ -213,7 +214,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       searchService.pauseRegeneration();
       res.json({ success: true });
     } catch (error) {
-      console.error('Pause error:', error);
+      logger.error('Pause error:', error);
       res.status(500).json({ error: 'Failed to pause' });
     }
   });
@@ -232,7 +233,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       searchService.resumeRegeneration();
       res.json({ success: true });
     } catch (error) {
-      console.error('Resume error:', error);
+      logger.error('Resume error:', error);
       res.status(500).json({ error: 'Failed to resume' });
     }
   });
@@ -251,7 +252,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       searchService.stopRegeneration();
       res.json({ success: true });
     } catch (error) {
-      console.error('Stop error:', error);
+      logger.error('Stop error:', error);
       res.status(500).json({ error: 'Failed to stop' });
     }
   });
@@ -271,7 +272,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const estimate = await searchService.getCostEstimate(options);
       res.json(estimate);
     } catch (error) {
-      console.error('Cost estimate error:', error);
+      logger.error('Cost estimate error:', error);
       res.status(500).json({ error: 'Failed to estimate cost' });
     }
   });
@@ -290,7 +291,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const summary = await searchService.getAnalyticsSummary();
       res.json(summary);
     } catch (error) {
-      console.error('Analytics summary error:', error);
+      logger.error('Analytics summary error:', error);
       res.status(500).json({ error: 'Failed to get analytics' });
     }
   });
@@ -309,7 +310,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const metrics = await searchService.getEmbeddingQualityMetrics();
       res.json(metrics);
     } catch (error) {
-      console.error('Quality metrics error:', error);
+      logger.error('Quality metrics error:', error);
       res.status(500).json({ error: 'Failed to get quality metrics' });
     }
   });
@@ -333,7 +334,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const result = await searchService.testSearch(query, userRole);
       res.json(result);
     } catch (error) {
-      console.error('Test search error:', error);
+      logger.error('Test search error:', error);
       res.status(500).json({ error: 'Failed to test search' });
     }
   });
@@ -359,7 +360,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       const feature = await searchService.addFeature(req.body);
       res.json(feature);
     } catch (error) {
-      console.error('Add feature error:', error);
+      logger.error('Add feature error:', error);
       res.status(500).json({ error: 'Failed to add feature' });
     }
   });
@@ -417,7 +418,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       }
       res.json(feature);
     } catch (error) {
-      console.error('Update feature error:', error);
+      logger.error('Update feature error:', error);
       res.status(500).json({ error: 'Failed to update feature' });
     }
   });
@@ -439,7 +440,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       }
       res.json({ success: true });
     } catch (error) {
-      console.error('Delete feature error:', error);
+      logger.error('Delete feature error:', error);
       res.status(500).json({ error: 'Failed to delete feature' });
     }
   });
@@ -460,7 +461,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       res.setHeader('Content-Disposition', 'attachment; filename=smart-search-features.json');
       res.json(features);
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       res.status(500).json({ error: 'Failed to export features' });
     }
   });
@@ -491,7 +492,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
       await searchService.importFeatures(features, mode || 'merge');
       res.json({ success: true, message: `Imported ${features.length} features` });
     } catch (error) {
-      console.error('Import error:', error);
+      logger.error('Import error:', error);
       res.status(500).json({ error: 'Failed to import features' });
     }
   });
@@ -527,7 +528,7 @@ export function createSmartSearchRouter(searchService: SmartSearchService) {
 
       res.json({ success: true });
     } catch (error) {
-      console.error('Analytics error:', error);
+      logger.error('Analytics error:', error);
       res.status(500).json({ error: 'Failed to log analytics' });
     }
   });

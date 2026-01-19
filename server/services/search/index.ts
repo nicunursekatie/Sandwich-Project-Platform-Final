@@ -5,6 +5,7 @@ import { db } from '../../db';
 import { wishlistSuggestions, volunteers, recipients, searchAnalytics } from '@shared/schema';
 import { ilike, or, and, eq, inArray, gte, lte, desc, sql } from 'drizzle-orm';
 import { SearchEngine, type SearchFilters, type SearchResult } from '../../search-engine';
+import { logger } from '../../utils/production-safe-logger';
 
 // Extended search filters
 export interface ExtendedSearchFilters extends SearchFilters {
@@ -183,7 +184,7 @@ export class SearchService implements ISearchService {
         filters,
       };
     } catch (error) {
-      console.error('Global search failed:', error);
+      logger.error('Global search failed:', error);
       return {
         results: [],
         summary: {
@@ -297,7 +298,7 @@ export class SearchService implements ISearchService {
         relevance: this.calculateWishlistRelevance(query, item),
       }));
     } catch (error) {
-      console.error('Wishlist search failed:', error);
+      logger.error('Wishlist search failed:', error);
       return [];
     }
   }
@@ -350,7 +351,7 @@ export class SearchService implements ISearchService {
         },
       }));
     } catch (error) {
-      console.error('Volunteer search failed:', error);
+      logger.error('Volunteer search failed:', error);
       return [];
     }
   }
@@ -402,7 +403,7 @@ export class SearchService implements ISearchService {
         },
       }));
     } catch (error) {
-      console.error('Recipient search failed:', error);
+      logger.error('Recipient search failed:', error);
       return [];
     }
   }
@@ -415,7 +416,7 @@ export class SearchService implements ISearchService {
       const suggestions = await SearchEngine.getSearchSuggestions(query);
       return suggestions.slice(0, limit);
     } catch (error) {
-      console.error('Quick suggestions failed:', error);
+      logger.error('Quick suggestions failed:', error);
       return [];
     }
   }
@@ -441,7 +442,7 @@ export class SearchService implements ISearchService {
         return popularQueries.map((row) => row.query);
       }
     } catch (error) {
-      console.error('Popular search analytics failed:', error);
+      logger.error('Popular search analytics failed:', error);
     }
 
     return [

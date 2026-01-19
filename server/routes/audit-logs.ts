@@ -6,6 +6,7 @@ import { safeJsonParse } from '../utils/safe-json';
 import { db } from '../db';
 import { auditLogs, users } from '@shared/schema';
 import { desc, sql, and, or, eq, gte } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export function createAuditLogsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -74,7 +75,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
 
         res.json(parsedLogs);
       } catch (error) {
-        console.error('Failed to fetch audit logs:', error);
+        logger.error('Failed to fetch audit logs:', error);
         res.status(500).json({ error: 'Failed to fetch audit logs' });
       }
     }
@@ -138,7 +139,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
 
         res.json(parsedLogs);
       } catch (error) {
-        console.error('Failed to fetch audit logs for entity:', error);
+        logger.error('Failed to fetch audit logs for entity:', error);
         res.status(500).json({ error: 'Failed to fetch audit logs' });
       }
     }
@@ -272,7 +273,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
           }
         });
       } catch (error) {
-        console.error('Failed to fetch activity feed:', error);
+        logger.error('Failed to fetch activity feed:', error);
         res.status(500).json({ error: 'Failed to fetch activity feed' });
       }
     }
