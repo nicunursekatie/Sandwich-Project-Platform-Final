@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import type { RouterDependencies } from '../types';
+import type { AuthenticatedRequest, SessionUser } from '../types/express';
 import { eq, sql, and, gt, or, isNull } from 'drizzle-orm';
 import {
   messages,
@@ -16,8 +17,11 @@ import { PERMISSIONS } from '../../shared/auth-utils';
 import { hasPermission } from '../../shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 
+// Type for user data needed for permission checking
+type UserForPermissionCheck = Pick<SessionUser, 'id' | 'permissions' | 'role'>;
+
 // Helper function to check if user has permission for specific chat type
-function checkUserChatPermission(user: any, chatType: string): boolean {
+function checkUserChatPermission(user: UserForPermissionCheck | undefined, chatType: string): boolean {
   if (!user) return false;
 
   switch (chatType) {
@@ -43,17 +47,17 @@ function checkUserChatPermission(user: any, chatType: string): boolean {
 }
 
 // Get unread message counts for a user
-const getUnreadCounts = async (req: Request, res: Response) => {
+const getUnreadCounts = async (req: AuthenticatedRequest, res: Response) => {
   try {
     logger.log('=== UNREAD COUNTS REQUEST ===');
-    logger.log('req.user exists:', !!(req as any).user);
-    logger.log('req.user?.id:', (req as any).user?.id);
-    logger.log('req.session exists:', !!(req as any).session);
-    logger.log('req.session?.user exists:', !!(req as any).session?.user);
+    logger.log('req.user exists:', !!req.user);
+    logger.log('req.user?.id:', req.user?.id);
+    logger.log('req.session exists:', !!req.session);
+    logger.log('req.session?.user exists:', !!req.session?.user);
 
     // Try to get user from both req.user and req.session.user for compatibility
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
-    const user = (req as any).user || (req as any).session?.user;
+    const userId = req.user?.id || req.session?.user?.id;
+    const user = req.user || req.session?.user;
 
     if (!userId || !user) {
       logger.log('Authentication failed: No user ID found');
@@ -212,9 +216,9 @@ const getUnreadCounts = async (req: Request, res: Response) => {
 };
 
 // Mark chat messages as read when user views a chat channel
-const markChatMessagesRead = async (req: Request, res: Response) => {
+const markChatMessagesRead = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    const userId = req.user?.id || req.session?.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -315,9 +319,9 @@ const markChatMessagesRead = async (req: Request, res: Response) => {
 };
 
 // Mark messages as read when user views a chat
-const markMessagesRead = async (req: Request, res: Response) => {
+const markMessagesRead = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    const userId = req.user?.id || req.session?.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -361,10 +365,10 @@ const markMessagesRead = async (req: Request, res: Response) => {
 };
 
 // Mark all messages as read for user
-const markAllRead = async (req: Request, res: Response) => {
+const markAllRead = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
-    const user = (req as any).user || (req as any).session?.user;
+    const userId = req.user?.id || req.session?.user?.id;
+    const user = req.user || req.session?.user;
 
     if (!userId || !user) {
       return res.status(401).json({ error: 'User not authenticated' });
@@ -483,9 +487,9 @@ const markAllRead = async (req: Request, res: Response) => {
 };
 
 // Get who has read a specific chat message
-const getMessageReaders = async (req: Request, res: Response) => {
+const getMessageReaders = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    const userId = req.user?.id || req.session?.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -520,9 +524,9 @@ const getMessageReaders = async (req: Request, res: Response) => {
 };
 
 // Get read status for multiple chat messages at once (batch endpoint for efficiency)
-const getBatchMessageReaders = async (req: Request, res: Response) => {
+const getBatchMessageReaders = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    const userId = req.user?.id || req.session?.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -574,9 +578,9 @@ const getBatchMessageReaders = async (req: Request, res: Response) => {
 };
 
 // Get read status for email/inbox messages
-const getEmailMessageReadStatus = async (req: Request, res: Response) => {
+const getEmailMessageReadStatus = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id || (req as any).session?.user?.id;
+    const userId = req.user?.id || req.session?.user?.id;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
