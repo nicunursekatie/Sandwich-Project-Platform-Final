@@ -72,7 +72,7 @@ export default function SignupPage() {
 
   const sendVerificationMutation = useMutation({
     mutationFn: async (phone: string) => {
-      return await apiRequest('/api/auth/signup/send-sms-verification', 'POST', { phone });
+      return await apiRequest('POST', '/api/auth/signup/send-sms-verification', { phone });
     },
     onSuccess: () => {
       setSmsVerificationState('pending');
@@ -93,7 +93,7 @@ export default function SignupPage() {
 
   const verifyCodeMutation = useMutation({
     mutationFn: async ({ phone, code }: { phone: string; code: string }) => {
-      return await apiRequest('/api/auth/signup/verify-sms-code', 'POST', { phone, code });
+      return await apiRequest('POST', '/api/auth/signup/verify-sms-code', { phone, code });
     },
     onSuccess: () => {
       setSmsVerificationState('verified');
@@ -114,7 +114,7 @@ export default function SignupPage() {
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupForm) => {
-      return await apiRequest('/api/auth/signup', 'POST', data);
+      return await apiRequest('POST', '/api/auth/signup', data);
     },
     onSuccess: () => {
       toast({
