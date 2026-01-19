@@ -611,7 +611,13 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                   type="checkbox"
                   id="vanDriverNeeded"
                   checked={vanDriverNeeded}
-                  onChange={e => setVanDriverNeeded(e.target.checked)}
+                  onChange={e => {
+                    setVanDriverNeeded(e.target.checked);
+                    // When van driver is checked, default to no additional regular drivers needed
+                    if (e.target.checked) {
+                      setDriversNeeded('0');
+                    }
+                  }}
                   className="w-4 h-4"
                 />
                 <Label htmlFor="vanDriverNeeded" className="flex items-center gap-2 cursor-pointer">

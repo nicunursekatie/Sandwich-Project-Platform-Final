@@ -1159,6 +1159,8 @@ const EventRequestsManagementContent: React.FC = () => {
                 // Also set vanDriverNeeded to true if not already set
                 if (!currentEvent.vanDriverNeeded) {
                   updateData.vanDriverNeeded = true;
+                  // Default to no additional regular drivers when van driver is newly needed
+                  updateData.driversNeeded = 0;
                 }
               } else {
                 // Regular driver assignment

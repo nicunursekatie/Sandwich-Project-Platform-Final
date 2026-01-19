@@ -280,6 +280,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     if (value) {
       payload.vanDriverNeeded = true;
       payload.assignedVanDriverId = null;
+      // Default to no additional regular drivers when van is enabled
+      payload.driversNeeded = 0;
     }
     updateFieldsMutation.mutate(payload);
   };

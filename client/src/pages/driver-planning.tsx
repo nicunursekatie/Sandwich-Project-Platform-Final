@@ -1400,6 +1400,17 @@ export default function DriverPlanningDashboard() {
     refetchInterval: 60000, // Refetch every 60 seconds to catch newly geocoded recipients
   });
 
+  // Fetch ALL recipients for name lookup (including those without coordinates)
+  const { data: allRecipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+    queryKey: ['/api/recipients'],
+    queryFn: async () => {
+      const response = await fetch('/api/recipients');
+      if (!response.ok) throw new Error('Failed to fetch all recipients');
+      return response.json();
+    },
+    staleTime: 300000, // Cache for 5 minutes - this is just for name lookup
+  });
+
   const usersById = useMemo(() => {
     const map = new Map<string, string>();
     for (const u of usersBasic) {
@@ -1729,6 +1740,13 @@ export default function DriverPlanningDashboard() {
   const driversWithoutLocation = useMemo(() => {
     return activeDrivers.filter(driver =>
       !driver.hostLocation && !driver.area && !driver.zone && !driver.routeDescription && !driver.homeAddress
+    );
+  }, [activeDrivers]);
+
+  // Get drivers with addresses but missing geocoding (have address but no coordinates)
+  const driversNeedingGeocoding = useMemo(() => {
+    return activeDrivers.filter(driver =>
+      (driver.homeAddress || driver.address) && (!driver.latitude || !driver.longitude)
     );
   }, [activeDrivers]);
 
@@ -2369,13 +2387,20 @@ export default function DriverPlanningDashboard() {
       .map((raw) => {
         const numericId = extractNumericId(raw);
         if (numericId !== null) {
+          // First check recipientMapData (has coordinates)
           const recipient = recipientMapData.find((r) => r.id === numericId);
           if (recipient?.name) return recipient.name;
+          // Then check allRecipients (includes those without coordinates)
+          const allRecipient = allRecipients.find((r) => r.id === numericId);
+          if (allRecipient?.name) return allRecipient.name;
         }
         const normalizedName = normalizeRecipientToken(raw);
         if (normalizedName) {
           const match = recipientMapData.find((r) => (r.name || '').trim().toLowerCase() === normalizedName);
           if (match?.name) return match.name;
+          // Also check allRecipients for name match
+          const allMatch = allRecipients.find((r) => (r.name || '').trim().toLowerCase() === normalizedName);
+          if (allMatch?.name) return allMatch.name;
         }
         return stripRecipientPrefix(raw);
       })
@@ -4721,6 +4746,29 @@ export default function DriverPlanningDashboard() {
                 )}
 
 
+                {/* Drivers needing geocoding (have address but no coordinates) */}
+                {driversNeedingGeocoding.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <h4 className="text-xs font-semibold text-blue-800 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {driversNeedingGeocoding.length} drivers need geocoding
+                      </h4>
+                      <p className="text-xs text-blue-700 mt-1">
+                        These drivers have addresses but haven't been geocoded yet. Run batch geocode in Driver Management.
+                      </p>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-xs p-0 h-auto mt-2 text-blue-800"
+                        onClick={() => window.location.href = '/dashboard?section=drivers'}
+                      >
+                        Go to Driver Management →
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Drivers needing location data */}
                 {driversWithoutLocation.length > 0 && (
                   <div className="mt-4 pt-4 border-t">
@@ -6540,6 +6588,19 @@ export default function DriverPlanningDashboard() {
                 {driverSearchResults && driverSearchResults.length === 0 && (
                   <div className="text-sm text-gray-500 p-3 bg-gray-100 rounded-lg text-center">
                     No drivers match your search.
+                  </div>
+                )}
+
+                {/* Drivers needing geocoding */}
+                {driversNeedingGeocoding.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+                    <h4 className="text-xs font-semibold text-blue-800 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {driversNeedingGeocoding.length} drivers need geocoding
+                    </h4>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Run batch geocode in Driver Management.
+                    </p>
                   </div>
                 )}
 

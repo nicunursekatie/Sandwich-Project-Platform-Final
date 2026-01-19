@@ -97,7 +97,13 @@ export const ResourceRequirementsSection: React.FC<ResourceRequirementsSectionPr
                     type="checkbox"
                     id="vanDriverNeeded"
                     checked={formData.vanDriverNeeded}
-                    onChange={(e) => setFormData(prev => ({ ...prev, vanDriverNeeded: e.target.checked, isDhlVan: e.target.checked ? prev.isDhlVan : false }))}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      vanDriverNeeded: e.target.checked,
+                      isDhlVan: e.target.checked ? prev.isDhlVan : false,
+                      // Default to no additional regular drivers when van driver is checked
+                      driversNeeded: e.target.checked ? 0 : prev.driversNeeded
+                    }))}
                   />
                   <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
                 </div>
@@ -117,6 +123,8 @@ export const ResourceRequirementsSection: React.FC<ResourceRequirementsSectionPr
                       isDhlVan: e.target.checked,
                       assignedVanDriverId: e.target.checked ? '' : prev.assignedVanDriverId,
                       vanDriverNeeded: e.target.checked ? true : prev.vanDriverNeeded,
+                      // Default to no additional regular drivers when DHL van is checked
+                      driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
                     }))}
                   />
                   <Label htmlFor="isDhlVan">Use DHL van (external driver)</Label>
