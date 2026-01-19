@@ -32,78 +32,51 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// Semantic activity rules registry - maps API patterns to user-facing actions
+// Semantic activity rules registry - maps API patterns to meaningful user actions
 // Order matters: more specific patterns should come first
+// NOTE: Only endpoints with explicit rules here will be logged
+// Unmapped endpoints are skipped to avoid confusing activity entries
+//
+// PHILOSOPHY: Only log MEANINGFUL user actions, not page views or polling
+// - Creating things (new events, collections, messages)
+// - Updating/editing things
+// - Sending things (messages, kudos, emails)
+// - Exporting data
+// - Completing tasks
 const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
-  // Chat / Messaging
+  // ===== MESSAGING & COMMUNICATION =====
   {
-    pattern: '/api/stream/credentials',
+    pattern: /\/api\/messaging\/kudos\/send/,
     rule: {
-      section: 'Chat',
-      feature: 'Stream Chat',
-      action: 'Visit',
-      details: 'Opened the Chat feature',
-      groupKey: 'chat-visit',
-      dedupeWindowMs: 120000,
+      section: 'Recognition',
+      feature: 'Kudos',
+      action: 'Send',
+      details: 'Sent kudos to a team member',
+      methods: ['POST'],
     },
   },
   {
-    pattern: '/conversations/recent',
+    pattern: /\/api\/emails\/send/,
     rule: {
-      section: 'Chat',
-      feature: 'Conversations',
-      action: 'View',
-      details: 'Viewed recent conversations',
-      groupKey: 'chat-visit',
-      dedupeWindowMs: 120000,
+      section: 'Communication',
+      feature: 'Email',
+      action: 'Send',
+      details: 'Sent an email',
+      methods: ['POST'],
     },
   },
   {
-    pattern: '/api/messaging',
+    pattern: /\/api\/messaging\/send/,
     rule: {
-      section: 'Chat',
-      feature: 'Messaging',
-      action: 'View',
-      details: 'Accessed messaging system',
-      groupKey: 'messaging-visit',
-      dedupeWindowMs: 60000,
+      section: 'Communication',
+      feature: 'Messages',
+      action: 'Send',
+      details: 'Sent a message',
+      methods: ['POST'],
     },
   },
 
-  // Event Requests
-  {
-    pattern: '/api/event-requests/status-counts',
-    rule: {
-      section: 'Event Requests',
-      feature: 'Dashboard',
-      action: 'View',
-      details: 'Viewed Event Requests dashboard',
-      groupKey: 'event-requests-dashboard',
-      dedupeWindowMs: 60000,
-    },
-  },
-  {
-    pattern: '/api/event-requests/list',
-    rule: {
-      section: 'Event Requests',
-      feature: 'Event List',
-      action: 'View',
-      details: 'Viewed event request list',
-      groupKey: 'event-requests-dashboard',
-      dedupeWindowMs: 60000,
-    },
-  },
-  {
-    pattern: '/api/event-requests/collaboration',
-    rule: {
-      section: 'Event Requests',
-      feature: 'Collaboration',
-      action: 'View',
-      details: 'Accessed real-time collaboration on events',
-      groupKey: 'event-collaboration',
-      dedupeWindowMs: 120000,
-    },
-  },
+  // ===== EVENT REQUESTS =====
   {
     pattern: /\/api\/event-requests\/\d+\/toolkit-sent/,
     rule: {
@@ -115,146 +88,27 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
     },
   },
   {
-    pattern: /\/api\/event-requests\/\d+/,
+    pattern: /\/api\/event-requests$/,
     rule: {
       section: 'Event Requests',
-      feature: 'Event Details',
-      action: 'View',
-      details: 'Viewed event request details',
-      groupKey: 'event-details',
-      dedupeWindowMs: 30000,
-      methods: ['GET'],
-    },
-  },
-
-  // Resources
-  {
-    pattern: '/resources/user/recent',
-    rule: {
-      section: 'Resources',
-      feature: 'Documents',
-      action: 'View',
-      details: 'Viewed recently accessed documents',
-      groupKey: 'resources-recent',
-      dedupeWindowMs: 120000,
-    },
-  },
-
-  // Directory - Hosts
-  {
-    pattern: '/api/hosts-with-contacts',
-    rule: {
-      section: 'Directory',
-      feature: 'Hosts',
-      action: 'View',
-      details: 'Viewed host directory',
-      groupKey: 'hosts-directory',
-      dedupeWindowMs: 60000,
+      feature: 'Event Management',
+      action: 'Create',
+      details: 'Created a new event request',
+      methods: ['POST'],
     },
   },
   {
-    pattern: '/api/hosts/map',
-    rule: {
-      section: 'Directory',
-      feature: 'Host Map',
-      action: 'View',
-      details: 'Viewed host locations on map',
-      groupKey: 'hosts-map',
-      dedupeWindowMs: 60000,
-    },
-  },
-  {
-    pattern: '/api/hosts',
-    rule: {
-      section: 'Directory',
-      feature: 'Hosts',
-      action: 'View',
-      details: 'Accessed host management',
-      groupKey: 'hosts-management',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
-    },
-  },
-
-  // Directory - Drivers
-  {
-    pattern: '/api/drivers',
-    rule: {
-      section: 'Directory',
-      feature: 'Drivers',
-      action: 'View',
-      details: 'Viewed driver directory',
-      groupKey: 'drivers-directory',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
-    },
-  },
-
-  // Directory - Recipients
-  {
-    pattern: '/api/recipients/map',
-    rule: {
-      section: 'Directory',
-      feature: 'Recipient Map',
-      action: 'View',
-      details: 'Viewed recipient locations on map',
-      groupKey: 'recipients-map',
-      dedupeWindowMs: 60000,
-    },
-  },
-  {
-    pattern: '/api/recipients',
-    rule: {
-      section: 'Directory',
-      feature: 'Recipients',
-      action: 'View',
-      details: 'Viewed recipient directory',
-      groupKey: 'recipients-directory',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
-    },
-  },
-
-  // Users / Admin
-  {
-    pattern: '/api/users/online',
-    rule: {
-      section: 'Platform',
-      feature: 'Online Status',
-      action: 'View',
-      details: 'Checked who is online',
-      groupKey: 'online-status',
-      dedupeWindowMs: 300000, // 5 min - this polls frequently
-    },
-  },
-
-  // Onboarding
-  {
-    pattern: '/api/onboarding',
-    rule: {
-      section: 'Onboarding',
-      feature: 'Progress',
-      action: 'View',
-      details: 'Checked onboarding progress',
-      groupKey: 'onboarding-check',
-      dedupeWindowMs: 300000,
-    },
-  },
-
-  // Event Reminders
-  {
-    pattern: '/api/event-reminders',
+    pattern: /\/api\/event-requests\/\d+$/,
     rule: {
       section: 'Event Requests',
-      feature: 'Reminders',
-      action: 'View',
-      details: 'Viewed event reminders',
-      groupKey: 'event-reminders',
-      dedupeWindowMs: 120000,
+      feature: 'Event Management',
+      action: 'Update',
+      details: 'Updated an event request',
+      methods: ['PUT', 'PATCH'],
     },
   },
 
-  // Collections
+  // ===== COLLECTIONS =====
   {
     pattern: '/api/sandwich-collections/export',
     rule: {
@@ -262,165 +116,366 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
       feature: 'Export',
       action: 'Export',
       details: 'Exported sandwich collection data',
+      methods: ['GET', 'POST'],
     },
   },
   {
-    pattern: '/api/sandwich-collections',
+    pattern: /\/api\/sandwich-collections$/,
     rule: {
       section: 'Collections',
-      feature: 'Collection Entry',
-      action: 'View',
-      details: 'Viewed sandwich collections',
-      groupKey: 'collections-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      feature: 'Collection Log',
+      action: 'Create',
+      details: 'Logged a sandwich collection',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/sandwich-collections\/\d+$/,
+    rule: {
+      section: 'Collections',
+      feature: 'Collection Log',
+      action: 'Update',
+      details: 'Updated a collection entry',
+      methods: ['PUT', 'PATCH'],
     },
   },
 
-  // Projects
+  // ===== DIRECTORY MANAGEMENT =====
   {
-    pattern: '/api/projects',
+    pattern: /\/api\/hosts$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Hosts',
+      action: 'Create',
+      details: 'Added a new host',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/hosts\/\d+$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Hosts',
+      action: 'Update',
+      details: 'Updated host information',
+      methods: ['PUT', 'PATCH'],
+    },
+  },
+  {
+    pattern: /\/api\/drivers$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Drivers',
+      action: 'Create',
+      details: 'Added a new driver',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/drivers\/\d+$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Drivers',
+      action: 'Update',
+      details: 'Updated driver information',
+      methods: ['PUT', 'PATCH'],
+    },
+  },
+  {
+    pattern: /\/api\/recipients$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Recipients',
+      action: 'Create',
+      details: 'Added a new recipient',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/recipients\/\d+$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Recipients',
+      action: 'Update',
+      details: 'Updated recipient information',
+      methods: ['PUT', 'PATCH'],
+    },
+  },
+  {
+    pattern: /\/api\/volunteers$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Volunteers',
+      action: 'Create',
+      details: 'Added a new volunteer',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/volunteers\/\d+$/,
+    rule: {
+      section: 'Directory',
+      feature: 'Volunteers',
+      action: 'Update',
+      details: 'Updated volunteer information',
+      methods: ['PUT', 'PATCH'],
+    },
+  },
+
+  // ===== PROJECTS & TASKS =====
+  {
+    pattern: /\/api\/projects$/,
     rule: {
       section: 'Projects',
       feature: 'Project Management',
-      action: 'View',
-      details: 'Viewed projects',
-      groupKey: 'projects-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      action: 'Create',
+      details: 'Created a new project',
+      methods: ['POST'],
     },
   },
-
-  // Meetings
   {
-    pattern: '/api/meetings',
+    pattern: /\/api\/projects\/\d+$/,
     rule: {
-      section: 'Meetings',
-      feature: 'Meeting Management',
-      action: 'View',
-      details: 'Viewed meetings',
-      groupKey: 'meetings-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      section: 'Projects',
+      feature: 'Project Management',
+      action: 'Update',
+      details: 'Updated a project',
+      methods: ['PUT', 'PATCH'],
+    },
+  },
+  {
+    pattern: /\/api\/tasks$/,
+    rule: {
+      section: 'Tasks',
+      feature: 'Task Management',
+      action: 'Create',
+      details: 'Created a new task',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/tasks\/\d+\/complete/,
+    rule: {
+      section: 'Tasks',
+      feature: 'Task Management',
+      action: 'Complete',
+      details: 'Completed a task',
+      methods: ['POST', 'PATCH'],
+    },
+  },
+  {
+    pattern: /\/api\/tasks\/\d+$/,
+    rule: {
+      section: 'Tasks',
+      feature: 'Task Management',
+      action: 'Update',
+      details: 'Updated a task',
+      methods: ['PUT', 'PATCH'],
     },
   },
 
-  // Work Logs
+  // ===== WORK LOGS =====
   {
-    pattern: '/api/work-logs',
+    pattern: /\/api\/work-logs$/,
     rule: {
       section: 'Work Log',
       feature: 'Time Tracking',
-      action: 'View',
-      details: 'Viewed work logs',
-      groupKey: 'worklogs-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      action: 'Create',
+      details: 'Logged work time',
+      methods: ['POST'],
     },
   },
-
-  // TSP Holding Zone
   {
-    pattern: '/api/holding-zone',
+    pattern: /\/api\/work-logs\/\d+$/,
     rule: {
-      section: 'Holding Zone',
-      feature: 'Ideas & Tasks',
-      action: 'View',
-      details: 'Viewed TSP Holding Zone',
-      groupKey: 'holding-zone-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      section: 'Work Log',
+      feature: 'Time Tracking',
+      action: 'Update',
+      details: 'Updated work log entry',
+      methods: ['PUT', 'PATCH'],
     },
   },
 
-  // Emails
+  // ===== MEETINGS =====
   {
-    pattern: '/api/emails',
+    pattern: /\/api\/meetings$/,
     rule: {
-      section: 'Communication',
-      feature: 'Email',
-      action: 'View',
-      details: 'Accessed email system',
-      groupKey: 'emails-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      section: 'Meetings',
+      feature: 'Meeting Management',
+      action: 'Create',
+      details: 'Scheduled a new meeting',
+      methods: ['POST'],
     },
   },
-
-  // Kudos
   {
-    pattern: '/api/kudos',
+    pattern: /\/api\/meetings\/\d+$/,
     rule: {
-      section: 'Communication',
-      feature: 'Kudos',
-      action: 'View',
-      details: 'Viewed kudos messages',
-      groupKey: 'kudos-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      section: 'Meetings',
+      feature: 'Meeting Management',
+      action: 'Update',
+      details: 'Updated meeting details',
+      methods: ['PUT', 'PATCH'],
     },
   },
 
-  // Driver Planning
+  // ===== REPORTS =====
   {
-    pattern: '/api/driver-candidates',
-    rule: {
-      section: 'Driver Planning',
-      feature: 'Route Planning',
-      action: 'View',
-      details: 'Accessed driver planning tools',
-      groupKey: 'driver-planning',
-      dedupeWindowMs: 60000,
-    },
-  },
-
-  // Analytics
-  {
-    pattern: '/api/analytics',
-    rule: {
-      section: 'Analytics',
-      feature: 'Reports',
-      action: 'View',
-      details: 'Viewed analytics dashboard',
-      groupKey: 'analytics-view',
-      dedupeWindowMs: 60000,
-    },
-  },
-
-  // Reports
-  {
-    pattern: '/api/reports',
+    pattern: /\/api\/reports\/generate/,
     rule: {
       section: 'Reports',
       feature: 'Report Generation',
-      action: 'View',
-      details: 'Accessed reports',
-      groupKey: 'reports-view',
-      dedupeWindowMs: 60000,
-      methods: ['GET'],
+      action: 'Generate',
+      details: 'Generated a report',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/impact-reports$/,
+    rule: {
+      section: 'Reports',
+      feature: 'Impact Reports',
+      action: 'Create',
+      details: 'Created an impact report',
+      methods: ['POST'],
+    },
+  },
+
+  // ===== HOLDING ZONE =====
+  {
+    pattern: /\/api\/holding-zone$/,
+    rule: {
+      section: 'Holding Zone',
+      feature: 'Ideas',
+      action: 'Create',
+      details: 'Added item to Holding Zone',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/holding-zone\/\d+$/,
+    rule: {
+      section: 'Holding Zone',
+      feature: 'Ideas',
+      action: 'Update',
+      details: 'Updated Holding Zone item',
+      methods: ['PUT', 'PATCH'],
+    },
+  },
+
+  // ===== USER MANAGEMENT =====
+  {
+    pattern: /\/api\/users\/\d+\/permissions/,
+    rule: {
+      section: 'Admin',
+      feature: 'User Management',
+      action: 'Update',
+      details: 'Updated user permissions',
+      methods: ['PUT', 'PATCH', 'POST'],
+    },
+  },
+  {
+    pattern: /\/api\/users\/\d+\/activate/,
+    rule: {
+      section: 'Admin',
+      feature: 'User Management',
+      action: 'Activate',
+      details: 'Activated a user account',
+      methods: ['POST', 'PATCH'],
+    },
+  },
+  {
+    pattern: /\/api\/users\/\d+\/deactivate/,
+    rule: {
+      section: 'Admin',
+      feature: 'User Management',
+      action: 'Deactivate',
+      details: 'Deactivated a user account',
+      methods: ['POST', 'PATCH'],
+    },
+  },
+
+  // ===== RESOURCES/DOCUMENTS =====
+  {
+    pattern: /\/api\/resources$/,
+    rule: {
+      section: 'Resources',
+      feature: 'Documents',
+      action: 'Upload',
+      details: 'Uploaded a document',
+      methods: ['POST'],
+    },
+  },
+  {
+    pattern: /\/api\/documents$/,
+    rule: {
+      section: 'Resources',
+      feature: 'Documents',
+      action: 'Upload',
+      details: 'Uploaded a document',
+      methods: ['POST'],
     },
   },
 ];
 
 // Paths to completely skip - these provide zero user insight
+// These are internal/polling/system endpoints that don't represent meaningful user activity
 const skipPaths = [
+  // Auth & session
   '/api/auth/user',
+  '/api/auth/me',
+  '/api/user/me',
+
+  // Notification polling
   '/api/message-notifications',
   '/api/emails/unread-count',
   '/api/messaging/unread',
   '/unread',
   '/api/notifications/counts',
+  '/api/notifications',
+
+  // Stats & counts (background polling)
   '/count',
   '/stats',
+  '/status-counts',
   '/kudos/unnotified',
+
+  // Online status & presence
   '/api/online',
+  '/api/users/online',
+
+  // Health & system
   '/api/health',
   '/api/ping',
+  '/healthz',
   '/socket.io',
-  '/api/dismissed-announcements',
+  '/heartbeat',
+
+  // Activity logging itself (prevent recursion)
   '/api/activity-log',
   '/api/activity-logs',
+
+  // Announcements
+  '/api/dismissed-announcements',
   '/api/announcements/dismissed',
+  '/api/announcements',
+
+  // Stream Chat (internal credentials)
+  '/api/stream/credentials',
+  '/api/stream/token',
+
+  // Dashboard data polling
+  '/api/dashboard',
+  '/recent',
+  '/api/resources/user/recent',
+
+  // Feature flags
+  '/api/feature-flags',
+
+  // Onboarding checks
+  '/api/onboarding',
+
+  // For-assignments queries (internal)
+  '/for-assignments',
 ];
 
 function matchActivityRule(path: string, method: string): ActivityRule | null {
@@ -492,62 +547,26 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
             let action: string;
             let details: string;
 
-            if (rule) {
-              // Check deduplication
-              if (rule.groupKey && rule.dedupeWindowMs) {
-                if (shouldDedupe(user.id, rule.groupKey, rule.dedupeWindowMs)) {
-                  // Skip logging - already logged recently
-                  return originalEnd.call(this, chunk, encoding);
-                }
-              }
+            // Only log activities that have explicit semantic rules
+            // Skip unmapped endpoints to avoid confusing/meaningless entries
+            if (!rule) {
+              // Still update last active timestamp for all requests
+              await options.storage.updateUserLastActive(user.id);
+              return originalEnd.call(this, chunk, encoding);
+            }
 
-              section = rule.section;
-              feature = rule.feature;
-              action = rule.action;
-              details = rule.details;
-            } else {
-              // Fallback for unmapped endpoints - generate meaningful description
-              const actionInfo = methodToAction[req.method] || { action: 'Access', description: 'Accessed' };
-              action = actionInfo.action;
-
-              // Extract section from path
-              const pathParts = req.path.split('/').filter((p) => p && p !== 'api');
-              
-              if (pathParts.length > 0) {
-                // Capitalize and format section name
-                const rawSection = pathParts[0].replace(/-/g, ' ');
-                section = rawSection.charAt(0).toUpperCase() + rawSection.slice(1);
-                
-                // Build meaningful feature name
-                if (pathParts.length > 1) {
-                  const rawFeature = pathParts[1].replace(/-/g, ' ');
-                  feature = rawFeature.charAt(0).toUpperCase() + rawFeature.slice(1);
-                } else {
-                  feature = section;
-                }
-                
-                // Build details based on action and section
-                if (action === 'Create') {
-                  details = `Created new ${section.toLowerCase()} entry`;
-                } else if (action === 'Update') {
-                  const idMatch = req.path.match(/\/(\d+)(?:\/|$)/);
-                  details = idMatch
-                    ? `Updated ${section.toLowerCase()} #${idMatch[1]}`
-                    : `Updated ${section.toLowerCase()} settings`;
-                } else if (action === 'Delete') {
-                  const idMatch = req.path.match(/\/(\d+)(?:\/|$)/);
-                  details = idMatch
-                    ? `Deleted ${section.toLowerCase()} #${idMatch[1]}`
-                    : `Deleted ${section.toLowerCase()} item`;
-                } else {
-                  details = `Viewed ${section.toLowerCase()}`;
-                }
-              } else {
-                section = 'Platform';
-                feature = 'Navigation';
-                details = 'Navigated the platform';
+            // Check deduplication
+            if (rule.groupKey && rule.dedupeWindowMs) {
+              if (shouldDedupe(user.id, rule.groupKey, rule.dedupeWindowMs)) {
+                // Skip logging - already logged recently
+                return originalEnd.call(this, chunk, encoding);
               }
             }
+
+            section = rule.section;
+            feature = rule.feature;
+            action = rule.action;
+            details = rule.details;
 
             // Update user's last active timestamp
             await options.storage.updateUserLastActive(user.id);
