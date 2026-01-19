@@ -10,6 +10,11 @@ import { requirePermission } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
+import {
+  transformRecipientForApi,
+  createSuccessResponse,
+  createErrorResponse,
+} from '@shared/types';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -21,10 +26,12 @@ router.get(
   async (req, res) => {
     try {
       const recipients = await storage.getAllRecipients();
-      res.json(recipients);
+      // Transform recipients to use canonical field names (focusAreas instead of focusArea)
+      const transformedRecipients = recipients.map((r) => transformRecipientForApi(r));
+      res.json(transformedRecipients);
     } catch (error) {
       logger.error('Error fetching recipients:', error);
-      res.status(500).json({ error: 'Failed to fetch recipients' });
+      res.status(500).json(createErrorResponse('Failed to fetch recipients', 'INTERNAL_ERROR'));
     }
   }
 );

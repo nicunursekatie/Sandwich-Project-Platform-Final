@@ -6,6 +6,7 @@ import { isAuthenticated } from '../auth';
 import { AuthenticatedRequest } from '../types';
 import { logger } from '../utils/production-safe-logger';
 import { getSocketInstance } from '../socket-chat';
+import { transformMessageForApi, createErrorResponse } from '@shared/types';
 
 const router = Router();
 
@@ -50,10 +51,12 @@ router.get('/:userId', isAuthenticated, async (req: AuthenticatedRequest, res: R
         )
       );
 
-    res.json(messages);
+    // Transform messages to use canonical field names (isRead instead of read)
+    const transformedMessages = messages.map((msg) => transformMessageForApi(msg));
+    res.json(transformedMessages);
   } catch (error) {
     logger.error('[Instant Messages] Error fetching conversation:', error);
-    res.status(500).json({ message: 'Failed to fetch conversation' });
+    res.status(500).json(createErrorResponse('Failed to fetch conversation', 'INTERNAL_ERROR'));
   }
 });
 
@@ -92,19 +95,22 @@ router.post('/', isAuthenticated, async (req: AuthenticatedRequest, res: Respons
 
     logger.log(`[Instant Messages] Message sent from ${currentUser.id} to ${recipientId}`);
 
+    // Transform to canonical field names (isRead instead of read)
+    const transformedMessage = transformMessageForApi(newMessage);
+
     // Emit to recipient via Socket.IO for real-time delivery
     const io = getSocketInstance();
     if (io) {
       // Emit to recipient's messaging channel
-      io.to(`messaging:${recipientId}`).emit('instant_message', newMessage);
+      io.to(`messaging:${recipientId}`).emit('instant_message', transformedMessage);
       // Also emit to sender's messaging channel (for multi-device sync)
-      io.to(`messaging:${currentUser.id}`).emit('instant_message', newMessage);
+      io.to(`messaging:${currentUser.id}`).emit('instant_message', transformedMessage);
     }
 
-    res.status(201).json(newMessage);
+    res.status(201).json(transformedMessage);
   } catch (error) {
     logger.error('[Instant Messages] Error sending message:', error);
-    res.status(500).json({ message: 'Failed to send message' });
+    res.status(500).json(createErrorResponse('Failed to send message', 'INTERNAL_ERROR'));
   }
 });
 
@@ -132,7 +138,7 @@ router.post('/:userId/read', isAuthenticated, async (req: AuthenticatedRequest, 
     res.json({ success: true });
   } catch (error) {
     logger.error('[Instant Messages] Error marking messages as read:', error);
-    res.status(500).json({ message: 'Failed to mark messages as read' });
+    res.status(500).json(createErrorResponse('Failed to mark messages as read', 'INTERNAL_ERROR'));
   }
 });
 
