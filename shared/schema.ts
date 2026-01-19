@@ -2197,7 +2197,7 @@ export const eventRequests = pgTable(
     // @deprecated Use attendanceKids instead - data migrated in migration 0025
     childrenCount: integer('children_count'),
     hasRefrigeration: boolean('has_refrigeration'), // Whether site has refrigeration
-    completedByUserId: varchar('completed_by_user_id'), // User ID who completed the contact
+    // NOTE: completed_by_user_id was removed in migration 0024 (no code references)
 
     // Advanced event planning fields (for scheduled/in_planning status)
     tspContactAssigned: varchar('tsp_contact_assigned'), // TSP team member assigned to this event
@@ -2240,7 +2240,7 @@ export const eventRequests = pgTable(
     driverNotes: text('driver_notes'), // Notes for drivers
     driversArranged: boolean('drivers_arranged').default(false), // Whether drivers are confirmed
     assignedSpeakerIds: text('assigned_speaker_ids').array(), // Array of assigned speaker IDs/names
-    assignedDriverSpeakers: text('assigned_driver_speakers').array(), // Array of driver IDs who are also speakers
+    // NOTE: assigned_driver_speakers was removed in migration 0024 (never implemented)
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
     volunteerDetails: jsonb('volunteer_details'), // Additional volunteer assignment details (mirrors driverDetails/speakerDetails)
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
