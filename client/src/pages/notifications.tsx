@@ -135,7 +135,23 @@ export default function NotificationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
     },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to mark notification as read',
+        description: error.message || 'Please try again',
+        variant: 'destructive',
+      });
+    },
   });
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      markRead.mutate(notification.id);
+    }
+    if (notification.actionUrl) {
+      window.location.href = notification.actionUrl;
+    }
+  };
 
   const filteredNotifications = notifications.filter((n) => {
     if (filterCategory !== 'all' && (n.category || n.type) !== filterCategory) {
@@ -148,7 +164,7 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const categories = [...new Set(notifications.map((n) => n.category || n.type))].filter(Boolean);
+  const categories = [...new Set(notifications.map((n) => n.category || n.type))].filter((c): c is string => Boolean(c));
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -258,11 +274,7 @@ export default function NotificationsPage() {
                     return (
                       <div
                         key={notification.id}
-                        onClick={() => {
-                          if (!notification.isRead) {
-                            markRead.mutate(notification.id);
-                          }
-                        }}
+                        onClick={() => handleNotificationClick(notification)}
                         className={cn(
                           "flex items-start gap-4 p-4 cursor-pointer transition-colors",
                           notification.isRead
