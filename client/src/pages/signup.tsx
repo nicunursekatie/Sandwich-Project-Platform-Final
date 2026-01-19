@@ -48,7 +48,7 @@ const signupSchema = z.object({
 type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [smsVerificationState, setSmsVerificationState] = useState<'idle' | 'sending' | 'pending' | 'verified'>('idle');
   const [verificationCode, setVerificationCode] = useState('');
   const { toast } = useToast();
@@ -122,7 +122,7 @@ export default function SignupPage() {
         description:
           'Welcome to The Sandwich Project! Please check your email for next steps.',
       });
-      setCurrentStep(3); // Success step
+      setIsSuccess(true);
     },
     onError: (error: any) => {
       toast({
@@ -163,7 +163,6 @@ export default function SignupPage() {
   };
 
   const onSubmit = (data: SignupForm) => {
-    // Block submission if opted in to text alerts but not verified
     if (data.optInTextAlerts && smsVerificationState !== 'verified') {
       toast({
         title: 'Phone Verification Required',
@@ -175,19 +174,7 @@ export default function SignupPage() {
     signupMutation.mutate(data);
   };
 
-  const nextStep = () => {
-    if (currentStep < 2) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  if (currentStep === 3) {
+  if (isSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm border-0 shadow-2xl">
@@ -231,81 +218,31 @@ export default function SignupPage() {
             Join The Sandwich Project
           </CardTitle>
           <CardDescription className="text-lg">
-            Help us fight hunger in our community - Step {currentStep} of 2
+            Help us fight hunger in our community
           </CardDescription>
-          <div className="flex justify-center mt-4">
-            <div className="flex space-x-2">
-              {[1, 2].map((step) => (
-                <div
-                  key={step}
-                  className={`w-3 h-3 rounded-full ${
-                    step <= currentStep ? 'bg-brand-primary' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
         </CardHeader>
 
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Step 1: Personal Information */}
-              {currentStep === 1 && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Users className="w-5 h-5 text-brand-primary" />
-                    <h3 className="text-xl font-semibold">
-                      Personal Information
-                    </h3>
-                  </div>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Users className="w-5 h-5 text-brand-primary" />
+                  <h3 className="text-xl font-semibold">
+                    Personal Information
+                  </h3>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter your first name"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Enter your last name"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email Address</FormLabel>
+                        <FormLabel>First Name</FormLabel>
                         <FormControl>
                           <Input
-                            type="email"
-                            placeholder="your.email@example.com"
+                            placeholder="Enter your first name"
                             {...field}
                           />
                         </FormControl>
@@ -316,261 +253,269 @@ export default function SignupPage() {
 
                   <FormField
                     control={form.control}
-                    name="phone"
+                    name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel>Last Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="(555) 123-4567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="rounded-md border p-4 bg-blue-50 space-y-3">
-                    <FormField
-                      control={form.control}
-                      name="optInTextAlerts"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={(checked) => {
-                                field.onChange(checked);
-                                if (!checked) {
-                                  setSmsVerificationState('idle');
-                                  setVerificationCode('');
-                                  form.setValue('smsVerified', false);
-                                }
-                              }}
-                              disabled={smsVerificationState === 'verified'}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>
-                              Yes, send me text message updates from The Sandwich Project
-                            </FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {form.watch('optInTextAlerts') && smsVerificationState === 'idle' && (
-                      <div className="pl-7">
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={handleSendVerification}
-                          disabled={sendVerificationMutation.isPending}
-                          className="bg-brand-primary hover:bg-brand-primary-dark"
-                        >
-                          {sendVerificationMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Sending...
-                            </>
-                          ) : (
-                            <>
-                              <Phone className="mr-2 h-4 w-4" />
-                              Send Verification Code
-                            </>
-                          )}
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          We'll send a code to verify your phone number
-                        </p>
-                      </div>
-                    )}
-
-                    {form.watch('optInTextAlerts') && smsVerificationState === 'pending' && (
-                      <div className="pl-7 space-y-2">
-                        <div className="flex gap-2">
                           <Input
-                            type="text"
-                            placeholder="Enter 6-digit code"
-                            value={verificationCode}
-                            onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                            className="w-40"
-                            maxLength={6}
+                            placeholder="Enter your last name"
+                            {...field}
                           />
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleVerifyCode}
-                            disabled={verifyCodeMutation.isPending || verificationCode.length < 6}
-                            className="bg-brand-primary hover:bg-brand-primary-dark"
-                          >
-                            {verifyCodeMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Verify'
-                            )}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Check your phone for a 6-digit code
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleSendVerification}
-                          className="text-xs text-brand-primary hover:underline"
-                          disabled={sendVerificationMutation.isPending}
-                        >
-                          Resend code
-                        </button>
-                      </div>
-                    )}
-
-                    {form.watch('optInTextAlerts') && smsVerificationState === 'verified' && (
-                      <div className="pl-7 flex items-center gap-2 text-green-600">
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">Phone number verified!</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                        <FormControl>
-                          <Input placeholder="123 Main Street" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your city" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="state"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                          <FormControl>
-                            <Input placeholder="State" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="zipCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>ZIP Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
-                          <FormControl>
-                            <Input placeholder="12345" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
                 </div>
-              )}
 
-              {/* Step 2: Terms and Conditions */}
-              {currentStep === 2 && (
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <CheckCircle className="w-5 h-5 text-brand-primary" />
-                    <h3 className="text-xl font-semibold">Terms & Agreement</h3>
-                  </div>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="your.email@example.com"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-semibold mb-2">
-                      The Sandwich Project Terms of Service
-                    </h4>
-                    <div className="text-sm text-gray-600 space-y-2 max-h-40 overflow-y-auto">
-                      <p>By joining The Sandwich Project, you agree to:</p>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li>Volunteer in a safe and respectful manner</li>
-                        <li>Follow all food safety and handling guidelines</li>
-                        <li>Represent the organization professionally</li>
-                        <li>Respect the privacy of all community members</li>
-                        <li>Participate in required training sessions</li>
-                        <li>Report any safety concerns immediately</li>
-                      </ul>
-                    </div>
-                  </div>
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(555) 123-4567" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
+                <div className="rounded-md border p-4 bg-blue-50 space-y-3">
                   <FormField
                     control={form.control}
-                    name="agreeToTerms"
+                    name="optInTextAlerts"
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                         <FormControl>
                           <Checkbox
                             checked={field.value}
-                            onCheckedChange={field.onChange}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              if (!checked) {
+                                setSmsVerificationState('idle');
+                                setVerificationCode('');
+                                form.setValue('smsVerified', false);
+                              }
+                            }}
+                            disabled={smsVerificationState === 'verified'}
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
                           <FormLabel>
-                            I agree to the terms and conditions of The Sandwich
-                            Project
+                            Yes, send me text message updates from The Sandwich Project
                           </FormLabel>
-                          <FormMessage />
                         </div>
                       </FormItem>
                     )}
                   />
+                  
+                  {form.watch('optInTextAlerts') && smsVerificationState === 'idle' && (
+                    <div className="pl-7">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleSendVerification}
+                        disabled={sendVerificationMutation.isPending}
+                        className="bg-brand-primary hover:bg-brand-primary-dark"
+                      >
+                        {sendVerificationMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Phone className="mr-2 h-4 w-4" />
+                            Send Verification Code
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        We'll send a code to verify your phone number
+                      </p>
+                    </div>
+                  )}
 
-                  <div className="bg-brand-primary-lighter p-4 rounded-lg">
-                    <p className="text-sm text-brand-primary-dark">
-                      <strong>Next Steps:</strong> After submitting your
-                      application, our volunteer coordinator will review your
-                      information and contact you within 2-3 business days with
-                      orientation details and next steps.
-                    </p>
+                  {form.watch('optInTextAlerts') && smsVerificationState === 'pending' && (
+                    <div className="pl-7 space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Enter 6-digit code"
+                          value={verificationCode}
+                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-40"
+                          maxLength={6}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleVerifyCode}
+                          disabled={verifyCodeMutation.isPending || verificationCode.length < 6}
+                          className="bg-brand-primary hover:bg-brand-primary-dark"
+                        >
+                          {verifyCodeMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            'Verify'
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Check your phone for a 6-digit code
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleSendVerification}
+                        className="text-xs text-brand-primary hover:underline"
+                        disabled={sendVerificationMutation.isPending}
+                      >
+                        Resend code
+                      </button>
+                    </div>
+                  )}
+
+                  {form.watch('optInTextAlerts') && smsVerificationState === 'verified' && (
+                    <div className="pl-7 flex items-center gap-2 text-green-600">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Phone number verified!</span>
+                    </div>
+                  )}
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main Street" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder="Your city" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder="State" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="zipCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ZIP Code <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                        <FormControl>
+                          <Input placeholder="12345" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg mt-6">
+                  <h4 className="font-semibold mb-2">
+                    The Sandwich Project Terms of Service
+                  </h4>
+                  <div className="text-sm text-gray-600 space-y-2 max-h-40 overflow-y-auto">
+                    <p>By joining The Sandwich Project, you agree to:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Volunteer in a safe and respectful manner</li>
+                      <li>Follow all food safety and handling guidelines</li>
+                      <li>Represent the organization professionally</li>
+                      <li>Respect the privacy of all community members</li>
+                      <li>Report any safety concerns immediately</li>
+                    </ul>
                   </div>
                 </div>
-              )}
 
-              {/* Navigation Buttons */}
-              <div className="flex justify-between pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={prevStep}
-                  disabled={currentStep === 1}
-                >
-                  Previous
+                <FormField
+                  control={form.control}
+                  name="agreeToTerms"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I agree to the terms and conditions of The Sandwich
+                          Project
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <div className="bg-brand-primary-lighter p-4 rounded-lg">
+                  <p className="text-sm text-brand-primary-dark">
+                    <strong>Next Steps:</strong> After submitting your
+                    application, our volunteer coordinator will review your
+                    information and contact you within 2-3 business days with
+                    next steps.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-6">
+                <Button type="submit" disabled={signupMutation.isPending}>
+                  {signupMutation.isPending
+                    ? 'Submitting...'
+                    : 'Complete Registration'}
                 </Button>
-
-                {currentStep < 2 ? (
-                  <Button type="button" onClick={nextStep}>
-                    Next
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={signupMutation.isPending}>
-                    {signupMutation.isPending
-                      ? 'Submitting...'
-                      : 'Complete Registration'}
-                  </Button>
-                )}
               </div>
             </form>
           </Form>
