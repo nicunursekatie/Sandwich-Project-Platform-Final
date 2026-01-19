@@ -56,9 +56,22 @@ export function RecipientAllocationEditor({
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch recipients
-  const { data: recipients = [], isLoading: recipientsLoading } = useQuery<any[]>({
+  const { data: recipients = [], isLoading: recipientsLoading, error: recipientsError } = useQuery<any[]>({
     queryKey: ['/api/recipients'],
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduce unnecessary refetches
   });
+
+  // Debug: Log recipients fetch status when dialog opens
+  useEffect(() => {
+    if (open) {
+      console.log('[RecipientAllocationEditor] Dialog opened. Recipients:', {
+        count: recipients.length,
+        loading: recipientsLoading,
+        error: recipientsError,
+        sampleNames: recipients.slice(0, 3).map((r: any) => r.name),
+      });
+    }
+  }, [open, recipients, recipientsLoading, recipientsError]);
 
   // Initialize allocations from current data
   useEffect(() => {
@@ -194,12 +207,24 @@ export function RecipientAllocationEditor({
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search recipients..."
+                placeholder="Type to search recipients..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9"
               />
             </div>
+            {/* Show status/error messages */}
+            {recipientsError && (
+              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                Failed to load recipients. You may not have permission to view recipients.
+              </div>
+            )}
+            {!recipientsError && !recipientsLoading && recipients.length === 0 && (
+              <div className="p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md">
+                No recipients found in the system. Please add recipients first.
+              </div>
+            )}
+            {/* Show search results when typing */}
             {searchTerm && (
               <ScrollArea className="h-32 border rounded-md">
                 {recipientsLoading ? (
@@ -208,7 +233,7 @@ export function RecipientAllocationEditor({
                   </div>
                 ) : filteredRecipients.length === 0 ? (
                   <div className="p-4 text-sm text-muted-foreground text-center">
-                    No recipients found
+                    No recipients match "{searchTerm}"
                   </div>
                 ) : (
                   <div className="p-1">
@@ -233,6 +258,12 @@ export function RecipientAllocationEditor({
                   </div>
                 )}
               </ScrollArea>
+            )}
+            {/* Show hint when not searching and recipients exist */}
+            {!searchTerm && !recipientsLoading && !recipientsError && recipients.length > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {recipients.length} recipient{recipients.length !== 1 ? 's' : ''} available. Start typing to search.
+              </div>
             )}
           </div>
 
