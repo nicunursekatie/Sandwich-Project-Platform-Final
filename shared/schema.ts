@@ -2146,21 +2146,8 @@ export const eventRequests = pgTable(
       role?: 'co-host' | 'partner' | 'sponsor';
     }>>(),
 
-    // DEPRECATED: AI-generated categorization - never implemented, will be removed in migration 0024
-    // @deprecated Use organizationCategory instead
-    autoCategories: jsonb('auto_categories').$type<{
-      eventType: 'corporate' | 'school' | 'nonprofit' | 'community' | 'religious' | 'government' | 'other';
-      eventSize: 'small' | 'medium' | 'large' | 'extra_large';
-      specialNeeds: string[];
-      targetAudience: string;
-      confidence: number;
-      reasoning: string;
-      suggestedTags?: string[];
-    }>(),
-    // @deprecated Will be removed in migration 0024
-    categorizedAt: timestamp('categorized_at'),
-    // @deprecated Will be removed in migration 0024
-    categorizedBy: varchar('categorized_by'),
+    // NOTE: auto_categories, categorized_at, categorized_by columns were removed in migration 0024
+    // They were never implemented. Do not re-add them.
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
@@ -2190,19 +2177,13 @@ export const eventRequests = pgTable(
     postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
 
     // Follow-up tracking fields
-    // @deprecated Use communicationMethod instead - will be removed in migration 0024
-    followUpMethod: varchar('follow_up_method'),
-    // @deprecated No code references - will be removed in migration 0024
-    updatedEmail: varchar('updated_email'),
+    // NOTE: follow_up_method, updated_email removed in migration 0024 (superseded by communicationMethod)
     followUpDate: timestamp('follow_up_date'), // When follow-up was completed
     scheduledCallDate: timestamp('scheduled_call_date'), // When a follow-up call is scheduled
 
-    // Timeline tracking
-    contactedAt: timestamp('contacted_at'), // When initial contact was completed
-
     // Contact completion details (collected when marking contacted)
+    // NOTE: contacted_at, contact_completion_notes removed in migration 0024 (no code references)
     communicationMethod: varchar('communication_method'), // 'phone', 'email', 'video_meeting'
-    contactCompletionNotes: text('contact_completion_notes'), // Free text notes from the contact
     eventAddress: text('event_address'), // Event location address collected
     latitude: varchar('latitude'), // Geocoded latitude for map display
     longitude: varchar('longitude'), // Geocoded longitude for map display
@@ -2334,8 +2315,7 @@ export const eventRequests = pgTable(
     isUnresponsive: boolean('is_unresponsive').default(false), // Flag indicating they're not responding
     markedUnresponsiveAt: timestamp('marked_unresponsive_at'), // When marked as unresponsive
     markedUnresponsiveBy: varchar('marked_unresponsive_by'), // User ID who marked as unresponsive
-    // @deprecated Use unresponsiveNotes instead - will be removed in migration 0024
-    unresponsiveReason: text('unresponsive_reason'),
+    // NOTE: unresponsive_reason removed in migration 0024 (superseded by unresponsiveNotes)
     contactMethod: varchar('contact_method'), // 'phone', 'email', 'both' - preferred contact method
     nextFollowUpDate: timestamp('next_follow_up_date'), // Scheduled next attempt date
     unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status (legacy - use contactAttemptsLog for new entries)
