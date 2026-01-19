@@ -26,6 +26,7 @@ import {
 import { db } from '../db';
 import { messages, messageRecipients, emailMessages, users } from '@shared/schema';
 import { eq, or, ilike, and, desc, sql } from 'drizzle-orm';
+import { logger } from '../utils/production-safe-logger';
 
 export class SmartSearchService {
   private index: SmartSearchIndex | null = null;
@@ -76,9 +77,9 @@ export class SmartSearchService {
       try {
         const data = await fs.readFile(this.indexPath, 'utf-8');
         this.index = JSON.parse(data);
-        console.log(`✓ Smart search index loaded: ${this.index?.features.length} features`);
+        logger.log(`✓ Smart search index loaded: ${this.index?.features.length} features`);
       } catch (error) {
-        console.error('Failed to load smart search index:', error);
+        logger.error('Failed to load smart search index:', error);
         // Initialize with empty index
         this.index = { features: [], commonQuestions: [] };
       } finally {
@@ -101,9 +102,9 @@ export class SmartSearchService {
         JSON.stringify(this.index, null, 2),
         'utf-8'
       );
-      console.log('✓ Smart search index saved');
+      logger.log('✓ Smart search index saved');
     } catch (error) {
-      console.error('Failed to save smart search index:', error);
+      logger.error('Failed to save smart search index:', error);
     }
   }
 
@@ -128,7 +129,7 @@ export class SmartSearchService {
       this.embeddingCache.set(text, embedding);
       return embedding;
     } catch (error) {
-      console.error('Failed to get embedding:', error);
+      logger.error('Failed to get embedding:', error);
       return null;
     }
   }
@@ -388,7 +389,7 @@ export class SmartSearchService {
       // Limit total results
       return results.slice(0, query.limit || 10);
     } catch (error) {
-      console.error('Error searching messages:', error);
+      logger.error('Error searching messages:', error);
       return [];
     }
   }
@@ -461,7 +462,7 @@ export class SmartSearchService {
         // Re-sort after merging
         results.sort((a, b) => b.score - a.score);
       } catch (error) {
-        console.error('Error including message search results:', error);
+        logger.error('Error including message search results:', error);
       }
     }
 
@@ -624,7 +625,7 @@ export class SmartSearchService {
     try {
       const data = await fs.readFile(this.analyticsPath, 'utf-8');
       this.analytics = JSON.parse(data);
-      console.log(`✓ Smart search analytics loaded: ${this.analytics.length} records`);
+      logger.log(`✓ Smart search analytics loaded: ${this.analytics.length} records`);
     } catch (error) {
       // File doesn't exist yet, start with empty array
       this.analytics = [];
@@ -642,7 +643,7 @@ export class SmartSearchService {
         'utf-8'
       );
     } catch (error) {
-      console.error('Failed to save analytics:', error);
+      logger.error('Failed to save analytics:', error);
     }
   }
 
@@ -848,14 +849,14 @@ export class SmartSearchService {
     };
 
     this.shouldStop = false;
-    console.log(`Regenerating embeddings for ${featuresToProcess.length} features (mode: ${options.mode})...`);
+    logger.log(`Regenerating embeddings for ${featuresToProcess.length} features (mode: ${options.mode})...`);
 
     const batchSize = options.batchSize || 5;
 
     for (let i = 0; i < featuresToProcess.length; i += batchSize) {
       // Check if we should stop
       if (this.shouldStop) {
-        console.log('Regeneration stopped by user');
+        logger.log('Regeneration stopped by user');
         this.regenerationProgress.inProgress = false;
         return;
       }
@@ -875,14 +876,14 @@ export class SmartSearchService {
 
           if (embedding) {
             feature.embedding = embedding;
-            console.log(`✓ Generated embedding for: ${feature.title}`);
+            logger.log(`✓ Generated embedding for: ${feature.title}`);
             return { success: true, feature };
           } else {
             throw new Error('Failed to generate embedding');
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          console.error(`✗ Failed to generate embedding for: ${feature.title} - ${errorMessage}`);
+          logger.error(`✗ Failed to generate embedding for: ${feature.title} - ${errorMessage}`);
           return {
             success: false,
             feature,
@@ -912,7 +913,7 @@ export class SmartSearchService {
         this.regenerationProgress!.currentFeature = lastFeature.title;
       }
 
-      console.log(`Batch complete: ${this.regenerationProgress!.completed}/${this.regenerationProgress!.total}`);
+      logger.log(`Batch complete: ${this.regenerationProgress!.completed}/${this.regenerationProgress!.total}`);
 
       // Update estimated time remaining
       const elapsed = Date.now() - this.regenerationProgress.startTime!.getTime();
@@ -935,7 +936,7 @@ export class SmartSearchService {
     this.regenerationProgress.inProgress = false;
     this.regenerationProgress.currentFeature = undefined;
     await this.saveIndex();
-    console.log(`✓ Regeneration complete: ${this.regenerationProgress.completed} succeeded, ${this.regenerationProgress.failed} failed`);
+    logger.log(`✓ Regeneration complete: ${this.regenerationProgress.completed} succeeded, ${this.regenerationProgress.failed} failed`);
   }
 
   /**

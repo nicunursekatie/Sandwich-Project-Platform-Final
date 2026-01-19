@@ -178,7 +178,8 @@ export const instantMessages = pgTable(
     senderName: varchar('sender_name').notNull(),
     recipientId: varchar('recipient_id').notNull(),
     content: text('content').notNull(),
-    read: boolean('read').default(false),
+    read: boolean('read').default(false), // Legacy field - use isRead for new code
+    isRead: boolean('is_read').default(false), // Canonical field - synced with 'read' via DB trigger
     readAt: timestamp('read_at'),
     createdAt: timestamp('created_at').defaultNow(),
   },
@@ -550,7 +551,8 @@ export const messages = pgTable('messages', {
   contextType: text('context_type'), // 'suggestion', 'project', 'task', 'event', 'graphic', 'expense', 'collection', 'direct'
   contextId: text('context_id'),
   contextTitle: text('context_title'), // Display name of related entity
-  read: boolean('read').notNull().default(false), // Simple read status
+  read: boolean('read').notNull().default(false), // Legacy field - use isRead for new code
+  isRead: boolean('is_read').notNull().default(false), // Canonical field - synced with 'read' via DB trigger
   editedAt: timestamp('edited_at'),
   editedContent: text('edited_content'),
   deletedAt: timestamp('deleted_at'),
@@ -574,7 +576,8 @@ export const messageRecipients = pgTable(
       onDelete: 'cascade',
     }),
     recipientId: text('recipient_id').notNull(),
-    read: boolean('read').notNull().default(false),
+    read: boolean('read').notNull().default(false), // Legacy field - use isRead for new code
+    isRead: boolean('is_read').notNull().default(false), // Canonical field - synced with 'read' via DB trigger
     readAt: timestamp('read_at'),
     notificationSent: boolean('notification_sent').notNull().default(false),
     emailSentAt: timestamp('email_sent_at'),
@@ -878,7 +881,8 @@ export const drivers = pgTable('drivers', {
   voicemailLeft: boolean('voicemail_left').notNull().default(false),
   inactiveReason: text('inactive_reason'),
   isWeeklyDriver: boolean('is_weekly_driver').notNull().default(false),
-  willingToSpeak: boolean('willing_to_speak').notNull().default(false),
+  willingToSpeak: boolean('willing_to_speak').notNull().default(false), // Legacy field - use isSpeaker for new code
+  isSpeaker: boolean('is_speaker').notNull().default(false), // Canonical field - synced with 'willingToSpeak' via DB trigger
   // New driver fields
   isEventDriver: boolean('is_event_driver').notNull().default(false),
   wantsAppWalkthrough: boolean('wants_app_walkthrough').notNull().default(false),

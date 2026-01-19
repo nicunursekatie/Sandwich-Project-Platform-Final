@@ -6,6 +6,7 @@ import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata } from '@shared/types';
 import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS, sendEventCommentSMS } from '../sms-service';
+import { getAppBaseUrl } from '../config/constants';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -535,10 +536,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
    * Generate chat room URL for the notification
    */
   private static getChatUrl(channel: string): string {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://sandwich-project-platform-final-katielong2316.replit.app'
-        : 'http://localhost:5000';
+    const baseUrl = getAppBaseUrl();
 
     return `${baseUrl}/dashboard?section=chat&channel=${encodeURIComponent(
       channel
@@ -700,10 +698,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
    * Generate event URL for the notification
    */
   private static getEventUrl(eventId: number): string {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://sandwich-project-platform-final-katielong2316.replit.app'
-        : 'http://localhost:5000';
+    const baseUrl = getAppBaseUrl();
 
     return `${baseUrl}/event-requests-v2?eventId=${eventId}`;
   }
@@ -712,10 +707,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
    * Generate team board URL for the notification
    */
   private static getTeamBoardUrl(): string {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://sandwich-project-platform-final-katielong2316.replit.app'
-        : 'http://localhost:5000';
+    const baseUrl = getAppBaseUrl();
 
     return `${baseUrl}/dashboard?section=team-board`;
   }
@@ -1204,7 +1196,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
             <p style="margin: 0; white-space: pre-wrap;">${itemPreview}</p>
           </div>
           <p>
-            <a href="${process.env.CLIENT_URL || 'http://localhost:5000'}/dashboard?section=holding-zone"
+            <a href="${getAppBaseUrl()}/dashboard?section=holding-zone"
                style="background-color: #236383; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
               View Holding Zone
             </a>
