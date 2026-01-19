@@ -3278,6 +3278,55 @@ router.put(
         }
       );
 
+      // Create in-app notifications for status changes (for admins)
+      if (originalEvent.status !== updatedEventRequest.status) {
+        const userName = req.user?.firstName && req.user?.lastName
+          ? `${req.user.firstName} ${req.user.lastName}`
+          : req.user?.email || 'Someone';
+        
+        // Get admin users to notify (users with EVENT_REQUESTS_VIEW permission)
+        try {
+          const adminUsers = await db.select({ id: users.id })
+            .from(users)
+            .where(
+              and(
+                eq(users.isActive, true),
+                or(
+                  eq(users.role, 'admin'),
+                  eq(users.role, 'superadmin'),
+                  sql`${users.permissions}::text LIKE '%EVENT_REQUESTS_VIEW%'`
+                )
+              )
+            );
+          
+          // Don't notify the user who made the change
+          const usersToNotify = adminUsers.filter(u => u.id.toString() !== req.user?.id?.toString());
+          
+          for (const adminUser of usersToNotify) {
+            await storage.createNotification({
+              userId: adminUser.id.toString(),
+              type: 'event_status_change',
+              priority: 'medium',
+              title: `Event Status Changed`,
+              message: `${userName} moved "${updatedEventRequest.organizationName}" from ${originalEvent.status} to ${updatedEventRequest.status}`,
+              category: 'events',
+              isRead: false,
+              isArchived: false,
+              metadata: {
+                eventId: updatedEventRequest.id,
+                organizationName: updatedEventRequest.organizationName,
+                oldStatus: originalEvent.status,
+                newStatus: updatedEventRequest.status,
+                changedBy: req.user?.id,
+                changedByName: userName,
+              },
+            });
+          }
+        } catch (notifyError) {
+          logger.error('Failed to create status change notifications:', notifyError);
+        }
+      }
+
       await logActivity(
         req,
         res,
