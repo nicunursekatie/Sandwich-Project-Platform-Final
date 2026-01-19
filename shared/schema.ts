@@ -2146,7 +2146,8 @@ export const eventRequests = pgTable(
       role?: 'co-host' | 'partner' | 'sponsor';
     }>>(),
 
-    // AI-generated categorization (optional, auto-populated)
+    // DEPRECATED: AI-generated categorization - never implemented, will be removed in migration 0024
+    // @deprecated Use organizationCategory instead
     autoCategories: jsonb('auto_categories').$type<{
       eventType: 'corporate' | 'school' | 'nonprofit' | 'community' | 'religious' | 'government' | 'other';
       eventSize: 'small' | 'medium' | 'large' | 'extra_large';
@@ -2156,8 +2157,10 @@ export const eventRequests = pgTable(
       reasoning: string;
       suggestedTags?: string[];
     }>(),
-    categorizedAt: timestamp('categorized_at'), // When AI categorization was performed
-    categorizedBy: varchar('categorized_by'), // 'ai' or user ID if manually overridden
+    // @deprecated Will be removed in migration 0024
+    categorizedAt: timestamp('categorized_at'),
+    // @deprecated Will be removed in migration 0024
+    categorizedBy: varchar('categorized_by'),
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
@@ -2187,8 +2190,10 @@ export const eventRequests = pgTable(
     postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
 
     // Follow-up tracking fields
-    followUpMethod: varchar('follow_up_method'), // 'email', 'call'
-    updatedEmail: varchar('updated_email'), // Email address collected during follow-up call
+    // @deprecated Use communicationMethod instead - will be removed in migration 0024
+    followUpMethod: varchar('follow_up_method'),
+    // @deprecated No code references - will be removed in migration 0024
+    updatedEmail: varchar('updated_email'),
     followUpDate: timestamp('follow_up_date'), // When follow-up was completed
     scheduledCallDate: timestamp('scheduled_call_date'), // When a follow-up call is scheduled
 
@@ -2206,8 +2211,10 @@ export const eventRequests = pgTable(
     estimatedSandwichCountMax: integer('estimated_sandwich_count_max'), // Maximum sandwiches in range (optional)
     estimatedSandwichRangeType: varchar('estimated_sandwich_range_type'), // Type for sandwich range (e.g., 'turkey', 'ham')
     volunteerCount: integer('volunteer_count'), // Number of attendees expected (general total, or can use adult/children breakdown)
-    adultCount: integer('adult_count'), // Number of adults (optional breakdown)
-    childrenCount: integer('children_count'), // Number of children (optional breakdown)
+    // @deprecated Use attendanceAdults instead - data migrated in migration 0025
+    adultCount: integer('adult_count'),
+    // @deprecated Use attendanceKids instead - data migrated in migration 0025
+    childrenCount: integer('children_count'),
     hasRefrigeration: boolean('has_refrigeration'), // Whether site has refrigeration
     completedByUserId: varchar('completed_by_user_id'), // User ID who completed the contact
 
@@ -2327,7 +2334,8 @@ export const eventRequests = pgTable(
     isUnresponsive: boolean('is_unresponsive').default(false), // Flag indicating they're not responding
     markedUnresponsiveAt: timestamp('marked_unresponsive_at'), // When marked as unresponsive
     markedUnresponsiveBy: varchar('marked_unresponsive_by'), // User ID who marked as unresponsive
-    unresponsiveReason: text('unresponsive_reason'), // Why they were marked unresponsive
+    // @deprecated Use unresponsiveNotes instead - will be removed in migration 0024
+    unresponsiveReason: text('unresponsive_reason'),
     contactMethod: varchar('contact_method'), // 'phone', 'email', 'both' - preferred contact method
     nextFollowUpDate: timestamp('next_follow_up_date'), // Scheduled next attempt date
     unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status (legacy - use contactAttemptsLog for new entries)

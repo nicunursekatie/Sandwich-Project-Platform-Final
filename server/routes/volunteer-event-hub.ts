@@ -22,6 +22,7 @@ import { EmailNotificationService } from '../services/email-notification-service
 import { getAppBaseUrl } from '../config/constants';
 import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
+import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 
 const router = Router();
 
@@ -191,26 +192,9 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    // Calculate unfilled needs for each event
+    // Calculate unfilled needs for each event using centralized utils
     const eventsWithNeeds = events.map(event => {
-      // Count speakers needed vs assigned
-      const speakersNeeded = event.speakersNeeded || 0;
-      const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
-      const speakersUnfilled = Math.max(0, speakersNeeded - speakersAssigned);
-
-      // Count volunteers needed vs assigned
-      const volunteersNeeded = event.volunteersNeeded || 0;
-      const volunteersAssigned = (event.assignedVolunteerIds || []).length;
-      const volunteersUnfilled = Math.max(0, volunteersNeeded - volunteersAssigned);
-
-      // Count drivers needed vs assigned
-      const driversNeeded = event.driversNeeded || 0;
-      const driversAssigned = (event.assignedDriverIds || []).length +
-        (event.assignedVanDriverId ? 1 : 0) +
-        (event.isDhlVan ? 1 : 0);
-      const driversUnfilled = Math.max(0, driversNeeded - driversAssigned);
-
-      const hasUnfilledNeeds = speakersUnfilled > 0 || volunteersUnfilled > 0 || driversUnfilled > 0;
+      const counts = getUnfilledCounts(event);
 
       return {
         id: event.id,
@@ -228,17 +212,8 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
         eventStartTime: event.eventStartTime,
         eventEndTime: event.eventEndTime,
         estimatedSandwichCount: event.estimatedSandwichCount,
-        // Unfilled needs
-        speakersNeeded,
-        speakersAssigned,
-        speakersUnfilled,
-        volunteersNeeded,
-        volunteersAssigned,
-        volunteersUnfilled,
-        driversNeeded,
-        driversAssigned,
-        driversUnfilled,
-        hasUnfilledNeeds,
+        // Unfilled needs from centralized utils
+        ...counts,
         // Additional info for volunteers
         vanDriverNeeded: event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan,
         selfTransport: event.selfTransport,
@@ -295,15 +270,8 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
         role: v.role,
       }));
 
-    // Calculate needs
-    const speakersNeeded = event.speakersNeeded || 0;
-    const speakersAssigned = Object.keys(event.speakerDetails || {}).length;
-    const volunteersNeeded = event.volunteersNeeded || 0;
-    const volunteersAssigned = (event.assignedVolunteerIds || []).length;
-    const driversNeeded = event.driversNeeded || 0;
-    const driversAssigned = (event.assignedDriverIds || []).length +
-      (event.assignedVanDriverId ? 1 : 0) +
-      (event.isDhlVan ? 1 : 0);
+    // Calculate needs using centralized utils
+    const counts = getUnfilledCounts(event);
 
     res.json({
       id: event.id,
@@ -321,12 +289,12 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
       eventStartTime: event.eventStartTime,
       eventEndTime: event.eventEndTime,
       estimatedSandwichCount: event.estimatedSandwichCount,
-      speakersNeeded,
-      speakersUnfilled: Math.max(0, speakersNeeded - speakersAssigned),
-      volunteersNeeded,
-      volunteersUnfilled: Math.max(0, volunteersNeeded - volunteersAssigned),
-      driversNeeded,
-      driversUnfilled: Math.max(0, driversNeeded - driversAssigned),
+      speakersNeeded: counts.speakersNeeded,
+      speakersUnfilled: counts.speakersUnfilled,
+      volunteersNeeded: counts.volunteersNeeded,
+      volunteersUnfilled: counts.volunteersUnfilled,
+      driversNeeded: counts.driversNeeded,
+      driversUnfilled: counts.driversUnfilled,
       vanDriverNeeded: event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan,
       selfTransport: event.selfTransport,
       pickupTime: event.pickupTime,

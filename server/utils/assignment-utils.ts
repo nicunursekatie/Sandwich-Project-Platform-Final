@@ -1,10 +1,11 @@
 /**
- * Centralized utilities for reading assignment data.
+ * Centralized utilities for reading assignment data (Server-side)
  *
  * These functions use the JSONB fields (driverDetails, speakerDetails, volunteerDetails)
  * as the source of truth, rather than the legacy array columns.
  *
  * This consolidates the dual-storage pattern where both arrays and JSONB exist.
+ * Mirrors the client-side assignment-utils.ts for consistency.
  */
 
 type EventWithAssignments = {
@@ -19,6 +20,9 @@ type EventWithAssignments = {
   assignedVolunteerIds?: string[] | null;
 };
 
+/**
+ * Parse details field - handles both string JSON and object formats
+ */
 function parseDetails(details?: Record<string, any> | string | null): Record<string, any> | null {
   if (!details) return null;
   if (typeof details === 'string') {
@@ -71,14 +75,16 @@ export function getTotalDriverCount(event: EventWithAssignments): number {
  * Check if a specific person is assigned as a driver
  */
 export function hasDriver(event: EventWithAssignments, personId: string): boolean {
-  return !!(event.driverDetails?.[personId]);
+  const parsed = parseDetails(event.driverDetails);
+  return !!(parsed?.[personId]);
 }
 
 /**
  * Get driver details for a specific person
  */
 export function getDriverDetail(event: EventWithAssignments, personId: string): any | null {
-  return event.driverDetails?.[personId] ?? null;
+  const parsed = parseDetails(event.driverDetails);
+  return parsed?.[personId] ?? null;
 }
 
 /**
@@ -104,14 +110,16 @@ export function getSpeakerCount(event: EventWithAssignments): number {
  * Check if a specific person is assigned as a speaker
  */
 export function hasSpeaker(event: EventWithAssignments, personId: string): boolean {
-  return !!(event.speakerDetails?.[personId]);
+  const parsed = parseDetails(event.speakerDetails);
+  return !!(parsed?.[personId]);
 }
 
 /**
  * Get speaker details for a specific person
  */
 export function getSpeakerDetail(event: EventWithAssignments, personId: string): any | null {
-  return event.speakerDetails?.[personId] ?? null;
+  const parsed = parseDetails(event.speakerDetails);
+  return parsed?.[personId] ?? null;
 }
 
 /**
@@ -137,14 +145,16 @@ export function getVolunteerCount(event: EventWithAssignments): number {
  * Check if a specific person is assigned as a volunteer
  */
 export function hasVolunteer(event: EventWithAssignments, personId: string): boolean {
-  return !!(event.volunteerDetails?.[personId]);
+  const parsed = parseDetails(event.volunteerDetails);
+  return !!(parsed?.[personId]);
 }
 
 /**
  * Get volunteer details for a specific person
  */
 export function getVolunteerDetail(event: EventWithAssignments, personId: string): any | null {
-  return event.volunteerDetails?.[personId] ?? null;
+  const parsed = parseDetails(event.volunteerDetails);
+  return parsed?.[personId] ?? null;
 }
 
 /**
@@ -158,7 +168,7 @@ export function isPersonAssigned(event: EventWithAssignments, personId: string):
 }
 
 /**
- * Get unfilled counts for an event - calculates needed vs assigned for all roles
+ * Get unfilled counts for an event
  */
 export function getUnfilledCounts(event: EventWithAssignments & {
   driversNeeded?: number | null;

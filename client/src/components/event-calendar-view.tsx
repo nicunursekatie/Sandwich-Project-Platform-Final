@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
+import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '@/lib/assignment-utils';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -76,32 +77,17 @@ const getStatusColor = (status: string) => {
   }
 };
 
-// Helper function to calculate unfilled needs for an event
+// Helper function to calculate unfilled needs for an event using centralized utils
 const getUnfilledNeeds = (event: EventRequest) => {
-  // Speakers: count needed vs assigned (using speakerDetails object)
-  const speakersNeededCount = event.speakersNeeded ?? 0;
-  const speakersAssignedCount = Object.keys(event.speakerDetails || {}).length;
-  const needsSpeaker = speakersNeededCount > speakersAssignedCount;
-  const speakersUnfilled = Math.max(0, speakersNeededCount - speakersAssignedCount);
+  const counts = getUnfilledCounts(event);
 
-  // Volunteers: count needed vs assigned (using assignedVolunteerIds array)
-  const volunteersNeededCount = event.volunteersNeeded ?? 0;
-  const volunteersAssignedCount = event.assignedVolunteerIds?.length || 0;
-  const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
-  const volunteersUnfilled = Math.max(0, volunteersNeededCount - volunteersAssignedCount);
-
-  // Drivers: count needed vs assigned (using assignedDriverIds array + van driver)
-  const driversNeededCount = event.driversNeeded ?? 0;
-  const driversAssignedCount =
-    (event.assignedDriverIds?.length || 0) +
-    (event.assignedVanDriverId ? 1 : 0) +
-    (event.isDhlVan ? 1 : 0);
-  const needsDriver = driversNeededCount > driversAssignedCount;
-  const driversUnfilled = Math.max(0, driversNeededCount - driversAssignedCount);
-
-  return { 
-    needsSpeaker, needsVolunteer, needsDriver,
-    speakersUnfilled, volunteersUnfilled, driversUnfilled
+  return {
+    needsSpeaker: counts.speakersUnfilled > 0,
+    needsVolunteer: counts.volunteersUnfilled > 0,
+    needsDriver: counts.driversUnfilled > 0,
+    speakersUnfilled: counts.speakersUnfilled,
+    volunteersUnfilled: counts.volunteersUnfilled,
+    driversUnfilled: counts.driversUnfilled,
   };
 };
 
