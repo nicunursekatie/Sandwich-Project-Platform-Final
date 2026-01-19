@@ -204,29 +204,36 @@ export function SMSDialog({
             </div>
           </div>
         </div>
-        <div className="flex justify-between">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleEnable}
-              disabled={isPending || !phoneNumber || campaignTypes.length === 0}
-              className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
-            >
-              <Phone className="h-4 w-4 mr-2" />
-              {isPending ? 'Updating...' : 'Enable SMS'}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleDisable}
-              disabled={isPending}
-              className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
-            >
-              {isPending ? 'Updating...' : 'Disable SMS'}
+        <div className="space-y-3">
+          <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+            Changes are only saved when you click the button below.
+          </p>
+          <div className="flex justify-between">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleEnable}
+                disabled={isPending || !phoneNumber || campaignTypes.length === 0}
+                className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+              >
+                <Phone className="h-4 w-4 mr-2" />
+                {isPending ? 'Saving...' : (user?.metadata?.smsConsent?.enabled ? 'Save Changes' : 'Enable SMS')}
+              </Button>
+              {user?.metadata?.smsConsent?.enabled && (
+                <Button
+                  variant="outline"
+                  onClick={handleDisable}
+                  disabled={isPending}
+                  className="bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
+                >
+                  {isPending ? 'Updating...' : 'Disable SMS'}
+                </Button>
+              )}
+            </div>
+            <Button variant="outline" onClick={handleClose}>
+              Close
             </Button>
           </div>
-          <Button variant="outline" onClick={handleClose}>
-            Close
-          </Button>
         </div>
       </DialogContent>
     </Dialog>
