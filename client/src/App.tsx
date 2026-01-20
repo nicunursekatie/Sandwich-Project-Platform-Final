@@ -131,6 +131,7 @@ function Router() {
   const EmailTemplatesAdmin = lazy(() => import('./pages/admin/email-templates'));
   const NotificationsPage = lazy(() => import('./pages/notifications'));
   const VolunteerEventHub = lazy(() => import('./pages/volunteer-event-hub'));
+  const HostResources = lazy(() => import('./pages/host-resources'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
@@ -453,6 +454,9 @@ function Router() {
         </Route>
         <Route path="/volunteer-hub">
           {() => <Dashboard initialSection="volunteer-hub" />}
+        </Route>
+        <Route path="/host-resources">
+          {() => <Dashboard initialSection="host-resources" />}
         </Route>
         <Route path="/event-reminders">
           {() => <Dashboard initialSection="event-reminders" />}

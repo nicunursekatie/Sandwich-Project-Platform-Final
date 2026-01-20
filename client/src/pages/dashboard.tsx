@@ -146,6 +146,7 @@ const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
 const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
 const VolunteerEventHub = lazyWithRetry(() => import('@/pages/volunteer-event-hub'));
+const HostResources = lazyWithRetry(() => import('@/pages/host-resources'));
 const YearlyCalendar = lazyWithRetry(() => import('@/pages/yearly-calendar'));
 const Directory = lazyWithRetry(() => import('@/pages/directory'));
 
@@ -442,6 +443,8 @@ export default function Dashboard({
         return <DriverPlanningDashboard />;
       case 'volunteer-hub':
         return <VolunteerEventHub />;
+      case 'host-resources':
+        return <HostResources />;
       case 'recipients':
         return <RecipientsManagement />;
       case 'drivers':

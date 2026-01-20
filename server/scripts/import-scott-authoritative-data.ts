@@ -89,7 +89,7 @@ async function importScottData() {
     // Verify import
     console.log('\n✅ Verifying import...');
     const yearTotals = await db.execute(sql`
-      SELECT 
+      SELECT
         year,
         COUNT(*) as record_count,
         SUM(sandwiches) as total_sandwiches
@@ -97,10 +97,12 @@ async function importScottData() {
       GROUP BY year
       ORDER BY year
     `);
-    
+
     console.log('\n=== IMPORT COMPLETE ===');
     console.log('Yearly totals in database:');
-    for (const row of yearTotals.rows as any[]) {
+    // Handle both array result and object with rows property
+    const rows = Array.isArray(yearTotals) ? yearTotals : (yearTotals.rows || []);
+    for (const row of rows as any[]) {
       console.log(`  ${row.year}: ${row.record_count} records, ${Number(row.total_sandwiches).toLocaleString()} sandwiches`);
     }
     
