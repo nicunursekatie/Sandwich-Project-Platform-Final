@@ -108,7 +108,8 @@ export default function PredictiveForecasts() {
     // Check if current week is complete (past Thursday)
     const isCurrentWeekComplete = today > currentWeekEnd;
 
-    const scheduledThisWeek = (eventRequests || []).filter((event) => {
+    // Get all events this week with relevant statuses
+    const allEventsThisWeek = (eventRequests || []).filter((event) => {
       if (!event.desiredEventDate) return false;
       // Include in_process, scheduled, AND completed events for accurate weekly totals
       if (!['in_process', 'scheduled', 'completed'].includes(event.status)) return false;
@@ -117,24 +118,44 @@ export default function PredictiveForecasts() {
       return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
     });
 
-    // Debug: Show ALL events in the current week range regardless of status
-    const allEventsThisWeek = (eventRequests || []).filter((event) => {
-      if (!event.desiredEventDate) return false;
+    // Split events into past (already happened) and future (truly scheduled)
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    const pastEventsThisWeek = allEventsThisWeek.filter((event) => {
       const eventDate = new Date(event.desiredEventDate);
-      return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate < todayStart;
     });
 
-    logger.log('🔍 ALL events this week (any status):', allEventsThisWeek.map(e => ({
+    const futureEventsThisWeek = allEventsThisWeek.filter((event) => {
+      const eventDate = new Date(event.desiredEventDate);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= todayStart;
+    });
+
+    logger.log('🔍 ALL events this week:', allEventsThisWeek.map(e => ({
       org: e.organizationName,
       date: e.desiredEventDate,
       count: e.estimatedSandwichCount,
       status: e.status
     })));
+    logger.log('📅 Past events (already happened):', pastEventsThisWeek.length);
+    logger.log('📆 Future events (upcoming):', futureEventsThisWeek.length);
 
-    const scheduledWeeklyTotal = scheduledThisWeek.reduce(
+    // Calculate totals separately
+    const pastEventsTotal = pastEventsThisWeek.reduce(
       (sum, event) => sum + (event.estimatedSandwichCount || 0),
       0
     );
+
+    const scheduledWeeklyTotal = futureEventsThisWeek.reduce(
+      (sum, event) => sum + (event.estimatedSandwichCount || 0),
+      0
+    );
+
+    // For backward compatibility, keep scheduledThisWeek as future events only
+    const scheduledThisWeek = futureEventsThisWeek;
 
     // Get current week collections (already completed AND planned for future dates this week)
     const currentWeekCollections = collections.filter((c) => {
@@ -340,6 +361,8 @@ export default function PredictiveForecasts() {
         projected: weeklyProjected,
         scheduled: scheduledWeeklyTotal,
         scheduledEventCount: scheduledThisWeek.length,
+        pastEvents: pastEventsTotal,
+        pastEventCount: pastEventsThisWeek.length,
         expectedIndividual: baselineIndividualExpectation,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
@@ -454,12 +477,15 @@ export default function PredictiveForecasts() {
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
               <div className="text-xs text-gray-700 mt-2 space-y-0.5">
-                <div>{forecasts.weekly.completed.toLocaleString()} completed (past)</div>
+                <div>{forecasts.weekly.completed.toLocaleString()} completed collections (past)</div>
+                {forecasts.weekly.pastEventCount > 0 && (
+                  <div>+ {forecasts.weekly.pastEventCount} past event{forecasts.weekly.pastEventCount !== 1 ? 's' : ''} ({forecasts.weekly.pastEvents.toLocaleString()})</div>
+                )}
                 {forecasts.weekly.planned > 0 && (
                   <div>+ {forecasts.weekly.planned.toLocaleString()} planned group collections</div>
                 )}
-                {forecasts.weekly.scheduled > 0 && (
-                  <div>+ {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
+                {forecasts.weekly.scheduledEventCount > 0 && (
+                  <div>+ {forecasts.weekly.scheduledEventCount} upcoming event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
                 )}
                 {forecasts.weekly.expectedIndividual > 0 && (
                   <div>+ {forecasts.weekly.expectedIndividual.toLocaleString()} expected individual</div>
