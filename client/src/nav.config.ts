@@ -260,11 +260,10 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'volunteer-hub',
     label: 'Volunteer Hub',
     icon: HandHeart,
-    href: '/volunteer-hub',
+    href: 'volunteer-hub',
     permission: PERMISSIONS.NAV_VOLUNTEERS,
     group: 'logistics',
     highlighted: true,
-    external: true, // Opens as a separate page, not in dashboard
   },
   {
     id: 'maps',

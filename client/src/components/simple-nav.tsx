@@ -315,6 +315,13 @@ export default function SimpleNav({
                   return;
                 }
 
+                // Handle external items - navigate directly to the URL (for pages outside dashboard)
+                if (item.external) {
+                  logger.log('External navigation:', item.href);
+                  setLocation(item.href);
+                  return;
+                }
+
                 // Handle hrefs with query parameters
                 if (item.href.includes('?')) {
                   const [baseSection, queryString] = item.href.split('?');

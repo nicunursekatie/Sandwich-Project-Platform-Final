@@ -452,9 +452,7 @@ function Router() {
           {() => <Dashboard initialSection="driver-planning" />}
         </Route>
         <Route path="/volunteer-hub">
-          <Suspense fallback={<LoadingState text="Loading..." size="lg" className="min-h-screen" />}>
-            <VolunteerEventHub />
-          </Suspense>
+          {() => <Dashboard initialSection="volunteer-hub" />}
         </Route>
         <Route path="/event-reminders">
           {() => <Dashboard initialSection="event-reminders" />}
