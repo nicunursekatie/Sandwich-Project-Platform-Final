@@ -213,25 +213,37 @@ export default function HostResources() {
             title="Deli Sandwich Labels"
             description="Pre-formatted labels for deli meat sandwiches with ingredient info"
             fileType="PDF"
-            downloadUrl="/documents/deli-labels.pdf"
+            downloadUrl="/attached_assets/Deli Labels_1756865384146.pdf"
           />
           <DocumentCard
             title="PB&J Sandwich Labels"
             description="Pre-formatted labels for peanut butter & jelly sandwiches"
             fileType="PDF"
-            downloadUrl="/documents/pbj-labels.pdf"
+            downloadUrl="/attached_assets/PBJ Labels_1756865384146.pdf"
           />
           <DocumentCard
             title="Volunteer Sign-In Sheet"
             description="Sign-in sheet for tracking volunteer attendance at your site"
             fileType="PDF"
-            downloadUrl="/documents/sign-in-sheet.pdf"
+            downloadUrl="/attached_assets/Sandwich Project - Sign In Sheet correct qrs.pdf"
           />
           <DocumentCard
-            title="Host Guidelines"
-            description="Complete guide to running a successful sandwich collection site"
+            title="Food Safety for Hosts"
+            description="Food safety guidelines and best practices for host collection sites"
             fileType="PDF"
-            downloadUrl="/documents/host-guidelines.pdf"
+            downloadUrl="/attached_assets/20230525-TSP-Food Safety Hosts (1)_1753670644140.pdf"
+          />
+          <DocumentCard
+            title="Deli Sandwich Making 101"
+            description="Step-by-step guide for making deli sandwiches"
+            fileType="PDF"
+            downloadUrl="/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf"
+          />
+          <DocumentCard
+            title="PB&J Sandwich Making 101"
+            description="Step-by-step guide for making peanut butter & jelly sandwiches"
+            fileType="PDF"
+            downloadUrl="/attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf"
           />
         </div>
       </section>
