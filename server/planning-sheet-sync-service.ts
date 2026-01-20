@@ -916,10 +916,13 @@ export class PlanningSheetSyncService {
         }
 
         const eventDate = event[0].scheduledEventDate || event[0].desiredEventDate;
-        const eventDateObj = eventDate ? new Date(eventDate) : new Date();
+        let eventDateObj = eventDate ? new Date(eventDate) : new Date();
+
+        // Normalize to midnight for date-only comparison (ignore time component)
+        eventDateObj = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth(), eventDateObj.getDate());
 
         // Find the correct insertion point based on date
-        logger.log(`[PlanningSheet] Event date for insertion: ${eventDateObj.toISOString()}`);
+        logger.log(`[PlanningSheet] Event date for insertion (normalized): ${eventDateObj.toISOString()}`);
         const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj);
         logger.log(`[PlanningSheet] insertBeforeRow result: ${insertBeforeRow}`);
 
