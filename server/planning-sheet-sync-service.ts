@@ -766,25 +766,40 @@ export class PlanningSheetSyncService {
   }
 
   /**
-   * Parse a date string from the sheet (e.g., "1/15/2026" or "01/15/2026") into a Date object
+   * Parse a date string from the sheet (e.g., "1/15/26", "1/15/2026", or "01/15/2026") into a Date object
    */
   private parseSheetDate(dateStr: string): Date | null {
     if (!dateStr || !dateStr.trim()) return null;
 
-    // Try parsing MM/DD/YYYY format
+    // Try parsing MM/DD/YY or MM/DD/YYYY format
     const parts = dateStr.trim().split('/');
     if (parts.length === 3) {
       const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
       const day = parseInt(parts[1], 10);
-      const year = parseInt(parts[2], 10);
+      let year = parseInt(parts[2], 10);
+
+      // Handle 2-digit years (e.g., "26" -> 2026)
+      if (year < 100) {
+        // Assume 2000s for years 00-99
+        year += 2000;
+      }
+
       if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-        return new Date(year, month, day);
+        const date = new Date(year, month, day);
+        logger.log(`[PlanningSheet] Parsed date "${dateStr}" -> ${date.toISOString()}`);
+        return date;
       }
     }
 
     // Fallback: try native Date parsing
     const parsed = new Date(dateStr);
-    return isNaN(parsed.getTime()) ? null : parsed;
+    if (!isNaN(parsed.getTime())) {
+      logger.log(`[PlanningSheet] Fallback parsed date "${dateStr}" -> ${parsed.toISOString()}`);
+      return parsed;
+    }
+
+    logger.warn(`[PlanningSheet] Could not parse date: "${dateStr}"`);
+    return null;
   }
 
   /**
@@ -795,7 +810,7 @@ export class PlanningSheetSyncService {
   private async findInsertionRowIndex(eventDate: Date): Promise<number | null> {
     const sheetRows = await this.readPlanningSheet();
 
-    logger.log(`[PlanningSheet] Finding insertion point for date: ${eventDate.toISOString()}`);
+    logger.log(`[PlanningSheet] Finding insertion point for event date: ${eventDate.toISOString()}`);
     logger.log(`[PlanningSheet] Sheet has ${sheetRows.length} rows`);
 
     if (sheetRows.length === 0) {
@@ -803,12 +818,16 @@ export class PlanningSheetSyncService {
       return null; // Empty sheet, just append
     }
 
+    // Log first few dates to help debug
+    const firstRows = sheetRows.slice(0, 5);
+    logger.log(`[PlanningSheet] First 5 row dates: ${firstRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
+
     // Find the first row with a date AFTER the event date
     // We want to insert BEFORE that row (so the new event is in chronological order)
     for (const row of sheetRows) {
       const rowDate = this.parseSheetDate(row.date);
       if (rowDate && rowDate > eventDate) {
-        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} which is after event date`);
+        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} (parsed: ${rowDate.toISOString()}) which is AFTER event date ${eventDate.toISOString()}`);
         // Insert before this row
         return row.rowIndex;
       }
@@ -816,7 +835,7 @@ export class PlanningSheetSyncService {
 
     // Log the last few dates to help debug
     const lastRows = sheetRows.slice(-5);
-    logger.log(`[PlanningSheet] Last 5 row dates: ${lastRows.map(r => r.date).join(', ')}`);
+    logger.log(`[PlanningSheet] Last 5 row dates: ${lastRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
     logger.log(`[PlanningSheet] No row found with date after ${eventDate.toISOString()}, will append to end`);
 
     // No row found with a later date - check if we should append
