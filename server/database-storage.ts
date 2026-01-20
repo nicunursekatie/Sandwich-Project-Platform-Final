@@ -255,7 +255,7 @@ export class DatabaseStorage implements IStorage {
   async setUserPassword(id: string, password: string): Promise<boolean> {
     const result = await db
       .update(users)
-      .set({ password: password, updatedAt: new Date() })
+      .set({ password: password, needsPasswordSetup: false, updatedAt: new Date() })
       .where(eq(users.id, id));
     return (result.rowCount ?? 0) > 0;
   }
