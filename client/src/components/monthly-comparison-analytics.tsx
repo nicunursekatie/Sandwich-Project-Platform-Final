@@ -1184,14 +1184,16 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                       <h5 className="font-medium text-amber-800 mb-1">Medium-term (Next 2-3 Months)</h5>
                       <p className="text-sm text-amber-700">
-                        Focus on group event recruitment. Group events showed stronger per-event performance than individual collections.
+                        Continue growing both group events and individual collections. Look for successful engagement tactics that can be applied across both channels.
                       </p>
                     </div>
 
                     <div className="p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
                       <h5 className="font-medium text-brand-primary-dark mb-1">Long-term (Annual Planning)</h5>
                       <p className="text-sm text-brand-primary">
-                        Develop month-specific strategies to account for seasonal patterns and volunteer availability trends.
+                        <strong>Scheduled off-weeks:</strong> Thanksgiving, Christmas, New Year's, Memorial Day, and Independence Day weeks have no collections. 
+                        <strong className="ml-1">School breaks</strong> (winter, spring, summer) typically show reduced volunteer availability. 
+                        Check the <a href="/yearly-calendar" className="underline hover:text-brand-primary-dark">TSP Yearly Calendar</a> for specific dates and plan outreach around these periods.
                       </p>
                     </div>
                   </div>
