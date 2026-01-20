@@ -11,6 +11,12 @@ export function formatLastLogin(lastLoginAt: string | null): string {
   return date.toLocaleDateString();
 }
 
+export function formatDateCreated(createdAt: string | null): string {
+  if (!createdAt) return 'Unknown';
+  const date = new Date(createdAt);
+  return date.toLocaleDateString();
+}
+
 export function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }

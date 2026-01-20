@@ -23,7 +23,7 @@ import {
 import { UserAvatar } from './UserAvatar';
 import { RolePermissionBadge } from './RolePermissionBadge';
 import { StatusBadge } from './StatusBadge';
-import { formatLastLogin } from '@/lib/userHelpers';
+import { formatLastLogin, formatDateCreated } from '@/lib/userHelpers';
 import type { User } from '@/types/user';
 
 interface SimplifiedUserTableRowProps {
@@ -88,6 +88,9 @@ export function SimplifiedUserTableRow({
       </TableCell>
       <TableCell className="text-sm text-gray-600">
         {formatLastLogin(user.lastLoginAt)}
+      </TableCell>
+      <TableCell className="text-sm text-gray-600">
+        {formatDateCreated(user.createdAt)}
       </TableCell>
       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu>
