@@ -483,7 +483,7 @@ export default function VolunteerEventHub() {
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
+  const [showOnlyNeeds, setShowOnlyNeeds] = useState(false); // Default to showing all events
 
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({

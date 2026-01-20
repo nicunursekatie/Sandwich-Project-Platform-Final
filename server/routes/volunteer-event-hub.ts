@@ -170,27 +170,37 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
 
 /**
  * Get all events available for volunteer signup
- * Returns scheduled events with unfilled volunteer/speaker/driver needs
+ * Returns scheduled and in_process events with unfilled volunteer/speaker/driver needs
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Get events that are scheduled and have upcoming dates
+    // Get events that are scheduled or in_process and have upcoming dates
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
+
+    logger.log(`[VolunteerHub] Fetching events with date >= ${todayStr}`);
 
     const events = await db
       .select()
       .from(eventRequests)
       .where(
         and(
-          eq(eventRequests.status, 'scheduled'),
+          // Include both scheduled and in_process events
           or(
-            gte(eventRequests.scheduledEventDate, today.toISOString().split('T')[0]),
-            gte(eventRequests.desiredEventDate, today.toISOString().split('T')[0])
+            eq(eventRequests.status, 'scheduled'),
+            eq(eventRequests.status, 'in_process')
+          ),
+          // Event date must be in the future (check both date fields)
+          or(
+            gte(eventRequests.scheduledEventDate, todayStr),
+            gte(eventRequests.desiredEventDate, todayStr)
           )
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
+
+    logger.log(`[VolunteerHub] Found ${events.length} events`);
 
     // Calculate unfilled needs for each event using centralized utils
     const eventsWithNeeds = events.map(event => {
