@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Card,
@@ -9,12 +9,15 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import {
   TrendingUp,
   TrendingDown,
   Calendar,
   Target,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   LineChart,
@@ -35,6 +38,11 @@ import { isDateInExcludedWeek } from '@/lib/excluded-weeks';
 import { logger } from '@/lib/logger';
 
 export default function PredictiveForecasts() {
+  // Week offset: 0 = current week, -1 = last week, 1 = next week, etc.
+  const [weekOffset, setWeekOffset] = useState(0);
+  // Month offset: 0 = current month, -1 = last month, 1 = next month, etc.
+  const [monthOffset, setMonthOffset] = useState(0);
+
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
     queryKey: ['/api/sandwich-collections/all'],
     queryFn: async () => {
@@ -69,8 +77,8 @@ export default function PredictiveForecasts() {
   const forecasts = useMemo(() => {
     if (!collections.length) return null;
 
-    // Check if core hosts have reported for current week
-    const coreHostsReported = weeklyMonitoring ? 
+    // Check if core hosts have reported for current week (only relevant when weekOffset = 0)
+    const coreHostsReported = weeklyMonitoring ?
       weeklyMonitoring.filter((status: any) => status.hasSubmitted).length : 0;
     const totalCoreHosts = weeklyMonitoring ? weeklyMonitoring.length : 8; // Default to 8 expected hosts
     const reportingPercentage = totalCoreHosts > 0 ? (coreHostsReported / totalCoreHosts) * 100 : 100;
@@ -78,35 +86,52 @@ export default function PredictiveForecasts() {
 
     const today = new Date();
 
-    // Check if current week is an excluded/holiday week
-    const excludedWeekCheck = isDateInExcludedWeek(today);
-    const isExcludedWeek = excludedWeekCheck.excluded;
-    const excludedWeekReason = excludedWeekCheck.reason || 'Holiday week';
-
     // Helper function for consistent date formatting
     const formatDate = (date: Date) => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const dayOfMonth = today.getDate();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const monthProgress = dayOfMonth / daysInMonth;
 
-    // Calculate scheduled events for current week (Fri-Thu)
+    // Calculate the target week based on weekOffset
     // Week runs Friday to Thursday (distribution day)
-    const currentWeekStart = new Date(today);
+    const targetWeekStart = new Date(today);
     const dayOfWeek = today.getDay(); // 0=Sun, 5=Fri
     const daysFromFriday = (dayOfWeek + 2) % 7; // Days since last Friday
-    currentWeekStart.setDate(today.getDate() - daysFromFriday);
-    currentWeekStart.setHours(0, 0, 0, 0);
+    targetWeekStart.setDate(today.getDate() - daysFromFriday + (weekOffset * 7));
+    targetWeekStart.setHours(0, 0, 0, 0);
 
-    const currentWeekEnd = new Date(currentWeekStart);
-    currentWeekEnd.setDate(currentWeekStart.getDate() + 6); // Fri + 6 = Thu
-    currentWeekEnd.setHours(23, 59, 59, 999);
+    const targetWeekEnd = new Date(targetWeekStart);
+    targetWeekEnd.setDate(targetWeekStart.getDate() + 6); // Fri + 6 = Thu
+    targetWeekEnd.setHours(23, 59, 59, 999);
 
-    // Check if current week is complete (past Thursday)
-    const isCurrentWeekComplete = today > currentWeekEnd;
+    // Check if target week is an excluded/holiday week
+    const excludedWeekCheck = isDateInExcludedWeek(targetWeekStart);
+    const isExcludedWeek = excludedWeekCheck.excluded;
+    const excludedWeekReason = excludedWeekCheck.reason || 'Holiday week';
+
+    // Check if target week is complete (past Thursday) or in the future
+    const isTargetWeekComplete = today > targetWeekEnd;
+    const isTargetWeekFuture = today < targetWeekStart;
+    const isCurrentWeek = weekOffset === 0;
+
+    // Calculate the target month based on monthOffset
+    const targetMonthDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
+    const targetYear = targetMonthDate.getFullYear();
+    const targetMonth = targetMonthDate.getMonth();
+    const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+    // For current month, use actual day. For past months, use last day. For future, use 0.
+    let dayOfTargetMonth: number;
+    let targetMonthProgress: number;
+    if (monthOffset === 0) {
+      dayOfTargetMonth = today.getDate();
+      targetMonthProgress = dayOfTargetMonth / daysInTargetMonth;
+    } else if (monthOffset < 0) {
+      dayOfTargetMonth = daysInTargetMonth;
+      targetMonthProgress = 1; // 100% complete
+    } else {
+      dayOfTargetMonth = 0;
+      targetMonthProgress = 0; // 0% complete (future month)
+    }
 
     const scheduledThisWeek = (eventRequests || []).filter((event) => {
       if (!event.desiredEventDate) return false;
@@ -114,14 +139,14 @@ export default function PredictiveForecasts() {
       if (!['in_process', 'scheduled', 'completed'].includes(event.status)) return false;
 
       const eventDate = new Date(event.desiredEventDate);
-      return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+      return eventDate >= targetWeekStart && eventDate <= targetWeekEnd;
     });
 
-    // Debug: Show ALL events in the current week range regardless of status
+    // Debug: Show ALL events in the target week range regardless of status
     const allEventsThisWeek = (eventRequests || []).filter((event) => {
       if (!event.desiredEventDate) return false;
       const eventDate = new Date(event.desiredEventDate);
-      return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+      return eventDate >= targetWeekStart && eventDate <= targetWeekEnd;
     });
 
     logger.log('🔍 ALL events this week (any status):', allEventsThisWeek.map(e => ({
@@ -136,24 +161,24 @@ export default function PredictiveForecasts() {
       0
     );
 
-    // Get current week collections (already completed AND planned for future dates this week)
-    const currentWeekCollections = collections.filter((c) => {
+    // Get target week collections (already completed AND planned for future dates this week)
+    const targetWeekCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
-      return date >= currentWeekStart && date <= currentWeekEnd;
+      return date >= targetWeekStart && date <= targetWeekEnd;
     });
 
     // Split into completed (past) and planned (future)
-    const completedThisWeek = currentWeekCollections.filter((c) => {
+    const completedThisWeek = targetWeekCollections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
       return date <= today;
     });
 
-    const plannedThisWeek = currentWeekCollections.filter((c) => {
+    const plannedThisWeek = targetWeekCollections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
       return date > today;
     });
 
-    const currentWeekTotal = currentWeekCollections.reduce(
+    const targetWeekTotal = targetWeekCollections.reduce(
       (sum, c) => sum + calculateTotalSandwiches(c),
       0
     );
@@ -168,13 +193,13 @@ export default function PredictiveForecasts() {
       0
     );
 
-    // Get current month data
-    const currentMonthCollections = collections.filter((c) => {
+    // Get target month data
+    const targetMonthCollections = collections.filter((c) => {
       const date = parseCollectionDate(c.collectionDate);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      return date.getMonth() === targetMonth && date.getFullYear() === targetYear;
     });
 
-    const currentMonthTotal = currentMonthCollections.reduce(
+    const targetMonthTotal = targetMonthCollections.reduce(
       (sum, c) => sum + calculateTotalSandwiches(c),
       0
     );
@@ -243,11 +268,16 @@ export default function PredictiveForecasts() {
     const baselineIndividualExpectation = 5000;
 
     // Combined projection: Already collected + Scheduled events + Baseline individual expectation
-    const weeklyProjected = currentWeekTotal + scheduledWeeklyTotal + baselineIndividualExpectation;
+    // For past weeks (complete), just use actual total
+    // For current/future weeks, add baseline expectation
+    const weeklyProjected = isTargetWeekComplete
+      ? targetWeekTotal
+      : targetWeekTotal + scheduledWeeklyTotal + (isTargetWeekFuture ? baselineIndividualExpectation : baselineIndividualExpectation);
 
     // Debug logging
     logger.log('=== WEEKLY FORECAST DEBUG ===');
-    logger.log('Week range:', formatDate(currentWeekStart), 'to', formatDate(currentWeekEnd));
+    logger.log('Week range:', formatDate(targetWeekStart), 'to', formatDate(targetWeekEnd));
+    logger.log('Week offset:', weekOffset, isTargetWeekComplete ? '(complete)' : isTargetWeekFuture ? '(future)' : '(in progress)');
     logger.log('Today:', today.toLocaleDateString());
     logger.log('Current day of week:', todayDayOfWeek, '(0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat)');
     logger.log('---');
@@ -296,17 +326,21 @@ export default function PredictiveForecasts() {
     const isWeeklyWithinRange = weeklyAbsDiff <= 300;
 
     // Monthly projection
-    const monthlyProjected = monthProgress > 0
-      ? Math.round(currentMonthTotal / monthProgress)
-      : currentMonthTotal;
-    const monthlyVsAvg = ((monthlyProjected - avgMonthly) / avgMonthly) * 100;
+    // For past months (complete), just use actual total
+    // For current/future months, project based on pace
+    const monthlyProjected = monthOffset < 0
+      ? targetMonthTotal // Past month - use actual
+      : targetMonthProgress > 0
+        ? Math.round(targetMonthTotal / targetMonthProgress)
+        : targetMonthTotal;
+    const monthlyVsAvg = avgMonthly > 0 ? ((monthlyProjected - avgMonthly) / avgMonthly) * 100 : 0;
     const monthlyAbsDiff = Math.abs(monthlyProjected - avgMonthly);
     const isMonthlyWithinRange = monthlyAbsDiff <= 300;
 
     // Calculate remaining days needed for monthly average
-    const monthlyGap = avgMonthly - currentMonthTotal;
-    const daysRemaining = daysInMonth - dayOfMonth;
-    const dailyNeeded = daysRemaining > 0 ? Math.round(monthlyGap / daysRemaining) : 0;
+    const monthlyGap = avgMonthly - targetMonthTotal;
+    const daysRemainingInMonth = daysInTargetMonth - dayOfTargetMonth;
+    const dailyNeeded = daysRemainingInMonth > 0 ? Math.round(monthlyGap / daysRemainingInMonth) : 0;
 
     // Get recent weekly trend (last 4 weeks)
     const recentWeeks = Array.from(weekMap.entries())
@@ -332,52 +366,63 @@ export default function PredictiveForecasts() {
     const isUptrend = recentThreeWeeks.length >= 2 &&
       recentThreeWeeks[recentThreeWeeks.length - 1] > recentThreeWeeks[0];
 
+    // Format month name for display
+    const targetMonthName = targetMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
     return {
       weekly: {
-        current: currentWeekTotal,
+        current: targetWeekTotal,
         completed: completedTotal,
         planned: plannedTotal,
         projected: weeklyProjected,
         scheduled: scheduledWeeklyTotal,
         scheduledEventCount: scheduledThisWeek.length,
-        expectedIndividual: baselineIndividualExpectation,
+        expectedIndividual: isTargetWeekComplete ? 0 : baselineIndividualExpectation,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
         absDiff: weeklyAbsDiff,
         isWithinRange: isWeeklyWithinRange,
         dayOfWeek: todayDayOfWeek,
-        daysRemaining: 7 - daysElapsedInWeek,
-        isComplete: isCurrentWeekComplete,
-        weekStart: formatDate(currentWeekStart),
-        weekEnd: formatDate(currentWeekEnd),
-        // Host reporting status
-        coreHostsReported,
-        totalCoreHosts,
-        reportingPercentage,
-        hasIncompleteReporting,
+        daysRemaining: isTargetWeekComplete ? 0 : (isTargetWeekFuture ? 7 : 7 - daysElapsedInWeek),
+        isComplete: isTargetWeekComplete,
+        isFuture: isTargetWeekFuture,
+        isCurrent: isCurrentWeek,
+        weekStart: formatDate(targetWeekStart),
+        weekEnd: formatDate(targetWeekEnd),
+        weekOffset,
+        // Host reporting status (only relevant for current week)
+        coreHostsReported: isCurrentWeek ? coreHostsReported : 0,
+        totalCoreHosts: isCurrentWeek ? totalCoreHosts : 0,
+        reportingPercentage: isCurrentWeek ? reportingPercentage : 100,
+        hasIncompleteReporting: isCurrentWeek && hasIncompleteReporting,
         // Holiday/excluded week
         isExcludedWeek,
         excludedWeekReason,
       },
       monthly: {
-        current: currentMonthTotal,
+        current: targetMonthTotal,
         projected: monthlyProjected,
         average: Math.round(avgMonthly),
         vsAvg: monthlyVsAvg,
         absDiff: monthlyAbsDiff,
         isWithinRange: isMonthlyWithinRange,
-        progress: monthProgress * 100,
-        dayOfMonth,
-        daysInMonth,
+        progress: targetMonthProgress * 100,
+        dayOfMonth: dayOfTargetMonth,
+        daysInMonth: daysInTargetMonth,
         dailyNeeded: dailyNeeded > 0 ? dailyNeeded : 0,
         gap: monthlyGap > 0 ? monthlyGap : 0,
+        monthName: targetMonthName,
+        monthOffset,
+        isComplete: monthOffset < 0,
+        isFuture: monthOffset > 0,
+        isCurrent: monthOffset === 0,
       },
       trend: {
         isUptrend,
         data: trendData,
       },
     };
-  }, [collections, eventRequests, weeklyMonitoring]);
+  }, [collections, eventRequests, weeklyMonitoring, weekOffset, monthOffset]);
 
   if (!forecasts) {
     return (
@@ -389,8 +434,6 @@ export default function PredictiveForecasts() {
 
   const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDayName = weekdays[forecasts.weekly.dayOfWeek];
-
-  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <div className="space-y-6">
@@ -413,14 +456,51 @@ export default function PredictiveForecasts() {
                   <Badge className="bg-blue-100 text-blue-800 text-xs">
                     {forecasts.weekly.excludedWeekReason}
                   </Badge>
-                ) : !forecasts.weekly.isComplete && (
+                ) : forecasts.weekly.isComplete ? (
+                  <Badge className="bg-gray-100 text-gray-800 text-xs">
+                    Complete
+                  </Badge>
+                ) : forecasts.weekly.isFuture ? (
+                  <Badge className="bg-purple-100 text-purple-800 text-xs">
+                    Future Week
+                  </Badge>
+                ) : (
                   <Badge className="bg-yellow-100 text-yellow-800 text-xs">
                     Week in Progress
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription>
-                {forecasts.weekly.weekStart} - {forecasts.weekly.weekEnd} • Currently {currentDayName}
+              <CardDescription className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setWeekOffset(weekOffset - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span>
+                  {forecasts.weekly.weekStart} - {forecasts.weekly.weekEnd}
+                  {forecasts.weekly.isCurrent && ` • Currently ${currentDayName}`}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setWeekOffset(weekOffset + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                {weekOffset !== 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-xs ml-2"
+                    onClick={() => setWeekOffset(0)}
+                  >
+                    Today
+                  </Button>
+                )}
               </CardDescription>
             </div>
             <Calendar className="h-8 w-8 text-brand-primary" />
@@ -429,7 +509,13 @@ export default function PredictiveForecasts() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Current Week (through {currentDayName})</p>
+              <p className="text-sm text-gray-600 mb-1">
+                {forecasts.weekly.isComplete
+                  ? 'Week Total (Final)'
+                  : forecasts.weekly.isFuture
+                    ? 'Planned Collections'
+                    : `Week Total (through ${currentDayName})`}
+              </p>
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.weekly.current.toLocaleString()}
               </p>
@@ -630,9 +716,55 @@ export default function PredictiveForecasts() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl">Monthly Forecast</CardTitle>
-              <CardDescription>
-                {currentMonth} • Day {forecasts.monthly.dayOfMonth} of {forecasts.monthly.daysInMonth} ({Math.round(forecasts.monthly.progress)}% complete)
+              <CardTitle className="text-2xl flex items-center gap-2">
+                Monthly Forecast
+                {forecasts.monthly.isComplete ? (
+                  <Badge className="bg-gray-100 text-gray-800 text-xs">
+                    Complete
+                  </Badge>
+                ) : forecasts.monthly.isFuture ? (
+                  <Badge className="bg-purple-100 text-purple-800 text-xs">
+                    Future Month
+                  </Badge>
+                ) : (
+                  <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                    Month in Progress
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setMonthOffset(monthOffset - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span>
+                  {forecasts.monthly.monthName}
+                  {forecasts.monthly.isCurrent && ` • Day ${forecasts.monthly.dayOfMonth} of ${forecasts.monthly.daysInMonth}`}
+                  {!forecasts.monthly.isCurrent && forecasts.monthly.isComplete && ` • ${forecasts.monthly.daysInMonth} days`}
+                  {` (${Math.round(forecasts.monthly.progress)}% complete)`}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0"
+                  onClick={() => setMonthOffset(monthOffset + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                {monthOffset !== 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-6 text-xs ml-2"
+                    onClick={() => setMonthOffset(0)}
+                  >
+                    This Month
+                  </Button>
+                )}
               </CardDescription>
             </div>
             <Target className="h-8 w-8 text-brand-teal" />
@@ -651,7 +783,13 @@ export default function PredictiveForecasts() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Current Month Total</p>
+              <p className="text-sm text-gray-600 mb-1">
+                {forecasts.monthly.isComplete
+                  ? 'Month Total (Final)'
+                  : forecasts.monthly.isFuture
+                    ? 'Planned Collections'
+                    : 'Month Total (So Far)'}
+              </p>
               <p className="text-3xl font-bold text-brand-primary">
                 {forecasts.monthly.current.toLocaleString()}
               </p>

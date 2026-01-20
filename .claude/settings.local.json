@@ -56,7 +56,8 @@
       "Bash(findstr:*)",
       "Bash(source:*)",
       "Bash(git checkout:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm run check:*)"
     ],
     "deny": [],
     "ask": []
