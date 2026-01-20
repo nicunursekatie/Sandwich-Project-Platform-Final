@@ -243,6 +243,7 @@ To unsubscribe from system notifications, please contact us at katie@thesandwich
     const hashedPassword = await authService.hashPassword(newPassword);
     await storage.updateUser(user.id!, {
       password: hashedPassword,
+      needsPasswordSetup: false,
     });
 
     // Mark token as used
