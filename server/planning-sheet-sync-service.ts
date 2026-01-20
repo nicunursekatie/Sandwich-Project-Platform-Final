@@ -768,7 +768,11 @@ export class PlanningSheetSyncService {
   private async findInsertionRowIndex(eventDate: Date): Promise<number | null> {
     const sheetRows = await this.readPlanningSheet();
 
+    logger.log(`[PlanningSheet] Finding insertion point for date: ${eventDate.toISOString()}`);
+    logger.log(`[PlanningSheet] Sheet has ${sheetRows.length} rows`);
+
     if (sheetRows.length === 0) {
+      logger.log(`[PlanningSheet] Sheet is empty, will append`);
       return null; // Empty sheet, just append
     }
 
@@ -777,10 +781,16 @@ export class PlanningSheetSyncService {
     for (const row of sheetRows) {
       const rowDate = this.parseSheetDate(row.date);
       if (rowDate && rowDate > eventDate) {
+        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} which is after event date`);
         // Insert before this row
         return row.rowIndex;
       }
     }
+
+    // Log the last few dates to help debug
+    const lastRows = sheetRows.slice(-5);
+    logger.log(`[PlanningSheet] Last 5 row dates: ${lastRows.map(r => r.date).join(', ')}`);
+    logger.log(`[PlanningSheet] No row found with date after ${eventDate.toISOString()}, will append to end`);
 
     // No row found with a later date - check if we should append
     // If all dates are before or equal to our date, append to end
@@ -863,11 +873,14 @@ export class PlanningSheetSyncService {
         const eventDateObj = eventDate ? new Date(eventDate) : new Date();
 
         // Find the correct insertion point based on date
+        logger.log(`[PlanningSheet] Event date for insertion: ${eventDateObj.toISOString()}`);
         const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj);
+        logger.log(`[PlanningSheet] insertBeforeRow result: ${insertBeforeRow}`);
 
         if (insertBeforeRow !== null) {
           // Insert row at specific position to maintain chronological order
           const sheetId = await this.getWorksheetId();
+          logger.log(`[PlanningSheet] Worksheet ID: ${sheetId}`);
 
           if (sheetId === null) {
             logger.warn(`[PlanningSheet] Could not find worksheet ID for "${this.worksheetName}", falling back to append`);
