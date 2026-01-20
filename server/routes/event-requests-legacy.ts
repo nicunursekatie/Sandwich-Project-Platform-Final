@@ -4744,8 +4744,10 @@ router.get(
         activeStatuses.includes(event.status || '')
       );
 
-      // This week's events (scheduled events happening this week)
+      // This week's events (active events happening this week - excludes completed, cancelled, etc.)
       const thisWeekEvents = allEventRequests.filter(event => {
+        // Only count active events
+        if (!activeStatuses.includes(event.status || '')) return false;
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
         if (!eventDate) return false;
         const date = new Date(eventDate);

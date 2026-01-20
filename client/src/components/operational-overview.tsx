@@ -87,8 +87,10 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
     return null;
   }
 
-  const hasUrgentItems = stats.todayEventsCount > 0 ||
-    (stats.upcomingDeadlines.some(d => d.isToday && (d.needsDriver || d.needsSpeaker)));
+  // Check if there are urgent items: events today that still need staffing
+  const hasUrgentItems = stats.upcomingDeadlines.some(
+    d => d.isToday && (d.needsDriver || d.needsSpeaker || d.needsVolunteer)
+  );
 
   return (
     <div className="mx-4 mb-8">
@@ -237,7 +239,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                       ? 'bg-red-50 border border-red-200 hover:border-red-400'
                       : 'bg-white border border-gray-200 hover:border-brand-primary'
                   }`}
-                  onClick={() => onNavigate(`event-requests?eventId=${deadline.id}`)}
+                  onClick={() => onNavigate('event-requests')}
                 >
                   <div className="flex items-center gap-3">
                     {deadline.isToday ? (
