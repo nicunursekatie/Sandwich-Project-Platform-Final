@@ -739,8 +739,80 @@ export class PlanningSheetSyncService {
   }
 
   /**
+   * Parse a date string from the sheet (e.g., "1/15/2026" or "01/15/2026") into a Date object
+   */
+  private parseSheetDate(dateStr: string): Date | null {
+    if (!dateStr || !dateStr.trim()) return null;
+
+    // Try parsing MM/DD/YYYY format
+    const parts = dateStr.trim().split('/');
+    if (parts.length === 3) {
+      const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+        return new Date(year, month, day);
+      }
+    }
+
+    // Fallback: try native Date parsing
+    const parsed = new Date(dateStr);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  /**
+   * Find the correct row index to insert a new event based on date ordering.
+   * Returns the row index where the new row should be inserted (rows after this will shift down).
+   * If no suitable position is found, returns null (append to end).
+   */
+  private async findInsertionRowIndex(eventDate: Date): Promise<number | null> {
+    const sheetRows = await this.readPlanningSheet();
+
+    if (sheetRows.length === 0) {
+      return null; // Empty sheet, just append
+    }
+
+    // Find the first row with a date AFTER the event date
+    // We want to insert BEFORE that row (so the new event is in chronological order)
+    for (const row of sheetRows) {
+      const rowDate = this.parseSheetDate(row.date);
+      if (rowDate && rowDate > eventDate) {
+        // Insert before this row
+        return row.rowIndex;
+      }
+    }
+
+    // No row found with a later date - check if we should append
+    // If all dates are before or equal to our date, append to end
+    return null;
+  }
+
+  /**
+   * Get the worksheet/sheet ID (gid) for the current worksheet name
+   */
+  private async getWorksheetId(): Promise<number | null> {
+    try {
+      const response = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.spreadsheetId,
+      });
+
+      const sheets = response.data.sheets || [];
+      for (const sheet of sheets) {
+        if (sheet.properties?.title === this.worksheetName) {
+          return sheet.properties.sheetId ?? null;
+        }
+      }
+      return null;
+    } catch (error) {
+      logger.error('[PlanningSheet] Error getting worksheet ID:', error);
+      return null;
+    }
+  }
+
+  /**
    * Push an event directly to the Planning Sheet (no proposal workflow)
    * This is a direct write - user sees preview first, then pushes immediately
+   * New rows are inserted in chronological order based on event date.
    */
   async pushEventDirectly(
     eventId: number,
@@ -776,7 +848,68 @@ export class PlanningSheetSyncService {
           isUpdate: true
         };
       } else {
-        // Append new row
+        // Get event date for insertion point calculation
+        const event = await db
+          .select()
+          .from(eventRequests)
+          .where(eq(eventRequests.id, eventId))
+          .limit(1);
+
+        if (!event || event.length === 0) {
+          return { success: false, message: 'Event not found' };
+        }
+
+        const eventDate = event[0].scheduledEventDate || event[0].desiredEventDate;
+        const eventDateObj = eventDate ? new Date(eventDate) : new Date();
+
+        // Find the correct insertion point based on date
+        const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj);
+
+        if (insertBeforeRow !== null) {
+          // Insert row at specific position to maintain chronological order
+          const sheetId = await this.getWorksheetId();
+
+          if (sheetId === null) {
+            logger.warn(`[PlanningSheet] Could not find worksheet ID for "${this.worksheetName}", falling back to append`);
+          } else {
+            // Use batchUpdate to insert a blank row at the correct position
+            await this.sheets.spreadsheets.batchUpdate({
+              spreadsheetId: this.spreadsheetId,
+              resource: {
+                requests: [{
+                  insertDimension: {
+                    range: {
+                      sheetId: sheetId,
+                      dimension: 'ROWS',
+                      startIndex: insertBeforeRow - 1, // 0-indexed
+                      endIndex: insertBeforeRow, // Insert 1 row
+                    },
+                    inheritFromBefore: false,
+                  },
+                }],
+              },
+            });
+
+            // Now write the data to the newly inserted row
+            const range = this.getSheetRange(`A${insertBeforeRow}:Z${insertBeforeRow}`);
+            await this.sheets.spreadsheets.values.update({
+              spreadsheetId: this.spreadsheetId,
+              range,
+              valueInputOption: 'USER_ENTERED',
+              resource: { values: [rowData] },
+            });
+
+            logger.log(`[PlanningSheet] User ${userId} inserted new row at position ${insertBeforeRow} for event ${eventId} (chronological order)`);
+            return {
+              success: true,
+              message: `Inserted new row at position ${insertBeforeRow} in Planning Sheet (sorted by date)`,
+              rowIndex: insertBeforeRow,
+              isUpdate: false
+            };
+          }
+        }
+
+        // Fallback: Append to end if no insertion point found or worksheet ID unavailable
         const response = await this.sheets.spreadsheets.values.append({
           spreadsheetId: this.spreadsheetId,
           range: this.getSheetRange('A:Z'),
@@ -790,7 +923,7 @@ export class PlanningSheetSyncService {
         const rowMatch = updatedRange.match(/(\d+)$/);
         const newRowIndex = rowMatch ? parseInt(rowMatch[1]) : undefined;
 
-        logger.log(`[PlanningSheet] User ${userId} added new row ${newRowIndex} for event ${eventId}`);
+        logger.log(`[PlanningSheet] User ${userId} appended new row ${newRowIndex} for event ${eventId}`);
         return {
           success: true,
           message: `Added new row ${newRowIndex || ''} to Planning Sheet`,
