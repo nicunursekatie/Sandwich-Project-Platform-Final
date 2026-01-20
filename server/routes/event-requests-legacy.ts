@@ -3107,6 +3107,12 @@ router.put(
         processedUpdates.statusChangedAt = new Date();
       }
 
+      // Track who marked the event as unresponsive
+      if (processedUpdates.isUnresponsive && !originalEvent.isUnresponsive) {
+        processedUpdates.markedUnresponsiveAt = new Date();
+        processedUpdates.markedUnresponsiveBy = req.user?.id || null;
+      }
+
       // Validate and auto-adjust "needed" fields to prevent impossible states (PUT endpoint)
       // Count currently assigned drivers (regular + van)
       const putAssignedRegularDrivers = processedUpdates.assignedDriverIds !== undefined
