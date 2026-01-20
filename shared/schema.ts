@@ -2146,10 +2146,7 @@ export const eventRequests = pgTable(
       role?: 'co-host' | 'partner' | 'sponsor';
     }>>(),
 
-    // @deprecated - removed in migration 0024, kept for backward compatibility with production
-    autoCategories: jsonb('auto_categories'),
-    categorizedAt: timestamp('categorized_at'),
-    categorizedBy: varchar('categorized_by'),
+    // NOTE: auto_categories, categorized_at, categorized_by were removed in migration 0024
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
@@ -2179,16 +2176,12 @@ export const eventRequests = pgTable(
     postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
 
     // Follow-up tracking fields
-    // @deprecated - removed in migration 0024, kept for backward compatibility with production
-    followUpMethod: varchar('follow_up_method'),
-    updatedEmail: varchar('updated_email'),
+    // NOTE: follow_up_method, updated_email were removed in migration 0024
     followUpDate: timestamp('follow_up_date'), // When follow-up was completed
     scheduledCallDate: timestamp('scheduled_call_date'), // When a follow-up call is scheduled
 
     // Contact completion details (collected when marking contacted)
-    // @deprecated - removed in migration 0024, kept for backward compatibility with production
-    contactedAt: timestamp('contacted_at'),
-    contactCompletionNotes: text('contact_completion_notes'),
+    // NOTE: contacted_at, contact_completion_notes were removed in migration 0024
     communicationMethod: varchar('communication_method'), // 'phone', 'email', 'video_meeting'
     eventAddress: text('event_address'), // Event location address collected
     latitude: varchar('latitude'), // Geocoded latitude for map display
@@ -2203,8 +2196,7 @@ export const eventRequests = pgTable(
     // @deprecated Use attendanceKids instead - data migrated in migration 0025
     childrenCount: integer('children_count'),
     hasRefrigeration: boolean('has_refrigeration'), // Whether site has refrigeration
-    // @deprecated - removed in migration 0024, kept for backward compatibility with production
-    completedByUserId: varchar('completed_by_user_id'),
+    // NOTE: completed_by_user_id was removed in migration 0024
 
     // Advanced event planning fields (for scheduled/in_planning status)
     tspContactAssigned: varchar('tsp_contact_assigned'), // TSP team member assigned to this event
@@ -2247,8 +2239,7 @@ export const eventRequests = pgTable(
     driverNotes: text('driver_notes'), // Notes for drivers
     driversArranged: boolean('drivers_arranged').default(false), // Whether drivers are confirmed
     assignedSpeakerIds: text('assigned_speaker_ids').array(), // Array of assigned speaker IDs/names
-    // @deprecated - removed in migration 0024, kept for backward compatibility with production
-    assignedDriverSpeakers: text('assigned_driver_speakers').array(),
+    // NOTE: assigned_driver_speakers was removed in migration 0024
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
     volunteerDetails: jsonb('volunteer_details'), // Additional volunteer assignment details (mirrors driverDetails/speakerDetails)
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
@@ -2323,8 +2314,7 @@ export const eventRequests = pgTable(
     isUnresponsive: boolean('is_unresponsive').default(false), // Flag indicating they're not responding
     markedUnresponsiveAt: timestamp('marked_unresponsive_at'), // When marked as unresponsive
     markedUnresponsiveBy: varchar('marked_unresponsive_by'), // User ID who marked as unresponsive
-    // @deprecated - removed in migration 0024, kept for backward compatibility with production
-    unresponsiveReason: text('unresponsive_reason'),
+    // NOTE: unresponsive_reason was removed in migration 0024
     contactMethod: varchar('contact_method'), // 'phone', 'email', 'both' - preferred contact method
     nextFollowUpDate: timestamp('next_follow_up_date'), // Scheduled next attempt date
     unresponsiveNotes: text('unresponsive_notes'), // Detailed notes about unresponsive status (legacy - use contactAttemptsLog for new entries)

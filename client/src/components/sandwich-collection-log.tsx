@@ -977,9 +977,7 @@ export default function SandwichCollectionLog() {
 
   // Include all hosts (active and inactive) for collection assignment
   const hostOptions = [
-    ...hostsList
-      .filter((host) => host.name !== 'Groups')
-      .map((host) => host.name),
+    ...hostsList.map((host) => host.name),
     'Other',
   ];
 

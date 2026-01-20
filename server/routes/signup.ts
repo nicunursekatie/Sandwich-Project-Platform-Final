@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import bcrypt from 'bcrypt';
 import { storage } from '../storage-wrapper';
 import { db } from '../db';
 import { users } from '@shared/schema';
@@ -32,6 +33,8 @@ const signupSchema = z.object({
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   email: z.string().email(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string(),
   phone: z.string().min(10),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -40,6 +43,9 @@ const signupSchema = z.object({
   optInTextAlerts: z.boolean().optional(),
   smsVerified: z.boolean().optional(),
   agreeToTerms: z.boolean().refine((val) => val === true),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 // Send SMS verification for signup (no auth required)
@@ -205,6 +211,10 @@ router.post('/auth/signup', async (req, res) => {
     const userId =
       'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(validatedData.password, saltRounds);
+
     // Use direct database insert with explicit casting
     logger.log('Creating user with ID:', userId);
     const [newUser] = await db
@@ -212,6 +222,7 @@ router.post('/auth/signup', async (req, res) => {
       .values({
         id: userId,
         email: validatedData.email,
+        password: hashedPassword,
         firstName: validatedData.firstName,
         lastName: validatedData.lastName,
         phoneNumber: validatedData.phone,
@@ -220,7 +231,11 @@ router.post('/auth/signup', async (req, res) => {
         isActive: false, // Requires approval
         wantsTextAlerts: validatedData.optInTextAlerts && validatedData.smsVerified,
         metadata: {
-          registrationData: validatedData,
+          registrationData: {
+            ...validatedData,
+            password: undefined, // Don't store plaintext password in metadata
+            confirmPassword: undefined,
+          },
           status: 'pending_approval',
           registrationDate: new Date().toISOString(),
           ...(smsConsentData && { smsConsent: smsConsentData }),
