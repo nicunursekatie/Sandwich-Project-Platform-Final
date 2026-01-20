@@ -1184,7 +1184,7 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                       <h5 className="font-medium text-amber-800 mb-1">Medium-term (Next 2-3 Months)</h5>
                       <p className="text-sm text-amber-700">
-                        Focus on group event recruitment. Group events showed stronger per-event performance than individual collections.
+                        Continue growing both group events and individual collections. Look for successful engagement tactics that can be applied across both channels.
                       </p>
                     </div>
 
