@@ -625,7 +625,10 @@ export default function PredictiveForecasts() {
               )}
               {!forecasts.weekly.isExcludedWeek && (
                 <>
-                  <p className="text-gray-700">• <strong>Scheduled events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
+                  {forecasts.weekly.pastEventCount > 0 && (
+                    <p className="text-gray-700">• <strong>Past events this week:</strong> {forecasts.weekly.pastEventCount} event{forecasts.weekly.pastEventCount !== 1 ? 's' : ''} for {forecasts.weekly.pastEvents.toLocaleString()} sandwiches</p>
+                  )}
+                  <p className="text-gray-700">• <strong>Upcoming events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
                   <p className="text-gray-700">• <strong>Expected individual collections:</strong> ~{forecasts.weekly.expectedIndividual.toLocaleString()} sandwiches from regular donors</p>
                 </>
               )}
