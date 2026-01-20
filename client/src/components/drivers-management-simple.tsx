@@ -119,6 +119,20 @@ function getCoolerStatusDisplay(status: string | null | undefined): { label: str
   return statusMap[status] || null;
 }
 
+function getInactiveReasonLabel(reason: string | null | undefined): string {
+  if (!reason) return '';
+  const reasonMap: Record<string, string> = {
+    'moved_away': 'Moved Away',
+    'no_longer_available': 'No Longer Available',
+    'health_issues': 'Health Issues',
+    'vehicle_issues': 'Vehicle Issues',
+    'unresponsive': 'Unresponsive',
+    'retired': 'Retired',
+    'other': 'Other',
+  };
+  return reasonMap[reason] || reason;
+}
+
 export default function DriversManagement() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -153,6 +167,7 @@ export default function DriversManagement() {
     isWeeklyDriver: false,
     willingToSpeak: false,
     isActive: true,
+    inactiveReason: '',
     // New fields
     isEventDriver: false,
     wantsAppWalkthrough: false,
@@ -337,6 +352,7 @@ export default function DriversManagement() {
       isWeeklyDriver: false,
       willingToSpeak: false,
       isActive: true,
+      inactiveReason: '',
       isEventDriver: false,
       wantsAppWalkthrough: false,
       wantsTextAlerts: false,
@@ -1142,6 +1158,31 @@ export default function DriversManagement() {
                       />
                       <Label htmlFor="isActive">Active Driver</Label>
                     </div>
+                    {/* Show Inactive Reason when driver is marked inactive */}
+                    {!newDriver.isActive && (
+                      <div>
+                        <Label htmlFor="new-inactiveReason">Reason for Marking Inactive</Label>
+                        <Select
+                          value={(newDriver as any).inactiveReason || ''}
+                          onValueChange={(value) =>
+                            setNewDriver({ ...newDriver, inactiveReason: value } as any)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select reason..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="moved_away">Moved Away</SelectItem>
+                            <SelectItem value="no_longer_available">No Longer Available</SelectItem>
+                            <SelectItem value="health_issues">Health Issues</SelectItem>
+                            <SelectItem value="vehicle_issues">Vehicle Issues</SelectItem>
+                            <SelectItem value="unresponsive">Unresponsive</SelectItem>
+                            <SelectItem value="retired">Retired from Driving</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="flex justify-end gap-2 pt-4">
                       <Button
                         variant="outline"
@@ -1840,6 +1881,34 @@ export default function DriversManagement() {
                 />
                 <Label htmlFor="edit-isActive">Active Driver</Label>
               </div>
+              {/* Show Inactive Reason when driver is marked inactive */}
+              {!editingDriver.isActive && (
+                <div>
+                  <Label htmlFor="edit-inactiveReason">Reason for Marking Inactive</Label>
+                  <Select
+                    value={(editingDriver as any).inactiveReason || ''}
+                    onValueChange={(value) =>
+                      setEditingDriver({ ...editingDriver, inactiveReason: value } as any)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select reason..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="moved_away">Moved Away</SelectItem>
+                      <SelectItem value="no_longer_available">No Longer Available</SelectItem>
+                      <SelectItem value="health_issues">Health Issues</SelectItem>
+                      <SelectItem value="vehicle_issues">Vehicle Issues</SelectItem>
+                      <SelectItem value="unresponsive">Unresponsive</SelectItem>
+                      <SelectItem value="retired">Retired from Driving</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    This helps track why drivers become inactive
+                  </p>
+                </div>
+              )}
               <div className="flex justify-end gap-2 pt-4">
                 <Button
                   variant="outline"
@@ -1963,9 +2032,9 @@ export default function DriversManagement() {
                                 Active
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs" title={(driver as any).inactiveReason ? `Reason: ${getInactiveReasonLabel((driver as any).inactiveReason)}` : undefined}>
                                 <XCircle className="w-3 h-3 mr-1" />
-                                Inactive
+                                Inactive{(driver as any).inactiveReason && ` - ${getInactiveReasonLabel((driver as any).inactiveReason)}`}
                               </Badge>
                             )}
                             {driver.temporarilyUnavailable && (

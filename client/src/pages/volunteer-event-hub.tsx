@@ -489,7 +489,9 @@ export default function VolunteerEventHub() {
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
     queryKey: ['/api/volunteer-hub/available-events', showOnlyNeeds],
     queryFn: async () => {
-      const response = await fetch(`/api/volunteer-hub/available-events?needsOnly=${showOnlyNeeds}`);
+      const response = await fetch(`/api/volunteer-hub/available-events?needsOnly=${showOnlyNeeds}`, {
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch events');
       return response.json();
     },
@@ -499,7 +501,9 @@ export default function VolunteerEventHub() {
   const { data: mySignups = [], isLoading: signupsLoading } = useQuery<MySignup[]>({
     queryKey: ['/api/volunteer-hub/my-signups'],
     queryFn: async () => {
-      const response = await fetch('/api/volunteer-hub/my-signups');
+      const response = await fetch('/api/volunteer-hub/my-signups', {
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch signups');
       return response.json();
     },
@@ -512,6 +516,7 @@ export default function VolunteerEventHub() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role, notes }),
+        credentials: 'include',
       });
       if (!response.ok) {
         const error = await response.json();
@@ -543,6 +548,7 @@ export default function VolunteerEventHub() {
     mutationFn: async (signupId: number) => {
       const response = await fetch(`/api/volunteer-hub/signup/${signupId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       if (!response.ok) {
         const error = await response.json();
