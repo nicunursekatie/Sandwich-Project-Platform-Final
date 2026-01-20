@@ -1691,22 +1691,39 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       const typeMap: Record<string, number> = {};
       currentTypes.forEach((item: { type?: string; quantity?: number }) => {
         if (item.type && item.quantity) {
-          // Normalize type values to match SANDWICH_TYPES format
-          // Map old format types (e.g., "ham", "turkey") to new format (e.g., "deli_ham", "deli_turkey")
-          let normalizedType = item.type.toLowerCase();
-          
+          // Normalize type values to match SANDWICH_TYPES format (all lowercase)
+          let normalizedType = item.type.toLowerCase().trim();
+
           // Map common variations to SANDWICH_TYPES values
+          // Handle "Ham", "ham", "deli_ham" all as "deli_ham"
           if (normalizedType === 'ham' || normalizedType === 'deli_ham') {
             normalizedType = 'deli_ham';
-          } else if (normalizedType === 'turkey' || normalizedType === 'deli_turkey') {
+          }
+          // Handle "Turkey", "turkey", "deli_turkey" all as "deli_turkey"
+          else if (normalizedType === 'turkey' || normalizedType === 'deli_turkey') {
             normalizedType = 'deli_turkey';
-          } else if (normalizedType === 'pbj' || normalizedType === 'pb&j' || normalizedType === 'peanut butter and jelly') {
+          }
+          // Handle PBJ variations
+          else if (normalizedType === 'pbj' || normalizedType === 'pb&j' || normalizedType === 'peanut butter and jelly') {
             normalizedType = 'pbj';
-          } else if (normalizedType === 'deli' && !normalizedType.includes('_')) {
-            // If it's just "deli" without a subtype, keep it as "deli"
+          }
+          // Handle "Deli", "deli" as "deli"
+          else if (normalizedType === 'deli') {
             normalizedType = 'deli';
           }
-          
+          // Handle "Unknown", "unknown" as "unknown"
+          else if (normalizedType === 'unknown') {
+            normalizedType = 'unknown';
+          }
+          // Any unrecognized type goes to "unknown" to preserve the count
+          else {
+            // Check if the type is a valid SANDWICH_TYPES value
+            const validTypes = SANDWICH_TYPES.map(t => t.value);
+            if (!validTypes.includes(normalizedType)) {
+              normalizedType = 'unknown';
+            }
+          }
+
           // Accumulate quantities if the same normalized type appears multiple times
           // This handles cases where old and new formats might both exist
           if (typeMap[normalizedType]) {
@@ -2331,19 +2348,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                           return <span className="text-gray-400 italic text-base">Not recorded</span>;
                         }
 
-                        // If we have types, show breakdown with total
+                        // If we have types, show breakdown (no separate total - it's already in the breakdown)
                         if (types && Array.isArray(types) && types.length > 0) {
                           const typeDisplay = formatSandwichTypesDisplay(types, count || undefined);
-                          return (
-                            <div className="space-y-1">
-                              <div>{typeDisplay}</div>
-                              {count && (
-                                <div className="text-xs text-[#FBAD3F]/80 font-normal">
-                                  Total: {count} sandwich{count !== 1 ? 'es' : ''}
-                                </div>
-                              )}
-                            </div>
-                          );
+                          return <div>{typeDisplay}</div>;
                         }
 
                         // Otherwise just show count

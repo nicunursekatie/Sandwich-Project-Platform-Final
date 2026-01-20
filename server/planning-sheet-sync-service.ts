@@ -401,31 +401,58 @@ export class PlanningSheetSyncService {
       },
     };
 
-    // Format date
+    // Format date with 2-digit year (M/D/YY)
     const eventDate = e.scheduledEventDate || e.desiredEventDate;
     const eventDateObj = eventDate ? new Date(eventDate) : null;
     const dateStr = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
       month: 'numeric',
       day: 'numeric',
-      year: 'numeric'
+      year: '2-digit'
     }) : '';
 
     const dayOfWeek = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
       weekday: 'long'
     }) : '';
 
-    // Format sandwich types
+    // Convert military time (e.g., "14:00" or "14:00:00") to 12-hour format (e.g., "2:00 PM")
+    const formatTime12Hour = (timeStr: string | null | undefined): string => {
+      if (!timeStr) return '';
+      // Handle HH:MM or HH:MM:SS format
+      const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+      if (!match) return timeStr; // Return as-is if not recognized format
+
+      let hours = parseInt(match[1], 10);
+      const minutes = match[2];
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+
+      if (hours === 0) {
+        hours = 12;
+      } else if (hours > 12) {
+        hours -= 12;
+      }
+
+      return `${hours}:${minutes} ${ampm}`;
+    };
+
+    // Format sandwich types with proper capitalization (e.g., "deli" -> "Deli", "pbj" -> "PBJ")
     const sandwichTypes = e.sandwichTypes as Array<{ type: string; quantity?: number }> | null;
-    const deliOrPbj = sandwichTypes?.map(st => st.type).join(', ') || '';
+    const formatSandwichType = (type: string): string => {
+      const lower = type.toLowerCase();
+      if (lower === 'pbj' || lower === 'pb&j') return 'PBJ';
+      if (lower === 'deli') return 'Deli';
+      // Capitalize first letter for any other type
+      return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+    };
+    const deliOrPbj = sandwichTypes?.map(st => formatSandwichType(st.type)).join(', ') || '';
 
     // Build the row array matching column order
     const row: string[] = new Array(26).fill('');
     row[PLANNING_SHEET_COLUMNS.DATE] = dateStr;
     row[PLANNING_SHEET_COLUMNS.DAY_OF_WEEK] = dayOfWeek;
     row[PLANNING_SHEET_COLUMNS.GROUP_NAME] = e.organizationName || '';
-    row[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] = e.eventStartTime || '';
-    row[PLANNING_SHEET_COLUMNS.EVENT_END_TIME] = e.eventEndTime || '';
-    row[PLANNING_SHEET_COLUMNS.PICK_UP_TIME] = e.pickupTime || '';
+    row[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] = formatTime12Hour(e.eventStartTime);
+    row[PLANNING_SHEET_COLUMNS.EVENT_END_TIME] = formatTime12Hour(e.eventEndTime);
+    row[PLANNING_SHEET_COLUMNS.PICK_UP_TIME] = formatTime12Hour(e.pickupTime);
     row[PLANNING_SHEET_COLUMNS.PICK_UP_NEXT_DAY] = e.overnightHoldingLocation ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.ALL_DETAILS] = e.message || '';
     row[PLANNING_SHEET_COLUMNS.VAN_BOOKED] = e.vanDriverNeeded ? 'Yes' : '';
@@ -435,7 +462,7 @@ export class PlanningSheetSyncService {
     // Only show final sandwich count if it's a positive number (not 0 or null)
     row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = (e.actualSandwichCount && e.actualSandwichCount > 0) ? e.actualSandwichCount.toString() : '';
     row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] = e.socialMediaPostCompleted ? 'Yes' : '';
-    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'Yes' : '';
+    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'yes' : '';
     row[PLANNING_SHEET_COLUMNS.CONTACT_NAME] = `${e.firstName || ''} ${e.lastName || ''}`.trim();
     row[PLANNING_SHEET_COLUMNS.EMAIL] = e.email || '';
     row[PLANNING_SHEET_COLUMNS.PHONE] = e.phone || '';
