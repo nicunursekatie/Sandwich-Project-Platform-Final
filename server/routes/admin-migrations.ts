@@ -5,8 +5,8 @@
 
 import { Router } from 'express';
 import { db } from '../db';
-import { emailMessages } from '@shared/schema';
-import { eq } from 'drizzle-orm';
+import { emailMessages, users } from '@shared/schema';
+import { eq, and, isNotNull } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 
 export function createAdminMigrationsRouter(deps: { isAuthenticated: any }) {
@@ -133,6 +133,84 @@ export function createAdminMigrationsRouter(deps: { isAuthenticated: any }) {
       });
     } catch (error) {
       logger.error('[Migration] Error during email thread migration:', error);
+      res.status(500).json({
+        message: 'Migration failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  /**
+   * POST /api/admin/migrations/fix-password-setup-flags
+   * Fixes users who have passwords but still have needsPasswordSetup=true
+   * This was caused by a bug where setting passwords via user management didn't clear the flag
+   */
+  router.post('/fix-password-setup-flags', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      if (!user?.id) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Check if user is super_admin
+      if (user.role !== 'super_admin') {
+        return res.status(403).json({ message: 'Only super admins can run this migration' });
+      }
+
+      logger.log('[Migration] Starting password setup flag fix...');
+
+      // Find users who have a password hash but still have needsPasswordSetup=true
+      const usersToFix = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        })
+        .from(users)
+        .where(
+          and(
+            isNotNull(users.password),
+            eq(users.needsPasswordSetup, true)
+          )
+        );
+
+      if (usersToFix.length === 0) {
+        logger.log('[Migration] No users need fixing');
+        return res.json({
+          success: true,
+          message: 'No users need fixing - all users with passwords have needsPasswordSetup=false',
+          usersFixed: 0,
+        });
+      }
+
+      logger.log(`[Migration] Found ${usersToFix.length} user(s) to fix`);
+
+      // Update all affected users
+      const result = await db
+        .update(users)
+        .set({ needsPasswordSetup: false, updatedAt: new Date() })
+        .where(
+          and(
+            isNotNull(users.password),
+            eq(users.needsPasswordSetup, true)
+          )
+        );
+
+      const fixedCount = result.rowCount ?? 0;
+      logger.log(`[Migration] Fixed ${fixedCount} user(s)`);
+
+      res.json({
+        success: true,
+        message: `Fixed ${fixedCount} user(s) - needsPasswordSetup set to false`,
+        usersFixed: fixedCount,
+        usersAffected: usersToFix.map(u => ({
+          email: u.email,
+          name: `${u.firstName} ${u.lastName}`,
+        })),
+      });
+    } catch (error) {
+      logger.error('[Migration] Error fixing password setup flags:', error);
       res.status(500).json({
         message: 'Migration failed',
         error: error instanceof Error ? error.message : 'Unknown error',
