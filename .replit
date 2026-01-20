@@ -79,3 +79,4 @@ APP_ENV = "development"
 
 [userenv.production]
 APP_ENV = "production"
+CLIENT_URL = "https://sandwich-project-platform-final-katielong2316.replit.app"
