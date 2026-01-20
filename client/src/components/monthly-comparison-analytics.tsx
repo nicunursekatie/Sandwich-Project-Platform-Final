@@ -1177,7 +1177,7 @@ export default function MonthlyComparisonAnalytics() {
                     <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
                       <h5 className="font-medium text-orange-800 mb-1">Immediate (This Month)</h5>
                       <p className="text-sm text-orange-700">
-                        Focus on maintaining momentum with current hosts. Consider targeted outreach to hosts who haven't scheduled recently.
+                        Focus on maintaining momentum with current collection hosts. Check the Weekly Monitoring dashboard for hosts who haven't reported collections this week.
                       </p>
                     </div>
 

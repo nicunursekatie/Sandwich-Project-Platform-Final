@@ -133,7 +133,8 @@ export default function PredictiveForecasts() {
       targetMonthProgress = 0; // 0% complete (future month)
     }
 
-    const scheduledThisWeek = (eventRequests || []).filter((event) => {
+    // Get all events this week with relevant statuses
+    const allEventsThisWeek = (eventRequests || []).filter((event) => {
       if (!event.desiredEventDate) return false;
       // Include in_process, scheduled, AND completed events for accurate weekly totals
       if (!['in_process', 'scheduled', 'completed'].includes(event.status)) return false;
@@ -142,24 +143,44 @@ export default function PredictiveForecasts() {
       return eventDate >= targetWeekStart && eventDate <= targetWeekEnd;
     });
 
-    // Debug: Show ALL events in the target week range regardless of status
-    const allEventsThisWeek = (eventRequests || []).filter((event) => {
-      if (!event.desiredEventDate) return false;
+    // Split events into past (already happened) and future (truly scheduled)
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const pastEventsThisWeek = allEventsThisWeek.filter((event) => {
       const eventDate = new Date(event.desiredEventDate);
-      return eventDate >= targetWeekStart && eventDate <= targetWeekEnd;
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate < todayStart;
     });
 
-    logger.log('🔍 ALL events this week (any status):', allEventsThisWeek.map(e => ({
+    const futureEventsThisWeek = allEventsThisWeek.filter((event) => {
+      const eventDate = new Date(event.desiredEventDate);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= todayStart;
+    });
+
+    logger.log('🔍 ALL events this week:', allEventsThisWeek.map(e => ({
       org: e.organizationName,
       date: e.desiredEventDate,
       count: e.estimatedSandwichCount,
       status: e.status
     })));
+    logger.log('📅 Past events (already happened):', pastEventsThisWeek.length);
+    logger.log('📆 Future events (upcoming):', futureEventsThisWeek.length);
 
-    const scheduledWeeklyTotal = scheduledThisWeek.reduce(
+    // Calculate totals separately
+    const pastEventsTotal = pastEventsThisWeek.reduce(
       (sum, event) => sum + (event.estimatedSandwichCount || 0),
       0
     );
+
+    const scheduledWeeklyTotal = futureEventsThisWeek.reduce(
+      (sum, event) => sum + (event.estimatedSandwichCount || 0),
+      0
+    );
+
+    // For backward compatibility, keep scheduledThisWeek as future events only
+    const scheduledThisWeek = futureEventsThisWeek;
 
     // Get target week collections (already completed AND planned for future dates this week)
     const targetWeekCollections = collections.filter((c) => {
@@ -272,7 +293,7 @@ export default function PredictiveForecasts() {
     // For current/future weeks, add baseline expectation
     const weeklyProjected = isTargetWeekComplete
       ? targetWeekTotal
-      : targetWeekTotal + scheduledWeeklyTotal + (isTargetWeekFuture ? baselineIndividualExpectation : baselineIndividualExpectation);
+      : targetWeekTotal + scheduledWeeklyTotal + baselineIndividualExpectation;
 
     // Debug logging
     logger.log('=== WEEKLY FORECAST DEBUG ===');
@@ -377,6 +398,8 @@ export default function PredictiveForecasts() {
         projected: weeklyProjected,
         scheduled: scheduledWeeklyTotal,
         scheduledEventCount: scheduledThisWeek.length,
+        pastEvents: pastEventsTotal,
+        pastEventCount: pastEventsThisWeek.length,
         expectedIndividual: isTargetWeekComplete ? 0 : baselineIndividualExpectation,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
@@ -540,12 +563,15 @@ export default function PredictiveForecasts() {
                 {forecasts.weekly.projected.toLocaleString()}
               </p>
               <div className="text-xs text-gray-700 mt-2 space-y-0.5">
-                <div>{forecasts.weekly.completed.toLocaleString()} completed (past)</div>
+                <div>{forecasts.weekly.completed.toLocaleString()} completed collections (past)</div>
+                {forecasts.weekly.pastEventCount > 0 && (
+                  <div>+ {forecasts.weekly.pastEventCount} past event{forecasts.weekly.pastEventCount !== 1 ? 's' : ''} ({forecasts.weekly.pastEvents.toLocaleString()})</div>
+                )}
                 {forecasts.weekly.planned > 0 && (
                   <div>+ {forecasts.weekly.planned.toLocaleString()} planned group collections</div>
                 )}
-                {forecasts.weekly.scheduled > 0 && (
-                  <div>+ {forecasts.weekly.scheduledEventCount} scheduled event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
+                {forecasts.weekly.scheduledEventCount > 0 && (
+                  <div>+ {forecasts.weekly.scheduledEventCount} upcoming event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
                 )}
                 {forecasts.weekly.expectedIndividual > 0 && (
                   <div>+ {forecasts.weekly.expectedIndividual.toLocaleString()} expected individual</div>
@@ -685,13 +711,16 @@ export default function PredictiveForecasts() {
               )}
               {!forecasts.weekly.isExcludedWeek && (
                 <>
-                  <p className="text-gray-700">• <strong>Scheduled events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
+                  {forecasts.weekly.pastEventCount > 0 && (
+                    <p className="text-gray-700">• <strong>Past events this week:</strong> {forecasts.weekly.pastEventCount} event{forecasts.weekly.pastEventCount !== 1 ? 's' : ''} for {forecasts.weekly.pastEvents.toLocaleString()} sandwiches</p>
+                  )}
+                  <p className="text-gray-700">• <strong>Upcoming events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
                   <p className="text-gray-700">• <strong>Expected individual collections:</strong> ~{forecasts.weekly.expectedIndividual.toLocaleString()} sandwiches from regular donors</p>
                 </>
               )}
             </div>
           </div>
-          
+
           {/* Host Reporting Warning - hide during excluded weeks */}
           {!forecasts.weekly.isExcludedWeek && forecasts.weekly.hasIncompleteReporting && forecasts.weekly.vsAvg < 0 && (
             <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 flex items-start gap-3">
@@ -699,7 +728,7 @@ export default function PredictiveForecasts() {
               <div>
                 <p className="font-semibold text-yellow-800">Incomplete Host Reporting</p>
                 <p className="text-sm text-gray-700 mt-1">
-                  Only {forecasts.weekly.coreHostsReported} of {forecasts.weekly.totalCoreHosts} core hosts ({Math.round(forecasts.weekly.reportingPercentage)}%) have reported this week. 
+                  Only {forecasts.weekly.coreHostsReported} of {forecasts.weekly.totalCoreHosts} core hosts ({Math.round(forecasts.weekly.reportingPercentage)}%) have reported this week.
                   Low count may be due to missing data rather than actual performance issues.
                 </p>
                 <p className="text-xs text-gray-600 mt-2 italic">
