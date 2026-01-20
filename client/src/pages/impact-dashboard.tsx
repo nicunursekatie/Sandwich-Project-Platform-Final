@@ -48,6 +48,7 @@ import PredictiveForecasts from '@/components/predictive-forecasts';
 import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { logger } from '@/lib/logger';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 export default function ImpactDashboard() {
   const { trackView, trackClick } = useActivityTracker();
@@ -1351,6 +1352,27 @@ export default function ImpactDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="collections"
+        title="Impact Dashboard Assistant"
+        subtitle="Ask about impact metrics and trends"
+        contextData={{
+          currentView: 'impact-dashboard',
+          filters: {
+            dateRange,
+            chartView,
+            trendsView,
+          },
+          summaryStats: {
+            totalCollections: collections?.length || 0,
+            totalSandwiches: hybridStats?.total || (stats as any)?.completeTotalSandwiches || 0,
+            activeHosts: hosts?.length || 0,
+          },
+          hybridStats: hybridStats || null,
+        }}
+      />
     </div>
   );
 }

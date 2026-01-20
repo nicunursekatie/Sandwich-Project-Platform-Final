@@ -30,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { apiRequest } from '@/lib/queryClient';
 import type { SandwichCollection, Host } from '@shared/schema';
 import { parseCollectionDate } from '@/lib/analytics-utils';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 interface HostAnalyticsProps {
   selectedHost?: string;
@@ -624,6 +625,28 @@ export default function HostAnalytics({
           )}
         </>
       )}
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="collections"
+        title="Host Analytics Assistant"
+        subtitle="Ask about host performance and trends"
+        contextData={{
+          currentView: 'host-analytics',
+          filters: {
+            selectedHost: selectedHost || 'all',
+            timeRange,
+            includeHistoricalData,
+          },
+          summaryStats: hostData ? {
+            totalSandwiches: hostData.totalSandwiches,
+            totalCollections: hostData.totalCollections,
+            avgPerCollection: hostData.avgPerCollection,
+            uniqueGroups: hostData.uniqueGroups?.length || 0,
+          } : null,
+          availableHosts: hosts?.map((h: Host) => h.name) || [],
+        }}
+      />
     </div>
   );
 }
