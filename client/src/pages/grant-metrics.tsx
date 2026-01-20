@@ -540,21 +540,33 @@ export default function GrantMetrics() {
       ? ((yearTotals[2024] - yearTotals[2023]) / yearTotals[2023]) * 100
       : 0;
 
-    // Calculate weekly average from last 12 weeks (excluding no-collection weeks like Thanksgiving)
+    // Calculate weekly average from last 4 complete weeks (more representative of current production)
+    // Excluding no-collection weeks like Thanksgiving, Christmas, etc.
     const now = new Date();
-    const twelveWeeksAgo = new Date(now);
-    twelveWeeksAgo.setDate(now.getDate() - (12 * 7));
+    const fourWeeksAgo = new Date(now);
+    fourWeeksAgo.setDate(now.getDate() - (4 * 7));
 
     const recentWeeks = Object.entries(weeklyData)
       .filter(([weekKey]) => {
         const weekDate = new Date(weekKey);
-        if (weekDate < twelveWeeksAgo) return false;
+        if (weekDate < fourWeeksAgo) return false;
+        // Exclude current incomplete week (if weekKey is this week's Monday)
+        const thisMonday = new Date(now);
+        const dayOfWeek = thisMonday.getDay();
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        thisMonday.setDate(thisMonday.getDate() - daysFromMonday);
+        thisMonday.setHours(0, 0, 0, 0);
+        if (weekDate.toISOString().split('T')[0] === thisMonday.toISOString().split('T')[0]) {
+          return false; // Skip current incomplete week
+        }
         // weekKey is Monday - convert to Wednesday to check exclusion (add 2 days)
         const wednesday = new Date(weekDate);
         wednesday.setDate(weekDate.getDate() + 2);
         const wednesdayStr = `${wednesday.getFullYear()}-${String(wednesday.getMonth() + 1).padStart(2, '0')}-${String(wednesday.getDate()).padStart(2, '0')}`;
         return !isInExcludedWeek(wednesdayStr).excluded;
       })
+      .sort(([a], [b]) => b.localeCompare(a)) // Sort by date descending (most recent first)
+      .slice(0, 4) // Take the 4 most recent complete weeks
       .map(([, total]) => total);
 
     const weeklyAverage = recentWeeks.length > 0
@@ -1233,11 +1245,11 @@ export default function GrantMetrics() {
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#007E8C]/20">
-                <div className="text-sm text-gray-600 mb-1">Weekly Avg (12 weeks)</div>
+                <div className="text-sm text-gray-600 mb-1">Weekly Avg (Recent)</div>
                 <div className="text-3xl font-black text-[#007E8C]">
                   {metrics.weeklyAverage > 0 ? metrics.weeklyAverage.toLocaleString() : '8-10K'}
                 </div>
-                <div className="text-xs text-gray-500">sandwiches</div>
+                <div className="text-xs text-gray-500">sandwiches/week</div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#FBAD3F]/20">
