@@ -175,22 +175,10 @@ router.post('/:id/ai-categorize', isAuthenticated, async (req, res) => {
       deliveryDestination: eventRequest.deliveryDestination || undefined,
     });
 
-    // Update the event request with categorization
-    // The categorization object structure matches the schema definition exactly
-    await storage.updateEventRequest(eventId, {
-      autoCategories: {
-        eventType: categorization.eventType,
-        eventSize: categorization.eventSize,
-        specialNeeds: categorization.specialNeeds,
-        targetAudience: categorization.targetAudience,
-        confidence: categorization.confidence,
-        reasoning: categorization.reasoning,
-        suggestedTags: categorization.suggestedTags,
-      },
-      categorizedAt: new Date(),
-      categorizedBy: 'ai',
-      updatedAt: new Date(),
-    });
+    // NOTE: AI categorization columns (autoCategories, categorizedAt, categorizedBy)
+    // were removed in migration 0024 as the feature was never fully implemented.
+    // The categorization result is returned but not persisted to the database.
+    // If you need to re-enable this feature, add the columns back to the schema first.
 
     // Log activity
     await logActivity(

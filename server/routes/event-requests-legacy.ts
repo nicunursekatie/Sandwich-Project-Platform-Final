@@ -2138,9 +2138,7 @@ router.post(
 
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...updates,
-        contactedAt: new Date(),
-        completedByUserId: req.user?.id,
-        contactCompletedAt: new Date(),
+        // NOTE: contactedAt, completedByUserId, contactCompletedAt were removed in migration 0024
         updatedAt: new Date(),
       });
 
