@@ -25,68 +25,84 @@ function notifyListeners() {
   listeners.forEach(listener => listener({ ...globalUnreadCounts }));
 }
 
+// Track if initialization is in progress to prevent race conditions
+let initializationPromise: Promise<StreamChat | null> | null = null;
+
 // Initialize Stream Chat client and track unread counts globally
 async function initializeStreamChat(user: any): Promise<StreamChat | null> {
+  // Return existing client if already initialized
   if (globalClient) return globalClient;
 
-  try {
-    const response = await fetch('/api/stream/credentials', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-    });
+  // If initialization is already in progress, wait for it
+  if (initializationPromise) return initializationPromise;
 
-    if (!response.ok) {
-      logger.warn('Failed to get Stream credentials for unread tracking');
+  // Start initialization
+  initializationPromise = (async () => {
+    try {
+      const response = await fetch('/api/stream/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        logger.warn('Failed to get Stream credentials for unread tracking');
+        return null;
+      }
+
+      const { apiKey, userToken, streamUserId } = await response.json();
+
+      const client = StreamChat.getInstance(apiKey);
+
+      // Only connect if not already connected (prevents duplicate connectUser calls)
+      if (!client.userID) {
+        await client.connectUser(
+          {
+            id: streamUserId,
+            name: user.firstName && user.lastName
+              ? `${user.firstName} ${user.lastName}`
+              : user.email,
+          } as any,
+          userToken
+        );
+      }
+
+      globalClient = client;
+
+      // Calculate initial unread counts
+      await updateUnreadCounts(client, streamUserId);
+
+      // Listen for new messages to update unread counts
+      client.on('message.new', async (event) => {
+        if (event.user?.id !== streamUserId) {
+          // New message from someone else, update counts
+          await updateUnreadCounts(client, streamUserId);
+        }
+      });
+
+      // Listen for message read events
+      client.on('message.read', async () => {
+        await updateUnreadCounts(client, streamUserId);
+      });
+
+      // Listen for channel updates
+      client.on('notification.message_new', async () => {
+        await updateUnreadCounts(client, streamUserId);
+      });
+
+      client.on('notification.mark_read', async () => {
+        await updateUnreadCounts(client, streamUserId);
+      });
+
+      return client;
+    } catch (error) {
+      logger.error('Failed to initialize Stream Chat for unread tracking:', error);
+      initializationPromise = null; // Reset so it can be retried
       return null;
     }
+  })();
 
-    const { apiKey, userToken, streamUserId } = await response.json();
-
-    const client = StreamChat.getInstance(apiKey);
-
-    await client.connectUser(
-      {
-        id: streamUserId,
-        name: user.firstName && user.lastName
-          ? `${user.firstName} ${user.lastName}`
-          : user.email,
-      } as any,
-      userToken
-    );
-
-    globalClient = client;
-
-    // Calculate initial unread counts
-    await updateUnreadCounts(client, streamUserId);
-
-    // Listen for new messages to update unread counts
-    client.on('message.new', async (event) => {
-      if (event.user?.id !== streamUserId) {
-        // New message from someone else, update counts
-        await updateUnreadCounts(client, streamUserId);
-      }
-    });
-
-    // Listen for message read events
-    client.on('message.read', async () => {
-      await updateUnreadCounts(client, streamUserId);
-    });
-
-    // Listen for channel updates
-    client.on('notification.message_new', async () => {
-      await updateUnreadCounts(client, streamUserId);
-    });
-
-    client.on('notification.mark_read', async () => {
-      await updateUnreadCounts(client, streamUserId);
-    });
-
-    return client;
-  } catch (error) {
-    logger.error('Failed to initialize Stream Chat for unread tracking:', error);
-    return null;
-  }
+  return initializationPromise;
 }
 
 // Update unread counts from Stream Chat

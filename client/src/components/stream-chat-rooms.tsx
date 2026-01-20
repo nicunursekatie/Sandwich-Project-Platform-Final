@@ -48,6 +48,10 @@ import {
 import 'stream-chat-react/dist/css/v2/index.css';
 import { logger } from '@/lib/logger';
 
+// Module-level flag to prevent multiple initializations across re-renders
+let streamChatInitialized = false;
+let streamChatInitPromise: Promise<void> | null = null;
+
 // Custom Message component with read receipts
 const CustomMessage = () => {
   const { message, readBy } = useMessageContext();
@@ -445,14 +449,21 @@ export default function StreamChatRooms() {
 
   // Initialize Stream Chat client
   useEffect(() => {
-    let isInitialized = false;
-
     const initializeClient = async () => {
-      if (!user || isInitialized) return;
+      // Skip if no user or already initialized
+      if (!user || streamChatInitialized) return;
 
-      try {
-        // Get Stream credentials and user token from backend
-        const response = await fetch('/api/stream/credentials', {
+      // If initialization is in progress, wait for it
+      if (streamChatInitPromise) {
+        await streamChatInitPromise;
+        return;
+      }
+
+      // Create the initialization promise
+      streamChatInitPromise = (async () => {
+        try {
+          // Get Stream credentials and user token from backend
+          const response = await fetch('/api/stream/credentials', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -469,7 +480,7 @@ export default function StreamChatRooms() {
 
         const chatClient = StreamChat.getInstance(apiKey);
 
-        // Only connect if not already connected
+        // Only connect if not already connected (prevents duplicate connectUser warnings)
         if (!chatClient.userID) {
           await chatClient.connectUser(
             {
@@ -480,7 +491,7 @@ export default function StreamChatRooms() {
           );
         }
 
-        isInitialized = true;
+        streamChatInitialized = true;
 
         // Listen for new messages from this user to track challenge completion
         chatClient.on('message.new', (event) => {
@@ -602,15 +613,18 @@ export default function StreamChatRooms() {
           // Track that user has viewed team chat messages
           track('chat_read_messages');
         }
-
       } catch (error) {
         logger.error('Failed to initialize Stream Chat:', error);
+        streamChatInitPromise = null; // Reset so it can be retried
         toast({
           title: 'Chat Initialization Failed',
           description: 'Unable to connect to chat service. Please try refreshing.',
           variant: 'destructive',
         });
       }
+      })();
+
+      await streamChatInitPromise;
     };
 
     initializeClient();
