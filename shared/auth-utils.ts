@@ -57,6 +57,7 @@ export const PERMISSIONS = {
   HOSTS_ADD: 'HOSTS_ADD',
   HOSTS_EDIT: 'HOSTS_EDIT',
   HOSTS_DELETE: 'HOSTS_DELETE',
+  HOST_RESOURCES_ACCESS: 'HOST_RESOURCES_ACCESS', // Access to Host Resources hub
 
   // RECIPIENTS - Recipient organization management
   RECIPIENTS_VIEW: 'RECIPIENTS_VIEW',

@@ -266,6 +266,15 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'host-resources',
+    label: 'Host Resources',
+    icon: Building2,
+    href: 'host-resources',
+    permission: PERMISSIONS.HOST_RESOURCES_ACCESS,
+    group: 'logistics',
+    highlighted: true,
+  },
+  {
     id: 'maps',
     label: 'Maps',
     icon: MapPin,

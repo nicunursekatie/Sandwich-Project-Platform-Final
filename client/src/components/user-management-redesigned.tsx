@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -37,6 +37,14 @@ import {
   TrendingUp,
   MessageCircle,
   SquareCheck,
+  Clock,
+  Check,
+  X,
+  UserPlus,
+  Calendar,
+  Phone,
+  Mail,
+  MapPin,
 } from 'lucide-react';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 import BulkPermissionsManager from '@/components/bulk-permissions-manager';
@@ -75,8 +83,9 @@ export default function UserManagementFinal() {
   const { toast } = useToast();
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
 
-  const [activeTab, setActiveTab] = useState<'users' | 'permissions' | 'impact'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'pending' | 'permissions' | 'impact'>('users');
   const [viewingActivityFor, setViewingActivityFor] = useState<User | null>(null);
+  const queryClient = useQueryClient();
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -118,6 +127,53 @@ export default function UserManagementFinal() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['/api/users'],
     enabled: USERS_EDIT,
+  });
+
+  // Fetch pending registrations
+  const { data: pendingRegistrations = [], isLoading: isPendingLoading } = useQuery({
+    queryKey: ['/api/auth/pending-registrations'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/pending-registrations', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch pending registrations');
+      return response.json();
+    },
+    enabled: USERS_EDIT,
+  });
+
+  // Approve/reject user mutation
+  const approveUserMutation = useMutation({
+    mutationFn: async ({ userId, approved }: { userId: string; approved: boolean }) => {
+      const response = await fetch(`/api/auth/approve-user/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ approved }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update user status');
+      }
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/pending-registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: variables.approved ? 'User Approved' : 'User Rejected',
+        description: variables.approved
+          ? `User has been approved and can now log in.`
+          : `User registration has been rejected.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   // Use custom hooks
@@ -361,6 +417,15 @@ export default function UserManagementFinal() {
             <Users className="h-4 w-4" />
             Users
           </TabsTrigger>
+          <TabsTrigger value="pending" className="flex items-center gap-2 relative">
+            <Clock className="h-4 w-4" />
+            Pending Approvals
+            {pendingRegistrations.length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                {pendingRegistrations.length}
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="permissions" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Permissions
@@ -584,6 +649,116 @@ export default function UserManagementFinal() {
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Pending Approvals Tab */}
+        <TabsContent value="pending" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Pending Registration Approvals
+              </CardTitle>
+              <CardDescription>
+                Review and approve new user registrations. Users cannot log in until approved.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isPendingLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-primary"></div>
+                </div>
+              ) : pendingRegistrations.length === 0 ? (
+                <div className="text-center py-12">
+                  <UserCheck className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900">No Pending Approvals</h3>
+                  <p className="text-gray-500 mt-1">All registration requests have been processed.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingRegistrations.map((registration: any) => {
+                    const regData = registration.metadata?.registrationData || {};
+                    const registrationDate = registration.metadata?.registrationDate
+                      ? new Date(registration.metadata.registrationDate).toLocaleDateString()
+                      : 'Unknown';
+
+                    return (
+                      <div
+                        key={registration.id}
+                        className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                                <UserPlus className="h-5 w-5 text-amber-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-gray-900">
+                                  {registration.firstName} {registration.lastName}
+                                </h4>
+                                <p className="text-sm text-gray-500">{registration.email}</p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mt-3">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Phone className="h-4 w-4" />
+                                <span>{registration.phoneNumber || regData.phone || 'No phone'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Calendar className="h-4 w-4" />
+                                <span>Registered: {registrationDate}</span>
+                              </div>
+                              {(regData.address || regData.city) && (
+                                <div className="flex items-center gap-2 text-gray-600 md:col-span-2">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>
+                                    {[regData.address, regData.city, regData.state, regData.zipCode]
+                                      .filter(Boolean)
+                                      .join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {registration.metadata?.smsConsent?.enabled && (
+                              <Badge variant="outline" className="mt-2 text-xs bg-green-50 text-green-700 border-green-200">
+                                <MessageCircle className="h-3 w-3 mr-1" />
+                                Opted in to SMS alerts
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 shrink-0">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => approveUserMutation.mutate({ userId: registration.id, approved: false })}
+                              disabled={approveUserMutation.isPending}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Reject
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => approveUserMutation.mutate({ userId: registration.id, approved: true })}
+                              disabled={approveUserMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Approve
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
