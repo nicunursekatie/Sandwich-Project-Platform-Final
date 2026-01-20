@@ -101,6 +101,17 @@ declare global {
  * - Get user: GET /api/auth/me or GET /api/auth/user (server/routes/auth/index.ts)
  */
 
+/**
+ * Check if we're truly in development mode
+ * Requires: APP_ENV=development AND NOT production NODE_ENV AND NOT in deployment
+ */
+function isDevMode(): boolean {
+  const appEnv = process.env.APP_ENV;
+  const nodeEnv = process.env.NODE_ENV;
+  const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  return appEnv === 'development' && nodeEnv !== 'production' && !isDeployment;
+}
+
 // Middleware to check if user is authenticated
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   logger.log('=== AUTHENTICATION MIDDLEWARE ===');
@@ -111,7 +122,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   logger.log('User email in session:', req.session?.user?.email);
 
   // In development mode, inject a dev admin user if no session exists OR if dev user is already in session
-  if (process.env.APP_ENV === 'development') {
+  if (isDevMode()) {
     const isDevUser = req.session?.user?.email === 'dev@thesandwichproject.org';
     if (!req.session || !req.session.user || isDevUser) {
       logger.log('🔧 DEV MODE: Using dev admin user');

@@ -220,7 +220,8 @@ export function createAuthRouter() {
       }
 
       // In development mode, if user is a dev admin, return the injected user directly
-      if (process.env.APP_ENV === 'development' && req.user.email?.includes('dev@') || req.user.email?.includes('thesandwichproject.org')) {
+      const isDevMode = process.env.APP_ENV === 'development' && process.env.NODE_ENV !== 'production' && process.env.REPLIT_DEPLOYMENT !== '1';
+      if (isDevMode && (req.user.email?.includes('dev@') || req.user.email?.includes('thesandwichproject.org'))) {
         // Try database lookup first, but fall back to injected user
         const freshUser = await storage.getUserByEmail(req.user.email);
         if (freshUser) {

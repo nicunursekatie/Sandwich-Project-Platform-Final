@@ -13,15 +13,26 @@ interface AuthenticatedRequest extends Request {
 }
 
 /**
+ * Check if we're truly in development mode
+ * Requires: APP_ENV=development AND NOT production NODE_ENV AND NOT in deployment
+ */
+function isDevMode(): boolean {
+  const appEnv = process.env.APP_ENV;
+  const nodeEnv = process.env.NODE_ENV;
+  const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  return appEnv === 'development' && nodeEnv !== 'production' && !isDeployment;
+}
+
+/**
  * Development-only bypass middleware
- * Allows all requests in development when APP_ENV=development
+ * Allows all requests in development when truly in dev mode
  */
 export function devBypass(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) {
-  if (process.env.APP_ENV === 'development') {
+  if (isDevMode()) {
     return next();
   }
   next();
@@ -37,7 +48,7 @@ export async function requireAuth(
   next: NextFunction
 ) {
   // In development mode, inject a dev admin user
-  if (process.env.APP_ENV === 'development') {
+  if (isDevMode()) {
     // Try to get a real super_admin user from the database, or create a fake one
     try {
       const devUser = await storage.getUserByEmail('katie@thesandwichproject.org');
@@ -145,7 +156,7 @@ export async function blockInactiveUsers(
   next: NextFunction
 ) {
   // Skip in development mode
-  if (process.env.APP_ENV === 'development') {
+  if (isDevMode()) {
     return next();
   }
 
@@ -220,7 +231,7 @@ export function requirePermission(permission: string) {
     next: NextFunction
   ) => {
     // Skip permission check in development mode
-    if (process.env.APP_ENV === 'development') {
+    if (isDevMode()) {
       return next();
     }
 
@@ -275,7 +286,7 @@ export function requireAnyPermission(...permissions: string[]) {
     next: NextFunction
   ) => {
     // Skip permission check in development mode
-    if (process.env.APP_ENV === 'development') {
+    if (isDevMode()) {
       return next();
     }
 
@@ -330,7 +341,7 @@ export function requireRole(...roles: string[]) {
     next: NextFunction
   ) => {
     // Skip role check in development mode
-    if (process.env.APP_ENV === 'development') {
+    if (isDevMode()) {
       return next();
     }
 
@@ -377,7 +388,7 @@ export const requireOwnershipPermission = (
 ): RequestHandler => {
   return async (req: any, res, next) => {
     // Skip in development mode
-    if (process.env.APP_ENV === 'development') {
+    if (isDevMode()) {
       return next();
     }
 
