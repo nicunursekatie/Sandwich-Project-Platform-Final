@@ -2146,7 +2146,18 @@ export const eventRequests = pgTable(
       role?: 'co-host' | 'partner' | 'sponsor';
     }>>(),
 
-    // NOTE: auto_categories, categorized_at, categorized_by were removed in migration 0024
+    // AI auto-categorization fields
+    autoCategories: jsonb('auto_categories').$type<{
+      eventType?: string;
+      eventSize?: string;
+      specialNeeds?: string[];
+      targetAudience?: string;
+      confidence?: number;
+      reasoning?: string;
+      suggestedTags?: string[];
+    }>(),
+    categorizedAt: timestamp('categorized_at'),
+    categorizedBy: varchar('categorized_by'), // 'ai' or user ID
 
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
