@@ -160,7 +160,9 @@ export async function updateActiveSessionsCount(_sessionStore?: Store): Promise<
       sql`SELECT COUNT(*) as count FROM sessions WHERE expire > NOW()`
     );
     
-    const count = parseInt((result.rows[0] as any).count, 10) || 0;
+    // Handle both array and object response formats (Neon returns array directly)
+    const rows = Array.isArray(result) ? result : (result.rows || []);
+    const count = rows.length > 0 ? parseInt((rows[0] as any).count, 10) || 0 : 0;
     activeSessions.set(count);
     logger.debug('Updated active sessions count', { count });
   } catch (error: any) {

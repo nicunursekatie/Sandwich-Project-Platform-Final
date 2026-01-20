@@ -275,24 +275,32 @@ export class DatabaseStorage implements IStorage {
 
   async getOnlineUsers(sinceMinutes: number = 5): Promise<Pick<User, 'id' | 'firstName' | 'lastName' | 'displayName' | 'email' | 'profileImageUrl' | 'lastActiveAt'>[]> {
     const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000);
-    const onlineUsers = await db
-      .select({
-        id: users.id,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        displayName: users.displayName,
-        email: users.email,
-        profileImageUrl: users.profileImageUrl,
-        lastActiveAt: users.lastActiveAt,
-      })
-      .from(users)
-      .where(
-        and(
-          eq(users.isActive, true),
-          gte(users.lastActiveAt, cutoff)
-        )
-      )
-      .orderBy(desc(users.lastActiveAt));
+    
+    // Use raw SQL for Neon serverless compatibility
+    // Neon's execute returns an array directly, not { rows: [...] }
+    const rawResult = await db.execute(sql`
+      SELECT id, first_name, last_name, display_name, email, profile_image_url, last_active_at
+      FROM users
+      WHERE is_active = true
+        AND last_active_at IS NOT NULL
+        AND last_active_at >= ${cutoff}
+      ORDER BY last_active_at DESC
+    `);
+    
+    // Handle both array and object response formats
+    const rows = Array.isArray(rawResult) ? rawResult : (rawResult.rows || []);
+    
+    // Map to expected format
+    const onlineUsers = rows.map((row: any) => ({
+      id: row.id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      displayName: row.display_name,
+      email: row.email,
+      profileImageUrl: row.profile_image_url,
+      lastActiveAt: row.last_active_at ? new Date(row.last_active_at) : null,
+    }));
+    
     return onlineUsers;
   }
 
