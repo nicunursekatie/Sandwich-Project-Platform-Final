@@ -44,6 +44,7 @@ import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-m
 import MissingDriversModal from '@/components/modals/missing-drivers-modal';
 import MissingSpeakersModal from '@/components/modals/missing-speakers-modal';
 import WeekOutlookModal from '@/components/modals/week-outlook-modal';
+import NextMonthPlanningModal from '@/components/modals/next-month-planning-modal';
 
 interface ActionItem {
   id: string;
@@ -83,6 +84,8 @@ export default function ActionCenter() {
   const [missingSpeakersEvents, setMissingSpeakersEvents] = useState<EventRequest[]>([]);
 
   const [isWeekOutlookModalOpen, setIsWeekOutlookModalOpen] = useState(false);
+
+  const [isNextMonthPlanningModalOpen, setIsNextMonthPlanningModalOpen] = useState(false);
 
   // Fetch collections data
   const { data: collectionsData } = useQuery<{ collections: SandwichCollection[] }>({
@@ -662,6 +665,88 @@ export default function ActionCenter() {
       });
     }
 
+    // ============================================================
+    // CATEGORY 4: PROACTIVE PLANNING
+    // ============================================================
+
+    // Always show "Plan Ahead for Next Month" in the second half of the current month
+    const dayOfMonth = today.getDate();
+    const daysInCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const isSecondHalfOfMonth = dayOfMonth >= Math.floor(daysInCurrentMonth / 2);
+
+    if (isSecondHalfOfMonth) {
+      const nextMonth = new Date(currentYear, currentMonth + 1, 1);
+      const nextMonthName = nextMonth.toLocaleDateString('en-US', { month: 'long' });
+      const nextMonthYear = nextMonth.getFullYear();
+
+      // Check how many events are already scheduled for next month
+      const nextMonthEnd = new Date(nextMonthYear, nextMonth.getMonth() + 1, 0);
+      const scheduledNextMonth = (eventRequests || []).filter((event) => {
+        if (!['in_process', 'scheduled'].includes(event.status)) return false;
+        if (!event.desiredEventDate) return false;
+        const eventDate = new Date(event.desiredEventDate);
+        return eventDate >= nextMonth && eventDate <= nextMonthEnd;
+      });
+
+      const scheduledNextMonthTotal = scheduledNextMonth.reduce(
+        (sum, event) => sum + (event.estimatedSandwichCount || 0),
+        0
+      );
+
+      // Calculate historical average for next month
+      const historicalNextMonthTotals: number[] = [];
+      const monthMap = new Map<string, number>();
+
+      collections.forEach((c) => {
+        const date = parseCollectionDate(c.collectionDate);
+        if (date.getMonth() === nextMonth.getMonth()) {
+          const yearKey = date.getFullYear().toString();
+          const current = monthMap.get(yearKey) || 0;
+          monthMap.set(yearKey, current + calculateTotalSandwiches(c));
+        }
+      });
+
+      monthMap.forEach((total) => historicalNextMonthTotals.push(total));
+
+      const hasHistoricalData = historicalNextMonthTotals.length > 0;
+      const historicalAverage = hasHistoricalData
+        ? Math.round(historicalNextMonthTotals.reduce((a, b) => a + b, 0) / historicalNextMonthTotals.length)
+        : 0;
+
+      const progressPercent = hasHistoricalData && historicalAverage > 0
+        ? Math.round((scheduledNextMonthTotal / historicalAverage) * 100)
+        : 0;
+
+      // Determine priority based on how prepared we are
+      let priority: 'high' | 'medium' | 'low' = 'low';
+      if (hasHistoricalData && progressPercent < 25 && dayOfMonth >= 20) {
+        priority = 'medium'; // Less than 25% scheduled in last 10 days of month
+      }
+
+      actions.push({
+        id: 'plan-ahead-next-month',
+        priority,
+        category: 'planning',
+        title: `Plan Ahead for ${nextMonthName}`,
+        description: hasHistoricalData
+          ? `${scheduledNextMonth.length} events scheduled (${scheduledNextMonthTotal.toLocaleString()} sandwiches) • Historical avg: ${historicalAverage.toLocaleString()}`
+          : `${scheduledNextMonth.length} events scheduled for ${nextMonthName} so far`,
+        impact: hasHistoricalData
+          ? `Currently at ${progressPercent}% of historical ${nextMonthName} average`
+          : `Review patterns and opportunities for ${nextMonthName}`,
+        action: `Review ${nextMonthName} patterns from previous years`,
+        data: {
+          nextMonthName,
+          nextMonthYear,
+          scheduledCount: scheduledNextMonth.length,
+          scheduledTotal: scheduledNextMonthTotal,
+          historicalAverage,
+          progressPercent,
+          hasHistoricalData,
+        },
+      });
+    }
+
     return actions.sort((a, b) => {
       const priorityOrder = { high: 0, medium: 1, low: 2 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -916,6 +1001,9 @@ export default function ActionCenter() {
                       } else if (item.id === 'early-week-planning') {
                         // Open Week Outlook Modal
                         setIsWeekOutlookModalOpen(true);
+                      } else if (item.id === 'plan-ahead-next-month') {
+                        // Open Next Month Planning Modal
+                        setIsNextMonthPlanningModalOpen(true);
                       } else if (item.id.startsWith('low-forecast-week-') || item.id === 'weekly-pace' || item.id === 'month-below-year-average') {
                         // Navigate to event requests to add new events / increase recruitment
                         setLocation('/event-requests');
@@ -989,6 +1077,11 @@ export default function ActionCenter() {
     <WeekOutlookModal
       isOpen={isWeekOutlookModalOpen}
       onClose={() => setIsWeekOutlookModalOpen(false)}
+    />
+
+    <NextMonthPlanningModal
+      isOpen={isNextMonthPlanningModalOpen}
+      onClose={() => setIsNextMonthPlanningModalOpen(false)}
     />
     </TooltipProvider>
   );
