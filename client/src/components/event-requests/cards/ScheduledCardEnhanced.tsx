@@ -247,6 +247,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [tempOvernightHolding, setTempOvernightHolding] = useState('');
   const [isExportingToSheet, setIsExportingToSheet] = useState(false);
 
+  // State for recording actual/final sandwich count
+  const [isEditingActualCount, setIsEditingActualCount] = useState(false);
+  const [actualCountMode, setActualCountMode] = useState<'simple' | 'detailed'>('simple');
+  const [actualCountSimple, setActualCountSimple] = useState('');
+  const [actualCountTypes, setActualCountTypes] = useState<Record<string, number>>({});
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -758,6 +764,99 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     } finally {
       setIsExportingToSheet(false);
     }
+  };
+
+  // Handlers for recording actual/final sandwich count
+  const startEditingActualCount = () => {
+    const currentCount = (request as any).actualSandwichCount || 0;
+    const currentTypes = (request as any).actualSandwichTypes;
+
+    if (currentTypes && Array.isArray(currentTypes) && currentTypes.length > 0) {
+      const typeMap: Record<string, number> = {};
+      currentTypes.forEach((item: { type?: string; quantity?: number }) => {
+        if (item.type && item.quantity) {
+          typeMap[item.type.toLowerCase()] = item.quantity;
+        }
+      });
+      setActualCountTypes(typeMap);
+      setActualCountMode('detailed');
+    } else {
+      setActualCountSimple(currentCount > 0 ? currentCount.toString() : '');
+      setActualCountMode('simple');
+    }
+    setIsEditingActualCount(true);
+  };
+
+  const saveActualCount = () => {
+    const todayDate = new Date().toISOString();
+
+    if (actualCountMode === 'simple') {
+      const count = parseInt(actualCountSimple, 10);
+      if (isNaN(count) || count < 0) {
+        toast({
+          title: 'Invalid count',
+          description: 'Please enter a valid positive number.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      updateFieldsMutation.mutate({
+        actualSandwichCount: count,
+        actualSandwichCountRecordedDate: todayDate,
+        actualSandwichCountRecordedBy: user?.id?.toString() || null,
+      }, {
+        onSuccess: () => {
+          setIsEditingActualCount(false);
+          setActualCountSimple('');
+          toast({
+            title: 'Final count recorded',
+            description: `Recorded ${count} sandwiches for this event.`,
+          });
+        }
+      });
+    } else {
+      const types: Array<{ type: string; quantity: number }> = [];
+      let total = 0;
+
+      Object.entries(actualCountTypes).forEach(([type, count]) => {
+        if (count && count > 0) {
+          types.push({ type, quantity: count });
+          total += count;
+        }
+      });
+
+      if (total === 0) {
+        toast({
+          title: 'Invalid count',
+          description: 'Please enter at least one sandwich type with a count.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      updateFieldsMutation.mutate({
+        actualSandwichCount: total,
+        actualSandwichTypes: types,
+        actualSandwichCountRecordedDate: todayDate,
+        actualSandwichCountRecordedBy: user?.id?.toString() || null,
+      }, {
+        onSuccess: () => {
+          setIsEditingActualCount(false);
+          setActualCountTypes({});
+          toast({
+            title: 'Final count recorded',
+            description: `Recorded ${total} sandwiches for this event.`,
+          });
+        }
+      });
+    }
+  };
+
+  const cancelActualCountEdit = () => {
+    setIsEditingActualCount(false);
+    setActualCountSimple('');
+    setActualCountTypes({});
   };
 
   return (
@@ -2056,6 +2155,112 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       <Edit2 className="w-3 h-3" aria-hidden="true" />
                     </Button>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Record Final Sandwich Count - for day-of recording before event completes */}
+            <div className="flex items-center gap-2 pt-3 border-t border-gray-200 mt-3">
+              <Check className="w-5 h-5 shrink-0 text-green-600" aria-hidden="true" />
+              {isEditingActualCount ? (
+                <div className="flex-1 bg-green-50 rounded p-3 space-y-2 border border-green-200">
+                  <div className="text-xs uppercase text-green-700 font-semibold">Record Final Count</div>
+                  <div className="flex gap-2 mb-2">
+                    <Button
+                      size="sm"
+                      variant={actualCountMode === 'simple' ? 'default' : 'outline'}
+                      onClick={() => setActualCountMode('simple')}
+                      className="h-7"
+                    >
+                      Total
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={actualCountMode === 'detailed' ? 'default' : 'outline'}
+                      onClick={() => setActualCountMode('detailed')}
+                      className="h-7"
+                    >
+                      By Type
+                    </Button>
+                  </div>
+
+                  {actualCountMode === 'simple' && (
+                    <Input
+                      type="number"
+                      value={actualCountSimple}
+                      onChange={(e) => setActualCountSimple(e.target.value)}
+                      placeholder="Enter final sandwich count"
+                      className="bg-white"
+                    />
+                  )}
+
+                  {actualCountMode === 'detailed' && (
+                    <div className="space-y-2">
+                      {SANDWICH_TYPES.map((type) => (
+                        <div key={type.value} className="flex items-center gap-2">
+                          <span className="text-sm w-24">{type.label}</span>
+                          <Input
+                            type="number"
+                            value={actualCountTypes[type.value] || ''}
+                            onChange={(e) => setActualCountTypes(prev => ({
+                              ...prev,
+                              [type.value]: parseInt(e.target.value) || 0
+                            }))}
+                            placeholder="0"
+                            className="w-20 bg-white"
+                          />
+                        </div>
+                      ))}
+                      <div className="text-sm font-semibold text-green-700 pt-1">
+                        Total: {Object.values(actualCountTypes).reduce((sum, n) => sum + (n || 0), 0)}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <Button size="sm" onClick={saveActualCount} disabled={updateFieldsMutation.isPending} className="bg-green-600 hover:bg-green-700">
+                      {updateFieldsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-3 h-3 mr-1" /> Save Final Count
+                        </>
+                      )}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelActualCountEdit}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs uppercase text-gray-600 font-medium">Final Count</div>
+                      <div className="text-sm font-semibold">
+                        {(request as any).actualSandwichCount ? (
+                          <span className="text-green-700">
+                            {(request as any).actualSandwichCount} sandwiches recorded
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic">Not yet recorded</span>
+                        )}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={startEditingActualCount}
+                        className="h-7 px-3 text-xs border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400"
+                      >
+                        <Edit2 className="w-3 h-3 mr-1" />
+                        {(request as any).actualSandwichCount ? 'Edit' : 'Record Final Count'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

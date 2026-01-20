@@ -30,6 +30,8 @@ const signupSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirmPassword: z.string(),
   phone: z.string().min(10, 'Please enter a valid phone number'),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -43,6 +45,9 @@ const signupSchema = z.object({
       (val) => val === true,
       'You must agree to the terms and conditions'
     ),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type SignupForm = z.infer<typeof signupSchema>;
@@ -59,6 +64,8 @@ export default function SignupPage() {
       firstName: '',
       lastName: '',
       email: '',
+      password: '',
+      confirmPassword: '',
       phone: '',
       address: '',
       city: '',
@@ -286,6 +293,44 @@ export default function SignupPage() {
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Create a password"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Confirm your password"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
