@@ -70,6 +70,7 @@ import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { PostponementDialog } from './dialogs/PostponementDialog';
 import IntakeCallDialog from './IntakeCallDialog';
 import NextActionDialog from './NextActionDialog';
+import { DashboardSummaryCards } from './DashboardSummaryCards';
 import { logger } from '@/lib/logger';
 import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
@@ -638,6 +639,13 @@ const EventRequestsManagementContent: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Dashboard Summary Cards */}
+        <DashboardSummaryCards
+          eventRequests={eventRequests}
+          statusCounts={statusCounts}
+          isLoading={isLoading || statusCountsLoading}
+        />
 
         {/* Role-customized view indicator */}
         {user?.role && user.role !== 'super_admin' && user.role !== 'admin' && (

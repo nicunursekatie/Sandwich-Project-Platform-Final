@@ -582,6 +582,25 @@ export default function VolunteerEventHub() {
     });
   }, [events, roleFilter]);
 
+  // Calculate summary metrics for dashboard cards
+  const summaryMetrics = useMemo(() => {
+    const totalEvents = events.length;
+    const eventsNeedingHelp = events.filter(e => e.hasUnfilledNeeds).length;
+    const totalSpeakerOpenings = events.reduce((sum, e) => sum + e.speakersUnfilled, 0);
+    const totalVolunteerOpenings = events.reduce((sum, e) => sum + e.volunteersUnfilled, 0);
+    const totalDriverOpenings = events.reduce((sum, e) => sum + e.driversUnfilled, 0);
+    const totalOpenings = totalSpeakerOpenings + totalVolunteerOpenings + totalDriverOpenings;
+
+    return {
+      totalEvents,
+      eventsNeedingHelp,
+      totalSpeakerOpenings,
+      totalVolunteerOpenings,
+      totalDriverOpenings,
+      totalOpenings,
+    };
+  }, [events]);
+
   // Group events by date for calendar view
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, AvailableEvent[]> = {};
@@ -691,6 +710,77 @@ export default function VolunteerEventHub() {
               </CardContent>
             </Card>
           )}
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Total Events */}
+          <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-emerald-600 p-2 rounded-lg bg-white/50">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-bold text-emerald-600">
+                  {summaryMetrics.totalEvents}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600">
+                  Upcoming Events
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Drivers Needed */}
+          <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-amber-600 p-2 rounded-lg bg-white/50">
+                <Car className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-bold text-amber-600">
+                  {summaryMetrics.totalDriverOpenings}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600">
+                  Drivers Needed
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Speakers Needed */}
+          <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-purple-600 p-2 rounded-lg bg-white/50">
+                <Mic className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-bold text-purple-600">
+                  {summaryMetrics.totalSpeakerOpenings}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600">
+                  Speakers Needed
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Volunteer Openings */}
+          <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 sm:p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-blue-600 p-2 rounded-lg bg-white/50">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">
+                  {summaryMetrics.totalOpenings}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-600">
+                  Total Openings
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filters & View Toggle */}
