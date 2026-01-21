@@ -750,20 +750,20 @@ export default function GrantMetrics() {
             </div>
           </div>
 
-          {/* Sustainability Story */}
+          {/* Our Story */}
           <div className="max-w-4xl mx-auto space-y-4 text-center">
             <p className="text-lg md:text-xl leading-relaxed">
-              Our weekly baseline has grown from <span className="font-semibold text-[#fbad3f]">1,000 sandwiches</span> in 2020
-              to over <span className="font-semibold text-[#fbad3f]">10,000+</span> in 2025 —
-              <span className="font-semibold text-[#fbad3f]"> 10x growth</span> in sustainable, repeatable output.
+              Our journey began in mid-2020, when the COVID-19 pandemic profoundly impacted countless lives.
+              Even as the urgency of COVID has eased, housing costs, inflation, and systemic inequities
+              force many families into impossible choices between food and other basic needs.
             </p>
             <p className="text-base md:text-lg leading-relaxed text-white/90">
-              When Hurricane Helene hit, we surged to <span className="font-semibold text-[#fbad3f]">14,023 sandwiches</span> in a single week —
-              3x our normal capacity, mobilized without external support. We're not a volunteer network
-              that happens to feed people. <span className="font-semibold text-white">We're infrastructure that happens to be volunteer-powered.</span>
+              Through a network of dedicated volunteers, we create and deliver fresh, homemade sandwiches
+              to individuals in need. We believe in the transformative power of community, compassion, and kindness —
+              and in the fundamental right of every person to access nourishing food.
             </p>
             <p className="text-xl md:text-2xl font-semibold mt-6 text-[#47b3cb]">
-              Proven. Sustainable. Ready for anything.
+              Fighting food insecurity. Fostering a spirit of service. Building a stronger community.
             </p>
           </div>
         </div>
@@ -1280,19 +1280,19 @@ export default function GrantMetrics() {
             <div className="flex flex-col md:flex-row md:items-center gap-6">
               <div className="flex-shrink-0 text-center md:text-left">
                 <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">+26%</div>
-                <div className="text-sm text-white/80">food price inflation<br />2022-2024</div>
+                <div className="text-sm text-white/80">food price inflation<br />since 2022</div>
               </div>
               <div className="flex-grow">
-                <h3 className="text-xl font-bold mb-2">Sustained Impact Despite Rising Costs</h3>
+                <h3 className="text-xl font-bold mb-2">Real Growth Despite Rising Costs</h3>
                 <p className="text-white/90">
-                  While food prices increased 26% from 2022-2024, we delivered <strong className="text-[#fbad3f]">501,856 sandwiches</strong> in 2024 —
-                  more than in 2023. This means our volunteers contributed an additional 26% more effort to maintain the same impact.
-                  That's infrastructure resilience in action.
+                  Food prices have increased 26%+ since 2022. Despite this, we've grown from <strong className="text-[#fbad3f]">440,371 sandwiches</strong> (2022)
+                  to <strong className="text-[#fbad3f]">526,083</strong> (2025) — representing <strong className="text-[#fbad3f]">41% real growth</strong> in
+                  volunteer effort and community contribution.
                 </p>
               </div>
               <div className="flex-shrink-0 text-center md:text-right">
-                <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">501K</div>
-                <div className="text-sm text-white/80">sandwiches in 2024<br />despite inflation</div>
+                <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">526K</div>
+                <div className="text-sm text-white/80">sandwiches in 2025<br />(peak year)</div>
               </div>
             </div>
           </CardContent>
@@ -1332,7 +1332,7 @@ export default function GrantMetrics() {
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
                 <div className="font-bold text-[#A31C41] mb-2">Inflation-Resilient</div>
                 <p className="text-sm text-gray-700">
-                  Maintained volume despite 26% food cost increases. Volunteers absorbed the extra effort.
+                  41% real growth despite 26% food cost increases since 2022. Volunteers absorbed the extra effort.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
@@ -2137,18 +2137,17 @@ export default function GrantMetrics() {
             </div>
             <div className="mt-8 p-6 bg-white/10 rounded-lg backdrop-blur-sm space-y-4">
               <p className="text-lg leading-relaxed">
-                Our weekly baseline has grown from <strong>1,000 sandwiches</strong> in 2020 to over
-                <strong> 10,000+</strong> in 2025 — <strong>10x growth</strong> in sustainable, repeatable output.
-                We maintained this volume despite <strong>26% food price inflation</strong> from 2022-2024.
+                Our journey began in mid-2020, when the COVID-19 pandemic profoundly impacted countless lives.
+                Even as the urgency of COVID has eased, housing costs, inflation, and systemic inequities
+                force many families into impossible choices between food and other basic needs.
               </p>
               <p className="text-lg leading-relaxed">
-                When Hurricane Helene hit, we surged to <strong>14,023 sandwiches</strong> in a single week —
-                3x our normal capacity, mobilized without external support.
-                We're not a volunteer network that happens to feed people.
-                <strong> We're infrastructure that happens to be volunteer-powered.</strong>
+                Through a network of dedicated volunteers, we create and deliver fresh, homemade sandwiches
+                to individuals in need. We believe in the transformative power of community, compassion, and kindness —
+                and in the fundamental right of every person to access nourishing food.
               </p>
               <p className="text-lg leading-relaxed font-semibold">
-                Proven. Sustainable. Ready for anything.
+                Fighting food insecurity. Fostering a spirit of service. Building a stronger community.
               </p>
             </div>
           </CardContent>
