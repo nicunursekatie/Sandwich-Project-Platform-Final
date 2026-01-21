@@ -117,7 +117,7 @@ export default function ContactOrganizerDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md sm:max-w-lg" data-testid="dialog-contact-organizer">
+      <DialogContent className="w-[95vw] max-w-md sm:max-w-lg p-4 sm:p-6" data-testid="dialog-contact-organizer">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 text-[#236383]">
             <User className="w-5 h-5" />

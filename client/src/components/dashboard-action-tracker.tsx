@@ -206,7 +206,7 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
             </div>
           </DialogTrigger>
           {quickViewEvent && quickViewEvent.id === item.id && (
-            <DialogContent className="max-w-md">
+            <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle>Event Quick View</DialogTitle>
               </DialogHeader>

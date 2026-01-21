@@ -1628,7 +1628,7 @@ ${userEmail}`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-4 sm:p-6">
         <DialogHeader className="pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Mail className="w-5 h-5 text-teal-600" />

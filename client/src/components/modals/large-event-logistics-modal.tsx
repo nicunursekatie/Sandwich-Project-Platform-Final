@@ -54,7 +54,7 @@ export default function LargeEventLogisticsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center text-2xl">
             <AlertCircle className="text-amber-500 mr-2 w-6 h-6" />

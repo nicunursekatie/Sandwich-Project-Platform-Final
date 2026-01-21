@@ -1077,11 +1077,11 @@ export default function HostsManagementConsolidated() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="w-6 h-6" />
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
               Host Management
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1127,12 +1127,12 @@ export default function HostsManagementConsolidated() {
       </div>
 
       {/* Action Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
           {viewMode === 'locations' && (
             <Button
               onClick={() => setActiveLocationTab('map')}
-              className="bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold shadow-md"
+              className="bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold shadow-md flex-1 sm:flex-none"
               size="lg"
             >
               <MapPin className="w-5 h-5 mr-2" />
@@ -1141,12 +1141,12 @@ export default function HostsManagementConsolidated() {
           )}
           <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
             <DialogTrigger asChild>
-              <Button disabled={!canEdit}>
+              <Button disabled={!canEdit} className="flex-1 sm:flex-none">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Contact
               </Button>
             </DialogTrigger>
-          <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-md sm:max-w-lg max-h-[85vh] overflow-y-auto p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
                 Add New Contact

@@ -421,7 +421,7 @@ export function PlanningTab({
 
       {/* Sandwich Planning Modal */}
       <Dialog open={showSandwichModal} onOpenChange={setShowSandwichModal}>
-        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
               <Package className="w-6 h-6" />
@@ -474,7 +474,7 @@ export function PlanningTab({
 
       {/* Staffing Planning Modal */}
       <Dialog open={showStaffingModal} onOpenChange={setShowStaffingModal}>
-        <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-brand-primary flex items-center gap-3">
               <Users className="w-6 h-6" />
@@ -528,7 +528,7 @@ export function PlanningTab({
 
       {/* Unassigned Events Modal */}
       <Dialog open={showUnassignedModal} onOpenChange={setShowUnassignedModal}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-brand-primary flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
@@ -610,7 +610,7 @@ export function PlanningTab({
 
       {/* Long In-Process Modal */}
       <Dialog open={showOverdueModal} onOpenChange={setShowOverdueModal}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: '#A31C41' }}>
               <Clock className="w-5 h-5" />
@@ -671,7 +671,7 @@ export function PlanningTab({
 
       {/* Stale Requests Modal */}
       <Dialog open={showStaleModal} onOpenChange={setShowStaleModal}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: '#FBAD3F' }}>
               <Info className="w-5 h-5" />
@@ -732,7 +732,7 @@ export function PlanningTab({
 
       {/* Missing Info Modal */}
       <Dialog open={showMissingInfoModal} onOpenChange={setShowMissingInfoModal}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2" style={{ color: '#FBAD3F' }}>
               <XCircle className="w-5 h-5" />

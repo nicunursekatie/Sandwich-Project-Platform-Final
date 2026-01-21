@@ -890,7 +890,7 @@ export default function EnhancedMeetingDashboard() {
         open={showEditPeopleDialog}
         onOpenChange={setShowEditPeopleDialog}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Support People</DialogTitle>
             <DialogDescription>
@@ -924,7 +924,7 @@ export default function EnhancedMeetingDashboard() {
 
       {/* Edit Project Owner Dialog */}
       <Dialog open={showEditOwnerDialog} onOpenChange={setShowEditOwnerDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Project Owner</DialogTitle>
             <DialogDescription>

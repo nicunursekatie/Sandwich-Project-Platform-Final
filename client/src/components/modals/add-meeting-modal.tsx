@@ -92,7 +92,7 @@ export default function AddMeetingModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] flex flex-col p-4 sm:p-6">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center">
             <Plus className="text-purple-500 mr-2 w-5 h-5" />

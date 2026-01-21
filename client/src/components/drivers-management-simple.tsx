@@ -649,7 +649,7 @@ export default function DriversManagement() {
                     <span className="sm:hidden">Add</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                <DialogContent className="w-[95vw] max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6">
                   <DialogHeader>
                     <DialogTitle>Add New Driver</DialogTitle>
                   </DialogHeader>
@@ -1362,7 +1362,7 @@ export default function DriversManagement() {
         open={!!editingDriver}
         onOpenChange={() => setEditingDriver(null)}
       >
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-md max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Driver</DialogTitle>
           </DialogHeader>
@@ -1937,7 +1937,7 @@ export default function DriversManagement() {
           if (!open) setAddressDialogDriver(null);
         }}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Driver Address</DialogTitle>
           </DialogHeader>

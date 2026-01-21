@@ -120,11 +120,11 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
     >
       <CardContent className="p-4">
         {/* Compact Header Row */}
-        <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
             {/* Title Row with Status */}
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-lg font-bold text-[#236383] truncate">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+              <h3 className="text-base sm:text-lg font-bold text-[#236383] break-words">
                 {request.organizationName}
                 {request.department && (
                   <span className="text-sm text-gray-600 ml-2">
@@ -180,7 +180,7 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
             </div>
 
             {/* Info Grid - Horizontal Layout */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2 text-sm">
               {/* Date */}
               <div className="flex items-center gap-2 text-gray-700">
                 <Calendar className="w-4 h-4 text-[#007E8C] shrink-0" />
@@ -291,7 +291,7 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
 
           {/* Action Buttons */}
           <TooltipProvider>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0 mt-2 sm:mt-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button

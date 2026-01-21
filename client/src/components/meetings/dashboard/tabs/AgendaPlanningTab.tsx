@@ -1495,7 +1495,7 @@ export function AgendaPlanningTab({
         open={showEditPeopleDialog}
         onOpenChange={setShowEditPeopleDialog}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Support People</DialogTitle>
             <DialogDescription>
@@ -1581,7 +1581,7 @@ export function AgendaPlanningTab({
 
       {/* Edit Project Owner Dialog */}
       <Dialog open={showEditOwnerDialog} onOpenChange={setShowEditOwnerDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Edit Project Owner</DialogTitle>
             <DialogDescription>
@@ -1664,7 +1664,7 @@ export function AgendaPlanningTab({
 
       {/* Add Task Dialog */}
       <Dialog open={showAddTaskDialog} onOpenChange={setShowAddTaskDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Add New Task</DialogTitle>
           </DialogHeader>
@@ -1748,7 +1748,7 @@ export function AgendaPlanningTab({
         open={showResetConfirmDialog}
         onOpenChange={setShowResetConfirmDialog}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] max-w-lg p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-orange-700">
               <AlertCircle className="w-5 h-5" />

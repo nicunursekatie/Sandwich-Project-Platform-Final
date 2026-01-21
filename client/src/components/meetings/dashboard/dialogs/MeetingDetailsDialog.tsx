@@ -93,7 +93,7 @@ export function MeetingDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -170,8 +170,8 @@ export function MeetingDetailsDialog({
           // Upcoming Meeting - Show compiled agenda with export options
           <div className="space-y-6">
             {/* Agenda Header */}
-            <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="bg-teal-50 p-3 sm:p-4 rounded-lg border border-teal-200">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-sm">
                 <div>
                   <span className="font-medium text-teal-900">Date:</span>
                   <span className="ml-2 text-teal-800">
@@ -234,7 +234,7 @@ export function MeetingDetailsDialog({
                                     {item.description}
                                   </p>
                                 )}
-                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 text-xs text-gray-500">
                                   <span>Presenter: {item.submittedBy}</span>
                                   <span>Time: {item.estimatedTime || '5 min'}</span>
                                   <Badge variant="outline" className="text-xs">
