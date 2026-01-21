@@ -730,19 +730,19 @@ export default function GrantMetrics() {
             </div>
           </div>
 
-          {/* Key Stats Grid - Reordered: Impact → Scale → Network */}
+          {/* Key Stats Grid - Capacity First, Then People */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">10,000+</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Weekly baseline (up from 1,000 in 2020)</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Volunteers making it happen</div>
-            </div>
-            <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">35</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Collection sites across Metro Atlanta</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Volunteers powering the network</div>
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">70+</div>
@@ -759,7 +759,7 @@ export default function GrantMetrics() {
             </p>
             <p className="text-base md:text-lg leading-relaxed text-white/90">
               When Hurricane Helene hit, we surged to <span className="font-semibold text-[#fbad3f]">14,023 sandwiches</span> in a single week —
-              proof that this infrastructure can flex when communities need it most. We're not a volunteer network
+              3x our normal capacity, mobilized without external support. We're not a volunteer network
               that happens to feed people. <span className="font-semibold text-white">We're infrastructure that happens to be volunteer-powered.</span>
             </p>
             <p className="text-xl md:text-2xl font-semibold mt-6 text-[#47b3cb]">
@@ -1022,21 +1022,24 @@ export default function GrantMetrics() {
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-90" />
-                <h2 className="font-black mb-2 text-[30px]">
-                  4,000+ Volunteers
-                </h2>
-                <p className="text-white/90 text-sm mb-4">across {totalHosts} collection sites</p>
+                <div className="font-black mb-1 text-[28px]">
+                  291 Consecutive Weeks
+                </div>
+                <p className="text-white/90 text-sm mb-4">of service — no gaps, no exceptions</p>
 
                 {/* Visual separator line */}
                 <div className="w-16 h-0.5 bg-white/30 mx-auto mb-4"></div>
 
-                <div className="font-black mb-2 text-[30px] text-center">
-                  {metrics.avgPerCollection}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="font-black text-[24px]">4,000+</div>
+                    <p className="text-white/90 text-xs">volunteers</p>
+                  </div>
+                  <div>
+                    <div className="font-black text-[24px]">{metrics.avgPerCollection}</div>
+                    <p className="text-white/90 text-xs">per collection</p>
+                  </div>
                 </div>
-                <p className="text-white font-semibold text-base">
-                  sandwiches per collection
-                </p>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#A31C41]/30">
@@ -1044,15 +1047,19 @@ export default function GrantMetrics() {
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
+                    <span>Zero paid staff for collections — 100% volunteer-powered</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
                     <span>Distributed network enables rapid response and 24/7 coverage</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Geographic diversity ensures we reach hungry people across Metro Atlanta</span>
+                    <span>Geographic diversity reaches hungry people across Metro Atlanta</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Volunteer model scales food distribution with minimal overhead</span>
+                    <span>Crisis-ready: proven 3x surge capacity (Hurricane Helene)</span>
                   </li>
                 </ul>
               </div>
@@ -1262,6 +1269,83 @@ export default function GrantMetrics() {
                   {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '107x'}
                 </div>
                 <div className="text-xs text-gray-500">since inception</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Inflation Resilience Callout */}
+        <Card className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] text-white shadow-xl border-0">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex-shrink-0 text-center md:text-left">
+                <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">+26%</div>
+                <div className="text-sm text-white/80">food price inflation<br />2022-2024</div>
+              </div>
+              <div className="flex-grow">
+                <h3 className="text-xl font-bold mb-2">Sustained Impact Despite Rising Costs</h3>
+                <p className="text-white/90">
+                  While food prices increased 26% from 2022-2024, we delivered <strong className="text-[#fbad3f]">501,856 sandwiches</strong> in 2024 —
+                  more than in 2023. This means our volunteers contributed an additional 26% more effort to maintain the same impact.
+                  That's infrastructure resilience in action.
+                </p>
+              </div>
+              <div className="flex-shrink-0 text-center md:text-right">
+                <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">501K</div>
+                <div className="text-sm text-white/80">sandwiches in 2024<br />despite inflation</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* What Makes This Infrastructure Revolutionary */}
+        <Card className="mb-8 border-2 border-[#A31C41] shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-[#A31C41] to-[#8a1636] text-white">
+            <CardTitle className="flex items-center text-xl">
+              <Zap className="w-6 h-6 mr-2" />
+              What Makes This Infrastructure Revolutionary
+            </CardTitle>
+            <CardDescription className="text-white/90">
+              For funders evaluating systems-change, replication potential, and disaster preparedness
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
+                <div className="font-bold text-[#A31C41] mb-2">100% Volunteer-Powered</div>
+                <p className="text-sm text-gray-700">
+                  Zero paid staff for collections. Built entirely on volunteer coordination and community trust.
+                </p>
+              </div>
+              <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
+                <div className="font-bold text-[#A31C41] mb-2">Weekly Consistency</div>
+                <p className="text-sm text-gray-700">
+                  291 consecutive weeks of service. No gaps. No exceptions. Institutional-grade reliability.
+                </p>
+              </div>
+              <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
+                <div className="font-bold text-[#A31C41] mb-2">Crisis-Ready</div>
+                <p className="text-sm text-gray-700">
+                  Proven 3x surge capacity during Hurricane Helene — mobilized without external support.
+                </p>
+              </div>
+              <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
+                <div className="font-bold text-[#A31C41] mb-2">Inflation-Resilient</div>
+                <p className="text-sm text-gray-700">
+                  Maintained volume despite 26% food cost increases. Volunteers absorbed the extra effort.
+                </p>
+              </div>
+              <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
+                <div className="font-bold text-[#A31C41] mb-2">Dual Collection Model</div>
+                <p className="text-sm text-gray-700">
+                  Scalable via both individuals and organizations — 1,113 sandwiches per collection average.
+                </p>
+              </div>
+              <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
+                <div className="font-bold text-[#A31C41] mb-2">Replicable Framework</div>
+                <p className="text-sm text-gray-700">
+                  Proven model that can be adapted for other cities facing food insecurity challenges.
+                </p>
               </div>
             </div>
           </CardContent>
@@ -2039,12 +2123,12 @@ export default function GrantMetrics() {
                 <p className="text-white/90 font-medium">Weekly baseline (up from 1,000)</p>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-black mb-2">4,000+</div>
-                <p className="text-white/90 font-medium">Volunteers</p>
-              </div>
-              <div className="text-center">
                 <div className="text-4xl font-black mb-2">35</div>
                 <p className="text-white/90 font-medium">Collection sites</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-black mb-2">4,000+</div>
+                <p className="text-white/90 font-medium">Volunteers</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-black mb-2">70+</div>
@@ -2055,10 +2139,11 @@ export default function GrantMetrics() {
               <p className="text-lg leading-relaxed">
                 Our weekly baseline has grown from <strong>1,000 sandwiches</strong> in 2020 to over
                 <strong> 10,000+</strong> in 2025 — <strong>10x growth</strong> in sustainable, repeatable output.
+                We maintained this volume despite <strong>26% food price inflation</strong> from 2022-2024.
               </p>
               <p className="text-lg leading-relaxed">
                 When Hurricane Helene hit, we surged to <strong>14,023 sandwiches</strong> in a single week —
-                proof that this infrastructure can flex when communities need it most.
+                3x our normal capacity, mobilized without external support.
                 We're not a volunteer network that happens to feed people.
                 <strong> We're infrastructure that happens to be volunteer-powered.</strong>
               </p>
