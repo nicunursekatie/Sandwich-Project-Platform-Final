@@ -102,6 +102,26 @@ function DocumentCard({
   fileType: string;
   downloadUrl: string;
 }) {
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(downloadUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = downloadUrl.split('/').pop() || 'document.pdf';
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(downloadUrl, '_blank');
+    }
+  };
+
   return (
     <Card className="bg-white hover:bg-gray-50 transition-colors">
       <CardContent className="p-4">
@@ -116,12 +136,10 @@ function DocumentCard({
               {fileType}
             </Badge>
           </div>
-          <a href={downloadUrl} download target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Download className="w-4 h-4" />
-              Download
-            </Button>
-          </a>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload}>
+            <Download className="w-4 h-4" />
+            Download
+          </Button>
         </div>
       </CardContent>
     </Card>
