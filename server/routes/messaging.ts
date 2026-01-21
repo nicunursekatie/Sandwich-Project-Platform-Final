@@ -129,6 +129,31 @@ router.post('/kudos/mark-initial-notified', isAuthenticated, async (req: Authent
   }
 });
 
+// Mark kudos as read
+router.post('/kudos/mark-read', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = req.user;
+    if (!user?.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { kudosIds } = req.body;
+
+    if (!kudosIds || !Array.isArray(kudosIds)) {
+      return res.status(400).json({ message: 'kudosIds array is required' });
+    }
+
+    logger.log(`[Messaging API] Marking ${kudosIds.length} kudos as read for user: ${user.email}`);
+
+    await messagingService.markKudosAsRead(user.id, kudosIds);
+
+    res.json({ success: true, markedCount: kudosIds.length });
+  } catch (error) {
+    logger.error('[Messaging API] Error marking kudos as read:', error);
+    res.status(500).json({ message: 'Failed to mark kudos as read' });
+  }
+});
+
 // Get received kudos for a user
 router.get('/kudos/received', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
