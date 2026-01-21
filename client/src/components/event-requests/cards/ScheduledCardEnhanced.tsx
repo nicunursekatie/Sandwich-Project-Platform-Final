@@ -1069,6 +1069,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <span className="hidden sm:inline opacity-90">&nbsp;sandwiches</span>
             </Badge>
 
+            {/* Attendance badge - show when attendance is set */}
+            {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) && (
+              <Badge
+                className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium flex items-center gap-1"
+                title={`${request.attendanceAdults || 0} adults, ${request.attendanceTeens || 0} teens, ${request.attendanceKids || 0} kids`}
+              >
+                <Users className="w-3 h-3" />
+                <span>{(request.attendanceAdults || 0) + (request.attendanceTeens || 0) + (request.attendanceKids || 0)}</span>
+                <span className="hidden sm:inline opacity-90">attending</span>
+              </Badge>
+            )}
+
             {/* Self-transport badge */}
             {request.selfTransport && (
               <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
@@ -1579,66 +1591,113 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 </div>
               ) : (
-                /* Grid layout when viewing */
-                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 text-sm flex-1 w-full sm:w-auto">
-                    {/* Start Time */}
-                    <div>
-                      <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
-                      {isEditingThisCard && editingField === 'eventStartTime' ? (
-                        <div className="flex flex-col gap-2">
-                          <Input
-                            type="time"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
-                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                              Save
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
-                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
-                          {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                /* Compact layout when viewing - inline on mobile */
+                <div className="flex flex-col gap-3">
+                  {/* Mobile: Compact inline times */}
+                  <div className="sm:hidden">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-[#236383]" />
+                        <span 
+                          className="font-bold text-[#236383] cursor-pointer" 
+                          onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}
+                        >
+                          {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : '—'}
+                        </span>
+                        <span className="text-gray-400">-</span>
+                        <span 
+                          className="font-bold text-[#236383] cursor-pointer"
+                          onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}
+                        >
+                          {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-gray-600">
+                        <span className="text-xs uppercase font-medium">Pickup:</span>
+                        <span 
+                          className="font-bold text-gray-900 cursor-pointer"
+                          onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}
+                        >
+                          {request.pickupDateTime 
+                            ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
+                            : request.pickupTime 
+                              ? formatTime12Hour(request.pickupTime)
+                              : '—'}
+                        </span>
+                      </div>
+                      {/* Attendance on mobile */}
+                      {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) && (
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <Users className="w-3.5 h-3.5" />
+                          <span className="font-bold text-gray-900">
+                            {(request.attendanceAdults || 0) + (request.attendanceTeens || 0) + (request.attendanceKids || 0)}
+                          </span>
+                          <span className="text-xs">attending</span>
                         </div>
                       )}
                     </div>
+                  </div>
 
-                    {/* End Time */}
-                    <div>
-                      <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
-                      {isEditingThisCard && editingField === 'eventEndTime' ? (
-                        <div className="flex flex-col gap-2">
-                          <Input
-                            type="time"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
-                              <Save className="w-4 h-4 mr-1" aria-hidden="true" />
-                              Save
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
-                              <X className="w-4 h-4 mr-1" aria-hidden="true" />
-                              Cancel
-                            </Button>
+                  {/* Desktop: Original grid layout */}
+                  <div className="hidden sm:flex flex-row items-start justify-between gap-4">
+                    <div className="grid grid-cols-3 gap-3 text-sm flex-1">
+                      {/* Start Time */}
+                      <div>
+                        <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
+                        {isEditingThisCard && editingField === 'eventStartTime' ? (
+                          <div className="flex flex-col gap-2">
+                            <Input
+                              type="time"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                                <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                                <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                                Cancel
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
-                          {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
-                        </div>
-                      )}
-                    </div>
+                        ) : (
+                          <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventStartTime', formatTimeForInput(request.eventStartTime || ''))}>
+                            {request.eventStartTime ? formatTime12Hour(request.eventStartTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* End Time */}
+                      <div>
+                        <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
+                        {isEditingThisCard && editingField === 'eventEndTime' ? (
+                          <div className="flex flex-col gap-2">
+                            <Input
+                              type="time"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
+                            />
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={saveEdit} className="h-8 px-3 bg-[#007E8C] text-white hover:bg-[#007E8C]/90 text-sm" aria-label="Save">
+                                <Save className="w-4 h-4 mr-1" aria-hidden="true" />
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 px-3 text-gray-600 hover:bg-gray-100 text-sm" aria-label="Cancel">
+                                <X className="w-4 h-4 mr-1" aria-hidden="true" />
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-base font-bold group cursor-pointer text-[#236383] py-1" onClick={() => canEdit && startEditing('eventEndTime', formatTimeForInput(request.eventEndTime || ''))}>
+                            {request.eventEndTime ? formatTime12Hour(request.eventEndTime) : <span className="text-gray-600 font-medium">Not set</span>}
+                          </div>
+                        )}
+                      </div>
 
                     {/* Pickup Time */}
                     <div>
@@ -1736,6 +1795,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
 
