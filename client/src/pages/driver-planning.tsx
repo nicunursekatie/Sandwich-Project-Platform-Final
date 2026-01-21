@@ -2740,26 +2740,30 @@ export default function DriverPlanningDashboard() {
                             className="text-xs"
                           >
                             <Truck className="w-3 h-3 mr-1" />
-                            {driversNeeded > 0 ? (
-                              event.vanDriverNeeded ? (
-                                // Van driver requirement - show as "X/Y Van driver needed/assigned"
-                                <>
-                                  {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} Van driver
-                                  {event.isDhlVan ? ' (DHL)' : event.assignedVanDriverId ? '' : ' needed'}
-                                </>
-                              ) : (
-                                // Regular drivers only
-                                <>
-                                  {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
-                                </>
-                              )
+                            {event.vanDriverNeeded ? (
+                              // Van driver requirement - show van driver status
+                              (() => {
+                                const vanDriverAssigned = (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
+                                const totalAssigned = regularDriversAssigned + vanDriverAssigned;
+                                const totalNeeded = driversNeeded + 1; // +1 for van driver
+                                return (
+                                  <>
+                                    {totalAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{totalNeeded} {driversNeeded > 0 ? 'drivers+van' : 'Van'}
+                                    {vanDriverAssigned === 0 && ' needed'}
+                                    {event.isDhlVan && ' (DHL)'}
+                                  </>
+                                );
+                              })()
+                            ) : driversNeeded > 0 ? (
+                              // Regular drivers only
+                              <>
+                                {totalDriversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} drivers
+                              </>
                             ) : (
-                              // Only van driver needed (no regular drivers)
-                              event.isDhlVan
-                                ? 'DHL Van'
-                                : event.assignedVanDriverId
-                                ? 'Van assigned'
-                                : 'Van needed'
+                              // No driver requirements but has assigned drivers
+                              <>
+                                {totalDriversAssigned} drivers assigned
+                              </>
                             )}
                           </Badge>
                         ) : (
@@ -4862,13 +4866,21 @@ export default function DriverPlanningDashboard() {
                           Self
                         </Badge>
                       ) : hasDriverRequirement ? (
-                        <Badge
-                          variant={driversFulfilled ? 'default' : 'destructive'}
-                          className="text-[10px] px-1 py-0"
-                        >
-                          {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded}
-                          {event.vanDriverNeeded && (event.isDhlVan ? '+DHL' : (event.assignedVanDriverId ? '+Van' : '+Van!'))}
-                        </Badge>
+                        (() => {
+                          const vanDriverAssigned = (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
+                          const totalAssigned = driversAssigned + vanDriverAssigned;
+                          const totalNeeded = event.vanDriverNeeded ? driversNeeded + 1 : driversNeeded;
+                          const isFulfilled = totalAssigned >= totalNeeded;
+                          return (
+                            <Badge
+                              variant={isFulfilled ? 'default' : 'destructive'}
+                              className="text-[10px] px-1 py-0"
+                            >
+                              {totalAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{totalNeeded}
+                              {event.vanDriverNeeded && (event.isDhlVan ? '+DHL' : (event.assignedVanDriverId ? '+Van' : '!'))}
+                            </Badge>
+                          );
+                        })()
                       ) : (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 text-gray-400">
                           No req
@@ -6053,16 +6065,25 @@ export default function DriverPlanningDashboard() {
                                   Self-transport
                                 </Badge>
                               ) : hasDriverRequirement ? (
-                                <Badge
-                                  variant={driversAssigned >= driversNeeded && (!event.vanDriverNeeded || event.assignedVanDriverId || event.isDhlVan) ? 'default' : 'destructive'}
-                                  className="text-xs px-2 py-0.5"
-                                >
-                                  <Truck className="w-3.5 h-3.5 mr-1" />
-                                  {driversAssigned}{driversTentative > 0 && <span className="text-amber-300">+{driversTentative}?</span>}/{driversNeeded} {event.vanDriverNeeded ? 'Van driver' : 'drivers'}
-                                  {event.vanDriverNeeded && (
-                                    event.isDhlVan ? ' (DHL)' : (event.assignedVanDriverId ? '' : ' needed')
-                                  )}
-                                </Badge>
+                                (() => {
+                                  // Calculate proper van driver counts
+                                  const vanDriverAssigned = (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
+                                  const totalAssigned = driversAssigned + vanDriverAssigned;
+                                  const totalNeeded = event.vanDriverNeeded ? driversNeeded + 1 : driversNeeded;
+                                  const isFulfilled = totalAssigned >= totalNeeded;
+                                  
+                                  return (
+                                    <Badge
+                                      variant={isFulfilled ? 'default' : 'destructive'}
+                                      className="text-xs px-2 py-0.5"
+                                    >
+                                      <Truck className="w-3.5 h-3.5 mr-1" />
+                                      {totalAssigned}/{totalNeeded} {event.vanDriverNeeded ? (driversNeeded > 0 ? 'drivers+van' : 'Van') : 'drivers'}
+                                      {event.vanDriverNeeded && vanDriverAssigned === 0 && ' needed'}
+                                      {event.isDhlVan && ' (DHL)'}
+                                    </Badge>
+                                  );
+                                })()
                               ) : (
                                 <Badge variant="outline" className="text-xs px-2 py-0.5 text-gray-400">
                                   No driver requirement

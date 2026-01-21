@@ -251,21 +251,31 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
             {/* Staffing Status Bar */}
             {totalNeeded > 0 && (
               <div className="mt-3 flex items-center gap-4 text-xs">
-                {/* Show regular driver needed only if van driver is NOT needed (van takes precedence) */}
-                {driverNeeded > 0 && !request.vanDriverNeeded && (
+                {/* Driver staffing status */}
+                {request.vanDriverNeeded ? (
+                  // Van driver requirement exists - driverAssigned already includes van counts
+                  (() => {
+                    const vanDriverAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
+                    const totalNeeded = driverNeeded + 1; // +1 for van driver
+                    // driverAssigned already includes van drivers, so use it directly as totalAssigned
+                    const isFulfilled = driverAssigned >= totalNeeded;
+                    return (
+                      <div className="flex items-center gap-1">
+                        <Car className="w-3 h-3 text-gray-500" />
+                        <span className={isFulfilled ? 'text-green-700 font-medium' : staffingNeededColor}>
+                          {driverAssigned}/{totalNeeded} {driverNeeded > 0 ? 'drivers+van' : 'Van'}
+                          {vanDriverAssigned === 0 && ' Needed'}
+                          {request.isDhlVan && ' (DHL)'}
+                        </span>
+                      </div>
+                    );
+                  })()
+                ) : driverNeeded > 0 && (
+                  // Regular drivers only
                   <div className="flex items-center gap-1">
                     <Car className="w-3 h-3 text-gray-500" />
                     <span className={driverAssigned >= driverNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
                       {driverAssigned}/{driverNeeded} drivers
-                    </span>
-                  </div>
-                )}
-                {/* Show van driver needed when van driver is needed but not assigned */}
-                {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
-                  <div className="flex items-center gap-1">
-                    <Car className="w-3 h-3 text-[#236383]" />
-                    <span className={staffingNeededColor}>
-                      Van Driver Needed
                     </span>
                   </div>
                 )}
