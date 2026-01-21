@@ -717,51 +717,53 @@ export default function GrantMetrics() {
           { label: 'Grant Metrics' }
         ]} />
 
-        {/* Hero Section - Community Infrastructure */}
+        {/* Hero Section - Impact First with Sustainability Story */}
         <div className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] rounded-2xl p-8 text-white shadow-xl">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center">
-            Community Infrastructure Disguised as Sandwiches
-          </h2>
+          {/* Lead with Impact + Consistency */}
+          <div className="text-center mb-8">
+            <div className="text-5xl md:text-7xl font-black text-[#fbad3f] mb-2">2.3 Million</div>
+            <div className="text-xl md:text-2xl font-semibold text-white/90 mb-2">
+              sandwiches delivered over <span className="text-[#fbad3f] font-bold">291 consecutive weeks</span>
+            </div>
+            <div className="text-base md:text-lg text-white/70">
+              Every single week since April 2020. No exceptions.
+            </div>
+          </div>
 
-          {/* Key Stats Grid */}
+          {/* Key Stats Grid - Reordered: Impact → Scale → Network */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">2,040</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Collection events organized</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">10,000+</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Weekly baseline (up from 1,000 in 2020)</div>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Volunteers making it happen</div>
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">35</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Host locations across Metro Atlanta</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Collection sites across Metro Atlanta</div>
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">70+</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Partner organizations served weekly</div>
             </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Active volunteer community members</div>
-            </div>
           </div>
 
-          {/* Narrative */}
+          {/* Sustainability Story */}
           <div className="max-w-4xl mx-auto space-y-4 text-center">
             <p className="text-lg md:text-xl leading-relaxed">
-              The Sandwich Project has evolved from pandemic response to proven community infrastructure.
-              Starting with just <span className="font-semibold text-[#fbad3f]">317 sandwiches in April 2020</span>,
-              we've delivered <span className="font-semibold text-[#fbad3f]">2,264,606 sandwiches</span> and
-              grown <span className="font-semibold text-[#fbad3f]">11.6x</span> since inception.
+              Our weekly baseline has grown from <span className="font-semibold text-[#fbad3f]">1,000 sandwiches</span> in 2020
+              to over <span className="font-semibold text-[#fbad3f]">10,000+</span> in 2025 —
+              <span className="font-semibold text-[#fbad3f]"> 10x growth</span> in sustainable, repeatable output.
             </p>
             <p className="text-base md:text-lg leading-relaxed text-white/90">
-              We don't just feed people — we've built disaster response capability
-              (<span className="font-semibold">14,023 sandwiches during Hurricane Helene</span>),
-              distributed logistics infrastructure across 35 sites, and a dedicated volunteer network.
-              Beyond sandwiches, we support adjacent needs through blanket and coat drives, feminine hygiene drives,
-              and emergency supply distribution when disaster strikes.
+              When Hurricane Helene hit, we surged to <span className="font-semibold text-[#fbad3f]">14,023 sandwiches</span> in a single week —
+              proof that this infrastructure can flex when communities need it most. We're not a volunteer network
+              that happens to feed people. <span className="font-semibold text-white">We're infrastructure that happens to be volunteer-powered.</span>
             </p>
             <p className="text-xl md:text-2xl font-semibold mt-6 text-[#47b3cb]">
-              Our mission is simple: get sandwiches to hungry people.
-              <br />
-              <span className="text-white">And we're just getting started.</span>
+              Proven. Sustainable. Ready for anything.
             </p>
           </div>
         </div>
@@ -1010,46 +1012,47 @@ export default function GrantMetrics() {
             </CardContent>
           </Card>
 
-          {/* Host Network Strength */}
+          {/* How We Do It: The Volunteer Network */}
           <Card className="border-2 border-[#A31C41] shadow-lg">
             <CardHeader className="bg-[#FCE4E6]">
               <CardTitle className="flex items-center text-[#A31C41]">
-                <MapPin className="w-5 h-5 mr-2 text-[#A31C41]" />
-                Collective Host Network
+                <Users className="w-5 h-5 mr-2 text-[#A31C41]" />
+                How We Do It: The Volunteer Network
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
-                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-90" />
-                <h2 className="font-black mb-4 text-[23px]">
-                  {totalHosts} Active Hosts
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-90" />
+                <h2 className="font-black mb-2 text-[30px]">
+                  4,000+ Volunteers
                 </h2>
-                
+                <p className="text-white/90 text-sm mb-4">across {totalHosts} collection sites</p>
+
                 {/* Visual separator line */}
                 <div className="w-16 h-0.5 bg-white/30 mx-auto mb-4"></div>
-                
-                <div className="font-black mb-2 text-[30px] text-center bg-[#83234300]">
+
+                <div className="font-black mb-2 text-[30px] text-center">
                   {metrics.avgPerCollection}
                 </div>
                 <p className="text-white font-semibold text-base">
-                  Average per collection
+                  sandwiches per collection
                 </p>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#A31C41]/30">
-                <h3 className="font-semibold text-gray-900 mb-3">Why This Matters</h3>
+                <h3 className="font-semibold text-gray-900 mb-3">Why This Model Works</h3>
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Distributed network prevents single points of failure</span>
+                    <span>Distributed network enables rapid response and 24/7 coverage</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Geographic diversity ensures consistent community coverage</span>
+                    <span>Geographic diversity ensures we reach hungry people across Metro Atlanta</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Every host location is essential to our collective impact</span>
+                    <span>Volunteer model scales food distribution with minimal overhead</span>
                   </li>
                 </ul>
               </div>
@@ -2016,61 +2019,51 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Impact Statement */}
+        {/* Impact Statement - Print Summary */}
         <Card className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white shadow-xl border-0">
           <CardContent className="p-8">
-            <h2 className="text-3xl font-bold mb-4 flex items-center">
-              <Heart className="w-8 h-8 mr-3" />
-              Community Infrastructure Disguised as Sandwiches
-            </h2>
+            {/* Lead with Impact + Consistency */}
+            <div className="text-center mb-6">
+              <div className="text-5xl font-black text-[#fbad3f] mb-2">
+                {metrics.totalSandwiches.toLocaleString()}
+              </div>
+              <h2 className="text-2xl font-bold">
+                sandwiches delivered over 291 consecutive weeks
+              </h2>
+              <p className="text-white/80 mt-1">Every single week since April 2020. No exceptions.</p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  {metrics.totalCollections.toLocaleString()}
-                </div>
-                <p className="text-white/90 font-medium">
-                  Collection events organized
-                </p>
+              <div className="text-center">
+                <div className="text-4xl font-black mb-2">10,000+</div>
+                <p className="text-white/90 font-medium">Weekly baseline (up from 1,000)</p>
               </div>
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  35
-                </div>
-                <p className="text-white/90 font-medium">
-                  Host locations across Metro Atlanta
-                </p>
+              <div className="text-center">
+                <div className="text-4xl font-black mb-2">4,000+</div>
+                <p className="text-white/90 font-medium">Volunteers</p>
               </div>
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  70+
-                </div>
-                <p className="text-white/90 font-medium">
-                  Partner organizations served weekly
-                </p>
+              <div className="text-center">
+                <div className="text-4xl font-black mb-2">35</div>
+                <p className="text-white/90 font-medium">Collection sites</p>
               </div>
-              <div>
-                <div className="text-4xl font-black mb-2">
-                  4,000+
-                </div>
-                <p className="text-white/90 font-medium">
-                  Active volunteer community members
-                </p>
+              <div className="text-center">
+                <div className="text-4xl font-black mb-2">70+</div>
+                <p className="text-white/90 font-medium">Partner orgs served weekly</p>
               </div>
             </div>
             <div className="mt-8 p-6 bg-white/10 rounded-lg backdrop-blur-sm space-y-4">
               <p className="text-lg leading-relaxed">
-                The Sandwich Project has evolved from pandemic response to <strong>proven community infrastructure</strong>.
-                Starting with just 317 sandwiches in April 2020, we've delivered <strong>{metrics.totalSandwiches.toLocaleString()}
-                sandwiches</strong> and grown <strong>{metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '107x'} since inception</strong>.
+                Our weekly baseline has grown from <strong>1,000 sandwiches</strong> in 2020 to over
+                <strong> 10,000+</strong> in 2025 — <strong>10x growth</strong> in sustainable, repeatable output.
               </p>
               <p className="text-lg leading-relaxed">
-                We don't just feed people - we've built <strong>disaster response capability</strong> (14,023 sandwiches during Hurricane Helene),
-                <strong> distributed logistics infrastructure</strong> across 35 sites, and a <strong>dedicated volunteer network</strong>.
-                Beyond sandwiches, we support adjacent needs through blanket and coat drives, feminine hygiene drives,
-                and emergency supply distribution when disaster strikes.
+                When Hurricane Helene hit, we surged to <strong>14,023 sandwiches</strong> in a single week —
+                proof that this infrastructure can flex when communities need it most.
+                We're not a volunteer network that happens to feed people.
+                <strong> We're infrastructure that happens to be volunteer-powered.</strong>
               </p>
               <p className="text-lg leading-relaxed font-semibold">
-                Our mission is simple: get sandwiches to hungry people. And we're just getting started.
+                Proven. Sustainable. Ready for anything.
               </p>
             </div>
           </CardContent>
