@@ -4754,6 +4754,12 @@ router.get(
         return date >= startOfWeek && date <= endOfWeek;
       });
 
+      // Helper to get array length safely
+      const getAssignedCount = (arr: unknown): number => {
+        if (Array.isArray(arr)) return arr.filter(Boolean).length;
+        return 0;
+      };
+
       // Events happening today or tomorrow (upcoming deadlines)
       const upcomingDeadlines = allEventRequests.filter(event => {
         if (event.status === 'completed' || event.status === 'declined' ||
@@ -4764,60 +4770,84 @@ router.get(
         if (!eventDate) return false;
         const date = new Date(eventDate);
         return date >= today && date < dayAfterTomorrow;
-      }).map(event => ({
-        id: event.id,
-        organizationName: event.organizationName,
-        eventDate: event.scheduledEventDate || event.desiredEventDate,
-        status: event.status,
-        needsDriver: (event.driversNeeded || 0) > 0 && !event.selfTransport,
-        needsSpeaker: (event.speakersNeeded || 0) > 0,
-        needsVolunteer: (event.volunteersNeeded || 0) > 0,
-        isToday: new Date(event.scheduledEventDate || event.desiredEventDate || '').toDateString() === today.toDateString(),
-      })).sort((a, b) => {
+      }).map(event => {
+        const driversNeeded = event.driversNeeded || 0;
+        const assignedDrivers = getAssignedCount(event.assignedDriverIds);
+        const speakersNeeded = event.speakersNeeded || 0;
+        const assignedSpeakers = getAssignedCount(event.assignedSpeakerIds);
+        const volunteersNeeded = event.volunteersNeeded || 0;
+        const assignedVolunteers = getAssignedCount(event.assignedVolunteerIds);
+
+        return {
+          id: event.id,
+          organizationName: event.organizationName,
+          eventDate: event.scheduledEventDate || event.desiredEventDate,
+          status: event.status,
+          needsDriver: (driversNeeded - assignedDrivers) > 0 && !event.selfTransport,
+          needsSpeaker: (speakersNeeded - assignedSpeakers) > 0,
+          needsVolunteer: (volunteersNeeded - assignedVolunteers) > 0,
+          isToday: new Date(event.scheduledEventDate || event.desiredEventDate || '').toDateString() === today.toDateString(),
+        };
+      }).sort((a, b) => {
         const dateA = new Date(a.eventDate || '').getTime();
         const dateB = new Date(b.eventDate || '').getTime();
         return dateA - dateB;
       });
 
-      // Events needing drivers (active events that need drivers and don't have self-transport)
+      // Events needing drivers (active events that still need more drivers assigned)
       const eventsNeedingDrivers = activeEvents.filter(event => {
         const driversNeeded = event.driversNeeded || 0;
+        const assignedDrivers = getAssignedCount(event.assignedDriverIds);
         const selfTransport = event.selfTransport || false;
-        return driversNeeded > 0 && !selfTransport;
+        return (driversNeeded - assignedDrivers) > 0 && !selfTransport;
       });
 
       // Events needing speakers
       const eventsNeedingSpeakers = activeEvents.filter(event => {
         const speakersNeeded = event.speakersNeeded || 0;
-        return speakersNeeded > 0;
+        const assignedSpeakers = getAssignedCount(event.assignedSpeakerIds);
+        return (speakersNeeded - assignedSpeakers) > 0;
       });
 
       // Events needing volunteers
       const eventsNeedingVolunteers = activeEvents.filter(event => {
         const volunteersNeeded = event.volunteersNeeded || 0;
-        return volunteersNeeded > 0;
+        const assignedVolunteers = getAssignedCount(event.assignedVolunteerIds);
+        return (volunteersNeeded - assignedVolunteers) > 0;
       });
 
-      // Calculate total staffing needs
+      // Calculate total staffing needs (remaining unfilled positions)
       const totalDriversNeeded = activeEvents.reduce((sum, event) => {
         if (event.selfTransport) return sum;
-        return sum + (event.driversNeeded || 0);
+        const needed = event.driversNeeded || 0;
+        const assigned = getAssignedCount(event.assignedDriverIds);
+        return sum + Math.max(0, needed - assigned);
       }, 0);
 
-      const totalSpeakersNeeded = activeEvents.reduce((sum, event) =>
-        sum + (event.speakersNeeded || 0), 0
-      );
+      const totalSpeakersNeeded = activeEvents.reduce((sum, event) => {
+        const needed = event.speakersNeeded || 0;
+        const assigned = getAssignedCount(event.assignedSpeakerIds);
+        return sum + Math.max(0, needed - assigned);
+      }, 0);
 
-      const totalVolunteersNeeded = activeEvents.reduce((sum, event) =>
-        sum + (event.volunteersNeeded || 0), 0
-      );
+      const totalVolunteersNeeded = activeEvents.reduce((sum, event) => {
+        const needed = event.volunteersNeeded || 0;
+        const assigned = getAssignedCount(event.assignedVolunteerIds);
+        return sum + Math.max(0, needed - assigned);
+      }, 0);
 
       // Last week's events for completion rate
+      // Only count events that were actually attempted (exclude cancelled/declined/postponed)
       const lastWeekEvents = allEventRequests.filter(event => {
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
         if (!eventDate) return false;
         const date = new Date(eventDate);
-        return date >= startOfLastWeek && date <= endOfLastWeek;
+        if (date < startOfLastWeek || date > endOfLastWeek) return false;
+        // Exclude events that were intentionally not attempted
+        if (event.status === 'cancelled' || event.status === 'declined' || event.status === 'postponed') {
+          return false;
+        }
+        return true;
       });
 
       const lastWeekCompleted = lastWeekEvents.filter(event =>
