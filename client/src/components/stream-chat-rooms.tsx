@@ -29,6 +29,7 @@ import {
   Search,
   X,
   MessageCircle,
+  ChevronLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -270,6 +271,9 @@ export default function StreamChatRooms() {
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [membersDialogTitle, setMembersDialogTitle] = useState<string>('Chat Members');
   const [membersDialogUsers, setMembersDialogUsers] = useState<Array<{ id: string; name: string }>>([]);
+  
+  // Mobile view: show sidebar (rooms list) or chat
+  const [mobileShowSidebar, setMobileShowSidebar] = useState(true);
 
   const openMembersDialog = (channel: ChannelType) => {
     const members = Object.values(channel.state?.members || {})
@@ -715,10 +719,10 @@ export default function StreamChatRooms() {
   return (
     <>
       <style>{customChatStyles}</style>
-      <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg border">
+      <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg border overflow-hidden">
         <Chat client={client}>
-        {/* Sidebar */}
-        <div className="w-72 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col">
+        {/* Sidebar - hidden on mobile when viewing chat */}
+        <div className={`w-full md:w-72 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col ${!mobileShowSidebar ? 'hidden md:flex' : 'flex'}`}>
           {/* Header with section tabs */}
           <div className="p-3 border-b border-[#47B3CB]/30 bg-[#236383] text-white">
             <h2 className="text-lg font-semibold mb-2">Messages</h2>
@@ -794,6 +798,7 @@ export default function StreamChatRooms() {
                           const existingChannel = roomData?.channel || client.channel('team', room.id);
                           await existingChannel.watch();
                           setActiveChannel(existingChannel);
+                          setMobileShowSidebar(false);
                         } catch (error) {
                           logger.error(`Failed to switch to channel ${room.id}:`, error);
                         }
@@ -862,6 +867,7 @@ export default function StreamChatRooms() {
                         onClick={async () => {
                           await channel.watch();
                           setActiveChannel(channel);
+                          setMobileShowSidebar(false);
                         }}
                       >
                         <div className="flex items-center gap-3">
@@ -942,6 +948,7 @@ export default function StreamChatRooms() {
                         onClick={async () => {
                           await channel.watch();
                           setActiveChannel(channel);
+                          setMobileShowSidebar(false);
                         }}
                       >
                         <div className="flex items-center gap-3">
@@ -1004,12 +1011,26 @@ export default function StreamChatRooms() {
           </ScrollArea>
         </div>
 
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col">
+        {/* Main Chat Area - hidden on mobile when sidebar is showing */}
+        <div className={`flex-1 flex flex-col ${mobileShowSidebar ? 'hidden md:flex' : 'flex'}`}>
           {activeChannel ? (
             <Channel channel={activeChannel}>
               <Window>
-                <ChannelHeader />
+                {/* Mobile back button */}
+                <div className="md:hidden flex items-center gap-2 px-3 py-2 border-b bg-[#236383] text-white">
+                  <button
+                    onClick={() => setMobileShowSidebar(true)}
+                    className="p-1 hover:bg-white/20 rounded"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <span className="font-medium truncate">
+                    {(activeChannel.data as any)?.name || 'Chat'}
+                  </span>
+                </div>
+                <div className="hidden md:block">
+                  <ChannelHeader />
+                </div>
                 {/* Members affordance: lets users see the full member list even when previews are truncated */}
                 <div className="px-4 py-2 border-b bg-white flex items-center justify-between">
                   <div className="text-xs text-gray-600 truncate">
