@@ -43,6 +43,7 @@ import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter'
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
+import OperationalOverview from '@/components/operational-overview';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -496,6 +497,9 @@ export default function DashboardOverview({
             </div>
           </div>
         </div>
+
+        {/* Operational Overview - Key metrics and urgent items */}
+        <OperationalOverview onNavigate={onSectionChange || (() => {})} />
 
         {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
         <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
