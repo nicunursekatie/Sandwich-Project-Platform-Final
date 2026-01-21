@@ -1,3 +1,4 @@
+import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventRequestContext } from '../context/EventRequestContext';
@@ -262,7 +263,7 @@ export const useEventAssignments = () => {
     setShowAssignmentDialog(true);
   };
 
-  // Handle removing assignment
+  // Handle removing assignment with undo capability
   const handleRemoveAssignment = async (
     personId: string,
     type: 'driver' | 'speaker' | 'volunteer',
@@ -272,43 +273,54 @@ export const useEventAssignments = () => {
       const eventRequest = eventRequests.find(req => req.id === eventId);
       if (!eventRequest) return;
 
+      // Store the original data for undo
+      const originalData: any = {};
       let updateData: any = {};
+      const personName = resolveUserName(personId);
 
       if (type === 'driver') {
         // Check if this is the van driver
         if (eventRequest.assignedVanDriverId === personId) {
+          originalData.assignedVanDriverId = eventRequest.assignedVanDriverId;
           updateData.assignedVanDriverId = null;
         } else {
           // Regular driver - remove from assignedDriverIds array
           const currentDrivers = eventRequest.assignedDriverIds || [];
+          originalData.assignedDriverIds = [...currentDrivers];
           updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
 
           const currentDriverDetails = eventRequest.driverDetails || {};
+          originalData.driverDetails = { ...currentDriverDetails };
           const newDriverDetails = { ...currentDriverDetails };
           delete newDriverDetails[personId];
           updateData.driverDetails = newDriverDetails;
         }
       } else if (type === 'speaker') {
         const currentSpeakerDetails = eventRequest.speakerDetails || {};
+        originalData.speakerDetails = { ...currentSpeakerDetails };
         const newSpeakerDetails = { ...currentSpeakerDetails };
         delete newSpeakerDetails[personId];
         updateData.speakerDetails = newSpeakerDetails;
 
         const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
+        originalData.speakerAssignments = [...currentSpeakerAssignments];
         const speakerName = currentSpeakerDetails[personId]?.name;
         if (speakerName) {
           updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
         }
       } else if (type === 'volunteer') {
         const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+        originalData.assignedVolunteerIds = [...currentVolunteers];
         updateData.assignedVolunteerIds = currentVolunteers.filter(id => id !== personId);
 
         const currentVolunteerDetails = eventRequest.volunteerDetails || {};
+        originalData.volunteerDetails = { ...currentVolunteerDetails };
         const newVolunteerDetails = { ...currentVolunteerDetails };
         delete newVolunteerDetails[personId];
         updateData.volunteerDetails = newVolunteerDetails;
 
         const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
+        originalData.volunteerAssignments = [...currentVolunteerAssignments];
         const volunteerName = currentVolunteerDetails[personId]?.name;
         if (volunteerName) {
           updateData.volunteerAssignments = currentVolunteerAssignments.filter(name => name !== volunteerName);
@@ -320,9 +332,37 @@ export const useEventAssignments = () => {
         data: updateData,
       });
 
-      toast({
-        title: 'Assignment removed',
-        description: `Person has been removed from ${type} assignments`,
+      // Show toast with undo action
+      const { dismiss } = toast({
+        title: `${type.charAt(0).toUpperCase() + type.slice(1)} removed`,
+        description: `${personName} has been removed. Click Undo to restore.`,
+        duration: 8000,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                await updateEventRequestMutation.mutateAsync({
+                  id: eventId,
+                  data: originalData,
+                });
+                dismiss();
+                toast({
+                  title: 'Assignment restored',
+                  description: `${personName} has been restored as ${type}.`,
+                });
+              } catch (error) {
+                toast({
+                  title: 'Restore failed',
+                  description: 'Failed to restore assignment.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Undo
+          </button>
+        ),
       });
     } catch (error) {
       logger.error('Failed to remove assignment:', error);
@@ -548,17 +588,36 @@ export const useEventAssignments = () => {
     return false;
   };
 
-  // Handle status change
-  const handleStatusChange = (id: number, status: string) => {
+  // Handle status change with confirmation and undo
+  const handleStatusChange = async (id: number, status: string) => {
+    const request = eventRequests.find(r => r.id === id);
+    if (!request) return;
+
+    const previousStatus = request.status;
+    const orgName = request.organizationName || 'Event';
+
+    // Format status labels for display
+    const formatStatus = (s: string) => {
+      const labels: Record<string, string> = {
+        'new-request': 'New Request',
+        'in_process': 'In Process',
+        'scheduled': 'Scheduled',
+        'completed': 'Completed',
+        'postponed': 'Postponed',
+        'declined': 'Declined',
+        'cancelled': 'Cancelled',
+      };
+      return labels[s] || s;
+    };
+
     // When moving to scheduled, check for incomplete next actions
     if (status === 'scheduled') {
-      const request = eventRequests.find(r => r.id === id);
-      if (request && request.nextAction && request.nextAction.trim()) {
+      if (request.nextAction && request.nextAction.trim()) {
         // Show confirmation dialog asking if they've completed the next action
         const confirmed = window.confirm(
           `This event has a next action that hasn't been marked complete:\n\n"${request.nextAction}"\n\nHave you completed this action? If not, please complete it before marking as scheduled.`
         );
-        
+
         if (!confirmed) {
           toast({
             title: 'Action Required',
@@ -570,20 +629,72 @@ export const useEventAssignments = () => {
       }
     }
 
+    // Confirm significant status changes (completed, cancelled, declined)
+    const significantStatuses = ['completed', 'cancelled', 'declined'];
+    if (significantStatuses.includes(status)) {
+      const confirmed = window.confirm(
+        `Are you sure you want to mark "${orgName}" as ${formatStatus(status)}?`
+      );
+      if (!confirmed) return;
+    }
+
     const data: any = { status };
 
     // When marking as scheduled, set scheduledEventDate to desiredEventDate if not already set
     if (status === 'scheduled') {
-      const request = eventRequests.find(r => r.id === id);
       if (request && !request.scheduledEventDate && request.desiredEventDate) {
         data.scheduledEventDate = request.desiredEventDate;
       }
     }
 
-    updateEventRequestMutation.mutate({
-      id,
-      data
-    });
+    try {
+      await updateEventRequestMutation.mutateAsync({
+        id,
+        data
+      });
+
+      // Show toast with undo action
+      const { dismiss } = toast({
+        title: 'Status changed',
+        description: `${orgName} is now ${formatStatus(status)}. Click Undo to restore.`,
+        duration: 10000,
+        action: (
+          <button
+            onClick={async () => {
+              try {
+                const undoData: any = { status: previousStatus };
+                // If we set scheduledEventDate, don't undo that separately
+                await updateEventRequestMutation.mutateAsync({
+                  id,
+                  data: undoData,
+                });
+                dismiss();
+                toast({
+                  title: 'Status restored',
+                  description: `${orgName} restored to ${formatStatus(previousStatus)}.`,
+                });
+              } catch (error) {
+                toast({
+                  title: 'Restore failed',
+                  description: 'Failed to restore status.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+            className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Undo
+          </button>
+        ),
+      });
+    } catch (error) {
+      logger.error('Failed to change status:', error);
+      toast({
+        title: 'Status change failed',
+        description: 'Failed to update event status. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return {

@@ -32,7 +32,7 @@ export const useEventMutations = () => {
       const { dismiss } = toast({
         title: 'Event request deleted',
         description: 'Click Undo to restore',
-        duration: 5000,
+        duration: 10000,
         action: (
           <button
             onClick={async () => {
@@ -398,15 +398,57 @@ export const useEventMutations = () => {
   });
 
   const rescheduleEventMutation = useMutation({
-    mutationFn: ({ id, newDate }: { id: number; newDate: Date }) =>
+    mutationFn: ({ id, newDate, previousDate }: { id: number; newDate: Date; previousDate?: string | null }) =>
       apiRequest('PATCH', `/api/event-requests/${id}`, {
         scheduledEventDate: newDate.toISOString(),
       }),
-    onSuccess: () => {
-      toast({
-        title: 'Event rescheduled',
-        description: 'The event date has been updated successfully.',
-      });
+    onSuccess: (_, variables) => {
+      const { id, newDate, previousDate } = variables;
+      const newDateStr = newDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const prevDateStr = previousDate
+        ? new Date(previousDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : null;
+
+      // Show toast with undo action if we have a previous date
+      if (previousDate) {
+        const { dismiss } = toast({
+          title: 'Event rescheduled',
+          description: `Date changed to ${newDateStr}. Click Undo to restore.`,
+          duration: 10000,
+          action: (
+            <button
+              onClick={async () => {
+                try {
+                  await apiRequest('PATCH', `/api/event-requests/${id}`, {
+                    scheduledEventDate: previousDate,
+                  });
+                  invalidateEventRequestQueries(queryClient);
+                  dismiss();
+                  toast({
+                    title: 'Date restored',
+                    description: `Event date restored to ${prevDateStr}.`,
+                  });
+                } catch (error) {
+                  toast({
+                    title: 'Restore failed',
+                    description: 'Failed to restore event date.',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+              className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary"
+            >
+              Undo
+            </button>
+          ),
+        });
+      } else {
+        toast({
+          title: 'Event rescheduled',
+          description: `The event date has been set to ${newDateStr}.`,
+        });
+      }
+
       // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
     },
