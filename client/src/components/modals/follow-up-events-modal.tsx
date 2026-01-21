@@ -84,7 +84,7 @@ export default function FollowUpEventsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-brand-primary">
             {title}
@@ -108,11 +108,11 @@ export default function FollowUpEventsModal({
                   key={event.id}
                   className={`${isCompleted ? 'opacity-50 bg-gray-50' : ''}`}
                 >
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-lg font-semibold text-brand-primary">
+                  <CardContent className="pt-4 sm:pt-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4 mb-4">
+                      <div className="flex-1 w-full">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold text-brand-primary">
                             {event.organizationName}
                           </h3>
                           {isCompleted && (
@@ -121,7 +121,7 @@ export default function FollowUpEventsModal({
                             </Badge>
                           )}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
                           {event.desiredEventDate && (
                             <div className="flex items-center gap-2">
                               <Calendar className="h-4 w-4" />
@@ -181,7 +181,7 @@ export default function FollowUpEventsModal({
                         onClick={() => handleMarkComplete(event.id)}
                         disabled={isCompleted || markFollowUpMutation.isPending}
                         variant={isCompleted ? 'outline' : 'default'}
-                        className="ml-4"
+                        className="w-full sm:w-auto sm:ml-4 shrink-0"
                       >
                         {isCompleted ? (
                           <>

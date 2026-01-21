@@ -189,7 +189,7 @@ function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
           Upload Document
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Upload New Document</DialogTitle>
         </DialogHeader>
@@ -372,7 +372,7 @@ function DocumentPermissionsDialog({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Shield className="w-5 h-5" />

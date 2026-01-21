@@ -757,7 +757,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-full">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
             <div
               className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('collections')}
@@ -835,7 +835,7 @@ export default function DashboardOverview({
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="premium-grid sm:grid-cols-2 lg:grid-cols-3 mx-4 mb-6 sm:mb-8 max-w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 mb-6 sm:mb-8 max-w-full">
           <div className="premium-card premium-interactive p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h3 className="premium-text-caption text-brand-primary uppercase">
@@ -899,7 +899,7 @@ export default function DashboardOverview({
             <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-full">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
               {/* Peak Week - Burgundy accent */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h3 text-brand-burgundy mb-1">

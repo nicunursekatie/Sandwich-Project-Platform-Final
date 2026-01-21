@@ -1786,7 +1786,7 @@ export default function GmailStyleInbox() {
 
       {/* Compose Dialog - Subtle TSP Branding */}
       <Dialog open={showCompose} onOpenChange={setShowCompose}>
-        <DialogContent className="max-w-2xl bg-white border border-gray-200 rounded-xl shadow-xl">
+        <DialogContent className="w-[95vw] max-w-2xl p-4 sm:p-6 bg-white border border-gray-200 rounded-xl shadow-xl">
           <DialogHeader className="pb-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-1 h-8 bg-gradient-to-b from-amber-400 to-amber-500 rounded-full"></div>

@@ -160,12 +160,12 @@ export function MeetingOverviewTab({
       )}
 
       {/* View Toggle & New Meeting Button */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
           <button
             onClick={() => setViewMode('grid')}
             data-testid="view-mode-grid"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
               viewMode === 'grid'
                 ? 'bg-white text-teal-700 shadow-sm'
                 : 'text-gray-600 hover:text-teal-700'
@@ -177,7 +177,7 @@ export function MeetingOverviewTab({
           <button
             onClick={() => setViewMode('calendar')}
             data-testid="view-mode-calendar"
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
               viewMode === 'calendar'
                 ? 'bg-white text-teal-700 shadow-sm'
                 : 'text-gray-600 hover:text-teal-700'
@@ -191,7 +191,7 @@ export function MeetingOverviewTab({
         <Button
           onClick={() => setShowNewMeetingDialog(true)}
           data-testid="button-new-meeting"
-          className="bg-teal-600 hover:bg-teal-700 text-white"
+          className="bg-teal-600 hover:bg-teal-700 text-white w-full sm:w-auto"
         >
           <Plus className="w-4 h-4 mr-2" />
           New Meeting
@@ -298,8 +298,8 @@ export function MeetingOverviewTab({
       {/* Past Meetings Section */}
       {pastMeetings.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-700">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-700">
               Past Meetings
             </h2>
             <Badge

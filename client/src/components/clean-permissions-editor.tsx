@@ -459,7 +459,7 @@ export default function CleanPermissionsEditor({
   // Default: render with Dialog wrapper
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] border-2 border-brand-primary/30 shadow-2xl">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[85vh] p-4 sm:p-6 border-2 border-brand-primary/30 shadow-2xl">
         <DialogHeader className="pb-4 border-b-2 border-brand-primary/20 bg-gradient-to-r from-brand-primary/5 to-brand-primary/10 -mx-6 -mt-6 px-6 pt-6 rounded-t-lg">
           <DialogTitle className="flex items-center gap-3 text-xl">
             <div className="p-2 rounded-lg bg-gradient-to-br from-brand-primary to-brand-primary-dark shadow-md">

@@ -247,7 +247,7 @@ export default function EditContactAttemptDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md sm:max-w-lg" data-testid="dialog-edit-contact">
+      <DialogContent className="w-[95vw] max-w-md sm:max-w-lg p-4 sm:p-6" data-testid="dialog-edit-contact">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2 text-[#236383]">
             <MessageSquare className="w-5 h-5" />

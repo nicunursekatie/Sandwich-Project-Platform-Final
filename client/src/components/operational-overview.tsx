@@ -114,7 +114,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
         </div>
 
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
           {/* This Week's Events */}
           <div
             className="bg-white rounded-lg p-4 border border-gray-200 hover:border-brand-primary cursor-pointer transition-all"
@@ -234,46 +234,46 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
               {stats.upcomingDeadlines.slice(0, 5).map((deadline) => (
                 <div
                   key={deadline.id}
-                  className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg cursor-pointer transition-all gap-2 ${
                     deadline.isToday
                       ? 'bg-red-50 border border-red-200 hover:border-red-400'
                       : 'bg-white border border-gray-200 hover:border-brand-primary'
                   }`}
                   onClick={() => onNavigate('event-requests')}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     {deadline.isToday ? (
-                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                      <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
                     ) : (
-                      <Calendar className="w-5 h-5 text-brand-primary" />
+                      <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
                     )}
-                    <div>
-                      <div className="font-medium text-gray-900">{deadline.organizationName}</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-gray-900 truncate">{deadline.organizationName}</div>
                       <div className="text-sm text-gray-500">
                         {deadline.isToday ? 'Today' : 'Tomorrow'} - {formatDate(deadline.eventDate)}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pl-8 sm:pl-0">
                     {deadline.needsDriver && (
-                      <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50">
+                      <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50 text-xs">
                         <Car className="w-3 h-3 mr-1" />
                         Driver
                       </Badge>
                     )}
                     {deadline.needsSpeaker && (
-                      <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50">
+                      <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 text-xs">
                         <Mic2 className="w-3 h-3 mr-1" />
                         Speaker
                       </Badge>
                     )}
                     {deadline.needsVolunteer && (
-                      <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">
+                      <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50 text-xs">
                         <Users className="w-3 h-3 mr-1" />
                         Volunteer
                       </Badge>
                     )}
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
+                    <ArrowRight className="w-4 h-4 text-gray-400 hidden sm:block" />
                   </div>
                 </div>
               ))}

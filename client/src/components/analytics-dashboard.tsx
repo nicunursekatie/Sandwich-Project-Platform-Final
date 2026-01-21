@@ -336,28 +336,36 @@ export default function AnalyticsDashboard() {
         </div>
 
       {/* Period Selection Buttons */}
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex flex-wrap justify-center gap-2 mb-4 px-2">
         <Button
           variant={selectedPeriod === '3months' ? 'default' : 'outline'}
           onClick={() => setSelectedPeriod('3months')}
+          size="sm"
+          className="text-xs sm:text-sm"
         >
           3 Months
         </Button>
         <Button
           variant={selectedPeriod === '6months' ? 'default' : 'outline'}
           onClick={() => setSelectedPeriod('6months')}
+          size="sm"
+          className="text-xs sm:text-sm"
         >
           6 Months
         </Button>
         <Button
           variant={selectedPeriod === '1year' ? 'default' : 'outline'}
           onClick={() => setSelectedPeriod('1year')}
+          size="sm"
+          className="text-xs sm:text-sm"
         >
           1 Year
         </Button>
         <Button
           variant={selectedPeriod === 'all' ? 'default' : 'outline'}
           onClick={() => setSelectedPeriod('all')}
+          size="sm"
+          className="text-xs sm:text-sm"
         >
           All Time
         </Button>

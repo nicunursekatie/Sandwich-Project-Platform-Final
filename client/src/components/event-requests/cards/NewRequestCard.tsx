@@ -816,7 +816,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {/* Left Column - Event Details */}
           <div className="space-y-3">
             {/* Submitted Info */}
@@ -840,10 +840,10 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center justify-between mt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2">
                   {(request.contactAttempts || request.lastContactAttempt) && (
-                    <div className="text-sm text-gray-600 flex items-center gap-2">
-                      <Phone className="w-3 h-3" />
+                    <div className="text-sm text-gray-600 flex flex-wrap items-center gap-2">
+                      <Phone className="w-3 h-3 flex-shrink-0" />
                       {request.contactAttempts && request.contactAttempts > 0 && (
                         <span>Contact attempts: {request.contactAttempts}</span>
                       )}
@@ -858,7 +858,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={onLogContact}
-                    className="h-7 text-xs flex items-center gap-1"
+                    className="h-7 text-xs flex items-center gap-1 self-end sm:self-auto"
                   >
                     <Phone className="w-3 h-3" />
                     Log Contact

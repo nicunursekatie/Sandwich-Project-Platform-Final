@@ -485,7 +485,7 @@ export default function BulkDataManager({
 
       {/* Host Records Dialog */}
       <Dialog open={showHostRecords} onOpenChange={setShowHostRecords}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <div className="flex items-center space-x-2">
               <Button

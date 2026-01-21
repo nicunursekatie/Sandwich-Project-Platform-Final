@@ -383,25 +383,25 @@ export default function UserManagementFinal() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Manage user accounts, roles, and permissions
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
           <ButtonTooltip explanation="Add a new user to the platform">
             <Button
-              className="bg-brand-primary hover:bg-brand-primary-dark"
+              className="bg-brand-primary hover:bg-brand-primary-dark w-full sm:w-auto"
               onClick={() => setShowAddUserDialog(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -412,26 +412,29 @@ export default function UserManagementFinal() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Users
+        <TabsList className="flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="users" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Users</span>
+            <span className="xs:hidden">Users</span>
           </TabsTrigger>
-          <TabsTrigger value="pending" className="flex items-center gap-2 relative">
-            <Clock className="h-4 w-4" />
-            Pending Approvals
+          <TabsTrigger value="pending" className="flex items-center gap-1.5 sm:gap-2 relative text-xs sm:text-sm px-2 sm:px-3">
+            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Pending Approvals</span>
+            <span className="sm:hidden">Pending</span>
             {pendingRegistrations.length > 0 && (
-              <Badge variant="destructive" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+              <Badge variant="destructive" className="ml-0.5 sm:ml-1 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-[10px] sm:text-xs">
                 {pendingRegistrations.length}
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="permissions" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Permissions
+          <TabsTrigger value="permissions" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Permissions</span>
+            <span className="sm:hidden">Perms</span>
           </TabsTrigger>
-          <TabsTrigger value="impact" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
+          <TabsTrigger value="impact" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Impact
           </TabsTrigger>
         </TabsList>
@@ -439,7 +442,7 @@ export default function UserManagementFinal() {
         {/* Users Tab - Simplified with inline summary */}
         <TabsContent value="users" className="space-y-6">
           {/* Inline Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
@@ -588,8 +591,8 @@ export default function UserManagementFinal() {
               <CardTitle>{filteredUsers.length} Users</CardTitle>
               <CardDescription>Click a row to edit user details</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-md border">
+            <CardContent className="overflow-x-auto">
+              <div className="rounded-md border min-w-[800px] sm:min-w-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
