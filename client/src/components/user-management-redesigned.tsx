@@ -415,8 +415,7 @@ export default function UserManagementFinal() {
         <TabsList className="flex flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="users" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
             <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Users</span>
-            <span className="xs:hidden">Users</span>
+            Users
           </TabsTrigger>
           <TabsTrigger value="pending" className="flex items-center gap-1.5 sm:gap-2 relative text-xs sm:text-sm px-2 sm:px-3">
             <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />

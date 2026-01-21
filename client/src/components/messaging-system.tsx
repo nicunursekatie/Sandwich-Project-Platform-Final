@@ -173,7 +173,7 @@ export default function MessagingSystem({
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar - Hidden on mobile when collapsed, overlay on mobile when expanded */}
         <div
           className={`${
