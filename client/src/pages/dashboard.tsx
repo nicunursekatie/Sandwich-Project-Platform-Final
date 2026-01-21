@@ -651,7 +651,7 @@ export default function Dashboard({
         <AnnouncementBanner />
         
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-white to-teal-50/30 border-b-2 border-teal-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px]">
+        <div className="bg-gradient-to-r from-white to-teal-50/30 border-b-2 border-teal-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full">
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             {/* Mobile menu button - positioned first for easy access */}
             <button
@@ -685,9 +685,9 @@ export default function Dashboard({
 
           {/* Right side container - optimized for tablets/mobile */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Compact user indicator for tablets */}
+            {/* Compact user indicator for tablets - hidden on very small screens */}
             {user && (
-              <div className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200 shadow-sm max-w-[120px] xs:max-w-[150px] sm:max-w-[180px] md:max-w-none">
+              <div className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200 shadow-sm max-w-[100px] sm:max-w-[150px] md:max-w-none">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
                   <span className="text-xs font-medium text-teal-800">
                     {(user as any)?.firstName?.charAt(0) ||
@@ -721,7 +721,7 @@ export default function Dashboard({
             <TooltipProvider delayDuration={300}>
             <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
               
-              {/* Group 1: Communication */}
+              {/* Group 1: Communication - hide comments on very small screens */}
               <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -732,7 +732,7 @@ export default function Dashboard({
                         setActiveSection('messages');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-2 rounded-md transition-colors ${
+                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                         activeSection === 'messages'
                           ? 'bg-brand-primary text-white shadow-sm'
                           : 'text-gray-600 hover:bg-white hover:text-gray-900'
@@ -754,7 +754,7 @@ export default function Dashboard({
                         setActiveSection('messaging-inbox');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-2 rounded-md transition-colors ${
+                      className={`hidden xs:block p-1.5 sm:p-2 rounded-md transition-colors ${
                         activeSection === 'messaging-inbox'
                           ? 'bg-brand-primary text-white shadow-sm'
                           : 'text-gray-600 hover:bg-white hover:text-gray-900'
@@ -767,7 +767,10 @@ export default function Dashboard({
                   <TooltipContent side="bottom" sideOffset={8}>Comments</TooltipContent>
                 </Tooltip>
 
-                <OnlineUsers />
+                {/* Online users - hide on mobile */}
+                <div className="hidden sm:block">
+                  <OnlineUsers />
+                </div>
               </div>
 
               {/* Group 2: Notifications & Progress */}
@@ -817,7 +820,7 @@ export default function Dashboard({
               </div>
 
               {/* Group 4: Account Menu */}
-              <div className="flex items-center gap-1 pl-1 border-l border-gray-200">
+              <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-gray-200">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -829,7 +832,7 @@ export default function Dashboard({
                         window.history.pushState({}, '', '/dashboard?section=profile');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-2 rounded-md transition-colors ${
+                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                         activeSection === 'profile'
                           ? 'bg-brand-primary text-white shadow-sm'
                           : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
@@ -857,7 +860,7 @@ export default function Dashboard({
                       window.location.href = '/login';
                     }
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-gray-600 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
+                  className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1.5 text-gray-600 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
                   aria-label="Logout"
                 >
                   <LogOut className="w-4 h-4" />
