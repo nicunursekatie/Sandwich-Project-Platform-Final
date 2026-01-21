@@ -174,36 +174,44 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Get events that are scheduled or in_process and have upcoming dates
+    // Get events that are scheduled or in_process
+    // Date filtering is optional - we show all active events and let frontend filter if needed
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
 
-    logger.log(`[VolunteerHub] Fetching events with date >= ${todayStr}`);
+    logger.log(`[VolunteerHub] Fetching scheduled/in_process events`);
 
+    // First, just get events by status (the core requirement)
     const events = await db
       .select()
       .from(eventRequests)
       .where(
-        and(
-          // Include both scheduled and in_process events
-          or(
-            eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'in_process')
-          ),
-          // Event date must be in the future (check both date fields)
-          or(
-            gte(eventRequests.scheduledEventDate, todayStr),
-            gte(eventRequests.desiredEventDate, todayStr)
-          )
+        // Include both scheduled and in_process events
+        or(
+          eq(eventRequests.status, 'scheduled'),
+          eq(eventRequests.status, 'in_process')
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} events`);
+    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/in_process status`);
+
+    // Filter to events with dates today or in the future
+    // Include events with no date set (they're still active)
+    const upcomingEvents = events.filter(event => {
+      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      if (!eventDate) {
+        // Include events without dates - they're still active
+        return true;
+      }
+      const eventDateObj = new Date(eventDate);
+      return eventDateObj >= today;
+    });
+
+    logger.log(`[VolunteerHub] ${upcomingEvents.length} events are upcoming or have no date set`);
 
     // Calculate unfilled needs for each event using centralized utils
-    const eventsWithNeeds = events.map(event => {
+    const eventsWithNeeds = upcomingEvents.map(event => {
       const counts = getUnfilledCounts(event);
 
       return {
