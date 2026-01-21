@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { formatDistanceToNow } from 'date-fns';
-import { Activity, ArrowRight, Plus, User, RefreshCw } from 'lucide-react';
+import { formatDistanceToNow, format, parseISO } from 'date-fns';
+import { Activity, ArrowRight, Plus, User, RefreshCw, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ interface ActivityItem {
   description: string;
   oldStatus?: string;
   newStatus?: string;
+  eventDate?: string | null;
 }
 
 interface ActivityFeedResponse {
@@ -59,6 +60,10 @@ function StatusBadge({ status }: { status: string }) {
 function ActivityItemCard({ activity }: { activity: ActivityItem }) {
   const Icon = activityTypeIcons[activity.activityType] || Activity;
   const timeAgo = formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true });
+  
+  const formattedEventDate = activity.eventDate 
+    ? format(parseISO(activity.eventDate), 'MMM d, yyyy')
+    : null;
 
   return (
     <div className="flex items-start gap-3 p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
@@ -85,7 +90,13 @@ function ActivityItemCard({ activity }: { activity: ActivityItem }) {
             </Badge>
           )}
         </div>
-        <p className="text-xs text-gray-500 mt-1">
+        {formattedEventDate && (
+          <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Event: {formattedEventDate}
+          </p>
+        )}
+        <p className="text-xs text-gray-500 mt-0.5">
           by <span className="font-medium">{activity.userName}</span> {timeAgo}
         </p>
       </div>

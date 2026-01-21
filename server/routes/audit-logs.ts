@@ -223,6 +223,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
           const newStatus = newData?.status;
           const organizationName = newData?.organizationName || oldData?.organizationName || 'Unknown Organization';
           const userName = log.userId ? (userMap[log.userId] || 'System') : 'System';
+          const eventDate = newData?.scheduledEventDate || newData?.desiredEventDate || oldData?.scheduledEventDate || oldData?.desiredEventDate || null;
 
           // Determine activity type
           let activityType = 'update';
@@ -253,6 +254,7 @@ export function createAuditLogsRouter(deps: RouterDependencies) {
             description,
             oldStatus,
             newStatus,
+            eventDate,
           };
         });
 
