@@ -1104,12 +1104,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </Badge>
                 ) : (
                   <>
-                    {driverNeeded > driverAssigned && !(request.vanDriverNeeded && driverNeeded === 0) && (
+                    {/* Show regular driver needs only if NOT a van driver event (van takes precedence) */}
+                    {driverNeeded > driverAssigned && !request.vanDriverNeeded && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
                         {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''}
                       </Badge>
                     )}
-                    {request.vanDriverNeeded && driverNeeded === 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+                    {/* Show Van badge when van driver is needed but not yet assigned */}
+                    {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
                       <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
                         <Car className="w-3 h-3 mr-1" />
                         Van
@@ -1126,13 +1128,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </Badge>
                     )}
                   </>
-                )}
-
-                {request.vanDriverNeeded && driverNeeded > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
-                  <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
-                    <Car className="w-3 h-3 mr-1" />
-                    Van
-                  </Badge>
                 )}
 
                 {request.assignedVanDriverId && (
