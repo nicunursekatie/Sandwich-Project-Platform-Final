@@ -350,16 +350,25 @@ export default function ImportantDocuments() {
     }
   );
 
-  const handleDownload = (doc: AdminDocument) => {
+  const handleDownload = async (doc: AdminDocument) => {
     if (doc.type === 'link') {
       window.open(doc.path, '_blank');
     } else {
-      const link = document.createElement('a');
-      link.href = doc.path;
-      link.download = doc.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      try {
+        const response = await fetch(doc.path);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        logger.error('Download failed:', error);
+        window.open(doc.path, '_blank');
+      }
     }
   };
 
