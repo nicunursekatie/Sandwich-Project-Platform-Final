@@ -171,14 +171,22 @@ function DocumentCard({
   document: ToolkitDocument;
   onPreview: (doc: ToolkitDocument) => void;
 }) {
-  const handleDownload = (path: string, name: string) => {
-    const link = window.document.createElement('a');
-    link.href = path;
-    link.download = name;
-    link.target = '_blank';
-    window.document.body.appendChild(link);
-    link.click();
-    window.document.body.removeChild(link);
+  const handleDownload = async (path: string, name: string) => {
+    try {
+      const response = await fetch(path);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = name;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(path, '_blank');
+    }
   };
 
   return (

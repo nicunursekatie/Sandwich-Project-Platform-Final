@@ -107,14 +107,22 @@ export function DocumentsBrowser() {
     ? documentFiles 
     : documentFiles.filter(doc => doc.category === selectedCategory);
 
-  const handleDownload = (path: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = path;
-    link.download = name;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (path: string, name: string) => {
+    try {
+      const response = await fetch(path);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(path, '_blank');
+    }
   };
 
   const handlePreview = (doc: DocumentFile) => {

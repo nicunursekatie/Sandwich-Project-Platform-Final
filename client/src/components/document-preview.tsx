@@ -29,13 +29,22 @@ export function DocumentPreview({
     }
   }, [documentPath, documentType]);
 
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = documentPath;
-    link.download = documentName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(documentPath);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = documentName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(documentPath, '_blank');
+    }
   };
 
   const handleOpenInNewTab = () => {

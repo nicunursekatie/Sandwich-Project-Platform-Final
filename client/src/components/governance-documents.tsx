@@ -93,13 +93,22 @@ export function GovernanceDocuments() {
     setPreviewDocument(document);
   };
 
-  const handleDownload = (document: GovernanceDocument) => {
-    const link = window.document.createElement('a');
-    link.href = document.path;
-    link.download = document.name;
-    window.document.body.appendChild(link);
-    link.click();
-    window.document.body.removeChild(link);
+  const handleDownload = async (document: GovernanceDocument) => {
+    try {
+      const response = await fetch(document.path);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = document.name;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(document.path, '_blank');
+    }
   };
 
   const handleExternalOpen = (document: GovernanceDocument) => {
