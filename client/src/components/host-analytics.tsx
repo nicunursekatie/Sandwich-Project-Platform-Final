@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   BarChart3,
   Calendar,
@@ -27,10 +26,10 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { apiRequest } from '@/lib/queryClient';
 import type { SandwichCollection, Host } from '@shared/schema';
-import { parseCollectionDate } from '@/lib/analytics-utils';
+import { parseCollectionDate, calculateGroupSandwiches } from '@/lib/analytics-utils';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { useCollectionsData } from '@/hooks/useCollectionsData';
 
 interface HostAnalyticsProps {
   selectedHost?: string;
@@ -60,22 +59,8 @@ export default function HostAnalytics({
     setIncludeHistoricalData(false);
   }, [selectedHost]);
 
-  // Fetch all collections data
-  const { data: collectionsResponse, isLoading } = useQuery({
-    queryKey: ['/api/sandwich-collections', 'analytics'],
-    queryFn: async () =>
-      apiRequest(
-        'GET',
-        '/api/sandwich-collections?page=1&limit=10000'
-      ),
-  });
-
-  // Fetch hosts list
-  const { data: hostsList = [] } = useQuery<Host[]>({
-    queryKey: ['/api/hosts'],
-  });
-
-  const collections: SandwichCollection[] = collectionsResponse?.collections || [];
+  // Use shared collections data hook
+  const { collections, hosts, isLoading } = useCollectionsData();
 
   // Get available hosts from collections data
   const availableHosts: string[] = useMemo(() => {
@@ -106,23 +91,6 @@ export default function HostAnalytics({
     // For combined locations with historical data enabled, include both the combined name and component names
     const componentNames = parseComponentLocations(hostName);
     return [hostName, ...componentNames];
-  };
-
-  // Helper function to calculate group total for a collection
-  const calculateGroupTotal = (collection: SandwichCollection) => {
-    if (
-      collection.groupCollections &&
-      Array.isArray(collection.groupCollections) &&
-      collection.groupCollections.length > 0
-    ) {
-      return collection.groupCollections.reduce(
-        (total: number, group: any) => total + (group.count || 0),
-        0
-      );
-    }
-    const groupCount1 = (collection as any).group1Count || 0;
-    const groupCount2 = (collection as any).group2Count || 0;
-    return groupCount1 + groupCount2;
   };
 
   // Helper function to get group collections from a collection
@@ -190,7 +158,7 @@ export default function HostAnalytics({
 
     filteredCollections.forEach((collection: SandwichCollection) => {
       totalIndividual += collection.individualSandwiches || 0;
-      totalGroup += calculateGroupTotal(collection);
+      totalGroup += calculateGroupSandwiches(collection);
       const parsedDate = parseCollectionDate(collection.collectionDate);
       if (!Number.isNaN(parsedDate.getTime())) {
         dates.push(parsedDate);
@@ -227,7 +195,7 @@ export default function HostAnalytics({
 
       const monthStats = monthlyData.get(monthKey)!;
       const individualCount = collection.individualSandwiches || 0;
-      const groupCount = calculateGroupTotal(collection);
+      const groupCount = calculateGroupSandwiches(collection);
 
       monthStats.individualSandwiches += individualCount;
       monthStats.groupSandwiches += groupCount;

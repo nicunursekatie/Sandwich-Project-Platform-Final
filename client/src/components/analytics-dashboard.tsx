@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,8 +9,6 @@ import {
   TooltipProvider,
 } from '@/components/ui/tooltip';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -35,66 +32,33 @@ import {
   calculateTotalSandwiches,
   calculateActualWeeklyAverage,
   getRecordWeek,
-  parseCollectionDate,
   calculateYearlyBreakdown,
 } from '@/lib/analytics-utils';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/lib/logger';
+import { useCollectionsData } from '@/hooks/useCollectionsData';
 
 export default function AnalyticsDashboard() {
   // Get authenticated user - CRITICAL for API calls
   const { user, isLoading: authLoading } = useAuth();
-  
+
   // Force complete cache busting and debugging
   const [debugKey] = useState(() => `analytics-v4-${Date.now()}-${Math.random()}`);
-  
+
   logger.log('\n🚀 ANALYTICS DASHBOARD v4 - COMPONENT LOADING:', debugKey);
   logger.log('🔐 Auth status:', { user: !!user, authLoading, userEmail: user?.email });
-  
-  const { data: collections, isLoading: collectionsLoading } = useQuery<
-    SandwichCollection[]
-  >({
-    queryKey: ['/api/sandwich-collections/all', debugKey], // Unique key per component instance
-    queryFn: async () => {
-      logger.log('\n🔄 ANALYTICS v4: Fetching collections with key:', debugKey);
-      const response = await fetch(`/api/sandwich-collections?limit=10000&cache=${Date.now()}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        logger.error('❌ Failed to fetch collections:', response.status, response.statusText);
-        throw new Error(`Failed to fetch collections: ${response.status}`);
-      }
-      const data = await response.json();
-      logger.log('✅ ANALYTICS v4: Successfully fetched', data.collections?.length || 0, 'collections');
-      return data.collections || [];
-    },
-    enabled: !!user && !authLoading, // Only run when user is authenticated
-    staleTime: 2 * 60 * 1000, // 2 minutes - analytics need reasonable freshness but not aggressive refetching
-    refetchOnWindowFocus: false,
-  });
 
-  const { data: statsData, isLoading: statsLoading } = useQuery<{
-    completeTotalSandwiches: number;
-  }>({
-    queryKey: ['/api/sandwich-collections/stats'],
-    enabled: !!user && !authLoading, // Only run when user is authenticated
-  });
+  // Use shared collections data hook
+  const {
+    collections,
+    hosts: hostsData,
+    stats: statsData,
+    isLoading: dataLoading
+  } = useCollectionsData();
 
-  const { data: hostsData, isLoading: hostsLoading } = useQuery<any[]>({
-    queryKey: ['/api/hosts'],
-    queryFn: async () => {
-      const response = await fetch('/api/hosts', {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch hosts');
-      return response.json();
-    },
-    enabled: !!user && !authLoading, // Only run when user is authenticated
-  });
-
-  const isLoading = authLoading || collectionsLoading || statsLoading || hostsLoading;
+  const isLoading = authLoading || dataLoading;
 
   const analyticsData = useMemo(() => {
     logger.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
@@ -104,7 +68,7 @@ export default function AnalyticsDashboard() {
       debugKey
     });
     
-    if (!collections?.length || !statsData || !hostsData) {
+    if (!collections?.length || !statsData || !hostsData?.length) {
       logger.log('⚠️ ANALYTICS v4: Missing required data, returning null');
       return null;
     }
