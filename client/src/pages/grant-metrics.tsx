@@ -754,11 +754,12 @@ export default function GrantMetrics() {
             <p className="text-base md:text-lg leading-relaxed text-white/90">
               We don't just feed people — we've built disaster response capability
               (<span className="font-semibold">14,023 sandwiches during Hurricane Helene</span>),
-              distributed logistics infrastructure across 35 sites, and a volunteer network that could pivot
-              tomorrow to housing crisis response, voter mobilization, or climate disaster coordination.
+              distributed logistics infrastructure across 35 sites, and a dedicated volunteer network.
+              Beyond sandwiches, we support adjacent needs through blanket and coat drives, feminine hygiene drives,
+              and emergency supply distribution when disaster strikes.
             </p>
             <p className="text-xl md:text-2xl font-semibold mt-6 text-[#47b3cb]">
-              This is not charity. This is community infrastructure that happens to use sandwiches as its medium.
+              Our mission is simple: get sandwiches to hungry people.
               <br />
               <span className="text-white">And we're just getting started.</span>
             </p>
@@ -2064,12 +2065,12 @@ export default function GrantMetrics() {
               </p>
               <p className="text-lg leading-relaxed">
                 We don't just feed people - we've built <strong>disaster response capability</strong> (14,023 sandwiches during Hurricane Helene),
-                <strong> distributed logistics infrastructure</strong> across 35 sites, and a <strong>volunteer network</strong> that could
-                pivot tomorrow to housing crisis response, voter mobilization, or climate disaster coordination.
+                <strong> distributed logistics infrastructure</strong> across 35 sites, and a <strong>dedicated volunteer network</strong>.
+                Beyond sandwiches, we support adjacent needs through blanket and coat drives, feminine hygiene drives,
+                and emergency supply distribution when disaster strikes.
               </p>
               <p className="text-lg leading-relaxed font-semibold">
-                This is not charity. This is community infrastructure that happens to use sandwiches as its medium.
-                And we're just getting started.
+                Our mission is simple: get sandwiches to hungry people. And we're just getting started.
               </p>
             </div>
           </CardContent>

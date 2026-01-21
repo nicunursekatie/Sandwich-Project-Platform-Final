@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -40,15 +39,24 @@ import {
   Cell,
   Pie,
 } from 'recharts';
-import { apiRequest } from '@/lib/queryClient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytics';
 import ActionCenter from '@/components/action-center';
 import PredictiveForecasts from '@/components/predictive-forecasts';
-import { calculateTotalSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import {
+  processCollectionDataForChart,
+  calculateHostPerformance,
+  calculateTrendAnalysis,
+  calculateImpactMetrics,
+  parseCollectionDate,
+  calculateTotalSandwiches,
+  type DateRangeFilter,
+  type ChartViewType,
+} from '@/lib/analytics-utils';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { useCollectionsData } from '@/hooks/useCollectionsData';
 
 export default function ImpactDashboard() {
   const { trackView, trackClick } = useActivityTracker();
@@ -64,439 +72,39 @@ export default function ImpactDashboard() {
       'User accessed impact dashboard'
     );
   }, [trackView]);
-  const [dateRange, setDateRange] = useState<'3months' | '6months' | '1year' | 'all'>('1year');
+  const [dateRange, setDateRange] = useState<DateRangeFilter>('1year');
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
 
-  // Fetch sandwich collections data
-  const { data: collectionsData } = useQuery({
-    queryKey: ['/api/sandwich-collections'],
-    queryFn: async () => {
-      const response = await fetch('/api/sandwich-collections?page=1&limit=5000', {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch collections');
-      return response.json();
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes - balance freshness with performance
-    refetchOnMount: true,
-    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
-    keepPreviousData: true, // Prevent UI thrash during updates
-  });
+  // Use shared collections data hook
+  const { collections, hosts, stats, hybridStats } = useCollectionsData();
 
-  const collections = collectionsData?.collections || [];
+  // Use shared utility functions with memoization
+  const chartData = useMemo(
+    () => processCollectionDataForChart(collections, dateRange, chartView as ChartViewType),
+    [collections, dateRange, chartView]
+  );
 
-  // Fetch hybrid stats (authoritative data + collection log)
-  const { data: hybridStats } = useQuery({
-    queryKey: ['/api/sandwich-collections/hybrid-stats'],
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnMount: true,
-    refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
-    keepPreviousData: true,
-  });
+  const hostPerformance = useMemo(
+    () => calculateHostPerformance(collections),
+    [collections]
+  );
 
-  // Fetch collection stats
-  const { data: stats } = useQuery({
-    queryKey: ['/api/sandwich-collections/stats'],
-    staleTime: 30 * 1000, // 30 seconds for stats - more frequent updates
-    refetchOnMount: true,
-    refetchInterval: 2 * 60 * 1000, // Auto-refresh every 2 minutes
-    keepPreviousData: true,
-  });
+  const trendAnalysis = useMemo(
+    () => calculateTrendAnalysis(collections),
+    [collections]
+  );
 
-  // Fetch hosts data
-  const { data: hosts = [] } = useQuery({
-    queryKey: ['/api/hosts'],
-    staleTime: 5 * 60 * 1000, // 5 minutes - hosts change less frequently
-    refetchOnMount: true,
-    refetchInterval: 10 * 60 * 1000, // Auto-refresh every 10 minutes
-    keepPreviousData: true,
-  });
-
-  // Process data for visualizations
-  const processCollectionData = () => {
-    // Return empty array if no collections data available
-    if (!Array.isArray(collections) || collections.length === 0) {
-      return [];
-    }
-
-    // Calculate date cutoff based on selected range
-    const now = new Date();
-    let cutoffDate: Date | null = null;
-
-    switch (dateRange) {
-      case '3months':
-        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        break;
-      case '6months':
-        cutoffDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        break;
-      case '1year':
-        cutoffDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-        break;
-      case 'all':
-        cutoffDate = null; // No filter
-        break;
-    }
-
-    // Filter collections by date range
-    const filteredCollections = cutoffDate
-      ? collections.filter((collection: any) => {
-          if (!collection.collectionDate) return false;
-          const date = parseCollectionDate(collection.collectionDate);
-          return !Number.isNaN(date.getTime()) && date >= cutoffDate;
-        })
-      : collections;
-
-    const timeData: Record<
-      string,
-      {
-        period: string;
-        sandwiches: number;
-        collections: number;
-        hosts: Set<string>;
-      }
-    > = {};
-
-    filteredCollections.forEach((collection: any) => {
-      const collectionDate = collection.collectionDate;
-      if (collectionDate) {
-        const date = parseCollectionDate(collectionDate);
-        if (Number.isNaN(date.getTime())) {
-          return;
-        }
-        let periodKey: string;
-
-        if (chartView === 'weekly') {
-          // Group by week (starting Monday)
-          const weekStart = new Date(date);
-          const day = weekStart.getDay();
-          const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
-          weekStart.setDate(diff);
-          periodKey = `Week of ${weekStart.getFullYear()}-${String(
-            weekStart.getMonth() + 1
-          ).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
-        } else {
-          // Group by month
-          periodKey = `${date.getFullYear()}-${String(
-            date.getMonth() + 1
-          ).padStart(2, '0')}`;
-        }
-
-        if (!timeData[periodKey]) {
-          timeData[periodKey] = {
-            period: periodKey,
-            sandwiches: 0,
-            collections: 0,
-            hosts: new Set(),
-          };
-        }
-
-        // Use standardized total calculation
-        const totalSandwiches = calculateTotalSandwiches(collection);
-
-        timeData[periodKey].sandwiches += totalSandwiches;
-        timeData[periodKey].collections += 1;
-        const hostName = collection.hostName;
-        if (hostName) {
-          timeData[periodKey].hosts.add(hostName);
-        }
-      }
-    });
-
-    const processedData = Object.values(timeData)
-      .map((item) => ({
-        [chartView === 'weekly' ? 'week' : 'month']: item.period,
-        sandwiches: item.sandwiches,
-        collections: item.collections,
-        hosts: item.hosts.size,
-      }))
-      .sort((a, b) =>
-        a[chartView === 'weekly' ? 'week' : 'month'].localeCompare(
-          b[chartView === 'weekly' ? 'week' : 'month']
-        )
-      );
-
-    logger.log('Processed chart data:', processedData);
-    return processedData;
-  };
-
-  const processHostPerformance = () => {
-    // Return empty array if no collections data available
-    if (!Array.isArray(collections) || collections.length === 0) {
-      return [];
-    }
-
-    const hostData: Record<
-      string,
-      {
-        name: string;
-        totalSandwiches: number;
-        totalCollections: number;
-        avgPerCollection: number;
-      }
-    > = {};
-
-    collections.forEach((collection: any) => {
-      const hostName = collection.hostName || 'Unknown';
-
-      if (!hostData[hostName]) {
-        hostData[hostName] = {
-          name: hostName,
-          totalSandwiches: 0,
-          totalCollections: 0,
-          avgPerCollection: 0,
-        };
-      }
-
-      // Use standardized total calculation
-      const totalSandwiches = calculateTotalSandwiches(collection);
-
-      hostData[hostName].totalSandwiches += totalSandwiches;
-      hostData[hostName].totalCollections += 1;
-    });
-
-    return Object.values(hostData)
-      .map((host) => ({
-        ...host,
-        avgPerCollection:
-          host.totalCollections > 0
-            ? Math.round(host.totalSandwiches / host.totalCollections)
-            : 0,
-      }))
-      .sort((a, b) => b.totalSandwiches - a.totalSandwiches)
-      .slice(0, 10);
-  };
-
-  // Calculate dynamic trend analysis from real data
-  const calculateTrendAnalysis = () => {
-    if (!Array.isArray(collections) || collections.length === 0) {
-      return {
-        recentTrend: { status: 'Loading...', percentage: 0, description: 'Analyzing data...' },
-        seasonalContext: { status: 'Loading...', percentage: 0, description: 'Calculating patterns...' }
-      };
-    }
-
-    const now = new Date();
-    const fourWeeksAgo = new Date(now.getTime() - (4 * 7 * 24 * 60 * 60 * 1000));
-    const eightWeeksAgo = new Date(now.getTime() - (8 * 7 * 24 * 60 * 60 * 1000));
-
-    // Recent trend (last 4 weeks vs previous 4 weeks)
-    const recentCollections = collections.filter(c => {
-      if (!c.collectionDate) {
-        return false;
-      }
-      const date = parseCollectionDate(c.collectionDate);
-      const time = date.getTime();
-      return time >= fourWeeksAgo.getTime() && time <= now.getTime();
-    });
-
-    const previousCollections = collections.filter(c => {
-      if (!c.collectionDate) {
-        return false;
-      }
-      const date = parseCollectionDate(c.collectionDate);
-      const time = date.getTime();
-      return time >= eightWeeksAgo.getTime() && time < fourWeeksAgo.getTime();
-    });
-
-    const recentTotal = recentCollections.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
-    const previousTotal = previousCollections.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
-
-    const trendChange = previousTotal > 0 ? ((recentTotal - previousTotal) / previousTotal) * 100 : 0;
-    
-    let trendStatus = 'Steady';
-    let trendPercentage = 75; // Default baseline
-    let trendDescription = 'Consistent weekly collection performance';
-
-    // Clamp trend change for calculations
-    const clampedTrendChange = Math.max(-100, Math.min(100, trendChange));
-    
-    if (trendChange > 15) {
-      trendStatus = 'Growing';
-      trendPercentage = Math.min(85, 75 + (clampedTrendChange * 0.2));
-      trendDescription = 'Strong upward collection trend';
-    } else if (trendChange < -15) {
-      trendStatus = 'Declining';
-      trendPercentage = Math.max(60, 75 + (clampedTrendChange * 0.2));
-      trendDescription = 'Collections below recent average';
-    } else if (Math.abs(trendChange) <= 5) {
-      trendStatus = 'Steady';
-      trendPercentage = 75;
-      trendDescription = 'Consistent weekly collection performance';
-    }
-    
-    // Ensure percentage stays within bounds
-    trendPercentage = Math.max(0, Math.min(100, trendPercentage));
-
-    // Seasonal context (current month vs same month average) - Fixed calculation
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    const currentMonthCollections = collections.filter(c => {
-      if (!c.collectionDate) {
-        return false;
-      }
-      const date = parseCollectionDate(c.collectionDate);
-      return (
-        date.getMonth() === currentMonth && date.getFullYear() === currentYear
-      );
-    });
-
-    // Group by year for the current month, compute per-year totals, then average
-    const monthlyTotalsByYear: Record<number, number> = {};
-    
-    collections.forEach(c => {
-      if (!c.collectionDate) {
-        return;
-      }
-      const date = parseCollectionDate(c.collectionDate);
-      if (date.getMonth() === currentMonth && date.getFullYear() < currentYear) {
-        const year = date.getFullYear();
-        if (!monthlyTotalsByYear[year]) {
-          monthlyTotalsByYear[year] = 0;
-        }
-        monthlyTotalsByYear[year] += calculateTotalSandwiches(c);
-      }
-    });
-
-    const currentMonthTotal = currentMonthCollections.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
-    const yearlyTotals = Object.values(monthlyTotalsByYear);
-    const avgSameMonth = yearlyTotals.length > 0 ? 
-      yearlyTotals.reduce((sum, total) => sum + total, 0) / yearlyTotals.length : 0;
-
-    const monthNames = ['Winter', 'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer', 'Summer', 'Fall', 'Fall', 'Fall', 'Winter'];
-    const seasonName = monthNames[currentMonth];
-    
-    let seasonalPercentage = 70;
-    let seasonalDescription = `Tracking ${seasonName.toLowerCase()} collection patterns`;
-
-    if (avgSameMonth > 0) {
-      const seasonalChange = ((currentMonthTotal - avgSameMonth) / avgSameMonth) * 100;
-      // Clamp seasonal change for display
-      const clampedChange = Math.max(-100, Math.min(100, seasonalChange));
-      
-      if (seasonalChange > 10) {
-        seasonalPercentage = Math.min(85, 70 + (clampedChange * 0.3));
-        seasonalDescription = `Strong ${seasonName.toLowerCase()} performance vs historical average`;
-      } else if (seasonalChange < -10) {
-        seasonalPercentage = Math.max(55, 70 + (clampedChange * 0.3));
-        seasonalDescription = `Below average for ${seasonName.toLowerCase()} season`;
-      }
-      
-      // Ensure percentage stays within bounds
-      seasonalPercentage = Math.max(0, Math.min(100, seasonalPercentage));
-    }
-    
-    // Final clamp to ensure seasonalPercentage is always valid
-    seasonalPercentage = Math.max(0, Math.min(100, seasonalPercentage));
-
-    return {
-      recentTrend: { 
-        status: trendStatus, 
-        percentage: trendPercentage, 
-        description: trendDescription,
-        change: trendChange
-      },
-      seasonalContext: { 
-        status: `${seasonName} Activity`, 
-        percentage: seasonalPercentage, 
-        description: seasonalDescription 
-      }
-    };
-  };
-
-  const calculateImpactMetrics = () => {
-    // Use hybrid stats total (authoritative data through 8/6/2025 + collection log after)
-    const totalSandwiches = hybridStats?.total || (stats as any)?.completeTotalSandwiches || 0;
-    const totalCollections = collections?.length || 0;
-    const uniqueHosts = 34; // Override to show correct active hosts count
-
-    // Calculate current month totals
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    let currentMonthTotal = 0;
-    let currentMonthCollections = 0;
-
-    // Use authoritative yearly totals from hybrid stats if available
-    const yearTotals: Record<number, number> = {
-      2023: 0,
-      2024: 0,
-      2025: 0,
-    };
-    
-    if (hybridStats?.byYear) {
-      Object.entries(hybridStats.byYear).forEach(([year, data]: [string, any]) => {
-        const y = parseInt(year);
-        if (yearTotals[y] !== undefined) {
-          yearTotals[y] = data?.sandwiches ?? 0;
-        }
-      });
-    } else {
-      // Fallback to calculating from collections if hybrid stats not available
-      if (Array.isArray(collections)) {
-        collections.forEach((collection: any) => {
-          if (collection.collectionDate) {
-            const date = parseCollectionDate(collection.collectionDate);
-            if (Number.isNaN(date.getTime())) {
-              return;
-            }
-            const year = date.getFullYear();
-            const collectionTotal = calculateTotalSandwiches(collection);
-
-            // Add to year totals
-            if (yearTotals[year] !== undefined) {
-              yearTotals[year] += collectionTotal;
-            }
-          }
-        });
-      }
-    }
-
-    // Calculate current month totals (always from collections for real-time data)
-    if (Array.isArray(collections)) {
-      collections.forEach((collection: any) => {
-        if (collection.collectionDate) {
-          const date = parseCollectionDate(collection.collectionDate);
-          if (Number.isNaN(date.getTime())) {
-            return;
-          }
-          const year = date.getFullYear();
-          const month = date.getMonth();
-          const collectionTotal = calculateTotalSandwiches(collection);
-
-          // Add to current month totals
-          if (year === currentYear && month === currentMonth) {
-            currentMonthTotal += collectionTotal;
-            currentMonthCollections += 1;
-          }
-        }
-      });
-    }
-
-    return {
-      totalSandwiches,
-      year2023Total: yearTotals[2023],
-      year2024Total: yearTotals[2024],
-      year2025YTD: yearTotals[2025],
-      totalCollections,
-      uniqueHosts,
-      currentMonthTotal,
-      currentMonthCollections,
-    };
-  };
-
-  const chartData = processCollectionData();
-  const hostPerformance = processHostPerformance();
-  const impactMetrics = calculateImpactMetrics();
-  const trendAnalysis = calculateTrendAnalysis();
+  const impactMetrics = useMemo(
+    () => calculateImpactMetrics(collections, hybridStats, stats),
+    [collections, hybridStats, stats]
+  );
 
   // Debug logging for final data
   logger.log('=== IMPACT DASHBOARD DEBUG ===');
   logger.log('Final chartData:', chartData);
   logger.log('Final chartData length:', chartData?.length);
   logger.log('Chart view:', chartView);
-  logger.log('Collections data from API:', collectionsData);
+  logger.log('Collections count:', collections?.length);
   logger.log('Stats data from API:', stats);
   logger.log('=== END DEBUG ===');
 
