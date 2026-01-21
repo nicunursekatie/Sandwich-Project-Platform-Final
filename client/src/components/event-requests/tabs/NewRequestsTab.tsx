@@ -10,6 +10,7 @@ import { NewRequestCard } from '../cards/NewRequestCard';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { EventListSkeleton } from '../EventCardSkeleton';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
@@ -254,9 +255,7 @@ export const NewRequestsTab: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-500">
-          Loading event requests...
-        </div>
+        <EventListSkeleton count={3} />
       ) : newRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           No new event requests

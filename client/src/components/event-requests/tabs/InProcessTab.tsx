@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { EyeOff, Eye, CalendarX, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { EventListSkeleton } from '../EventCardSkeleton';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
@@ -356,9 +357,7 @@ export const InProcessTab: React.FC = () => {
       )}
 
       {isLoading ? (
-        <div className="text-center py-8 text-gray-500">
-          Loading event requests...
-        </div>
+        <EventListSkeleton count={5} />
       ) : filteredRequests.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
           {inProcessRequests.length === 0
