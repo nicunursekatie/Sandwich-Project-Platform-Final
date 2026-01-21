@@ -1,10 +1,16 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye, EyeOff, Calendar as CalendarIcon2, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Eye, EyeOff, Calendar as CalendarIcon2, Clock, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/lib/queryClient';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface CalendarEvent {
   id: string;
@@ -27,6 +33,16 @@ export default function GoogleCalendarAvailability() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [eventFilter, setEventFilter] = useState<'all' | 'unavailability' | 'events'>('all');
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
+  // Helper to get initials from event summary
+  const getInitials = (summary: string): string => {
+    const words = summary.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return `${words[0][0]}${words[1][0]}`.toUpperCase();
+    }
+    return summary.substring(0, 2).toUpperCase();
+  };
 
   useEffect(() => {
     trackView(
@@ -376,18 +392,26 @@ export default function GoogleCalendarAvailability() {
                     {dayEvents.map((event, eventIndex) => {
                       const isMultiDay = isMultiDayEvent(event);
                       return (
-                        <div
+                        <button
                           key={event.id || eventIndex}
-                          className="text-xs px-2 py-1 rounded truncate font-medium"
+                          onClick={() => setSelectedEvent(event)}
+                          className="w-full text-left text-xs px-1.5 sm:px-2 py-1 rounded font-medium cursor-pointer hover:opacity-80 transition-opacity"
                           style={{
                             backgroundColor: event.backgroundColor || '#a4bdfc',
                             color: event.foregroundColor || '#1d1d1d',
                           }}
                           title={`${event.summary}${isMultiDay ? ' (Multi-day event)' : ''}${event.description ? '\n' + event.description : ''}`}
                         >
-                          {isMultiDay && '→ '}
-                          {event.summary}
-                        </div>
+                          {/* Show initials on mobile, full text on desktop */}
+                          <span className="sm:hidden">
+                            {isMultiDay && '→ '}
+                            {getInitials(event.summary)}
+                          </span>
+                          <span className="hidden sm:inline truncate block">
+                            {isMultiDay && '→ '}
+                            {event.summary}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
@@ -407,6 +431,61 @@ export default function GoogleCalendarAvailability() {
           </span>
         </div>
       </div>
+
+      {/* Event Detail Dialog */}
+      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle 
+              className="text-base sm:text-lg"
+              style={{ color: selectedEvent?.foregroundColor || '#1d1d1d' }}
+            >
+              {selectedEvent?.summary}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <Clock className="h-4 w-4" />
+              <span>
+                {selectedEvent?.start.dateTime 
+                  ? new Date(selectedEvent.start.dateTime).toLocaleString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })
+                  : selectedEvent?.start.date
+                    ? new Date(selectedEvent.start.date + 'T00:00:00').toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric'
+                      }) + ' (All day)'
+                    : 'Time not set'
+                }
+                {selectedEvent?.end.dateTime && selectedEvent.start.dateTime && 
+                  selectedEvent.end.dateTime.split('T')[0] === selectedEvent.start.dateTime.split('T')[0] && (
+                    <> - {new Date(selectedEvent.end.dateTime).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    })}</>
+                  )
+                }
+              </span>
+            </div>
+            {selectedEvent?.description && (
+              <div className="text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg">
+                {selectedEvent.description}
+              </div>
+            )}
+            {isMultiDayEvent(selectedEvent!) && (
+              <div className="text-xs text-slate-500 dark:text-slate-400 italic">
+                This is a multi-day event
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* AI Assistant */}
       <FloatingAIChat

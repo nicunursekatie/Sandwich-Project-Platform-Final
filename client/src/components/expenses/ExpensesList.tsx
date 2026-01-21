@@ -256,8 +256,8 @@ export function ExpensesList({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="pb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <CardTitle>Expenses</CardTitle>
             <CardDescription>
@@ -265,10 +265,10 @@ export function ExpensesList({
             </CardDescription>
           </div>
           {showFilters && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="w-4 h-4 mr-2" />
+                <SelectTrigger className="w-[110px] sm:w-[140px]">
+                  <Filter className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -280,8 +280,8 @@ export function ExpensesList({
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="w-4 h-4 mr-2" />
+                <SelectTrigger className="w-[110px] sm:w-[140px]">
+                  <Filter className="w-4 h-4 mr-1 sm:mr-2 flex-shrink-0" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
