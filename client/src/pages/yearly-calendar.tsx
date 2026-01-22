@@ -143,6 +143,18 @@ function formatDateRange(startDate: string, endDate: string): string {
   return `${startMonth} ${start.getDate()} - ${endMonth} ${end.getDate()}`;
 }
 
+function formatDateRangeWithWeekday(startDate: string, endDate: string): string {
+  const start = parseDateSafe(startDate);
+  const end = parseDateSafe(endDate);
+  const startLabel = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const endLabel = end.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  if (start.toDateString() === end.toDateString()) {
+    return startLabel;
+  }
+  return `${startLabel} - ${endLabel}`;
+}
+
 // Group similar tracked items together (same title, dates within same month or close)
 function groupSimilarItems(items: TrackedCalendarItem[]): TrackedCalendarItem[][] {
   const groups: TrackedCalendarItem[][] = [];
@@ -940,6 +952,11 @@ export default function YearlyCalendar() {
                                 {item.title}
                               </h4>
                             </div>
+                            {item.startDate && (
+                              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {formatDateRangeWithWeekday(item.startDate, item.endDate || item.startDate)}
+                              </div>
+                            )}
                             {item.description && (
                               <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                                 {item.description}
