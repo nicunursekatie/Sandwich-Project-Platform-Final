@@ -889,12 +889,14 @@ export async function transitionDriverAvailabilityStatuses(): Promise<{
     today.setHours(0, 0, 0, 0);
 
     // 1. Transition drivers from 'available' to 'unavailable' where unavailableStartDate has arrived
+    // IMPORTANT: Only process drivers with explicit 'available' status, not NULL
+    // NULL statuses should be cleaned up by migration, not auto-transitioned
     const driversToMakeUnavailable = await db
       .select()
       .from(drivers)
       .where(
         and(
-          sql`${drivers.availabilityStatus} = 'available' OR ${drivers.availabilityStatus} IS NULL`,
+          eq(drivers.availabilityStatus, 'available'),
           isNotNull(drivers.unavailableStartDate),
           lte(drivers.unavailableStartDate, today)
         )

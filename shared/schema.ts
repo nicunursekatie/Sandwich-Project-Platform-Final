@@ -894,7 +894,7 @@ export const drivers = pgTable('drivers', {
   unavailableFollowUp: text('unavailable_follow_up'),
   // Enhanced availability system
   // availabilityStatus: 'available', 'unavailable', 'pending_checkin', 'inactive'
-  availabilityStatus: text('availability_status').default('available'),
+  availabilityStatus: text('availability_status').notNull().default('available'),
   // Date when driver should become unavailable (for scheduling future unavailability)
   unavailableStartDate: timestamp('unavailable_start_date'),
   // Date when admin should check in with driver to see if they're ready to return
