@@ -38,8 +38,17 @@ export function WhatsNewModal() {
     setIsOpen(false);
   };
 
+  // Handle any close action (clicking outside, escape key, or button)
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Always mark as seen when closing, regardless of how it was closed
+      localStorage.setItem(STORAGE_KEY, 'true');
+    }
+    setIsOpen(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-2">
