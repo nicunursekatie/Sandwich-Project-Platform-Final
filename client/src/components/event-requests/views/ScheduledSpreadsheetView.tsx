@@ -399,23 +399,46 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
   const isMobile = useIsMobile();
 
   // Fetch recipients for displaying assigned recipient names
-  const { data: recipients = [] } = useQuery<Array<{ id: number; name: string }>>({
+  const { data: recipients = [], isLoading: recipientsLoading } = useQuery<Array<{ id: number; name: string; organizationName?: string }>>({
     queryKey: ['/api/recipients'],
     staleTime: 5 * 60 * 1000,
   });
 
-  // Resolve recipient ID to name
+  // Fetch hosts as fallback (some "recipient" IDs are actually host IDs)
+  const { data: hosts = [], isLoading: hostsLoading } = useQuery<Array<{ id: number; name: string; locationName?: string }>>({
+    queryKey: ['/api/hosts'],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Resolve recipient ID to name - checks both recipients AND hosts tables
   const resolveRecipientName = (recipientId: string): string => {
     if (!recipientId) return '';
 
-    // Handle prefixed format like "recipient:5"
+    // If data hasn't loaded yet, show a placeholder
+    if (recipientsLoading && hostsLoading) {
+      return 'Loading...';
+    }
+
+    // Handle prefixed format like "recipient:5" or "host:5"
     const [prefix, id] = recipientId.includes(':') ? recipientId.split(':') : ['', recipientId];
     const numId = parseInt(id, 10);
 
     if (isNaN(numId)) return recipientId;
 
-    const recipient = recipients.find(r => r.id === numId);
-    return recipient?.name || `Recipient ${numId}`;
+    // Try to find in recipients first
+    const recipient = recipients.find(r => r.id === numId || String(r.id) === id);
+    if (recipient) {
+      return recipient.name || (recipient as any).organizationName || `Recipient ${numId}`;
+    }
+
+    // If not found in recipients, check hosts (this handles cases where host IDs are stored in assignedRecipientIds)
+    const host = hosts.find(h => h.id === numId || String(h.id) === id);
+    if (host) {
+      return host.name || host.locationName || `Host ${numId}`;
+    }
+    
+    // If still not found in either table, return a descriptive fallback
+    return `Unknown (ID: ${numId})`;
   };
 
   const [sortField, setSortField] = useState<SortField>('eventDate');
@@ -1627,7 +1650,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         return '';
       },
     },
-  ], [resolveUserName, resolveRecipientName, recipients]);
+  ], [resolveUserName, resolveRecipientName, recipients, hosts]);
 
   // Reorder columns based on saved order
   const columns: Column[] = useMemo(() => {
