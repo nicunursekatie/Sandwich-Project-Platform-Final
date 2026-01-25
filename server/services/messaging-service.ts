@@ -247,17 +247,33 @@ export class MessagingService {
 
       const matchingRecipient = recipientCheck.find(r => r.recipientId === userId);
       if (!matchingRecipient) {
-        logger.log(`[markMessageRead] No messageRecipients entry found for userId ${userId} and messageId ${messageId}`);
-        return false;
+        logger.log(`[markMessageRead] No messageRecipients entry found for userId ${userId} and messageId ${messageId} - creating one`);
+        // Create the missing message_recipients entry (for old kudos that didn't have one)
+        await db.insert(messageRecipients).values({
+          messageId,
+          recipientId: userId,
+          read: true,
+          isRead: true,
+          notificationSent: true,
+          initiallyNotified: true,
+          readAt: new Date(),
+        }).onConflictDoUpdate({
+          target: [messageRecipients.messageId, messageRecipients.recipientId],
+          set: { read: true, isRead: true, readAt: new Date() }
+        });
+        logger.log(`[markMessageRead] Created message_recipients entry for userId ${userId} and messageId ${messageId}`);
+        return true;
       }
 
       logger.log(`[markMessageRead] Found matching recipient entry: id=${matchingRecipient.id}, currentRead=${matchingRecipient.read}`);
 
       // Only update if user is actually a recipient
+      // Update both 'read' (legacy) and 'isRead' (canonical) columns
       const result = await db
         .update(messageRecipients)
         .set({
           read: true,
+          isRead: true,
           readAt: new Date(),
         })
         .where(
@@ -752,6 +768,8 @@ export class MessagingService {
     kudosIds: number[]
   ): Promise<{ count: number }> {
     try {
+      logger.log(`[markKudosAsRead] Marking kudos as read for user ${userId}, message IDs: ${kudosIds.join(', ')}`);
+      
       // Get the message IDs from kudos tracking
       const kudosEntries = await db
         .select({ messageId: kudosTracking.messageId })
@@ -766,7 +784,10 @@ export class MessagingService {
           )
         );
 
+      logger.log(`[markKudosAsRead] Found ${kudosEntries.length} kudos tracking entries`);
+
       if (kudosEntries.length === 0) {
+        logger.log(`[markKudosAsRead] No kudos tracking entries found for user ${userId} with message IDs ${kudosIds.join(', ')}`);
         return { count: 0 };
       }
 
@@ -774,11 +795,49 @@ export class MessagingService {
         .map((entry) => entry.messageId)
         .filter((id) => id !== null) as number[];
 
+      // Check if message_recipients entries exist before updating
+      const existingRecipients = await db
+        .select({ messageId: messageRecipients.messageId, recipientId: messageRecipients.recipientId, read: messageRecipients.read })
+        .from(messageRecipients)
+        .where(
+          and(
+            eq(messageRecipients.recipientId, userId),
+            sql`${messageRecipients.messageId} IN (${sql.join(
+              messageIds.map((id) => sql`${id}`),
+              sql`, `
+            )})`
+          )
+        );
+      
+      logger.log(`[markKudosAsRead] Found ${existingRecipients.length} message_recipients entries for ${messageIds.length} message IDs`);
+      if (existingRecipients.length === 0) {
+        logger.warn(`[markKudosAsRead] No message_recipients entries found! Migration may not have run. Creating them now...`);
+        // Create missing message_recipients entries
+        for (const messageId of messageIds) {
+          await db.insert(messageRecipients).values({
+            messageId,
+            recipientId: userId,
+            read: true,
+            isRead: true,
+            notificationSent: true,
+            initiallyNotified: true,
+            readAt: sql`NOW()`,
+          }).onConflictDoUpdate({
+            target: [messageRecipients.messageId, messageRecipients.recipientId],
+            set: { read: true, isRead: true, readAt: sql`NOW()` }
+          });
+        }
+        logger.log(`[markKudosAsRead] Created/updated ${messageIds.length} message_recipients entries`);
+        return { count: messageIds.length };
+      }
+
       // Mark the corresponding message recipients as read
+      // Update both 'read' (legacy) and 'isRead' (canonical) columns
       const result = await db
         .update(messageRecipients)
         .set({
           read: true,
+          isRead: true,
           readAt: sql`NOW()`,
         })
         .where(
@@ -790,6 +849,8 @@ export class MessagingService {
             )})`
           )
         );
+
+      logger.log(`[markKudosAsRead] Updated ${messageIds.length} message_recipients entries for user ${userId}`);
 
       return { count: messageIds.length };
     } catch (error) {
@@ -904,7 +965,9 @@ export class MessagingService {
               projectTitle: entityName, // Add projectTitle alias for display
               message: messageResult.content, // Add message alias for display
               createdAt: messageResult.createdAt,
+              // Return both field names for compatibility
               isRead: messageResult.isRead || false,
+              read: messageResult.isRead || false, // Client expects 'read' field
             };
           } catch (error) {
             logger.error(

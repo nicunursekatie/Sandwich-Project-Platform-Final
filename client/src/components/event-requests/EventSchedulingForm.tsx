@@ -58,6 +58,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { PresenceAvatars, FieldLockIndicator } from '@/components/collaboration';
 import { EventConflictWarnings } from './EventConflictWarnings';
+import { RefrigerationWarningDialog } from './RefrigerationWarningDialog';
+import { RefrigerationWarningAlert } from './RefrigerationWarningBadge';
+import { needsRefrigerationConfirmation } from '@/lib/refrigeration-utils';
 import {
   ContactInfoSection,
   BackupContactSection,
@@ -389,6 +392,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     acknowledged: boolean;
   } | null>(null);
   const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
+  const [showRefrigerationWarning, setShowRefrigerationWarning] = useState(false);
+  const [pendingSchedule, setPendingSchedule] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
@@ -1539,6 +1544,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       logger.log('✅ Van conflict check skipped');
     }
 
+    // Check refrigeration status when scheduling
+    if (mode === 'schedule' && !pendingSchedule) {
+      const hasRef = formData.hasRefrigeration === 'true' ? true :
+                     formData.hasRefrigeration === 'false' ? false : null;
+
+      if (needsRefrigerationConfirmation(hasRef)) {
+        console.log('⚠️ [PROD DEBUG] Refrigeration not confirmed - showing warning');
+        logger.log('⚠️ Refrigeration not confirmed - showing warning');
+        setShowRefrigerationWarning(true);
+        return; // Wait for user to confirm
+      }
+    }
+
     // All checks passed, proceed with submission
     console.log('✅ [PROD DEBUG] All pre-submit checks passed - calling performSubmit');
     logger.log('✅ All pre-submit checks passed - calling performSubmit');
@@ -2240,6 +2258,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 <SelectItem value="unknown">Unknown</SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Show refrigeration warning/info based on status and sandwich types */}
+            <RefrigerationWarningAlert
+              sandwichTypes={formData.sandwichTypes}
+              hasRefrigeration={
+                formData.hasRefrigeration === 'true' ? true :
+                formData.hasRefrigeration === 'false' ? false : null
+              }
+              className="mt-2"
+            />
           </div>
 
           {/* Resource Requirements - Extracted Component */}
@@ -2741,6 +2769,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Refrigeration Warning Dialog */}
+      <RefrigerationWarningDialog
+        open={showRefrigerationWarning}
+        onOpenChange={setShowRefrigerationWarning}
+        onConfirm={async () => {
+          setShowRefrigerationWarning(false);
+          setPendingSchedule(true);
+          // Proceed with scheduling even without refrigeration confirmation
+          await performSubmit(false);
+          setPendingSchedule(false);
+        }}
+        onCancel={() => {
+          setShowRefrigerationWarning(false);
+          setPendingSchedule(false);
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>

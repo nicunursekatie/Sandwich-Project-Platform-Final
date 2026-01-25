@@ -68,6 +68,7 @@ import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
+import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -1058,6 +1059,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </Badge>
 
             {request.isMlkDayEvent && <MlkDayBadge />}
+
+            <RefrigerationWarningBadge
+              sandwichTypes={request.sandwichTypes}
+              hasRefrigeration={request.hasRefrigeration}
+              className="text-xs sm:text-sm"
+            />
 
             {/* Sandwich count badge */}
             <Badge

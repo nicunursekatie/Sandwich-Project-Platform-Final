@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { CalendarCheck } from 'lucide-react';
 import {
@@ -18,12 +18,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { RefrigerationWarningDialog } from './RefrigerationWarningDialog';
+import { needsRefrigerationConfirmation } from '@/lib/refrigeration-utils';
 
 interface QuickScheduleButtonProps {
   eventId: number;
   eventName: string;
   currentStatus: string;
   scheduledDate?: string | null;
+  hasRefrigeration?: boolean | null;
+  sandwichTypes?: Array<{ type: string; quantity: number }> | null;
   onSuccess?: () => void;
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'lg' | 'icon';
@@ -34,19 +38,31 @@ export const QuickScheduleButton: React.FC<QuickScheduleButtonProps> = ({
   eventName,
   currentStatus,
   scheduledDate,
+  hasRefrigeration,
+  sandwichTypes,
   onSuccess,
   variant = 'outline',
   size = 'sm',
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { toast } = useToast();
+  const [showRefrigerationWarning, setShowRefrigerationWarning] = useState(false);
+  const { toast} = useToast();
   const queryClient = useQueryClient();
 
   // Only show for events that can be scheduled
   if (currentStatus === 'scheduled' || currentStatus === 'completed' || currentStatus === 'declined' || currentStatus === 'cancelled') {
     return null;
   }
+
+  const handleScheduleClick = () => {
+    // Check refrigeration status before scheduling
+    if (needsRefrigerationConfirmation(hasRefrigeration)) {
+      setShowRefrigerationWarning(true);
+    } else {
+      setShowConfirm(true);
+    }
+  };
 
   const handleQuickSchedule = async () => {
     setIsLoading(true);
@@ -90,13 +106,23 @@ export const QuickScheduleButton: React.FC<QuickScheduleButtonProps> = ({
       <Button
         variant={variant}
         size={size}
-        onClick={() => setShowConfirm(true)}
+        onClick={handleScheduleClick}
         disabled={isLoading}
         className="gap-1"
       >
         <CalendarCheck className="h-4 w-4" />
         {isLoading ? 'Scheduling...' : 'Quick Schedule'}
       </Button>
+
+      <RefrigerationWarningDialog
+        open={showRefrigerationWarning}
+        onOpenChange={setShowRefrigerationWarning}
+        onConfirm={() => {
+          setShowRefrigerationWarning(false);
+          setShowConfirm(true);
+        }}
+        onCancel={() => setShowRefrigerationWarning(false)}
+      />
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>

@@ -193,13 +193,13 @@ export function ActivityFeed({
             <p className="text-sm">No recent activity</p>
           </div>
         ) : (
-          <ScrollArea style={{ maxHeight }}>
+          <div className="overflow-auto" style={{ maxHeight }}>
             <div className="divide-y divide-gray-100">
               {data?.activities.map((activity) => (
                 <ActivityItemCard key={activity.id} activity={activity} />
               ))}
             </div>
-          </ScrollArea>
+          </div>
         )}
       </CardContent>
     </Card>
