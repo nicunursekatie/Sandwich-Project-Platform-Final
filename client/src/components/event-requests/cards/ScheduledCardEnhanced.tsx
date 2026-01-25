@@ -1126,24 +1126,27 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {/* Show regular driver needs only if NOT a van driver event (van takes precedence) */}
                     {driverNeeded > driverAssigned && !request.vanDriverNeeded && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''}
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                       </Badge>
                     )}
                     {/* Show Van badge when van driver is needed but not yet assigned */}
                     {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
-                      <Badge className={`${isWithin7Days ? 'bg-[#A31C41] text-white border border-[#A31C41]' : 'bg-[#236383] text-white border border-[#236383]'} text-xs sm:text-sm font-medium`}>
-                        <Car className="w-3 h-3 mr-1" />
-                        Van
+                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        Van needed
                       </Badge>
                     )}
                     {speakerNeeded > speakerAssigned && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''}
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
                       </Badge>
                     )}
                     {volunteerNeeded > volunteerAssigned && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        {volunteerNeeded - volunteerAssigned} vol{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''}
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {volunteerNeeded - volunteerAssigned} volunteer{volunteerNeeded - volunteerAssigned > 1 ? 's' : ''} needed
                       </Badge>
                     )}
                   </>

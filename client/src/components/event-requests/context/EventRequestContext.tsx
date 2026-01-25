@@ -47,6 +47,8 @@ interface EventRequestContextType {
   // Dialog visibility states
   showEventDetails: boolean;
   setShowEventDetails: (show: boolean) => void;
+  showEventDetailsPreview: boolean;
+  setShowEventDetailsPreview: (show: boolean) => void;
   showSchedulingDialog: boolean;
   setShowSchedulingDialog: (show: boolean) => void;
   showToolkitSentDialog: boolean;
@@ -369,6 +371,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Dialog visibility states
   const [showEventDetails, setShowEventDetails] = useState(false);
+  const [showEventDetailsPreview, setShowEventDetailsPreview] = useState(false);
   const [showSchedulingDialog, setShowSchedulingDialog] = useState(false);
   const [showToolkitSentDialog, setShowToolkitSentDialog] = useState(false);
   const [showScheduleCallDialog, setShowScheduleCallDialog] = useState(false);
@@ -684,6 +687,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     // Dialog states
     showEventDetails,
     setShowEventDetails,
+    showEventDetailsPreview,
+    setShowEventDetailsPreview,
     showSchedulingDialog,
     setShowSchedulingDialog,
     showToolkitSentDialog,

@@ -53,6 +53,7 @@ import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 // Import hooks
 import { useEventMutations } from './hooks/useEventMutations';
 import { useEventQueries } from './hooks/useEventQueries';
+import { useEventAssignments } from './hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -63,6 +64,7 @@ import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 // Import dialogs
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
+import { EventDetailsDialog } from './dialogs/EventDetailsDialog';
 import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
@@ -115,6 +117,8 @@ const EventRequestsManagementContent: React.FC = () => {
     // Dialog states
     showEventDetails,
     setShowEventDetails,
+    showEventDetailsPreview,
+    setShowEventDetailsPreview,
     showSchedulingDialog,
     setShowSchedulingDialog,
     showToolkitSentDialog,
@@ -213,6 +217,8 @@ const EventRequestsManagementContent: React.FC = () => {
     oneMonthFollowUpMutation,
     updateEventRequestMutation,
   } = useEventMutations();
+
+  const { resolveUserName, resolveRecipientName } = useEventAssignments();
 
   const queryClient = useQueryClient();
   
@@ -687,8 +693,7 @@ const EventRequestsManagementContent: React.FC = () => {
           <EventCalendarView
             onEventClick={(event) => {
               setSelectedEventRequest(event);
-              setShowEventDetails(true);
-              setIsEditing(false);
+              setShowEventDetailsPreview(true);
             }}
           />
         ) : (
@@ -802,6 +807,23 @@ const EventRequestsManagementContent: React.FC = () => {
           />
           </>
         )}
+
+        {/* Event Details Preview Dialog */}
+        <EventDetailsDialog
+          event={selectedEventRequest}
+          isOpen={showEventDetailsPreview}
+          onClose={() => {
+            setShowEventDetailsPreview(false);
+            setSelectedEventRequest(null);
+          }}
+          onEdit={() => {
+            setShowEventDetailsPreview(false);
+            setShowEventDetails(true);
+            setIsEditing(false);
+          }}
+          resolveUserName={resolveUserName}
+          resolveRecipientName={resolveRecipientName}
+        />
 
         {/* Event Details Edit Modal */}
         {showEventDetails && (selectedEventRequest || isEditing) && (
