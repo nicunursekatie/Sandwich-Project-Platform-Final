@@ -128,8 +128,13 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
 
     // Process events with dates and estimated sandwich counts (past and future)
     const relevantEvents = eventRequests.filter((request) => {
+      // Use scheduledEventDate for scheduled/completed events, fall back to desiredEventDate
+      const dateToCheck = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
+        ? request.scheduledEventDate
+        : request.desiredEventDate;
+      
       if (
-        !request.desiredEventDate ||
+        !dateToCheck ||
         !request.estimatedSandwichCount ||
         request.estimatedSandwichCount <= 0
       ) {
@@ -146,7 +151,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       }
 
       try {
-        const eventDate = parseEventDate(request.desiredEventDate);
+        const eventDate = parseEventDate(dateToCheck);
         if (!eventDate) return false;
         
         // Normalize event date to midnight for proper comparison
@@ -163,7 +168,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
           logger.log('📅 Event on today\'s date:', {
             org: request.organizationName,
             eventDate: eventDateStr,
-            eventDateRaw: request.desiredEventDate,
+            eventDateRaw: dateToCheck,
             parsedDate: eventDateNormalized.toISOString(),
             isIncluded,
             fourWeeksAgo: fourWeeksAgo.toISOString().split('T')[0],
@@ -178,7 +183,11 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
 
     relevantEvents.forEach((request) => {
       try {
-        const eventDate = parseEventDate(request.desiredEventDate!);
+        // Use scheduledEventDate for scheduled/completed events, fall back to desiredEventDate
+        const dateToUse = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
+          ? request.scheduledEventDate
+          : request.desiredEventDate!;
+        const eventDate = parseEventDate(dateToUse);
         if (!eventDate) return;
         const weekMonday = getWeekMonday(eventDate);
         const weekSunday = getWeekSunday(weekMonday);
