@@ -2,7 +2,7 @@ import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, TrendingUp, Users, AlertTriangle, Info } from 'lucide-react';
+import { Calendar, TrendingUp, Users, AlertTriangle, Info, Download } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour } from '@/components/event-requests/utils';
+import { exportSandwichPlanning } from '@/lib/planning-pdf-export';
 
 interface SandwichForecastWidgetProps {
   hideHeader?: boolean;
@@ -504,28 +505,53 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                 📅 Week view: {includeUntilNextCollection ? 'Mon-Wed (next week)' : 'Mon-Sun'}
               </p>
             </div>
-            <div className="flex flex-col gap-1 items-end ml-4">
-              <label className="text-xs font-medium text-[#646464]">Week Range</label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={includeUntilNextCollection ? 'outline' : 'default'}
-                  onClick={() => setIncludeUntilNextCollection(false)}
-                  className="text-xs h-7"
-                >
-                  Mon-Sun
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={includeUntilNextCollection ? 'default' : 'outline'}
-                  onClick={() => setIncludeUntilNextCollection(true)}
-                  className="text-xs h-7"
-                >
-                  Until Next Collection
-                </Button>
+            <div className="flex flex-col gap-2 items-end ml-4">
+              <div className="flex flex-col gap-1 items-end">
+                <label className="text-xs font-medium text-[#646464]">Week Range</label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={includeUntilNextCollection ? 'outline' : 'default'}
+                    onClick={() => setIncludeUntilNextCollection(false)}
+                    className="text-xs h-7"
+                  >
+                    Mon-Sun
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={includeUntilNextCollection ? 'default' : 'outline'}
+                    onClick={() => setIncludeUntilNextCollection(true)}
+                    className="text-xs h-7"
+                  >
+                    Until Next Collection
+                  </Button>
+                </div>
               </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (currentWeek) {
+                        exportSandwichPlanning(currentWeek);
+                      }
+                    }}
+                    disabled={!currentWeek}
+                    className="text-xs h-7 gap-1"
+                    style={{ borderColor: '#236383', color: '#236383' }}
+                  >
+                    <Download className="w-3 h-3" />
+                    Export PDF
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Download a stylized PDF of this week's sandwich planning
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
         </CardHeader>

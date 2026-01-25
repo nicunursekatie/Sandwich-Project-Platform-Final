@@ -57,6 +57,7 @@ import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
+import { getPrimaryContextualAction, getContextualTooltip } from '@/lib/contextual-actions';
 import { MessageComposer } from '@/components/message-composer';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
@@ -1558,18 +1559,43 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
             <div className="flex-1" />
 
-            {canEdit && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Edit this event request</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+            {canEdit && (() => {
+              const contextualAction = getPrimaryContextualAction(request);
+              const tooltip = getContextualTooltip(request);
+
+              // Determine which action to call
+              const handleClick = () => {
+                if (contextualAction?.action === 'schedule') {
+                  onSchedule();
+                } else {
+                  onEdit();
+                }
+              };
+
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant={contextualAction?.action === 'schedule' ? 'default' : 'outline'}
+                      onClick={handleClick}
+                      className={`h-8 ${contextualAction?.action === 'schedule' ? 'bg-[#007E8C] hover:bg-[#005f6b]' : ''}`}
+                    >
+                      {contextualAction?.action === 'schedule' ? (
+                        <CalendarCheck className="w-4 h-4 mr-1.5" />
+                      ) : (
+                        <Edit className="w-4 h-4 mr-1.5" />
+                      )}
+                      <span className="hidden sm:inline">{contextualAction?.label || 'Edit'}</span>
+                      <span className="sm:hidden">{contextualAction?.action === 'schedule' ? 'Schedule' : 'Edit'}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{tooltip}</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })()}
             {canDelete && (
               <Tooltip>
                 <TooltipTrigger asChild>

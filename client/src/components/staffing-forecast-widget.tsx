@@ -16,13 +16,15 @@ import {
   Megaphone,
   ChevronLeft,
   ChevronRight,
-  MapPin
+  MapPin,
+  Download
 } from 'lucide-react';
 
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/components/event-requests/utils';
 import { getDriverCount, getSpeakerCount, getVolunteerCount } from '@/lib/assignment-utils';
+import { exportStaffingPlanning } from '@/lib/planning-pdf-export';
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -436,6 +438,29 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                     Include Previous Weekend
                   </label>
                 </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        if (currentWeek) {
+                          exportStaffingPlanning(currentWeek);
+                        }
+                      }}
+                      disabled={!currentWeek}
+                      className="text-xs h-7 gap-1"
+                      style={{ borderColor: '#FBAD3F', color: '#FBAD3F' }}
+                    >
+                      <Download className="w-3 h-3" />
+                      Export PDF
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Download a stylized PDF of this week's staffing planning
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
           </CardHeader>

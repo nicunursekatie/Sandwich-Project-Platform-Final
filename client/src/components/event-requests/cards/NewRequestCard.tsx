@@ -44,6 +44,7 @@ import { useDatePopulation, type DatePopulationInfo } from '@/components/event-r
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
+import { getPrimaryContextualAction, getContextualTooltip } from '@/lib/contextual-actions';
 import type { EventRequest } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
@@ -1131,16 +1132,33 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             <div className="flex-1" />
 
             {/* Edit/Delete */}
-            {canEdit && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="sm" variant="ghost" onClick={onEdit} className="h-8">
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Edit this event request</p>
-                </TooltipContent>
+            {canEdit && (() => {
+              const contextualAction = getPrimaryContextualAction(request);
+              const tooltip = getContextualTooltip(request);
+
+              // Determine which action to call
+              const handleClick = () => {
+                // For new requests, we don't have a schedule action, so always edit
+                onEdit();
+              };
+
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleClick}
+                      className="h-8"
+                    >
+                      <Edit className="w-4 h-4 mr-1.5" />
+                      <span className="hidden sm:inline">{contextualAction?.label || 'Edit'}</span>
+                      <span className="sm:hidden">Edit</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{tooltip}</p>
+                  </TooltipContent>
               </Tooltip>
             )}
             {canDelete && (
