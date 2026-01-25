@@ -341,13 +341,36 @@ export default function MonthlyComparisonAnalytics() {
       ? Math.round(selectedMonthData.totalSandwiches / monthProgressRatio)
       : selectedMonthData.totalSandwiches;
 
-    // Calculate both percent changes using projected values for partial months
-    const yearOverYearChange = prevYearMonth
-      ? projectedSelectedMonthTotal - prevYearMonth.totalSandwiches
+    // For partial months, calculate SAME PERIOD last year (not full month)
+    // This compares Jan 1-25, 2026 to Jan 1-25, 2025 (same day cutoff)
+    let prevYearSamePeriodTotal = 0;
+    if (isCurrentMonth && prevYearMonth) {
+      // Filter previous year's collections to only include those through the same day
+      collections.forEach((collection: any) => {
+        if (!collection.collectionDate) return;
+        const date = parseCollectionDate(collection.collectionDate);
+        if (Number.isNaN(date.getTime())) return;
+        
+        // Check if this is in the same month last year AND within the same day range
+        if (date.getFullYear() === selectedYear - 1 && 
+            date.getMonth() === selectedMonth && 
+            date.getDate() <= dayOfMonth) {
+          prevYearSamePeriodTotal += calculateTotalSandwiches(collection);
+        }
+      });
+    } else if (prevYearMonth) {
+      // For complete months, use the full month total
+      prevYearSamePeriodTotal = prevYearMonth.totalSandwiches;
+    }
+
+    // Calculate YoY using same-period comparison for partial months
+    // This ensures we compare apples-to-apples: Jan 1-25 this year vs Jan 1-25 last year
+    const yearOverYearChange = prevYearSamePeriodTotal > 0
+      ? selectedMonthData.totalSandwiches - prevYearSamePeriodTotal
       : null;
-    const yearOverYearPercent = prevYearMonth
-      ? ((projectedSelectedMonthTotal - prevYearMonth.totalSandwiches) /
-          prevYearMonth.totalSandwiches) * 100
+    const yearOverYearPercent = prevYearSamePeriodTotal > 0
+      ? ((selectedMonthData.totalSandwiches - prevYearSamePeriodTotal) /
+          prevYearSamePeriodTotal) * 100
       : null;
 
     const monthOverMonthChange = previousMonth
@@ -363,7 +386,12 @@ export default function MonthlyComparisonAnalytics() {
     let comparisonChange = yearOverYearChange;
     let comparisonPercent = yearOverYearPercent;
     let comparisonBase = prevYearMonth;
-    let comparisonLabel = prevYearMonth ? `${months[selectedMonth]} ${selectedYear - 1}` : null;
+    // For partial months, show the same-period comparison label (e.g., "Jan 1-25, 2025")
+    let comparisonLabel = prevYearMonth 
+      ? (isCurrentMonth 
+          ? `${months[selectedMonth].substring(0, 3)} 1-${dayOfMonth}, ${selectedYear - 1}` 
+          : `${months[selectedMonth]} ${selectedYear - 1}`)
+      : null;
 
     if (yearOverYearPercent !== null && monthOverMonthPercent !== null) {
       // Both comparisons available - pick less drastic
@@ -457,6 +485,8 @@ export default function MonthlyComparisonAnalytics() {
       isCurrentMonth,
       monthProgressRatio,
       projectedSelectedMonthTotal,
+      // Same-period comparison data (for partial months)
+      prevYearSamePeriodTotal: isCurrentMonth ? prevYearSamePeriodTotal : (prevYearMonth?.totalSandwiches || 0),
     };
   }, [monthlyAnalytics, selectedMonth, selectedYear]);
 
@@ -662,7 +692,12 @@ export default function MonthlyComparisonAnalytics() {
                     <span className="text-gray-500">
                       ({selectedMonthAnalysis.comparisonChange > 0 ? '+' : ''}{selectedMonthAnalysis.comparisonPercent?.toFixed(1)}%)
                     </span>
-                    {selectedMonthAnalysis.isCurrentMonth && (
+                    {selectedMonthAnalysis.isCurrentMonth && selectedMonthAnalysis.comparisonType === 'year-over-year' && (
+                      <span className="text-xs text-blue-600 ml-2">
+                        • Same period YoY ({Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month)
+                      </span>
+                    )}
+                    {selectedMonthAnalysis.isCurrentMonth && selectedMonthAnalysis.comparisonType === 'month-over-month' && (
                       <span className="text-xs text-blue-600 ml-2">
                         • Projected based on {Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month complete
                       </span>
@@ -857,7 +892,12 @@ export default function MonthlyComparisonAnalytics() {
                       </div>
                       <div className="text-sm text-gray-500">
                         vs {selectedMonthAnalysis.comparisonLabel}
-                        {selectedMonthAnalysis.isCurrentMonth && (
+                        {selectedMonthAnalysis.isCurrentMonth && selectedMonthAnalysis.comparisonType === 'year-over-year' && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            Same period comparison ({Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month)
+                          </div>
+                        )}
+                        {selectedMonthAnalysis.isCurrentMonth && selectedMonthAnalysis.comparisonType === 'month-over-month' && (
                           <div className="text-xs text-blue-600 mt-1">
                             Projected ({Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% complete)
                           </div>
@@ -909,10 +949,14 @@ export default function MonthlyComparisonAnalytics() {
                       <div className="p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
                         <div className="flex items-center gap-2 mb-1">
                           <Activity className="h-3 w-3 text-brand-primary-muted" />
-                          <span className="text-xs font-medium text-brand-primary-dark">Alternative: Year-over-Year</span>
+                          <span className="text-xs font-medium text-brand-primary-dark">
+                            Alternative: Year-over-Year {selectedMonthAnalysis.isCurrentMonth && '(same period)'}
+                          </span>
                         </div>
                         <p className="text-xs text-brand-primary">
-                          vs {months[selectedMonth]} {selectedYear - 1}: {selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : ''}{selectedMonthAnalysis.yearOverYearPercent.toFixed(1)}%
+                          vs {selectedMonthAnalysis.isCurrentMonth 
+                            ? `${months[selectedMonth].substring(0, 3)} 1-${new Date().getDate()}, ${selectedYear - 1}` 
+                            : `${months[selectedMonth]} ${selectedYear - 1}`}: {selectedMonthAnalysis.yearOverYearPercent > 0 ? '+' : ''}{selectedMonthAnalysis.yearOverYearPercent.toFixed(1)}%
                           ({Math.abs(selectedMonthAnalysis.yearOverYearChange!).toLocaleString()} sandwiches)
                         </p>
                       </div>

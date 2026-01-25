@@ -320,13 +320,24 @@ collectionsRouter.post(
       // Check for sandwich collection milestones
       try {
         const allCollections = await storage.getAllSandwichCollections();
-        const totalSandwiches = allCollections.reduce((sum, c) => {
-          return sum + (c.individualSandwiches || 0) + (c.group1Count || 0) + (c.group2Count || 0);
-        }, 0);
+
+        // Helper to calculate collection total (use EITHER groupCollections OR group1/group2)
+        const getCollectionTotal = (c: any) => {
+          const individual = c.individualSandwiches || 0;
+          let groupTotal = 0;
+          if (c.groupCollections && Array.isArray(c.groupCollections) && c.groupCollections.length > 0) {
+            groupTotal = c.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+          } else {
+            groupTotal = (c.group1Count || 0) + (c.group2Count || 0);
+          }
+          return individual + groupTotal;
+        };
+
+        const totalSandwiches = allCollections.reduce((sum, c) => sum + getCollectionTotal(c), 0);
 
         // Define milestones
         const milestones = [1000, 5000, 10000, 25000, 50000, 75000, 100000];
-        const previousTotal = totalSandwiches - (collection.individualSandwiches || 0) - (collection.group1Count || 0) - (collection.group2Count || 0);
+        const previousTotal = totalSandwiches - getCollectionTotal(collection);
 
         // Check if we just crossed a milestone
         const crossedMilestone = milestones.find(m => previousTotal < m && totalSandwiches >= m);
@@ -389,14 +400,20 @@ collectionsRouter.get('/audit-cleanup-impact', async (req, res) => {
     const collections = await storage.getAllSandwichCollections();
 
     // Helper to calculate total sandwiches
+    // CRITICAL: Use EITHER groupCollections OR group1/group2, never both to prevent double counting
     const calculateTotal = (c: any) => {
       const individual = c.individualSandwiches || 0;
-      const group1 = c.group1Count || 0;
-      const group2 = c.group2Count || 0;
-      const groupCollections = Array.isArray(c.groupCollections)
-        ? c.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0)
-        : 0;
-      return individual + group1 + group2 + groupCollections;
+
+      let groupTotal = 0;
+      if (c.groupCollections && Array.isArray(c.groupCollections) && c.groupCollections.length > 0) {
+        // NEW FORMAT: Use groupCollections JSON array
+        groupTotal = c.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+      } else {
+        // LEGACY FORMAT: Use old group1Count and group2Count fields
+        groupTotal = (c.group1Count || 0) + (c.group2Count || 0);
+      }
+
+      return individual + groupTotal;
     };
 
     // Find records with individual=0 but have group totals (potential Fix #1 victims)

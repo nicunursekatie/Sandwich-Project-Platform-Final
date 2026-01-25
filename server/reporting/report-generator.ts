@@ -125,6 +125,25 @@ export interface ReportData {
 }
 
 export class ReportGenerator {
+  /**
+   * Helper to calculate total sandwiches from a collection record
+   * CRITICAL: Use EITHER groupCollections OR group1/group2, never both to prevent double counting
+   */
+  private static getCollectionTotal(collection: any): number {
+    const individual = collection.individualSandwiches || 0;
+
+    let groupTotal = 0;
+    if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
+      // NEW FORMAT: Use groupCollections JSON array
+      groupTotal = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+    } else {
+      // LEGACY FORMAT: Use old group1Count and group2Count fields
+      groupTotal = (collection.group1Count || 0) + (collection.group2Count || 0);
+    }
+
+    return individual + groupTotal;
+  }
+
   static async generateReport(config: any): Promise<ReportData> {
     // Handle different input formats
     let dateFrom: string, dateTo: string, reportFormat: string, type: string;
@@ -496,11 +515,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
         acc[area] = (acc[area] || 0) + totalContributions;
@@ -527,11 +542,7 @@ export class ReportGenerator {
         (c) => c.hostName === host.name
       );
       const totalContributions = hostCollections.reduce(
-        (sum, item) =>
-          sum +
-          (item.individualSandwiches || 0) +
-          (item.group1Count || 0) +
-          (item.group2Count || 0),
+        (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
         0
       );
 
@@ -595,11 +606,7 @@ export class ReportGenerator {
     endDate: Date
   ) {
     const totalSandwiches = collections.reduce(
-      (sum, item) =>
-        sum +
-        (item.individualSandwiches || 0) +
-        (item.group1Count || 0) +
-        (item.group2Count || 0),
+      (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
       0
     );
 
@@ -697,11 +704,7 @@ export class ReportGenerator {
     });
 
     const currentCapacity = previousMonthCollections.reduce(
-      (sum, item) =>
-        sum +
-        (item.individualSandwiches || 0) +
-        (item.group1Count || 0) +
-        (item.group2Count || 0),
+      (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
       0
     );
     const growthPercentage = 15; // Estimated based on historical trends
@@ -731,11 +734,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
 
@@ -765,11 +764,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
         return totalContributions < 200; // Hosts that might need support
@@ -803,11 +798,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
 
@@ -831,11 +822,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
         return totalContributions < 150;
@@ -854,11 +841,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
         return totalContributions > 400;
@@ -891,11 +874,7 @@ export class ReportGenerator {
   ) {
     // Milestone moments
     const totalSandwiches = collections.reduce(
-      (sum, item) =>
-        sum +
-        (item.individualSandwiches || 0) +
-        (item.group1Count || 0) +
-        (item.group2Count || 0),
+      (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
       0
     );
 
@@ -916,11 +895,7 @@ export class ReportGenerator {
           (c) => c.hostName === host.name
         );
         const totalContributions = hostCollections.reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         );
         return { host, totalContributions };
@@ -988,10 +963,7 @@ export class ReportGenerator {
   ) {
     return collections.map((c) => ({
       ...c,
-      totalSandwiches:
-        (c.individualSandwiches || 0) +
-        (c.group1Count || 0) +
-        (c.group2Count || 0),
+      totalSandwiches: ReportGenerator.getCollectionTotal(c),
       impactCategory: 'Community Support',
     }));
   }
@@ -1009,11 +981,7 @@ export class ReportGenerator {
       totalContributions: collections
         .filter((c) => c.hostName === h.name)
         .reduce(
-          (sum, item) =>
-            sum +
-            (item.individualSandwiches || 0) +
-            (item.group1Count || 0) +
-            (item.group2Count || 0),
+          (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
           0
         ),
       joinDate: h.createdAt || startDate,
@@ -1029,11 +997,7 @@ export class ReportGenerator {
     return hosts.map((h) => {
       const hostCollections = collections.filter((c) => c.hostName === h.name);
       const totalContributions = hostCollections.reduce(
-        (sum, item) =>
-          sum +
-          (item.individualSandwiches || 0) +
-          (item.group1Count || 0) +
-          (item.group2Count || 0),
+        (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
         0
       );
 
@@ -1064,11 +1028,7 @@ export class ReportGenerator {
     return hosts.map((h) => {
       const hostCollections = collections.filter((c) => c.hostName === h.name);
       const totalContributions = hostCollections.reduce(
-        (sum, item) =>
-          sum +
-          (item.individualSandwiches || 0) +
-          (item.group1Count || 0) +
-          (item.group2Count || 0),
+        (sum, item) => sum + ReportGenerator.getCollectionTotal(item),
         0
       );
 

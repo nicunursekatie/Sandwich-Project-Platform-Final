@@ -511,26 +511,25 @@ export class CollectionService implements ICollectionService {
     }
 
     // At least some sandwiches should be collected
-    const groupTotal =
-      (collection.group1Count || 0) + (collection.group2Count || 0);
-    if (individual === 0 && groupTotal === 0) {
-      // Check groupCollections array too
-      let hasGroupData = false;
-      if (collection.groupCollections) {
-        try {
-          const groups =
-            typeof collection.groupCollections === 'string'
-              ? JSON.parse(collection.groupCollections)
-              : collection.groupCollections;
-          if (Array.isArray(groups) && groups.length > 0) {
-            hasGroupData = groups.some((g: any) => (g.count || 0) > 0);
-          }
-        } catch (e) {
-          // Invalid format already caught above
+    // Use EITHER groupCollections OR group1/group2, never both
+    let groupTotal = 0;
+    if (collection.groupCollections) {
+      try {
+        const groups =
+          typeof collection.groupCollections === 'string'
+            ? JSON.parse(collection.groupCollections)
+            : collection.groupCollections;
+        if (Array.isArray(groups) && groups.length > 0) {
+          groupTotal = groups.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
         }
+      } catch (e) {
+        // Invalid format already caught above
       }
+    } else {
+      groupTotal = (collection.group1Count || 0) + (collection.group2Count || 0);
+    }
 
-      if (!hasGroupData) {
+    if (individual === 0 && groupTotal === 0) {
         errors.push(
           'Collection must have at least some sandwiches (individual or group)'
         );

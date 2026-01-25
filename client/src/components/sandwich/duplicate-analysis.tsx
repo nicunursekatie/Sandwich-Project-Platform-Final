@@ -51,6 +51,15 @@ export function DuplicateAnalysisDialog({
 }: DuplicateAnalysisProps) {
   if (!analysis) return null;
 
+  // Helper to calculate group sandwich total
+  // Use EITHER groupCollections OR group1/group2, never both to prevent double counting
+  const getGroupTotal = (item: SandwichCollection) => {
+    if (item.groupCollections && Array.isArray(item.groupCollections) && item.groupCollections.length > 0) {
+      return item.groupCollections.reduce((sum, g) => sum + (g.count || 0), 0);
+    }
+    return (item.group1Count || 0) + (item.group2Count || 0);
+  };
+
   const handleDeleteAllDuplicates = () => {
     const duplicateIds = analysis.duplicates.flatMap((group) =>
       group.toDelete.map((item) => item.id)
@@ -184,7 +193,7 @@ export function DuplicateAnalysisDialog({
                         </div>
                         <div className="text-sm mt-1">
                           Individual: {item.individualSandwiches} | Groups:{' '}
-                          {(item.group1Count || 0) + (item.group2Count || 0)}
+                          {getGroupTotal(item)}
                         </div>
                       </div>
                     ))}
@@ -224,7 +233,7 @@ export function DuplicateAnalysisDialog({
                           Individual: {nearDup.entry1.individualSandwiches}
                         </div>
                         <div className="text-sm">
-                          Groups: {(nearDup.entry1.group1Count || 0) + (nearDup.entry1.group2Count || 0)}
+                          Groups: {getGroupTotal(nearDup.entry1)}
                         </div>
                         <div className="text-sm font-bold mt-1">
                           Total: {nearDup.total1}
@@ -244,7 +253,7 @@ export function DuplicateAnalysisDialog({
                           Individual: {nearDup.entry2.individualSandwiches}
                         </div>
                         <div className="text-sm">
-                          Groups: {(nearDup.entry2.group1Count || 0) + (nearDup.entry2.group2Count || 0)}
+                          Groups: {getGroupTotal(nearDup.entry2)}
                         </div>
                         <div className="text-sm font-bold mt-1">
                           Total: {nearDup.total2}
@@ -290,7 +299,7 @@ export function DuplicateAnalysisDialog({
                     </div>
                     <div className="text-sm mt-1">
                       Individual: {entry.individualSandwiches} | Groups:{' '}
-                      {(entry.group1Count || 0) + (entry.group2Count || 0)}
+                      {getGroupTotal(entry)}
                     </div>
                   </div>
                 ))}
