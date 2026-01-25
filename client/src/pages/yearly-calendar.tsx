@@ -383,7 +383,7 @@ export default function YearlyCalendar() {
     });
 
     return grouped;
-  }, [trackedItems, selectedYear, showTrackedItems]);
+  }, [filteredTrackedItems, selectedYear, showTrackedItems]);
 
   // Toggle category collapse
   const toggleCategory = (category: string) => {
