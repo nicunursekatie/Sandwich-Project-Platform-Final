@@ -23,6 +23,7 @@ import {
   Filter,
   CalendarDays,
   X,
+  Search,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -209,6 +210,7 @@ export default function YearlyCalendar() {
   const [showTrackedItems, setShowTrackedItems] = useState(true);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form state
   const [formMonth, setFormMonth] = useState<number>(new Date().getMonth() + 1);
@@ -285,13 +287,46 @@ export default function YearlyCalendar() {
     });
   }, [items]);
 
-  // Group items by month and sort them
+  // Filter items based on search query
+  const filteredYearlyItems = useMemo(() => {
+    if (!searchQuery.trim()) return deduplicatedItems;
+    const query = searchQuery.toLowerCase();
+    return deduplicatedItems.filter(item =>
+      item.title.toLowerCase().includes(query) ||
+      (item.description && item.description.toLowerCase().includes(query)) ||
+      item.category.toLowerCase().includes(query)
+    );
+  }, [deduplicatedItems, searchQuery]);
+
+  // Filter tracked items based on search query
+  const filteredTrackedItems = useMemo(() => {
+    if (!searchQuery.trim()) return trackedItems;
+    const query = searchQuery.toLowerCase();
+    return trackedItems.filter(item => {
+      // Search in title
+      if (item.title.toLowerCase().includes(query)) return true;
+      // Search in notes
+      if (item.notes && item.notes.toLowerCase().includes(query)) return true;
+      // Search in category
+      if (item.category.toLowerCase().includes(query)) return true;
+      // Search in districts
+      if (item.metadata?.districts) {
+        if (item.metadata.districts.some((d: string) => d.toLowerCase().includes(query))) return true;
+      }
+      // Search for common break types
+      const breakTypes = ['spring', 'winter', 'fall', 'summer', 'thanksgiving', 'christmas', 'mlk', 'presidents', 'memorial', 'labor'];
+      if (breakTypes.some(bt => bt.includes(query) && item.title.toLowerCase().includes(bt))) return true;
+      return false;
+    });
+  }, [trackedItems, searchQuery]);
+
+  // Group items by month and sort them (uses filtered items)
   const itemsByMonth = useMemo(() => {
     const grouped: Record<number, YearlyCalendarItem[]> = {};
     for (let i = 1; i <= 12; i++) {
       grouped[i] = [];
     }
-    deduplicatedItems.forEach(item => {
+    filteredYearlyItems.forEach(item => {
       if (!grouped[item.month]) {
         grouped[item.month] = [];
       }
@@ -307,7 +342,7 @@ export default function YearlyCalendar() {
         }
         // Then by priority
         const priorityOrder = { high: 3, medium: 2, low: 1 };
-        const priorityDiff = (priorityOrder[b.priority as keyof typeof priorityOrder] || 2) - 
+        const priorityDiff = (priorityOrder[b.priority as keyof typeof priorityOrder] || 2) -
                             (priorityOrder[a.priority as keyof typeof priorityOrder] || 2);
         if (priorityDiff !== 0) return priorityDiff;
         // Finally by creation date (newest first)
@@ -315,9 +350,9 @@ export default function YearlyCalendar() {
       });
     });
     return grouped;
-  }, [deduplicatedItems]);
+  }, [filteredYearlyItems]);
 
-  // Group tracked items by month using date range overlap
+  // Group tracked items by month using date range overlap (uses filtered items)
   const trackedItemsByMonth = useMemo(() => {
     const grouped: Record<number, Record<string, TrackedCalendarItem[]>> = {};
     for (let i = 1; i <= 12; i++) {
@@ -326,7 +361,7 @@ export default function YearlyCalendar() {
 
     if (!showTrackedItems) return grouped;
 
-    trackedItems.forEach(item => {
+    filteredTrackedItems.forEach(item => {
       for (let month = 1; month <= 12; month++) {
         if (dateRangeOverlapsMonth(item.startDate, item.endDate, selectedYear, month)) {
           if (!grouped[month][item.category]) {
@@ -630,7 +665,26 @@ export default function YearlyCalendar() {
             Plan ahead for recurring activities and events throughout the year
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search calendar..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 w-[220px]"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -712,6 +766,26 @@ export default function YearlyCalendar() {
             }}
             onClose={() => setExpandedMonth(null)}
           />
+        </div>
+      )}
+
+      {/* Search Results Indicator */}
+      {searchQuery.trim() && (
+        <div className="mb-4 flex items-center gap-2">
+          <Badge variant="secondary" className="bg-[#e8f4f8] text-[#236383] border-[#236383]/20">
+            <Search className="h-3 w-3 mr-1" />
+            Searching: "{searchQuery}"
+          </Badge>
+          <span className="text-sm text-gray-600">
+            Found {filteredYearlyItems.length} calendar item{filteredYearlyItems.length !== 1 ? 's' : ''}
+            {showTrackedItems && ` and ${filteredTrackedItems.length} school break${filteredTrackedItems.length !== 1 ? 's' : ''}`}
+          </span>
+          <button
+            onClick={() => setSearchQuery('')}
+            className="text-sm text-[#236383] hover:underline"
+          >
+            Clear search
+          </button>
         </div>
       )}
 
@@ -953,8 +1027,11 @@ export default function YearlyCalendar() {
                               </h4>
                             </div>
                             {item.startDate && (
-                              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                {formatDateRangeWithWeekday(item.startDate, item.endDate || item.startDate)}
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <CalendarDays className="h-4 w-4 text-[#236383]" />
+                                <span className="text-sm font-semibold text-[#236383]">
+                                  {formatDateRangeWithWeekday(item.startDate, item.endDate || item.startDate)}
+                                </span>
                               </div>
                             )}
                             {item.description && (
