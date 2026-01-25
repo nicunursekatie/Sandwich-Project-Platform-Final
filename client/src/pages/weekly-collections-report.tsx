@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,7 +81,18 @@ export default function WeeklyCollectionsReport() {
     enabled: false,
   });
 
+  // Track if report has been generated at least once
+  const hasGeneratedReport = useRef(false);
+
+  // Auto-refetch when useExactDates changes (if report has been generated)
+  useEffect(() => {
+    if (hasGeneratedReport.current && !isLoading) {
+      refetch();
+    }
+  }, [useExactDates]);
+
   const handleGenerate = () => {
+    hasGeneratedReport.current = true;
     refetch();
   };
 
@@ -431,13 +442,24 @@ export default function WeeklyCollectionsReport() {
       {data && (
         <>
           {/* Date Range Summary */}
-          {data.weeks.length > 0 && (
+          {data.weeks.length > 0 && !useExactDates && (
             <Alert className="border-2 bg-brand-primary-light border-brand-teal">
               <Info className="h-5 w-5 text-brand-teal" />
               <AlertDescription className="text-slate-800 text-base">
                 <strong className="text-base text-brand-navy">Showing collections from:</strong> {data.weeks[0].weekStartDate} to {data.weeks[data.weeks.length - 1].weekEndDate}
                 <div className="text-sm mt-2 text-slate-700">
                   Your selected date range ({data.startDate} to {data.endDate}) was expanded to include complete Wednesday-Tuesday weeks.
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          {data.weeks.length > 0 && useExactDates && (
+            <Alert className="border-2 bg-brand-primary-light border-brand-teal">
+              <Info className="h-5 w-5 text-brand-teal" />
+              <AlertDescription className="text-slate-800 text-base">
+                <strong className="text-base text-brand-navy">Showing collections from:</strong> {data.startDate} to {data.endDate}
+                <div className="text-sm mt-2 text-slate-700">
+                  Using exact date range (not expanded to full weeks). Results are still grouped by Wednesday-Tuesday weeks for display.
                 </div>
               </AlertDescription>
             </Alert>
