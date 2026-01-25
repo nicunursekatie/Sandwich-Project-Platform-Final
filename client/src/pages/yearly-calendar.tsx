@@ -756,8 +756,8 @@ export default function YearlyCalendar() {
           <MonthlyCalendarGrid
             year={selectedYear}
             month={expandedMonth}
-            trackedItems={trackedItems}
-            yearlyItems={deduplicatedItems}
+            trackedItems={filteredTrackedItems}
+            yearlyItems={filteredYearlyItems}
             onMonthChange={(year, month) => {
               if (year !== selectedYear) {
                 setSelectedYear(year);
