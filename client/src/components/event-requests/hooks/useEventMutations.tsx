@@ -104,20 +104,35 @@ export const useEventMutations = () => {
     },
     onError: (error: any) => {
       logger.error('Update event request error:', error);
-      
+
       // Check for network errors
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
                             error?.message?.includes('NetworkError') ||
                             error?.message?.includes('network');
-      
+
       let errorTitle = 'Save Failed';
-      let errorDescription = error?.message || error?.details || 'Failed to update event request. Please check your data and try again.';
-      
+
+      // Extract detailed error message from server response
+      const serverMessage = error?.response?.data?.message ||
+                           error?.data?.message ||
+                           error?.message ||
+                           error?.details;
+
+      // Check for missing fields info from server
+      const missingFields = error?.response?.data?.missingFields || error?.data?.missingFields;
+
+      let errorDescription = serverMessage || 'Failed to update event request. Please check your data and try again.';
+
+      // If server provided missing fields, include them in the message
+      if (missingFields && Array.isArray(missingFields) && missingFields.length > 0) {
+        errorDescription = `${serverMessage || 'Missing required fields:'} ${missingFields.join(', ')}`;
+      }
+
       if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not save changes. Please check your internet connection and try again.';
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,

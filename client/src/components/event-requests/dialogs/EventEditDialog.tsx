@@ -395,12 +395,30 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       onSaved?.();
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logger.error('Failed to update event:', error);
+
+      // Extract detailed error message from server response
+      const serverMessage = error?.response?.data?.message ||
+                           error?.data?.message ||
+                           error?.message ||
+                           'There was an error saving your changes.';
+
+      // Check for missing fields info from server
+      const missingFields = error?.response?.data?.missingFields || error?.data?.missingFields;
+
+      let errorDescription = serverMessage;
+
+      // If server provided missing fields, include them in the message
+      if (missingFields && Array.isArray(missingFields) && missingFields.length > 0) {
+        errorDescription = `${serverMessage} Missing: ${missingFields.join(', ')}`;
+      }
+
       toast({
         title: 'Update failed',
-        description: 'There was an error saving your changes.',
+        description: errorDescription,
         variant: 'destructive',
+        duration: 10000,
       });
     },
   });

@@ -3026,13 +3026,15 @@ router.put(
       }
 
       // Ensure boolean fields are properly typed (for ALL updates)
+      // NOTE: volunteersNeeded, driversNeeded, speakersNeeded are NUMBER fields, not booleans
       const booleanFields = [
         'hasRefrigeration',
-        'volunteersNeeded',
         'vanDriverNeeded',
         'isDhlVan',
         'isConfirmed',
         'addedToOfficialSheet',
+        'selfTransport',
+        'toolkitSent',
       ];
       booleanFields.forEach((field) => {
         if (processedUpdates[field] !== undefined) {
@@ -3042,6 +3044,17 @@ router.put(
             processedUpdates[field] === 'true';
           processedUpdates[field] = convertedValue;
           logger.info(`[PUT] Boolean field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${convertedValue}`);
+        }
+      });
+
+      // Ensure numeric fields are properly typed
+      const numericFields = ['volunteersNeeded', 'driversNeeded', 'speakersNeeded', 'estimatedSandwichCount'];
+      numericFields.forEach((field) => {
+        if (processedUpdates[field] !== undefined && processedUpdates[field] !== null) {
+          const originalValue = processedUpdates[field];
+          const parsedValue = parseInt(String(originalValue), 10);
+          processedUpdates[field] = isNaN(parsedValue) ? null : parsedValue;
+          logger.info(`[PUT] Numeric field ${field}: ${JSON.stringify(originalValue)} (${typeof originalValue}) → ${processedUpdates[field]}`);
         }
       });
 
