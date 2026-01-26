@@ -16,6 +16,7 @@ import { getEventNotificationPreferences, getUserMetadata, getUserPhoneNumber } 
 import type { EventNotificationPreferences } from '@shared/types';
 import { generateImpactReport, saveImpactReport } from './ai-impact-reports';
 import { processTspContactFollowups } from './tsp-contact-followup-service';
+import { processSmartTspFollowups } from './tsp-smart-followup-service';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -1144,16 +1145,20 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
-  // TSP Contact follow-up reminders - runs twice daily at 8 AM and 4 PM
-  // Sends reminders for: approaching events still in-progress, toolkit-only events needing follow-up
+  // TSP Contact smart follow-up reminders - runs twice daily at 8 AM and 4 PM
+  // Sends ONE-TIME reminders for:
+  // - New requests without toolkit sent (24 business hours)
+  // - In-process events without activity (7 days)
+  // - Escalations (3 days after first reminder with no activity)
   // Cron format: minute hour day-of-month month day-of-week
   // '0 8,16 * * *' = At 8:00 AM and 4:00 PM every day
   const tspFollowupJob = cron.schedule('0 8,16 * * *', async () => {
-    cronLogger.info('Running TSP contact follow-up check...');
+    cronLogger.info('Running smart TSP contact follow-up check...');
     try {
-      const result = await processTspContactFollowups();
-      cronLogger.info('TSP contact follow-up job completed', {
+      const result = await processSmartTspFollowups();
+      cronLogger.info('Smart TSP contact follow-up job completed', {
         notificationsSent: result.notificationsSent,
+        escalationsSent: result.escalationsSent,
         eventsProcessed: result.eventsProcessed,
         errors: result.errors,
         timestamp: result.timestamp,

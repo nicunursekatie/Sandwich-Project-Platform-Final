@@ -1444,4 +1444,79 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       return false;
     }
   }
+
+  /**
+   * Send escalation email to admin when TSP contact hasn't responded to reminders
+   */
+  static async sendEscalationEmail(
+    adminEmail: string,
+    adminName: string,
+    organizationName: string,
+    tspContactName: string,
+    eventId: number,
+    eventLink: string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping escalation email');
+      return false;
+    }
+
+    try {
+      const subject = `ESCALATION: Event ${eventId} (${organizationName}) Needs Attention`;
+
+      const msg = {
+        to: adminEmail,
+        from: 'katie@thesandwichproject.org',
+        cc: 'katie@thesandwichproject.org',
+        subject: `${subject} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #A31C41; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .alert-box { background-color: #fff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #A31C41; }
+              .btn { display: inline-block; background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⚠️ Event Escalation</h1>
+              </div>
+              <div class="content">
+                <p>Hi ${adminName},</p>
+
+                <div class="alert-box">
+                  <h3>Event Requires Attention</h3>
+                  <p><strong>Event:</strong> ${organizationName} (#${eventId})</p>
+                  <p><strong>Assigned TSP Contact:</strong> ${tspContactName}</p>
+                  <p><strong>Issue:</strong> No activity for several days despite automated reminders</p>
+                </div>
+
+                <p>This event has been sent automated reminders but still hasn't had any contact notes or activity. The TSP contact may need assistance or the event may need to be reassigned.</p>
+
+                <p>Please review the event and follow up as needed:</p>
+                <a href="${eventLink}" class="btn">View Event Details</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `ESCALATION NEEDED\n\nEvent: ${organizationName} (#${eventId})\nAssigned to: ${tspContactName}\n\nThis event hasn't had any activity despite automated reminders. Please review and follow up.\n\nView event: ${eventLink}\n\n---\nThe Sandwich Project`,
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Escalation email sent to ${adminEmail} for event ${eventId}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending escalation email:', error);
+      return false;
+    }
+  }
 }
