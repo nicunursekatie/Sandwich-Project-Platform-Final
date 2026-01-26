@@ -1695,8 +1695,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const sectionStatus = {
     contact: !!(formData.firstName || formData.lastName || formData.email || formData.phone),
     schedule: !!(formData.eventDate),
-    delivery: !!(formData.eventAddress || formData.assignedRecipientIds.length > 0),
-    sandwiches: !!(formData.totalSandwichCount > 0 || formData.sandwichTypes.length > 0 || formData.estimatedSandwichCountMin > 0),
+    delivery: !!(formData.eventAddress || (formData.assignedRecipientIds && formData.assignedRecipientIds.length > 0)),
+    sandwiches: !!(formData.totalSandwichCount > 0 || (formData.sandwichTypes && formData.sandwichTypes.length > 0) || formData.estimatedSandwichCountMin > 0),
     resources: !!(formData.driversNeeded > 0 || formData.speakersNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
     notes: !!(formData.schedulingNotes || formData.planningNotes || formData.nextAction),
   };
@@ -1899,7 +1899,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       + Add Backup Date
                     </Button>
                   </div>
-                  {formData.backupDates.length > 0 && (
+                  {formData.backupDates && formData.backupDates.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                       {formData.backupDates.map((date, index) => (
                         <div key={index} className="flex items-center gap-2">
@@ -1907,7 +1907,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                             type="date"
                             value={date}
                             onChange={(e) => {
-                              const newBackupDates = [...formData.backupDates];
+                              const newBackupDates = [...(formData.backupDates || [])];
                               newBackupDates[index] = e.target.value;
                               setFormData(prev => ({
                                 ...prev,
@@ -1924,7 +1924,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                             onClick={() => {
                               setFormData(prev => ({
                                 ...prev,
-                                backupDates: prev.backupDates.filter((_, i) => i !== index)
+                                backupDates: (prev.backupDates || []).filter((_, i) => i !== index)
                               }));
                             }}
                             className="h-9 w-9 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -1935,7 +1935,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       ))}
                     </div>
                   )}
-                  {formData.backupDates.length === 0 && (
+                  {(!formData.backupDates || formData.backupDates.length === 0) && (
                     <p className="text-xs text-gray-500">
                       Add alternate dates if the primary event date is not available
                     </p>

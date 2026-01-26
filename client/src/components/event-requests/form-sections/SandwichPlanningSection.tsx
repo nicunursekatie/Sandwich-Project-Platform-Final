@@ -185,7 +185,7 @@ export const SandwichPlanningSection: React.FC<SandwichPlanningSectionProps> = (
             </Button>
           </div>
 
-          {formData.sandwichTypes.length === 0 ? (
+          {(!formData.sandwichTypes || formData.sandwichTypes.length === 0) ? (
             <div className="text-center py-4 text-[#007E8C] border-2 border-dashed border-[#236383]/30 rounded">
               <p>No sandwich types added yet. Click "Add Type" to get started.</p>
             </div>
