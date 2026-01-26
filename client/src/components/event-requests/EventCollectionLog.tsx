@@ -132,10 +132,10 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold">
-                Collection Log for {eventRequest.organizationName}
+                Collection Log for {eventRequest?.organizationName}
               </h2>
               <p className="text-[#236383]">
-                {eventRequest.firstName} {eventRequest.lastName}
+                {eventRequest?.firstName} {eventRequest?.lastName}
               </p>
             </div>
             <Button

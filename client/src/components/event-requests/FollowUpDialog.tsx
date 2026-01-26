@@ -65,9 +65,9 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
           <DialogDescription className="text-gray-600 mt-2">
             {description} with{' '}
             <strong>
-              {eventRequest.firstName} {eventRequest.lastName}
+              {eventRequest?.firstName} {eventRequest?.lastName}
             </strong>{' '}
-            at <strong>{eventRequest.organizationName}</strong>.
+            at <strong>{eventRequest?.organizationName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,12 +77,12 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             <h4 className="font-semibold text-[#236383] uppercase tracking-wide text-sm mb-3">Event Details</h4>
             <div className="space-y-2 text-sm">
               <div><strong className="text-[#236383]">Event Date:</strong> <span className="text-gray-700">{
-                eventRequest.desiredEventDate ?
+                eventRequest?.desiredEventDate ?
                   new Date(eventRequest.desiredEventDate).toLocaleDateString() :
                   'Not specified'
               }</span></div>
-              <div><strong className="text-[#236383]">Address:</strong> <span className="text-gray-700">{eventRequest.eventAddress || 'Not specified'}</span></div>
-              <div><strong className="text-[#236383]">Estimated Sandwiches:</strong> <span className="text-gray-700">{eventRequest.estimatedSandwichCount || 'Not specified'}</span></div>
+              <div><strong className="text-[#236383]">Address:</strong> <span className="text-gray-700">{eventRequest?.eventAddress || 'Not specified'}</span></div>
+              <div><strong className="text-[#236383]">Estimated Sandwiches:</strong> <span className="text-gray-700">{eventRequest?.estimatedSandwichCount || 'Not specified'}</span></div>
             </div>
           </div>
 
@@ -92,18 +92,18 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             <div className="space-y-2 text-sm">
               <div className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
-                <span className="text-gray-700">{eventRequest.email}</span>
+                <span className="text-gray-700">{eventRequest?.email}</span>
               </div>
-              {eventRequest.phone && (
+              {eventRequest?.phone && (
                 <div className="flex items-center space-x-2">
                   <Phone className="w-4 h-4 text-[#007E8C]" aria-hidden="true" />
-                  <span className="text-gray-700">{eventRequest.phone}</span>
+                  <span className="text-gray-700">{eventRequest?.phone}</span>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      const phoneNumber = eventRequest.phone;
+                      const phoneNumber = eventRequest?.phone;
 
                       if (isMobile) {
                         window.location.href = `tel:${phoneNumber}`;

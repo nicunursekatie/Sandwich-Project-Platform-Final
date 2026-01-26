@@ -119,10 +119,10 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if (!eventRequest?.phone) return;
 
     if (isMobile) {
-      window.location.href = `tel:${eventRequest.phone}`;
+      window.location.href = `tel:${eventRequest?.phone}`;
     } else {
-      navigator.clipboard.writeText(eventRequest.phone || '').then(() => {
-        window.alert(`Phone number copied!\n${eventRequest.phone} has been copied to your clipboard.`);
+      navigator.clipboard.writeText(eventRequest?.phone || '').then(() => {
+        window.alert(`Phone number copied!\n${eventRequest?.phone} has been copied to your clipboard.`);
       });
     }
   };
@@ -174,7 +174,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       }
 
       const summaryBlock = summaryLines.join('\n');
-      const existingNotes = eventRequest.planningNotes || '';
+      const existingNotes = eventRequest?.planningNotes || '';
       const updatedPlanningNotes = existingNotes
         ? `${existingNotes}\n\n${summaryBlock}`
         : summaryBlock;
@@ -202,7 +202,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         updates.eventAddress = itemAnswers.event_address.trim();
       }
 
-      await apiRequest('PATCH', `/api/event-requests/${eventRequest.id}`, updates);
+      await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
 
       toast({
         title: 'Intake call saved',
@@ -484,8 +484,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                 Intake Call Guide
               </DialogTitle>
               <DialogDescription className="mt-2 text-base">
-                {eventRequest.organizationName} • {eventRequest.firstName}{' '}
-                {eventRequest.lastName}
+                {eventRequest?.organizationName} • {eventRequest?.firstName}{' '}
+                {eventRequest?.lastName}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -518,35 +518,35 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                 Quick Reference
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                {eventRequest.phone && (
+                {eventRequest?.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-gray-500" />
                     <span className="font-medium">Phone:</span>
-                    <span>{eventRequest.phone}</span>
+                    <span>{eventRequest?.phone}</span>
                   </div>
                 )}
-                {eventRequest.email && (
+                {eventRequest?.email && (
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4 text-gray-500" />
                     <span className="font-medium">Email:</span>
-                    <span className="truncate">{eventRequest.email}</span>
+                    <span className="truncate">{eventRequest?.email}</span>
                   </div>
                 )}
-                {eventRequest.eventAddress && (
+                {eventRequest?.eventAddress && (
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-gray-500" />
                     <span className="font-medium">Address:</span>
-                    <span className="truncate">{eventRequest.eventAddress}</span>
+                    <span className="truncate">{eventRequest?.eventAddress}</span>
                   </div>
                 )}
-                {(eventRequest.desiredEventDate || eventRequest.scheduledEventDate) && (
+                {(eventRequest?.desiredEventDate || eventRequest?.scheduledEventDate) && (
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <span className="font-medium">Date:</span>
                     <span>
-                      {eventRequest.scheduledEventDate
+                      {eventRequest?.scheduledEventDate
                         ? new Date(eventRequest.scheduledEventDate).toLocaleDateString()
-                        : eventRequest.desiredEventDate
+                        : eventRequest?.desiredEventDate
                         ? new Date(eventRequest.desiredEventDate).toLocaleDateString()
                         : 'Not set'}
                     </span>

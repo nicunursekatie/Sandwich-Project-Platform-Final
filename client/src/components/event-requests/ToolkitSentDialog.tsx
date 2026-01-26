@@ -83,9 +83,9 @@ const ToolkitSentDialog = ({
             <DialogDescription className="text-gray-600 mt-2">
               Record when the toolkit was sent to{' '}
               <strong>
-                {eventRequest.firstName} {eventRequest.lastName}
+                {eventRequest?.firstName} {eventRequest?.lastName}
               </strong>{' '}
-              at <strong>{eventRequest.organizationName}</strong>. This will move
+              at <strong>{eventRequest?.organizationName}</strong>. This will move
               the event to &quot;In Process&quot; status.
             </DialogDescription>
           </DialogHeader>
@@ -126,7 +126,7 @@ const ToolkitSentDialog = ({
                   <span className="font-semibold">Email successfully sent!</span>
                 </div>
                 <p className="text-sm text-[#236383] mt-1">
-                  The toolkit email has been sent to {eventRequest.email}
+                  The toolkit email has been sent to {eventRequest?.email}
                 </p>
               </div>
             )}
@@ -142,7 +142,7 @@ const ToolkitSentDialog = ({
                 {!emailSent && (
                   <li>
                     • You can optionally send an email to{' '}
-                    {eventRequest.firstName} with toolkit attachments
+                    {eventRequest?.firstName} with toolkit attachments
                   </li>
                 )}
               </ul>
@@ -157,8 +157,8 @@ const ToolkitSentDialog = ({
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      const recipient = eventRequest.email;
-                      const subject = encodeURIComponent(`${eventRequest.organizationName} - Sandwich Making Event`);
+                      const recipient = eventRequest?.email || '';
+                      const subject = encodeURIComponent(`${eventRequest?.organizationName || 'Event'} - Sandwich Making Event`);
                       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${recipient}&su=${subject}`;
                       window.open(gmailUrl, '_blank');
                     }}
@@ -186,7 +186,7 @@ const ToolkitSentDialog = ({
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      const phoneNumber = eventRequest.phone;
+                      const phoneNumber = eventRequest?.phone;
 
                       if (isMobile) {
                         // On mobile, open the dialer
@@ -208,7 +208,7 @@ const ToolkitSentDialog = ({
                     }}
                     className="flex items-center space-x-2 border-[#47B3CB]/30 text-[#47B3CB] hover:bg-[#47B3CB]/5"
                     data-testid="button-call-contact"
-                    title={eventRequest.phone}
+                    title={eventRequest?.phone || ''}
                   >
                     <Phone className="w-4 h-4" aria-hidden="true" />
                     <span>{isMobile ? 'Call' : 'Copy Number'}</span>
@@ -247,19 +247,19 @@ const ToolkitSentDialog = ({
       {/* Email Composer as a separate dialog */}
       <EventEmailComposer
         eventRequest={{
-          id: eventRequest.id,
-          firstName: eventRequest.firstName || '',
-          lastName: eventRequest.lastName || '',
-          email: eventRequest.email || '',
-          phone: eventRequest.phone || undefined,
-          organizationName: eventRequest.organizationName || '',
-          department: eventRequest.department || undefined,
-          desiredEventDate: eventRequest.desiredEventDate?.toString() || undefined,
-          eventAddress: eventRequest.eventAddress || undefined,
-          estimatedSandwichCount: eventRequest.estimatedSandwichCount || undefined,
-          eventStartTime: eventRequest.eventStartTime || undefined,
-          eventEndTime: eventRequest.eventEndTime || undefined,
-          message: eventRequest.message || undefined,
+          id: eventRequest?.id || 0,
+          firstName: eventRequest?.firstName || '',
+          lastName: eventRequest?.lastName || '',
+          email: eventRequest?.email || '',
+          phone: eventRequest?.phone || undefined,
+          organizationName: eventRequest?.organizationName || '',
+          department: eventRequest?.department || undefined,
+          desiredEventDate: eventRequest?.desiredEventDate?.toString() || undefined,
+          eventAddress: eventRequest?.eventAddress || undefined,
+          estimatedSandwichCount: eventRequest?.estimatedSandwichCount || undefined,
+          eventStartTime: eventRequest?.eventStartTime || undefined,
+          eventEndTime: eventRequest?.eventEndTime || undefined,
+          message: eventRequest?.message || undefined,
         }}
         onEmailSent={handleEmailSent}
         isOpen={showEmailComposer}
