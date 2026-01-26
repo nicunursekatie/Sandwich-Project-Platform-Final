@@ -106,7 +106,7 @@ const getSandwichCount = (event: EventRequest): number => {
 const generatePDFStyles = () => `
   <style>
     @page {
-      margin: 0.5in;
+      margin: 0.4in;
       size: letter;
     }
 
@@ -122,63 +122,63 @@ const generatePDFStyles = () => `
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       color: #333;
-      line-height: 1.4;
-      font-size: 12px;
+      line-height: 1.2;
+      font-size: 10px;
       background: white;
     }
 
     .page {
-      max-width: 7.5in;
+      max-width: 7.7in;
       margin: 0 auto;
-      padding: 20px;
+      padding: 8px;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 3px solid ${COLORS.primary};
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid ${COLORS.primary};
     }
 
     .header h1 {
       color: ${COLORS.primary};
-      font-size: 24px;
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
     }
 
     .header .subtitle {
       color: ${COLORS.gray};
-      font-size: 11px;
+      font-size: 9px;
     }
 
     .week-box {
       background-color: ${COLORS.primaryLight} !important;
       border: 2px solid ${COLORS.primary};
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
+      border-radius: 4px;
+      padding: 6px;
+      margin-bottom: 8px;
       text-align: center;
     }
 
     .week-box .week-title {
-      font-size: 18px;
+      font-size: 13px;
       font-weight: 700;
       color: ${COLORS.primary};
     }
 
     .week-box .week-dates {
-      font-size: 12px;
+      font-size: 10px;
       color: ${COLORS.gray};
-      margin-top: 3px;
+      margin-top: 2px;
     }
 
     .summary-box {
       background-color: ${COLORS.primary} !important;
       color: white !important;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 10px;
       text-align: center;
     }
 
@@ -191,13 +191,13 @@ const generatePDFStyles = () => `
     }
 
     .summary-box .big-number {
-      font-size: 42px;
+      font-size: 28px;
       font-weight: 700;
       color: white !important;
     }
 
     .summary-box .label {
-      font-size: 14px;
+      font-size: 11px;
       color: white !important;
       opacity: 0.95;
     }
@@ -205,9 +205,9 @@ const generatePDFStyles = () => `
     .staffing-grid {
       display: table;
       width: 100%;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       border-collapse: separate;
-      border-spacing: 8px;
+      border-spacing: 4px;
     }
 
     .staffing-row {
@@ -218,9 +218,9 @@ const generatePDFStyles = () => `
       display: table-cell;
       width: 25%;
       background-color: white !important;
-      border: 2px solid ${COLORS.lightGray};
-      border-radius: 6px;
-      padding: 12px 8px;
+      border: 1px solid ${COLORS.lightGray};
+      border-radius: 4px;
+      padding: 6px 4px;
       text-align: center;
       vertical-align: top;
     }
@@ -236,27 +236,27 @@ const generatePDFStyles = () => `
     }
 
     .staffing-card .icon {
-      font-size: 20px;
-      margin-bottom: 5px;
+      font-size: 16px;
+      margin-bottom: 2px;
     }
 
     .staffing-card .role {
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 600;
       color: ${COLORS.gray};
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.2px;
     }
 
     .staffing-card .count {
-      font-size: 20px;
+      font-size: 15px;
       font-weight: 700;
       color: #333;
-      margin: 3px 0;
+      margin: 2px 0;
     }
 
     .staffing-card .status {
-      font-size: 10px;
+      font-size: 8px;
       color: ${COLORS.gray};
     }
 
@@ -266,24 +266,24 @@ const generatePDFStyles = () => `
     }
 
     .section-title {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       color: ${COLORS.primary};
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid ${COLORS.lightGray};
+      margin-bottom: 6px;
+      padding-bottom: 3px;
+      border-bottom: 1px solid ${COLORS.lightGray};
     }
 
     .event-list {
-      margin-bottom: 15px;
+      margin-bottom: 8px;
     }
 
     .event-item {
       background-color: white !important;
       border: 1px solid #E5E7EB;
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 8px;
+      border-radius: 3px;
+      padding: 6px;
+      margin-bottom: 4px;
       page-break-inside: avoid;
     }
 
@@ -301,49 +301,49 @@ const generatePDFStyles = () => `
       display: table-cell;
       vertical-align: top;
       text-align: right;
-      width: 100px;
+      width: 80px;
     }
 
     .org-name {
-      font-size: 14px;
+      font-size: 11px;
       font-weight: 600;
       color: ${COLORS.primary};
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .event-details {
-      font-size: 11px;
+      font-size: 9px;
       color: ${COLORS.gray};
     }
 
     .event-details span {
-      margin-right: 12px;
+      margin-right: 8px;
     }
 
     .sandwich-count {
-      font-size: 18px;
+      font-size: 14px;
       font-weight: 700;
       color: ${COLORS.teal};
     }
 
     .sandwich-types {
-      font-size: 10px;
+      font-size: 8px;
       color: ${COLORS.gray};
-      margin-top: 2px;
+      margin-top: 1px;
     }
 
     .badges {
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     .badge {
       display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 8px;
       font-weight: 500;
-      margin-right: 6px;
-      margin-bottom: 4px;
+      margin-right: 4px;
+      margin-bottom: 2px;
     }
 
     .badge-red {
@@ -368,18 +368,18 @@ const generatePDFStyles = () => `
 
     .no-events {
       text-align: center;
-      padding: 30px;
+      padding: 15px;
       color: ${COLORS.gray};
-      font-size: 13px;
+      font-size: 10px;
     }
 
     .footer {
-      margin-top: 25px;
-      padding-top: 15px;
+      margin-top: 8px;
+      padding-top: 6px;
       border-top: 1px solid ${COLORS.lightGray};
       text-align: center;
       color: ${COLORS.gray};
-      font-size: 10px;
+      font-size: 8px;
     }
   </style>
 `;
@@ -455,8 +455,8 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
         </div>
 
         <div class="week-box">
-          <div class="week-title">${weekData.distributionDate || 'Week Overview'}</div>
-          <div class="week-dates">${weekData.weekStartDate} - ${weekData.weekEndDate}</div>
+          <div class="week-title">Week of ${weekData.weekStartDate}</div>
+          <div class="week-dates">${weekData.weekStartDate} → ${weekData.weekEndDate}</div>
         </div>
 
         <div class="summary-box">
@@ -560,8 +560,8 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
         </div>
 
         <div class="week-box">
-          <div class="week-title">${weekData.distributionDate}</div>
-          <div class="week-dates">${weekData.weekStartDate} - ${weekData.weekEndDate}</div>
+          <div class="week-title">Week of ${weekData.weekStartDate}</div>
+          <div class="week-dates">${weekData.weekStartDate} → ${weekData.weekEndDate}</div>
         </div>
 
         <div class="summary-box ${totalUnfulfilled === 0 ? 'success' : 'warning'}">

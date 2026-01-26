@@ -284,14 +284,14 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
               </div>
               <div className="flex flex-col gap-2 items-end ml-4">
                 {/* Week Range Selector */}
-                <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
+                <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker} modal>
                   <PopoverTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-2 text-xs">
                       <Settings2 className="w-3 h-3" />
                       {currentPreset.label}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80" align="end">
+                  <PopoverContent className="w-80 z-[100]" align="end">
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
@@ -371,14 +371,14 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
               </span>
             </div>
             {hideHeader && (
-              <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
+              <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker} modal>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1 text-xs text-blue-600 hover:text-blue-800">
                     <Settings2 className="w-3 h-3" />
                     Change
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
+                <PopoverContent className="w-80 z-[100]" align="end">
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
