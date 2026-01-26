@@ -223,7 +223,7 @@ export function getPrimaryContextualAction(request: EventRequest): ContextualAct
   // Priority 3: Sandwich Info (critical for planning)
   if (missingInfo.includes('Sandwich Info')) {
     return {
-      label: 'Add Sandwich Count',
+      label: 'Edit Event',
       field: 'sandwiches',
       priority: 80,
       action: 'edit',
@@ -304,7 +304,7 @@ export function getAllContextualActions(request: EventRequest): ContextualAction
 
   if (missingInfo.includes('Sandwich Info')) {
     actions.push({
-      label: 'Add Sandwich Count',
+      label: 'Edit Event',
       field: 'sandwiches',
       priority: 80,
       action: 'edit',
