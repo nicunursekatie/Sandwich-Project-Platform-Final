@@ -102,271 +102,284 @@ const getSandwichCount = (event: EventRequest): number => {
     : event.estimatedSandwichCount || 0;
 };
 
-// Generate styled HTML for PDF
+// Generate print-friendly styles
 const generatePDFStyles = () => `
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @page {
+      margin: 0.5in;
+      size: letter;
+    }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       color: #333;
-      line-height: 1.5;
-      padding: 40px;
-      max-width: 800px;
+      line-height: 1.4;
+      font-size: 12px;
+      background: white;
+    }
+
+    .page {
+      max-width: 7.5in;
       margin: 0 auto;
+      padding: 20px;
     }
 
     .header {
       text-align: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
       border-bottom: 3px solid ${COLORS.primary};
     }
 
     .header h1 {
       color: ${COLORS.primary};
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 5px;
     }
 
     .header .subtitle {
       color: ${COLORS.gray};
-      font-size: 14px;
+      font-size: 11px;
     }
 
-    .week-info {
-      background: ${COLORS.primaryLight};
+    .week-box {
+      background-color: ${COLORS.primaryLight} !important;
       border: 2px solid ${COLORS.primary};
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 15px;
       text-align: center;
     }
 
-    .week-info .week-title {
-      font-size: 22px;
+    .week-box .week-title {
+      font-size: 18px;
       font-weight: 700;
       color: ${COLORS.primary};
-      margin-bottom: 4px;
     }
 
-    .week-info .week-dates {
-      font-size: 14px;
+    .week-box .week-dates {
+      font-size: 12px;
       color: ${COLORS.gray};
+      margin-top: 3px;
     }
 
     .summary-box {
-      background: linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.teal} 100%);
-      color: white;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
+      background-color: ${COLORS.primary} !important;
+      color: white !important;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
       text-align: center;
+    }
+
+    .summary-box.success {
+      background-color: ${COLORS.green} !important;
+    }
+
+    .summary-box.warning {
+      background-color: ${COLORS.orange} !important;
     }
 
     .summary-box .big-number {
-      font-size: 48px;
+      font-size: 42px;
       font-weight: 700;
-      margin-bottom: 4px;
+      color: white !important;
     }
 
     .summary-box .label {
-      font-size: 16px;
-      opacity: 0.9;
+      font-size: 14px;
+      color: white !important;
+      opacity: 0.95;
     }
 
-    .staffing-summary {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
+    .staffing-grid {
+      display: table;
+      width: 100%;
+      margin-bottom: 20px;
+      border-collapse: separate;
+      border-spacing: 8px;
+    }
+
+    .staffing-row {
+      display: table-row;
     }
 
     .staffing-card {
-      background: white;
+      display: table-cell;
+      width: 25%;
+      background-color: white !important;
       border: 2px solid ${COLORS.lightGray};
-      border-radius: 8px;
-      padding: 16px;
+      border-radius: 6px;
+      padding: 12px 8px;
       text-align: center;
+      vertical-align: top;
     }
 
-    .staffing-card.fulfilled {
-      border-color: ${COLORS.green};
-      background: #F0FDF4;
+    .staffing-card.filled {
+      border-color: ${COLORS.green} !important;
+      background-color: #F0FDF4 !important;
     }
 
-    .staffing-card.unfulfilled {
-      border-color: ${COLORS.red};
-      background: #FEF2F2;
+    .staffing-card.needed {
+      border-color: ${COLORS.red} !important;
+      background-color: #FEF2F2 !important;
     }
 
-    .staffing-card .role-icon {
-      font-size: 24px;
-      margin-bottom: 8px;
+    .staffing-card .icon {
+      font-size: 20px;
+      margin-bottom: 5px;
     }
 
-    .staffing-card .role-name {
-      font-size: 12px;
+    .staffing-card .role {
+      font-size: 10px;
       font-weight: 600;
       color: ${COLORS.gray};
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      letter-spacing: 0.3px;
     }
 
-    .staffing-card .role-count {
-      font-size: 24px;
+    .staffing-card .count {
+      font-size: 20px;
       font-weight: 700;
+      color: #333;
+      margin: 3px 0;
     }
 
-    .staffing-card .role-status {
-      font-size: 11px;
-      margin-top: 4px;
+    .staffing-card .status {
+      font-size: 10px;
+      color: ${COLORS.gray};
+    }
+
+    .staffing-card.needed .status {
+      color: ${COLORS.red};
+      font-weight: 600;
     }
 
     .section-title {
-      font-size: 18px;
+      font-size: 14px;
       font-weight: 600;
       color: ${COLORS.primary};
-      margin-bottom: 16px;
-      padding-bottom: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
       border-bottom: 2px solid ${COLORS.lightGray};
     }
 
-    .events-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .event-list {
+      margin-bottom: 15px;
     }
 
-    .event-card {
-      background: white;
-      border: 1px solid ${COLORS.lightGray};
-      border-radius: 8px;
-      padding: 16px;
+    .event-item {
+      background-color: white !important;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
       page-break-inside: avoid;
     }
 
-    .event-card .event-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 8px;
+    .event-header {
+      display: table;
+      width: 100%;
     }
 
-    .event-card .org-name {
-      font-size: 16px;
+    .event-info {
+      display: table-cell;
+      vertical-align: top;
+    }
+
+    .event-count {
+      display: table-cell;
+      vertical-align: top;
+      text-align: right;
+      width: 100px;
+    }
+
+    .org-name {
+      font-size: 14px;
       font-weight: 600;
       color: ${COLORS.primary};
+      margin-bottom: 3px;
     }
 
-    .event-card .sandwich-count {
+    .event-details {
+      font-size: 11px;
+      color: ${COLORS.gray};
+    }
+
+    .event-details span {
+      margin-right: 12px;
+    }
+
+    .sandwich-count {
       font-size: 18px;
       font-weight: 700;
       color: ${COLORS.teal};
     }
 
-    .event-card .event-details {
-      font-size: 13px;
+    .sandwich-types {
+      font-size: 10px;
       color: ${COLORS.gray};
+      margin-top: 2px;
     }
 
-    .event-card .event-details span {
-      margin-right: 16px;
-    }
-
-    .event-card .badges {
-      display: flex;
-      gap: 8px;
+    .badges {
       margin-top: 8px;
-      flex-wrap: wrap;
     }
 
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
       font-weight: 500;
+      margin-right: 6px;
+      margin-bottom: 4px;
     }
 
-    .badge-driver {
-      background: #DCFCE7;
-      color: #166534;
+    .badge-red {
+      background-color: #FEE2E2 !important;
+      color: #991B1B !important;
     }
 
-    .badge-driver.needed {
-      background: #FEE2E2;
-      color: #991B1B;
+    .badge-yellow {
+      background-color: #FEF3C7 !important;
+      color: #92400E !important;
     }
 
-    .badge-speaker {
-      background: #FEF3C7;
-      color: #92400E;
+    .badge-blue {
+      background-color: ${COLORS.primaryLight} !important;
+      color: ${COLORS.primary} !important;
     }
 
-    .badge-speaker.needed {
-      background: #FEE2E2;
-      color: #991B1B;
-    }
-
-    .badge-volunteer {
-      background: ${COLORS.primaryLight};
-      color: ${COLORS.primary};
-    }
-
-    .badge-volunteer.needed {
-      background: #FEE2E2;
-      color: #991B1B;
-    }
-
-    .badge-van {
-      background: #F3E8FF;
-      color: #7C3AED;
-    }
-
-    .badge-van.needed {
-      background: #FEE2E2;
-      color: #991B1B;
-    }
-
-    .footer {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 2px solid ${COLORS.lightGray};
-      text-align: center;
-      color: ${COLORS.gray};
-      font-size: 12px;
+    .badge-purple {
+      background-color: #F3E8FF !important;
+      color: #7C3AED !important;
     }
 
     .no-events {
       text-align: center;
-      padding: 40px;
+      padding: 30px;
       color: ${COLORS.gray};
+      font-size: 13px;
     }
 
-    .sandwich-types {
-      font-size: 12px;
+    .footer {
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid ${COLORS.lightGray};
+      text-align: center;
       color: ${COLORS.gray};
-      margin-top: 4px;
-    }
-
-    @media print {
-      body {
-        padding: 20px;
-      }
-      .event-card {
-        page-break-inside: avoid;
-      }
+      font-size: 10px;
     }
   </style>
 `;
@@ -397,14 +410,13 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
           ? types.map((t: any) => `${t.quantity} ${t.type}`).join(', ')
           : '';
 
-        // Calculate unfulfilled staffing
         const driversUnfulfilled = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
         const speakersUnfulfilled = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
 
         return `
-          <div class="event-card">
+          <div class="event-item">
             <div class="event-header">
-              <div>
+              <div class="event-info">
                 <div class="org-name">${event.organizationName || 'Unknown Organization'}</div>
                 <div class="event-details">
                   <span>📅 ${formatDate(dateStr?.toString())}</span>
@@ -412,12 +424,14 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
                 </div>
                 ${typesStr ? `<div class="sandwich-types">Types: ${typesStr}</div>` : ''}
               </div>
-              <div class="sandwich-count">🥪 ${count.toLocaleString()}</div>
+              <div class="event-count">
+                <div class="sandwich-count">🥪 ${count.toLocaleString()}</div>
+              </div>
             </div>
             ${(driversUnfulfilled > 0 || speakersUnfulfilled > 0) ? `
               <div class="badges">
-                ${driversUnfulfilled > 0 ? `<span class="badge badge-driver needed">🚗 ${driversUnfulfilled} Driver${driversUnfulfilled > 1 ? 's' : ''} Needed</span>` : ''}
-                ${speakersUnfulfilled > 0 ? `<span class="badge badge-speaker needed">🎤 ${speakersUnfulfilled} Speaker${speakersUnfulfilled > 1 ? 's' : ''} Needed</span>` : ''}
+                ${driversUnfulfilled > 0 ? `<span class="badge badge-red">🚗 ${driversUnfulfilled} Driver${driversUnfulfilled > 1 ? 's' : ''} Needed</span>` : ''}
+                ${speakersUnfulfilled > 0 ? `<span class="badge badge-yellow">🎤 ${speakersUnfulfilled} Speaker${speakersUnfulfilled > 1 ? 's' : ''} Needed</span>` : ''}
               </div>
             ` : ''}
           </div>
@@ -434,28 +448,30 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
       ${generatePDFStyles()}
     </head>
     <body>
-      <div class="header">
-        <h1>🥪 Sandwich Planning Report</h1>
-        <div class="subtitle">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-      </div>
+      <div class="page">
+        <div class="header">
+          <h1>🥪 Sandwich Planning Report</h1>
+          <div class="subtitle">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        </div>
 
-      <div class="week-info">
-        <div class="week-title">${weekData.distributionDate || 'Week Overview'}</div>
-        <div class="week-dates">${weekData.weekStartDate} - ${weekData.weekEndDate}</div>
-      </div>
+        <div class="week-box">
+          <div class="week-title">${weekData.distributionDate || 'Week Overview'}</div>
+          <div class="week-dates">${weekData.weekStartDate} - ${weekData.weekEndDate}</div>
+        </div>
 
-      <div class="summary-box">
-        <div class="big-number">${weekTotal.toLocaleString()}</div>
-        <div class="label">Total Sandwiches This Week</div>
-      </div>
+        <div class="summary-box">
+          <div class="big-number">${weekTotal.toLocaleString()}</div>
+          <div class="label">Total Sandwiches This Week</div>
+        </div>
 
-      <div class="section-title">Events This Week (${sortedEvents.length} total)</div>
-      <div class="events-list">
-        ${eventsHTML}
-      </div>
+        <div class="section-title">Events This Week (${sortedEvents.length} total)</div>
+        <div class="event-list">
+          ${eventsHTML}
+        </div>
 
-      <div class="footer">
-        <p>The Sandwich Project • Weekly Planning Report</p>
+        <div class="footer">
+          The Sandwich Project • Weekly Planning Report
+        </div>
       </div>
     </body>
     </html>
@@ -479,10 +495,6 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
   const totalUnfulfilled = weekData.unfulfilled.drivers + weekData.unfulfilled.speakers +
                            weekData.unfulfilled.volunteers + weekData.unfulfilled.vanDrivers;
 
-  const getCardClass = (needed: number, fulfilled: number) =>
-    needed === 0 ? '' : (fulfilled >= needed ? 'fulfilled' : 'unfulfilled');
-
-  // Filter to only events with unmet needs for the detailed list
   const eventsWithUnmetNeeds = sortedEvents.filter(event => {
     const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
     const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
@@ -503,27 +515,33 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
         const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
 
         return `
-          <div class="event-card">
+          <div class="event-item">
             <div class="event-header">
-              <div>
+              <div class="event-info">
                 <div class="org-name">${event.organizationName || 'Unknown Organization'}</div>
                 <div class="event-details">
                   <span>📅 ${formatDate(dateStr?.toString())}</span>
                   ${event.eventStartTime ? `<span>🕐 ${formatTime(event.eventStartTime)}</span>` : ''}
                   ${sandwichCount > 0 ? `<span>🥪 ${sandwichCount.toLocaleString()}</span>` : ''}
                 </div>
-                ${event.eventAddress ? `<div class="event-details" style="margin-top: 4px;">📍 ${event.eventAddress}</div>` : ''}
+                ${event.eventAddress ? `<div class="event-details">📍 ${event.eventAddress}</div>` : ''}
               </div>
             </div>
             <div class="badges">
-              ${driversNeeded > 0 ? `<span class="badge badge-driver needed">🚗 ${driversNeeded} Driver${driversNeeded > 1 ? 's' : ''} Needed</span>` : ''}
-              ${speakersNeeded > 0 ? `<span class="badge badge-speaker needed">🎤 ${speakersNeeded} Speaker${speakersNeeded > 1 ? 's' : ''} Needed</span>` : ''}
-              ${volunteersNeeded > 0 ? `<span class="badge badge-volunteer needed">👤 ${volunteersNeeded} Volunteer${volunteersNeeded > 1 ? 's' : ''} Needed</span>` : ''}
-              ${vanDriverNeeded > 0 ? `<span class="badge badge-van needed">🚐 Van Driver Needed</span>` : ''}
+              ${driversNeeded > 0 ? `<span class="badge badge-red">🚗 ${driversNeeded} Driver${driversNeeded > 1 ? 's' : ''} Needed</span>` : ''}
+              ${speakersNeeded > 0 ? `<span class="badge badge-yellow">🎤 ${speakersNeeded} Speaker${speakersNeeded > 1 ? 's' : ''} Needed</span>` : ''}
+              ${volunteersNeeded > 0 ? `<span class="badge badge-blue">👤 ${volunteersNeeded} Volunteer${volunteersNeeded > 1 ? 's' : ''} Needed</span>` : ''}
+              ${vanDriverNeeded > 0 ? `<span class="badge badge-purple">🚐 Van Driver Needed</span>` : ''}
             </div>
           </div>
         `;
       }).join('');
+
+  // Helper for staffing card class
+  const getCardClass = (needed: number, assigned: number) => {
+    if (needed === 0) return '';
+    return assigned >= needed ? 'filled' : 'needed';
+  };
 
   return `
     <!DOCTYPE html>
@@ -535,55 +553,59 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
       ${generatePDFStyles()}
     </head>
     <body>
-      <div class="header">
-        <h1>👥 Staffing Planning Report</h1>
-        <div class="subtitle">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
-      </div>
-
-      <div class="week-info">
-        <div class="week-title">${weekData.distributionDate}</div>
-        <div class="week-dates">${weekData.weekStartDate} - ${weekData.weekEndDate}</div>
-      </div>
-
-      <div class="summary-box" style="background: ${totalUnfulfilled === 0 ? `linear-gradient(135deg, ${COLORS.green} 0%, #16A34A 100%)` : `linear-gradient(135deg, ${COLORS.orange} 0%, #EA580C 100%)`};">
-        <div class="big-number">${totalUnfulfilled === 0 ? '✅' : totalUnfulfilled}</div>
-        <div class="label">${totalUnfulfilled === 0 ? 'All Positions Filled!' : 'Positions Still Needed'}</div>
-      </div>
-
-      <div class="staffing-summary">
-        <div class="staffing-card ${getCardClass(weekData.totalDriversNeeded, weekData.driversAssigned)}">
-          <div class="role-icon">🚗</div>
-          <div class="role-name">Drivers</div>
-          <div class="role-count">${weekData.driversAssigned}/${weekData.totalDriversNeeded}</div>
-          <div class="role-status">${weekData.unfulfilled.drivers > 0 ? `${weekData.unfulfilled.drivers} needed` : 'Filled'}</div>
+      <div class="page">
+        <div class="header">
+          <h1>👥 Staffing Planning Report</h1>
+          <div class="subtitle">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
-        <div class="staffing-card ${getCardClass(weekData.totalSpeakersNeeded, weekData.speakersAssigned)}">
-          <div class="role-icon">🎤</div>
-          <div class="role-name">Speakers</div>
-          <div class="role-count">${weekData.speakersAssigned}/${weekData.totalSpeakersNeeded}</div>
-          <div class="role-status">${weekData.unfulfilled.speakers > 0 ? `${weekData.unfulfilled.speakers} needed` : 'Filled'}</div>
-        </div>
-        <div class="staffing-card ${getCardClass(weekData.totalVolunteersNeeded, weekData.volunteersAssigned)}">
-          <div class="role-icon">👤</div>
-          <div class="role-name">Volunteers</div>
-          <div class="role-count">${weekData.volunteersAssigned}/${weekData.totalVolunteersNeeded}</div>
-          <div class="role-status">${weekData.unfulfilled.volunteers > 0 ? `${weekData.unfulfilled.volunteers} needed` : 'Filled'}</div>
-        </div>
-        <div class="staffing-card ${getCardClass(weekData.totalVanDriversNeeded, weekData.vanDriversAssigned)}">
-          <div class="role-icon">🚐</div>
-          <div class="role-name">Van Drivers</div>
-          <div class="role-count">${weekData.vanDriversAssigned}/${weekData.totalVanDriversNeeded}</div>
-          <div class="role-status">${weekData.unfulfilled.vanDrivers > 0 ? `${weekData.unfulfilled.vanDrivers} needed` : 'Filled'}</div>
-        </div>
-      </div>
 
-      <div class="section-title">Events Needing Staffing (${eventsWithUnmetNeeds.length} of ${sortedEvents.length} total)</div>
-      <div class="events-list">
-        ${eventsHTML}
-      </div>
+        <div class="week-box">
+          <div class="week-title">${weekData.distributionDate}</div>
+          <div class="week-dates">${weekData.weekStartDate} - ${weekData.weekEndDate}</div>
+        </div>
 
-      <div class="footer">
-        <p>The Sandwich Project • Weekly Staffing Report</p>
+        <div class="summary-box ${totalUnfulfilled === 0 ? 'success' : 'warning'}">
+          <div class="big-number">${totalUnfulfilled === 0 ? '✅' : totalUnfulfilled}</div>
+          <div class="label">${totalUnfulfilled === 0 ? 'All Positions Filled!' : 'Positions Still Needed'}</div>
+        </div>
+
+        <div class="staffing-grid">
+          <div class="staffing-row">
+            <div class="staffing-card ${getCardClass(weekData.totalDriversNeeded, weekData.driversAssigned)}">
+              <div class="icon">🚗</div>
+              <div class="role">Drivers</div>
+              <div class="count">${weekData.driversAssigned}/${weekData.totalDriversNeeded}</div>
+              <div class="status">${weekData.unfulfilled.drivers > 0 ? `${weekData.unfulfilled.drivers} needed` : 'Filled'}</div>
+            </div>
+            <div class="staffing-card ${getCardClass(weekData.totalSpeakersNeeded, weekData.speakersAssigned)}">
+              <div class="icon">🎤</div>
+              <div class="role">Speakers</div>
+              <div class="count">${weekData.speakersAssigned}/${weekData.totalSpeakersNeeded}</div>
+              <div class="status">${weekData.unfulfilled.speakers > 0 ? `${weekData.unfulfilled.speakers} needed` : 'Filled'}</div>
+            </div>
+            <div class="staffing-card ${getCardClass(weekData.totalVolunteersNeeded, weekData.volunteersAssigned)}">
+              <div class="icon">👤</div>
+              <div class="role">Volunteers</div>
+              <div class="count">${weekData.volunteersAssigned}/${weekData.totalVolunteersNeeded}</div>
+              <div class="status">${weekData.unfulfilled.volunteers > 0 ? `${weekData.unfulfilled.volunteers} needed` : 'Filled'}</div>
+            </div>
+            <div class="staffing-card ${getCardClass(weekData.totalVanDriversNeeded, weekData.vanDriversAssigned)}">
+              <div class="icon">🚐</div>
+              <div class="role">Van Drivers</div>
+              <div class="count">${weekData.vanDriversAssigned}/${weekData.totalVanDriversNeeded}</div>
+              <div class="status">${weekData.unfulfilled.vanDrivers > 0 ? `${weekData.unfulfilled.vanDrivers} needed` : 'Filled'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">Events Needing Staffing (${eventsWithUnmetNeeds.length} of ${sortedEvents.length} total)</div>
+        <div class="event-list">
+          ${eventsHTML}
+        </div>
+
+        <div class="footer">
+          The Sandwich Project • Weekly Staffing Report
+        </div>
       </div>
     </body>
     </html>
@@ -594,7 +616,6 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
  * Download HTML as PDF using browser print
  */
 export function downloadPDF(htmlContent: string, filename: string): void {
-  // Create a new window with the HTML content
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     alert('Please allow popups to download the PDF');
@@ -604,11 +625,11 @@ export function downloadPDF(htmlContent: string, filename: string): void {
   printWindow.document.write(htmlContent);
   printWindow.document.close();
 
-  // Wait for content to load, then trigger print
+  // Wait for content and fonts to load
   printWindow.onload = () => {
     setTimeout(() => {
       printWindow.print();
-    }, 250);
+    }, 300);
   };
 }
 
@@ -617,8 +638,7 @@ export function downloadPDF(htmlContent: string, filename: string): void {
  */
 export function exportSandwichPlanning(weekData: SandwichWeekData): void {
   const html = generateSandwichPlanningPDF(weekData);
-  const dateStr = weekData.weekKey || new Date().toISOString().split('T')[0];
-  downloadPDF(html, `sandwich-planning-${dateStr}.pdf`);
+  downloadPDF(html, `sandwich-planning-${weekData.weekKey || 'week'}.pdf`);
 }
 
 /**
@@ -626,6 +646,5 @@ export function exportSandwichPlanning(weekData: SandwichWeekData): void {
  */
 export function exportStaffingPlanning(weekData: StaffingWeekData): void {
   const html = generateStaffingPlanningPDF(weekData);
-  const dateStr = weekData.weekKey || new Date().toISOString().split('T')[0];
-  downloadPDF(html, `staffing-planning-${dateStr}.pdf`);
+  downloadPDF(html, `staffing-planning-${weekData.weekKey || 'week'}.pdf`);
 }
