@@ -69,6 +69,7 @@ import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
 import { WhatsNewModal } from '@/components/whats-new-modal';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { ReviewerBanner } from '@/components/reviewer-banner';
+import { CommandPalette, useCommandPalette } from '@/components/command-palette';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -177,6 +178,9 @@ export default function Dashboard({
 
   // Show toast notifications when other users come online
   useOnlinePresenceNotifications();
+
+  // Command palette for quick navigation (Cmd+K)
+  const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
 
   React.useEffect(() => {
     trackView(
@@ -642,6 +646,9 @@ export default function Dashboard({
       <LoginMessageNotifier />
       <TextIdeaAnnouncementModal />
       <WhatsNewModal />
+
+      {/* Command Palette for quick navigation (Cmd+K) */}
+      <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">

@@ -225,6 +225,7 @@ export default function RequestFilters({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
         <Input
+          id="event-requests-search"
           placeholder="Search by organization, name, email, date, location, TSP contact, or volunteer..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}

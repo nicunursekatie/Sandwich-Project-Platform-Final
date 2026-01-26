@@ -90,6 +90,21 @@ const EventRequestsManagementContent: React.FC = () => {
     track('view_event_requests');
   }, []);
 
+  // Listen for focus-event-search event from command palette (Cmd+/)
+  useEffect(() => {
+    const handleFocusSearch = () => {
+      const searchInput = document.getElementById('event-requests-search');
+      if (searchInput) {
+        searchInput.focus();
+        // Scroll to top to make search visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+
+    window.addEventListener('focus-event-search', handleFocusSearch);
+    return () => window.removeEventListener('focus-event-search', handleFocusSearch);
+  }, []);
+
   const {
     eventRequests,
     isLoading,
