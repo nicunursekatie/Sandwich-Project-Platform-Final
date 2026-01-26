@@ -304,10 +304,29 @@ export async function checkReturningOrganization(
   similarNames?: string[];
 }> {
   try {
+    // Validate input
+    if (!orgName || typeof orgName !== 'string' || orgName.trim().length === 0) {
+      return {
+        isReturning: false,
+        inCatalog: false,
+        pastEventCount: 0,
+        collectionCount: 0,
+      };
+    }
+
     const canonicalName = canonicalizeOrgName(orgName);
+    if (!canonicalName) {
+      return {
+        isReturning: false,
+        inCatalog: false,
+        pastEventCount: 0,
+        collectionCount: 0,
+      };
+    }
 
     // Check for exact matches and similar names in past events
     // Exclude the current event request if provided
+    // Limit results for performance - we only need to detect if there are past events
     const eventCondition = currentEventId
       ? sql`${eventRequests.organizationName} IS NOT NULL
             AND ${eventRequests.organizationName} != ''
@@ -325,7 +344,8 @@ export async function checkReturningOrganization(
       })
       .from(eventRequests)
       .where(eventCondition)
-      .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
+      .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`)
+      .limit(500); // Limit to prevent performance issues
 
     // Find events with matching or similar organization names
     const matchingEvents: typeof pastEvents = [];
@@ -347,6 +367,7 @@ export async function checkReturningOrganization(
     }
 
     // Check sandwich collections for matching organization
+    // Limit to recent collections for performance
     const collections = await db
       .select({
         id: sandwichCollections.id,
@@ -355,7 +376,8 @@ export async function checkReturningOrganization(
         group2Name: sandwichCollections.group2Name,
       })
       .from(sandwichCollections)
-      .orderBy(sql`${sandwichCollections.dateCollected} DESC`);
+      .orderBy(sql`${sandwichCollections.dateCollected} DESC`)
+      .limit(500);
 
     // Find collections with matching organization names
     const matchingCollections: typeof collections = [];
