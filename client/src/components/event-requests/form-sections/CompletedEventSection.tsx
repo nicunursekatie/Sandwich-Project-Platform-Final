@@ -54,14 +54,14 @@ export const CompletedEventSection: React.FC<CompletedEventSectionProps> = ({
   const addActualSandwichType = () => {
     setFormData(prev => ({
       ...prev,
-      actualSandwichTypes: [...prev.actualSandwichTypes, { type: 'turkey', quantity: 0 }]
+      actualSandwichTypes: [...(prev.actualSandwichTypes || []), { type: 'turkey', quantity: 0 }]
     }));
   };
 
   const updateActualSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      actualSandwichTypes: prev.actualSandwichTypes.map((item, i) =>
+      actualSandwichTypes: (prev.actualSandwichTypes || []).map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       )
     }));
@@ -70,7 +70,7 @@ export const CompletedEventSection: React.FC<CompletedEventSectionProps> = ({
   const removeActualSandwichType = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      actualSandwichTypes: prev.actualSandwichTypes.filter((_, i) => i !== index)
+      actualSandwichTypes: (prev.actualSandwichTypes || []).filter((_, i) => i !== index)
     }));
   };
 

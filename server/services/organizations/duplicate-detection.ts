@@ -319,13 +319,13 @@ export async function checkReturningOrganization(
       .select({
         id: eventRequests.id,
         organizationName: eventRequests.organizationName,
-        eventDate: eventRequests.eventDate,
+        desiredEventDate: eventRequests.desiredEventDate,
         scheduledEventDate: eventRequests.scheduledEventDate,
         status: eventRequests.status,
       })
       .from(eventRequests)
       .where(eventCondition)
-      .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.eventDate}) DESC`);
+      .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
 
     // Find events with matching or similar organization names
     const matchingEvents: typeof pastEvents = [];
@@ -391,7 +391,7 @@ export async function checkReturningOrganization(
       collectionCount: matchingCollections.length,
       mostRecentEvent: mostRecentEvent ? {
         id: mostRecentEvent.id,
-        eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.eventDate,
+        eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,
         status: mostRecentEvent.status,
       } : undefined,
       mostRecentCollection: mostRecentCollection ? {

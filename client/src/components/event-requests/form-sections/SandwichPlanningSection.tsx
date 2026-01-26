@@ -44,14 +44,14 @@ export const SandwichPlanningSection: React.FC<SandwichPlanningSectionProps> = (
   const addSandwichType = () => {
     setFormData(prev => ({
       ...prev,
-      sandwichTypes: [...prev.sandwichTypes, { type: 'turkey', quantity: 0 }]
+      sandwichTypes: [...(prev.sandwichTypes || []), { type: 'turkey', quantity: 0 }]
     }));
   };
 
   const updateSandwichType = (index: number, field: 'type' | 'quantity', value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      sandwichTypes: prev.sandwichTypes.map((item, i) =>
+      sandwichTypes: (prev.sandwichTypes || []).map((item, i) =>
         i === index ? { ...item, [field]: value } : item
       )
     }));
@@ -60,7 +60,7 @@ export const SandwichPlanningSection: React.FC<SandwichPlanningSectionProps> = (
   const removeSandwichType = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      sandwichTypes: prev.sandwichTypes.filter((_, i) => i !== index)
+      sandwichTypes: (prev.sandwichTypes || []).filter((_, i) => i !== index)
     }));
   };
 
