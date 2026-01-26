@@ -104,7 +104,12 @@ interface User {
 
 // Helper to linkify addresses in text
 // Matches patterns like "123 Main St" or "123 Main Street, City, ST 12345"
-const LinkifyAddresses: React.FC<{ text: string }> = ({ text }) => {
+const LinkifyAddresses: React.FC<{ text: string | null | undefined }> = ({ text }) => {
+  // Handle null/undefined text
+  if (!text) {
+    return null;
+  }
+
   // Regex to match common US address patterns
   // Matches: number + street name (+ optional suite/apt) + optional city, state zip
   const addressRegex = /(\d+\s+[\w\s]+(?:St(?:reet)?|Ave(?:nue)?|Blvd|Boulevard|Dr(?:ive)?|Rd|Road|Ln|Lane|Way|Pl(?:ace)?|Ct|Court|Cir(?:cle)?|Pkwy|Parkway|Hwy|Highway)\.?(?:\s*(?:#|Suite|Ste|Apt|Unit)\s*[\w-]+)?(?:\s*,?\s*[\w\s]+,?\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?)?)/gi;
