@@ -308,10 +308,11 @@ export default function EmailStyleMessaging() {
       }
 
       const result = await response.json();
-      setAttachments(prev => [...prev, ...result.attachments]);
+      const uploadedAttachments = Array.isArray(result.attachments) ? result.attachments : [];
+      setAttachments(prev => [...prev, ...uploadedAttachments]);
 
       toast({
-        description: `${result.attachments.length} file(s) uploaded`,
+        description: `${uploadedAttachments.length} file(s) uploaded`,
       });
     } catch (error) {
       logger.error('Failed to upload attachments:', error);
