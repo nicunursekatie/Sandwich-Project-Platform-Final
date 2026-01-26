@@ -1131,27 +1131,25 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
             <div className="flex-1" />
 
-            {/* Edit/Delete */}
-            {canEdit && onEdit && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onEdit}
-                    className="h-8"
-                    data-testid="button-edit-request"
-                  >
-                    <Edit className="w-4 h-4 mr-1.5" />
-                    <span className="hidden sm:inline">{getPrimaryContextualAction(request)?.label || 'Edit'}</span>
-                    <span className="sm:hidden">Edit</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{getContextualTooltip(request)}</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+            {/* Edit Button - Always show for new requests */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onEdit}
+                  className="h-8"
+                  data-testid="button-edit-request"
+                >
+                  <Edit className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">{getPrimaryContextualAction(request)?.label || 'Edit'}</span>
+                  <span className="sm:hidden">Edit</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{getContextualTooltip(request)}</p>
+              </TooltipContent>
+            </Tooltip>
             {canDelete && (
               <ConfirmationDialog
                 trigger={

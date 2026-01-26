@@ -1559,7 +1559,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
             <div className="flex-1" />
 
-            {canEdit && (() => {
+            {/* Edit/Schedule Button - Always show */}
+            {(() => {
               const contextualAction = getPrimaryContextualAction(request);
               const tooltip = getContextualTooltip(request);
 
@@ -1580,6 +1581,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       variant={contextualAction?.action === 'schedule' ? 'default' : 'outline'}
                       onClick={handleClick}
                       className={`h-8 ${contextualAction?.action === 'schedule' ? 'bg-[#007E8C] hover:bg-[#005f6b]' : ''}`}
+                      data-testid="button-edit-request"
                     >
                       {contextualAction?.action === 'schedule' ? (
                         <CalendarCheck className="w-4 h-4 mr-1.5" />
