@@ -1159,8 +1159,9 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   <TooltipContent>
                     <p>{tooltip}</p>
                   </TooltipContent>
-              </Tooltip>
-            )}
+                </Tooltip>
+              );
+            })()}
             {canDelete && (
               <ConfirmationDialog
                 trigger={
