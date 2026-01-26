@@ -334,18 +334,25 @@ export async function checkReturningOrganization(
       : sql`${eventRequests.organizationName} IS NOT NULL
             AND ${eventRequests.organizationName} != ''`;
 
-    const pastEvents = await db
-      .select({
-        id: eventRequests.id,
-        organizationName: eventRequests.organizationName,
-        desiredEventDate: eventRequests.desiredEventDate,
-        scheduledEventDate: eventRequests.scheduledEventDate,
-        status: eventRequests.status,
-      })
-      .from(eventRequests)
-      .where(eventCondition)
-      .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`)
-      .limit(500); // Limit to prevent performance issues
+    // Wrapped in try/catch to handle potential Drizzle column resolution issues
+    let pastEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null }[] = [];
+    try {
+      pastEvents = await db
+        .select({
+          id: eventRequests.id,
+          organizationName: eventRequests.organizationName,
+          desiredEventDate: eventRequests.desiredEventDate,
+          scheduledEventDate: eventRequests.scheduledEventDate,
+          status: eventRequests.status,
+        })
+        .from(eventRequests)
+        .where(eventCondition)
+        .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`)
+        .limit(500); // Limit to prevent performance issues
+    } catch (eventQueryError) {
+      logger.warn('Failed to query event requests for returning org check, skipping event check', { error: eventQueryError });
+      // Continue with empty events - we'll just return that it's not a returning org
+    }
 
     // Find events with matching or similar organization names
     const matchingEvents: typeof pastEvents = [];
@@ -368,16 +375,23 @@ export async function checkReturningOrganization(
 
     // Check sandwich collections for matching organization
     // Limit to recent collections for performance
-    const collections = await db
-      .select({
-        id: sandwichCollections.id,
-        dateCollected: sandwichCollections.collectionDate,
-        group1Name: sandwichCollections.group1Name,
-        group2Name: sandwichCollections.group2Name,
-      })
-      .from(sandwichCollections)
-      .orderBy(sql`${sandwichCollections.collectionDate} DESC`)
-      .limit(500);
+    // Note: Wrapped in try/catch to handle potential Drizzle column resolution issues
+    let collections: { id: number; dateCollected: string | null; group1Name: string | null; group2Name: string | null }[] = [];
+    try {
+      collections = await db
+        .select({
+          id: sandwichCollections.id,
+          dateCollected: sandwichCollections.collectionDate,
+          group1Name: sandwichCollections.group1Name,
+          group2Name: sandwichCollections.group2Name,
+        })
+        .from(sandwichCollections)
+        .orderBy(sql`${sandwichCollections.collectionDate} DESC`)
+        .limit(500);
+    } catch (collectionQueryError) {
+      logger.warn('Failed to query sandwich collections for returning org check, skipping collection check', { error: collectionQueryError });
+      // Continue with empty collections - we'll just check event requests
+    }
 
     // Find collections with matching organization names
     const matchingCollections: typeof collections = [];
