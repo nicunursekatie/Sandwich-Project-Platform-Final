@@ -215,14 +215,14 @@ export function EventDetailsDialog({
           )}
 
           {/* Sandwich Section */}
-          {(event.estimatedSandwichCount || sandwichTypes.length > 0) && (
+          {(event.estimatedSandwichCount || (sandwichTypes && sandwichTypes.length > 0)) && (
             <div className="space-y-2">
               <h3 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
                 <Sandwich className="h-4 w-4" />
                 Sandwiches
               </h3>
               <div className="pl-6">
-                {sandwichTypes.length > 0 ? (
+                {sandwichTypes && sandwichTypes.length > 0 ? (
                   <p className="text-base">{sandwichDisplay}</p>
                 ) : (
                   <p className="text-base">{event.estimatedSandwichCount} sandwiches</p>
