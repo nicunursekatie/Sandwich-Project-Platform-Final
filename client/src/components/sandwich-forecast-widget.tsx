@@ -134,19 +134,17 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       return request.estimatedSandwichCount || 0;
     };
 
-    // Process events - include scheduled, in_process, and completed
+    // Process events - include only scheduled and completed
     const relevantEvents = eventRequests.filter((request) => {
-      // Use scheduledEventDate if available and status is scheduled/completed, otherwise use desiredEventDate
-      const dateToUse = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
-        ? request.scheduledEventDate
-        : request.desiredEventDate;
-
-      if (!dateToUse) return false;
-
-      // Include scheduled, in_process, and completed events
-      if (!['in_process', 'scheduled', 'completed'].includes(request.status)) {
+      // Only include scheduled and completed events
+      if (!['scheduled', 'completed'].includes(request.status)) {
         return false;
       }
+
+      // Use scheduledEventDate if available, otherwise use desiredEventDate
+      const dateToUse = request.scheduledEventDate || request.desiredEventDate;
+
+      if (!dateToUse) return false;
 
       try {
         const eventDate = parseEventDate(dateToUse.toString());

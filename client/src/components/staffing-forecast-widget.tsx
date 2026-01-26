@@ -128,8 +128,13 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Process events that need staffing (future scheduled/in-process events only)
+    // Process events that need staffing (scheduled events only)
     const relevantEvents = eventRequests.filter((request) => {
+      // Only include scheduled events
+      if (request.status !== 'scheduled') {
+        return false;
+      }
+
       if (!request.desiredEventDate) return false;
 
       // Only include events that need staffing
@@ -140,11 +145,6 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
         request.vanDriverNeeded;
 
       if (!needsStaffing) return false;
-
-      // Only include scheduled or in-process events
-      if (!['in_process', 'scheduled'].includes(request.status)) {
-        return false;
-      }
 
       try {
         const eventDate = new Date(request.desiredEventDate);
