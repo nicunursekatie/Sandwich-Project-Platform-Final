@@ -1132,36 +1132,25 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             <div className="flex-1" />
 
             {/* Edit/Delete */}
-            {canEdit && (() => {
-              const contextualAction = getPrimaryContextualAction(request);
-              const tooltip = getContextualTooltip(request);
-
-              // Determine which action to call
-              const handleClick = () => {
-                // For new requests, we don't have a schedule action, so always edit
-                onEdit();
-              };
-
-              return (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleClick}
-                      className="h-8"
-                    >
-                      <Edit className="w-4 h-4 mr-1.5" />
-                      <span className="hidden sm:inline">{contextualAction?.label || 'Edit'}</span>
-                      <span className="sm:hidden">Edit</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{tooltip}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })()}
+            {canEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onEdit}
+                    className="h-8"
+                  >
+                    <Edit className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">{getPrimaryContextualAction(request)?.label || 'Edit'}</span>
+                    <span className="sm:hidden">Edit</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{getContextualTooltip(request)}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {canDelete && (
               <ConfirmationDialog
                 trigger={

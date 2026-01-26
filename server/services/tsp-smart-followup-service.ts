@@ -27,8 +27,7 @@ import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import { EmailNotificationService } from './email-notification-service';
-import { getMissingIntakeInfo } from '../../client/src/lib/event-request-validation';
-import { getPrimaryContextualAction } from '../../client/src/lib/contextual-actions';
+import { getMissingIntakeInfo, getPrimaryContextualAction } from '@shared/event-validation-utils';
 
 const serviceLogger = {
   info: (msg: string, ...args: any[]) => logger.info(`[SmartFollowup] ${msg}`, ...args),
