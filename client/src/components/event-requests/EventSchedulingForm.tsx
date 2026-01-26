@@ -1703,6 +1703,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const completedSections = Object.values(sectionStatus).filter(Boolean).length;
   const totalSections = Object.keys(sectionStatus).length;
 
+  // Debug logging for render errors
+  try {
+    console.log('[EventSchedulingForm] Rendering with:', {
+      eventRequestId: eventRequest?.id,
+      organizationName: eventRequest?.organizationName,
+      mode,
+      dialogOpen,
+      formInitialized,
+    });
+  } catch (err) {
+    console.error('[EventSchedulingForm] Error during render preparation:', err);
+  }
+
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
