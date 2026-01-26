@@ -266,6 +266,8 @@ export const NewRequestsTab: React.FC = () => {
             <NewRequestCard
               key={request.id}
               request={request}
+              canEdit={true}
+              canDelete={true}
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
