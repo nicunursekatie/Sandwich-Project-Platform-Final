@@ -131,7 +131,27 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       if (request.status === 'completed' && request.actualSandwichCount) {
         return request.actualSandwichCount;
       }
-      return request.estimatedSandwichCount || 0;
+
+      // Check estimatedSandwichCount first
+      if (request.estimatedSandwichCount && request.estimatedSandwichCount > 0) {
+        return request.estimatedSandwichCount;
+      }
+
+      // Check for min/max range - use max if available, otherwise min
+      if (request.estimatedSandwichCountMax && request.estimatedSandwichCountMax > 0) {
+        return request.estimatedSandwichCountMax;
+      }
+      if (request.estimatedSandwichCountMin && request.estimatedSandwichCountMin > 0) {
+        return request.estimatedSandwichCountMin;
+      }
+
+      // Fall back to summing sandwichTypes quantities
+      const types = request.sandwichTypes as Array<{ type: string; quantity: number }> | undefined;
+      if (types && Array.isArray(types) && types.length > 0) {
+        return types.reduce((sum, t) => sum + (t.quantity || 0), 0);
+      }
+
+      return 0;
     };
 
     // Process events - include only scheduled and completed

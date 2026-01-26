@@ -97,9 +97,31 @@ const getAssignmentCount = (assignments: any): number => {
 
 // Get sandwich count for an event
 const getSandwichCount = (event: EventRequest): number => {
-  return event.status === 'completed' && event.actualSandwichCount
-    ? event.actualSandwichCount
-    : event.estimatedSandwichCount || 0;
+  // For completed events, prefer actual count
+  if (event.status === 'completed' && event.actualSandwichCount) {
+    return event.actualSandwichCount;
+  }
+
+  // Check estimatedSandwichCount first
+  if (event.estimatedSandwichCount && event.estimatedSandwichCount > 0) {
+    return event.estimatedSandwichCount;
+  }
+
+  // Check for min/max range - use max if available, otherwise min
+  if (event.estimatedSandwichCountMax && event.estimatedSandwichCountMax > 0) {
+    return event.estimatedSandwichCountMax;
+  }
+  if (event.estimatedSandwichCountMin && event.estimatedSandwichCountMin > 0) {
+    return event.estimatedSandwichCountMin;
+  }
+
+  // Fall back to summing sandwichTypes quantities
+  const types = event.sandwichTypes as Array<{ type: string; quantity: number }> | undefined;
+  if (types && Array.isArray(types) && types.length > 0) {
+    return types.reduce((sum, t) => sum + (t.quantity || 0), 0);
+  }
+
+  return 0;
 };
 
 // Generate print-friendly styles
