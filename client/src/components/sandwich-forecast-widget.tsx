@@ -80,11 +80,30 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       d.setHours(0, 0, 0, 0);
       const currentDay = d.getDay();
 
-      // Calculate days to go back to reach the start day
-      let daysBack = currentDay - weekStartDay;
-      if (daysBack < 0) daysBack += 7;
+      // Check if we're in the "gap" between week end and next week start
+      // For Thu→Tue (4→2), Wed (3) is after Tue (2) but before Thu (4), so it belongs to the NEXT Thu
+      const isInGapAfterWeekEnd = (() => {
+        if (weekEndDay >= weekStartDay) {
+          // Normal week like Mon→Fri: after Fri means next week
+          return currentDay > weekEndDay;
+        } else {
+          // Wrapped week like Thu→Tue: after Tue but before Thu means next week
+          return currentDay > weekEndDay && currentDay < weekStartDay;
+        }
+      })();
 
-      d.setDate(d.getDate() - daysBack);
+      if (isInGapAfterWeekEnd) {
+        // Move forward to the next week's start
+        let daysForward = weekStartDay - currentDay;
+        if (daysForward <= 0) daysForward += 7;
+        d.setDate(d.getDate() + daysForward);
+      } else {
+        // Normal case: go back to this week's start
+        let daysBack = currentDay - weekStartDay;
+        if (daysBack < 0) daysBack += 7;
+        d.setDate(d.getDate() - daysBack);
+      }
+
       return d;
     };
 
