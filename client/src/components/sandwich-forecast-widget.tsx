@@ -371,7 +371,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
               </span>
             </div>
             {hideHeader && (
-              <Popover>
+              <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1 text-xs text-blue-600 hover:text-blue-800">
                     <Settings2 className="w-3 h-3" />
