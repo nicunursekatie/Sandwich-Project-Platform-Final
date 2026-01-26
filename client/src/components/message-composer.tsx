@@ -94,11 +94,13 @@ export function MessageComposer({
       }
 
       const result = await response.json();
-      const uploadedAttachments = Array.isArray(result.attachments) ? result.attachments : [];
-      setAttachments(prev => [...prev, ...uploadedAttachments]);
+      if (!result.attachments || !Array.isArray(result.attachments)) {
+        throw new Error('Invalid response from server');
+      }
+      setAttachments(prev => [...prev, ...result.attachments]);
 
       toast({
-        description: `${uploadedAttachments.length} file(s) uploaded`,
+        description: `${result.attachments.length} file(s) uploaded`,
       });
     } catch (error) {
       logger.error('Failed to upload attachments:', error);
