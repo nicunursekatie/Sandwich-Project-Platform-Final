@@ -3,11 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Users,
-  TrendingUp,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -17,7 +17,9 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
-  Download
+  Download,
+  Calendar,
+  Settings2
 } from 'lucide-react';
 
 import type { EventRequest } from '@shared/schema';
@@ -25,6 +27,19 @@ import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/components/event-requests/utils';
 import { getDriverCount, getSpeakerCount, getVolunteerCount } from '@/lib/assignment-utils';
 import { exportStaffingPlanning } from '@/lib/planning-pdf-export';
+
+// Day names for display
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Preset week configurations
+const WEEK_PRESETS = [
+  { label: 'Thu → Tue', startDay: 4, endDay: 2, description: 'Thursday through Tuesday (6 days)' },
+  { label: 'Sat → Fri', startDay: 6, endDay: 5, description: 'Saturday through Friday (7 days)' },
+  { label: 'Mon → Sun', startDay: 1, endDay: 0, description: 'Monday through Sunday (standard week)' },
+  { label: 'Sun → Sat', startDay: 0, endDay: 6, description: 'Sunday through Saturday (7 days)' },
+  { label: 'Custom', startDay: -1, endDay: -1, description: 'Choose your own start and end days' },
+];
 
 interface WeeklyStaffing {
   weekKey: string;
@@ -54,8 +69,10 @@ interface StaffingForecastWidgetProps {
 
 export default function StaffingForecastWidget({ hideHeader = false }: StaffingForecastWidgetProps) {
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
-  const [weekRange, setWeekRange] = useState<'mon-sun' | 'until-collection'>('mon-sun');
-  const [includePreviousWeekend, setIncludePreviousWeekend] = useState(false);
+
+  // Week range state - default to Thu → Tue
+  const [weekStartDay, setWeekStartDay] = useState(4); // Thursday
+  const [weekEndDay, setWeekEndDay] = useState(2); // Tuesday
 
   const { data: eventRequests, isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests/all'],
@@ -66,44 +83,45 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
     },
   });
 
+  // Find matching preset or show as custom
+  const currentPreset = WEEK_PRESETS.find(p => p.startDay === weekStartDay && p.endDay === weekEndDay)
+    || WEEK_PRESETS[WEEK_PRESETS.length - 1]; // Default to "Custom"
+
+  // Calculate days in the week range
+  const getDaysInRange = (start: number, end: number) => {
+    if (end >= start) {
+      return end - start + 1;
+    } else {
+      return (7 - start) + end + 1;
+    }
+  };
+
   // Weekly staffing forecast calculator
   const weeklyStaffingForecast = useMemo(() => {
     if (!eventRequests) return [];
 
     const weeklyData: Record<string, WeeklyStaffing> = {};
 
-    // Helper function to get the Monday of a calendar week
-    const getWeekMonday = (date: Date) => {
+    // Helper function to get the start of the week based on weekStartDay
+    const getWeekStart = (date: Date) => {
       const d = new Date(date);
       d.setHours(0, 0, 0, 0);
-      const day = d.getDay(); // 0=Sun, 1=Mon, ...
-      // Adjust to get Monday (if Sunday, go back 6 days; otherwise go back (day-1) days)
-      const daysToMonday = day === 0 ? -6 : 1 - day;
-      d.setDate(d.getDate() + daysToMonday);
+      const currentDay = d.getDay();
+
+      // Calculate days to go back to reach the start day
+      let daysBack = currentDay - weekStartDay;
+      if (daysBack < 0) daysBack += 7;
+
+      d.setDate(d.getDate() - daysBack);
       return d;
     };
 
-    // Helper function to get the Sunday of the same calendar week
-    const getWeekSunday = (monday: Date) => {
-      const d = new Date(monday);
-      d.setDate(d.getDate() + 6);
+    // Helper function to get the end of the week based on weekEndDay
+    const getWeekEnd = (weekStart: Date) => {
+      const d = new Date(weekStart);
+      const daysInRange = getDaysInRange(weekStartDay, weekEndDay);
+      d.setDate(d.getDate() + daysInRange - 1);
       return d;
-    };
-
-    // Helper function to get the next Wednesday after Sunday (collection day)
-    const getNextWednesday = (sunday: Date) => {
-      const d = new Date(sunday);
-      d.setDate(d.getDate() + 3); // Sun + 3 = Wed
-      return d;
-    };
-
-    // Helper function to get the previous weekend (Saturday and Sunday before Monday)
-    const getPreviousWeekend = (monday: Date) => {
-      const saturday = new Date(monday);
-      saturday.setDate(saturday.getDate() - 2); // 2 days before Monday = Saturday
-      const sunday = new Date(monday);
-      sunday.setDate(sunday.getDate() - 1); // 1 day before Monday = Sunday
-      return { saturday, sunday };
     };
 
     // Get current date for filtering events
@@ -115,7 +133,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
       if (!request.desiredEventDate) return false;
 
       // Only include events that need staffing
-      const needsStaffing = 
+      const needsStaffing =
         (request.driversNeeded && request.driversNeeded > 0) ||
         (request.speakersNeeded && request.speakersNeeded > 0) ||
         (request.volunteersNeeded && request.volunteersNeeded > 0) ||
@@ -132,17 +150,13 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
         const eventDate = new Date(request.desiredEventDate);
         if (isNaN(eventDate.getTime())) return false;
 
-        // Only future events (or past weekend if includePreviousWeekend is enabled)
-        if (includePreviousWeekend) {
-          // Include events from previous weekend onwards
-          const thisWeekMonday = getWeekMonday(today);
-          const prevWeekend = getPreviousWeekend(thisWeekMonday);
-          const minDate = new Date(prevWeekend.saturday);
-          minDate.setHours(0, 0, 0, 0);
-          return eventDate >= minDate;
-        } else {
-          return eventDate >= today;
-        }
+        // Include events from 1 week ago to 8 weeks forward
+        const oneWeekAgo = new Date(today);
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const eightWeeksFromNow = new Date(today);
+        eightWeeksFromNow.setDate(eightWeeksFromNow.getDate() + 56);
+
+        return eventDate >= oneWeekAgo && eventDate <= eightWeeksFromNow;
       } catch (error) {
         return false;
       }
@@ -151,144 +165,24 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
     relevantEvents.forEach((request) => {
       try {
         const eventDate = new Date(request.desiredEventDate!);
-        const weekMonday = getWeekMonday(eventDate);
-        const weekSunday = getWeekSunday(weekMonday);
+        const weekStart = getWeekStart(eventDate);
+        const weekEnd = getWeekEnd(weekStart);
+        const weekKey = weekStart.toISOString().split('T')[0];
 
-        // Determine the end date based on user preference
-        const weekEndDate = weekRange === 'until-collection'
-          ? getNextWednesday(weekSunday)
-          : weekSunday;
-
-        // Handle previous weekend events if enabled
-        let useWeekKey = weekMonday.toISOString().split('T')[0];
-        let useWeekMonday = weekMonday;
-        let useWeekEndDate = weekEndDate;
-
-        if (includePreviousWeekend) {
-          // Check if this event is on the previous weekend (Saturday/Sunday before current week's Monday)
-          const thisWeekMonday = getWeekMonday(today);
-          const prevWeekend = getPreviousWeekend(thisWeekMonday);
-          const eventDay = eventDate.getDay();
-          
-          // If event is on previous weekend, it should belong to this week
-          if (eventDay === 6 || eventDay === 0) { // Saturday or Sunday
-            const saturdayStr = prevWeekend.saturday.toDateString();
-            const sundayStr = prevWeekend.sunday.toDateString();
-            const eventDateStr = eventDate.toDateString();
-            
-            if (eventDateStr === saturdayStr || eventDateStr === sundayStr) {
-              // This event is on the previous weekend - assign it to this week
-              useWeekMonday = thisWeekMonday;
-              useWeekEndDate = weekRange === 'until-collection'
-                ? getNextWednesday(getWeekSunday(thisWeekMonday))
-                : getWeekSunday(thisWeekMonday);
-              useWeekKey = thisWeekMonday.toISOString().split('T')[0];
-            }
-          }
-        }
-
-        // For extended mode (until collection), check if event falls in Mon-Wed of next week
-        if (weekRange === 'until-collection') {
-          const eventDay = eventDate.getDay();
-          if (eventDay >= 1 && eventDay <= 3) { // Mon, Tue, Wed
-            // Get the previous week's Monday to check if this event belongs there
-            const prevWeekMonday = new Date(weekMonday);
-            prevWeekMonday.setDate(prevWeekMonday.getDate() - 7);
-            const prevWeekSunday = getWeekSunday(prevWeekMonday);
-            const prevWeekWednesday = getNextWednesday(prevWeekSunday);
-            
-            // Check if this event should belong to the previous week's extended range
-            if (eventDate <= prevWeekWednesday && eventDate > prevWeekSunday) {
-              // This event belongs to the previous week's extended range
-              const useWeekKey = prevWeekMonday.toISOString().split('T')[0];
-              const useWeekMonday = prevWeekMonday;
-              const useWeekEndDate = prevWeekWednesday;
-
-              if (!weeklyData[useWeekKey]) {
-                weeklyData[useWeekKey] = {
-                  weekKey: useWeekKey,
-                  weekStartDate: useWeekMonday.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  }),
-                  weekEndDate: useWeekEndDate.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  }),
-                  distributionDate: useWeekEndDate.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  }),
-                  events: [],
-                  totalDriversNeeded: 0,
-                  totalSpeakersNeeded: 0,
-                  totalVolunteersNeeded: 0,
-                  totalVanDriversNeeded: 0,
-                  driversAssigned: 0,
-                  speakersAssigned: 0,
-                  volunteersAssigned: 0,
-                  vanDriversAssigned: 0,
-                  unfulfilled: {
-                    drivers: 0,
-                    speakers: 0,
-                    volunteers: 0,
-                    vanDrivers: 0,
-                  }
-                };
-              }
-
-              const week = weeklyData[useWeekKey];
-              week.events.push(request);
-
-              // Calculate staffing needs
-              const driversNeeded = request.driversNeeded || 0;
-              const speakersNeeded = request.speakersNeeded || 0;
-              const volunteersNeeded = request.volunteersNeeded || 0;
-              const vanDriversNeeded = request.vanDriverNeeded ? 1 : 0;
-
-              const driversAssigned = getDriverCount(request);
-              const speakersAssigned = getSpeakerCount(request);
-              const volunteersAssigned = getVolunteerCount(request);
-              const vanDriversAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
-
-              week.totalDriversNeeded += driversNeeded;
-              week.totalSpeakersNeeded += speakersNeeded;
-              week.totalVolunteersNeeded += volunteersNeeded;
-              week.totalVanDriversNeeded += vanDriversNeeded;
-
-              week.driversAssigned += driversAssigned;
-              week.speakersAssigned += speakersAssigned;
-              week.volunteersAssigned += volunteersAssigned;
-              week.vanDriversAssigned += vanDriversAssigned;
-
-              // Calculate unfulfilled positions
-              week.unfulfilled.drivers += Math.max(0, driversNeeded - driversAssigned);
-              week.unfulfilled.speakers += Math.max(0, speakersNeeded - speakersAssigned);
-              week.unfulfilled.volunteers += Math.max(0, volunteersNeeded - volunteersAssigned);
-              week.unfulfilled.vanDrivers += Math.max(0, vanDriversNeeded - vanDriversAssigned);
-
-              return; // Skip normal processing
-            }
-          }
-        }
-
-        if (!weeklyData[useWeekKey]) {
-          weeklyData[useWeekKey] = {
-            weekKey: useWeekKey,
-            weekStartDate: useWeekMonday.toLocaleDateString('en-US', {
+        if (!weeklyData[weekKey]) {
+          weeklyData[weekKey] = {
+            weekKey,
+            weekStartDate: weekStart.toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
             }),
-            weekEndDate: useWeekEndDate.toLocaleDateString('en-US', {
+            weekEndDate: weekEnd.toLocaleDateString('en-US', {
               weekday: 'short',
               month: 'short',
               day: 'numeric',
             }),
-            distributionDate: useWeekEndDate.toLocaleDateString('en-US', {
+            distributionDate: weekEnd.toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
               day: 'numeric',
@@ -311,7 +205,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
           };
         }
 
-        const week = weeklyData[useWeekKey];
+        const week = weeklyData[weekKey];
         week.events.push(request);
 
         // Calculate staffing needs
@@ -349,19 +243,19 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
     // Convert to array and sort by week start date
     return Object.values(weeklyData)
       .sort((a, b) => a.weekKey.localeCompare(b.weekKey))
-      .slice(0, 8); // Show next 8 weeks
-  }, [eventRequests, weekRange, includePreviousWeekend]);
+      .slice(0, 12); // Show up to 12 weeks
+  }, [eventRequests, weekStartDay, weekEndDay]);
 
   // Reset week index when date range options change
   useEffect(() => {
     setCurrentWeekIndex(0);
-  }, [weekRange, includePreviousWeekend]);
+  }, [weekStartDay, weekEndDay]);
 
   // Only show one week at a time
   const currentWeek = weeklyStaffingForecast[currentWeekIndex] || null;
 
   const getTotalUnfulfilled = (week: WeeklyStaffing) => {
-    return week.unfulfilled.drivers + week.unfulfilled.speakers + 
+    return week.unfulfilled.drivers + week.unfulfilled.speakers +
            week.unfulfilled.volunteers + week.unfulfilled.vanDrivers;
   };
 
@@ -397,75 +291,172 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                 <p className="text-sm text-[#646464] mt-1">
                   Track driver, speaker, and volunteer needs for upcoming events requiring staffing.
                 </p>
-                <p className="text-xs text-brand-orange mt-1 font-medium">
-                  👥 Focus on scheduled events that need volunteers
-                </p>
               </div>
-              <div className="flex flex-col gap-3 items-end ml-4">
-                <div className="flex flex-col gap-1 items-end">
-                  <label className="text-xs font-medium text-[#646464]">Week Range</label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={weekRange === 'mon-sun' ? 'default' : 'outline'}
-                      onClick={() => setWeekRange('mon-sun')}
-                      className="text-xs h-7"
-                    >
-                      Mon-Sun
+              <div className="flex flex-col gap-2 items-end ml-4">
+                {/* Week Range Selector */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 text-xs">
+                      <Settings2 className="w-3 h-3" />
+                      {currentPreset.label}
                     </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={weekRange === 'until-collection' ? 'default' : 'outline'}
-                      onClick={() => setWeekRange('until-collection')}
-                      className="text-xs h-7"
-                    >
-                      Until Next Collection
-                    </Button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="include-previous-weekend"
-                    checked={includePreviousWeekend}
-                    onCheckedChange={(checked) => setIncludePreviousWeekend(checked === true)}
-                  />
-                  <label
-                    htmlFor="include-previous-weekend"
-                    className="text-xs font-medium text-[#646464] cursor-pointer"
-                  >
-                    Include Previous Weekend
-                  </label>
-                </div>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        if (currentWeek) {
-                          exportStaffingPlanning(currentWeek);
-                        }
-                      }}
-                      disabled={!currentWeek}
-                      className="text-xs h-7 gap-1"
-                      style={{ borderColor: '#FBAD3F', color: '#FBAD3F' }}
-                    >
-                      <Download className="w-3 h-3" />
-                      Export PDF
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Download a stylized PDF of this week's staffing planning
-                  </TooltipContent>
-                </Tooltip>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80" align="end">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          {WEEK_PRESETS.slice(0, -1).map((preset) => (
+                            <Button
+                              key={preset.label}
+                              variant={currentPreset.label === preset.label ? 'default' : 'outline'}
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => {
+                                setWeekStartDay(preset.startDay);
+                                setWeekEndDay(preset.endDay);
+                              }}
+                            >
+                              {preset.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-3">
+                        <h4 className="font-medium text-sm mb-2">Custom Range</h4>
+                        <div className="flex gap-3 items-center">
+                          <div className="flex-1">
+                            <label className="text-xs text-gray-500 block mb-1">Start Day</label>
+                            <Select
+                              value={weekStartDay.toString()}
+                              onValueChange={(v) => setWeekStartDay(parseInt(v))}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DAY_NAMES.map((day, i) => (
+                                  <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <span className="text-gray-400 mt-5">→</span>
+                          <div className="flex-1">
+                            <label className="text-xs text-gray-500 block mb-1">End Day</label>
+                            <Select
+                              value={weekEndDay.toString()}
+                              onValueChange={(v) => setWeekEndDay(parseInt(v))}
+                            >
+                              <SelectTrigger className="h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DAY_NAMES.map((day, i) => (
+                                  <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {getDaysInRange(weekStartDay, weekEndDay)} days: {DAY_NAMES_SHORT[weekStartDay]} → {DAY_NAMES_SHORT[weekEndDay]}
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </CardHeader>
         )}
         <CardContent className={hideHeader ? "p-0 space-y-6" : "space-y-6"}>
+          {/* Week Range Info Banner - Always visible */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-orange-600" />
+              <span className="text-sm text-orange-800">
+                <strong>Week view:</strong> {DAY_NAMES[weekStartDay]} → {DAY_NAMES[weekEndDay]} ({getDaysInRange(weekStartDay, weekEndDay)} days)
+              </span>
+            </div>
+            {hideHeader && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1 text-xs text-orange-600 hover:text-orange-800">
+                    <Settings2 className="w-3 h-3" />
+                    Change
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {WEEK_PRESETS.slice(0, -1).map((preset) => (
+                          <Button
+                            key={preset.label}
+                            variant={currentPreset.label === preset.label ? 'default' : 'outline'}
+                            size="sm"
+                            className="text-xs"
+                            onClick={() => {
+                              setWeekStartDay(preset.startDay);
+                              setWeekEndDay(preset.endDay);
+                            }}
+                          >
+                            {preset.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-3">
+                      <h4 className="font-medium text-sm mb-2">Custom Range</h4>
+                      <div className="flex gap-3 items-center">
+                        <div className="flex-1">
+                          <label className="text-xs text-gray-500 block mb-1">Start Day</label>
+                          <Select
+                            value={weekStartDay.toString()}
+                            onValueChange={(v) => setWeekStartDay(parseInt(v))}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DAY_NAMES.map((day, i) => (
+                                <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <span className="text-gray-400 mt-5">→</span>
+                        <div className="flex-1">
+                          <label className="text-xs text-gray-500 block mb-1">End Day</label>
+                          <Select
+                            value={weekEndDay.toString()}
+                            onValueChange={(v) => setWeekEndDay(parseInt(v))}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DAY_NAMES.map((day, i) => (
+                                <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        {getDaysInRange(weekStartDay, weekEndDay)} days: {DAY_NAMES_SHORT[weekStartDay]} → {DAY_NAMES_SHORT[weekEndDay]}
+                      </p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+
           {/* Week Navigation */}
           <div className="flex items-center justify-between mb-4">
             <Button
@@ -479,7 +470,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
               Previous
             </Button>
             <div className="font-bold text-lg text-brand-primary">
-              {currentWeek?.distributionDate || 'No week selected'}
+              {currentWeek?.weekStartDate} - {currentWeek?.weekEndDate}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -522,8 +513,8 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
             <div className="space-y-4">
               {/* Overall Status */}
               <div className={`rounded-lg p-4 border-2 ${
-                getTotalUnfulfilled(currentWeek) === 0 
-                  ? 'bg-green-50 border-green-300 text-green-800' 
+                getTotalUnfulfilled(currentWeek) === 0
+                  ? 'bg-green-50 border-green-300 text-green-800'
                   : 'bg-amber-50 border-amber-300 text-amber-800'
               }`}>
                 <div className="flex items-center space-x-2">
@@ -550,22 +541,22 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                   // Helper function to safely get array length for PostgreSQL arrays
                   const getAssignmentCount = (assignments: any) => {
                     if (!assignments) return 0;
-                    
+
                     // If it's already a JavaScript array
                     if (Array.isArray(assignments)) {
                       return assignments.length;
                     }
-                    
+
                     // If it's a string (PostgreSQL array format like "{item1,item2}" or '{"item1","item2"}')
                     if (typeof assignments === 'string') {
                       // Empty PostgreSQL array
                       if (assignments === '{}' || assignments === '') return 0;
-                      
+
                       // Remove curly braces and handle quoted strings
                       let cleaned = assignments.replace(/^{|}$/g, '');
-                      
+
                       if (!cleaned) return 0;
-                      
+
                       // Handle quoted elements like "Andy Hiles","Barbara Bancroft"
                       if (cleaned.includes('"')) {
                         // Split by comma but handle quoted strings properly
@@ -576,12 +567,12 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                         return cleaned.split(',').filter(item => item.trim()).length;
                       }
                     }
-                    
+
                     // Fallback: if it's an object, check if it has length property
                     if (typeof assignments === 'object' && assignments.length !== undefined) {
                       return assignments.length;
                     }
-                    
+
                     return 0;
                   };
 
@@ -677,7 +668,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                           {totalUnfulfilled === 0 ? 'Fully Staffed' : `${totalUnfulfilled} needed`}
                         </Badge>
                       </div>
-                      
+
                       {/* Show specific unfilled roles */}
                       {totalUnfulfilled > 0 && (
                         <div className="flex flex-wrap gap-2">
