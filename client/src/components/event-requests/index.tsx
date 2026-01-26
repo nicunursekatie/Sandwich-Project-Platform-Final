@@ -334,8 +334,8 @@ const EventRequestsManagementContent: React.FC = () => {
   const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
   const [showFloatingTip, setShowFloatingTip] = React.useState(false);
 
-  // Check if user has permission to manage event requests (required for sync)
-  const canManageEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_MANAGE) ||
+  // Check if user has permission to sync event requests from Google Sheets
+  const canSyncEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_SYNC) ||
     user?.role === 'admin' || user?.role === 'super_admin';
 
   // Support both old and new permission strings for backward compatibility
@@ -631,7 +631,7 @@ const EventRequestsManagementContent: React.FC = () => {
             {/* Action buttons row */}
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
               {/* Admin actions */}
-              {canManageEvents && (
+              {canSyncEvents && (
                 <button
                   onClick={() => syncFromSheetsMutation.mutate()}
                   disabled={syncFromSheetsMutation.isPending}
