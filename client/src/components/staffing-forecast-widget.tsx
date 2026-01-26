@@ -69,6 +69,7 @@ interface StaffingForecastWidgetProps {
 
 export default function StaffingForecastWidget({ hideHeader = false }: StaffingForecastWidgetProps) {
   const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   // Week range state - default to Thu → Tue
   const [weekStartDay, setWeekStartDay] = useState(4); // Thursday
@@ -135,7 +136,9 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
         return false;
       }
 
-      if (!request.desiredEventDate) return false;
+      // Use scheduledEventDate for scheduled events, fall back to desiredEventDate
+      const dateToUse = request.scheduledEventDate || request.desiredEventDate;
+      if (!dateToUse) return false;
 
       // Only include events that need staffing
       const needsStaffing =
@@ -147,7 +150,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
       if (!needsStaffing) return false;
 
       try {
-        const eventDate = new Date(request.desiredEventDate);
+        const eventDate = new Date(dateToUse);
         if (isNaN(eventDate.getTime())) return false;
 
         // Include events from 1 week ago to 8 weeks forward
@@ -164,7 +167,8 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
 
     relevantEvents.forEach((request) => {
       try {
-        const eventDate = new Date(request.desiredEventDate!);
+        const dateToUse = request.scheduledEventDate || request.desiredEventDate;
+        const eventDate = new Date(dateToUse!);
         const weekStart = getWeekStart(eventDate);
         const weekEnd = getWeekEnd(weekStart);
         const weekKey = weekStart.toISOString().split('T')[0];
@@ -294,14 +298,23 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
               </div>
               <div className="flex flex-col gap-2 items-end ml-4">
                 {/* Week Range Selector */}
-                <Popover>
+                <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker} modal>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 text-xs">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCustomPicker(true);
+                      }}
+                    >
                       <Settings2 className="w-3 h-3" />
                       {currentPreset.label}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80" align="end">
+                  <PopoverContent className="w-80 z-[10010]" align="end" side="bottom">
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
@@ -381,14 +394,23 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
               </span>
             </div>
             {hideHeader && (
-              <Popover>
+              <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker} modal>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1 text-xs text-orange-600 hover:text-orange-800">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-xs text-orange-600 hover:text-orange-800"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCustomPicker(true);
+                    }}
+                  >
                     <Settings2 className="w-3 h-3" />
                     Change
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
+                <PopoverContent className="w-80 z-[10010]" align="end" side="bottom">
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
