@@ -4304,6 +4304,22 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
         // Log error but don't fail the request if SMS notification fails
         logger.error('Failed to send TSP contact assignment SMS:', error);
       }
+
+      // Initialize corporate follow-up protocol if this is a corporate priority event
+      if (originalEvent.isCorporatePriority) {
+        try {
+          const { initializeCorporateProtocol } = await import('../services/corporate-followup-service');
+          await initializeCorporateProtocol(
+            id,
+            validatedData.tspContact!,
+            req.user?.id || 'system'
+          );
+          logger.log(`✅ Corporate follow-up protocol initialized for event ${id}`);
+        } catch (error) {
+          logger.error('Failed to initialize corporate follow-up protocol:', error);
+          // Don't fail the request if protocol initialization fails
+        }
+      }
     }
 
     // Enhanced audit logging for this operation
@@ -4350,6 +4366,108 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
 
 // Audit Log Routes - MOVED to ./event-requests/audit.ts
 // Routes moved: GET /audit-logs
+
+// Toggle corporate priority status for an event request
+// When marked as corporate, notifies Christine and Katie that event needs core team attention
+router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { isCorporatePriority, coreTeamMemberNotes } = req.body;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions - admin or TSP contact assignment permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_EDIT)) {
+      return res.status(403).json({
+        error: 'Insufficient permissions to update corporate priority status.',
+      });
+    }
+
+    // Get original data for comparison
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Prepare updates
+    const updates: Partial<EventRequest> = {
+      isCorporatePriority: isCorporatePriority ?? false,
+      requiresCoreTeamMember: isCorporatePriority ?? false,
+      updatedAt: new Date(),
+    };
+
+    // Track when it was marked/unmarked
+    if (isCorporatePriority && !originalEvent.isCorporatePriority) {
+      updates.corporatePriorityMarkedAt = new Date();
+      updates.corporatePriorityMarkedBy = req.user?.id || null;
+    } else if (!isCorporatePriority && originalEvent.isCorporatePriority) {
+      updates.corporatePriorityMarkedAt = null;
+      updates.corporatePriorityMarkedBy = null;
+    }
+
+    // Update core team member notes if provided
+    if (coreTeamMemberNotes !== undefined) {
+      updates.coreTeamMemberNotes = coreTeamMemberNotes;
+    }
+
+    await storage.updateEventRequest(id, updates);
+
+    // Fetch updated record
+    const updatedEventRequest = await storage.getEventRequestById(id);
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: 'Event request not found after update' });
+    }
+
+    // Send notification to Christine and Katie when marked as corporate
+    if (isCorporatePriority && !originalEvent.isCorporatePriority) {
+      try {
+        await EmailNotificationService.sendCorporatePriorityNotification(
+          id,
+          originalEvent.organizationName,
+          originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
+          req.user?.email || 'Unknown user'
+        );
+      } catch (error) {
+        logger.error('Failed to send corporate priority notification:', error);
+        // Don't fail the request if notification fails
+      }
+    }
+
+    // Audit log
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_EDIT',
+      `${isCorporatePriority ? 'Marked' : 'Unmarked'} event as corporate priority: ${id}`,
+      {
+        eventId: id,
+        isCorporatePriority,
+        organizationName: originalEvent.organizationName,
+        markedBy: req.user?.email,
+      }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    logger.error('Error updating corporate priority status:', error);
+    res.status(500).json({ error: 'Failed to update corporate priority status' });
+  }
+});
 
 // Update recipient assignment for event requests
 router.patch('/:id/recipients', isAuthenticated, async (req, res) => {

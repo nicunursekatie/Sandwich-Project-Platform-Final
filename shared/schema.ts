@@ -2372,6 +2372,53 @@ export const eventRequests = pgTable(
     mlkDayMarkedAt: timestamp('mlk_day_marked_at'), // When it was marked as MLK Day event
     mlkDayMarkedBy: varchar('mlk_day_marked_by'), // User ID who marked it as MLK Day event
 
+    // Corporate priority tracking - manually assigned, triggers strict follow-up protocol
+    isCorporatePriority: boolean('is_corporate_priority').default(false), // Whether this is a corporate priority event requiring immediate attention
+    corporatePriorityMarkedAt: timestamp('corporate_priority_marked_at'), // When it was marked as corporate priority
+    corporatePriorityMarkedBy: varchar('corporate_priority_marked_by'), // User ID who marked it as corporate priority
+    requiresCoreTeamMember: boolean('requires_core_team_member').default(false), // Whether a core team member should attend (auto-set for corporate)
+    coreTeamMemberNotes: text('core_team_member_notes'), // Notes about core team member assignment for relationship building
+
+    // Corporate follow-up protocol tracking - strict protocol for corporate events
+    corporateFollowUpProtocol: jsonb('corporate_follow_up_protocol').$type<{
+      status: 'not_started' | 'active' | 'completed' | 'stalled'; // Current protocol status
+      protocolStartedAt: string | null; // When TSP contact was assigned (protocol begins)
+      protocolStartedBy: string | null; // User ID who started the protocol
+
+      // Day 1 actions (required immediately when TSP contact assigned)
+      initialCallMade: boolean;
+      initialCallAt: string | null; // Timestamp
+      initialCallBy: string | null; // User ID
+      initialCallOutcome: 'answered' | 'voicemail' | 'no_answer' | null;
+
+      voicemailLeft: boolean;
+      voicemailLeftAt: string | null;
+
+      toolkitEmailSent: boolean;
+      toolkitEmailSentAt: string | null;
+      toolkitEmailSentBy: string | null;
+
+      // Day 2+ actions (if no response)
+      day2CallMade: boolean;
+      day2CallAt: string | null;
+      day2CallBy: string | null;
+      day2CallOutcome: 'answered' | 'voicemail' | 'no_answer' | null;
+
+      day2TextSent: boolean;
+      day2TextSentAt: string | null;
+      day2TextSentBy: string | null;
+
+      // Ongoing tracking
+      lastReminderSentAt: string | null; // Last reminder sent to TSP contact
+      reminderCount: number; // How many reminders have been sent
+
+      // Resolution
+      successfulContactAt: string | null; // When we got through to them
+      successfulContactBy: string | null;
+      finalOutcome: 'yes' | 'no' | 'standby' | null; // Their response
+      finalOutcomeNotes: string | null;
+    }>().default('{"status": "not_started", "initialCallMade": false, "voicemailLeft": false, "toolkitEmailSent": false, "day2CallMade": false, "day2TextSent": false, "reminderCount": 0}'),
+
     // Event instructions for volunteers (included in automated alerts)
     driverInstructions: text('driver_instructions'), // Special instructions for drivers (included in reminder texts/emails)
     volunteerInstructions: text('volunteer_instructions'), // Special instructions for general volunteers
