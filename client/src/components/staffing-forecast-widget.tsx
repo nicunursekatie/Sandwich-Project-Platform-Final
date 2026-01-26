@@ -481,16 +481,41 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
             <div className="font-bold text-lg text-brand-primary">
               {currentWeek?.distributionDate || 'No week selected'}
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentWeekIndex(i => Math.min(weeklyStaffingForecast.length - 1, i + 1))}
-              disabled={currentWeekIndex === weeklyStaffingForecast.length - 1}
-              style={{ color: '#236383', borderColor: '#236383' }}
-              data-testid="button-next-week"
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentWeekIndex(i => Math.min(weeklyStaffingForecast.length - 1, i + 1))}
+                disabled={currentWeekIndex === weeklyStaffingForecast.length - 1}
+                style={{ color: '#236383', borderColor: '#236383' }}
+                data-testid="button-next-week"
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (currentWeek) {
+                        exportStaffingPlanning(currentWeek);
+                      }
+                    }}
+                    disabled={!currentWeek}
+                    className="gap-1"
+                    style={{ borderColor: '#FBAD3F', color: '#FBAD3F' }}
+                  >
+                    <Download className="w-4 h-4" />
+                    Export PDF
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Download a stylized PDF of this week's staffing planning
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
 
           {currentWeek ? (

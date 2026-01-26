@@ -577,14 +577,39 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
               </Badge>
             )}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentWeekIndex(i => Math.min(weeklySandwichForecast.length - 1, i + 1))}
-            disabled={currentWeekIndex === weeklySandwichForecast.length - 1}
-            style={{ color: '#236383', borderColor: '#236383' }}
-          >
-            Next Week
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentWeekIndex(i => Math.min(weeklySandwichForecast.length - 1, i + 1))}
+              disabled={currentWeekIndex === weeklySandwichForecast.length - 1}
+              style={{ color: '#236383', borderColor: '#236383' }}
+            >
+              Next Week
+            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (currentWeek) {
+                      exportSandwichPlanning(currentWeek);
+                    }
+                  }}
+                  disabled={!currentWeek}
+                  className="gap-1"
+                  style={{ borderColor: '#236383', color: '#236383' }}
+                >
+                  <Download className="w-4 h-4" />
+                  Export PDF
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Download a stylized PDF of this week's sandwich planning
+              </TooltipContent>
+            </Tooltip>
+          </div>
         </div>
         {/* Totals Section */}
         <div className="flex items-center gap-2 p-3 rounded-lg border border-[#236383] bg-[#F0FBFC] mb-4">
