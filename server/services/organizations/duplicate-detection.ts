@@ -251,13 +251,13 @@ export async function getOrganizationDetails(orgName: string) {
     const collections = await db
       .select({
         id: sandwichCollections.id,
-        dateCollected: sandwichCollections.dateCollected,
+        dateCollected: sandwichCollections.collectionDate,
       })
       .from(sandwichCollections)
       .where(
         sql`${sandwichCollections.group1Name} = ${orgName} OR ${sandwichCollections.group2Name} = ${orgName}`
       )
-      .orderBy(sql`${sandwichCollections.dateCollected} DESC`)
+      .orderBy(sql`${sandwichCollections.collectionDate} DESC`)
       .limit(5);
 
     return {
@@ -299,7 +299,7 @@ export async function checkReturningOrganization(
   };
   mostRecentCollection?: {
     id: number;
-    dateCollected: Date | null;
+    dateCollected: string | null;
   };
   similarNames?: string[];
 }> {
@@ -371,12 +371,12 @@ export async function checkReturningOrganization(
     const collections = await db
       .select({
         id: sandwichCollections.id,
-        dateCollected: sandwichCollections.dateCollected,
+        dateCollected: sandwichCollections.collectionDate,
         group1Name: sandwichCollections.group1Name,
         group2Name: sandwichCollections.group2Name,
       })
       .from(sandwichCollections)
-      .orderBy(sql`${sandwichCollections.dateCollected} DESC`)
+      .orderBy(sql`${sandwichCollections.collectionDate} DESC`)
       .limit(500);
 
     // Find collections with matching organization names
