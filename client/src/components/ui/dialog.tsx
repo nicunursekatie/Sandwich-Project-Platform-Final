@@ -38,6 +38,7 @@ const DialogContent = React.forwardRef<
     if (
       target?.closest('[data-radix-select-content]') ||
       target?.closest('[data-radix-popper-content-wrapper]') ||
+      target?.closest('[data-radix-popover-content]') ||
       target?.closest('[role="listbox"]') ||
       target?.closest('[role="option"]') ||
       target?.closest('[role="combobox"]') ||
@@ -54,6 +55,7 @@ const DialogContent = React.forwardRef<
     if (
       target?.closest('[data-radix-select-content]') ||
       target?.closest('[data-radix-popper-content-wrapper]') ||
+      target?.closest('[data-radix-popover-content]') ||
       target?.closest('[role="listbox"]') ||
       target?.closest('[role="option"]') ||
       target?.closest('[role="combobox"]') ||

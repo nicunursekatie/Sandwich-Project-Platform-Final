@@ -291,7 +291,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                       {currentPreset.label}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 z-[100]" align="end">
+                  <PopoverContent className="w-80 z-[10010]" align="end">
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
@@ -378,7 +378,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                     Change
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 z-[100]" align="end">
+                <PopoverContent className="w-80 z-[10010]" align="end">
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
