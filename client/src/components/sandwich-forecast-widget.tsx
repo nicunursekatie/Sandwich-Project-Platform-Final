@@ -286,12 +286,21 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                 {/* Week Range Selector */}
                 <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker} modal>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 text-xs">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCustomPicker(true);
+                      }}
+                    >
                       <Settings2 className="w-3 h-3" />
                       {currentPreset.label}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 z-[10010]" align="end">
+                  <PopoverContent className="w-80 z-[10010]" align="end" side="bottom">
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
@@ -373,12 +382,21 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
             {hideHeader && (
               <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker} modal>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-1 text-xs text-blue-600 hover:text-blue-800">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-xs text-blue-600 hover:text-blue-800"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCustomPicker(true);
+                    }}
+                  >
                     <Settings2 className="w-3 h-3" />
                     Change
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 z-[10010]" align="end">
+                <PopoverContent className="w-80 z-[10010]" align="end" side="bottom">
                   <div className="space-y-4">
                     <div>
                       <h4 className="font-medium text-sm mb-2">Week Range Presets</h4>
