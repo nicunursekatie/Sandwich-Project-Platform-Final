@@ -130,20 +130,22 @@ export function EventEmailComposer({
   const { user } = useAuth();
 
   // Fetch available documents
-  const { data: documents = [], isLoading: isDocumentsLoading } = useQuery<
+  const { data: documentsData = [], isLoading: isDocumentsLoading } = useQuery<
     Document[]
   >({
     queryKey: ['/api/storage/documents'],
     enabled: isOpen, // Only fetch when dialog is open
   });
+  const documents = Array.isArray(documentsData) ? documentsData : [];
 
   // Fetch available drafts for this event request
-  const { data: availableDrafts = [], isLoading: isDraftsLoading } = useQuery({
+  const { data: availableDraftsData = [], isLoading: isDraftsLoading } = useQuery({
     queryKey: ['/api/emails/event', eventRequest.id, 'drafts'],
     queryFn: () =>
       apiRequest('GET', `/api/emails/event/${eventRequest.id}/drafts`),
     enabled: isOpen, // Only fetch when dialog is open
   });
+  const availableDrafts = Array.isArray(availableDraftsData) ? availableDraftsData : [];
 
   // Fetch customizable email template sections
   const { data: templateSections } = useQuery<EmailTemplateSection[]>({
