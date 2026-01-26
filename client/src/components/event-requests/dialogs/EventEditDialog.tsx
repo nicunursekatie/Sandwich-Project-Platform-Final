@@ -566,7 +566,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
           <Tabs defaultValue="logistics" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="logistics">
@@ -923,7 +923,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
               )}
             </TabsContent>
           </Tabs>
-        </ScrollArea>
+        </div>
 
         <div className="flex justify-end gap-2 pt-4 pb-6 px-6 border-t flex-shrink-0">
           <Button variant="outline" onClick={onClose}>
