@@ -339,6 +339,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
   const [tspContact, setTspContact] = useState('');
   const [customTspContact, setCustomTspContact] = useState('');
   const [vanDriverNeeded, setVanDriverNeeded] = useState(false);
+  const [isCorporatePriority, setIsCorporatePriority] = useState(false);
 
   // Staffing assignments
   const [assignedDriverIds, setAssignedDriverIds] = useState<string[]>([]);
@@ -370,6 +371,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       setTspContact(event.tspContact || '');
       setCustomTspContact(event.customTspContact || '');
       setVanDriverNeeded(event.vanDriverNeeded || false);
+      setIsCorporatePriority((event as any).isCorporatePriority || false);
       setAssignedDriverIds(getDriverIds(event));
       setAssignedSpeakerIds(getSpeakerIds(event));
       setAssignedVolunteerIds(getVolunteerIds(event));
@@ -456,6 +458,11 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     if (vanDriverNeeded !== (event?.vanDriverNeeded || false)) {
       console.log('[EventEditDialog] Adding vanDriverNeeded to updates:', vanDriverNeeded);
       updates.vanDriverNeeded = vanDriverNeeded;
+    }
+    
+    // Corporate Priority
+    if (isCorporatePriority !== ((event as any)?.isCorporatePriority || false)) {
+      updates.isCorporatePriority = isCorporatePriority;
     }
 
     // TSP Contact
@@ -642,6 +649,25 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                   <Truck className="w-4 h-4 text-amber-600" />
                   Van Driver Needed
                 </Label>
+              </div>
+
+              {/* Corporate Priority */}
+              <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50">
+                <input
+                  type="checkbox"
+                  id="isCorporatePriority"
+                  checked={isCorporatePriority}
+                  onChange={(e) => setIsCorporatePriority(e.target.checked)}
+                  className="h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                />
+                <div>
+                  <Label htmlFor="isCorporatePriority" className="text-amber-900 font-medium cursor-pointer">
+                    Corporate Priority Event
+                  </Label>
+                  <p className="text-xs text-amber-700">
+                    Mark this as a corporate priority event requiring immediate attention and core team member attendance.
+                  </p>
+                </div>
               </div>
 
               <Separator />
