@@ -2162,6 +2162,7 @@ export const eventRequests = pgTable(
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
     backupDates: jsonb('backup_dates').$type<string[]>(), // Array of backup/alternate dates in ISO format
+    dateFlexible: boolean('date_flexible').default(true), // Whether the organizer is flexible on the date (false = inflexible, must be this date)
     scheduledEventDate: timestamp('scheduled_event_date'), // Actual scheduled date (may differ from requested)
     isConfirmed: boolean('is_confirmed').notNull().default(false), // Whether event is confirmed by our team (separate from status workflow)
     addedToOfficialSheet: boolean('added_to_official_sheet')
@@ -2315,6 +2316,7 @@ export const eventRequests = pgTable(
     attendanceAdults: integer('attendance_adults'), // Number of adults who attended
     attendanceTeens: integer('attendance_teens'), // Number of teens who attended
     attendanceKids: integer('attendance_kids'), // Number of kids who attended
+    kidsAgeRange: varchar('kids_age_range'), // Age range of kids participating (e.g., "5-12", "8-15")
     attendanceRecordedDate: timestamp('attendance_recorded_date'), // When attendance was recorded
     attendanceRecordedBy: varchar('attendance_recorded_by'), // User ID who recorded attendance
     attendanceNotes: text('attendance_notes'), // Notes about attendance

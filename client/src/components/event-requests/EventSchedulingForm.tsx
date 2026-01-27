@@ -177,6 +177,7 @@ function buildFormDataFromEventRequest(
 
   return {
     eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+    dateFlexible: eventRequest?.dateFlexible !== false, // Default to true/flexible
     backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
     eventStartTime: eventRequest?.eventStartTime || '',
     eventEndTime: eventRequest?.eventEndTime || '',
@@ -219,6 +220,7 @@ function buildFormDataFromEventRequest(
     estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
     adultCount: (eventRequest as any)?.adultCount || 0,
     childrenCount: (eventRequest as any)?.childrenCount || 0,
+    kidsAgeRange: (eventRequest as any)?.kidsAgeRange || '',
     firstName: eventRequest?.firstName || '',
     lastName: eventRequest?.lastName || '',
     email: eventRequest?.email || '',
@@ -327,6 +329,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     estimatedAttendance: 0,
     adultCount: 0,
     childrenCount: 0,
+    kidsAgeRange: '',
     status: 'new',
     toolkitSent: false,
     toolkitSentDate: '',
@@ -1251,6 +1254,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
+      dateFlexible: formData.dateFlexible !== false, // true = flexible, false = inflexible
       backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
       // If status is scheduled, also set scheduledEventDate
       ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
@@ -1352,6 +1356,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventData.volunteerCount = formData.volunteerCount || 0;
     eventData.adultCount = formData.adultCount || 0;
     eventData.childrenCount = formData.childrenCount || 0;
+    eventData.kidsAgeRange = formData.kidsAgeRange || null;
 
     // Include completed event tracking fields
     eventData.socialMediaPostRequested = formData.socialMediaPostRequested;
@@ -1964,7 +1969,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   onBlur={(e) => {
                     const newDate = e.target.value;
                     // Only check for confirmation when user finishes editing (onBlur)
-                    if (eventRequest?.status === 'scheduled' && 
+                    if (eventRequest?.status === 'scheduled' &&
                         formatDateForInput(eventRequest.desiredEventDate) !== newDate &&
                         formatDateForInput(eventRequest.desiredEventDate) !== '' &&
                         newDate !== formatDateForInput(eventRequest.desiredEventDate)) {
@@ -1974,6 +1979,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   }}
                   data-testid="input-event-date"
                 />
+                <div className="flex items-center gap-2 mt-2">
+                  <Checkbox
+                    id="dateFlexible"
+                    checked={formData.dateFlexible !== false}
+                    onCheckedChange={(checked) => {
+                      setFormData(prev => ({ ...prev, dateFlexible: checked === true }));
+                    }}
+                  />
+                  <Label
+                    htmlFor="dateFlexible"
+                    className="text-sm font-normal text-gray-600 cursor-pointer"
+                  >
+                    Date is flexible
+                  </Label>
+                </div>
               </div>
 
               {/* Backup Dates */}
@@ -2334,6 +2354,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     data-testid="input-children-count"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Kids Age Range - show when there are children participating */}
+            {(formData.childrenCount > 0 || formData.kidsAgeRange) && (
+              <div className="mt-3">
+                <Label htmlFor="kidsAgeRange">Kids Age Range</Label>
+                <Input
+                  id="kidsAgeRange"
+                  type="text"
+                  value={formData.kidsAgeRange || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, kidsAgeRange: e.target.value }))}
+                  placeholder="e.g., 5-12, Elementary school, Middle school"
+                  className="w-64"
+                  data-testid="input-kids-age-range"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Optional: Age range of children participating (e.g., "5-12", "Elementary school")
+                </p>
               </div>
             )}
 

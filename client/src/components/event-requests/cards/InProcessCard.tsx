@@ -34,6 +34,8 @@ import {
   MapPin,
   FileText,
   MessageCircle,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -501,6 +503,38 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <TooltipContent>
                   <p>{indicatorTooltips.inProcessConflict}</p>
                   <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.inProcessCount} event{datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {/* Date Flexibility Indicator */}
+            {displayDate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className={`flex items-center gap-1 text-xs px-2 py-0.5 cursor-help ${
+                      request.dateFlexible === false
+                        ? 'border-red-300 bg-red-500/20 text-white'
+                        : 'border-green-300 bg-green-500/20 text-white'
+                    }`}
+                  >
+                    {request.dateFlexible === false ? (
+                      <>
+                        <Lock className="w-3 h-3" />
+                        Fixed
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="w-3 h-3" />
+                        Flexible
+                      </>
+                    )}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {request.dateFlexible === false
+                    ? 'This organization has a pre-planned event and cannot change the date'
+                    : 'This organization is flexible and can adjust their date if needed'}
                 </TooltipContent>
               </Tooltip>
             )}
