@@ -74,7 +74,7 @@ import { CommandPalette, useCommandPalette } from '@/components/command-palette'
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
 const WeeklySandwichForm = lazyWithRetry(() => import('@/components/weekly-sandwich-form'));
-const CommitteeChat = lazyWithRetry(() => import('@/components/committee-chat'));
+// CommitteeChat removed - consolidated into StreamChatRooms (Team Chat)
 const GoogleDriveLinks = lazyWithRetry(() => import('@/components/google-drive-links'));
 const DashboardOverview = lazyWithRetry(() => import('@/components/dashboard-overview'));
 const SandwichCollectionLog = lazyWithRetry(() => import('@/components/sandwich-collection-log'));
@@ -585,32 +585,11 @@ export default function Dashboard({
         return <GoogleSheetsPage />;
       case 'planning-sheet-proposals':
         return <PlanningSheetProposalsPage />;
+      // Legacy 'committee' and 'committee-chat' routes redirect to Stream Chat
       case 'committee':
       case 'committee-chat':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div
-                className="flex items-center justify-center w-12 h-12 rounded-xl"
-                style={{ backgroundColor: 'var(--color-brand-teal-light)' }}
-              >
-                <MessageCircle
-                  className="w-6 h-6"
-                  style={{ color: 'var(--color-brand-teal)' }}
-                />
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">
-                  Committee Communications
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Internal committee discussions and collaboration
-                </p>
-              </div>
-            </div>
-            <CommitteeChat />
-          </div>
-        );
+        // Redirect to main Team Chat
+        return <StreamChatRooms />;
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':

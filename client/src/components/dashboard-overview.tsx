@@ -475,11 +475,6 @@ export default function DashboardOverview({
           </div>
         )}
 
-        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
-        <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
-        </div>
-
         {/* Hero Impact Section */}
         <div className="mx-4 mb-8 sm:mb-12 max-w-full">
           <div className="premium-card-featured p-8 sm:p-12 text-center max-w-full">
@@ -502,6 +497,11 @@ export default function DashboardOverview({
               Real data from verified collection records
             </div>
           </div>
+        </div>
+
+        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
         </div>
 
         {/* Operational Overview - Key metrics and urgent items */}
