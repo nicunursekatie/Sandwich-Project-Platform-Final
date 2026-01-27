@@ -1737,8 +1737,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-[#236383]">
               {isCreateMode ? 'Create New Event' : `${mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} ${eventRequest?.organizationName}`}
@@ -1754,43 +1754,45 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
         </DialogHeader>
 
-        {/* Auto-save Recovery Banner */}
-        {hasRecoveredData && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between" data-testid="autosave-recovery-banner">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                Unsaved changes were recovered from your previous session.
-              </span>
+        {/* Scrollable content area */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
+          {/* Auto-save Recovery Banner */}
+          {hasRecoveredData && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between mb-4" data-testid="autosave-recovery-banner">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  Unsaved changes were recovered from your previous session.
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={discardRecoveredData}
+                className="text-amber-700 border-amber-300 hover:bg-amber-100"
+                data-testid="discard-recovered-data-btn"
+              >
+                Discard
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={discardRecoveredData}
-              className="text-amber-700 border-amber-300 hover:bg-amber-100"
-              data-testid="discard-recovered-data-btn"
-            >
-              Discard
-            </Button>
-          </div>
-        )}
+          )}
 
-        {/* Progress Indicator */}
-        <div className="bg-slate-50 rounded-lg p-3 border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-[#236383]">Form Progress</span>
-            <span className="text-sm text-gray-600">{completedSections} of {totalSections} sections</span>
+          {/* Progress Indicator */}
+          <div className="bg-slate-50 rounded-lg p-3 border mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[#236383]">Form Progress</span>
+              <span className="text-sm text-gray-600">{completedSections} of {totalSections} sections</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-[#47B3CB] h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(completedSections / totalSections) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-[#47B3CB] h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(completedSections / totalSections) * 100}%` }}
-            />
-          </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
           {/* Contact Information Section - Extracted Component */}
           <ContactInfoSection
             formData={formData as EventFormData}
@@ -2693,43 +2695,46 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             setActualSandwichMode={setActualSandwichMode}
           />
 
-          {/* Form Actions */}
-          <div className="flex justify-between pt-4 border-t">
-            <div>
-              {/* Delete button - only show for existing events in edit mode */}
-              {eventRequest && mode === 'edit' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-                  onClick={() => setShowDeleteConfirmation(true)}
-                  disabled={deleteEventRequestMutation.isPending}
-                  data-testid="button-delete-event"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {deleteEventRequestMutation.isPending ? 'Deleting...' : 'Delete Event'}
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex space-x-3">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="text-white"
-                style={{ backgroundColor: '#236383' }}
-                disabled={updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
-                data-testid="button-submit"
-              >
-                {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
-                  ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
-                  : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
-              </Button>
-            </div>
-          </div>
         </form>
+        </div>
+
+        {/* Sticky Footer - Action Buttons */}
+        <div className="flex-shrink-0 flex justify-between px-4 sm:px-6 py-4 border-t bg-white">
+          <div>
+            {/* Delete button - only show for existing events in edit mode */}
+            {eventRequest && mode === 'edit' && (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                onClick={() => setShowDeleteConfirmation(true)}
+                disabled={deleteEventRequestMutation.isPending}
+                data-testid="button-delete-event"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleteEventRequestMutation.isPending ? 'Deleting...' : 'Delete Event'}
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex space-x-3">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="event-scheduling-form"
+              className="text-white"
+              style={{ backgroundColor: '#236383' }}
+              disabled={updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              data-testid="button-submit"
+            >
+              {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
+                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
+                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
 
       {/* Date Change Confirmation Dialog */}
