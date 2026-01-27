@@ -1640,4 +1640,87 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       return false;
     }
   }
+
+  /**
+   * Send notification to admins when a user requests permission access
+   */
+  static async sendPermissionRequestNotification(
+    adminEmails: string[],
+    request: {
+      userName: string;
+      userEmail: string;
+      requestedAction: string;
+      requiredPermission?: string;
+      userMessage?: string;
+    }
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping permission request email');
+      return false;
+    }
+
+    try {
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://app.thesandwichproject.org');
+
+      const msg = {
+        to: adminEmails,
+        from: 'katie@thesandwichproject.org',
+        subject: `Permission Request from ${request.userName} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #FBAD3F; color: #333; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .request-box { background-color: #fff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #FBAD3F; }
+              .message-box { background-color: #FFF8E7; padding: 12px; border-radius: 6px; margin: 10px 0; font-style: italic; }
+              .btn { display: inline-block; background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔐 Permission Access Request</h1>
+              </div>
+              <div class="content">
+                <p>A user has requested access to a feature or action they currently don't have permission for.</p>
+
+                <div class="request-box">
+                  <p><strong>User:</strong> ${request.userName}</p>
+                  <p><strong>Email:</strong> ${request.userEmail}</p>
+                  <p><strong>Requested Action:</strong> ${request.requestedAction}</p>
+                  ${request.requiredPermission ? `<p><strong>Permission Needed:</strong> ${request.requiredPermission}</p>` : ''}
+                </div>
+
+                ${request.userMessage ? `
+                <div class="message-box">
+                  <strong>User's Message:</strong><br>
+                  "${request.userMessage}"
+                </div>
+                ` : ''}
+
+                <p>To grant this permission, go to the user's profile in Admin Settings:</p>
+                <a href="${appUrl}/admin-settings?tab=permissions" class="btn">Manage Permissions</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Permission Request\n\nUser: ${request.userName} (${request.userEmail})\nRequested Action: ${request.requestedAction}\n${request.requiredPermission ? `Permission Needed: ${request.requiredPermission}\n` : ''}${request.userMessage ? `\nUser's Message: "${request.userMessage}"\n` : ''}\nManage permissions at: ${appUrl}/admin-settings?tab=permissions\n\n---\nThe Sandwich Project`,
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Permission request email sent to ${adminEmails.length} admin(s) for user ${request.userEmail}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending permission request email:', error);
+      return false;
+    }
+  }
 }

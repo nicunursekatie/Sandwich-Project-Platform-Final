@@ -86,6 +86,7 @@ import peopleSearchRouter from './people-search';
 import photoScannerRouter from './photo-scanner';
 import { createEmailTemplatesRouter } from './email-templates';
 import volunteerEventHubRouter from './volunteer-event-hub';
+import { createPermissionRequestsRouter } from './permission-requests';
 
 // Import centralized middleware
 import {
@@ -345,6 +346,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     notificationsRouter
   );
   router.use('/api/notifications', createErrorHandler('notifications'));
+
+  // Permission requests - allow users to request access to features
+  const permissionRequestsRouter = createPermissionRequestsRouter(deps);
+  router.use(
+    '/api/permission-requests',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    permissionRequestsRouter
+  );
+  router.use('/api/permission-requests', createErrorHandler('permission-requests'));
 
   router.use(
     '/api/reports',
