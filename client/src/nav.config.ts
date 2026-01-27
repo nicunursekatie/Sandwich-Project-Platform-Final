@@ -543,7 +543,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Quick Tools',
     icon: Link,
     href: 'important-links',
-    permission: PERMISSIONS.NAV_QUICK_TOOLS,
+    // No permission - Quick Tools is available to everyone
     group: 'admin',
     highlighted: true,
   },
