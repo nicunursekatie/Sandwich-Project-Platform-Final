@@ -15,6 +15,7 @@ interface ActivityRule {
   groupKey?: string; // For deduplication - same groupKey within window = single log
   dedupeWindowMs?: number; // Time window for deduplication (default 60000 = 1 min)
   methods?: string[]; // Only log for these HTTP methods (default: all)
+  dynamicDetails?: (req: Request) => string; // Function to extract dynamic details from request
 }
 
 // In-memory cache for activity deduplication
@@ -274,6 +275,36 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
     },
   },
 
+  // ===== FILE VIEWS =====
+  {
+    pattern: /\/api\/objects\/proxy/,
+    rule: {
+      section: 'Files',
+      feature: 'File Access',
+      action: 'View',
+      details: 'Viewed a file',
+      methods: ['GET'],
+      dynamicDetails: (req: Request) => {
+        try {
+          // Extract filename from the URL query parameter
+          const urlParam = req.query.url as string;
+          if (urlParam) {
+            // URL format: objects/folder/filename.ext
+            const filename = urlParam.split('/').pop() || urlParam;
+            return `Viewed file: ${decodeURIComponent(filename)}`;
+          }
+          const filenameParam = req.query.filename as string;
+          if (filenameParam) {
+            return `Viewed file: ${filenameParam}`;
+          }
+          return 'Viewed a file';
+        } catch {
+          return 'Viewed a file';
+        }
+      },
+    },
+  },
+
   // ===== WORK LOGS =====
   {
     pattern: /\/api\/work-logs$/,
@@ -474,8 +505,7 @@ const skipPaths = [
   '/collaboration/revisions',
   '/collaboration/bulk',
 
-  // Object storage proxy (file viewing/downloading - too noisy)
-  '/api/objects/proxy',
+  // Object storage proxy - now logged with file names (removed from skip list)
 
   // Feature flags
   '/api/feature-flags',
@@ -575,7 +605,8 @@ export function createActivityLogger(options: ActivityLoggerOptions) {
             section = rule.section;
             feature = rule.feature;
             action = rule.action;
-            details = rule.details;
+            // Use dynamic details if available, otherwise use static details
+            details = rule.dynamicDetails ? rule.dynamicDetails(req) : rule.details;
 
             // Update user's last active timestamp
             await options.storage.updateUserLastActive(user.id);
