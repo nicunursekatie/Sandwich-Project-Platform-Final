@@ -243,6 +243,7 @@ function buildFormDataFromEventRequest(
     toolkitSent: eventRequest?.toolkitSent || false,
     toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
     toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+    isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
     socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
     socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
     socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -368,6 +369,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Delivery details for overnight holding
     deliveryTimeWindow: '',
     deliveryParkingAccess: '',
+    // Corporate priority
+    isCorporatePriority: false,
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
@@ -541,6 +544,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSent: eventRequest?.toolkitSent || false,
       toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
       toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+      isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
       socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
       socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
       socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -633,6 +637,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSent: eventRequest?.toolkitSent || false,
       toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
       toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+      isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
       socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
       socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
       socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -1296,6 +1301,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSent: formData.toolkitSent || false,
       toolkitStatus: formData.toolkitStatus || null,
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
+      // Corporate priority
+      isCorporatePriority: formData.isCorporatePriority || false,
     };
 
     // Handle sandwich data based on mode
@@ -1804,8 +1811,29 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 <SelectItem value="declined">Declined</SelectItem>
                 <SelectItem value="postponed">Postponed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="standby">Standby</SelectItem>
+                <SelectItem value="stalled">Stalled</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Corporate Priority */}
+          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50">
+            <input
+              type="checkbox"
+              id="isCorporatePriority"
+              checked={formData.isCorporatePriority}
+              onChange={(e) => setFormData(prev => ({ ...prev, isCorporatePriority: e.target.checked }))}
+              className="h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+            />
+            <div>
+              <Label htmlFor="isCorporatePriority" className="text-amber-900 font-medium cursor-pointer">
+                Corporate Priority Event
+              </Label>
+              <p className="text-xs text-amber-700">
+                Mark this as a corporate priority event requiring immediate attention and core team member attendance.
+              </p>
+            </div>
           </div>
 
           {/* Toolkit Status Section */}
