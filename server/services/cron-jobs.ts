@@ -207,6 +207,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -214,7 +220,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 volunteer.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(volunteer.role)
+                getRoleInstructions(volunteer.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -269,6 +276,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -276,7 +289,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 volunteer.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(volunteer.role)
+                getRoleInstructions(volunteer.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -284,7 +298,7 @@ async function sendVolunteerReminders(): Promise<{
                   .update(eventVolunteers)
                   .set({ smsReminder2SentAt: new Date() })
                   .where(eq(eventVolunteers.id, volunteer.id));
-                
+
                 remindersSent++;
                 cronLogger.info(`Sent secondary SMS reminder to ${volunteerPhone} for event ${event.id}`);
               }
@@ -375,6 +389,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -382,7 +402,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 assignment.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(assignment.role)
+                getRoleInstructions(assignment.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -425,6 +446,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -432,7 +459,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 assignment.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(assignment.role)
+                getRoleInstructions(assignment.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -512,13 +540,21 @@ async function sendVolunteerReminders(): Promise<{
                 contactPhone
               ) {
                 const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+                // Build event contact details for the reminder
+                const eventContactDetails = {
+                  contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                  contactPhone: event.phone || null,
+                  contactEmail: event.email || null,
+                };
                 await sendEventReminderSMS(
                   contactPhone,
                   contactName,
                   event.organizationName || 'Unknown Organization',
                   event.scheduledEventDate!,
                   'TSP Contact',
-                  `${appUrl}/dashboard?section=event-requests`
+                  `${appUrl}/dashboard?section=event-requests`,
+                  null, // instructions
+                  eventContactDetails
                 );
                 remindersSent++;
                 cronLogger.info(`Sent primary SMS reminder to TSP contact ${contactPhone} for event ${event.id}`);
@@ -554,13 +590,21 @@ async function sendVolunteerReminders(): Promise<{
                 contactPhone
               ) {
                 const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+                // Build event contact details for the reminder
+                const eventContactDetails = {
+                  contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                  contactPhone: event.phone || null,
+                  contactEmail: event.email || null,
+                };
                 await sendEventReminderSMS(
                   contactPhone,
                   contactName,
                   event.organizationName || 'Unknown Organization',
                   event.scheduledEventDate!,
                   'TSP Contact',
-                  `${appUrl}/dashboard?section=event-requests`
+                  `${appUrl}/dashboard?section=event-requests`,
+                  null, // instructions
+                  eventContactDetails
                 );
                 remindersSent++;
                 cronLogger.info(`Sent secondary SMS reminder to TSP contact ${contactPhone} for event ${event.id}`);
