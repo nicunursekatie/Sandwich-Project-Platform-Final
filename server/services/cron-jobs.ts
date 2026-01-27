@@ -17,6 +17,7 @@ import type { EventNotificationPreferences } from '@shared/types';
 import { generateImpactReport, saveImpactReport } from './ai-impact-reports';
 import { processTspContactFollowups } from './tsp-contact-followup-service';
 import { processSmartTspFollowups } from './tsp-smart-followup-service';
+import { processCorporateFollowups } from './corporate-followup-service';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -1181,6 +1182,39 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Corporate priority event follow-up - runs daily at 9:00 AM and 2:00 PM
+  // Sends strict follow-up reminders to TSP contacts for corporate priority events
+  // that don't have successful contact logged
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 9,14 * * *' = At 9:00 AM and 2:00 PM every day
+  const corporateFollowupJob = cron.schedule('0 9,14 * * *', async () => {
+    cronLogger.info('Running corporate priority follow-up check...');
+    try {
+      const result = await processCorporateFollowups();
+      cronLogger.info('Corporate follow-up job completed', {
+        remindersGenerated: result.remindersGenerated,
+        eventsProcessed: result.eventsProcessed,
+        errors: result.errors,
+        timestamp: result.timestamp,
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running corporate follow-up cron job',
+        undefined,
+        { jobType: 'corporate-followup' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Corporate follow-up job scheduled successfully', {
+    schedule: 'Daily at 9:00 AM and 2:00 PM',
+    timezone: 'America/New_York',
+  });
+
   // Driver availability status transition - runs daily at 12:10 AM
   // Transitions drivers to unavailable when unavailableStartDate arrives
   // Transitions drivers to pending_checkin when checkInDate arrives
@@ -1222,6 +1256,7 @@ export function initializeCronJobs() {
     autoCompleteJob,
     pastDateNotificationJob,
     tspFollowupJob,
+    corporateFollowupJob,
     driverAvailabilityJob,
   };
 }
@@ -1237,6 +1272,7 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.autoCompleteJob.stop();
   jobs.pastDateNotificationJob.stop();
   jobs.tspFollowupJob.stop();
+  jobs.corporateFollowupJob.stop();
   jobs.driverAvailabilityJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }
