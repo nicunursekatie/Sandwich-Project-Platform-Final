@@ -4331,7 +4331,9 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       }
 
       // Initialize corporate follow-up protocol if this is a corporate priority event
-      if (originalEvent.isCorporatePriority) {
+      // BUT only for events that are not yet scheduled (new/in_progress) - scheduled/completed events don't need "call now" alerts
+      const statusesNeedingCallNotification = ['new', 'in_progress'];
+      if (originalEvent.isCorporatePriority && statusesNeedingCallNotification.includes(originalEvent.status || '')) {
         try {
           const { initializeCorporateProtocol } = await import('../services/corporate-followup-service');
           await initializeCorporateProtocol(
@@ -4344,6 +4346,8 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
           logger.error('Failed to initialize corporate follow-up protocol:', error);
           // Don't fail the request if protocol initialization fails
         }
+      } else if (originalEvent.isCorporatePriority) {
+        logger.log(`ℹ️ Skipping corporate protocol for event ${id} - already ${originalEvent.status}`);
       }
     }
 
@@ -4479,7 +4483,9 @@ router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
 
       // If event already has a TSP contact assigned, initialize the corporate protocol
       // and send immediate call notification to that contact
-      if (originalEvent.tspContact) {
+      // BUT only for events that are not yet scheduled (new/in_progress) - scheduled/completed events don't need "call now" alerts
+      const statusesNeedingCallNotification = ['new', 'in_progress'];
+      if (originalEvent.tspContact && statusesNeedingCallNotification.includes(originalEvent.status || '')) {
         try {
           const { initializeCorporateProtocol } = await import('../services/corporate-followup-service');
           await initializeCorporateProtocol(id, originalEvent.tspContact, req.user?.id || 'system');
@@ -4487,6 +4493,8 @@ router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
           logger.error('Failed to initialize corporate follow-up protocol:', error);
           // Don't fail the request if protocol initialization fails
         }
+      } else if (originalEvent.tspContact) {
+        logger.log(`Skipping corporate call notification for event ${id} - already ${originalEvent.status}`);
       }
     }
 
