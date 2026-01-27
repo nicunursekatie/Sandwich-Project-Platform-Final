@@ -405,6 +405,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  
+  // Check if current user can remove corporate priority (only Katie and Christine)
+  const canRemoveCorporatePriority = useMemo(() => {
+    const allowedEmails = [
+      'admin@sandwich.project',
+      'katielong2316@gmail.com',
+      'katie@thesandwichproject.org',
+      'christine@thesandwichproject.org'
+    ];
+    const userEmail = currentUser?.email?.toLowerCase();
+    return userEmail && allowedEmails.includes(userEmail);
+  }, [currentUser?.email]);
 
   // Auto-save key based on event ID (or 'new' for create mode)
   const getAutoSaveKey = useCallback(() => {
@@ -1818,20 +1830,35 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
 
           {/* Corporate Priority */}
-          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50">
+          <div className={`flex items-center space-x-3 p-3 rounded-lg border ${
+            (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+              ? 'bg-amber-100/70 border-amber-300' 
+              : 'bg-amber-50/50'
+          }`}>
             <input
               type="checkbox"
               id="isCorporatePriority"
               checked={formData.isCorporatePriority}
               onChange={(e) => setFormData(prev => ({ ...prev, isCorporatePriority: e.target.checked }))}
-              className="h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+              disabled={(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority}
+              className={`h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 ${
+                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'opacity-60 cursor-not-allowed' 
+                  : ''
+              }`}
             />
             <div>
-              <Label htmlFor="isCorporatePriority" className="text-amber-900 font-medium cursor-pointer">
+              <Label htmlFor="isCorporatePriority" className={`text-amber-900 font-medium ${
+                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'cursor-not-allowed' 
+                  : 'cursor-pointer'
+              }`}>
                 Corporate Priority Event
               </Label>
               <p className="text-xs text-amber-700">
-                Mark this as a corporate priority event requiring immediate attention and core team member attendance.
+                {(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'Only Christine and Katie can remove the corporate priority flag.' 
+                  : 'Mark this as a corporate priority event requiring immediate attention and core team member attendance.'}
               </p>
             </div>
           </div>

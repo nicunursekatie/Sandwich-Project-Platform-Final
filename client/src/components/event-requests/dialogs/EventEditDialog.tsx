@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Dialog,
   DialogContent,
@@ -327,6 +328,19 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  // Check if current user can remove corporate priority (only Katie and Christine)
+  const canRemoveCorporatePriority = useMemo(() => {
+    const allowedEmails = [
+      'admin@sandwich.project',
+      'katielong2316@gmail.com',
+      'katie@thesandwichproject.org',
+      'christine@thesandwichproject.org'
+    ];
+    const userEmail = user?.email?.toLowerCase();
+    return userEmail && allowedEmails.includes(userEmail);
+  }, [user?.email]);
 
   // Form state for logistics
   const [driversNeeded, setDriversNeeded] = useState('');
@@ -652,20 +666,35 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
               </div>
 
               {/* Corporate Priority */}
-              <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50">
+              <div className={`flex items-center space-x-3 p-3 rounded-lg border ${
+                (event as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'bg-amber-100/70 border-amber-300' 
+                  : 'bg-amber-50/50'
+              }`}>
                 <input
                   type="checkbox"
                   id="isCorporatePriority"
                   checked={isCorporatePriority}
                   onChange={(e) => setIsCorporatePriority(e.target.checked)}
-                  className="h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  disabled={(event as any)?.isCorporatePriority && !canRemoveCorporatePriority}
+                  className={`h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 ${
+                    (event as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                      ? 'opacity-60 cursor-not-allowed' 
+                      : ''
+                  }`}
                 />
                 <div>
-                  <Label htmlFor="isCorporatePriority" className="text-amber-900 font-medium cursor-pointer">
+                  <Label htmlFor="isCorporatePriority" className={`text-amber-900 font-medium ${
+                    (event as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                      ? 'cursor-not-allowed' 
+                      : 'cursor-pointer'
+                  }`}>
                     Corporate Priority Event
                   </Label>
                   <p className="text-xs text-amber-700">
-                    Mark this as a corporate priority event requiring immediate attention and core team member attendance.
+                    {(event as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                      ? 'Only Christine and Katie can remove the corporate priority flag.' 
+                      : 'Mark this as a corporate priority event requiring immediate attention and core team member attendance.'}
                   </p>
                 </div>
               </div>

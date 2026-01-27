@@ -2878,6 +2878,27 @@ router.put(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // Check permission for removing corporate priority - only Katie and Christine can do this
+      if (
+        originalEvent.isCorporatePriority === true &&
+        updates.isCorporatePriority === false
+      ) {
+        const userEmail = req.user?.email;
+        const allowedEmails = [
+          'admin@sandwich.project',
+          'katielong2316@gmail.com',
+          'katie@thesandwichproject.org',
+          'christine@thesandwichproject.org'
+        ];
+        
+        if (!userEmail || !allowedEmails.includes(userEmail.toLowerCase())) {
+          return res.status(403).json({
+            message: 'Only Christine and Katie can remove the corporate priority flag from an event.',
+            error: 'Insufficient permissions',
+          });
+        }
+      }
+
       // Process pickup time fields for data migration
       const pickupProcessedUpdates = processPickupTimeFields(updates, originalEvent);
 
@@ -4393,6 +4414,23 @@ router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
     const originalEvent = await storage.getEventRequestById(id);
     if (!originalEvent) {
       return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Check permission for REMOVING corporate priority - only Katie and Christine can do this
+    if (originalEvent.isCorporatePriority === true && isCorporatePriority === false) {
+      const userEmail = req.user?.email;
+      const allowedEmails = [
+        'admin@sandwich.project',
+        'katielong2316@gmail.com',
+        'katie@thesandwichproject.org',
+        'christine@thesandwichproject.org'
+      ];
+      
+      if (!userEmail || !allowedEmails.includes(userEmail.toLowerCase())) {
+        return res.status(403).json({
+          error: 'Only Christine and Katie can remove the corporate priority flag from an event.',
+        });
+      }
     }
 
     // Prepare updates
