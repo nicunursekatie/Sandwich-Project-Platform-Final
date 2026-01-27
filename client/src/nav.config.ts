@@ -318,7 +318,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Directory',
     icon: Users,
     href: 'directory',
-    permission: PERMISSIONS.NAV_DIRECTORY,
+    // No permission - parent shows for everyone, children control their own visibility
     group: 'network',
     highlighted: true,
   },
@@ -357,7 +357,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Partners',
     icon: Building,
     href: 'partners',
-    permission: PERMISSIONS.NAV_PARTNERS,
+    // No permission - parent shows for everyone, children control their own visibility
     group: 'network',
     highlighted: true,
   },

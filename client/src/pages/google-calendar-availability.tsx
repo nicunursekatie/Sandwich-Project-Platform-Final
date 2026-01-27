@@ -234,7 +234,8 @@ export default function GoogleCalendarAvailability() {
   };
 
   // Helper to check if an event spans multiple days
-  const isMultiDayEvent = (event: CalendarEvent) => {
+  const isMultiDayEvent = (event: CalendarEvent | null) => {
+    if (!event || !event.start || !event.end) return false;
     const startDateStr = event.start.date || event.start.dateTime?.split('T')[0];
     const endDateStr = event.end.date || event.end.dateTime?.split('T')[0];
 
@@ -478,7 +479,7 @@ export default function GoogleCalendarAvailability() {
                 {selectedEvent.description}
               </div>
             )}
-            {isMultiDayEvent(selectedEvent!) && (
+            {isMultiDayEvent(selectedEvent) && (
               <div className="text-xs text-slate-500 dark:text-slate-400 italic">
                 This is a multi-day event
               </div>
