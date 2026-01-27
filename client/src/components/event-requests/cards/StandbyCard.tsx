@@ -202,7 +202,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
                 </p>
                 <p className={`text-base font-semibold flex items-center gap-1 ${isExpectedDatePast ? 'text-red-900' : 'text-purple-900'}`}>
                   <Clock className="w-4 h-4" />
-                  {expectedDateInfo?.display}
+                  {expectedDateInfo?.text}
                   {isExpectedDatePast && (
                     <Badge variant="destructive" className="ml-2 text-xs">
                       Overdue - Check In!
@@ -226,7 +226,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
               <p className="text-sm text-gray-500">Originally Requested Date</p>
               <p className="font-medium flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {dateInfo.display}
+                {dateInfo.text}
               </p>
             </div>
             {request.estimatedSandwichCount && (

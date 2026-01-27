@@ -211,7 +211,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
               {lastOutreachInfo && (
                 <div className="bg-white/50 rounded p-2">
                   <p className="text-xs text-gray-500">Last Outreach</p>
-                  <p className="text-sm font-medium text-gray-800">{lastOutreachInfo.display}</p>
+                  <p className="text-sm font-medium text-gray-800">{lastOutreachInfo.text}</p>
                 </div>
               )}
             </div>
@@ -223,7 +223,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
                 </p>
                 <p className={`text-base font-semibold flex items-center gap-1 ${isNextOutreachDue ? 'text-amber-900' : 'text-gray-800'}`}>
                   <Clock className="w-4 h-4" />
-                  {nextOutreachInfo?.display}
+                  {nextOutreachInfo?.text}
                   {isNextOutreachDue && (
                     <Badge variant="default" className="ml-2 text-xs bg-amber-600">
                       Time to Reach Out!
