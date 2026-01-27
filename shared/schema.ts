@@ -2175,7 +2175,7 @@ export const eventRequests = pgTable(
       .default('i_dont_know'), // 'yes', 'no', 'i_dont_know'
 
     // System tracking
-    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
+    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled', 'standby', 'stalled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
     nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)
@@ -2185,6 +2185,23 @@ export const eventRequests = pgTable(
     postponementReason: text('postponement_reason'), // Reason why event was postponed
     tentativeNewDate: timestamp('tentative_new_date'), // Tentative new date for the event (optional)
     postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
+
+    // Standby tracking (for 'standby' status - waiting on organizer who is working things out)
+    standbyReason: text('standby_reason'), // Reason why we're on standby (e.g., "Waiting for budget approval")
+    standbyExpectedDate: timestamp('standby_expected_date'), // When we expect to hear back from them
+    standbyNotes: text('standby_notes'), // Notes about the standby situation
+    standbyMarkedAt: timestamp('standby_marked_at'), // When the event was marked as standby
+    standbyMarkedBy: varchar('standby_marked_by'), // User ID who marked it as standby
+
+    // Stalled tracking (for 'stalled' status - no response after repeated outreach)
+    stalledReason: text('stalled_reason'), // Reason why it's stalled (e.g., "No response after 3 attempts")
+    stalledLastOutreachDate: timestamp('stalled_last_outreach_date'), // When we last reached out while stalled
+    stalledNextOutreachDate: timestamp('stalled_next_outreach_date'), // When we should reach out again (quarterly)
+    stalledOutreachCount: integer('stalled_outreach_count').default(0), // How many times we've reached out while stalled
+    stalledNotes: text('stalled_notes'), // Notes about the stalled situation
+    stalledMarkedAt: timestamp('stalled_marked_at'), // When the event was marked as stalled
+    stalledMarkedBy: varchar('stalled_marked_by'), // User ID who marked it as stalled
+    stalledOriginalEventDate: timestamp('stalled_original_event_date'), // Keep the original requested date on file for reference
 
     // Follow-up tracking fields
     // NOTE: follow_up_method, updated_email were removed in migration 0024

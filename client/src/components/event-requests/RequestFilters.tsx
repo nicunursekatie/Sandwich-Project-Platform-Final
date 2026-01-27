@@ -23,6 +23,8 @@ import {
   BarChart3,
   ClipboardList,
   LayoutList,
+  Hourglass,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -65,6 +67,8 @@ interface RequestFiltersProps {
     declined: number;
     postponed: number;
     cancelled: number;
+    standby: number;
+    stalled: number;
     my_assignments: number;
   };
   statusCountsLoading?: boolean;
@@ -78,6 +82,8 @@ interface RequestFiltersProps {
     completed: ReactNode;
     declined: ReactNode;
     postponed: ReactNode;
+    standby: ReactNode;
+    stalled: ReactNode;
     my_assignments: ReactNode;
     admin_overview?: ReactNode;
     planning?: ReactNode;
@@ -206,6 +212,20 @@ export default function RequestFilters({
       shortLabel: 'Postponed',
       icon: Pause,
       count: statusCounts.postponed,
+    },
+    {
+      value: 'standby',
+      label: 'Standby',
+      shortLabel: 'Standby',
+      icon: Hourglass,
+      count: statusCounts.standby,
+    },
+    {
+      value: 'stalled',
+      label: 'Stalled',
+      shortLabel: 'Stalled',
+      icon: AlertCircle,
+      count: statusCounts.stalled,
     },
     {
       value: 'my_assignments',

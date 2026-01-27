@@ -786,7 +786,9 @@ const VALID_EVENT_REQUEST_STATUSES = [
   'completed',
   'declined',
   'postponed',
-  'cancelled'
+  'cancelled',
+  'standby',
+  'stalled'
 ] as const;
 
 // Helper function to validate and sanitize status values
@@ -1552,10 +1554,12 @@ router.get(
         declined: 0,
         postponed: 0,
         cancelled: 0,
+        standby: 0,
+        stalled: 0,
         my_assignments: 0,
       };
 
-      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled']);
+      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled', 'stalled']);
 
       // Helper to check if user is assigned to an event
       const isUserAssigned = (event: any): boolean => {
