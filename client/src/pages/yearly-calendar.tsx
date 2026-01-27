@@ -34,6 +34,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MonthlyCalendarGrid } from '@/components/monthly-calendar-grid';
+import { PermissionDenied } from '@/components/permission-denied';
 
 interface YearlyCalendarItem {
   id: number;
@@ -638,14 +639,11 @@ export default function YearlyCalendar() {
   if (!canView) {
     return (
       <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              You don't have permission to view the yearly calendar.
-            </p>
-          </CardContent>
-        </Card>
+        <PermissionDenied
+          action="view the yearly calendar"
+          requiredPermission="CALENDAR_VIEW"
+          variant="card"
+        />
       </div>
     );
   }

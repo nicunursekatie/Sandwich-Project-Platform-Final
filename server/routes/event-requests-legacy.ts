@@ -4271,63 +4271,29 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found after update' });
     }
 
-    // Send email and SMS notifications if:
-    // 1. TSP contact was assigned (not removed)
-    // 2. It changed from previous value
-    // 3. Event is not already completed or declined
+    // Send tiered notification for TSP contact assignment:
+    // URGENT tier: SMS-first, email fallback if no SMS opt-in
+    // This reduces notification fatigue by not sending both email AND SMS
     if (
-      validatedData.tspContact && 
+      validatedData.tspContact &&
       originalEvent.tspContact !== validatedData.tspContact &&
       originalEvent.status !== 'completed' &&
       originalEvent.status !== 'declined'
     ) {
       try {
-        // Send email notification
-        await EmailNotificationService.sendTspContactAssignmentNotification(
+        // Use the new tiered notification dispatcher (SMS-first, email fallback)
+        const { sendTspAssignmentNotification } = await import('../services/event-notification-dispatcher');
+        await sendTspAssignmentNotification(
           validatedData.tspContact!,
           id,
-          originalEvent.organizationName,
-          originalEvent.scheduledEventDate || originalEvent.desiredEventDate
+          originalEvent.organizationName || 'Unknown Organization',
+          originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
+          originalEvent.isCorporatePriority || false
         );
+        logger.log(`✅ TSP contact assignment notification sent (tiered) for event ${id}`);
       } catch (error) {
-        // Log error but don't fail the request if email notification fails
-        logger.error('Failed to send TSP contact assignment email:', error);
-      }
-
-      // Send SMS notification if user has opted in
-      try {
-        const assignedUser = await storage.getUserById(validatedData.tspContact!);
-        if (assignedUser) {
-          const metadata = assignedUser.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          
-          // Check for 'events' campaign - support both old single campaignType and new campaignTypes array
-          const hasEventsConsent = 
-            smsConsent.campaignType === 'events' || 
-            (Array.isArray(smsConsent.campaignTypes) && smsConsent.campaignTypes.includes('events'));
-          
-          // Only send SMS if user has confirmed SMS opt-in for the 'events' campaign
-          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && hasEventsConsent) {
-            const { sendTspContactAssignmentSMS } = await import('../sms-service');
-            const smsResult = await sendTspContactAssignmentSMS(
-              smsConsent.phoneNumber,
-              originalEvent.organizationName,
-              id,
-              originalEvent.scheduledEventDate || originalEvent.desiredEventDate
-            );
-            
-            if (smsResult.success) {
-              logger.log(`✅ TSP contact assignment SMS sent to ${assignedUser.email}`);
-            } else {
-              logger.warn(`⚠️ TSP contact assignment SMS failed: ${smsResult.message}`);
-            }
-          } else if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && !hasEventsConsent) {
-            logger.log(`ℹ️ User ${assignedUser.email} has SMS enabled but not opted into 'events' campaign - skipping TSP contact SMS`);
-          }
-        }
-      } catch (error) {
-        // Log error but don't fail the request if SMS notification fails
-        logger.error('Failed to send TSP contact assignment SMS:', error);
+        // Log error but don't fail the request if notification fails
+        logger.error('Failed to send TSP contact assignment notification:', error);
       }
 
       // Initialize corporate follow-up protocol if this is a corporate priority event

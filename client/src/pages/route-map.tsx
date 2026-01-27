@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import { useToast } from '@/hooks/use-toast';
+import { PermissionDenied } from '@/components/permission-denied';
 import type { Recipient } from '@shared/schema';
 
 // Fix Leaflet default marker icon issue in bundled apps
@@ -380,19 +381,13 @@ export default function LocationsMapView() {
   if (!canViewHosts && !canViewRecipients) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <Card className="max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-                <p className="text-gray-600">You don't have permission to view locations.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="max-w-md mx-4">
+          <PermissionDenied
+            action="view locations on the route map"
+            requiredPermission="HOSTS_VIEW or RECIPIENTS_VIEW"
+            variant="card"
+          />
+        </div>
       </div>
     );
   }

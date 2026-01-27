@@ -44,6 +44,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { apiRequest } from '@/lib/queryClient';
 import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
+import { PermissionDenied } from '@/components/permission-denied';
 
 export default function VolunteerManagement() {
   const { user } = useAuth();
@@ -107,19 +108,11 @@ export default function VolunteerManagement() {
   if (!canView) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex">
-            <AlertCircle className="h-5 w-5 text-red-400" />
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Access Denied
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                You don't have permission to view volunteer information.
-              </div>
-            </div>
-          </div>
-        </div>
+        <PermissionDenied
+          action="view volunteer information"
+          requiredPermission="VOLUNTEERS_VIEW"
+          variant="card"
+        />
       </div>
     );
   }

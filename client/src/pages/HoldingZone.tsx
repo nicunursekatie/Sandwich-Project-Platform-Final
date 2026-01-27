@@ -57,6 +57,7 @@ import { useCollaboration } from '@/hooks/use-collaboration';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PermissionDenied } from '@/components/permission-denied';
 
 // Types
 interface HoldingZoneCategory {
@@ -1303,14 +1304,13 @@ export default function HoldingZone() {
     return (
       <div className="container mx-auto p-6">
         <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
-        <Card className="mt-6">
-          <CardContent className="p-12 text-center">
-            <h2 className="text-2xl font-semibold mb-2">Access Denied</h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              You don't have permission to view the Holding Zone
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mt-6">
+          <PermissionDenied
+            action="view the Holding Zone"
+            requiredPermission="TEAM_BOARD_VIEW"
+            variant="card"
+          />
+        </div>
       </div>
     );
   }

@@ -39,6 +39,7 @@ import { format, parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
+import { PermissionDenied } from '@/components/permission-denied';
 import {
   Collapsible,
   CollapsibleContent,
@@ -99,20 +100,13 @@ export function ComprehensiveAuditLog() {
   if (!hasPermission(currentUser, PERMISSIONS.ADMIN_PANEL_ACCESS)) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <Card className="w-full max-w-md text-center shadow-lg">
-          <CardHeader className="pb-4">
-            <div className="mx-auto w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-red-600" />
-            </div>
-            <CardTitle className="text-xl font-sub-heading text-gray-900">
-              Access Restricted
-            </CardTitle>
-            <CardDescription className="text-base text-gray-600 leading-relaxed">
-              You don't have permission to view audit logs. Contact an
-              administrator if you need access.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <div className="w-full max-w-md">
+          <PermissionDenied
+            action="view audit logs"
+            requiredPermission="ADMIN_PANEL_ACCESS"
+            variant="card"
+          />
+        </div>
       </div>
     );
   }
