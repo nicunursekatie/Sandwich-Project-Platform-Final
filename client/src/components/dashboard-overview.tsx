@@ -44,6 +44,7 @@ import DashboardActionTracker from '@/components/dashboard-action-tracker';
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
+import { LowVolumeAlert } from '@/components/low-volume-alert';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -420,6 +421,11 @@ export default function DashboardOverview({
           <p className="premium-text-body-lg text-brand-primary font-medium">
             Nourish The Hungry. Feed The Soul.
           </p>
+        </div>
+
+        {/* Low Volume Alert - Shows when upcoming weeks have below-average group event sandwiches */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
         </div>
 
         {/* Collection Call-to-Action */}
