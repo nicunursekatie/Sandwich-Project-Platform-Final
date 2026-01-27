@@ -222,6 +222,26 @@ const customChatStyles = `
     padding-left: 8px;
     font-size: 11px;
   }
+
+  /* Make sender names more prominent in messages */
+  .str-chat__message-sender-name {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #236383 !important;
+  }
+
+  /* Avatar styling with better visibility */
+  .str-chat__avatar {
+    font-size: 11px !important;
+  }
+
+  /* Ensure message metadata (name + time) is always visible */
+  .str-chat__message-data {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 8px !important;
+    margin-bottom: 4px !important;
+  }
 `;
 
 // Room definitions matching your Socket.io setup

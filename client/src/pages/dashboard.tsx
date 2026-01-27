@@ -162,6 +162,7 @@ const SectionLoader = () => (
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
       <p className="text-muted-foreground">Loading section...</p>
+      <p className="text-xs text-muted-foreground/60 mt-2">This may take a moment on first load</p>
     </div>
   </div>
 );
@@ -303,6 +304,35 @@ export default function Dashboard({
       });
     }
   }, [user?.role, user?.id]);
+
+  // Preload commonly used component chunks after initial render
+  // This helps prevent "reload" errors by ensuring chunks are ready before navigation
+  React.useEffect(() => {
+    // Wait a bit for initial render to complete, then preload common sections
+    const preloadTimeout = setTimeout(() => {
+      // Preload the most commonly accessed sections in background
+      // Using dynamic import directly (not the lazy wrapper) to just fetch the chunk
+      const preloadImports = [
+        () => import('@/components/dashboard-overview'),
+        () => import('@/components/sandwich-collection-log'),
+        () => import('@/components/event-requests'),
+        () => import('@/components/stream-chat-rooms'),
+        () => import('@/components/action-tracking-enhanced'),
+        () => import('@/pages/my-availability'),
+      ];
+
+      // Load one at a time with small delays to avoid network congestion
+      preloadImports.forEach((importFn, index) => {
+        setTimeout(() => {
+          importFn().catch(() => {
+            // Silently ignore preload failures - the retry mechanism will handle it later
+          });
+        }, index * 200); // Stagger loads by 200ms each
+      });
+    }, 1000); // Wait 1 second after mount before preloading
+
+    return () => clearTimeout(preloadTimeout);
+  }, []);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>

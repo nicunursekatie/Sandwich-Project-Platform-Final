@@ -91,7 +91,27 @@ const MessageItem = memo(({
       ?.split(' ')
       .map((n: string) => n[0])
       .join('')
-      .slice(0, 2) || 'TM';
+      .slice(0, 2)
+      .toUpperCase() || 'TM';
+  }, [message.sender]);
+
+  // Generate a consistent color based on the sender's name
+  const avatarColor = useMemo(() => {
+    const colors = [
+      'bg-blue-500',
+      'bg-green-500',
+      'bg-purple-500',
+      'bg-orange-500',
+      'bg-pink-500',
+      'bg-teal-500',
+      'bg-indigo-500',
+      'bg-rose-500',
+      'bg-cyan-500',
+      'bg-amber-500',
+    ];
+    // Simple hash of the sender name to pick a color
+    const hash = message.sender?.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) || 0;
+    return colors[hash % colors.length];
   }, [message.sender]);
 
   const isOwnMessage = message.sender === currentUserName;
@@ -99,7 +119,7 @@ const MessageItem = memo(({
   return (
     <div className="flex space-x-3 group">
       <Avatar className="w-8 h-8">
-        <AvatarFallback className="bg-gray-500 text-white text-xs">
+        <AvatarFallback className={`${avatarColor} text-white text-xs font-medium`}>
           {avatarInitials}
         </AvatarFallback>
       </Avatar>
