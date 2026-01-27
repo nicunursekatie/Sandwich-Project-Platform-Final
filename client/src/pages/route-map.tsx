@@ -557,38 +557,34 @@ export default function LocationsMapView() {
                   </div>
                 </div>
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-3 space-y-2">
+                  <div className="p-2 space-y-1">
                     {filteredHosts.map(contact => (
-                      <Card
+                      <div
                         key={contact.id}
-                        className={`cursor-pointer hover:shadow-md transition-all ${
-                          selectedId === `host-${contact.id}` ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                        className={`cursor-pointer hover:bg-gray-50 transition-all p-2 rounded-md border ${
+                          selectedId === `host-${contact.id}` ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' : 'border-gray-100'
                         }`}
                         onClick={() => handleHostClick(contact)}
                       >
-                        <CardContent className="p-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-gray-900 text-sm">{contact.contactName}</div>
-                              <div className="text-xs text-gray-600 flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                {contact.hostLocationName}
-                              </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm truncate">{contact.contactName}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <Building2 className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{contact.hostLocationName}</span>
+                              {contact.role && <span className="text-gray-400">· {contact.role}</span>}
                             </div>
-                            {contact.distance !== undefined && (
-                              <Badge variant="secondary" className="text-xs ml-2 shrink-0">
-                                {contact.distance.toFixed(1)} mi
-                              </Badge>
-                            )}
                           </div>
-                          {contact.role && (
-                            <Badge variant="outline" className="text-xs mt-1">{contact.role}</Badge>
+                          {contact.distance !== undefined && (
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {contact.distance.toFixed(1)} mi
+                            </Badge>
                           )}
-                          {contact.address && (
-                            <div className="text-xs text-gray-500 mt-1 truncate">📍 {contact.address}</div>
-                          )}
-                        </CardContent>
-                      </Card>
+                        </div>
+                        {contact.address && (
+                          <div className="text-xs text-gray-400 mt-0.5 truncate">📍 {contact.address}</div>
+                        )}
+                      </div>
                     ))}
                     {filteredHosts.length === 0 && (
                       <p className="text-sm text-gray-500 text-center py-4">No hosts found</p>
