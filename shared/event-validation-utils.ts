@@ -233,7 +233,7 @@ export function getPrimaryContextualAction(request: EventRequest): ContextualAct
   // Priority 4: Event Start Time (if speakers needed)
   if (missingInfo.includes('Event Start Time')) {
     return {
-      label: 'Set Event Time',
+      label: 'Edit Event',
       field: 'eventStartTime',
       priority: 70,
       action: 'edit',
@@ -313,7 +313,7 @@ export function getAllContextualActions(request: EventRequest): ContextualAction
 
   if (missingInfo.includes('Event Start Time')) {
     actions.push({
-      label: 'Set Event Time',
+      label: 'Edit Event',
       field: 'eventStartTime',
       priority: 70,
       action: 'edit',
