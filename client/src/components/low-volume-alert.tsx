@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Calendar, TrendingDown, ChevronRight, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Calendar, TrendingDown, ChevronRight, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
@@ -16,7 +17,9 @@ interface WeekForecast {
   weekEnd: Date;
   weekLabel: string;
   totalSandwiches: number;
+  actualSandwiches?: number; // Only for current week - sandwiches already collected
   eventCount: number;
+  isCurrentWeek: boolean;
   events: Array<{
     id: number;
     organizationName: string | null;
@@ -106,7 +109,7 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
     queryKey: ['/api/event-requests'],
   });
 
-  // Fetch historical collection data to calculate baseline
+  // Fetch historical collection data to calculate baseline and current week actuals
   const { data: collectionsData } = useQuery<{ collections: any[] }>({
     queryKey: ['/api/sandwich-collections', { limit: 5000 }],
     queryFn: async () => {
@@ -118,18 +121,22 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
     },
   });
 
-  // Calculate forecasts for the next 3 weeks
-  const { weekForecasts, historicalAverage, lowVolumeWeeks } = useMemo(() => {
+  // Calculate forecasts for current week + next 3 weeks
+  const { weekForecasts, historicalAverage, lowVolumeWeeks, currentWeekActual } = useMemo(() => {
     const today = new Date();
     const forecasts: WeekForecast[] = [];
+    const currentWeekStart = getWeekStart(today);
+    const currentWeekEnd = getWeekEnd(currentWeekStart);
 
     // Calculate historical weekly average from GROUP events only
     // (excluding individual donations to focus on group event volume)
     let historicalGroupTotal = 0;
     let historicalWeekCount = 0;
+    let thisWeekActualSandwiches = 0;
 
     if (collectionsData?.collections) {
       const weeklyGroupTotals: Record<string, number> = {};
+      const currentWeekKey = currentWeekStart.toISOString().split('T')[0];
 
       collectionsData.collections.forEach((collection: any) => {
         if (collection.collectionDate && collection.groupCollections) {
@@ -143,12 +150,19 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
               }, 0)
             : 0;
 
+          // Track current week's actual collections
+          if (weekKey === currentWeekKey) {
+            thisWeekActualSandwiches += groupTotal;
+          }
+
           weeklyGroupTotals[weekKey] = (weeklyGroupTotals[weekKey] || 0) + groupTotal;
         }
       });
 
-      // Calculate average from weeks that had group collections
-      const weeksWithGroups = Object.values(weeklyGroupTotals).filter(total => total > 0);
+      // Calculate average from weeks that had group collections (excluding current week)
+      const weeksWithGroups = Object.entries(weeklyGroupTotals)
+        .filter(([key, total]) => total > 0 && key !== currentWeekKey)
+        .map(([, total]) => total);
       if (weeksWithGroups.length > 0) {
         historicalGroupTotal = weeksWithGroups.reduce((a, b) => a + b, 0);
         historicalWeekCount = weeksWithGroups.length;
@@ -159,11 +173,12 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
       ? Math.round(historicalGroupTotal / historicalWeekCount)
       : 3000; // Default baseline if no historical data
 
-    // Look at weeks 1, 2, and 3 from now (skip current week)
-    for (let weekOffset = 1; weekOffset <= 3; weekOffset++) {
+    // Build forecasts for current week + next 3 weeks
+    for (let weekOffset = 0; weekOffset <= 3; weekOffset++) {
       const weekStart = getWeekStart(today);
       weekStart.setDate(weekStart.getDate() + (weekOffset * 7));
       const weekEnd = getWeekEnd(weekStart);
+      const isCurrentWeek = weekOffset === 0;
 
       // Get events for this week (new, in_process, and scheduled)
       const eventsThisWeek = eventRequests.filter((event) => {
@@ -195,7 +210,9 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
 
       // Format week label
       let weekLabel: string;
-      if (weekOffset === 1) {
+      if (weekOffset === 0) {
+        weekLabel = 'This Week';
+      } else if (weekOffset === 1) {
         weekLabel = 'Next Week';
       } else if (weekOffset === 2) {
         weekLabel = 'In 2 Weeks';
@@ -208,22 +225,27 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
         weekEnd,
         weekLabel,
         totalSandwiches,
+        actualSandwiches: isCurrentWeek ? thisWeekActualSandwiches : undefined,
         eventCount: eventsThisWeek.length,
+        isCurrentWeek,
         events: eventsWithCounts,
       });
     }
 
-    // Identify weeks that are below 60% of the historical average
+    // Identify weeks that are below 60% of the historical average (excluding current week from alerts)
     const threshold = avgWeeklyFromGroups * 0.6;
-    const lowWeeks = forecasts.filter(f => f.totalSandwiches < threshold);
+    const lowWeeks = forecasts.filter(f => !f.isCurrentWeek && f.totalSandwiches < threshold);
 
     logger.log('Low Volume Alert Analysis:', {
       historicalAverage: avgWeeklyFromGroups,
       threshold,
+      currentWeekActual: thisWeekActualSandwiches,
       forecasts: forecasts.map(f => ({
         week: f.weekLabel,
         total: f.totalSandwiches,
+        actual: f.actualSandwiches,
         eventCount: f.eventCount,
+        isCurrentWeek: f.isCurrentWeek,
         isBelowThreshold: f.totalSandwiches < threshold,
       })),
     });
@@ -232,6 +254,7 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
       weekForecasts: forecasts,
       historicalAverage: avgWeeklyFromGroups,
       lowVolumeWeeks: lowWeeks,
+      currentWeekActual: thisWeekActualSandwiches,
     };
   }, [eventRequests, collectionsData]);
 
@@ -239,6 +262,12 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
   const urgentWeek = hasLowVolumeWeeks ? lowVolumeWeeks[0] : null;
   const shortfall = urgentWeek ? historicalAverage - urgentWeek.totalSandwiches : 0;
   const percentBelow = urgentWeek ? Math.round((shortfall / historicalAverage) * 100) : 0;
+
+  // Current week data
+  const currentWeek = weekForecasts.find(w => w.isCurrentWeek);
+  const currentWeekProgress = currentWeek && currentWeek.totalSandwiches > 0
+    ? Math.min(100, Math.round((currentWeek.actualSandwiches || 0) / currentWeek.totalSandwiches * 100))
+    : 0;
 
   return (
     <Card className={hasLowVolumeWeeks
@@ -268,32 +297,58 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Week-by-week breakdown */}
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-4">
           {weekForecasts.map((week, index) => {
-            const isLow = lowVolumeWeeks.some(lw => lw.weekStart.getTime() === week.weekStart.getTime());
+            const isLow = !week.isCurrentWeek && lowVolumeWeeks.some(lw => lw.weekStart.getTime() === week.weekStart.getTime());
             return (
               <div
                 key={index}
                 className={`p-3 rounded-lg border ${
-                  isLow
-                    ? 'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700'
-                    : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
+                  week.isCurrentWeek
+                    ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700'
+                    : isLow
+                      ? 'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700'
+                      : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm">{week.weekLabel}</span>
+                  <span className={`font-medium text-sm ${week.isCurrentWeek ? 'text-blue-700 dark:text-blue-300' : ''}`}>
+                    {week.weekLabel}
+                  </span>
                   {isLow && <TrendingDown className="w-4 h-4 text-amber-600" />}
+                  {week.isCurrentWeek && currentWeekProgress >= 100 && (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  )}
                 </div>
                 <div className="text-xs text-gray-500 mb-1">
                   {formatWeekRange(week.weekStart, week.weekEnd)}
                 </div>
-                <div className={`text-lg font-bold ${isLow ? 'text-amber-700 dark:text-amber-300' : ''}`}>
-                  {week.totalSandwiches.toLocaleString()}
-                </div>
-                <div className="text-xs text-gray-500 flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {week.eventCount} event{week.eventCount !== 1 ? 's' : ''}
-                </div>
+
+                {week.isCurrentWeek ? (
+                  <>
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                      {(week.actualSandwiches || 0).toLocaleString()}
+                      <span className="text-sm font-normal text-gray-500"> / {week.totalSandwiches.toLocaleString()}</span>
+                    </div>
+                    <Progress
+                      value={currentWeekProgress}
+                      className="h-1.5 mt-1"
+                    />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {currentWeekProgress}% collected
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className={`text-lg font-bold ${isLow ? 'text-amber-700 dark:text-amber-300' : ''}`}>
+                      {week.totalSandwiches.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {week.eventCount} event{week.eventCount !== 1 ? 's' : ''}
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}

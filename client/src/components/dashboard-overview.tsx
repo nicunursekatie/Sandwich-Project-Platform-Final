@@ -423,11 +423,6 @@ export default function DashboardOverview({
           </p>
         </div>
 
-        {/* Low Volume Alert - Shows when upcoming weeks have below-average group event sandwiches */}
-        <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
-        </div>
-
         {/* Collection Call-to-Action */}
         {(COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN) && (
           <div className="premium-card-elevated mx-4 p-4 sm:p-6 max-w-full">
@@ -479,6 +474,11 @@ export default function DashboardOverview({
             )}
           </div>
         )}
+
+        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+        </div>
 
         {/* Hero Impact Section */}
         <div className="mx-4 mb-8 sm:mb-12 max-w-full">
