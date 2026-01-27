@@ -186,6 +186,22 @@ usersRouter.get('/online', async (req, res, next) => {
   }
 });
 
+// Heartbeat endpoint to update user's last active timestamp
+// Called periodically by the client to mark the user as still online
+usersRouter.post('/heartbeat', async (req, res, next) => {
+  try {
+    const user = (req as any).user;
+    if (user?.id) {
+      await storage.updateUserLastActive(user.id);
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ error: 'Not authenticated' });
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Apply error handler
 usersRouter.use(errorHandler);
 

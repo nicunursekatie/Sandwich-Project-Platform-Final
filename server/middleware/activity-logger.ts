@@ -479,7 +479,7 @@ const skipPaths = [
   '/api/ping',
   '/healthz',
   '/socket.io',
-  '/heartbeat',
+  '/api/heartbeat', // System heartbeat only, not user presence heartbeat
 
   // Activity logging itself (prevent recursion)
   '/api/activity-log',
