@@ -4426,13 +4426,25 @@ router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
       try {
         await EmailNotificationService.sendCorporatePriorityNotification(
           id,
-          originalEvent.organizationName,
+          originalEvent.organizationName || 'Unknown Organization',
           originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
           req.user?.email || 'Unknown user'
         );
       } catch (error) {
         logger.error('Failed to send corporate priority notification:', error);
         // Don't fail the request if notification fails
+      }
+
+      // If event already has a TSP contact assigned, initialize the corporate protocol
+      // and send immediate call notification to that contact
+      if (originalEvent.tspContact) {
+        try {
+          const { initializeCorporateProtocol } = await import('../services/corporate-followup-service');
+          await initializeCorporateProtocol(id, originalEvent.tspContact, req.user?.id || 'system');
+        } catch (error) {
+          logger.error('Failed to initialize corporate follow-up protocol:', error);
+          // Don't fail the request if protocol initialization fails
+        }
       }
     }
 

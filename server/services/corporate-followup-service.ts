@@ -597,12 +597,14 @@ export async function initializeCorporateProtocol(
       return false;
     }
 
-    // Initialize protocol
+    // Initialize protocol with lastReminderSentAt set to prevent duplicate notifications from cron
     const protocol: CorporateFollowupProtocol = {
       ...DEFAULT_PROTOCOL,
       status: 'active',
       protocolStartedAt: new Date().toISOString(),
       protocolStartedBy: initiatedBy,
+      lastReminderSentAt: new Date().toISOString(), // Prevents cron from sending duplicate Day 1 notification
+      reminderCount: 1, // Count the initial notification
     };
 
     // Update event with protocol
