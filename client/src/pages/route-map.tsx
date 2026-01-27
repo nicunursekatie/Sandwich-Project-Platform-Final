@@ -259,9 +259,15 @@ export default function LocationsMapView() {
     },
   });
 
-  // Filter recipients with coordinates
+  // Filter recipients with coordinates (include active or those without a status set)
   const recipientsWithCoords = useMemo(() => {
-    return recipients.filter(r => r.latitude && r.longitude && r.status === 'active');
+    return recipients.filter(r => {
+      // Must have coordinates
+      if (!r.latitude || !r.longitude) return false;
+      // Include if status is 'active', 'Active', or not set (null/undefined)
+      const status = r.status?.toLowerCase();
+      return !status || status === 'active';
+    });
   }, [recipients]);
 
   // Filter hosts based on search and add distance if searching address
