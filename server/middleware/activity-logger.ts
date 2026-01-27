@@ -468,6 +468,15 @@ const skipPaths = [
   '/recent',
   '/api/resources/user/recent',
 
+  // Collaboration data fetching (just loading comments/locks - not meaningful activity)
+  '/collaboration/comments',
+  '/collaboration/locks',
+  '/collaboration/revisions',
+  '/collaboration/bulk',
+
+  // Object storage proxy (file viewing/downloading - too noisy)
+  '/api/objects/proxy',
+
   // Feature flags
   '/api/feature-flags',
 
