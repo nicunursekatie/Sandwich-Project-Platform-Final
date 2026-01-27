@@ -4168,15 +4168,6 @@ export class DatabaseStorage implements IStorage {
 
     logger.log(`🔍 getAllEventRequests: Database returned ${results.length} rows`);
 
-    // Check for duplicate IDs
-    const ids = results.map(r => r.id);
-    const uniqueIds = new Set(ids);
-    if (ids.length !== uniqueIds.size) {
-      logger.error(`⚠️ DUPLICATES IN DATABASE QUERY! Total: ${ids.length}, Unique: ${uniqueIds.size}`);
-      const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
-      logger.error(`Duplicate IDs from DB: ${[...new Set(duplicates)].join(', ')}`);
-    }
-
     return results;
   }
 
