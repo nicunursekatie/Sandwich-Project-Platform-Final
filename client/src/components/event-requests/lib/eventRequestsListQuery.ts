@@ -63,7 +63,7 @@ export function buildEventRequestsListFilterParams(
   if (activeTab === 'scheduled') return { status: 'scheduled' };
 
   // Other status tabs (no date restrictions) - lazy load these on demand
-  if (['completed', 'declined', 'postponed'].includes(activeTab)) {
+  if (['completed', 'declined', 'postponed', 'standby', 'stalled'].includes(activeTab)) {
     return { status: activeTab };
   }
 
