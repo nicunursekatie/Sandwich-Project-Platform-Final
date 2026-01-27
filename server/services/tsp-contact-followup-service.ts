@@ -234,7 +234,9 @@ async function sendFollowupNotification(
   user: any,
   reminderType: 'approaching_event' | 'toolkit_followup' | 'standby_followup'
 ): Promise<{ success: boolean; channel: string; message: string }> {
-  const channel = getPreferredChannel(user);
+  // Per notification tier system: standby_followup is IMPORTANT tier = email only
+  // approaching_event and toolkit_followup can use user's preferred channel
+  const channel = reminderType === 'standby_followup' ? 'email' : getPreferredChannel(user);
   const userName = user.displayName || user.firstName || 'there';
   const organization = event.organizationName || 'an organization';
   const eventDate = event.scheduledEventDate;
