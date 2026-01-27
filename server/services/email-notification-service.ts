@@ -1478,7 +1478,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     email: string,
     userName: string,
     organizationName: string,
-    reminderType: 'approaching_event' | 'toolkit_followup',
+    reminderType: 'approaching_event' | 'toolkit_followup' | 'standby_followup',
     eventDate: Date | null,
     eventId: number
   ): Promise<boolean> {
@@ -1503,6 +1503,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         bodyContent = `
           <p>The event with <strong>${organizationName}</strong> is coming up in <strong>${daysUntil} days</strong> and is still marked as in-progress.</p>
           <p>Let us know if you need any help getting it scheduled, or if you'd like to update the status!</p>
+        `;
+      } else if (reminderType === 'standby_followup') {
+        subject = `Follow-Up Reminder: ${organizationName} (Standby)`;
+        bodyContent = `
+          <p>This is a reminder to follow up with <strong>${organizationName}</strong>.</p>
+          <p>They're currently on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!</p>
         `;
       } else {
         subject = `Quick Check-in: ${organizationName} Toolkit Follow-up`;
@@ -1551,9 +1557,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           </body>
           </html>
         `,
-        text: `Hi ${userName}!\n\n${reminderType === 'approaching_event' 
-          ? `The event with ${organizationName} is coming up soon and is still in-progress. Let us know if you need help!` 
-          : `We sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
+        text: `Hi ${userName}!\n\n${
+          reminderType === 'approaching_event' 
+            ? `The event with ${organizationName} is coming up soon and is still in-progress. Let us know if you need help!` 
+            : reminderType === 'standby_followup'
+              ? `This is a reminder to follow up with ${organizationName} - they're on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!`
+              : `We sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
         }\n\nView event: ${eventUrl}\n\n---\nThe Sandwich Project`,
       };
 

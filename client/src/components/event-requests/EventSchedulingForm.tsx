@@ -244,6 +244,7 @@ function buildFormDataFromEventRequest(
     toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
     toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
     isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
+    standbyExpectedDate: (eventRequest as any)?.standbyExpectedDate ? formatDateForInput((eventRequest as any).standbyExpectedDate) : '',
     socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
     socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
     socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -371,6 +372,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     deliveryParkingAccess: '',
     // Corporate priority
     isCorporatePriority: false,
+    // Standby follow-up
+    standbyExpectedDate: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
@@ -399,6 +402,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [pendingSchedule, setPendingSchedule] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
+  const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
+  const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -557,6 +563,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
       toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
       isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
+      standbyExpectedDate: (eventRequest as any)?.standbyExpectedDate ? formatDateForInput((eventRequest as any).standbyExpectedDate) : '',
       socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
       socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
       socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -650,6 +657,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
       toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
       isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
+      standbyExpectedDate: (eventRequest as any)?.standbyExpectedDate ? formatDateForInput((eventRequest as any).standbyExpectedDate) : '',
       socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
       socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
       socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -1315,6 +1323,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
       // Corporate priority
       isCorporatePriority: formData.isCorporatePriority || false,
+      // Standby follow-up date
+      standbyExpectedDate: formData.status === 'standby' && formData.standbyExpectedDate
+        ? new Date(formData.standbyExpectedDate).toISOString()
+        : null,
     };
 
     // Handle sandwich data based on mode
@@ -1574,6 +1586,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         setShowRefrigerationWarning(true);
         return; // Wait for user to confirm
       }
+    }
+
+    // Check if status is changing to standby - prompt for follow-up date
+    const originalStatus = eventRequest?.status || 'new';
+    const isChangingToStandby = formData.status === 'standby' && originalStatus !== 'standby';
+    if (isChangingToStandby && !formData.standbyExpectedDate) {
+      console.log('⚠️ [PROD DEBUG] Status changing to standby - showing follow-up dialog');
+      logger.log('⚠️ Status changing to standby - showing follow-up dialog');
+      // Set default to one week from now
+      const oneWeekFromNow = new Date();
+      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+      setStandbyFollowUpMode('one_week');
+      setShowStandbyFollowUpDialog(true);
+      return; // Wait for user to set follow-up date
     }
 
     // All checks passed, proceed with submission
@@ -2859,6 +2886,95 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           setPendingSchedule(false);
         }}
       />
+
+      {/* Standby Follow-Up Date Dialog */}
+      <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={setShowStandbyFollowUpDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-amber-600" />
+              Set Follow-Up Reminder
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                You're moving this event to <span className="font-semibold text-amber-600">Standby</span>.
+              </p>
+              <p>
+                Did the contact request to be contacted on a specific date, or should we send a reminder in one week?
+              </p>
+              
+              <div className="space-y-3 mt-4">
+                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="standbyFollowUpMode"
+                    value="one_week"
+                    checked={standbyFollowUpMode === 'one_week'}
+                    onChange={() => {
+                      setStandbyFollowUpMode('one_week');
+                      const oneWeekFromNow = new Date();
+                      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+                      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+                    }}
+                    className="h-4 w-4 text-amber-600"
+                  />
+                  <div>
+                    <span className="font-medium">Reminder in one week</span>
+                    <p className="text-sm text-gray-500">Default follow-up timing</p>
+                  </div>
+                </label>
+                
+                <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="standbyFollowUpMode"
+                    value="specific"
+                    checked={standbyFollowUpMode === 'specific'}
+                    onChange={() => setStandbyFollowUpMode('specific')}
+                    className="h-4 w-4 text-amber-600 mt-1"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">Contact requested a specific date</span>
+                    <Input
+                      type="date"
+                      value={standbyFollowUpMode === 'specific' ? standbyFollowUpDate : ''}
+                      onChange={(e) => setStandbyFollowUpDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      disabled={standbyFollowUpMode !== 'specific'}
+                      className="mt-2"
+                      onClick={() => setStandbyFollowUpMode('specific')}
+                    />
+                  </div>
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowStandbyFollowUpDialog(false);
+              // Reset status back if they cancel
+              setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                // Set the standby expected date in form data and submit
+                setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
+                setShowStandbyFollowUpDialog(false);
+                // Wait a tick for state to update, then submit
+                setTimeout(async () => {
+                  await performSubmit(false);
+                }, 50);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+              disabled={!standbyFollowUpDate}
+            >
+              Set Reminder & Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>

@@ -206,12 +206,33 @@ function getPreferredChannel(user: any): 'sms' | 'email' {
 }
 
 /**
+ * Get standby events where the follow-up date has arrived or passed
+ */
+async function getStandbyEventsNeedingFollowup(): Promise<any[]> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const results = await db
+    .select()
+    .from(eventRequests)
+    .where(
+      and(
+        eq(eventRequests.status, 'standby'),
+        sql`${eventRequests.standbyExpectedDate} IS NOT NULL`,
+        sql`${eventRequests.standbyExpectedDate}::date <= ${today.toISOString().split('T')[0]}::date`
+      )
+    );
+  
+  return results;
+}
+
+/**
  * Send a follow-up reminder notification to a TSP contact
  */
 async function sendFollowupNotification(
   event: any,
   user: any,
-  reminderType: 'approaching_event' | 'toolkit_followup'
+  reminderType: 'approaching_event' | 'toolkit_followup' | 'standby_followup'
 ): Promise<{ success: boolean; channel: string; message: string }> {
   const channel = getPreferredChannel(user);
   const userName = user.displayName || user.firstName || 'there';
@@ -226,6 +247,8 @@ async function sendFollowupNotification(
       : 'a few';
     
     message = `Hi ${userName}! Quick reminder: The event with ${organization} is coming up in ${daysUntil} days and is still marked as in-progress. Let us know if you need any help getting it scheduled!`;
+  } else if (reminderType === 'standby_followup') {
+    message = `Hi ${userName}! This is a reminder to follow up with ${organization} - they're on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!`;
   } else {
     message = `Hi ${userName}! Just checking in on the ${organization} event - we sent the toolkit a couple days ago but haven't heard back. Want to send a follow-up email, or do you need any help?`;
   }
@@ -281,8 +304,9 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     
     const approachingEvents = await getApproachingInProgressEvents();
     const toolkitEvents = skipToolkitReminders ? [] : await getToolkitOnlyEvents();
+    const standbyEvents = await getStandbyEventsNeedingFollowup();
     
-    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${toolkitEvents.length} toolkit-only events${skipToolkitReminders ? ' (toolkit checks skipped on weekend)' : ''}`);
+    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${toolkitEvents.length} toolkit-only events${skipToolkitReminders ? ' (toolkit checks skipped on weekend)' : ''}, ${standbyEvents.length} standby events needing follow-up`);
     
     for (const event of approachingEvents) {
       result.eventsProcessed++;
@@ -375,6 +399,54 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
       } catch (error) {
         result.errors++;
         serviceLogger.error(`Error processing toolkit event ${event.id}:`, error);
+      }
+    }
+    
+    // Process standby events that need follow-up
+    for (const event of standbyEvents) {
+      result.eventsProcessed++;
+      const tspContactId = event.tspContactAssigned || event.tspContact;
+      
+      if (!tspContactId) continue;
+      
+      try {
+        const alreadySent = await wasNotificationSent(event.id, tspContactId, 'standby_followup');
+        if (alreadySent) {
+          serviceLogger.info(`Skipping standby event ${event.id} - notification already sent`);
+          continue;
+        }
+        
+        const user = await getTspContactUser(tspContactId);
+        if (!user) {
+          serviceLogger.warn(`TSP contact user ${tspContactId} not found for standby event ${event.id}`);
+          continue;
+        }
+        
+        const notificationResult = await sendFollowupNotification(event, user, 'standby_followup');
+        
+        if (notificationResult.success) {
+          await recordNotification(
+            event.id,
+            tspContactId,
+            'standby_followup',
+            notificationResult.channel,
+            event.organizationName || 'Unknown',
+            event.standbyExpectedDate,
+            'Standby follow-up reminder'
+          );
+          result.notificationsSent++;
+        }
+        
+        result.details.push({
+          eventId: event.id,
+          organization: event.organizationName || 'Unknown',
+          reminderType: 'standby_followup',
+          channel: notificationResult.channel,
+          success: notificationResult.success,
+        });
+      } catch (error) {
+        result.errors++;
+        serviceLogger.error(`Error processing standby event ${event.id}:`, error);
       }
     }
     
