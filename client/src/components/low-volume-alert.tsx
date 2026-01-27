@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Calendar, TrendingDown, ChevronRight } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle, Calendar, TrendingDown, ChevronRight, TrendingUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { EventRequest } from '@shared/schema';
@@ -235,89 +235,101 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
     };
   }, [eventRequests, collectionsData]);
 
-  // Don't render if there are no low volume weeks
-  if (lowVolumeWeeks.length === 0) {
-    return null;
-  }
-
-  // Get the most urgent low volume week (closest in time)
-  const urgentWeek = lowVolumeWeeks[0];
-  const shortfall = historicalAverage - urgentWeek.totalSandwiches;
-  const percentBelow = Math.round((shortfall / historicalAverage) * 100);
+  const hasLowVolumeWeeks = lowVolumeWeeks.length > 0;
+  const urgentWeek = hasLowVolumeWeeks ? lowVolumeWeeks[0] : null;
+  const shortfall = urgentWeek ? historicalAverage - urgentWeek.totalSandwiches : 0;
+  const percentBelow = urgentWeek ? Math.round((shortfall / historicalAverage) * 100) : 0;
 
   return (
-    <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
-      <AlertTriangle className="h-5 w-5 text-amber-600" />
-      <AlertTitle className="text-amber-800 dark:text-amber-200 flex items-center gap-2">
-        Low Sandwich Volume Alert
-        <Badge variant="outline" className="text-amber-700 border-amber-400">
-          {lowVolumeWeeks.length} week{lowVolumeWeeks.length > 1 ? 's' : ''} affected
-        </Badge>
-      </AlertTitle>
-      <AlertDescription className="mt-3">
-        <div className="space-y-4">
-          {/* Summary */}
-          <div className="text-amber-700 dark:text-amber-300">
-            <p className="font-medium">
-              Group events {urgentWeek.weekLabel.toLowerCase()} ({formatWeekRange(urgentWeek.weekStart, urgentWeek.weekEnd)})
-              are forecasting <span className="font-bold">{urgentWeek.totalSandwiches.toLocaleString()}</span> sandwiches
-              {' '}&mdash; <span className="font-bold">{percentBelow}% below</span> our typical weekly average of{' '}
-              <span className="font-bold">{historicalAverage.toLocaleString()}</span>.
-            </p>
-          </div>
-
-          {/* Week-by-week breakdown */}
-          <div className="grid gap-2 sm:grid-cols-3">
-            {weekForecasts.map((week, index) => {
-              const isLow = lowVolumeWeeks.some(lw => lw.weekStart.getTime() === week.weekStart.getTime());
-              return (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border ${
-                    isLow
-                      ? 'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700'
-                      : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-sm">{week.weekLabel}</span>
-                    {isLow && <TrendingDown className="w-4 h-4 text-amber-600" />}
-                  </div>
-                  <div className="text-lg font-bold">
-                    {week.totalSandwiches.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {week.eventCount} event{week.eventCount !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Recommendation */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              <strong>Recommendation:</strong> Consider sending a callout for individual sandwich donations
-              to supplement the lower group event volume. You may need approximately{' '}
-              <strong>{shortfall.toLocaleString()} additional sandwiches</strong> to reach typical levels.
-            </p>
-          </div>
-
-          {/* Action button */}
-          {onNavigateToEvents && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNavigateToEvents}
-              className="border-amber-400 text-amber-700 hover:bg-amber-100"
-            >
-              View Upcoming Events
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
+    <Card className={hasLowVolumeWeeks
+      ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800"
+      : "border-gray-200 dark:border-gray-700"
+    }>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          {hasLowVolumeWeeks ? (
+            <>
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <span className="text-amber-800 dark:text-amber-200">Group Event Forecast</span>
+              <Badge variant="outline" className="text-amber-700 border-amber-400 ml-auto">
+                {lowVolumeWeeks.length} low week{lowVolumeWeeks.length > 1 ? 's' : ''}
+              </Badge>
+            </>
+          ) : (
+            <>
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <span>Group Event Forecast</span>
+              <Badge variant="outline" className="text-green-700 border-green-400 ml-auto">
+                On track
+              </Badge>
+            </>
           )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Week-by-week breakdown */}
+        <div className="grid gap-2 sm:grid-cols-3">
+          {weekForecasts.map((week, index) => {
+            const isLow = lowVolumeWeeks.some(lw => lw.weekStart.getTime() === week.weekStart.getTime());
+            return (
+              <div
+                key={index}
+                className={`p-3 rounded-lg border ${
+                  isLow
+                    ? 'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700'
+                    : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-sm">{week.weekLabel}</span>
+                  {isLow && <TrendingDown className="w-4 h-4 text-amber-600" />}
+                </div>
+                <div className="text-xs text-gray-500 mb-1">
+                  {formatWeekRange(week.weekStart, week.weekEnd)}
+                </div>
+                <div className={`text-lg font-bold ${isLow ? 'text-amber-700 dark:text-amber-300' : ''}`}>
+                  {week.totalSandwiches.toLocaleString()}
+                </div>
+                <div className="text-xs text-gray-500 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {week.eventCount} event{week.eventCount !== 1 ? 's' : ''}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </AlertDescription>
-    </Alert>
+
+        {/* Context: Historical average */}
+        <div className="text-xs text-gray-500 text-center">
+          Weekly average from group events: <span className="font-medium">{historicalAverage.toLocaleString()}</span> sandwiches
+        </div>
+
+        {/* Alert message for low volume weeks */}
+        {hasLowVolumeWeeks && urgentWeek && (
+          <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              <strong>Heads up:</strong> {urgentWeek.weekLabel} is forecasting{' '}
+              <strong>{percentBelow}% below</strong> typical volume. Consider a callout for{' '}
+              <strong>~{shortfall.toLocaleString()} individual sandwiches</strong> to supplement.
+            </p>
+          </div>
+        )}
+
+        {/* Action button */}
+        {onNavigateToEvents && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNavigateToEvents}
+            className={hasLowVolumeWeeks
+              ? "border-amber-400 text-amber-700 hover:bg-amber-100"
+              : ""}
+          >
+            View Upcoming Events
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
