@@ -237,6 +237,11 @@ export default function Dashboard({
         logger.log('Setting activeSection to project ID:', newSection);
         setActiveSection(newSection);
       }
+    } else if (pathWithoutQuery.startsWith('/event-contact/')) {
+      // Handle event contact detail route - keep section as 'event-contact-detail'
+      // The EventContactDetail component will extract the ID from the URL
+      logger.log('Setting activeSection to event-contact-detail');
+      setActiveSection('event-contact-detail');
     } else {
       // Handle other sections - strip query parameters and leading slash
       const pathSection = pathWithoutQuery.substring(1) || 'dashboard';

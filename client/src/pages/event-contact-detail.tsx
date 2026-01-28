@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useParams, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
 import {
   ArrowLeft,
   Phone,
@@ -23,9 +23,17 @@ import {
 import type { EventContactDetail } from '@shared/schema';
 
 export default function EventContactDetailPage() {
-  const params = useParams<{ id: string }>();
-  const [, setLocation] = useLocation();
-  const contactId = params.id ? decodeURIComponent(params.id) : '';
+  const [location, setLocation] = useLocation();
+
+  // Extract ID from URL path since useParams may not work through Dashboard wrapper
+  // URL format: /event-contact/{id}
+  const contactId = (() => {
+    const match = location.match(/\/event-contact\/([^/]+)/);
+    if (match && match[1]) {
+      return decodeURIComponent(match[1]);
+    }
+    return '';
+  })();
 
   const { data: contact, isLoading, error } = useQuery<EventContactDetail>({
     queryKey: [`/api/event-contacts/${encodeURIComponent(contactId)}`],
