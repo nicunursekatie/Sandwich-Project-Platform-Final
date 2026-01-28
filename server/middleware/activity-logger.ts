@@ -79,13 +79,21 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
 
   // ===== EVENT REQUESTS =====
   {
-    pattern: /\/api\/event-requests\/\d+\/toolkit-sent/,
+    pattern: /\/api\/event-requests\/(\d+)\/toolkit-sent/,
     rule: {
       section: 'Event Requests',
       feature: 'Event Management',
       action: 'Update',
       details: 'Marked event as scheduled (toolkit sent)',
       methods: ['PATCH', 'POST'],
+      dynamicDetails: (req: Request) => {
+        const match = req.path.match(/\/api\/event-requests\/(\d+)/);
+        const eventId = match?.[1] || 'unknown';
+        const orgName = req.body?.organizationName;
+        return orgName
+          ? `Sent toolkit for Event #${eventId}: ${orgName}`
+          : `Sent toolkit for Event #${eventId}`;
+      },
     },
   },
   {
@@ -96,16 +104,64 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
       action: 'Create',
       details: 'Created a new event request',
       methods: ['POST'],
+      dynamicDetails: (req: Request) => {
+        const orgName = req.body?.organizationName;
+        return orgName
+          ? `Created new event request for ${orgName}`
+          : 'Created a new event request';
+      },
     },
   },
   {
-    pattern: /\/api\/event-requests\/\d+$/,
+    pattern: /\/api\/event-requests\/(\d+)$/,
     rule: {
       section: 'Event Requests',
       feature: 'Event Management',
       action: 'Update',
       details: 'Updated an event request',
       methods: ['PUT', 'PATCH'],
+      dynamicDetails: (req: Request) => {
+        const match = req.path.match(/\/api\/event-requests\/(\d+)/);
+        const eventId = match?.[1] || 'unknown';
+        const orgName = req.body?.organizationName;
+
+        // Try to identify what was changed
+        const changedFields = Object.keys(req.body || {}).filter(
+          key => !['id', 'createdAt', 'updatedAt'].includes(key)
+        );
+
+        let details = orgName
+          ? `Updated Event #${eventId}: ${orgName}`
+          : `Updated Event #${eventId}`;
+
+        // Add info about what changed if available
+        if (changedFields.includes('status')) {
+          details += ` (status → ${req.body.status})`;
+        } else if (changedFields.includes('scheduledEventDate')) {
+          details += ' (date changed)';
+        } else if (changedFields.includes('tspContact')) {
+          details += ' (assigned TSP)';
+        }
+
+        return details;
+      },
+    },
+  },
+
+  // ===== EVENT AUDIT LOG =====
+  {
+    pattern: /\/api\/event-requests\/(\d+)\/audit/,
+    rule: {
+      section: 'Event Requests',
+      feature: 'Audit Log',
+      action: 'View',
+      details: 'Viewed event audit log',
+      methods: ['GET'],
+      dynamicDetails: (req: Request) => {
+        const match = req.path.match(/\/api\/event-requests\/(\d+)/);
+        const eventId = match?.[1] || 'unknown';
+        return `Reviewed audit history for Event #${eventId}`;
+      },
     },
   },
 
@@ -118,6 +174,13 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
       action: 'Export',
       details: 'Exported sandwich collection data',
       methods: ['GET', 'POST'],
+      dynamicDetails: (req: Request) => {
+        const format = req.query?.format || 'csv';
+        const dateRange = req.query?.startDate && req.query?.endDate
+          ? ` (${req.query.startDate} to ${req.query.endDate})`
+          : '';
+        return `Exported collections as ${format}${dateRange}`;
+      },
     },
   },
   {
@@ -128,16 +191,34 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
       action: 'Create',
       details: 'Logged a sandwich collection',
       methods: ['POST'],
+      dynamicDetails: (req: Request) => {
+        const hostName = req.body?.hostName;
+        const count = req.body?.sandwichCount;
+        if (hostName && count) {
+          return `Logged collection: ${count} sandwiches from ${hostName}`;
+        } else if (count) {
+          return `Logged collection: ${count} sandwiches`;
+        }
+        return 'Logged a sandwich collection';
+      },
     },
   },
   {
-    pattern: /\/api\/sandwich-collections\/\d+$/,
+    pattern: /\/api\/sandwich-collections\/(\d+)$/,
     rule: {
       section: 'Collections',
       feature: 'Collection Log',
       action: 'Update',
       details: 'Updated a collection entry',
       methods: ['PUT', 'PATCH'],
+      dynamicDetails: (req: Request) => {
+        const match = req.path.match(/\/api\/sandwich-collections\/(\d+)/);
+        const collectionId = match?.[1] || 'unknown';
+        const hostName = req.body?.hostName;
+        return hostName
+          ? `Updated collection #${collectionId} (${hostName})`
+          : `Updated collection #${collectionId}`;
+      },
     },
   },
 

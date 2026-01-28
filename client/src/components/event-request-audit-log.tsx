@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePageSession } from '@/hooks/usePageSession';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
@@ -87,8 +88,19 @@ export function EventRequestAuditLog({
   const [searchTerm, setSearchTerm] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [userNameCache, setUserNameCache] = useState<Record<string, string>>({});
-  const { trackView, trackClick, trackFilter, trackSearch } =
-    useActivityTracker();
+  const { trackClick, trackFilter, trackSearch } = useActivityTracker();
+
+  // Track page session with meaningful context and duration
+  usePageSession({
+    section: 'Event Requests',
+    page: 'Audit Log',
+    itemDescription: eventId ? `Event #${eventId}` : 'All Events',
+    itemId: eventId || undefined,
+    context: {
+      viewType: eventId ? 'single-event' : 'all-events',
+      timeFilter,
+    },
+  });
 
   // Check permissions
   if (!hasPermission(currentUser, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
@@ -109,18 +121,6 @@ export function EventRequestAuditLog({
       </div>
     );
   }
-
-  // Track component view on mount
-  useEffect(() => {
-    trackView(
-      'Event Request Audit Log',
-      'Audit',
-      'Event Requests',
-      eventId
-        ? `Viewing audit log for event ${eventId}`
-        : 'Viewing general event request audit log'
-    );
-  }, [trackView, eventId]);
 
   // Fetch all users to map IDs to names
   const { data: allUsers } = useQuery({

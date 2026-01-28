@@ -147,36 +147,56 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
                 }
                 const feature = log.feature || '';
                 const section = log.section || '';
-                
+
                 // Skip generic dashboard access entries
-                if (details.includes('Accessed main dashboard') || 
+                if (details.includes('Accessed main dashboard') ||
                     details.includes('Created new main dashboard') ||
                     details.includes('User accessed dashboard') ||
                     details.includes('Accessed main overview dashboard')) {
                   return false;
                 }
-                
+
                 // Skip "Online" entries which are just connection status
                 if (feature === 'Online' || feature.toLowerCase() === 'online') {
                   return false;
                 }
-                
+
                 // Skip entries with just numbers as features (meaningless)
                 if (/^\d+$/.test(feature)) {
                   return false;
                 }
-                
+
                 // Skip noisy "Dismissed" section entries that are just announcement polling
                 // but keep actual "Dismissed X" action events
                 if (section === 'Dismissed' && details.includes('Viewed')) {
                   return false;
                 }
-                
+
                 // Skip generic "Main Dashboard" feature entries
                 if (feature === 'Main Dashboard' && log.action === 'View') {
                   return false;
                 }
-                
+
+                // Skip vague "Viewed list" or "Viewed X" without context
+                if (details.match(/^Viewed\s+(list|status counts?|counts?)$/i)) {
+                  return false;
+                }
+
+                // Skip "Navigated the platform" or similar useless entries
+                if (details.match(/^Navigated\s+(the\s+)?platform$/i)) {
+                  return false;
+                }
+
+                // Skip generic "Platform" section with no meaningful info
+                if (section === 'Platform' && !details.includes('#')) {
+                  return false;
+                }
+
+                // Skip entries that are just "Navigation" section with no specifics
+                if (section === 'Navigation' && !log.metadata?.itemId) {
+                  return false;
+                }
+
                 return true;
               })
               .slice(0, 10).map((log: any) => {
@@ -247,23 +267,50 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
               };
               const displaySection = log.section ? (sectionMap[log.section] || log.section) : null;
 
+              // Format duration if available
+              const getDurationDisplay = () => {
+                const duration = log.duration || log.metadata?.durationSeconds;
+                if (!duration) return null;
+
+                const seconds = typeof duration === 'number' ? duration : parseInt(duration);
+                if (isNaN(seconds) || seconds < 1) return null;
+
+                if (seconds < 60) return `${seconds}s`;
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                if (minutes < 60) {
+                  return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+                }
+                const hours = Math.floor(minutes / 60);
+                const remainingMinutes = minutes % 60;
+                return `${hours}h ${remainingMinutes}m`;
+              };
+
+              const durationDisplay = getDurationDisplay();
+
               return (
                 <div
                   key={log.id}
                   className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg text-sm"
                 >
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {displaySection && (
                         <Badge variant="outline" className="text-xs">
                           {displaySection}
+                        </Badge>
+                      )}
+                      {durationDisplay && (
+                        <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {durationDisplay}
                         </Badge>
                       )}
                     </div>
                     <p className="text-sm font-medium text-gray-900 mt-1">
                       {getReadableDescription()}
                     </p>
-                    {log.feature && log.feature !== log.section && (
+                    {log.feature && log.feature !== log.section && log.feature !== getReadableDescription() && (
                       <p className="text-xs text-gray-500 mt-1">{log.feature}</p>
                     )}
                   </div>

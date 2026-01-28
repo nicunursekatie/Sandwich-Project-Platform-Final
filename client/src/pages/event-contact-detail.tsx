@@ -34,6 +34,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { usePageSession } from '@/hooks/usePageSession';
 import type { EventContactDetail } from '@shared/schema';
 
 export default function EventContactDetailPage() {
@@ -63,6 +64,20 @@ export default function EventContactDetailPage() {
   const { data: contact, isLoading, error } = useQuery<EventContactDetail>({
     queryKey: [`/api/event-contacts/${encodeURIComponent(contactId)}`],
     enabled: !!contactId,
+  });
+
+  // Track page session with meaningful context
+  const { trackAction } = usePageSession({
+    section: 'Event Contacts',
+    page: 'Contact Detail',
+    itemDescription: contact ? `${contact.fullName} (${contact.totalEvents} events)` : undefined,
+    itemId: contactId,
+    context: contact ? {
+      totalEvents: contact.totalEvents,
+      completedEvents: contact.completedEvents,
+      roles: contact.contactRoles,
+      organizations: contact.organizations.slice(0, 3),
+    } : undefined,
   });
 
   // Update contact mutation
@@ -109,6 +124,7 @@ export default function EventContactDetailPage() {
         phone: contact.phone || '',
       });
       setIsEditDialogOpen(true);
+      trackAction('Edit', `Opened edit dialog for ${contact.fullName}`);
     }
   };
 
