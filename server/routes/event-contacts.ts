@@ -79,6 +79,7 @@ async function aggregateEventContacts(): Promise<{
             completedEvents: 0,
             hasOnlyIncompleteEvents: false,
             organizations: [],
+            organizationCategories: [],
             lastEventDate: null,
             firstEventDate: null,
           },
@@ -102,6 +103,11 @@ async function aggregateEventContacts(): Promise<{
       // Update organization list
       if (event.organizationName && !entry.contact.organizations.includes(event.organizationName)) {
         entry.contact.organizations.push(event.organizationName);
+      }
+
+      // Update organization categories
+      if (event.organizationCategory && !entry.contact.organizationCategories.includes(event.organizationCategory)) {
+        entry.contact.organizationCategories.push(event.organizationCategory);
       }
 
       // Update dates
@@ -144,6 +150,7 @@ async function aggregateEventContacts(): Promise<{
             completedEvents: 0,
             hasOnlyIncompleteEvents: false,
             organizations: [],
+            organizationCategories: [],
             lastEventDate: null,
             firstEventDate: null,
           },
@@ -167,6 +174,11 @@ async function aggregateEventContacts(): Promise<{
       // Update organization list
       if (event.organizationName && !entry.contact.organizations.includes(event.organizationName)) {
         entry.contact.organizations.push(event.organizationName);
+      }
+
+      // Update organization categories
+      if (event.organizationCategory && !entry.contact.organizationCategories.includes(event.organizationCategory)) {
+        entry.contact.organizationCategories.push(event.organizationCategory);
       }
 
       // Update dates
@@ -219,6 +231,7 @@ async function aggregateEventContacts(): Promise<{
             completedEvents: 0,
             hasOnlyIncompleteEvents: false,
             organizations: [],
+            organizationCategories: [],
             lastEventDate: null,
             firstEventDate: null,
           },
@@ -247,6 +260,11 @@ async function aggregateEventContacts(): Promise<{
       // Update organization list
       if (event.organizationName && !entry.contact.organizations.includes(event.organizationName)) {
         entry.contact.organizations.push(event.organizationName);
+      }
+
+      // Update organization categories
+      if (event.organizationCategory && !entry.contact.organizationCategories.includes(event.organizationCategory)) {
+        entry.contact.organizationCategories.push(event.organizationCategory);
       }
 
       // Update dates
