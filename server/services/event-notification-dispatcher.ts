@@ -808,11 +808,16 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     .from(eventRequests)
     .where(eq(eventRequests.status, 'in_process'));
 
-  // Get admin users for escalations
+  // Get escalation recipients - only Katie and Christine
+  const escalationEmails = [
+    'katie@thesandwichproject.org',
+    'katielong2316@gmail.com',
+    'christine@thesandwichproject.org'
+  ];
   const admins = await db
     .select()
     .from(users)
-    .where(eq(users.role, 'admin'));
+    .where(inArray(users.email, escalationEmails));
   const adminIds = admins.map((a) => a.id);
 
   for (const event of events) {

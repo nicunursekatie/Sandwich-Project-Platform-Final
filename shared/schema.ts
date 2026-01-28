@@ -4665,6 +4665,7 @@ export interface EventContact {
 
   // Organization connections
   organizations: string[];
+  organizationCategories: string[]; // Unique categories from all associated organizations
 
   // Timing
   lastEventDate: string | null;
