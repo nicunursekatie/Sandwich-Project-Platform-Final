@@ -55,7 +55,8 @@ export const PERMISSIONS = {
   // HOSTS - Host location management
   HOSTS_VIEW: 'HOSTS_VIEW',
   HOSTS_ADD: 'HOSTS_ADD',
-  HOSTS_EDIT: 'HOSTS_EDIT',
+  HOSTS_EDIT_OWN: 'HOSTS_EDIT_OWN', // Edit own host contact details (matched by email)
+  HOSTS_EDIT: 'HOSTS_EDIT', // Edit any host location/contact
   HOSTS_DELETE: 'HOSTS_DELETE',
   HOST_RESOURCES_ACCESS: 'HOST_RESOURCES_ACCESS', // Access to Host Resources hub
 

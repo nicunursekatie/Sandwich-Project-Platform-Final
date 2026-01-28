@@ -153,6 +153,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.YEARLY_CALENDAR_ADD]: 'moderate',
   [PERMISSIONS.YEARLY_CALENDAR_EDIT_OWN]: 'moderate',
   [PERMISSIONS.YEARLY_CALENDAR_DELETE_OWN]: 'moderate',
+  [PERMISSIONS.HOSTS_EDIT_OWN]: 'moderate', // Edit own host contact details (matched by email)
 
   // ELEVATED - Can edit others' data or manage resources
   [PERMISSIONS.HOSTS_ADD]: 'elevated',

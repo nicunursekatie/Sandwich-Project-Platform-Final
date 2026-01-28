@@ -363,9 +363,9 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
         {hasLowVolumeWeeks && urgentWeek && (
           <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
             <p className="text-sm text-amber-800 dark:text-amber-200">
-              <strong>Heads up:</strong> {urgentWeek.weekLabel} is forecasting{' '}
-              <strong>{percentBelow}% below</strong> typical volume. Consider a callout for{' '}
-              <strong>~{shortfall.toLocaleString()} individual sandwiches</strong> to supplement.
+              <strong>Heads up:</strong> The forecast for {urgentWeek.weekLabel.toLowerCase()} is{' '}
+              <strong>{percentBelow}% below</strong> typical volume. Consider a callout to add{' '}
+              <strong>~{shortfall.toLocaleString()} individual sandwiches</strong>.
             </p>
           </div>
         )}

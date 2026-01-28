@@ -235,6 +235,18 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.YEARLY_CALENDAR_DELETE_ALL, label: 'Delete All Items', icon: Trash2 },
     ],
   },
+  'Hosts': {
+    icon: Building2,
+    description: 'Control Host location and contact management',
+    features: [
+      { permission: PERMISSIONS.HOSTS_VIEW, label: 'View Hosts', icon: Building2 },
+      { permission: PERMISSIONS.HOSTS_ADD, label: 'Add Hosts', icon: Building2 },
+      { permission: PERMISSIONS.HOSTS_EDIT_OWN, label: 'Edit Own Contact Details', icon: Edit },
+      { permission: PERMISSIONS.HOSTS_EDIT, label: 'Edit All Hosts/Contacts', icon: Edit },
+      { permission: PERMISSIONS.HOSTS_DELETE, label: 'Delete Hosts', icon: Trash2 },
+      { permission: PERMISSIONS.HOST_RESOURCES_ACCESS, label: 'Access Host Resources', icon: FileText },
+    ],
+  },
 };
 
 export default function BulkPermissionsManager() {
