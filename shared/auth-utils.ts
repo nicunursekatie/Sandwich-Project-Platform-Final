@@ -190,6 +190,7 @@ export const PERMISSIONS = {
   CHAT_GROUP: 'CHAT_GROUP',
   CHAT_GROUP_ADD_MEMBERS: 'CHAT_GROUP_ADD_MEMBERS', // Add members to group chats
   CHAT_GROUP_REMOVE_MEMBERS: 'CHAT_GROUP_REMOVE_MEMBERS', // Remove members from group chats
+  CHAT_MODERATE_MESSAGES: 'CHAT_MODERATE_MESSAGES', // Edit/delete any user's messages (admin moderation)
 
   // KUDOS - Kudos system
   KUDOS_SEND: 'KUDOS_SEND',

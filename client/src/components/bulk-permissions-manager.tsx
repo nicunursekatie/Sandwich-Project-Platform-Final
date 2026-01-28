@@ -170,6 +170,7 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.CHAT_GROUP, label: 'Group Chats', icon: Users },
       { permission: PERMISSIONS.CHAT_GROUP_ADD_MEMBERS, label: 'Add Members to Groups', icon: Users },
       { permission: PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS, label: 'Remove Members from Groups', icon: Users },
+      { permission: PERMISSIONS.CHAT_MODERATE_MESSAGES, label: 'Moderate Messages (Edit/Delete Any)', icon: Shield },
     ],
   },
   'Event Capabilities': {
