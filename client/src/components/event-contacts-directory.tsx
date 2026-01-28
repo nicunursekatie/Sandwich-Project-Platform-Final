@@ -325,7 +325,6 @@ export default function EventContactsDirectory() {
                         <SelectItem value="all">All Roles</SelectItem>
                         <SelectItem value="primary">Primary</SelectItem>
                         <SelectItem value="backup">Backup</SelectItem>
-                        <SelectItem value="tsp">TSP Coordinator</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

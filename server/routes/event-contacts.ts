@@ -8,9 +8,15 @@ import type { EventContact, EventContactDetail, EventContactEvent } from '@share
 const router = Router();
 
 /**
- * Generates a unique key for a contact based on email and phone
+ * Generates a unique key for a contact based on email, phone, or name
+ * Keys must be stable across API calls for the detail page to work
  */
-function getContactKey(email: string | null | undefined, phone: string | null | undefined): string {
+function getContactKey(
+  email: string | null | undefined,
+  phone: string | null | undefined,
+  firstName?: string | null,
+  lastName?: string | null
+): string {
   const normalizedEmail = email?.toLowerCase().trim() || '';
   const normalizedPhone = phone?.replace(/\D/g, '') || '';
 
@@ -22,8 +28,14 @@ function getContactKey(email: string | null | undefined, phone: string | null | 
     return `phone:${normalizedPhone}`;
   }
 
-  // Fallback: generate a unique key with timestamp
-  return `unknown:${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Use name as stable fallback (instead of random ID)
+  const normalizedName = [firstName, lastName].filter(Boolean).join(' ').toLowerCase().trim();
+  if (normalizedName) {
+    return `name:${normalizedName}`;
+  }
+
+  // Last resort: empty contact (shouldn't happen in practice)
+  return 'unknown:empty';
 }
 
 /**
@@ -35,18 +47,6 @@ async function aggregateEventContacts(): Promise<{
   contactEventsMap: Map<string, EventContactEvent[]>;
 }> {
   const eventRequests = await storage.getAllEventRequests();
-  const users = await storage.getAllUsers();
-
-  // Create a lookup map for users (to resolve TSP contact IDs)
-  const userMap = new Map<string, { firstName: string; lastName: string; email: string | null; phoneNumber: string | null }>();
-  for (const user of users) {
-    userMap.set(user.id, {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      email: user.email || null,
-      phoneNumber: user.phoneNumber || null,
-    });
-  }
 
   // Map to track contacts and their events
   const contactMap = new Map<string, {
@@ -63,7 +63,7 @@ async function aggregateEventContacts(): Promise<{
 
     // Process primary contact
     if (event.firstName || event.lastName || event.email || event.phone) {
-      const key = getContactKey(event.email, event.phone);
+      const key = getContactKey(event.email, event.phone, event.firstName, event.lastName);
 
       if (!contactMap.has(key)) {
         contactMap.set(key, {
@@ -134,7 +134,7 @@ async function aggregateEventContacts(): Promise<{
 
     // Process backup contact
     if (event.backupContactFirstName || event.backupContactLastName || event.backupContactEmail || event.backupContactPhone) {
-      const key = getContactKey(event.backupContactEmail, event.backupContactPhone);
+      const key = getContactKey(event.backupContactEmail, event.backupContactPhone, event.backupContactFirstName, event.backupContactLastName);
 
       if (!contactMap.has(key)) {
         contactMap.set(key, {
@@ -203,91 +203,8 @@ async function aggregateEventContacts(): Promise<{
       });
     }
 
-    // Process TSP contacts (primary TSP, additionalContact1, additionalContact2)
-    const tspContactIds = [
-      event.tspContact,
-      event.additionalContact1,
-      event.additionalContact2,
-    ].filter(Boolean) as string[];
-
-    for (const tspUserId of tspContactIds) {
-      const user = userMap.get(tspUserId);
-      if (!user) continue;
-
-      const key = getContactKey(user.email, user.phoneNumber);
-
-      if (!contactMap.has(key)) {
-        contactMap.set(key, {
-          contact: {
-            id: key,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            fullName: [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Unknown',
-            email: user.email,
-            phone: user.phoneNumber,
-            contactRoles: ['tsp'],
-            tspUserId,
-            totalEvents: 0,
-            completedEvents: 0,
-            hasOnlyIncompleteEvents: false,
-            organizations: [],
-            organizationCategories: [],
-            lastEventDate: null,
-            firstEventDate: null,
-          },
-          events: [],
-        });
-      }
-
-      const entry = contactMap.get(key)!;
-
-      // Add TSP role if not already present
-      if (!entry.contact.contactRoles.includes('tsp')) {
-        entry.contact.contactRoles.push('tsp');
-      }
-
-      // Set TSP user ID if not already set
-      if (!entry.contact.tspUserId) {
-        entry.contact.tspUserId = tspUserId;
-      }
-
-      // Update stats
-      entry.contact.totalEvents++;
-      if (event.status === 'completed') {
-        entry.contact.completedEvents++;
-      }
-
-      // Update organization list
-      if (event.organizationName && !entry.contact.organizations.includes(event.organizationName)) {
-        entry.contact.organizations.push(event.organizationName);
-      }
-
-      // Update organization categories
-      if (event.organizationCategory && !entry.contact.organizationCategories.includes(event.organizationCategory)) {
-        entry.contact.organizationCategories.push(event.organizationCategory);
-      }
-
-      // Update dates
-      if (eventDate) {
-        if (!entry.contact.lastEventDate || eventDate > entry.contact.lastEventDate) {
-          entry.contact.lastEventDate = eventDate;
-        }
-        if (!entry.contact.firstEventDate || eventDate < entry.contact.firstEventDate) {
-          entry.contact.firstEventDate = eventDate;
-        }
-      }
-
-      // Add event to history
-      entry.events.push({
-        eventId: event.id,
-        organizationName: event.organizationName || 'Unknown Organization',
-        scheduledEventDate: eventDate,
-        eventAddress: event.eventAddress || null,
-        status: event.status || 'new',
-        sandwichCount,
-        contactRole: 'tsp',
-      });
-    }
+    // Note: TSP contacts are not included in the Event Contacts Directory
+    // They are managed through the User Management system instead
   }
 
   // Build final contacts list
@@ -367,6 +284,63 @@ router.get(
     } catch (error) {
       logger.error('[EVENT CONTACTS] Error fetching contact details:', error);
       res.status(500).json({ error: 'Failed to fetch contact details' });
+    }
+  }
+);
+
+// PUT /api/event-contacts/:id - Update contact info across all associated events
+router.put(
+  '/:id',
+  requirePermission(PERMISSIONS.EVENTS_EDIT),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const decodedId = decodeURIComponent(id);
+      const { firstName, lastName, email, phone } = req.body;
+
+      logger.log(`[EVENT CONTACTS] Updating contact: ${decodedId}`);
+
+      // Get all event requests to find which ones have this contact
+      const eventRequests = await storage.getAllEventRequests();
+
+      let updatedCount = 0;
+
+      for (const event of eventRequests) {
+        // Check if primary contact matches
+        const primaryKey = getContactKey(event.email, event.phone, event.firstName, event.lastName);
+        if (primaryKey === decodedId) {
+          await storage.updateEventRequest(event.id, {
+            firstName: firstName ?? event.firstName,
+            lastName: lastName ?? event.lastName,
+            email: email ?? event.email,
+            phone: phone ?? event.phone,
+          });
+          updatedCount++;
+          continue;
+        }
+
+        // Check if backup contact matches
+        const backupKey = getContactKey(event.backupContactEmail, event.backupContactPhone, event.backupContactFirstName, event.backupContactLastName);
+        if (backupKey === decodedId) {
+          await storage.updateEventRequest(event.id, {
+            backupContactFirstName: firstName ?? event.backupContactFirstName,
+            backupContactLastName: lastName ?? event.backupContactLastName,
+            backupContactEmail: email ?? event.backupContactEmail,
+            backupContactPhone: phone ?? event.backupContactPhone,
+          });
+          updatedCount++;
+        }
+      }
+
+      if (updatedCount === 0) {
+        return res.status(404).json({ error: 'Contact not found in any events' });
+      }
+
+      logger.log(`[EVENT CONTACTS] Updated contact info in ${updatedCount} events`);
+      res.json({ success: true, updatedCount });
+    } catch (error) {
+      logger.error('[EVENT CONTACTS] Error updating contact:', error);
+      res.status(500).json({ error: 'Failed to update contact' });
     }
   }
 );

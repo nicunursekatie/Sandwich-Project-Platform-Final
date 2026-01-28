@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import {
   ArrowLeft,
@@ -8,6 +9,8 @@ import {
   Calendar,
   MapPin,
   Sandwich,
+  Pencil,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,10 +23,32 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import type { EventContactDetail } from '@shared/schema';
 
 export default function EventContactDetailPage() {
   const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
 
   // Extract ID from URL path since useParams may not work through Dashboard wrapper
   // URL format: /event-contact/{id}
@@ -39,6 +64,58 @@ export default function EventContactDetailPage() {
     queryKey: [`/api/event-contacts/${encodeURIComponent(contactId)}`],
     enabled: !!contactId,
   });
+
+  // Update contact mutation
+  const updateContactMutation = useMutation({
+    mutationFn: async (data: { firstName: string; lastName: string; email: string; phone: string }) => {
+      const response = await fetch(`/api/event-contacts/${encodeURIComponent(contactId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update contact');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Contact Updated',
+        description: `Updated contact info in ${data.updatedCount} event${data.updatedCount !== 1 ? 's' : ''}.`,
+      });
+      setIsEditDialogOpen(false);
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/event-contacts'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/event-contacts/${encodeURIComponent(contactId)}`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Update Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Open edit dialog with current values
+  const handleEditClick = () => {
+    if (contact) {
+      setEditForm({
+        firstName: contact.firstName || '',
+        lastName: contact.lastName || '',
+        email: contact.email || '',
+        phone: contact.phone || '',
+      });
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  // Handle form submission
+  const handleSaveEdit = () => {
+    updateContactMutation.mutate(editForm);
+  };
 
   const roleColors: Record<string, string> = {
     primary: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -122,7 +199,21 @@ export default function EventContactDetailPage() {
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div>
-              <CardTitle className="text-2xl">{contact.fullName}</CardTitle>
+              <div className="flex items-center gap-3">
+                <CardTitle className="text-2xl">{contact.fullName}</CardTitle>
+                {/* Edit button - show if contact has primary or backup roles (TSP-only contacts should be edited via user management) */}
+                {(contact.contactRoles.includes('primary') || contact.contactRoles.includes('backup')) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEditClick}
+                    className="gap-1.5"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Edit
+                  </Button>
+                )}
+              </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {contact.contactRoles.map((role) => (
                   <Badge
@@ -286,6 +377,86 @@ export default function EventContactDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Contact Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+            <DialogDescription>
+              Update this contact's information. Changes will apply to all {contact?.totalEvents || 0} event{(contact?.totalEvents || 0) !== 1 ? 's' : ''} where they appear.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={editForm.firstName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, firstName: e.target.value }))}
+                  placeholder="First name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={editForm.lastName}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, lastName: e.target.value }))}
+                  placeholder="Last name"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="email@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={editForm.phone}
+                onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateContactMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={updateContactMutation.isPending}
+            >
+              {updateContactMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
