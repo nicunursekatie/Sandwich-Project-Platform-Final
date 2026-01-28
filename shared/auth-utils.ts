@@ -237,8 +237,13 @@ export const PERMISSIONS = {
 
   // YEARLY_CALENDAR - TSP Yearly Calendar planning
   YEARLY_CALENDAR_VIEW: 'YEARLY_CALENDAR_VIEW', // View yearly calendar
-  YEARLY_CALENDAR_EDIT: 'YEARLY_CALENDAR_EDIT', // Add calendar items and edit/delete own items
-  YEARLY_CALENDAR_EDIT_ALL: 'YEARLY_CALENDAR_EDIT_ALL', // Edit/delete any calendar item (not just own)
+  YEARLY_CALENDAR_ADD: 'YEARLY_CALENDAR_ADD', // Add new calendar items
+  YEARLY_CALENDAR_EDIT_OWN: 'YEARLY_CALENDAR_EDIT_OWN', // Edit own calendar items
+  YEARLY_CALENDAR_EDIT_ALL: 'YEARLY_CALENDAR_EDIT_ALL', // Edit any calendar item
+  YEARLY_CALENDAR_DELETE_OWN: 'YEARLY_CALENDAR_DELETE_OWN', // Delete own calendar items
+  YEARLY_CALENDAR_DELETE_ALL: 'YEARLY_CALENDAR_DELETE_ALL', // Delete any calendar item
+  // Legacy permission for backward compatibility
+  YEARLY_CALENDAR_EDIT: 'YEARLY_CALENDAR_EDIT', // Legacy: Add calendar items and edit/delete own items
 
   // MEETINGS - Meeting management
   MEETINGS_VIEW: 'MEETINGS_VIEW',

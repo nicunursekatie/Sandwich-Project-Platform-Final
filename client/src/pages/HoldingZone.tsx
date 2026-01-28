@@ -603,6 +603,11 @@ export default function HoldingZone() {
   const canView = userPermissions.includes('VIEW_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
   const canSubmit = userPermissions.includes('SUBMIT_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
   const canManage = userPermissions.includes('MANAGE_HOLDING_ZONE') || user?.role === 'admin' || user?.role === 'super_admin';
+  // Granular edit/delete permissions for items
+  const canEditOwn = userPermissions.includes('HOLDING_ZONE_EDIT_OWN') || canManage;
+  const canEditAll = userPermissions.includes('HOLDING_ZONE_EDIT_ALL') || canManage;
+  const canDeleteOwn = userPermissions.includes('HOLDING_ZONE_DELETE_OWN') || canManage;
+  const canDeleteAll = userPermissions.includes('HOLDING_ZONE_DELETE_ALL') || canManage;
 
   // Real-time collaboration hook - called unconditionally (hook rules)
   const collaboration = useCollaboration({
@@ -1559,44 +1564,56 @@ export default function HoldingZone() {
                     </div>
                   </div>
 
-                  {canManage && item.status !== 'done' && !item.completedAt && (
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setItemToEdit(item);
-                          setEditItemContent(item.content);
-                          setEditItemType(item.type);
-                          setEditItemCategoryIds(item.categories?.map(c => c.id) || []);
-                          setEditItemIsUrgent(item.isUrgent);
-                          setEditItemIsPrivate(item.isPrivate);
-                          setEditItemDetails(item.details || '');
-                          setEditCanvasSections((item.canvasSections as CanvasSection[] | null) || []);
-                          setEditItemDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate : new Date(item.dueDate).toISOString().split('T')[0]) : '');
-                          setEditDialogOpen(true);
-                        }}
-                        className="h-8 w-8 p-0"
-                        data-testid={`button-edit-${item.id}`}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this item?')) {
-                            deleteItemMutation.mutate(item.id);
-                          }
-                        }}
-                        disabled={deleteItemMutation.isPending}
-                        className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
-                        data-testid={`button-delete-${item.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  {(() => {
+                    // Check edit/delete permissions per item
+                    const isOwner = item.createdBy === user?.id;
+                    const itemCanEdit = canEditAll || (isOwner && canEditOwn);
+                    const itemCanDelete = canDeleteAll || (isOwner && canDeleteOwn);
+                    const showActions = (itemCanEdit || itemCanDelete) && item.status !== 'done' && !item.completedAt;
+
+                    return showActions && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        {itemCanEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setItemToEdit(item);
+                              setEditItemContent(item.content);
+                              setEditItemType(item.type);
+                              setEditItemCategoryIds(item.categories?.map(c => c.id) || []);
+                              setEditItemIsUrgent(item.isUrgent);
+                              setEditItemIsPrivate(item.isPrivate);
+                              setEditItemDetails(item.details || '');
+                              setEditCanvasSections((item.canvasSections as CanvasSection[] | null) || []);
+                              setEditItemDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate : new Date(item.dueDate).toISOString().split('T')[0]) : '');
+                              setEditDialogOpen(true);
+                            }}
+                            className="h-8 w-8 p-0"
+                            data-testid={`button-edit-${item.id}`}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {itemCanDelete && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this item?')) {
+                                deleteItemMutation.mutate(item.id);
+                              }
+                            }}
+                            disabled={deleteItemMutation.isPending}
+                            className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                            data-testid={`button-delete-${item.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {(item.isCanvas || item.type === 'canvas') && (

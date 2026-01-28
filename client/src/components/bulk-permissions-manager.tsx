@@ -70,6 +70,8 @@ import {
   FileInput,
   Clock,
   Upload,
+  Trash2,
+  Inbox,
   type LucideIcon,
 } from 'lucide-react';
 import { PERMISSIONS, USER_ROLES, getRoleDisplayName, applyPermissionDependencies } from '@shared/auth-utils';
@@ -205,6 +207,32 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.DOCUMENTS_MANAGE, label: 'Manage Documents', icon: FileText },
       { permission: PERMISSIONS.DATA_EXPORT, label: 'Export Data', icon: FileText },
       { permission: PERMISSIONS.DATA_IMPORT, label: 'Import Data', icon: FileText },
+    ],
+  },
+  'Holding Zone': {
+    icon: Inbox,
+    description: 'Control Holding Zone (Team Board) capabilities',
+    features: [
+      { permission: PERMISSIONS.VIEW_HOLDING_ZONE, label: 'View Holding Zone', icon: StickyNote },
+      { permission: PERMISSIONS.SUBMIT_HOLDING_ZONE, label: 'Submit Items', icon: StickyNote },
+      { permission: PERMISSIONS.HOLDING_ZONE_EDIT_OWN, label: 'Edit Own Items', icon: Edit },
+      { permission: PERMISSIONS.HOLDING_ZONE_EDIT_ALL, label: 'Edit All Items', icon: Edit },
+      { permission: PERMISSIONS.HOLDING_ZONE_DELETE_OWN, label: 'Delete Own Items', icon: Trash2 },
+      { permission: PERMISSIONS.HOLDING_ZONE_DELETE_ALL, label: 'Delete All Items', icon: Trash2 },
+      { permission: PERMISSIONS.MANAGE_HOLDING_ZONE, label: 'Full Management (Categories, Status)', icon: Settings },
+      { permission: PERMISSIONS.COMMENT_HOLDING_ZONE, label: 'Comment on Items', icon: MessageCircle },
+    ],
+  },
+  'Yearly Calendar': {
+    icon: Calendar,
+    description: 'Control TSP Yearly Calendar capabilities',
+    features: [
+      { permission: PERMISSIONS.YEARLY_CALENDAR_VIEW, label: 'View Calendar', icon: Calendar },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_ADD, label: 'Add Items', icon: Calendar },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_EDIT_OWN, label: 'Edit Own Items', icon: Edit },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL, label: 'Edit All Items', icon: Edit },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_DELETE_OWN, label: 'Delete Own Items', icon: Trash2 },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_DELETE_ALL, label: 'Delete All Items', icon: Trash2 },
     ],
   },
 };
