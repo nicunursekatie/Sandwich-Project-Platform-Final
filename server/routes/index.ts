@@ -86,6 +86,7 @@ import peopleSearchRouter from './people-search';
 import photoScannerRouter from './photo-scanner';
 import { createEmailTemplatesRouter } from './email-templates';
 import volunteerEventHubRouter from './volunteer-event-hub';
+import { createEventContactsRouter } from './event-contacts';
 
 // Import centralized middleware
 import {
@@ -531,6 +532,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventMapRouter
   );
   router.use('/api/event-map', createErrorHandler('event-map'));
+
+  // Event contacts directory - aggregated contacts from event requests
+  const eventContactsRouter = createEventContactsRouter();
+  router.use(
+    '/api/event-contacts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventContactsRouter
+  );
+  router.use('/api/event-contacts', createErrorHandler('event-contacts'));
 
   // Directions routes - Google Maps Directions API with traffic data
   router.use(

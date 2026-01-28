@@ -4569,3 +4569,58 @@ export const insertTspContactFollowupSchema = createInsertSchema(tspContactFollo
 
 export type TspContactFollowup = typeof tspContactFollowups.$inferSelect;
 export type InsertTspContactFollowup = z.infer<typeof insertTspContactFollowupSchema>;
+
+// ============================================================================
+// EVENT CONTACTS DIRECTORY - Aggregated view of contacts from event requests
+// ============================================================================
+
+/**
+ * EventContact - Deduplicated contact from event requests
+ * Aggregates primary, backup, and TSP contacts across all events
+ */
+export interface EventContact {
+  id: string; // Composite key: `${email}|${phone}` or generated UUID
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+
+  // Contact role indicators
+  contactRoles: ('primary' | 'backup' | 'tsp')[];
+
+  // For TSP contacts, store the user ID
+  tspUserId?: string;
+
+  // Aggregate statistics
+  totalEvents: number;
+  completedEvents: number;
+  hasOnlyIncompleteEvents: boolean; // true if only 'new' or 'in_process' events
+
+  // Organization connections
+  organizations: string[];
+
+  // Timing
+  lastEventDate: string | null;
+  firstEventDate: string | null;
+}
+
+/**
+ * EventContactEvent - Event details for a contact's event history
+ */
+export interface EventContactEvent {
+  eventId: number;
+  organizationName: string;
+  scheduledEventDate: string | null;
+  eventAddress: string | null;
+  status: string;
+  sandwichCount: number; // actualSandwichCount || estimatedSandwichCount
+  contactRole: 'primary' | 'backup' | 'tsp';
+}
+
+/**
+ * EventContactDetail - Full contact details including event history
+ */
+export interface EventContactDetail extends EventContact {
+  events: EventContactEvent[];
+}
