@@ -17,6 +17,13 @@ import type { EventNotificationPreferences } from '@shared/types';
 import { generateImpactReport, saveImpactReport } from './ai-impact-reports';
 import { processTspContactFollowups } from './tsp-contact-followup-service';
 import { processSmartTspFollowups } from './tsp-smart-followup-service';
+import { processCorporateFollowups } from './corporate-followup-service';
+import { processWeeklyDigests } from './weekly-digest-service';
+import {
+  processCorporate24hEscalations,
+  processApproachingIncompleteEvents,
+  processWeeklyContactReminders,
+} from './event-notification-dispatcher';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -206,6 +213,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -213,7 +226,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 volunteer.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(volunteer.role)
+                getRoleInstructions(volunteer.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -268,6 +282,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -275,7 +295,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 volunteer.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(volunteer.role)
+                getRoleInstructions(volunteer.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -283,7 +304,7 @@ async function sendVolunteerReminders(): Promise<{
                   .update(eventVolunteers)
                   .set({ smsReminder2SentAt: new Date() })
                   .where(eq(eventVolunteers.id, volunteer.id));
-                
+
                 remindersSent++;
                 cronLogger.info(`Sent secondary SMS reminder to ${volunteerPhone} for event ${event.id}`);
               }
@@ -374,6 +395,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -381,7 +408,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 assignment.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(assignment.role)
+                getRoleInstructions(assignment.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -424,6 +452,12 @@ async function sendVolunteerReminders(): Promise<{
               volunteerPhone
             ) {
               const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+              // Build event contact details for the reminder
+              const eventContactDetails = {
+                contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                contactPhone: event.phone || null,
+                contactEmail: event.email || null,
+              };
               const smsSent = await sendEventReminderSMS(
                 volunteerPhone,
                 volunteerName,
@@ -431,7 +465,8 @@ async function sendVolunteerReminders(): Promise<{
                 event.scheduledEventDate,
                 assignment.role,
                 `${appUrl}/dashboard?section=event-requests`,
-                getRoleInstructions(assignment.role)
+                getRoleInstructions(assignment.role),
+                eventContactDetails
               );
 
               if (smsSent.success) {
@@ -511,13 +546,21 @@ async function sendVolunteerReminders(): Promise<{
                 contactPhone
               ) {
                 const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+                // Build event contact details for the reminder
+                const eventContactDetails = {
+                  contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                  contactPhone: event.phone || null,
+                  contactEmail: event.email || null,
+                };
                 await sendEventReminderSMS(
                   contactPhone,
                   contactName,
                   event.organizationName || 'Unknown Organization',
                   event.scheduledEventDate!,
                   'TSP Contact',
-                  `${appUrl}/dashboard?section=event-requests`
+                  `${appUrl}/dashboard?section=event-requests`,
+                  null, // instructions
+                  eventContactDetails
                 );
                 remindersSent++;
                 cronLogger.info(`Sent primary SMS reminder to TSP contact ${contactPhone} for event ${event.id}`);
@@ -553,13 +596,21 @@ async function sendVolunteerReminders(): Promise<{
                 contactPhone
               ) {
                 const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
+                // Build event contact details for the reminder
+                const eventContactDetails = {
+                  contactName: [event.firstName, event.lastName].filter(Boolean).join(' ') || null,
+                  contactPhone: event.phone || null,
+                  contactEmail: event.email || null,
+                };
                 await sendEventReminderSMS(
                   contactPhone,
                   contactName,
                   event.organizationName || 'Unknown Organization',
                   event.scheduledEventDate!,
                   'TSP Contact',
-                  `${appUrl}/dashboard?section=event-requests`
+                  `${appUrl}/dashboard?section=event-requests`,
+                  null, // instructions
+                  eventContactDetails
                 );
                 remindersSent++;
                 cronLogger.info(`Sent secondary SMS reminder to TSP contact ${contactPhone} for event ${event.id}`);
@@ -1181,6 +1232,39 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Corporate priority event follow-up - runs daily at 9:00 AM and 2:00 PM
+  // Sends strict follow-up reminders to TSP contacts for corporate priority events
+  // that don't have successful contact logged
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 9,14 * * *' = At 9:00 AM and 2:00 PM every day
+  const corporateFollowupJob = cron.schedule('0 9,14 * * *', async () => {
+    cronLogger.info('Running corporate priority follow-up check...');
+    try {
+      const result = await processCorporateFollowups();
+      cronLogger.info('Corporate follow-up job completed', {
+        remindersGenerated: result.remindersGenerated,
+        eventsProcessed: result.eventsProcessed,
+        errors: result.errors,
+        timestamp: result.timestamp,
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running corporate follow-up cron job',
+        undefined,
+        { jobType: 'corporate-followup' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Corporate follow-up job scheduled successfully', {
+    schedule: 'Daily at 9:00 AM and 2:00 PM',
+    timezone: 'America/New_York',
+  });
+
   // Driver availability status transition - runs daily at 12:10 AM
   // Transitions drivers to unavailable when unavailableStartDate arrives
   // Transitions drivers to pending_checkin when checkInDate arrives
@@ -1214,6 +1298,138 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // ============================================================================
+  // TIERED NOTIFICATION SYSTEM JOBS
+  // ============================================================================
+
+  // Weekly digest email - runs Monday mornings at 8:00 AM
+  // Sends portfolio summary to all TSP contacts with active events
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 8 * * 1' = At 8:00 AM on Monday
+  const weeklyDigestJob = cron.schedule('0 8 * * 1', async () => {
+    cronLogger.info('Running weekly digest email job...');
+    try {
+      const result = await processWeeklyDigests();
+      cronLogger.info('Weekly digest job completed', {
+        sent: result.sent,
+        skipped: result.skipped,
+        failed: result.failed,
+        errors: result.errors.length > 0 ? result.errors : undefined,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running weekly digest cron job',
+        undefined,
+        { jobType: 'weekly-digest' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Weekly digest job scheduled successfully', {
+    schedule: 'Mondays at 8:00 AM',
+    timezone: 'America/New_York',
+  });
+
+  // Corporate 24-hour escalation SMS - runs 3x daily at 9 AM, 1 PM, and 5 PM
+  // Sends urgent SMS to TSP contacts for corporate events without successful contact after 24 hours
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 9,13,17 * * *' = At 9:00 AM, 1:00 PM, and 5:00 PM every day
+  const corporate24hEscalationJob = cron.schedule('0 9,13,17 * * *', async () => {
+    cronLogger.info('Running corporate 24-hour escalation check...');
+    try {
+      const result = await processCorporate24hEscalations();
+      cronLogger.info('Corporate 24h escalation job completed', {
+        sent: result.sent,
+        skipped: result.skipped,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running corporate 24h escalation cron job',
+        undefined,
+        { jobType: 'corporate-24h-escalation' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Corporate 24h escalation job scheduled successfully', {
+    schedule: 'Daily at 9 AM, 1 PM, and 5 PM',
+    timezone: 'America/New_York',
+  });
+
+  // Event approaching incomplete alert - runs daily at 9 AM
+  // Sends urgent SMS/email when event is within 5 days but not yet scheduled
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 9 * * *' = At 9:00 AM every day
+  const eventApproachingJob = cron.schedule('0 9 * * *', async () => {
+    cronLogger.info('Running event approaching incomplete check...');
+    try {
+      const result = await processApproachingIncompleteEvents();
+      cronLogger.info('Event approaching job completed', {
+        sent: result.sent,
+        skipped: result.skipped,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running event approaching cron job',
+        undefined,
+        { jobType: 'event-approaching-incomplete' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Event approaching incomplete job scheduled successfully', {
+    schedule: 'Daily at 9:00 AM',
+    timezone: 'America/New_York',
+  });
+
+  // Weekly contact reminder + 2-week escalation - runs weekdays at 10 AM
+  // Sends email reminders for in-process events with no contact in 7 days
+  // Escalates to admin for events with no contact in 14+ days
+  // Cron format: minute hour day-of-month month day-of-week
+  // '0 10 * * 1-5' = At 10:00 AM Monday through Friday
+  const weeklyContactReminderJob = cron.schedule('0 10 * * 1-5', async () => {
+    cronLogger.info('Running weekly contact reminder check...');
+    try {
+      const result = await processWeeklyContactReminders();
+      cronLogger.info('Weekly contact reminder job completed', {
+        sent: result.sent,
+        escalated: result.escalated,
+        skipped: result.skipped,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running weekly contact reminder cron job',
+        undefined,
+        { jobType: 'weekly-contact-reminder' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Weekly contact reminder job scheduled successfully', {
+    schedule: 'Weekdays at 10:00 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1222,7 +1438,12 @@ export function initializeCronJobs() {
     autoCompleteJob,
     pastDateNotificationJob,
     tspFollowupJob,
+    corporateFollowupJob,
     driverAvailabilityJob,
+    weeklyDigestJob,
+    corporate24hEscalationJob,
+    eventApproachingJob,
+    weeklyContactReminderJob,
   };
 }
 
@@ -1237,6 +1458,11 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.autoCompleteJob.stop();
   jobs.pastDateNotificationJob.stop();
   jobs.tspFollowupJob.stop();
+  jobs.corporateFollowupJob.stop();
   jobs.driverAvailabilityJob.stop();
+  jobs.weeklyDigestJob.stop();
+  jobs.corporate24hEscalationJob.stop();
+  jobs.eventApproachingJob.stop();
+  jobs.weeklyContactReminderJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

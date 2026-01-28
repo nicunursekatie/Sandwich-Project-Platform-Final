@@ -115,8 +115,7 @@ const eventRequest = allEventRequests.find(
 
 ### 2.1 Minimal Use of React.memo
 
-**Finding**: Only 3 out of 200+ components use `React.memo`:
-- `client/src/components/committee-chat.tsx`
+**Finding**: Only 2 out of 200+ components use `React.memo`:
 - `client/src/components/email-style-messaging.tsx`
 - `client/src/components/enhanced-notifications.tsx`
 

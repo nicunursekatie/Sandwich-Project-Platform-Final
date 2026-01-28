@@ -786,7 +786,9 @@ const VALID_EVENT_REQUEST_STATUSES = [
   'completed',
   'declined',
   'postponed',
-  'cancelled'
+  'cancelled',
+  'standby',
+  'stalled'
 ] as const;
 
 // Helper function to validate and sanitize status values
@@ -1552,10 +1554,12 @@ router.get(
         declined: 0,
         postponed: 0,
         cancelled: 0,
+        standby: 0,
+        stalled: 0,
         my_assignments: 0,
       };
 
-      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled']);
+      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled', 'stalled']);
 
       // Helper to check if user is assigned to an event
       const isUserAssigned = (event: any): boolean => {
@@ -2872,6 +2876,27 @@ router.put(
       const originalEvent = await storage.getEventRequestById(id);
       if (!originalEvent) {
         return res.status(404).json({ message: 'Event request not found' });
+      }
+
+      // Check permission for removing corporate priority - only Katie and Christine can do this
+      if (
+        originalEvent.isCorporatePriority === true &&
+        updates.isCorporatePriority === false
+      ) {
+        const userEmail = req.user?.email;
+        const allowedEmails = [
+          'admin@sandwich.project',
+          'katielong2316@gmail.com',
+          'katie@thesandwichproject.org',
+          'christine@thesandwichproject.org'
+        ];
+        
+        if (!userEmail || !allowedEmails.includes(userEmail.toLowerCase())) {
+          return res.status(403).json({
+            message: 'Only Christine and Katie can remove the corporate priority flag from an event.',
+            error: 'Insufficient permissions',
+          });
+        }
       }
 
       // Process pickup time fields for data migration
@@ -4246,63 +4271,49 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
       return res.status(404).json({ error: 'Event request not found after update' });
     }
 
-    // Send email and SMS notifications if:
-    // 1. TSP contact was assigned (not removed)
-    // 2. It changed from previous value
-    // 3. Event is not already completed or declined
+    // Send tiered notification for TSP contact assignment:
+    // URGENT tier: SMS-first, email fallback if no SMS opt-in
+    // This reduces notification fatigue by not sending both email AND SMS
     if (
-      validatedData.tspContact && 
+      validatedData.tspContact &&
       originalEvent.tspContact !== validatedData.tspContact &&
       originalEvent.status !== 'completed' &&
       originalEvent.status !== 'declined'
     ) {
       try {
-        // Send email notification
-        await EmailNotificationService.sendTspContactAssignmentNotification(
+        // Use the new tiered notification dispatcher (SMS-first, email fallback)
+        const { sendTspAssignmentNotification } = await import('../services/event-notification-dispatcher');
+        await sendTspAssignmentNotification(
           validatedData.tspContact!,
           id,
-          originalEvent.organizationName,
-          originalEvent.scheduledEventDate || originalEvent.desiredEventDate
+          originalEvent.organizationName || 'Unknown Organization',
+          originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
+          originalEvent.isCorporatePriority || false
         );
+        logger.log(`✅ TSP contact assignment notification sent (tiered) for event ${id}`);
       } catch (error) {
-        // Log error but don't fail the request if email notification fails
-        logger.error('Failed to send TSP contact assignment email:', error);
+        // Log error but don't fail the request if notification fails
+        logger.error('Failed to send TSP contact assignment notification:', error);
       }
 
-      // Send SMS notification if user has opted in
-      try {
-        const assignedUser = await storage.getUserById(validatedData.tspContact!);
-        if (assignedUser) {
-          const metadata = assignedUser.metadata as any || {};
-          const smsConsent = metadata.smsConsent || {};
-          
-          // Check for 'events' campaign - support both old single campaignType and new campaignTypes array
-          const hasEventsConsent = 
-            smsConsent.campaignType === 'events' || 
-            (Array.isArray(smsConsent.campaignTypes) && smsConsent.campaignTypes.includes('events'));
-          
-          // Only send SMS if user has confirmed SMS opt-in for the 'events' campaign
-          if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && hasEventsConsent) {
-            const { sendTspContactAssignmentSMS } = await import('../sms-service');
-            const smsResult = await sendTspContactAssignmentSMS(
-              smsConsent.phoneNumber,
-              originalEvent.organizationName,
-              id,
-              originalEvent.scheduledEventDate || originalEvent.desiredEventDate
-            );
-            
-            if (smsResult.success) {
-              logger.log(`✅ TSP contact assignment SMS sent to ${assignedUser.email}`);
-            } else {
-              logger.warn(`⚠️ TSP contact assignment SMS failed: ${smsResult.message}`);
-            }
-          } else if (smsConsent.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber && !hasEventsConsent) {
-            logger.log(`ℹ️ User ${assignedUser.email} has SMS enabled but not opted into 'events' campaign - skipping TSP contact SMS`);
-          }
+      // Initialize corporate follow-up protocol if this is a corporate priority event
+      // BUT only for events that are not yet scheduled (new/in_progress) - scheduled/completed events don't need "call now" alerts
+      const statusesNeedingCallNotification = ['new', 'in_progress'];
+      if (originalEvent.isCorporatePriority && statusesNeedingCallNotification.includes(originalEvent.status || '')) {
+        try {
+          const { initializeCorporateProtocol } = await import('../services/corporate-followup-service');
+          await initializeCorporateProtocol(
+            id,
+            validatedData.tspContact!,
+            req.user?.id || 'system'
+          );
+          logger.log(`✅ Corporate follow-up protocol initialized for event ${id}`);
+        } catch (error) {
+          logger.error('Failed to initialize corporate follow-up protocol:', error);
+          // Don't fail the request if protocol initialization fails
         }
-      } catch (error) {
-        // Log error but don't fail the request if SMS notification fails
-        logger.error('Failed to send TSP contact assignment SMS:', error);
+      } else if (originalEvent.isCorporatePriority) {
+        logger.log(`ℹ️ Skipping corporate protocol for event ${id} - already ${originalEvent.status}`);
       }
     }
 
@@ -4350,6 +4361,141 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
 
 // Audit Log Routes - MOVED to ./event-requests/audit.ts
 // Routes moved: GET /audit-logs
+
+// Toggle corporate priority status for an event request
+// When marked as corporate, notifies Christine and Katie that event needs core team attention
+router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { isCorporatePriority, coreTeamMemberNotes } = req.body;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+
+    // Check permissions - admin or TSP contact assignment permissions
+    if (!hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_EDIT)) {
+      return res.status(403).json({
+        error: 'Insufficient permissions to update corporate priority status.',
+      });
+    }
+
+    // Get original data for comparison
+    const originalEvent = await storage.getEventRequestById(id);
+    if (!originalEvent) {
+      return res.status(404).json({ error: 'Event request not found' });
+    }
+
+    // Check permission for REMOVING corporate priority - only Katie and Christine can do this
+    if (originalEvent.isCorporatePriority === true && isCorporatePriority === false) {
+      const userEmail = req.user?.email;
+      const allowedEmails = [
+        'admin@sandwich.project',
+        'katielong2316@gmail.com',
+        'katie@thesandwichproject.org',
+        'christine@thesandwichproject.org'
+      ];
+      
+      if (!userEmail || !allowedEmails.includes(userEmail.toLowerCase())) {
+        return res.status(403).json({
+          error: 'Only Christine and Katie can remove the corporate priority flag from an event.',
+        });
+      }
+    }
+
+    // Prepare updates
+    const updates: Partial<EventRequest> = {
+      isCorporatePriority: isCorporatePriority ?? false,
+      requiresCoreTeamMember: isCorporatePriority ?? false,
+      updatedAt: new Date(),
+    };
+
+    // Track when it was marked/unmarked
+    if (isCorporatePriority && !originalEvent.isCorporatePriority) {
+      updates.corporatePriorityMarkedAt = new Date();
+      updates.corporatePriorityMarkedBy = req.user?.id || null;
+    } else if (!isCorporatePriority && originalEvent.isCorporatePriority) {
+      updates.corporatePriorityMarkedAt = null;
+      updates.corporatePriorityMarkedBy = null;
+    }
+
+    // Update core team member notes if provided
+    if (coreTeamMemberNotes !== undefined) {
+      updates.coreTeamMemberNotes = coreTeamMemberNotes;
+    }
+
+    await storage.updateEventRequest(id, updates);
+
+    // Fetch updated record
+    const updatedEventRequest = await storage.getEventRequestById(id);
+
+    if (!updatedEventRequest) {
+      return res.status(404).json({ error: 'Event request not found after update' });
+    }
+
+    // Send notification to Christine and Katie when marked as corporate
+    if (isCorporatePriority && !originalEvent.isCorporatePriority) {
+      try {
+        await EmailNotificationService.sendCorporatePriorityNotification(
+          id,
+          originalEvent.organizationName || 'Unknown Organization',
+          originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
+          req.user?.email || 'Unknown user'
+        );
+      } catch (error) {
+        logger.error('Failed to send corporate priority notification:', error);
+        // Don't fail the request if notification fails
+      }
+
+      // If event already has a TSP contact assigned, initialize the corporate protocol
+      // and send immediate call notification to that contact
+      // BUT only for events that are not yet scheduled (new/in_progress) - scheduled/completed events don't need "call now" alerts
+      const statusesNeedingCallNotification = ['new', 'in_progress'];
+      if (originalEvent.tspContact && statusesNeedingCallNotification.includes(originalEvent.status || '')) {
+        try {
+          const { initializeCorporateProtocol } = await import('../services/corporate-followup-service');
+          await initializeCorporateProtocol(id, originalEvent.tspContact, req.user?.id || 'system');
+        } catch (error) {
+          logger.error('Failed to initialize corporate follow-up protocol:', error);
+          // Don't fail the request if protocol initialization fails
+        }
+      } else if (originalEvent.tspContact) {
+        logger.log(`Skipping corporate call notification for event ${id} - already ${originalEvent.status}`);
+      }
+    }
+
+    // Audit log
+    await AuditLogger.logEventRequestChange(
+      id.toString(),
+      originalEvent,
+      updatedEventRequest,
+      {
+        userId: req.user?.id,
+        ipAddress: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('User-Agent'),
+        sessionId: req.session?.id || req.sessionID,
+      }
+    );
+
+    await logActivity(
+      req,
+      res,
+      'EVENT_REQUESTS_EDIT',
+      `${isCorporatePriority ? 'Marked' : 'Unmarked'} event as corporate priority: ${id}`,
+      {
+        eventId: id,
+        isCorporatePriority,
+        organizationName: originalEvent.organizationName,
+        markedBy: req.user?.email,
+      }
+    );
+
+    res.json(updatedEventRequest);
+  } catch (error) {
+    logger.error('Error updating corporate priority status:', error);
+    res.status(500).json({ error: 'Failed to update corporate priority status' });
+  }
+});
 
 // Update recipient assignment for event requests
 router.patch('/:id/recipients', isAuthenticated, async (req, res) => {

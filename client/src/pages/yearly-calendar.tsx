@@ -34,6 +34,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MonthlyCalendarGrid } from '@/components/monthly-calendar-grid';
+import { PermissionDenied } from '@/components/permission-denied';
 
 interface YearlyCalendarItem {
   id: number;
@@ -230,17 +231,36 @@ export default function YearlyCalendar() {
 
   // Permission checks - use YEARLY_CALENDAR permissions
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
-  const canView = userPermissions.includes('YEARLY_CALENDAR_VIEW') || user?.role === 'admin' || user?.role === 'super_admin';
-  const canAdd = userPermissions.includes('YEARLY_CALENDAR_EDIT') || user?.role === 'admin' || user?.role === 'super_admin';
-  const canEditAll = userPermissions.includes('YEARLY_CALENDAR_EDIT_ALL') || user?.role === 'admin' || user?.role === 'super_admin';
-  
-  // Check if user can edit/delete a specific item (own items or has EDIT_ALL permission)
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const canView = userPermissions.includes('YEARLY_CALENDAR_VIEW') || isAdmin;
+  // canAdd: new granular permission or legacy YEARLY_CALENDAR_EDIT
+  const canAdd = userPermissions.includes('YEARLY_CALENDAR_ADD') || userPermissions.includes('YEARLY_CALENDAR_EDIT') || isAdmin;
+
+  // Granular edit permissions
+  const canEditOwn = userPermissions.includes('YEARLY_CALENDAR_EDIT_OWN') || userPermissions.includes('YEARLY_CALENDAR_EDIT') || isAdmin;
+  const canEditAll = userPermissions.includes('YEARLY_CALENDAR_EDIT_ALL') || isAdmin;
+
+  // Granular delete permissions
+  const canDeleteOwn = userPermissions.includes('YEARLY_CALENDAR_DELETE_OWN') || userPermissions.includes('YEARLY_CALENDAR_EDIT') || isAdmin;
+  const canDeleteAll = userPermissions.includes('YEARLY_CALENDAR_DELETE_ALL') || isAdmin;
+
+  // Check if user can edit a specific item (own items or has EDIT_ALL permission)
   const canEditItem = (item: YearlyCalendarItem) => {
-    if (user?.role === 'super_admin' || user?.role === 'admin') return true;
+    if (isAdmin) return true;
     if (canEditAll) return true;
-    // Users with YEARLY_CALENDAR_EDIT can edit/delete their own items
     // Compare as strings to handle both string and number types
-    if (userPermissions.includes('YEARLY_CALENDAR_EDIT') && String(item.createdBy) === String(user?.id)) return true;
+    const isOwner = String(item.createdBy) === String(user?.id);
+    if (isOwner && canEditOwn) return true;
+    return false;
+  };
+
+  // Check if user can delete a specific item (own items or has DELETE_ALL permission)
+  const canDeleteItem = (item: YearlyCalendarItem) => {
+    if (isAdmin) return true;
+    if (canDeleteAll) return true;
+    // Compare as strings to handle both string and number types
+    const isOwner = String(item.createdBy) === String(user?.id);
+    if (isOwner && canDeleteOwn) return true;
     return false;
   };
 
@@ -638,14 +658,11 @@ export default function YearlyCalendar() {
   if (!canView) {
     return (
       <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              You don't have permission to view the yearly calendar.
-            </p>
-          </CardContent>
-        </Card>
+        <PermissionDenied
+          action="view the yearly calendar"
+          requiredPermission="CALENDAR_VIEW"
+          variant="card"
+        />
       </div>
     );
   }
@@ -1054,49 +1071,61 @@ export default function YearlyCalendar() {
                             </div>
                           </div>
                         </div>
-                        {canEditItem(item) && (
-                          <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleToggleComplete(item)}
-                            >
-                              {item.isCompleted ? 'Undo' : 'Complete'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => handleEdit(item)}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this item?')) {
-                                  deleteItemMutation.mutate(item.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                            {item.isRecurring && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2 text-xs"
-                                onClick={() => copyToNextYearMutation.mutate(item.id)}
-                                title="Copy to next year"
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                        {(() => {
+                          const itemCanEdit = canEditItem(item);
+                          const itemCanDelete = canDeleteItem(item);
+                          const showActions = itemCanEdit || itemCanDelete;
+
+                          return showActions && (
+                            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                              {itemCanEdit && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => handleToggleComplete(item)}
+                                  >
+                                    {item.isCompleted ? 'Undo' : 'Complete'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    onClick={() => handleEdit(item)}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                              {itemCanDelete && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
+                                  onClick={() => {
+                                    if (window.confirm('Are you sure you want to delete this item?')) {
+                                      deleteItemMutation.mutate(item.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
+                              {itemCanEdit && item.isRecurring && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => copyToNextYearMutation.mutate(item.id)}
+                                  title="Copy to next year"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                     </>

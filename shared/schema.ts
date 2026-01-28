@@ -2162,6 +2162,7 @@ export const eventRequests = pgTable(
     // Event details
     desiredEventDate: timestamp('desired_event_date'), // Date originally requested by organizer
     backupDates: jsonb('backup_dates').$type<string[]>(), // Array of backup/alternate dates in ISO format
+    dateFlexible: boolean('date_flexible').default(true), // Whether the organizer is flexible on the date (false = inflexible, must be this date)
     scheduledEventDate: timestamp('scheduled_event_date'), // Actual scheduled date (may differ from requested)
     isConfirmed: boolean('is_confirmed').notNull().default(false), // Whether event is confirmed by our team (separate from status workflow)
     addedToOfficialSheet: boolean('added_to_official_sheet')
@@ -2175,7 +2176,7 @@ export const eventRequests = pgTable(
       .default('i_dont_know'), // 'yes', 'no', 'i_dont_know'
 
     // System tracking
-    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled'
+    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled', 'standby', 'stalled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
     nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)
@@ -2185,6 +2186,23 @@ export const eventRequests = pgTable(
     postponementReason: text('postponement_reason'), // Reason why event was postponed
     tentativeNewDate: timestamp('tentative_new_date'), // Tentative new date for the event (optional)
     postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
+
+    // Standby tracking (for 'standby' status - waiting on organizer who is working things out)
+    standbyReason: text('standby_reason'), // Reason why we're on standby (e.g., "Waiting for budget approval")
+    standbyExpectedDate: timestamp('standby_expected_date'), // When we expect to hear back from them
+    standbyNotes: text('standby_notes'), // Notes about the standby situation
+    standbyMarkedAt: timestamp('standby_marked_at'), // When the event was marked as standby
+    standbyMarkedBy: varchar('standby_marked_by'), // User ID who marked it as standby
+
+    // Stalled tracking (for 'stalled' status - no response after repeated outreach)
+    stalledReason: text('stalled_reason'), // Reason why it's stalled (e.g., "No response after 3 attempts")
+    stalledLastOutreachDate: timestamp('stalled_last_outreach_date'), // When we last reached out while stalled
+    stalledNextOutreachDate: timestamp('stalled_next_outreach_date'), // When we should reach out again (quarterly)
+    stalledOutreachCount: integer('stalled_outreach_count').default(0), // How many times we've reached out while stalled
+    stalledNotes: text('stalled_notes'), // Notes about the stalled situation
+    stalledMarkedAt: timestamp('stalled_marked_at'), // When the event was marked as stalled
+    stalledMarkedBy: varchar('stalled_marked_by'), // User ID who marked it as stalled
+    stalledOriginalEventDate: timestamp('stalled_original_event_date'), // Keep the original requested date on file for reference
 
     // Follow-up tracking fields
     // NOTE: follow_up_method, updated_email were removed in migration 0024
@@ -2298,6 +2316,7 @@ export const eventRequests = pgTable(
     attendanceAdults: integer('attendance_adults'), // Number of adults who attended
     attendanceTeens: integer('attendance_teens'), // Number of teens who attended
     attendanceKids: integer('attendance_kids'), // Number of kids who attended
+    kidsAgeRange: varchar('kids_age_range'), // Age range of kids participating (e.g., "5-12", "8-15")
     attendanceRecordedDate: timestamp('attendance_recorded_date'), // When attendance was recorded
     attendanceRecordedBy: varchar('attendance_recorded_by'), // User ID who recorded attendance
     attendanceNotes: text('attendance_notes'), // Notes about attendance
@@ -2371,6 +2390,53 @@ export const eventRequests = pgTable(
     isMlkDayEvent: boolean('is_mlk_day_event').default(false), // Whether this event is designated as an MLK Day event
     mlkDayMarkedAt: timestamp('mlk_day_marked_at'), // When it was marked as MLK Day event
     mlkDayMarkedBy: varchar('mlk_day_marked_by'), // User ID who marked it as MLK Day event
+
+    // Corporate priority tracking - manually assigned, triggers strict follow-up protocol
+    isCorporatePriority: boolean('is_corporate_priority').default(false), // Whether this is a corporate priority event requiring immediate attention
+    corporatePriorityMarkedAt: timestamp('corporate_priority_marked_at'), // When it was marked as corporate priority
+    corporatePriorityMarkedBy: varchar('corporate_priority_marked_by'), // User ID who marked it as corporate priority
+    requiresCoreTeamMember: boolean('requires_core_team_member').default(false), // Whether a core team member should attend (auto-set for corporate)
+    coreTeamMemberNotes: text('core_team_member_notes'), // Notes about core team member assignment for relationship building
+
+    // Corporate follow-up protocol tracking - strict protocol for corporate events
+    corporateFollowUpProtocol: jsonb('corporate_follow_up_protocol').$type<{
+      status: 'not_started' | 'active' | 'completed' | 'stalled'; // Current protocol status
+      protocolStartedAt: string | null; // When TSP contact was assigned (protocol begins)
+      protocolStartedBy: string | null; // User ID who started the protocol
+
+      // Day 1 actions (required immediately when TSP contact assigned)
+      initialCallMade: boolean;
+      initialCallAt: string | null; // Timestamp
+      initialCallBy: string | null; // User ID
+      initialCallOutcome: 'answered' | 'voicemail' | 'no_answer' | null;
+
+      voicemailLeft: boolean;
+      voicemailLeftAt: string | null;
+
+      toolkitEmailSent: boolean;
+      toolkitEmailSentAt: string | null;
+      toolkitEmailSentBy: string | null;
+
+      // Day 2+ actions (if no response)
+      day2CallMade: boolean;
+      day2CallAt: string | null;
+      day2CallBy: string | null;
+      day2CallOutcome: 'answered' | 'voicemail' | 'no_answer' | null;
+
+      day2TextSent: boolean;
+      day2TextSentAt: string | null;
+      day2TextSentBy: string | null;
+
+      // Ongoing tracking
+      lastReminderSentAt: string | null; // Last reminder sent to TSP contact
+      reminderCount: number; // How many reminders have been sent
+
+      // Resolution
+      successfulContactAt: string | null; // When we got through to them
+      successfulContactBy: string | null;
+      finalOutcome: 'yes' | 'no' | 'standby' | null; // Their response
+      finalOutcomeNotes: string | null;
+    }>().default('{"status": "not_started", "initialCallMade": false, "voicemailLeft": false, "toolkitEmailSent": false, "day2CallMade": false, "day2TextSent": false, "reminderCount": 0}'),
 
     // Event instructions for volunteers (included in automated alerts)
     driverInstructions: text('driver_instructions'), // Special instructions for drivers (included in reminder texts/emails)

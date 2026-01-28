@@ -74,7 +74,7 @@ import { CommandPalette, useCommandPalette } from '@/components/command-palette'
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
 const WeeklySandwichForm = lazyWithRetry(() => import('@/components/weekly-sandwich-form'));
-const CommitteeChat = lazyWithRetry(() => import('@/components/committee-chat'));
+// CommitteeChat removed - consolidated into StreamChatRooms (Team Chat)
 const GoogleDriveLinks = lazyWithRetry(() => import('@/components/google-drive-links'));
 const DashboardOverview = lazyWithRetry(() => import('@/components/dashboard-overview'));
 const SandwichCollectionLog = lazyWithRetry(() => import('@/components/sandwich-collection-log'));
@@ -162,6 +162,7 @@ const SectionLoader = () => (
     <div className="text-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
       <p className="text-muted-foreground">Loading section...</p>
+      <p className="text-xs text-muted-foreground/60 mt-2">This may take a moment on first load</p>
     </div>
   </div>
 );
@@ -303,6 +304,35 @@ export default function Dashboard({
       });
     }
   }, [user?.role, user?.id]);
+
+  // Preload commonly used component chunks after initial render
+  // This helps prevent "reload" errors by ensuring chunks are ready before navigation
+  React.useEffect(() => {
+    // Wait a bit for initial render to complete, then preload common sections
+    const preloadTimeout = setTimeout(() => {
+      // Preload the most commonly accessed sections in background
+      // Using dynamic import directly (not the lazy wrapper) to just fetch the chunk
+      const preloadImports = [
+        () => import('@/components/dashboard-overview'),
+        () => import('@/components/sandwich-collection-log'),
+        () => import('@/components/event-requests'),
+        () => import('@/components/stream-chat-rooms'),
+        () => import('@/components/action-tracking-enhanced'),
+        () => import('@/pages/my-availability'),
+      ];
+
+      // Load one at a time with small delays to avoid network congestion
+      preloadImports.forEach((importFn, index) => {
+        setTimeout(() => {
+          importFn().catch(() => {
+            // Silently ignore preload failures - the retry mechanism will handle it later
+          });
+        }, index * 200); // Stagger loads by 200ms each
+      });
+    }, 1000); // Wait 1 second after mount before preloading
+
+    return () => clearTimeout(preloadTimeout);
+  }, []);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -555,32 +585,11 @@ export default function Dashboard({
         return <GoogleSheetsPage />;
       case 'planning-sheet-proposals':
         return <PlanningSheetProposalsPage />;
+      // Legacy 'committee' and 'committee-chat' routes redirect to Stream Chat
       case 'committee':
       case 'committee-chat':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 mb-6">
-              <div
-                className="flex items-center justify-center w-12 h-12 rounded-xl"
-                style={{ backgroundColor: 'var(--color-brand-teal-light)' }}
-              >
-                <MessageCircle
-                  className="w-6 h-6"
-                  style={{ color: 'var(--color-brand-teal)' }}
-                />
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">
-                  Committee Communications
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Internal committee discussions and collaboration
-                </p>
-              </div>
-            </div>
-            <CommitteeChat />
-          </div>
-        );
+        // Redirect to main Team Chat
+        return <StreamChatRooms />;
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':

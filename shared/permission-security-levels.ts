@@ -150,6 +150,10 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.KUDOS_SEND]: 'moderate',
   [PERMISSIONS.COOLERS_REPORT]: 'moderate',
   [PERMISSIONS.YEARLY_CALENDAR_EDIT]: 'moderate',
+  [PERMISSIONS.YEARLY_CALENDAR_ADD]: 'moderate',
+  [PERMISSIONS.YEARLY_CALENDAR_EDIT_OWN]: 'moderate',
+  [PERMISSIONS.YEARLY_CALENDAR_DELETE_OWN]: 'moderate',
+  [PERMISSIONS.HOSTS_EDIT_OWN]: 'moderate', // Edit own host contact details (matched by email)
 
   // ELEVATED - Can edit others' data or manage resources
   [PERMISSIONS.HOSTS_ADD]: 'elevated',
@@ -184,6 +188,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.DATA_EXPORT]: 'elevated',
   [PERMISSIONS.MESSAGES_MODERATE]: 'elevated',
   [PERMISSIONS.MANAGE_ANNOUNCEMENTS]: 'elevated',
+  [PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL]: 'elevated',
 
   // CRITICAL - Can delete data, manage users, or access sensitive information
   [PERMISSIONS.ADMIN_ACCESS]: 'critical',
@@ -196,6 +201,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.VOLUNTEERS_DELETE]: 'critical',
   [PERMISSIONS.COLLECTIONS_DELETE_ALL]: 'critical',
   [PERMISSIONS.PROJECTS_DELETE_ALL]: 'critical',
+  [PERMISSIONS.YEARLY_CALENDAR_DELETE_ALL]: 'critical',
   [PERMISSIONS.DISTRIBUTIONS_DELETE]: 'critical',
   [PERMISSIONS.EVENT_REQUESTS_DELETE]: 'critical',
   [PERMISSIONS.MESSAGES_DELETE]: 'critical',

@@ -64,6 +64,14 @@ import {
   FileText,
   UserCog,
   Loader2,
+  HelpCircle,
+  Link,
+  Gift,
+  FileInput,
+  Clock,
+  Upload,
+  Trash2,
+  Inbox,
   type LucideIcon,
 } from 'lucide-react';
 import { PERMISSIONS, USER_ROLES, getRoleDisplayName, applyPermissionDependencies } from '@shared/auth-utils';
@@ -103,27 +111,46 @@ const COMPONENT_ACCESS_CONFIG = {
     icon: LayoutGrid,
     description: 'Control which tabs users can see in the sidebar',
     features: [
+      // Core Operations
       { permission: PERMISSIONS.NAV_DRIVER_PLANNING, label: 'Driver Planning', icon: Truck },
       { permission: PERMISSIONS.NAV_EVENT_PLANNING, label: 'Event Planning', icon: Calendar },
       { permission: PERMISSIONS.NAV_COLLECTIONS_LOG, label: 'Collections Log', icon: ClipboardList },
       { permission: PERMISSIONS.NAV_TEAM_CHAT, label: 'Team Chat', icon: Hash },
       { permission: PERMISSIONS.VIEW_HOLDING_ZONE, label: 'Holding Zone', icon: StickyNote },
+      // Analytics & Reporting
       { permission: PERMISSIONS.NAV_ANALYTICS, label: 'Analytics', icon: BarChart3 },
+      { permission: PERMISSIONS.NAV_GRANT_METRICS, label: 'Grant Metrics', icon: BarChart3 },
+      { permission: PERMISSIONS.NAV_WEEKLY_MONITORING, label: 'Weekly Monitoring', icon: BarChart3 },
+      // Projects & Work
       { permission: PERMISSIONS.NAV_PROJECTS, label: 'Projects', icon: ListTodo },
       { permission: PERMISSIONS.NAV_MEETINGS, label: 'Meetings', icon: ClipboardList },
       { permission: PERMISSIONS.NAV_WORK_LOG, label: 'Work Log', icon: ClipboardList },
       { permission: PERMISSIONS.NAV_EXPENSES, label: 'Expenses & Receipts', icon: Receipt },
+      // Directories
       { permission: PERMISSIONS.NAV_HOSTS, label: 'Hosts Directory', icon: Building2 },
       { permission: PERMISSIONS.NAV_DRIVERS, label: 'Drivers Directory', icon: Car },
       { permission: PERMISSIONS.NAV_VOLUNTEERS, label: 'Volunteers Directory', icon: Users },
       { permission: PERMISSIONS.NAV_RECIPIENTS, label: 'Recipients Directory', icon: Building },
       { permission: PERMISSIONS.NAV_GROUPS_CATALOG, label: 'Groups Catalog', icon: Building },
-      { permission: PERMISSIONS.NAV_GRANT_METRICS, label: 'Grant Metrics', icon: BarChart3 },
+      // Calendar & Availability
       { permission: PERMISSIONS.NAV_YEARLY_CALENDAR, label: 'Yearly Calendar', icon: Calendar },
+      { permission: PERMISSIONS.NAV_MY_AVAILABILITY, label: 'My Availability', icon: Calendar },
+      { permission: PERMISSIONS.NAV_TEAM_AVAILABILITY, label: 'Team Availability', icon: Calendar },
+      // Documentation & Resources
       { permission: PERMISSIONS.NAV_RESOURCES, label: 'Resources', icon: FileText },
+      { permission: PERMISSIONS.NAV_IMPORTANT_LINKS, label: 'Quick Tools', icon: Link },
+      { permission: PERMISSIONS.NAV_AUTO_FORM_FILLER, label: 'Auto Form Filler', icon: FileInput },
+      { permission: PERMISSIONS.NAV_SERVICE_HOURS_FORM, label: 'Service Hours Form', icon: Clock },
+      { permission: PERMISSIONS.NAV_WISHLIST, label: 'Amazon Wishlist', icon: Gift },
       { permission: PERMISSIONS.NAV_DOCUMENT_MANAGEMENT, label: 'Document Management', icon: FileText },
+      { permission: PERMISSIONS.NAV_VOLUNTEER_HUB, label: 'Volunteer Hub', icon: Users },
+      { permission: PERMISSIONS.NAV_HOST_RESOURCES, label: 'Host Resources', icon: Building2 },
+      // Admin
       { permission: PERMISSIONS.ADMIN_PANEL_ACCESS, label: 'Admin Panel', icon: Settings },
       { permission: PERMISSIONS.NAV_USER_MANAGEMENT, label: 'User Management', icon: UserCog },
+      { permission: PERMISSIONS.NAV_HISTORICAL_IMPORT, label: 'Historical Import', icon: Upload },
+      // Help
+      { permission: PERMISSIONS.NAV_HELP, label: 'Help', icon: HelpCircle },
     ],
   },
   'Chat Rooms': {
@@ -145,6 +172,7 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.CHAT_GROUP, label: 'Group Chats', icon: Users },
       { permission: PERMISSIONS.CHAT_GROUP_ADD_MEMBERS, label: 'Add Members to Groups', icon: Users },
       { permission: PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS, label: 'Remove Members from Groups', icon: Users },
+      { permission: PERMISSIONS.CHAT_MODERATE_MESSAGES, label: 'Moderate Messages (Edit/Delete Any)', icon: Shield },
     ],
   },
   'Event Capabilities': {
@@ -179,6 +207,44 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.DOCUMENTS_MANAGE, label: 'Manage Documents', icon: FileText },
       { permission: PERMISSIONS.DATA_EXPORT, label: 'Export Data', icon: FileText },
       { permission: PERMISSIONS.DATA_IMPORT, label: 'Import Data', icon: FileText },
+    ],
+  },
+  'Holding Zone': {
+    icon: Inbox,
+    description: 'Control Holding Zone (Team Board) capabilities',
+    features: [
+      { permission: PERMISSIONS.VIEW_HOLDING_ZONE, label: 'View Holding Zone', icon: StickyNote },
+      { permission: PERMISSIONS.SUBMIT_HOLDING_ZONE, label: 'Submit Items', icon: StickyNote },
+      { permission: PERMISSIONS.HOLDING_ZONE_EDIT_OWN, label: 'Edit Own Items', icon: Edit },
+      { permission: PERMISSIONS.HOLDING_ZONE_EDIT_ALL, label: 'Edit All Items', icon: Edit },
+      { permission: PERMISSIONS.HOLDING_ZONE_DELETE_OWN, label: 'Delete Own Items', icon: Trash2 },
+      { permission: PERMISSIONS.HOLDING_ZONE_DELETE_ALL, label: 'Delete All Items', icon: Trash2 },
+      { permission: PERMISSIONS.MANAGE_HOLDING_ZONE, label: 'Full Management (Categories, Status)', icon: Settings },
+      { permission: PERMISSIONS.COMMENT_HOLDING_ZONE, label: 'Comment on Items', icon: MessageCircle },
+    ],
+  },
+  'Yearly Calendar': {
+    icon: Calendar,
+    description: 'Control TSP Yearly Calendar capabilities',
+    features: [
+      { permission: PERMISSIONS.YEARLY_CALENDAR_VIEW, label: 'View Calendar', icon: Calendar },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_ADD, label: 'Add Items', icon: Calendar },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_EDIT_OWN, label: 'Edit Own Items', icon: Edit },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_EDIT_ALL, label: 'Edit All Items', icon: Edit },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_DELETE_OWN, label: 'Delete Own Items', icon: Trash2 },
+      { permission: PERMISSIONS.YEARLY_CALENDAR_DELETE_ALL, label: 'Delete All Items', icon: Trash2 },
+    ],
+  },
+  'Hosts': {
+    icon: Building2,
+    description: 'Control Host location and contact management',
+    features: [
+      { permission: PERMISSIONS.HOSTS_VIEW, label: 'View Hosts', icon: Building2 },
+      { permission: PERMISSIONS.HOSTS_ADD, label: 'Add Hosts', icon: Building2 },
+      { permission: PERMISSIONS.HOSTS_EDIT_OWN, label: 'Edit Own Contact Details', icon: Edit },
+      { permission: PERMISSIONS.HOSTS_EDIT, label: 'Edit All Hosts/Contacts', icon: Edit },
+      { permission: PERMISSIONS.HOSTS_DELETE, label: 'Delete Hosts', icon: Trash2 },
+      { permission: PERMISSIONS.HOST_RESOURCES_ACCESS, label: 'Access Host Resources', icon: FileText },
     ],
   },
 };

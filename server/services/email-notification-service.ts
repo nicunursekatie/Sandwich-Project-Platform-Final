@@ -695,6 +695,127 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
   }
 
   /**
+   * Send notification to Christine and Katie when an event is marked as corporate priority
+   * Corporate events require immediate attention and core team member assignment
+   */
+  static async sendCorporatePriorityNotification(
+    eventId: number,
+    organizationName: string,
+    eventDate: Date | string | null,
+    markedByEmail: string
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping corporate priority notification');
+      return false;
+    }
+
+    try {
+      // Send to Christine and Katie
+      const recipients = [
+        'christine@thesandwichproject.org',
+        'katielong2316@gmail.com'
+      ];
+
+      const formattedEventDate = eventDate
+        ? new Date(eventDate).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+        : 'Date to be determined';
+
+      const eventUrl = this.getEventUrl(eventId);
+
+      const msg = {
+        to: recipients,
+        from: 'katie@thesandwichproject.org',
+        subject: `🏢 NEW CORPORATE PRIORITY: ${organizationName} - Action Required`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .event-details { background: white; padding: 15px; border-left: 4px solid #B8860B; margin: 15px 0; }
+              .priority-box { background: #FFF8DC; padding: 15px; border: 2px solid #B8860B; border-radius: 8px; margin: 15px 0; }
+              .action-items { background: #fff4e6; padding: 15px; border-radius: 8px; margin: 15px 0; }
+              .btn { display: inline-block; background: #B8860B; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 15px 0; }
+              .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🏢 Corporate Priority Event</h1>
+                <p style="margin: 0; opacity: 0.9;">Requires Immediate Attention</p>
+              </div>
+              <div class="content">
+                <div class="priority-box">
+                  <p style="margin: 0;"><strong>⚡ This event has been marked as CORPORATE PRIORITY</strong></p>
+                  <p style="margin: 5px 0 0 0; font-size: 0.9em;">Corporate events require immediate contact and core team member attendance.</p>
+                </div>
+
+                <div class="event-details">
+                  <strong>Organization:</strong> ${organizationName}<br>
+                  <strong>Event Date:</strong> ${formattedEventDate}<br>
+                  <strong>Marked By:</strong> ${markedByEmail}
+                </div>
+
+                <div class="action-items">
+                  <h3 style="margin-top: 0; color: #B8860B;">📋 Required Actions:</h3>
+                  <ol style="margin: 0; padding-left: 20px;">
+                    <li><strong>Assign TSP Contact immediately</strong> - Corporate events need same-day initial contact</li>
+                    <li><strong>Assign a Core Team Member</strong> - This event needs relationship building</li>
+                    <li><strong>Follow Corporate Protocol</strong> - Call first day, send toolkit if no answer, follow up daily</li>
+                  </ol>
+                </div>
+
+                <p>Click below to view and manage this event:</p>
+                <a href="${eventUrl}" class="btn">View Corporate Event</a>
+
+                <p style="font-size: 0.85em; color: #666; margin-top: 20px;">
+                  <em>Corporate events may use platforms like Deed or Benevity - be sure to note any donation matching opportunities!</em>
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `
+🏢 CORPORATE PRIORITY EVENT - ACTION REQUIRED
+
+This event has been marked as CORPORATE PRIORITY and requires immediate attention.
+
+Organization: ${organizationName}
+Event Date: ${formattedEventDate}
+Marked By: ${markedByEmail}
+
+📋 REQUIRED ACTIONS:
+1. Assign TSP Contact immediately - Corporate events need same-day initial contact
+2. Assign a Core Team Member - This event needs relationship building
+3. Follow Corporate Protocol - Call first day, send toolkit if no answer, follow up daily
+
+View event: ${eventUrl}
+
+Note: Corporate events may use platforms like Deed or Benevity - be sure to note any donation matching opportunities!
+        `.trim(),
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Corporate priority notification sent for event ${eventId} (${organizationName})`);
+
+      return true;
+    } catch (error) {
+      logger.error('Error sending corporate priority notification:', error);
+      return false;
+    }
+  }
+
+  /**
    * Generate event URL for the notification
    */
   private static getEventUrl(eventId: number): string {
@@ -1357,7 +1478,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     email: string,
     userName: string,
     organizationName: string,
-    reminderType: 'approaching_event' | 'toolkit_followup',
+    reminderType: 'approaching_event' | 'toolkit_followup' | 'standby_followup',
     eventDate: Date | null,
     eventId: number
   ): Promise<boolean> {
@@ -1382,6 +1503,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         bodyContent = `
           <p>The event with <strong>${organizationName}</strong> is coming up in <strong>${daysUntil} days</strong> and is still marked as in-progress.</p>
           <p>Let us know if you need any help getting it scheduled, or if you'd like to update the status!</p>
+        `;
+      } else if (reminderType === 'standby_followup') {
+        subject = `Follow-Up Reminder: ${organizationName} (Standby)`;
+        bodyContent = `
+          <p>This is a reminder to follow up with <strong>${organizationName}</strong>.</p>
+          <p>They're currently on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!</p>
         `;
       } else {
         subject = `Quick Check-in: ${organizationName} Toolkit Follow-up`;
@@ -1430,9 +1557,12 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           </body>
           </html>
         `,
-        text: `Hi ${userName}!\n\n${reminderType === 'approaching_event' 
-          ? `The event with ${organizationName} is coming up soon and is still in-progress. Let us know if you need help!` 
-          : `We sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
+        text: `Hi ${userName}!\n\n${
+          reminderType === 'approaching_event' 
+            ? `The event with ${organizationName} is coming up soon and is still in-progress. Let us know if you need help!` 
+            : reminderType === 'standby_followup'
+              ? `This is a reminder to follow up with ${organizationName} - they're on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!`
+              : `We sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
         }\n\nView event: ${eventUrl}\n\n---\nThe Sandwich Project`,
       };
 
@@ -1516,6 +1646,89 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       return true;
     } catch (error) {
       logger.error('Error sending escalation email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send notification to admins when a user requests permission access
+   */
+  static async sendPermissionRequestNotification(
+    adminEmails: string[],
+    request: {
+      userName: string;
+      userEmail: string;
+      requestedAction: string;
+      requiredPermission?: string;
+      userMessage?: string;
+    }
+  ): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping permission request email');
+      return false;
+    }
+
+    try {
+      const appUrl = process.env.PUBLIC_APP_URL ||
+        (process.env.REPLIT_DOMAIN ? `https://${process.env.REPLIT_DOMAIN}` : 'https://app.thesandwichproject.org');
+
+      const msg = {
+        to: adminEmails,
+        from: 'katie@thesandwichproject.org',
+        subject: `Permission Request from ${request.userName} - The Sandwich Project`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background-color: #FBAD3F; color: #333; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+              .request-box { background-color: #fff; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #FBAD3F; }
+              .message-box { background-color: #FFF8E7; padding: 12px; border-radius: 6px; margin: 10px 0; font-style: italic; }
+              .btn { display: inline-block; background-color: #236383; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔐 Permission Access Request</h1>
+              </div>
+              <div class="content">
+                <p>A user has requested access to a feature or action they currently don't have permission for.</p>
+
+                <div class="request-box">
+                  <p><strong>User:</strong> ${request.userName}</p>
+                  <p><strong>Email:</strong> ${request.userEmail}</p>
+                  <p><strong>Requested Action:</strong> ${request.requestedAction}</p>
+                  ${request.requiredPermission ? `<p><strong>Permission Needed:</strong> ${request.requiredPermission}</p>` : ''}
+                </div>
+
+                ${request.userMessage ? `
+                <div class="message-box">
+                  <strong>User's Message:</strong><br>
+                  "${request.userMessage}"
+                </div>
+                ` : ''}
+
+                <p>To grant this permission, go to the user's profile in Admin Settings:</p>
+                <a href="${appUrl}/admin-settings?tab=permissions" class="btn">Manage Permissions</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Permission Request\n\nUser: ${request.userName} (${request.userEmail})\nRequested Action: ${request.requestedAction}\n${request.requiredPermission ? `Permission Needed: ${request.requiredPermission}\n` : ''}${request.userMessage ? `\nUser's Message: "${request.userMessage}"\n` : ''}\nManage permissions at: ${appUrl}/admin-settings?tab=permissions\n\n---\nThe Sandwich Project`,
+      };
+
+      await sgMail.send(msg);
+      logger.log(`Permission request email sent to ${adminEmails.length} admin(s) for user ${request.userEmail}`);
+      return true;
+    } catch (error) {
+      logger.error('Error sending permission request email:', error);
       return false;
     }
   }

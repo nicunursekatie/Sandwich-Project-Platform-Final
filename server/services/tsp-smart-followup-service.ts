@@ -95,6 +95,22 @@ interface FollowupResult {
   }>;
 }
 
+interface EventToNotify {
+  event: any;
+  user: any;
+  reminderType: 'new_request_24h' | 'in_process_7d';
+  isEscalation: boolean;
+}
+
+interface UserEventGroup {
+  user: any;
+  events: Array<{
+    event: any;
+    reminderType: 'new_request_24h' | 'in_process_7d';
+    isEscalation: boolean;
+  }>;
+}
+
 /**
  * Check if a notification was already sent for this event/contact/type combination
  */
@@ -443,7 +459,73 @@ async function sendNotification(
 }
 
 /**
+ * Send batched SMS notification for multiple events to a single user
+ * Instead of spamming with 10+ individual texts, send ONE summary message
+ */
+async function sendBatchedSMSNotification(
+  user: any,
+  events: Array<{
+    event: any;
+    reminderType: 'new_request_24h' | 'in_process_7d';
+    isEscalation: boolean;
+  }>
+): Promise<{ success: boolean; message: string }> {
+  const phoneNumber = getUserPhoneNumber(user);
+  if (!phoneNumber) {
+    return { success: false, message: 'No phone number available' };
+  }
+
+  const userName = user.displayName || user.firstName || 'there';
+  
+  // Group events by type
+  const newRequests = events.filter(e => e.reminderType === 'new_request_24h' && !e.isEscalation);
+  const inProcessEvents = events.filter(e => e.reminderType === 'in_process_7d' && !e.isEscalation);
+  const escalations = events.filter(e => e.isEscalation);
+
+  let message = `Hi ${userName}! `;
+  const eventListUrl = `${APP_URL}/events?filter=my-events`;
+
+  // Build message based on what types of events we have
+  if (escalations.length > 0) {
+    const escalationOrgs = escalations.slice(0, 3).map(e => e.event.organizationName || 'an event').join(', ');
+    message += `ESCALATION: ${escalations.length} event${escalations.length > 1 ? 's need' : ' needs'} urgent attention (${escalationOrgs}${escalations.length > 3 ? '...' : ''}). `;
+  }
+
+  if (newRequests.length > 0) {
+    if (newRequests.length === 1) {
+      message += `The ${newRequests[0].event.organizationName} event was assigned yesterday but toolkit hasn't been sent. `;
+    } else {
+      const orgNames = newRequests.slice(0, 3).map(e => e.event.organizationName || 'event').join(', ');
+      message += `${newRequests.length} new event${newRequests.length > 1 ? 's' : ''} assigned need toolkits (${orgNames}${newRequests.length > 3 ? '...' : ''}). `;
+    }
+  }
+
+  if (inProcessEvents.length > 0) {
+    if (inProcessEvents.length === 1) {
+      message += `The ${inProcessEvents[0].event.organizationName} event hasn't had activity in 7+ days. `;
+    } else {
+      const orgNames = inProcessEvents.slice(0, 3).map(e => e.event.organizationName || 'event').join(', ');
+      message += `${inProcessEvents.length} in-process event${inProcessEvents.length > 1 ? 's' : ''} need follow-up (${orgNames}${inProcessEvents.length > 3 ? '...' : ''}). `;
+    }
+  }
+
+  message += `View your events: ${eventListUrl}`;
+
+  // Truncate if too long for SMS (160 chars is standard, but most support up to 1600)
+  if (message.length > 1500) {
+    message = message.substring(0, 1450) + `... View events: ${eventListUrl}`;
+  }
+
+  const result = await sendTSPFollowupReminderSMS(phoneNumber, message);
+  return { success: result.success, message: result.success ? 'Batched SMS sent' : result.message };
+}
+
+/**
  * Main function to process smart TSP follow-ups
+ * 
+ * SMS BATCHING: Instead of sending individual SMS per event (which can result in 10+ texts/day),
+ * we now collect all events per user and send ONE batched summary SMS per user.
+ * Email users still receive individual emails since those are less intrusive.
  */
 export async function processSmartTspFollowups(): Promise<FollowupResult> {
   const result: FollowupResult = {
@@ -463,6 +545,10 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       serviceLogger.info('Weekend detected - skipping all follow-up reminders');
       return result;
     }
+
+    // Collect all events that need notifications, grouped by user
+    const userEventGroups: Map<string, UserEventGroup> = new Map();
+    const emailNotifications: EventToNotify[] = [];
 
     // 1. Check new requests (24 hours without toolkit)
     const newRequestEvents = await getNewRequestsNeedingReminder();
@@ -486,31 +572,30 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
           continue;
         }
 
-        const notificationResult = await sendNotification(event, user, 'new_request_24h', false);
-
-        if (notificationResult.success) {
-          await recordNotification(
-            event.id,
-            tspContactId,
-            'new_request_24h',
-            notificationResult.channel,
-            event.organizationName || 'Unknown',
-            event.scheduledEventDate || event.desiredEventDate,
-            '24h reminder - toolkit not sent'
-          );
-          result.notificationsSent++;
+        const channel = getPreferredChannel(user);
+        
+        if (channel === 'sms') {
+          // Collect for batched SMS
+          if (!userEventGroups.has(user.id)) {
+            userEventGroups.set(user.id, { user, events: [] });
+          }
+          userEventGroups.get(user.id)!.events.push({
+            event,
+            reminderType: 'new_request_24h',
+            isEscalation: false,
+          });
+        } else {
+          // Email users - send individual emails (less intrusive)
+          emailNotifications.push({
+            event,
+            user,
+            reminderType: 'new_request_24h',
+            isEscalation: false,
+          });
         }
-
-        result.details.push({
-          eventId: event.id,
-          organization: event.organizationName || 'Unknown',
-          reminderType: 'new_request_24h',
-          channel: notificationResult.channel,
-          success: notificationResult.success,
-        });
       } catch (error) {
         result.errors++;
-        serviceLogger.error(`Error processing new request ${event.id}:`, error);
+        serviceLogger.error(`Error collecting new request ${event.id}:`, error);
       }
     }
 
@@ -536,31 +621,30 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
           continue;
         }
 
-        const notificationResult = await sendNotification(event, user, 'in_process_7d', false);
-
-        if (notificationResult.success) {
-          await recordNotification(
-            event.id,
-            tspContactId,
-            'in_process_7d',
-            notificationResult.channel,
-            event.organizationName || 'Unknown',
-            event.scheduledEventDate || event.desiredEventDate,
-            '7d reminder - no activity'
-          );
-          result.notificationsSent++;
+        const channel = getPreferredChannel(user);
+        
+        if (channel === 'sms') {
+          // Collect for batched SMS
+          if (!userEventGroups.has(user.id)) {
+            userEventGroups.set(user.id, { user, events: [] });
+          }
+          userEventGroups.get(user.id)!.events.push({
+            event,
+            reminderType: 'in_process_7d',
+            isEscalation: false,
+          });
+        } else {
+          // Email users - send individual emails
+          emailNotifications.push({
+            event,
+            user,
+            reminderType: 'in_process_7d',
+            isEscalation: false,
+          });
         }
-
-        result.details.push({
-          eventId: event.id,
-          organization: event.organizationName || 'Unknown',
-          reminderType: 'in_process_7d',
-          channel: notificationResult.channel,
-          success: notificationResult.success,
-        });
       } catch (error) {
         result.errors++;
-        serviceLogger.error(`Error processing in-process event ${event.id}:`, error);
+        serviceLogger.error(`Error collecting in-process event ${event.id}:`, error);
       }
     }
 
@@ -586,37 +670,139 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
         }
 
         const reminderType = event.status === 'new' ? 'new_request_24h' : 'in_process_7d';
-        const notificationResult = await sendNotification(event, user, reminderType, true, admin);
-
-        if (notificationResult.success) {
-          await recordNotification(
-            event.id,
-            tspContactId,
-            'escalation',
-            notificationResult.channel,
-            event.organizationName || 'Unknown',
-            event.scheduledEventDate || event.desiredEventDate,
-            'Escalation - no response to reminder'
-          );
-          result.escalationsSent++;
-          result.notificationsSent++;
+        const channel = getPreferredChannel(user);
+        
+        if (channel === 'sms') {
+          // Collect for batched SMS
+          if (!userEventGroups.has(user.id)) {
+            userEventGroups.set(user.id, { user, events: [] });
+          }
+          userEventGroups.get(user.id)!.events.push({
+            event,
+            reminderType,
+            isEscalation: true,
+          });
+        } else {
+          // Email users - send individual emails
+          emailNotifications.push({
+            event,
+            user,
+            reminderType,
+            isEscalation: true,
+          });
         }
-
-        result.details.push({
-          eventId: event.id,
-          organization: event.organizationName || 'Unknown',
-          reminderType: 'escalation',
-          channel: notificationResult.channel,
-          success: notificationResult.success,
-          isEscalation: true,
-        });
       } catch (error) {
         result.errors++;
-        serviceLogger.error(`Error processing escalation for event ${event.id}:`, error);
+        serviceLogger.error(`Error collecting escalation for event ${event.id}:`, error);
       }
     }
 
-    serviceLogger.info(`Smart follow-up check complete: ${result.notificationsSent} notifications sent (${result.escalationsSent} escalations), ${result.errors} errors`);
+    // === SEND BATCHED SMS NOTIFICATIONS ===
+    // Instead of 10+ individual texts, send ONE summary SMS per user
+    serviceLogger.info(`Sending batched SMS to ${userEventGroups.size} users with ${Array.from(userEventGroups.values()).reduce((sum, g) => sum + g.events.length, 0)} total events`);
+
+    for (const [userId, group] of userEventGroups) {
+      try {
+        const smsResult = await sendBatchedSMSNotification(group.user, group.events);
+        
+        if (smsResult.success) {
+          // Record each event individually in tracking table (prevents re-sending)
+          for (const eventItem of group.events) {
+            const tspContactId = eventItem.event.tspContactAssigned || eventItem.event.tspContact;
+            const recordType = eventItem.isEscalation ? 'escalation' : eventItem.reminderType;
+            const messagePreview = eventItem.isEscalation 
+              ? 'Escalation (batched SMS)' 
+              : `${eventItem.reminderType} reminder (batched SMS)`;
+            
+            await recordNotification(
+              eventItem.event.id,
+              tspContactId,
+              recordType,
+              'sms',
+              eventItem.event.organizationName || 'Unknown',
+              eventItem.event.scheduledEventDate || eventItem.event.desiredEventDate,
+              messagePreview
+            );
+
+            result.details.push({
+              eventId: eventItem.event.id,
+              organization: eventItem.event.organizationName || 'Unknown',
+              reminderType: eventItem.isEscalation ? 'escalation' : eventItem.reminderType,
+              channel: 'sms',
+              success: true,
+              isEscalation: eventItem.isEscalation,
+            });
+
+            if (eventItem.isEscalation) {
+              result.escalationsSent++;
+            }
+          }
+          
+          // Count as ONE notification sent (batched)
+          result.notificationsSent++;
+          serviceLogger.info(`Sent batched SMS to ${group.user.firstName || group.user.email} covering ${group.events.length} events`);
+        } else {
+          serviceLogger.error(`Failed to send batched SMS to ${group.user.firstName || group.user.email}: ${smsResult.message}`);
+          result.errors++;
+        }
+      } catch (error) {
+        result.errors++;
+        serviceLogger.error(`Error sending batched SMS to user ${userId}:`, error);
+      }
+    }
+
+    // === SEND INDIVIDUAL EMAIL NOTIFICATIONS ===
+    // Emails are less intrusive so we can send individual ones
+    serviceLogger.info(`Sending ${emailNotifications.length} individual email notifications`);
+
+    for (const notification of emailNotifications) {
+      try {
+        const notificationResult = await sendNotification(
+          notification.event,
+          notification.user,
+          notification.reminderType,
+          notification.isEscalation,
+          notification.isEscalation ? admin : undefined
+        );
+
+        const tspContactId = notification.event.tspContactAssigned || notification.event.tspContact;
+        const recordType = notification.isEscalation ? 'escalation' : notification.reminderType;
+        const messagePreview = notification.isEscalation 
+          ? 'Escalation - no response to reminder' 
+          : `${notification.reminderType === 'new_request_24h' ? '24h' : '7d'} reminder - ${notification.reminderType === 'new_request_24h' ? 'toolkit not sent' : 'no activity'}`;
+
+        if (notificationResult.success) {
+          await recordNotification(
+            notification.event.id,
+            tspContactId,
+            recordType,
+            notificationResult.channel,
+            notification.event.organizationName || 'Unknown',
+            notification.event.scheduledEventDate || notification.event.desiredEventDate,
+            messagePreview
+          );
+          result.notificationsSent++;
+
+          if (notification.isEscalation) {
+            result.escalationsSent++;
+          }
+        }
+
+        result.details.push({
+          eventId: notification.event.id,
+          organization: notification.event.organizationName || 'Unknown',
+          reminderType: notification.isEscalation ? 'escalation' : notification.reminderType,
+          channel: notificationResult.channel,
+          success: notificationResult.success,
+          isEscalation: notification.isEscalation,
+        });
+      } catch (error) {
+        result.errors++;
+        serviceLogger.error(`Error sending email for event ${notification.event.id}:`, error);
+      }
+    }
+
+    serviceLogger.info(`Smart follow-up check complete: ${result.notificationsSent} notifications sent (${result.escalationsSent} escalations, SMS batched for ${userEventGroups.size} users), ${result.errors} errors`);
 
   } catch (error) {
     serviceLogger.error('Fatal error in smart TSP follow-up processing:', error);

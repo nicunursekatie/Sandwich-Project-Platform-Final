@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -177,6 +178,7 @@ function buildFormDataFromEventRequest(
 
   return {
     eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+    dateFlexible: eventRequest?.dateFlexible !== false, // Default to true/flexible
     backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
     eventStartTime: eventRequest?.eventStartTime || '',
     eventEndTime: eventRequest?.eventEndTime || '',
@@ -219,6 +221,7 @@ function buildFormDataFromEventRequest(
     estimatedAttendance: (eventRequest as any)?.estimatedAttendance || 0,
     adultCount: (eventRequest as any)?.adultCount || 0,
     childrenCount: (eventRequest as any)?.childrenCount || 0,
+    kidsAgeRange: (eventRequest as any)?.kidsAgeRange || '',
     firstName: eventRequest?.firstName || '',
     lastName: eventRequest?.lastName || '',
     email: eventRequest?.email || '',
@@ -243,6 +246,8 @@ function buildFormDataFromEventRequest(
     toolkitSent: eventRequest?.toolkitSent || false,
     toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
     toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+    isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
+    standbyExpectedDate: (eventRequest as any)?.standbyExpectedDate ? formatDateForInput((eventRequest as any).standbyExpectedDate) : '',
     socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
     socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
     socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -325,6 +330,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     estimatedAttendance: 0,
     adultCount: 0,
     childrenCount: 0,
+    kidsAgeRange: '',
     status: 'new',
     toolkitSent: false,
     toolkitSentDate: '',
@@ -368,6 +374,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Delivery details for overnight holding
     deliveryTimeWindow: '',
     deliveryParkingAccess: '',
+    // Corporate priority
+    isCorporatePriority: false,
+    // Standby follow-up
+    standbyExpectedDate: '',
   });
 
   const [sandwichMode, setSandwichMode] = useState<'total' | 'range' | 'types'>('total');
@@ -396,12 +406,27 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [pendingSchedule, setPendingSchedule] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
+  const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
+  const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  
+  // Check if current user can remove corporate priority (only Katie and Christine)
+  const canRemoveCorporatePriority = useMemo(() => {
+    const allowedEmails = [
+      'admin@sandwich.project',
+      'katielong2316@gmail.com',
+      'katie@thesandwichproject.org',
+      'christine@thesandwichproject.org'
+    ];
+    const userEmail = currentUser?.email?.toLowerCase();
+    return userEmail && allowedEmails.includes(userEmail);
+  }, [currentUser?.email]);
 
   // Auto-save key based on event ID (or 'new' for create mode)
   const getAutoSaveKey = useCallback(() => {
@@ -541,6 +566,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSent: eventRequest?.toolkitSent || false,
       toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
       toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+      isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
+      standbyExpectedDate: (eventRequest as any)?.standbyExpectedDate ? formatDateForInput((eventRequest as any).standbyExpectedDate) : '',
       socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
       socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
       socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -633,6 +660,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSent: eventRequest?.toolkitSent || false,
       toolkitSentDate: eventRequest?.toolkitSentDate ? formatDateForInput(eventRequest.toolkitSentDate) : '',
       toolkitStatus: eventRequest?.toolkitStatus || 'not_sent',
+      isCorporatePriority: (eventRequest as any)?.isCorporatePriority || false,
+      standbyExpectedDate: (eventRequest as any)?.standbyExpectedDate ? formatDateForInput((eventRequest as any).standbyExpectedDate) : '',
       socialMediaPostRequested: (eventRequest as any)?.socialMediaPostRequested || false,
       socialMediaPostRequestedDate: (eventRequest as any)?.socialMediaPostRequestedDate ? formatDateForInput((eventRequest as any).socialMediaPostRequestedDate) : '',
       socialMediaPostCompleted: (eventRequest as any)?.socialMediaPostCompleted || false,
@@ -1226,6 +1255,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
+      dateFlexible: formData.dateFlexible !== false, // true = flexible, false = inflexible
       backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
       // If status is scheduled, also set scheduledEventDate
       ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
@@ -1296,6 +1326,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSent: formData.toolkitSent || false,
       toolkitStatus: formData.toolkitStatus || null,
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
+      // Corporate priority
+      isCorporatePriority: formData.isCorporatePriority || false,
+      // Standby follow-up date
+      standbyExpectedDate: formData.status === 'standby' && formData.standbyExpectedDate
+        ? new Date(formData.standbyExpectedDate).toISOString()
+        : null,
     };
 
     // Handle sandwich data based on mode
@@ -1321,6 +1357,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventData.volunteerCount = formData.volunteerCount || 0;
     eventData.adultCount = formData.adultCount || 0;
     eventData.childrenCount = formData.childrenCount || 0;
+    eventData.kidsAgeRange = formData.kidsAgeRange || null;
 
     // Include completed event tracking fields
     eventData.socialMediaPostRequested = formData.socialMediaPostRequested;
@@ -1557,6 +1594,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
     }
 
+    // Check if status is changing to standby - prompt for follow-up date
+    const originalStatus = eventRequest?.status || 'new';
+    const isChangingToStandby = formData.status === 'standby' && originalStatus !== 'standby';
+    if (isChangingToStandby && !formData.standbyExpectedDate) {
+      console.log('⚠️ [PROD DEBUG] Status changing to standby - showing follow-up dialog');
+      logger.log('⚠️ Status changing to standby - showing follow-up dialog');
+      // Set default to one week from now
+      const oneWeekFromNow = new Date();
+      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+      setStandbyFollowUpMode('one_week');
+      setShowStandbyFollowUpDialog(true);
+      return; // Wait for user to set follow-up date
+    }
+
     // All checks passed, proceed with submission
     console.log('✅ [PROD DEBUG] All pre-submit checks passed - calling performSubmit');
     logger.log('✅ All pre-submit checks passed - calling performSubmit');
@@ -1718,8 +1770,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   return (
     <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-[#236383]">
               {isCreateMode ? 'Create New Event' : `${mode === 'edit' ? 'Edit Event Details:' : 'Schedule Event:'} ${eventRequest?.organizationName}`}
@@ -1735,43 +1787,45 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
         </DialogHeader>
 
-        {/* Auto-save Recovery Banner */}
-        {hasRecoveredData && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between" data-testid="autosave-recovery-banner">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                Unsaved changes were recovered from your previous session.
-              </span>
+        {/* Scrollable content area */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
+          {/* Auto-save Recovery Banner */}
+          {hasRecoveredData && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between mb-4" data-testid="autosave-recovery-banner">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  Unsaved changes were recovered from your previous session.
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={discardRecoveredData}
+                className="text-amber-700 border-amber-300 hover:bg-amber-100"
+                data-testid="discard-recovered-data-btn"
+              >
+                Discard
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={discardRecoveredData}
-              className="text-amber-700 border-amber-300 hover:bg-amber-100"
-              data-testid="discard-recovered-data-btn"
-            >
-              Discard
-            </Button>
-          </div>
-        )}
+          )}
 
-        {/* Progress Indicator */}
-        <div className="bg-slate-50 rounded-lg p-3 border">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-[#236383]">Form Progress</span>
-            <span className="text-sm text-gray-600">{completedSections} of {totalSections} sections</span>
+          {/* Progress Indicator */}
+          <div className="bg-slate-50 rounded-lg p-3 border mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-[#236383]">Form Progress</span>
+              <span className="text-sm text-gray-600">{completedSections} of {totalSections} sections</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-[#47B3CB] h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(completedSections / totalSections) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-[#47B3CB] h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(completedSections / totalSections) * 100}%` }}
-            />
-          </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
           {/* Contact Information Section - Extracted Component */}
           <ContactInfoSection
             formData={formData as EventFormData}
@@ -1804,8 +1858,44 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 <SelectItem value="declined">Declined</SelectItem>
                 <SelectItem value="postponed">Postponed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="standby">Standby</SelectItem>
+                <SelectItem value="stalled">Stalled</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Corporate Priority */}
+          <div className={`flex items-center space-x-3 p-3 rounded-lg border ${
+            (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+              ? 'bg-amber-100/70 border-amber-300' 
+              : 'bg-amber-50/50'
+          }`}>
+            <input
+              type="checkbox"
+              id="isCorporatePriority"
+              checked={formData.isCorporatePriority}
+              onChange={(e) => setFormData(prev => ({ ...prev, isCorporatePriority: e.target.checked }))}
+              disabled={(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority}
+              className={`h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 ${
+                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'opacity-60 cursor-not-allowed' 
+                  : ''
+              }`}
+            />
+            <div>
+              <Label htmlFor="isCorporatePriority" className={`text-amber-900 font-medium ${
+                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'cursor-not-allowed' 
+                  : 'cursor-pointer'
+              }`}>
+                Corporate Priority Event
+              </Label>
+              <p className="text-xs text-amber-700">
+                {(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
+                  ? 'Only Christine and Katie can remove the corporate priority flag.' 
+                  : 'Mark this as a corporate priority event requiring immediate attention and core team member attendance.'}
+              </p>
+            </div>
           </div>
 
           {/* Toolkit Status Section */}
@@ -1880,7 +1970,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   onBlur={(e) => {
                     const newDate = e.target.value;
                     // Only check for confirmation when user finishes editing (onBlur)
-                    if (eventRequest?.status === 'scheduled' && 
+                    if (eventRequest?.status === 'scheduled' &&
                         formatDateForInput(eventRequest.desiredEventDate) !== newDate &&
                         formatDateForInput(eventRequest.desiredEventDate) !== '' &&
                         newDate !== formatDateForInput(eventRequest.desiredEventDate)) {
@@ -1890,6 +1980,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   }}
                   data-testid="input-event-date"
                 />
+                <div className="flex items-center gap-2 mt-2">
+                  <Checkbox
+                    id="dateFlexible"
+                    checked={formData.dateFlexible !== false}
+                    onCheckedChange={(checked) => {
+                      setFormData(prev => ({ ...prev, dateFlexible: checked === true }));
+                    }}
+                  />
+                  <Label
+                    htmlFor="dateFlexible"
+                    className="text-sm font-normal text-gray-600 cursor-pointer"
+                  >
+                    Date is flexible
+                  </Label>
+                </div>
               </div>
 
               {/* Backup Dates */}
@@ -2250,6 +2355,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     data-testid="input-children-count"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Kids Age Range - show when there are children participating */}
+            {(formData.childrenCount > 0 || formData.kidsAgeRange) && (
+              <div className="mt-3">
+                <Label htmlFor="kidsAgeRange">Kids Age Range</Label>
+                <Input
+                  id="kidsAgeRange"
+                  type="text"
+                  value={formData.kidsAgeRange || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, kidsAgeRange: e.target.value }))}
+                  placeholder="e.g., 5-12, Elementary school, Middle school"
+                  className="w-64"
+                  data-testid="input-kids-age-range"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Optional: Age range of children participating (e.g., "5-12", "Elementary school")
+                </p>
               </div>
             )}
 
@@ -2638,43 +2762,46 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             setActualSandwichMode={setActualSandwichMode}
           />
 
-          {/* Form Actions */}
-          <div className="flex justify-between pt-4 border-t">
-            <div>
-              {/* Delete button - only show for existing events in edit mode */}
-              {eventRequest && mode === 'edit' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
-                  onClick={() => setShowDeleteConfirmation(true)}
-                  disabled={deleteEventRequestMutation.isPending}
-                  data-testid="button-delete-event"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  {deleteEventRequestMutation.isPending ? 'Deleting...' : 'Delete Event'}
-                </Button>
-              )}
-            </div>
-            
-            <div className="flex space-x-3">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="text-white"
-                style={{ backgroundColor: '#236383' }}
-                disabled={updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
-                data-testid="button-submit"
-              >
-                {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
-                  ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
-                  : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
-              </Button>
-            </div>
-          </div>
         </form>
+        </div>
+
+        {/* Sticky Footer - Action Buttons */}
+        <div className="flex-shrink-0 flex justify-between px-4 sm:px-6 py-4 border-t bg-white">
+          <div>
+            {/* Delete button - only show for existing events in edit mode */}
+            {eventRequest && mode === 'edit' && (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41] hover:text-white"
+                onClick={() => setShowDeleteConfirmation(true)}
+                disabled={deleteEventRequestMutation.isPending}
+                data-testid="button-delete-event"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleteEventRequestMutation.isPending ? 'Deleting...' : 'Delete Event'}
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex space-x-3">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="event-scheduling-form"
+              className="text-white"
+              style={{ backgroundColor: '#236383' }}
+              disabled={updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              data-testid="button-submit"
+            >
+              {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
+                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...') 
+                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
 
       {/* Date Change Confirmation Dialog */}
@@ -2799,6 +2926,95 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           setPendingSchedule(false);
         }}
       />
+
+      {/* Standby Follow-Up Date Dialog */}
+      <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={setShowStandbyFollowUpDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-amber-600" />
+              Set Follow-Up Reminder
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                You're moving this event to <span className="font-semibold text-amber-600">Standby</span>.
+              </p>
+              <p>
+                Did the contact request to be contacted on a specific date, or should we send a reminder in one week?
+              </p>
+              
+              <div className="space-y-3 mt-4">
+                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="standbyFollowUpMode"
+                    value="one_week"
+                    checked={standbyFollowUpMode === 'one_week'}
+                    onChange={() => {
+                      setStandbyFollowUpMode('one_week');
+                      const oneWeekFromNow = new Date();
+                      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+                      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+                    }}
+                    className="h-4 w-4 text-amber-600"
+                  />
+                  <div>
+                    <span className="font-medium">Reminder in one week</span>
+                    <p className="text-sm text-gray-500">Default follow-up timing</p>
+                  </div>
+                </label>
+                
+                <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="standbyFollowUpMode"
+                    value="specific"
+                    checked={standbyFollowUpMode === 'specific'}
+                    onChange={() => setStandbyFollowUpMode('specific')}
+                    className="h-4 w-4 text-amber-600 mt-1"
+                  />
+                  <div className="flex-1">
+                    <span className="font-medium">Contact requested a specific date</span>
+                    <Input
+                      type="date"
+                      value={standbyFollowUpMode === 'specific' ? standbyFollowUpDate : ''}
+                      onChange={(e) => setStandbyFollowUpDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      disabled={standbyFollowUpMode !== 'specific'}
+                      className="mt-2"
+                      onClick={() => setStandbyFollowUpMode('specific')}
+                    />
+                  </div>
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowStandbyFollowUpDialog(false);
+              // Reset status back if they cancel
+              setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                // Set the standby expected date in form data and submit
+                setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
+                setShowStandbyFollowUpDialog(false);
+                // Wait a tick for state to update, then submit
+                setTimeout(async () => {
+                  await performSubmit(false);
+                }, 50);
+              }}
+              className="bg-amber-600 hover:bg-amber-700"
+              disabled={!standbyFollowUpDate}
+            >
+              Set Reminder & Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>

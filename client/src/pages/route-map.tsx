@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import { useToast } from '@/hooks/use-toast';
+import { PermissionDenied } from '@/components/permission-denied';
 import type { Recipient } from '@shared/schema';
 
 // Fix Leaflet default marker icon issue in bundled apps
@@ -258,9 +259,15 @@ export default function LocationsMapView() {
     },
   });
 
-  // Filter recipients with coordinates
+  // Filter recipients with coordinates (include active or those without a status set)
   const recipientsWithCoords = useMemo(() => {
-    return recipients.filter(r => r.latitude && r.longitude && r.status === 'active');
+    return recipients.filter(r => {
+      // Must have coordinates
+      if (!r.latitude || !r.longitude) return false;
+      // Include if status is 'active', 'Active', or not set (null/undefined)
+      const status = r.status?.toLowerCase();
+      return !status || status === 'active';
+    });
   }, [recipients]);
 
   // Filter hosts based on search and add distance if searching address
@@ -380,19 +387,13 @@ export default function LocationsMapView() {
   if (!canViewHosts && !canViewRecipients) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <Card className="max-w-md mx-4">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-                <p className="text-gray-600">You don't have permission to view locations.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="max-w-md mx-4">
+          <PermissionDenied
+            action="view locations on the route map"
+            requiredPermission="HOSTS_VIEW or RECIPIENTS_VIEW"
+            variant="card"
+          />
+        </div>
       </div>
     );
   }
@@ -556,38 +557,34 @@ export default function LocationsMapView() {
                   </div>
                 </div>
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-3 space-y-2">
+                  <div className="p-2 space-y-1">
                     {filteredHosts.map(contact => (
-                      <Card
+                      <div
                         key={contact.id}
-                        className={`cursor-pointer hover:shadow-md transition-all ${
-                          selectedId === `host-${contact.id}` ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                        className={`cursor-pointer hover:bg-gray-50 transition-all p-2 rounded-md border ${
+                          selectedId === `host-${contact.id}` ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' : 'border-gray-100'
                         }`}
                         onClick={() => handleHostClick(contact)}
                       >
-                        <CardContent className="p-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-semibold text-gray-900 text-sm">{contact.contactName}</div>
-                              <div className="text-xs text-gray-600 flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                {contact.hostLocationName}
-                              </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm truncate">{contact.contactName}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              <Building2 className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{contact.hostLocationName}</span>
+                              {contact.role && <span className="text-gray-400">· {contact.role}</span>}
                             </div>
-                            {contact.distance !== undefined && (
-                              <Badge variant="secondary" className="text-xs ml-2 shrink-0">
-                                {contact.distance.toFixed(1)} mi
-                              </Badge>
-                            )}
                           </div>
-                          {contact.role && (
-                            <Badge variant="outline" className="text-xs mt-1">{contact.role}</Badge>
+                          {contact.distance !== undefined && (
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {contact.distance.toFixed(1)} mi
+                            </Badge>
                           )}
-                          {contact.address && (
-                            <div className="text-xs text-gray-500 mt-1 truncate">📍 {contact.address}</div>
-                          )}
-                        </CardContent>
-                      </Card>
+                        </div>
+                        {contact.address && (
+                          <div className="text-xs text-gray-400 mt-0.5 truncate">📍 {contact.address}</div>
+                        )}
+                      </div>
                     ))}
                     {filteredHosts.length === 0 && (
                       <p className="text-sm text-gray-500 text-center py-4">No hosts found</p>

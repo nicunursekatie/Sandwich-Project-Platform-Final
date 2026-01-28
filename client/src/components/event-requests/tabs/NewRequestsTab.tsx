@@ -17,7 +17,7 @@ export const NewRequestsTab: React.FC = () => {
   const isMobile = useIsMobile();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, toggleCorporatePriorityMutation } = useEventMutations();
   const { handleStatusChange } = useEventAssignments();
 
   // Inline editing state
@@ -328,6 +328,12 @@ export const NewRequestsTab: React.FC = () => {
                 setNextActionEventRequest(request);
                 setNextActionMode('complete');
                 setShowNextActionDialog(true);
+              }}
+              onToggleCorporatePriority={(isCorporatePriority) => {
+                toggleCorporatePriorityMutation.mutate({
+                  id: request.id,
+                  isCorporatePriority
+                });
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}

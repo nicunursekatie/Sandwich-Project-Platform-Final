@@ -41,24 +41,26 @@ interface CommandPaletteProps {
 }
 
 // Quick navigation shortcuts - press the key after opening command palette
+// Routes must match App.tsx - most pages are dashboard sections accessed via /dashboard?section=X
 const QUICK_NAV_SHORTCUTS: Record<string, { label: string; href: string; icon: React.ElementType }> = {
   d: { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   e: { label: 'Event Requests', href: '/event-requests', icon: Calendar },
-  v: { label: 'Volunteers', href: '/volunteers', icon: Users },
-  r: { label: 'Drivers', href: '/drivers', icon: Car },
-  h: { label: 'Hosts', href: '/hosts', icon: Building2 },
-  p: { label: 'Recipients', href: '/recipients', icon: Heart },
+  v: { label: 'Volunteers', href: '/dashboard?section=volunteers', icon: Users },
+  r: { label: 'Drivers', href: '/dashboard?section=drivers', icon: Car },
+  h: { label: 'Hosts', href: '/dashboard?section=hosts', icon: Building2 },
+  p: { label: 'Recipients', href: '/dashboard?section=recipients', icon: Heart },
   t: { label: 'Driver Planning', href: '/driver-planning', icon: Truck },
   m: { label: 'Meetings', href: '/meetings', icon: ClipboardList },
-  a: { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-  s: { label: 'Settings', href: '/admin', icon: Settings },
-  c: { label: 'Team Chat', href: '/chat', icon: MessageCircle },
-  k: { label: 'Kudos', href: '/kudos', icon: Trophy },
+  a: { label: 'Analytics', href: '/dashboard?section=analytics', icon: BarChart3 },
+  s: { label: 'Settings', href: '/dashboard?section=admin', icon: Settings },
+  c: { label: 'Team Chat', href: '/dashboard?section=chat', icon: MessageCircle },
+  k: { label: 'Kudos', href: '/dashboard?section=kudos', icon: Trophy },
   o: { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package },
   l: { label: 'Event Map', href: '/event-map', icon: MapPin },
 };
 
 // Navigation items organized by category
+// Routes must match App.tsx - most pages are dashboard sections accessed via /dashboard?section=X
 const NAV_CATEGORIES = [
   {
     label: 'Quick Access',
@@ -72,17 +74,17 @@ const NAV_CATEGORIES = [
   {
     label: 'Directory',
     items: [
-      { label: 'Volunteers', href: '/volunteers', icon: Users, shortcut: 'V' },
-      { label: 'Drivers', href: '/drivers', icon: Car, shortcut: 'R' },
-      { label: 'Hosts', href: '/hosts', icon: Building2, shortcut: 'H' },
-      { label: 'Recipients', href: '/recipients', icon: Heart, shortcut: 'P' },
+      { label: 'Volunteers', href: '/dashboard?section=volunteers', icon: Users, shortcut: 'V' },
+      { label: 'Drivers', href: '/dashboard?section=drivers', icon: Car, shortcut: 'R' },
+      { label: 'Hosts', href: '/dashboard?section=hosts', icon: Building2, shortcut: 'H' },
+      { label: 'Recipients', href: '/dashboard?section=recipients', icon: Heart, shortcut: 'P' },
     ],
   },
   {
     label: 'Communication',
     items: [
-      { label: 'Team Chat', href: '/chat', icon: MessageCircle, shortcut: 'C' },
-      { label: 'Kudos', href: '/kudos', icon: Trophy, shortcut: 'K' },
+      { label: 'Team Chat', href: '/dashboard?section=chat', icon: MessageCircle, shortcut: 'C' },
+      { label: 'Kudos', href: '/dashboard?section=kudos', icon: Trophy, shortcut: 'K' },
     ],
   },
   {
@@ -90,14 +92,14 @@ const NAV_CATEGORIES = [
     items: [
       { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package, shortcut: 'O' },
       { label: 'Event Map', href: '/event-map', icon: MapPin, shortcut: 'L' },
-      { label: 'Analytics', href: '/analytics', icon: BarChart3, shortcut: 'A' },
+      { label: 'Analytics', href: '/dashboard?section=analytics', icon: BarChart3, shortcut: 'A' },
     ],
   },
   {
     label: 'Admin',
     items: [
-      { label: 'Settings', href: '/admin', icon: Settings, shortcut: 'S' },
-      { label: 'Help', href: '/help', icon: HelpCircle },
+      { label: 'Settings', href: '/dashboard?section=admin', icon: Settings, shortcut: 'S' },
+      { label: 'Help', href: '/dashboard?section=help', icon: HelpCircle },
     ],
   },
 ];

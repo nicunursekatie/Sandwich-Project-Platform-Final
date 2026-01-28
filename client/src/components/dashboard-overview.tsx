@@ -44,6 +44,7 @@ import DashboardActionTracker from '@/components/dashboard-action-tracker';
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
+import { LowVolumeAlert } from '@/components/low-volume-alert';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -496,6 +497,11 @@ export default function DashboardOverview({
               Real data from verified collection records
             </div>
           </div>
+        </div>
+
+        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
         </div>
 
         {/* Operational Overview - Key metrics and urgent items */}

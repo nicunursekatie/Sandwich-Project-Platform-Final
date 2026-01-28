@@ -570,6 +570,55 @@ export const useEventMutations = () => {
     },
   });
 
+  // Corporate priority toggle mutation
+  const toggleCorporatePriorityMutation = useMutation({
+    mutationFn: ({ id, isCorporatePriority, coreTeamMemberNotes }: {
+      id: number;
+      isCorporatePriority: boolean;
+      coreTeamMemberNotes?: string;
+    }) => {
+      logger.log('=== CORPORATE PRIORITY TOGGLE MUTATION ===');
+      logger.log('Event ID:', id);
+      logger.log('Corporate Priority:', isCorporatePriority);
+      return apiRequest('PATCH', `/api/event-requests/${id}/corporate-priority`, {
+        isCorporatePriority,
+        coreTeamMemberNotes
+      });
+    },
+    onSuccess: (updatedEvent, variables) => {
+      logger.log('=== CORPORATE PRIORITY TOGGLE SUCCESS ===');
+      logger.log('Updated event:', updatedEvent);
+
+      const action = variables.isCorporatePriority ? 'marked as' : 'removed from';
+      toast({
+        title: `Event ${action} Corporate Priority`,
+        description: variables.isCorporatePriority
+          ? 'Christine and Katie have been notified. This event requires immediate attention and core team member assignment.'
+          : 'This event is no longer marked as corporate priority.',
+      });
+
+      // Invalidate all event request queries to refresh UI
+      invalidateEventRequestQueries(queryClient);
+
+      // Update the selected event if it matches
+      if (selectedEventRequest && selectedEventRequest.id === variables.id) {
+        apiRequest('GET', `/api/event-requests/${variables.id}`)
+          .then(freshEventData => setSelectedEventRequest(freshEventData))
+          .catch(error => logger.error('Failed to fetch updated event data:', error));
+      }
+    },
+    onError: (error) => {
+      logger.error('=== CORPORATE PRIORITY TOGGLE ERROR ===');
+      logger.error(error);
+
+      toast({
+        title: 'Failed to update corporate priority',
+        description: 'There was an error updating the corporate priority status.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     deleteEventRequestMutation,
     updateEventRequestMutation,
@@ -582,5 +631,6 @@ export const useEventMutations = () => {
     rescheduleEventMutation,
     assignRecipientsMutation,
     assignTspContactMutation,
+    toggleCorporatePriorityMutation,
   };
 };

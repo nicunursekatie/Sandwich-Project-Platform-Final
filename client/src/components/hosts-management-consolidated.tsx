@@ -102,6 +102,21 @@ export default function HostsManagementConsolidated() {
   const { user } = useAuth();
   const { canEdit } = useResourcePermissions('HOSTS');
 
+  // Check if user can edit their own host contact details (matched by email)
+  const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const canEditOwnContact = userPermissions.includes(PERMISSIONS.HOSTS_EDIT_OWN) || canEdit || isAdmin;
+
+  // Check if user can edit a specific contact (owns it by email match, or has full edit permission)
+  const canEditContact = (contact: HostContact) => {
+    if (isAdmin || canEdit) return true;
+    if (!canEditOwnContact) return false;
+    // Match by email (case-insensitive)
+    const userEmail = user?.email?.toLowerCase()?.trim();
+    const contactEmail = contact.email?.toLowerCase()?.trim();
+    return userEmail && contactEmail && userEmail === contactEmail;
+  };
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingHost, setEditingHost] = useState<Host | null>(null);
   const [selectedHost, setSelectedHost] = useState<HostWithContacts | null>(
@@ -1623,29 +1638,39 @@ export default function HostsManagementConsolidated() {
                       )}
 
                       {/* Edit Actions */}
-                      {canEdit && (
-                        <div className="flex gap-2 pt-2 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-xs"
-                            onClick={() =>
-                              setEditingContact(contact as ExtendedHostContact)
-                            }
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteContact(contact.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      )}
+                      {(() => {
+                        const contactCanEdit = canEditContact(contact);
+                        const contactCanDelete = canEdit; // Only full edit permission can delete
+                        const showActions = contactCanEdit || contactCanDelete;
+
+                        return showActions && (
+                          <div className="flex gap-2 pt-2 border-t">
+                            {contactCanEdit && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 text-xs"
+                                onClick={() =>
+                                  setEditingContact(contact as ExtendedHostContact)
+                                }
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Edit
+                              </Button>
+                            )}
+                            {contactCanDelete && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteContact(contact.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
@@ -2252,7 +2277,7 @@ export default function HostsManagementConsolidated() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={!canEdit}
+                                disabled={!canEditContact(contact)}
                                 onClick={async () => {
                                   logger.log(
                                     'Edit button clicked for contact:',

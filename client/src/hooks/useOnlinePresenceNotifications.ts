@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,33 @@ export function useOnlinePresenceNotifications() {
   const { user: currentUser } = useAuth();
   const previousOnlineIdsRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef(true);
+
+  // Send heartbeat to mark user as active
+  const sendHeartbeat = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      await fetch('/api/users/heartbeat', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      // Silently ignore heartbeat errors
+    }
+  }, [currentUser]);
+
+  // Send heartbeat every 2 minutes to keep user marked as active
+  useEffect(() => {
+    if (!currentUser) return;
+
+    // Send initial heartbeat
+    sendHeartbeat();
+
+    // Set up interval for subsequent heartbeats
+    const heartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000); // 2 minutes
+
+    return () => clearInterval(heartbeatInterval);
+  }, [currentUser, sendHeartbeat]);
 
   const { data: onlineUsers = [] } = useQuery<OnlineUser[]>({
     queryKey: ['/api/users/online'],

@@ -79,7 +79,7 @@ export default function SimpleNav({
     });
 
     // Filter navigation items based on user permissions and exclude topNav items
-    const filteredNavigationItems = navigationItems.filter(item => {
+    const permissionFilteredItems = navigationItems.filter(item => {
       // Exclude items marked for top nav
       if (item.topNav) {
         return false;
@@ -96,6 +96,23 @@ export default function SimpleNav({
         isActive: user.isActive,
       } : null;
       return hasPermission(userForPermissions, item.permission);
+    });
+
+    // Second pass: hide parent items that have no visible children
+    const filteredNavigationItems = permissionFilteredItems.filter(item => {
+      // If this item is a sub-item, keep it
+      if (item.isSubItem) {
+        return true;
+      }
+      // Check if this item is a parent (has children in the original nav items)
+      const hasChildrenInConfig = navigationItems.some(navItem => navItem.parentId === item.id);
+      if (!hasChildrenInConfig) {
+        // Not a parent, keep it
+        return true;
+      }
+      // This is a parent - check if it has any visible children
+      const hasVisibleChildren = permissionFilteredItems.some(navItem => navItem.parentId === item.id);
+      return hasVisibleChildren;
     });
 
     // Toggle section collapse

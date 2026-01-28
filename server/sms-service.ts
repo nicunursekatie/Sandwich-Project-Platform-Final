@@ -1122,10 +1122,15 @@ export async function sendEventReminderSMS(
   eventDate: Date,
   role?: string,
   appUrl?: string,
-  instructions?: string | null
+  instructions?: string | null,
+  eventContactDetails?: {
+    contactName?: string | null;
+    contactPhone?: string | null;
+    contactEmail?: string | null;
+  } | null
 ): Promise<SMSReminderResult> {
   const provider = await resolveProvider();
-  
+
   if (!provider || !provider.isConfigured()) {
     return {
       success: false,
@@ -1142,12 +1147,31 @@ export async function sendEventReminderSMS(
     });
 
     const roleText = role && role !== 'general' ? ` as ${role}` : '';
-    const instructionsText = instructions && instructions.length < 100 
-      ? ` Note: ${instructions}` 
-      : instructions 
-        ? ' Check your email for detailed instructions.' 
+    const instructionsText = instructions && instructions.length < 100
+      ? ` Note: ${instructions}`
+      : instructions
+        ? ' Check your email for detailed instructions.'
         : '';
-    const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}.${instructionsText} ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
+
+    // Build contact details section for corporate/detailed reminders
+    let contactSection = '';
+    if (eventContactDetails) {
+      const contactParts: string[] = [];
+      if (eventContactDetails.contactName) {
+        contactParts.push(`Contact: ${eventContactDetails.contactName}`);
+      }
+      if (eventContactDetails.contactPhone) {
+        contactParts.push(`📞 ${eventContactDetails.contactPhone}`);
+      }
+      if (eventContactDetails.contactEmail) {
+        contactParts.push(`✉️ ${eventContactDetails.contactEmail}`);
+      }
+      if (contactParts.length > 0) {
+        contactSection = ` ${contactParts.join(' | ')}`;
+      }
+    }
+
+    const message = `Hi ${volunteerName}! 🥪 Reminder: You're scheduled${roleText} for The Sandwich Project event at ${organizationName} on ${eventDateStr}.${contactSection}${instructionsText} ${appUrl ? `View details: ${appUrl}` : ''} Thanks for making a difference!`;
 
     const result = await provider.sendSMS({
       to: phoneNumber,

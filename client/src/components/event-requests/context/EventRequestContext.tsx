@@ -197,6 +197,8 @@ interface EventRequestContextType {
     declined: number;
     postponed: number;
     cancelled: number;
+    standby: number;
+    stalled: number;
     my_assignments: number;
   };
   statusCountsLoading: boolean;
@@ -242,7 +244,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       return initialTab;
     }
     // Default to 'new' for event requests when no tab is specified
@@ -301,6 +303,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     declined: number;
     postponed: number;
     cancelled: number;
+    standby: number;
+    stalled: number;
     my_assignments: number;
   }>({
     queryKey: ['/api/event-requests/status-counts'],
@@ -325,7 +329,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'];
     if (initialTab && validTabs.includes(initialTab)) {
       logger.log('[EventRequestContext] Setting activeTab from initialTab:', initialTab);
       setActiveTab(initialTab);
@@ -343,8 +347,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
     const sectionFromUrl = urlParams.get('section');
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'];
-    
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'];
+
     // Only update if we're on the event-requests section and there's a valid tab in the URL
     if (sectionFromUrl === 'event-requests' && tabFromUrl && validTabs.includes(tabFromUrl)) {
       logger.log('[EventRequestContext] URL changed, updating activeTab from URL:', tabFromUrl, 'current activeTab:', activeTab);
@@ -553,6 +557,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     declined: serverStatusCounts?.declined ?? 0,
     postponed: serverStatusCounts?.postponed ?? 0,
     cancelled: serverStatusCounts?.cancelled ?? 0,
+    standby: serverStatusCounts?.standby ?? 0,
+    stalled: serverStatusCounts?.stalled ?? 0,
     // my_assignments count is calculated server-side to include TSP contacts, drivers, speakers
     my_assignments: serverStatusCounts?.my_assignments ?? 0,
   };
@@ -571,7 +577,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Synchronize statusFilter with activeTab (only for status-based tabs)
   useEffect(() => {
     // Only sync statusFilter for tabs that correspond to status values
-    if (['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments'].includes(activeTab)) {
+    if (['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments'].includes(activeTab)) {
       setStatusFilter(activeTab);
     }
     // For admin_overview and planning tabs, don't change statusFilter
@@ -611,7 +617,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
@@ -630,6 +636,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
             setActiveTab('scheduled');
           } else if (targetEvent.status === 'in_process') {
             setActiveTab('in_process');
+          } else if (targetEvent.status === 'standby') {
+            setActiveTab('standby');
+          } else if (targetEvent.status === 'stalled') {
+            setActiveTab('stalled');
           } else if (targetEvent.status === 'declined' || targetEvent.status === 'postponed' || targetEvent.status === 'cancelled') {
             setActiveTab('declined');
           } else {

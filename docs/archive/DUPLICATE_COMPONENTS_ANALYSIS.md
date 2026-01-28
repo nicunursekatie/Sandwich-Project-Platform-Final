@@ -120,8 +120,7 @@
 - `stream-messaging.tsx`
 
 ### ✅ KEEPING (already in use):
-- `committee-chat.tsx`
-- `stream-chat-rooms.tsx`
+- `stream-chat-rooms.tsx` (main Team Chat - consolidated from committee-chat.tsx)
 - `group-messaging.tsx`
 - `email-style-messaging.tsx`
 

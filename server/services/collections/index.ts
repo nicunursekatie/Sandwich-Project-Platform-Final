@@ -530,10 +530,9 @@ export class CollectionService implements ICollectionService {
     }
 
     if (individual === 0 && groupTotal === 0) {
-        errors.push(
-          'Collection must have at least some sandwiches (individual or group)'
-        );
-      }
+      errors.push(
+        'Collection must have at least some sandwiches (individual or group)'
+      );
     }
 
     return {

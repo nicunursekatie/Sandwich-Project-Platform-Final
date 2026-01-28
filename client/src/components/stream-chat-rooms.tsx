@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Chat,
   Channel,
@@ -11,6 +11,8 @@ import {
   Message,
   useMessageContext,
   useChannelStateContext,
+  useChatContext,
+  MessageActionsArray,
 } from 'stream-chat-react';
 import { StreamChat, Channel as ChannelType } from 'stream-chat';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,6 +20,7 @@ import { toast } from '@/hooks/use-toast';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { PERMISSIONS } from '@shared/auth-utils';
 import {
   Hash,
   Shield,
@@ -53,16 +56,37 @@ import { logger } from '@/lib/logger';
 let streamChatInitialized = false;
 let streamChatInitPromise: Promise<void> | null = null;
 
-// Custom Message component with read receipts
+// Custom Message component with read receipts and permission-based actions
 const CustomMessage = () => {
   const { message, readBy } = useMessageContext();
   const { channel } = useChannelStateContext();
   const { user } = useAuth();
-  
+
   // Check if this is the current user's message
   const isOwnMessage = message?.user?.id === `user_${user?.id}`;
   const currentUserId = user?.id ? `user_${user.id}` : null;
-  
+
+  // Check permissions for message moderation
+  const userPermissions = (user?.permissions as string[]) || [];
+  const canModerateMessages = userPermissions.includes(PERMISSIONS.CHAT_MODERATE_MESSAGES);
+
+  // Determine which message actions to show
+  // - Own messages: always allow edit and delete
+  // - Others' messages: only allow edit/delete if user has CHAT_MODERATE_MESSAGES permission
+  const getMessageActions = useCallback((): MessageActionsArray<string> => {
+    const actions: string[] = ['react', 'reply', 'quote'];
+
+    if (isOwnMessage) {
+      // Users can always edit/delete their own messages
+      actions.push('edit', 'delete');
+    } else if (canModerateMessages) {
+      // Admins with moderation permission can edit/delete anyone's messages
+      actions.push('edit', 'delete');
+    }
+
+    return actions as MessageActionsArray<string>;
+  }, [isOwnMessage, canModerateMessages]);
+
   // Get read receipts - Stream Chat tracks reads in readBy array
   // Filter out the sender from the readers array (sender should not count as a reader)
   const allReaders = readBy || [];
@@ -76,10 +100,13 @@ const CustomMessage = () => {
   const rawMemberCount = channel?.state?.members ? Object.keys(channel.state.members).length - 1 : 0; // -1 to exclude sender
   const memberCount = Math.max(0, rawMemberCount);
   const allRead = memberCount > 0 && readers.length >= memberCount;
-  
+
   return (
     <>
-      <Message message={message} />
+      <Message
+        message={message}
+        messageActions={getMessageActions()}
+      />
       {/* Show read receipts for your own messages */}
       {isOwnMessage && (
         <div className="read-receipt-indicator">
@@ -221,6 +248,26 @@ const customChatStyles = `
     margin-top: 4px;
     padding-left: 8px;
     font-size: 11px;
+  }
+
+  /* Make sender names more prominent in messages */
+  .str-chat__message-sender-name {
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #236383 !important;
+  }
+
+  /* Avatar styling with better visibility */
+  .str-chat__avatar {
+    font-size: 11px !important;
+  }
+
+  /* Ensure message metadata (name + time) is always visible */
+  .str-chat__message-data {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 8px !important;
+    margin-bottom: 4px !important;
   }
 `;
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Calculator, Plus, HelpCircle, AlertCircle, CheckCircle, Calendar, X } from 'lucide-react';
-import sandwichLogo from '@assets/LOGOS/sandwich logo.png';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -19,6 +18,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 // Format a Date as YYYY-MM-DD in local timezone (no timezone math tricks)
 function formatLocalDate(date: Date): string {
@@ -63,39 +67,100 @@ function formatDateForDisplay(dateStr: string): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+// LocalStorage key for saving draft data
+const DRAFT_STORAGE_KEY = 'tsp-collection-form-draft';
+
+interface DraftFormData {
+  date: string;
+  location: string;
+  groupCollections: Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>;
+  newGroupName: string;
+  newGroupCount: number;
+  totalMode: 'simple' | 'detailed';
+  simpleTotal: string;
+  details: { deli: string; pbj: string; other: string };
+  showGroupBreakdown: boolean;
+  newGroupDeli: number;
+  newGroupPbj: number;
+  newGroupOther: number;
+  savedAt: number; // timestamp for expiration check
+}
+
 interface CompactCollectionFormProps {
   onSuccess?: () => void;
+}
+
+// Load saved draft from localStorage
+function loadDraftFromStorage(): DraftFormData | null {
+  try {
+    const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!saved) return null;
+
+    const draft = JSON.parse(saved) as DraftFormData;
+
+    // Check if draft is older than 24 hours - expire it
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    if (Date.now() - draft.savedAt > ONE_DAY_MS) {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      return null;
+    }
+
+    return draft;
+  } catch {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    return null;
+  }
+}
+
+// Check if draft has meaningful data worth saving
+function hasMeaningfulData(draft: Partial<DraftFormData>): boolean {
+  return !!(
+    draft.simpleTotal ||
+    (draft.details && (draft.details.deli || draft.details.pbj || draft.details.other)) ||
+    (draft.groupCollections && draft.groupCollections.length > 0) ||
+    (draft.newGroupName && draft.newGroupName.trim() !== '') ||
+    (draft.newGroupCount && draft.newGroupCount > 0)
+  );
 }
 
 export default function CompactCollectionForm({
   onSuccess,
 }: CompactCollectionFormProps) {
+  // Load initial state from localStorage if available
+  const savedDraft = useRef<DraftFormData | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Initialize savedDraft on first render only
+  if (savedDraft.current === null) {
+    savedDraft.current = loadDraftFromStorage();
+  }
+
   // Get today's date in user's local timezone
-  const [date, setDate] = useState(() => formatLocalDate(new Date()));
-  const [location, setLocation] = useState('');
+  const [date, setDate] = useState(() => savedDraft.current?.date || formatLocalDate(new Date()));
+  const [location, setLocation] = useState(() => savedDraft.current?.location || '');
   const [groupCollections, setGroupCollections] = useState<
     Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>
-  >([]);
-  const [newGroupName, setNewGroupName] = useState('');
-  const [newGroupCount, setNewGroupCount] = useState(0);
+  >(() => savedDraft.current?.groupCollections || []);
+  const [newGroupName, setNewGroupName] = useState(() => savedDraft.current?.newGroupName || '');
+  const [newGroupCount, setNewGroupCount] = useState(() => savedDraft.current?.newGroupCount || 0);
 
   // Dual mode sandwich tracking - ALWAYS VISIBLE
-  const [totalMode, setTotalMode] = useState<'simple' | 'detailed'>('simple');
-  const [simpleTotal, setSimpleTotal] = useState('');
-  const [details, setDetails] = useState({
+  const [totalMode, setTotalMode] = useState<'simple' | 'detailed'>(() => savedDraft.current?.totalMode || 'simple');
+  const [simpleTotal, setSimpleTotal] = useState(() => savedDraft.current?.simpleTotal || '');
+  const [details, setDetails] = useState(() => savedDraft.current?.details || {
     deli: '',
     pbj: '',
     other: ''
   });
 
   // Group breakdown state
-  const [showGroupBreakdown, setShowGroupBreakdown] = useState(false);
-  const [newGroupDeli, setNewGroupDeli] = useState(0);
-  const [newGroupPbj, setNewGroupPbj] = useState(0);
-  const [newGroupOther, setNewGroupOther] = useState(0);
+  const [showGroupBreakdown, setShowGroupBreakdown] = useState(() => savedDraft.current?.showGroupBreakdown || false);
+  const [newGroupDeli, setNewGroupDeli] = useState(() => savedDraft.current?.newGroupDeli || 0);
+  const [newGroupPbj, setNewGroupPbj] = useState(() => savedDraft.current?.newGroupPbj || 0);
+  const [newGroupOther, setNewGroupOther] = useState(() => savedDraft.current?.newGroupOther || 0);
 
-  // Calculator state
-  const [showCalculator, setShowCalculator] = useState(false);
+  // Calculator state for inline calculator popover
+  const [activeCalcField, setActiveCalcField] = useState<string | null>(null);
   const [calcDisplay, setCalcDisplay] = useState('');
 
   // Validation state
@@ -174,11 +239,19 @@ export default function CompactCollectionForm({
         queryKey: ['/api/sandwich-collections/stats'],
       });
       onSuccess?.();
+      // Clear saved draft
+      clearDraft();
       // Reset form
       setSimpleTotal('');
       setDetails({ deli: '', pbj: '', other: '' });
       setTotalMode('simple');
       setGroupCollections([]);
+      setNewGroupName('');
+      setNewGroupCount(0);
+      setNewGroupDeli(0);
+      setNewGroupPbj(0);
+      setNewGroupOther(0);
+      setShowGroupBreakdown(false);
       setLocation('');
     },
     onError: () => {
@@ -215,6 +288,60 @@ export default function CompactCollectionForm({
       setGroupBreakdownError('');
     }
   }, [showGroupBreakdown, newGroupDeli, newGroupPbj, newGroupOther, newGroupCount, groupBreakdownSum]);
+
+  // Show toast if draft was restored
+  useEffect(() => {
+    if (savedDraft.current && hasMeaningfulData(savedDraft.current) && !draftRestored) {
+      setDraftRestored(true);
+      toast({
+        title: 'Draft restored',
+        description: 'Your previous unsaved collection data has been restored.',
+        duration: 4000,
+      });
+    }
+  }, [draftRestored, toast]);
+
+  // Save to localStorage whenever form data changes
+  useEffect(() => {
+    const draft: DraftFormData = {
+      date,
+      location,
+      groupCollections,
+      newGroupName,
+      newGroupCount,
+      totalMode,
+      simpleTotal,
+      details,
+      showGroupBreakdown,
+      newGroupDeli,
+      newGroupPbj,
+      newGroupOther,
+      savedAt: Date.now(),
+    };
+
+    // Only save if there's meaningful data
+    if (hasMeaningfulData(draft)) {
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    }
+  }, [
+    date,
+    location,
+    groupCollections,
+    newGroupName,
+    newGroupCount,
+    totalMode,
+    simpleTotal,
+    details,
+    showGroupBreakdown,
+    newGroupDeli,
+    newGroupPbj,
+    newGroupOther,
+  ]);
+
+  // Clear localStorage on successful submission
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+  }, []);
 
   const addGroup = () => {
     // Prevent adding if there's a validation error
@@ -256,15 +383,41 @@ export default function CompactCollectionForm({
       return;
     }
 
-    // Check for unsaved group entries - only warn if both fields have meaningful data
+    // Check for pending group entry - auto-add if complete
+    let finalGroupCollections = [...groupCollections];
+
     if (newGroupName.trim() !== '' && newGroupCount > 0) {
+      // Check for validation errors in the pending group
+      if (groupBreakdownError) {
+        toast({
+          title: 'Invalid group breakdown',
+          description: groupBreakdownError,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Auto-add the pending group
+      const pendingGroup: { name: string; count: number; deli?: number; pbj?: number; other?: number } = {
+        name: newGroupName.trim(),
+        count: Number(newGroupCount),
+      };
+
+      // Only include breakdown if provided
+      if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0)) {
+        pendingGroup.deli = newGroupDeli;
+        pendingGroup.pbj = newGroupPbj;
+        pendingGroup.other = newGroupOther;
+      }
+
+      finalGroupCollections.push(pendingGroup);
+
+      // Show a brief confirmation that we included the pending group
       toast({
-        title: 'Unsaved group entry',
-        description:
-          "Please click 'Add This Group' to save your group entry before submitting, or clear the fields if you don't want to add this group.",
-        variant: 'destructive',
+        title: 'Group included',
+        description: `"${newGroupName}" (${newGroupCount} sandwiches) was automatically added to your submission.`,
+        duration: 3000,
       });
-      return;
     }
 
     const host = hosts.find((h: any) => h.name === location);
@@ -283,8 +436,8 @@ export default function CompactCollectionForm({
     }
 
     // Include ALL groups in the submission (unlimited groups)
-    if (groupCollections.length > 0) {
-      submissionData.groupCollections = groupCollections;
+    if (finalGroupCollections.length > 0) {
+      submissionData.groupCollections = finalGroupCollections;
     }
 
     submitMutation.mutate(submissionData);
@@ -397,8 +550,8 @@ export default function CompactCollectionForm({
     if (value === '=') {
       try {
         const result = safeMathEvaluator(calcDisplay);
-        // Round to 2 decimal places to avoid floating point issues
-        const rounded = Math.round(result * 100) / 100;
+        // Round to integer for sandwich counts
+        const rounded = Math.round(result);
         setCalcDisplay(rounded.toString());
       } catch {
         setCalcDisplay('Error');
@@ -412,13 +565,150 @@ export default function CompactCollectionForm({
     }
   };
 
-  const useCalcResult = () => {
+  // Generic calculator result handler - applies result to the active field
+  const useCalcResult = (fieldSetter: (value: any) => void, isString: boolean = true) => {
     if (calcDisplay && !isNaN(Number(calcDisplay))) {
-      handleSimpleTotalChange(calcDisplay);
-      setShowCalculator(false);
+      const value = Math.round(Number(calcDisplay));
+      if (isString) {
+        fieldSetter(value.toString());
+      } else {
+        fieldSetter(value);
+      }
+      setActiveCalcField(null);
       setCalcDisplay('');
     }
   };
+
+  // Open calculator for a specific field
+  const openCalculator = (fieldId: string, currentValue: string | number) => {
+    setActiveCalcField(fieldId);
+    setCalcDisplay(currentValue ? currentValue.toString() : '');
+  };
+
+  // Calculator popover component
+  const CalculatorPopover = ({
+    fieldId,
+    onUseResult,
+    children
+  }: {
+    fieldId: string;
+    onUseResult: () => void;
+    children: React.ReactNode;
+  }) => (
+    <Popover
+      open={activeCalcField === fieldId}
+      onOpenChange={(open) => {
+        if (!open) {
+          setActiveCalcField(null);
+          setCalcDisplay('');
+        }
+      }}
+    >
+      <PopoverTrigger asChild>
+        {children}
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start" side="bottom">
+        <div className="space-y-2">
+          <p className="text-xs text-gray-600">
+            Calculate your count (e.g., 150 - 25 = 125)
+          </p>
+
+          <input
+            type="text"
+            value={calcDisplay}
+            readOnly
+            className="w-full h-9 px-3 border border-gray-200 rounded text-right bg-gray-50 text-sm"
+            placeholder="Enter calculation..."
+          />
+
+          <div className="grid grid-cols-4 gap-1">
+            <button
+              type="button"
+              className="h-9 border rounded bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90"
+              onClick={() => handleCalcInput('C')}
+            >
+              C
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90"
+              onClick={() => handleCalcInput('←')}
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+              onClick={() => handleCalcInput('/')}
+            >
+              /
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+              onClick={() => handleCalcInput('*')}
+            >
+              ×
+            </button>
+
+            {['7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3'].map((btn) => (
+              <button
+                key={btn}
+                type="button"
+                className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+                onClick={() => handleCalcInput(btn)}
+              >
+                {btn}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm row-span-2"
+              onClick={() => handleCalcInput('=')}
+            >
+              =
+            </button>
+
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm col-span-2"
+              onClick={() => handleCalcInput('0')}
+            >
+              0
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+              onClick={() => handleCalcInput('.')}
+            >
+              .
+            </button>
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              className="flex-1 h-9 bg-brand-orange text-white rounded text-sm font-semibold hover:bg-brand-orange/90"
+              onClick={onUseResult}
+              disabled={!calcDisplay || isNaN(Number(calcDisplay))}
+            >
+              Use Result
+            </button>
+            <button
+              type="button"
+              className="flex-1 h-9 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+              onClick={() => {
+                setActiveCalcField(null);
+                setCalcDisplay('');
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 
   return (
     <TooltipProvider>
@@ -567,31 +857,30 @@ export default function CompactCollectionForm({
             {/* Simple Total Input - Always Visible */}
             <div className={`transition-opacity ${totalMode === 'detailed' ? 'opacity-40 pointer-events-none' : ''}`}>
               <div className="flex items-center justify-center gap-3">
-                <Input
-                  type="number"
-                  value={simpleTotal}
-                  onChange={(e) => handleSimpleTotalChange(e.target.value)}
-                  placeholder="0"
-                  className={`w-32 h-14 text-2xl font-semibold text-center ${totalMode === 'simple' && simpleTotal ? 'border-brand-primary bg-brand-primary/5' : ''}`}
-                  disabled={totalMode === 'detailed'}
-                />
-                <span className="text-gray-600 font-medium">total sandwiches</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
+                <div className="relative">
+                  <Input
+                    type="number"
+                    value={simpleTotal}
+                    onChange={(e) => handleSimpleTotalChange(e.target.value)}
+                    placeholder="0"
+                    className={`w-32 h-14 text-2xl font-semibold text-center pr-10 ${totalMode === 'simple' && simpleTotal ? 'border-brand-primary bg-brand-primary/5' : ''}`}
+                    disabled={totalMode === 'detailed'}
+                  />
+                  <CalculatorPopover
+                    fieldId="simpleTotal"
+                    onUseResult={() => useCalcResult(handleSimpleTotalChange, true)}
+                  >
+                    <button
                       type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowCalculator(true)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-primary rounded"
+                      onClick={() => openCalculator('simpleTotal', simpleTotal)}
                       disabled={totalMode === 'detailed'}
                     >
-                      <Calculator className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Need help counting? Use this calculator</p>
-                  </TooltipContent>
-                </Tooltip>
+                      <Calculator className="h-5 w-5" />
+                    </button>
+                  </CalculatorPopover>
+                </div>
+                <span className="text-gray-600 font-medium">total sandwiches</span>
               </div>
             </div>
 
@@ -615,13 +904,27 @@ export default function CompactCollectionForm({
                 ].map(({ key, label, color }) => (
                   <div key={key} className="flex flex-col items-center">
                     <label className="text-xs text-gray-600 mb-1 font-medium">{label}</label>
-                    <Input
-                      type="number"
-                      value={details[key]}
-                      onChange={(e) => handleDetailChange(key, e.target.value)}
-                      placeholder="0"
-                      className={`w-20 h-12 text-center border rounded-lg ${color} ${totalMode === 'detailed' && details[key] ? 'border-brand-primary bg-brand-primary/5' : ''}`}
-                    />
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={details[key]}
+                        onChange={(e) => handleDetailChange(key, e.target.value)}
+                        placeholder="0"
+                        className={`w-24 h-12 text-center pr-8 border rounded-lg ${color} ${totalMode === 'detailed' && details[key] ? 'border-brand-primary bg-brand-primary/5' : ''}`}
+                      />
+                      <CalculatorPopover
+                        fieldId={`detail-${key}`}
+                        onUseResult={() => useCalcResult((val: string) => handleDetailChange(key, val), true)}
+                      >
+                        <button
+                          type="button"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-primary rounded"
+                          onClick={() => openCalculator(`detail-${key}`, details[key])}
+                        >
+                          <Calculator className="h-4 w-4" />
+                        </button>
+                      </CalculatorPopover>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -680,17 +983,33 @@ export default function CompactCollectionForm({
               />
 
               {/* Simple total count input */}
-              <Input
-                type="number"
-                placeholder="Enter count (e.g. 25)"
-                value={newGroupCount || ''}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0;
-                  setNewGroupCount(value);
-                }}
-                className="h-12 md:h-10 text-lg md:text-base"
-                disabled={showGroupBreakdown}
-              />
+              <div className="relative">
+                <Input
+                  type="number"
+                  placeholder="Enter count (e.g. 25)"
+                  value={newGroupCount || ''}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value) || 0;
+                    setNewGroupCount(value);
+                  }}
+                  className="h-12 md:h-10 text-lg md:text-base pr-10"
+                  disabled={showGroupBreakdown}
+                />
+                {!showGroupBreakdown && (
+                  <CalculatorPopover
+                    fieldId="newGroupCount"
+                    onUseResult={() => useCalcResult(setNewGroupCount, false)}
+                  >
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-primary rounded"
+                      onClick={() => openCalculator('newGroupCount', newGroupCount)}
+                    >
+                      <Calculator className="h-5 w-5" />
+                    </button>
+                  </CalculatorPopover>
+                )}
+              </div>
 
               {/* Toggle for breakdown */}
               <div className="flex items-center gap-2 my-3">
@@ -715,48 +1034,99 @@ export default function CompactCollectionForm({
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     <div>
                       <label className="text-xs font-medium text-gray-700">Deli</label>
-                      <Input
-                        type="number"
-                        value={newGroupDeli || ''}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          setNewGroupDeli(value);
-                          // Auto-calculate total
-                          setNewGroupCount(value + newGroupPbj + newGroupOther);
-                        }}
-                        className="h-10 text-base"
-                        placeholder="0"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={newGroupDeli || ''}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            setNewGroupDeli(value);
+                            // Auto-calculate total
+                            setNewGroupCount(value + newGroupPbj + newGroupOther);
+                          }}
+                          className="h-10 text-base pr-8"
+                          placeholder="0"
+                        />
+                        <CalculatorPopover
+                          fieldId="groupDeli"
+                          onUseResult={() => useCalcResult((val: number) => {
+                            setNewGroupDeli(val);
+                            setNewGroupCount(val + newGroupPbj + newGroupOther);
+                          }, false)}
+                        >
+                          <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-brand-primary rounded"
+                            onClick={() => openCalculator('groupDeli', newGroupDeli)}
+                          >
+                            <Calculator className="h-4 w-4" />
+                          </button>
+                        </CalculatorPopover>
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-700">PBJ</label>
-                      <Input
-                        type="number"
-                        value={newGroupPbj || ''}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          setNewGroupPbj(value);
-                          // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + value + newGroupOther);
-                        }}
-                        className="h-10 text-base"
-                        placeholder="0"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={newGroupPbj || ''}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            setNewGroupPbj(value);
+                            // Auto-calculate total
+                            setNewGroupCount(newGroupDeli + value + newGroupOther);
+                          }}
+                          className="h-10 text-base pr-8"
+                          placeholder="0"
+                        />
+                        <CalculatorPopover
+                          fieldId="groupPbj"
+                          onUseResult={() => useCalcResult((val: number) => {
+                            setNewGroupPbj(val);
+                            setNewGroupCount(newGroupDeli + val + newGroupOther);
+                          }, false)}
+                        >
+                          <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-brand-primary rounded"
+                            onClick={() => openCalculator('groupPbj', newGroupPbj)}
+                          >
+                            <Calculator className="h-4 w-4" />
+                          </button>
+                        </CalculatorPopover>
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-700">Generic</label>
-                      <Input
-                        type="number"
-                        value={newGroupOther || ''}
-                        onChange={(e) => {
-                          const value = parseInt(e.target.value) || 0;
-                          setNewGroupOther(value);
-                          // Auto-calculate total
-                          setNewGroupCount(newGroupDeli + newGroupPbj + value);
-                        }}
-                        className="h-10 text-base"
-                        placeholder="0"
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={newGroupOther || ''}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            setNewGroupOther(value);
+                            // Auto-calculate total
+                            setNewGroupCount(newGroupDeli + newGroupPbj + value);
+                          }}
+                          className="h-10 text-base pr-8"
+                          placeholder="0"
+                        />
+                        <CalculatorPopover
+                          fieldId="groupOther"
+                          onUseResult={() => useCalcResult((val: number) => {
+                            setNewGroupOther(val);
+                            setNewGroupCount(newGroupDeli + newGroupPbj + val);
+                          }, false)}
+                        >
+                          <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-brand-primary rounded"
+                            onClick={() => openCalculator('groupOther', newGroupOther)}
+                          >
+                            <Calculator className="h-4 w-4" />
+                          </button>
+                        </CalculatorPopover>
+                      </div>
                     </div>
                   </div>
                   {(newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0) && (
@@ -909,6 +1279,23 @@ export default function CompactCollectionForm({
             )}
           </div>
 
+          {/* Pending group notice - shows when there's an un-added group that will be auto-included */}
+          {newGroupName.trim() !== '' && newGroupCount > 0 && !groupBreakdownError && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium">
+                    "{newGroupName}" ({newGroupCount} sandwiches) will be included
+                  </p>
+                  <p className="text-xs mt-1 text-blue-600">
+                    This group will be automatically added when you save. Or click "Add This Group" first if you want to add more groups.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Submit button - compact */}
           <div className="flex items-center gap-2">
             <Button
@@ -946,163 +1333,6 @@ export default function CompactCollectionForm({
           </div>
         </div>
 
-        {/* Calculator Modal */}
-        {showCalculator && (
-          <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-            onClick={() => setShowCalculator(false)}
-          >
-            <div
-              className="bg-white rounded-lg p-5 shadow-xl w-60"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h4 className="text-base font-semibold text-brand-primary mb-3">
-                Calculator Helper
-              </h4>
-              <p className="text-sm text-gray-600 mb-3">
-                Calculate your individual count (e.g., 150 - 25 - 30 = 95)
-              </p>
-
-              <input
-                type="text"
-                value={calcDisplay}
-                readOnly
-                className="w-full h-10 px-3 border border-gray-200 rounded text-right mb-3 bg-gray-50"
-                placeholder="Enter calculation..."
-              />
-
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                <button
-                  className="h-11 border rounded bg-brand-primary text-white font-semibold hover:bg-brand-primary/90"
-                  onClick={() => handleCalcInput('C')}
-                >
-                  C
-                </button>
-                <button
-                  className="h-11 border rounded bg-brand-primary text-white font-semibold hover:bg-brand-primary/90"
-                  onClick={() => handleCalcInput('←')}
-                >
-                  ←
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('/')}
-                >
-                  /
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('*')}
-                >
-                  ×
-                </button>
-
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('7')}
-                >
-                  7
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('8')}
-                >
-                  8
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('9')}
-                >
-                  9
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('-')}
-                >
-                  -
-                </button>
-
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('4')}
-                >
-                  4
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('5')}
-                >
-                  5
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('6')}
-                >
-                  6
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('+')}
-                >
-                  +
-                </button>
-
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('1')}
-                >
-                  1
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('2')}
-                >
-                  2
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('3')}
-                >
-                  3
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50 row-span-2"
-                  onClick={() => handleCalcInput('=')}
-                >
-                  =
-                </button>
-
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50 col-span-2"
-                  onClick={() => handleCalcInput('0')}
-                >
-                  0
-                </button>
-                <button
-                  className="h-11 border rounded bg-white hover:bg-gray-50"
-                  onClick={() => handleCalcInput('.')}
-                >
-                  .
-                </button>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  className="flex-1 h-11 bg-brand-orange text-white rounded font-semibold hover:bg-brand-orange/90"
-                  onClick={useCalcResult}
-                >
-                  Use Result
-                </button>
-                <button
-                  className="flex-1 h-11 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                  onClick={() => setShowCalculator(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </TooltipProvider>
   );

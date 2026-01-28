@@ -4,6 +4,8 @@ import {
   Calendar,
   CheckCircle,
   XCircle,
+  Hourglass,
+  AlertCircle,
 } from 'lucide-react';
 
 // Standardized sandwich types - only these 5 options allowed
@@ -16,7 +18,7 @@ export const SANDWICH_TYPES = [
 ] as const;
 
 // Status color scheme - VIBRANT BRAND COLORS: Using TSP brand palette with high saturation
-export const statusColors = {
+export const statusColors: Record<string, string> = {
   new: 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-2 border-[#007E8C] shadow-md',
   in_process:
     'bg-gradient-to-br from-[#FBAD3F] to-[#ffc966] text-white border-2 border-[#FBAD3F] shadow-md',
@@ -30,10 +32,14 @@ export const statusColors = {
     'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
   cancelled:
     'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
+  standby:
+    'bg-gradient-to-br from-[#9333EA] to-[#A855F7] text-white border-2 border-[#9333EA] shadow-md',
+  stalled:
+    'bg-gradient-to-br from-[#6B7280] to-[#9CA3AF] text-white border-2 border-[#6B7280] shadow-md',
 };
 
 // Card border colors for left border accent - VIBRANT BRAND COLORS
-export const statusBorderColors = {
+export const statusBorderColors: Record<string, string> = {
   new: '#007E8C', // Vibrant teal
   in_process: '#FBAD3F', // Vibrant orange
   scheduled: '#236383', // Vibrant dark blue
@@ -41,10 +47,12 @@ export const statusBorderColors = {
   declined: '#A31C41', // Vibrant red
   postponed: '#A31C41', // Vibrant red
   cancelled: '#A31C41', // Vibrant red
+  standby: '#9333EA', // Purple
+  stalled: '#6B7280', // Gray
 };
 
 // Card background colors - SOLID LIGHTER TINTS (no opacity mixing)
-export const statusBgColors = {
+export const statusBgColors: Record<string, string> = {
   new: 'bg-[#E2F5F6]', // Solid light teal
   in_process: 'bg-[#FFF4E5]', // Solid light gold
   scheduled: 'bg-[#E4EFF6]', // Solid light navy
@@ -52,6 +60,8 @@ export const statusBgColors = {
   declined: 'bg-[#FAE7ED]', // Solid light crimson
   postponed: 'bg-[#FAE7ED]', // Solid light crimson
   cancelled: 'bg-[#FAE7ED]', // Solid light crimson
+  standby: 'bg-[#F3E8FF]', // Light purple
+  stalled: 'bg-[#F3F4F6]', // Light gray
 };
 
 // My Assignment highlight color
@@ -73,7 +83,7 @@ export const SANDWICH_DESTINATIONS = [
   'Zaban Paradies Center',
 ];
 
-export const statusIcons = {
+export const statusIcons: Record<string, any> = {
   new: Clock,
   in_process: Phone,
   scheduled: Calendar,
@@ -81,6 +91,8 @@ export const statusIcons = {
   declined: XCircle,
   postponed: Clock,
   cancelled: XCircle,
+  standby: Hourglass,
+  stalled: AlertCircle,
 };
 
 export const previouslyHostedOptions = [
@@ -97,6 +109,8 @@ export const statusOptions = [
   { value: 'declined', label: 'Declined' },
   { value: 'postponed', label: 'Postponed' },
   { value: 'cancelled', label: 'Cancelled' },
+  { value: 'standby', label: 'Standby' },
+  { value: 'stalled', label: 'Stalled' },
 ];
 
 // Status tooltips for accessibility - explains what each status means to non-technical users
@@ -108,6 +122,8 @@ export const statusTooltips: Record<string, string> = {
   declined: 'Request was declined or could not be accommodated',
   postponed: 'Event temporarily delayed - will be rescheduled',
   cancelled: 'Event was cancelled and will not take place',
+  standby: 'Waiting for organizer to work out details on their end - check back periodically',
+  stalled: 'No response after multiple outreach attempts - kept for periodic follow-up',
 };
 
 // Additional indicator tooltips for special badges
