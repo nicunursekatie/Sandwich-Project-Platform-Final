@@ -124,6 +124,8 @@ const EventOperationalDashboard = lazyWithRetry(() => import('@/components/event
 const EventRemindersManagement = lazyWithRetry(() => import('@/components/event-reminders-management'));
 const GroupCatalog = lazyWithRetry(() => import('@/components/organizations-catalog'));
 const GroupsInsightsDashboard = lazyWithRetry(() => import('@/components/groups-insights-dashboard'));
+const EventContactsDirectory = lazyWithRetry(() => import('@/components/event-contacts-directory'));
+const EventContactDetail = lazyWithRetry(() => import('@/pages/event-contact-detail'));
 const ActionTracking = lazyWithRetry(() => import('@/components/action-tracking-enhanced'));
 const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
 const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
@@ -506,6 +508,10 @@ export default function Dashboard({
         );
       case 'groups-insights':
         return <GroupsInsightsDashboard />;
+      case 'event-contacts-directory':
+        return <EventContactsDirectory />;
+      case 'event-contact-detail':
+        return <EventContactDetail />;
       case 'action-tracking':
         return <ActionTracking />;
       case 'my-actions':

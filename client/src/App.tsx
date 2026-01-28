@@ -435,6 +435,12 @@ function Router() {
         <Route path="/directory">
           {() => <Dashboard initialSection="directory" />}
         </Route>
+        <Route path="/event-contacts-directory">
+          {() => <Dashboard initialSection="event-contacts-directory" />}
+        </Route>
+        <Route path="/event-contact/:id">
+          {() => <Dashboard initialSection="event-contact-detail" />}
+        </Route>
         <Route path="/cooler-tracking">
           {() => <Dashboard initialSection="cooler-tracking" />}
         </Route>

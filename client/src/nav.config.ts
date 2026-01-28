@@ -392,6 +392,16 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
     highlighted: true,
   },
+  {
+    id: 'event-contacts-directory',
+    label: 'Event Contacts',
+    icon: Users,
+    href: 'event-contacts-directory',
+    permission: PERMISSIONS.NAV_HOSTS,
+    group: 'network',
+    parentId: 'partners',
+    isSubItem: true,
+  },
 
   // ========================================
   // OPERATIONS (Tracking The Work)
