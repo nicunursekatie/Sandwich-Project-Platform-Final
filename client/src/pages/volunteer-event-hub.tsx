@@ -480,6 +480,7 @@ export default function VolunteerEventHub() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<{ date: string; events: AvailableEvent[] } | null>(null);
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -943,9 +944,12 @@ export default function VolunteerEventHub() {
                             </Tooltip>
                           ))}
                           {dayEvents.length > 3 && (
-                            <div className="text-xs text-muted-foreground text-center">
+                            <button
+                              className="text-xs text-blue-600 hover:text-blue-800 hover:underline text-center w-full cursor-pointer"
+                              onClick={() => setSelectedDayEvents({ date: dateKey, events: dayEvents })}
+                            >
                               +{dayEvents.length - 3} more
-                            </div>
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1151,6 +1155,87 @@ export default function VolunteerEventHub() {
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
         />
+
+        {/* Day Events Dialog - shows all events for a selected day */}
+        <Dialog open={!!selectedDayEvents} onOpenChange={(open) => !open && setSelectedDayEvents(null)}>
+          <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Events on {selectedDayEvents?.date ? format(parseISO(selectedDayEvents.date), 'EEEE, MMMM d, yyyy') : ''}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedDayEvents?.events.length} event{selectedDayEvents?.events.length !== 1 ? 's' : ''} scheduled
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1 -mx-6 px-6">
+              <div className="space-y-3 py-2">
+                {selectedDayEvents?.events.map(event => (
+                  <div
+                    key={event.id}
+                    className="p-3 rounded-lg border hover:border-green-300 hover:bg-green-50/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedDayEvents(null);
+                      handleSignupClick(event.id);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{event.organizationName}</p>
+                        {event.department && (
+                          <p className="text-xs text-muted-foreground truncate">{event.department}</p>
+                        )}
+                      </div>
+                      {event.organizationCategory && (
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          {event.organizationCategory}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                      {event.eventStartTime && (
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{event.eventStartTime}{event.eventEndTime && ` - ${event.eventEndTime}`}</span>
+                        </div>
+                      )}
+                      {event.eventAddress && (
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span className="truncate">{event.eventAddress}{event.city && `, ${event.city}`}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {event.speakersUnfilled > 0 && (
+                        <Badge className="bg-purple-600 text-white text-xs">
+                          <Mic className="w-3 h-3 mr-1" />{event.speakersUnfilled} Speaker{event.speakersUnfilled > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                      {event.volunteersUnfilled > 0 && (
+                        <Badge className="bg-green-600 text-white text-xs">
+                          <UserCheck className="w-3 h-3 mr-1" />{event.volunteersUnfilled} Volunteer{event.volunteersUnfilled > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                      {event.driversUnfilled > 0 && (
+                        <Badge className="bg-blue-600 text-white text-xs">
+                          <Car className="w-3 h-3 mr-1" />{event.driversUnfilled} Driver{event.driversUnfilled > 1 ? 's' : ''}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            <DialogFooter className="mt-4">
+              <Button variant="outline" onClick={() => setSelectedDayEvents(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );

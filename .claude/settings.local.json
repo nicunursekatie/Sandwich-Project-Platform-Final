@@ -59,7 +59,8 @@
       "Bash(grep:*)",
       "Bash(npm run check:*)",
       "Read(//Users/katielong/**)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(/usr/local/bin/npm run check)"
     ],
     "deny": [],
     "ask": []
