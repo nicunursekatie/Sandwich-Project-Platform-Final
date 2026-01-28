@@ -54,12 +54,20 @@ import { useRecipientForm } from '@/hooks/useRecipientForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
+import { usePageSession } from '@/hooks/usePageSession';
 import type { Recipient } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
 export default function RecipientsManagement() {
   const { toast } = useToast();
   const { canEdit } = useResourcePermissions('RECIPIENTS');
+
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Directory',
+    page: 'Recipients Management',
+  });
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingRecipient, setEditingRecipient] = useState<Recipient | null>(null);

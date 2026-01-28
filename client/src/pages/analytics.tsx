@@ -1,26 +1,22 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import SimpleNav from '@/components/simple-nav';
 import AnalyticsDashboard from '@/components/analytics-dashboard';
-import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePageSession } from '@/hooks/usePageSession';
 import { NAV_ITEMS } from '@/nav.config';
 import { useLocation } from 'wouter';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { ResponsivePageLayout } from '@/components/layout/responsive-page-layout';
 
 export default function AnalyticsPage() {
-  const { trackView } = useActivityTracker();
-  const [, setLocation] = useLocation();
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Analytics',
+    page: 'Analytics Dashboard',
+  });
 
-  useEffect(() => {
-    trackView(
-      'Analytics',
-      'Analytics',
-      'Analytics Page',
-      'User accessed analytics page'
-    );
-  }, [trackView]);
+  const [, setLocation] = useLocation();
 
   const handleSectionChange = (section: string) => {
     if (section === 'analytics') {

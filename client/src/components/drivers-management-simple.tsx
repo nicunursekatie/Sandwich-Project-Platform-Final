@@ -57,6 +57,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
+import { usePageSession } from '@/hooks/usePageSession';
 import type { Driver, Host, DriverVehicle } from '@shared/schema';
 import { Textarea } from '@/components/ui/textarea';
 import { logger } from '@/lib/logger';
@@ -140,6 +141,13 @@ export default function DriversManagement() {
   const isAdmin = hasPermission(user, PERMISSIONS.ADMIN_PANEL_ACCESS);
   const canExport = hasPermission(user, PERMISSIONS.DATA_EXPORT);
   const queryClient = useQueryClient();
+
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Directory',
+    page: 'Drivers Management',
+    context: { userRole: user?.role },
+  });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);

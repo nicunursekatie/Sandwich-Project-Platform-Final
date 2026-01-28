@@ -66,6 +66,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePageSession } from '@/hooks/usePageSession';
 import { usePermissions } from '@/hooks/useResourcePermissions';
 import {
   PERMISSIONS,
@@ -154,6 +155,15 @@ export default function SandwichCollectionLog() {
     trackUpdate,
     trackDelete,
   } = useActivityTracker();
+
+  // Track page session with duration
+  usePageSession({
+    section: 'Collections',
+    page: 'Collection Log',
+    context: {
+      userRole: user?.role,
+    },
+  });
 
   // Check user permissions using the unified hook
   const {

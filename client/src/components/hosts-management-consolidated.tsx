@@ -59,6 +59,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
+import { usePageSession } from '@/hooks/usePageSession';
 import type {
   Host,
   InsertHost,
@@ -101,6 +102,13 @@ export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { canEdit } = useResourcePermissions('HOSTS');
+
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Directory',
+    page: 'Hosts Management',
+    context: { userRole: user?.role },
+  });
 
   // Check if user can edit their own host contact details (matched by email)
   const userPermissions = Array.isArray(user?.permissions) ? user.permissions : [];

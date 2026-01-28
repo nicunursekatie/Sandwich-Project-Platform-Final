@@ -44,7 +44,7 @@ import {
 import { useState, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePageSession } from '@/hooks/usePageSession';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
@@ -174,25 +174,22 @@ export default function Dashboard({
 }: {
   initialSection?: string;
 }) {
-  const { trackView } = useActivityTracker();
   const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Dashboard',
+    page: 'Main Dashboard',
+    context: { currentSection: activeSection },
+  });
 
   // Show toast notifications when other users come online
   useOnlinePresenceNotifications();
 
   // Command palette for quick navigation (Cmd+K)
   const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
-
-  React.useEffect(() => {
-    trackView(
-      'Dashboard',
-      'Dashboard',
-      'Main Dashboard',
-      `User accessed dashboard - section: ${activeSection}`
-    );
-  }, [activeSection, trackView]);
 
   // Parse URL query parameters
   const urlParams = useMemo(() => {

@@ -53,25 +53,21 @@ import {
   type DateRangeFilter,
   type ChartViewType,
 } from '@/lib/analytics-utils';
-import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { usePageSession } from '@/hooks/usePageSession';
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { useCollectionsData } from '@/hooks/useCollectionsData';
 
 export default function ImpactDashboard() {
-  const { trackView, trackClick } = useActivityTracker();
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Analytics',
+    page: 'Impact Dashboard',
+  });
+
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
     'monthly'
   );
-
-  useEffect(() => {
-    trackView(
-      'Analytics',
-      'Analytics',
-      'Impact Dashboard',
-      'User accessed impact dashboard'
-    );
-  }, [trackView]);
   const [dateRange, setDateRange] = useState<DateRangeFilter>('1year');
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
 

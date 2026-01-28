@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Car, Building2, Heart } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { usePageSession } from '@/hooks/usePageSession';
 
 interface DirectoryOption {
   id: string;
@@ -49,6 +50,16 @@ const directoryOptions: DirectoryOption[] = [
 export default function Directory() {
   const [, setLocation] = useLocation();
 
+  const { trackAction } = usePageSession({
+    section: 'Directory',
+    page: 'Directory Home',
+  });
+
+  const handleNavigate = (option: DirectoryOption) => {
+    trackAction('Navigate', `Opened ${option.title} directory`);
+    setLocation(option.href);
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -65,7 +76,7 @@ export default function Directory() {
             <Card
               key={option.id}
               className={`cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] border-2 ${option.color}`}
-              onClick={() => setLocation(option.href)}
+              onClick={() => handleNavigate(option)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">

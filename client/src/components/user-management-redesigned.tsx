@@ -65,6 +65,7 @@ import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { useUserFilters } from '@/hooks/useUserFilters';
 import { useUserStats } from '@/hooks/useUserStats';
+import { usePageSession } from '@/hooks/usePageSession';
 import type { User } from '@/types/user';
 
 /**
@@ -82,6 +83,13 @@ export default function UserManagementFinal() {
   const { USERS_EDIT } = usePermissions(['USERS_EDIT']);
   const { toast } = useToast();
   const { celebration, triggerCelebration, hideCelebration } = useCelebration();
+
+  // Track page session for activity logging
+  usePageSession({
+    section: 'User Management',
+    page: 'User Directory',
+    context: { currentUserRole: currentUser?.role },
+  });
 
   const [activeTab, setActiveTab] = useState<'users' | 'pending' | 'permissions' | 'impact'>('users');
   const [viewingActivityFor, setViewingActivityFor] = useState<User | null>(null);

@@ -11,6 +11,7 @@ import {
   Navigation, Home, Target, User, Megaphone, EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePageSession } from '@/hooks/usePageSession';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
@@ -864,6 +865,14 @@ export default function DriverPlanningDashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+
+  // Track page session for activity logging
+  usePageSession({
+    section: 'Driver Planning',
+    page: 'Driver Planning Map',
+    context: { userRole: user?.role },
+  });
+
   const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
   const [weeksAhead, setWeeksAhead] = useState<string>('all');
   const [copiedDriverId, setCopiedDriverId] = useState<string | number | null>(null);
