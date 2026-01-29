@@ -217,18 +217,15 @@ export default function EventContactDetailPage() {
             <div>
               <div className="flex items-center gap-3">
                 <CardTitle className="text-2xl">{contact.fullName}</CardTitle>
-                {/* Edit button - show if contact has primary or backup roles (TSP-only contacts should be edited via user management) */}
-                {(contact.contactRoles.includes('primary') || contact.contactRoles.includes('backup')) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleEditClick}
-                    className="gap-1.5"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Edit
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditClick}
+                  className="gap-1.5"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit
+                </Button>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
                 {contact.contactRoles.map((role) => (
@@ -332,8 +329,7 @@ export default function EventContactDetailPage() {
                       key={`${event.eventId}-${event.contactRole}`}
                       className="cursor-pointer hover:bg-slate-50"
                       onClick={() => {
-                        // Navigate to event details if needed
-                        // setLocation(`/event-requests/${event.eventId}`);
+                        setLocation(`/dashboard?section=event-requests&eventId=${event.eventId}`);
                       }}
                     >
                       <TableCell className="font-medium">
