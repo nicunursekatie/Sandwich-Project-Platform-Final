@@ -2204,6 +2204,9 @@ export const eventRequests = pgTable(
     stalledMarkedBy: varchar('stalled_marked_by'), // User ID who marked it as stalled
     stalledOriginalEventDate: timestamp('stalled_original_event_date'), // Keep the original requested date on file for reference
 
+    // Admin escalation tracking (for stale events with no contact in 2+ weeks)
+    adminEscalationSentAt: timestamp('admin_escalation_sent_at'), // When the last escalation email was sent to admins
+
     // Follow-up tracking fields
     // NOTE: follow_up_method, updated_email were removed in migration 0024
     followUpDate: timestamp('follow_up_date'), // When follow-up was completed

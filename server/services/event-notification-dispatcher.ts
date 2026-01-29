@@ -823,8 +823,21 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
   for (const event of events) {
     const contactLog = event.contactAttemptsLog as ContactAttemptLogEntry[] | null;
 
-    // Check if needs escalation (2+ weeks)
+    // Check if needs escalation (2+ weeks no contact)
     if (shouldEscalateToAdmin(event.status || 'new', event.lastContactAttempt, contactLog)) {
+      // Rate limit escalations: only send once per week (7 days)
+      const lastEscalation = event.adminEscalationSentAt 
+        ? new Date(event.adminEscalationSentAt).getTime()
+        : 0;
+      const daysSinceLastEscalation = (Date.now() - lastEscalation) / (1000 * 60 * 60 * 24);
+      
+      // Skip if we already sent an escalation within the past 7 days
+      if (lastEscalation > 0 && daysSinceLastEscalation < 7) {
+        logger.log(`Skipping escalation for ${event.organizationName} - last escalation ${daysSinceLastEscalation.toFixed(1)} days ago`);
+        results.skipped++;
+        continue;
+      }
+
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (tspContactId) {
         const [tspUser] = await db.select().from(users).where(eq(users.id, tspContactId)).limit(1);
@@ -841,6 +854,12 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
             event.organizationName || 'Unknown',
             daysSinceContact
           );
+
+          // Update the escalation sent timestamp to prevent repeated emails
+          await db.update(eventRequests)
+            .set({ adminEscalationSentAt: new Date() })
+            .where(eq(eventRequests.id, event.id));
+
           results.escalated++;
         }
       }
