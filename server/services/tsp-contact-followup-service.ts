@@ -252,7 +252,7 @@ async function sendFollowupNotification(
   } else if (reminderType === 'standby_followup') {
     message = `Hi ${userName}! This is a reminder to follow up with ${organization} - they're on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!`;
   } else {
-    message = `Hi ${userName}! Just checking in on the ${organization} event - we sent the toolkit a couple days ago but haven't heard back. Want to send a follow-up email, or do you need any help?`;
+    message = `Hi ${userName}! Just checking in on the ${organization} event - you sent the toolkit a couple days ago but haven't heard back. Want to send a follow-up email, or do you need any help?`;
   }
   
   if (channel === 'sms') {
