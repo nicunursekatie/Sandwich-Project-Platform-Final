@@ -314,8 +314,8 @@ export function needsCorporate24hEscalation(
     return false;
   }
 
-  // Skip terminal statuses
-  if (['completed', 'declined', 'cancelled', 'stalled'].includes(status)) {
+  // Skip terminal/inactive statuses
+  if (['completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby', 'scheduled'].includes(status)) {
     return false;
   }
 
@@ -539,8 +539,8 @@ export function getEventUrgency(
   lastContactAttempt: Date | string | null,
   isCorporatePriority: boolean
 ): 'high' | 'medium' | 'low' {
-  // Corporate priority is always at least medium
-  if (isCorporatePriority && !['completed', 'declined', 'cancelled'].includes(status)) {
+  // Corporate priority is always at least medium (but only for active events)
+  if (isCorporatePriority && !['completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby', 'scheduled'].includes(status)) {
     // Check if it needs escalation
     const daysSinceContact = lastContactAttempt
       ? (Date.now() - new Date(lastContactAttempt).getTime()) / (1000 * 60 * 60 * 24)

@@ -801,14 +801,15 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
 
   const results = { sent: 0, skipped: 0 };
 
-  // Find corporate priority events that aren't completed/declined/cancelled
+  // Find corporate priority events in active statuses only
+  // Explicitly exclude: completed, declined, cancelled, postponed, stalled, standby, scheduled
   const corporateEvents = await db
     .select()
     .from(eventRequests)
     .where(
       and(
         eq(eventRequests.isCorporatePriority, true),
-        inArray(eventRequests.status, ['new', 'followed_up', 'in_process'])
+        inArray(eventRequests.status, ['new', 'in_process'])
       )
     );
 
@@ -830,6 +831,19 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
       continue;
     }
 
+    // Rate limit: Only send corporate escalation SMS once per day per event
+    // Use the corporateFollowUpProtocol to track last notification
+    const lastNotificationTime = protocol?.lastEscalationSentAt 
+      ? new Date(protocol.lastEscalationSentAt).getTime() 
+      : 0;
+    const hoursSinceLastNotification = (Date.now() - lastNotificationTime) / (1000 * 60 * 60);
+    
+    if (lastNotificationTime > 0 && hoursSinceLastNotification < 24) {
+      logger.log(`Skipping corporate escalation for ${event.organizationName} - last sent ${hoursSinceLastNotification.toFixed(1)} hours ago`);
+      results.skipped++;
+      continue;
+    }
+
     // Determine which TSP contact to notify
     const tspContactId = event.tspContactAssigned || event.tspContact;
     if (!tspContactId) {
@@ -845,6 +859,15 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
     );
 
     if (success) {
+      // Update the protocol to track when we sent this notification
+      const updatedProtocol: CorporateFollowUpProtocol = {
+        ...(protocol || {}),
+        lastEscalationSentAt: new Date().toISOString(),
+      };
+      await db.update(eventRequests)
+        .set({ corporateFollowUpProtocol: updatedProtocol })
+        .where(eq(eventRequests.id, event.id));
+      
       results.sent++;
     } else {
       results.skipped++;
@@ -874,7 +897,7 @@ export async function processApproachingIncompleteEvents(): Promise<{ sent: numb
     .from(eventRequests)
     .where(
       and(
-        inArray(eventRequests.status, ['new', 'followed_up', 'in_process']),
+        inArray(eventRequests.status, ['new', 'in_process']),
         or(
           and(
             gte(eventRequests.desiredEventDate, now.toISOString().split('T')[0]),
