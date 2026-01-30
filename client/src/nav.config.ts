@@ -408,7 +408,7 @@ export const NAV_ITEMS: NavItem[] = [
   // ========================================
   {
     id: 'collections-reporting',
-    label: 'Collections Reporting',
+    label: 'Collections Analysis',
     icon: FileSpreadsheet,
     href: 'weekly-collections-report',
     permission: PERMISSIONS.NAV_COLLECTIONS_REPORTING,
