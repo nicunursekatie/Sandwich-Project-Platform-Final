@@ -419,7 +419,7 @@ export default function GroupCatalog({
     // Close the dialog
     setShowEventDetailsDialog(false);
     // Navigate to event requests page with the event ID
-    setLocation(`/event-requests?eventId=${eventId}`);
+    setLocation(`/dashboard?section=event-requests&eventId=${eventId}`);
   };
 
   // Helper function to get status badge color

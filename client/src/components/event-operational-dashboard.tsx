@@ -426,7 +426,7 @@ export default function EventOperationalDashboard() {
   };
 
   const navigateToEvent = (eventId: number) => {
-    setLocation(`/event-requests?eventId=${eventId}`);
+    setLocation(`/dashboard?section=event-requests&eventId=${eventId}`);
   };
 
   if (isLoading) {
