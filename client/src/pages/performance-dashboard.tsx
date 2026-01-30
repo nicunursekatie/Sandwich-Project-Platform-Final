@@ -99,7 +99,7 @@ export default function PerformanceDashboard() {
     refetch,
   } = useQuery<PerformanceMetrics>({
     queryKey: ['/api/performance/dashboard'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes (reduced from 30 seconds)
     staleTime: 15000, // Consider stale after 15 seconds
   });
 
