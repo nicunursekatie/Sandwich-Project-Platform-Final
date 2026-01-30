@@ -34,6 +34,7 @@ import {
   MessageCircle,
   Info,
   Camera,
+  Calculator,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import SendKudosButton from '@/components/send-kudos-button';
@@ -58,6 +59,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import BulkDataManager from '@/components/bulk-data-manager';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -267,6 +273,10 @@ export default function SandwichCollectionLog() {
   // Validation state for Edit Collection Dialog
   const [editIndividualBreakdownError, setEditIndividualBreakdownError] = useState<string>('');
   const [editGroupBreakdownErrors, setEditGroupBreakdownErrors] = useState<Map<string, string>>(new Map());
+  
+  // Calculator state for edit form
+  const [editActiveCalcField, setEditActiveCalcField] = useState<string | null>(null);
+  const [editCalcDisplay, setEditCalcDisplay] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDataManagement, setShowDataManagement] = useState(false);
   const [newCollectionData, setNewCollectionData] = useState({
@@ -1933,6 +1943,187 @@ export default function SandwichCollectionLog() {
     );
   };
 
+  // Calculator functions for edit form
+  const safeMathEvaluator = (expression: string): number => {
+    const sanitized = expression.replace(/[^0-9+\-*/().]/g, '');
+    if (!sanitized || sanitized === '') return 0;
+    
+    const tokens: (number | string)[] = [];
+    let currentNumber = '';
+    
+    for (const char of sanitized) {
+      if ('0123456789.'.includes(char)) {
+        currentNumber += char;
+      } else if ('+-*/'.includes(char)) {
+        if (currentNumber) {
+          tokens.push(parseFloat(currentNumber));
+          currentNumber = '';
+        }
+        tokens.push(char);
+      }
+    }
+    if (currentNumber) {
+      tokens.push(parseFloat(currentNumber));
+    }
+    
+    const evaluateTokens = (tokenList: (number | string)[]): number => {
+      // First pass: handle * and /
+      let i = 0;
+      while (i < tokenList.length) {
+        if (tokenList[i] === '*' || tokenList[i] === '/') {
+          const left = tokenList[i - 1] as number;
+          const right = tokenList[i + 1] as number;
+          const result = tokenList[i] === '*' ? left * right : left / right;
+          tokenList.splice(i - 1, 3, result);
+          i--;
+        }
+        i++;
+      }
+      
+      // Second pass: handle + and -
+      let result = tokenList[0] as number;
+      for (let j = 1; j < tokenList.length; j += 2) {
+        const operator = tokenList[j];
+        const operand = tokenList[j + 1] as number;
+        if (operator === '+') result += operand;
+        else if (operator === '-') result -= operand;
+      }
+      
+      return result;
+    };
+    
+    return evaluateTokens([...tokens]);
+  };
+
+  const handleEditCalcInput = (value: string) => {
+    if (value === '=') {
+      try {
+        const result = safeMathEvaluator(editCalcDisplay);
+        const rounded = Math.round(result);
+        setEditCalcDisplay(rounded.toString());
+      } catch {
+        setEditCalcDisplay('Error');
+      }
+    } else if (value === 'C') {
+      setEditCalcDisplay('');
+    } else if (value === '←') {
+      setEditCalcDisplay(editCalcDisplay.slice(0, -1));
+    } else {
+      setEditCalcDisplay(editCalcDisplay + value);
+    }
+  };
+
+  const openEditCalculator = (fieldId: string, currentValue: string | number) => {
+    setEditActiveCalcField(fieldId);
+    setEditCalcDisplay(currentValue ? currentValue.toString() : '');
+  };
+
+  const EditCalculatorPopover = ({
+    fieldId,
+    onUseResult,
+    children
+  }: {
+    fieldId: string;
+    onUseResult: () => void;
+    children: React.ReactNode;
+  }) => (
+    <Popover
+      open={editActiveCalcField === fieldId}
+      onOpenChange={(open) => {
+        if (!open) {
+          setEditActiveCalcField(null);
+          setEditCalcDisplay('');
+        }
+      }}
+    >
+      <PopoverTrigger asChild>
+        {children}
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start" side="bottom">
+        <div className="space-y-2">
+          <p className="text-xs text-gray-600">
+            Calculate your count (e.g., 150 - 25 = 125)
+          </p>
+
+          <input
+            type="text"
+            value={editCalcDisplay}
+            readOnly
+            className="w-full h-9 px-3 border border-gray-200 rounded text-right bg-gray-50 text-sm"
+            placeholder="Enter calculation..."
+          />
+
+          <div className="grid grid-cols-4 gap-1">
+            <button
+              type="button"
+              className="h-9 border rounded bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90"
+              onClick={() => handleEditCalcInput('C')}
+            >
+              C
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-brand-primary text-white text-sm font-semibold hover:bg-brand-primary/90"
+              onClick={() => handleEditCalcInput('←')}
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+              onClick={() => handleEditCalcInput('/')}
+            >
+              /
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+              onClick={() => handleEditCalcInput('*')}
+            >
+              ×
+            </button>
+
+            {['7', '8', '9', '-', '4', '5', '6', '+', '1', '2', '3'].map((btn) => (
+              <button
+                key={btn}
+                type="button"
+                className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+                onClick={() => handleEditCalcInput(btn)}
+              >
+                {btn}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm"
+              onClick={() => handleEditCalcInput('=')}
+            >
+              =
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-white hover:bg-gray-50 text-sm col-span-2"
+              onClick={() => handleEditCalcInput('0')}
+            >
+              0
+            </button>
+            <button
+              type="button"
+              className="h-9 border rounded bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
+              onClick={() => {
+                onUseResult();
+                setEditActiveCalcField(null);
+                setEditCalcDisplay('');
+              }}
+            >
+              Use
+            </button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   const handleDelete = (id: number) => {
     // Delete is now triggered by ConfirmationDialog's onConfirm
     deleteMutation.mutate(id);
@@ -3517,85 +3708,191 @@ export default function SandwichCollectionLog() {
             <div>
               <Label htmlFor="edit-individual">Individual Sandwiches</Label>
               {!showEditIndividualBreakdown ? (
-                <Input
-                  id="edit-individual"
-                  type="number"
-                  min="0"
-                  value={editFormData.individualSandwiches}
-                  onChange={(e) =>
-                    setEditFormData({
-                      ...editFormData,
-                      individualSandwiches: e.target.value,
-                    })
-                  }
-                />
+                <div className="flex gap-2 items-center">
+                  <Input
+                    id="edit-individual"
+                    type="number"
+                    min="0"
+                    value={editFormData.individualSandwiches}
+                    onChange={(e) =>
+                      setEditFormData({
+                        ...editFormData,
+                        individualSandwiches: e.target.value,
+                      })
+                    }
+                    className="flex-1"
+                  />
+                  <EditCalculatorPopover
+                    fieldId="edit-individual"
+                    onUseResult={() => {
+                      if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                        setEditFormData({
+                          ...editFormData,
+                          individualSandwiches: Math.round(Number(editCalcDisplay)).toString(),
+                        });
+                      }
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="p-2 hover:bg-gray-100 rounded-md border border-gray-200"
+                      onClick={() => openEditCalculator('edit-individual', editFormData.individualSandwiches)}
+                    >
+                      <Calculator className="h-5 w-5 text-gray-600" />
+                    </button>
+                  </EditCalculatorPopover>
+                </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2 mt-2">
                   <div>
                     <Label htmlFor="edit-deli" className="text-sm">Deli</Label>
-                    <Input
-                      id="edit-deli"
-                      type="number"
-                      min="0"
-                      value={editFormData.individualDeli}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setEditFormData({
-                          ...editFormData,
-                          individualDeli: value,
-                          individualSandwiches: (
-                            (parseInt(value) || 0) +
-                            (parseInt(editFormData.individualPbj) || 0) +
-                            (parseInt(editFormData.individualGeneric) || 0)
-                          ).toString(),
-                        });
-                      }}
-                      placeholder="0"
-                    />
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        id="edit-deli"
+                        type="number"
+                        min="0"
+                        value={editFormData.individualDeli}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setEditFormData({
+                            ...editFormData,
+                            individualDeli: value,
+                            individualSandwiches: (
+                              (parseInt(value) || 0) +
+                              (parseInt(editFormData.individualPbj) || 0) +
+                              (parseInt(editFormData.individualGeneric) || 0)
+                            ).toString(),
+                          });
+                        }}
+                        placeholder="0"
+                        className="flex-1"
+                      />
+                      <EditCalculatorPopover
+                        fieldId="edit-deli"
+                        onUseResult={() => {
+                          if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                            const value = Math.round(Number(editCalcDisplay)).toString();
+                            setEditFormData({
+                              ...editFormData,
+                              individualDeli: value,
+                              individualSandwiches: (
+                                (parseInt(value) || 0) +
+                                (parseInt(editFormData.individualPbj) || 0) +
+                                (parseInt(editFormData.individualGeneric) || 0)
+                              ).toString(),
+                            });
+                          }
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="p-1.5 hover:bg-gray-100 rounded border border-gray-200"
+                          onClick={() => openEditCalculator('edit-deli', editFormData.individualDeli)}
+                        >
+                          <Calculator className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </EditCalculatorPopover>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="edit-pbj" className="text-sm">PBJ</Label>
-                    <Input
-                      id="edit-pbj"
-                      type="number"
-                      min="0"
-                      value={editFormData.individualPbj}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setEditFormData({
-                          ...editFormData,
-                          individualPbj: value,
-                          individualSandwiches: (
-                            (parseInt(editFormData.individualDeli) || 0) +
-                            (parseInt(value) || 0) +
-                            (parseInt(editFormData.individualGeneric) || 0)
-                          ).toString(),
-                        });
-                      }}
-                      placeholder="0"
-                    />
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        id="edit-pbj"
+                        type="number"
+                        min="0"
+                        value={editFormData.individualPbj}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setEditFormData({
+                            ...editFormData,
+                            individualPbj: value,
+                            individualSandwiches: (
+                              (parseInt(editFormData.individualDeli) || 0) +
+                              (parseInt(value) || 0) +
+                              (parseInt(editFormData.individualGeneric) || 0)
+                            ).toString(),
+                          });
+                        }}
+                        placeholder="0"
+                        className="flex-1"
+                      />
+                      <EditCalculatorPopover
+                        fieldId="edit-pbj"
+                        onUseResult={() => {
+                          if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                            const value = Math.round(Number(editCalcDisplay)).toString();
+                            setEditFormData({
+                              ...editFormData,
+                              individualPbj: value,
+                              individualSandwiches: (
+                                (parseInt(editFormData.individualDeli) || 0) +
+                                (parseInt(value) || 0) +
+                                (parseInt(editFormData.individualGeneric) || 0)
+                              ).toString(),
+                            });
+                          }
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="p-1.5 hover:bg-gray-100 rounded border border-gray-200"
+                          onClick={() => openEditCalculator('edit-pbj', editFormData.individualPbj)}
+                        >
+                          <Calculator className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </EditCalculatorPopover>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="edit-generic" className="text-sm">Generic</Label>
-                    <Input
-                      id="edit-generic"
-                      type="number"
-                      min="0"
-                      value={editFormData.individualGeneric}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setEditFormData({
-                          ...editFormData,
-                          individualGeneric: value,
-                          individualSandwiches: (
-                            (parseInt(editFormData.individualDeli) || 0) +
-                            (parseInt(editFormData.individualPbj) || 0) +
-                            (parseInt(value) || 0)
-                          ).toString(),
-                        });
-                      }}
-                      placeholder="0"
-                    />
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        id="edit-generic"
+                        type="number"
+                        min="0"
+                        value={editFormData.individualGeneric}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setEditFormData({
+                            ...editFormData,
+                            individualGeneric: value,
+                            individualSandwiches: (
+                              (parseInt(editFormData.individualDeli) || 0) +
+                              (parseInt(editFormData.individualPbj) || 0) +
+                              (parseInt(value) || 0)
+                            ).toString(),
+                          });
+                        }}
+                        placeholder="0"
+                        className="flex-1"
+                      />
+                      <EditCalculatorPopover
+                        fieldId="edit-generic"
+                        onUseResult={() => {
+                          if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                            const value = Math.round(Number(editCalcDisplay)).toString();
+                            setEditFormData({
+                              ...editFormData,
+                              individualGeneric: value,
+                              individualSandwiches: (
+                                (parseInt(editFormData.individualDeli) || 0) +
+                                (parseInt(editFormData.individualPbj) || 0) +
+                                (parseInt(value) || 0)
+                              ).toString(),
+                            });
+                          }
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="p-1.5 hover:bg-gray-100 rounded border border-gray-200"
+                          onClick={() => openEditCalculator('edit-generic', editFormData.individualGeneric)}
+                        >
+                          <Calculator className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </EditCalculatorPopover>
+                    </div>
                   </div>
                 </div>
               )}
@@ -3708,37 +4005,59 @@ export default function SandwichCollectionLog() {
                         />
                       </div>
                       {!group.hasTypeBreakdown && (
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="Count"
-                          value={(() => {
-                            const groupCount = group.count || group.sandwichCount || 0;
-                            return groupCount === 0 ? '' : groupCount.toString();
-                          })()}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === '' || value === '0') {
-                              updateEditGroupCollection(
-                                group.id,
-                                'sandwichCount',
-                                0
-                              );
-                            } else {
-                              updateEditGroupCollection(
-                                group.id,
-                                'sandwichCount',
-                                parseInt(value) || 0
-                              );
-                            }
-                          }}
-                          onFocus={(e) => {
-                            if (e.target.value === '0') {
-                              e.target.value = '';
-                            }
-                          }}
-                          className="w-24"
-                        />
+                        <div className="flex gap-1 items-center">
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Count"
+                            value={(() => {
+                              const groupCount = group.count || group.sandwichCount || 0;
+                              return groupCount === 0 ? '' : groupCount.toString();
+                            })()}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === '' || value === '0') {
+                                updateEditGroupCollection(
+                                  group.id,
+                                  'sandwichCount',
+                                  0
+                                );
+                              } else {
+                                updateEditGroupCollection(
+                                  group.id,
+                                  'sandwichCount',
+                                  parseInt(value) || 0
+                                );
+                              }
+                            }}
+                            onFocus={(e) => {
+                              if (e.target.value === '0') {
+                                e.target.value = '';
+                              }
+                            }}
+                            className="w-24"
+                          />
+                          <EditCalculatorPopover
+                            fieldId={`group-count-${group.id}`}
+                            onUseResult={() => {
+                              if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                                updateEditGroupCollection(
+                                  group.id,
+                                  'sandwichCount',
+                                  Math.round(Number(editCalcDisplay))
+                                );
+                              }
+                            }}
+                          >
+                            <button
+                              type="button"
+                              className="p-1.5 hover:bg-gray-100 rounded border border-gray-200"
+                              onClick={() => openEditCalculator(`group-count-${group.id}`, group.count || group.sandwichCount || 0)}
+                            >
+                              <Calculator className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </EditCalculatorPopover>
+                        </div>
                       )}
                       
                       {/* Individual toggle for this group's type breakdown */}
@@ -3795,72 +4114,156 @@ export default function SandwichCollectionLog() {
                         <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded">
                           <div>
                             <Label className="text-xs">Deli</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={group.deli || ''}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                const updatedGroup = {
-                                  ...group,
-                                  deli: value,
-                                  sandwichCount: value + (group.pbj || 0) + (group.generic || 0),
-                                };
-                                setEditGroupCollections(
-                                  editGroupCollections.map((g) =>
-                                    g.id === group.id ? updatedGroup : g
-                                  )
-                                );
-                              }}
-                              placeholder="0"
-                              className="h-8"
-                            />
+                            <div className="flex gap-1 items-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={group.deli || ''}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  const updatedGroup = {
+                                    ...group,
+                                    deli: value,
+                                    sandwichCount: value + (group.pbj || 0) + (group.generic || 0),
+                                  };
+                                  setEditGroupCollections(
+                                    editGroupCollections.map((g) =>
+                                      g.id === group.id ? updatedGroup : g
+                                    )
+                                  );
+                                }}
+                                placeholder="0"
+                                className="h-8 flex-1"
+                              />
+                              <EditCalculatorPopover
+                                fieldId={`group-deli-${group.id}`}
+                                onUseResult={() => {
+                                  if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                                    const value = Math.round(Number(editCalcDisplay));
+                                    const updatedGroup = {
+                                      ...group,
+                                      deli: value,
+                                      sandwichCount: value + (group.pbj || 0) + (group.generic || 0),
+                                    };
+                                    setEditGroupCollections(
+                                      editGroupCollections.map((g) =>
+                                        g.id === group.id ? updatedGroup : g
+                                      )
+                                    );
+                                  }
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  className="p-1 hover:bg-gray-200 rounded border border-gray-300"
+                                  onClick={() => openEditCalculator(`group-deli-${group.id}`, group.deli || 0)}
+                                >
+                                  <Calculator className="h-3.5 w-3.5 text-gray-600" />
+                                </button>
+                              </EditCalculatorPopover>
+                            </div>
                           </div>
                           <div>
                             <Label className="text-xs">PBJ</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={group.pbj || ''}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                const updatedGroup = {
-                                  ...group,
-                                  pbj: value,
-                                  sandwichCount: (group.deli || 0) + value + (group.generic || 0),
-                                };
-                                setEditGroupCollections(
-                                  editGroupCollections.map((g) =>
-                                    g.id === group.id ? updatedGroup : g
-                                  )
-                                );
-                              }}
-                              placeholder="0"
-                              className="h-8"
-                            />
+                            <div className="flex gap-1 items-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={group.pbj || ''}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  const updatedGroup = {
+                                    ...group,
+                                    pbj: value,
+                                    sandwichCount: (group.deli || 0) + value + (group.generic || 0),
+                                  };
+                                  setEditGroupCollections(
+                                    editGroupCollections.map((g) =>
+                                      g.id === group.id ? updatedGroup : g
+                                    )
+                                  );
+                                }}
+                                placeholder="0"
+                                className="h-8 flex-1"
+                              />
+                              <EditCalculatorPopover
+                                fieldId={`group-pbj-${group.id}`}
+                                onUseResult={() => {
+                                  if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                                    const value = Math.round(Number(editCalcDisplay));
+                                    const updatedGroup = {
+                                      ...group,
+                                      pbj: value,
+                                      sandwichCount: (group.deli || 0) + value + (group.generic || 0),
+                                    };
+                                    setEditGroupCollections(
+                                      editGroupCollections.map((g) =>
+                                        g.id === group.id ? updatedGroup : g
+                                      )
+                                    );
+                                  }
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  className="p-1 hover:bg-gray-200 rounded border border-gray-300"
+                                  onClick={() => openEditCalculator(`group-pbj-${group.id}`, group.pbj || 0)}
+                                >
+                                  <Calculator className="h-3.5 w-3.5 text-gray-600" />
+                                </button>
+                              </EditCalculatorPopover>
+                            </div>
                           </div>
                           <div>
                             <Label className="text-xs">Generic</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              value={group.generic || ''}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value) || 0;
-                                const updatedGroup = {
-                                  ...group,
-                                  generic: value,
-                                  sandwichCount: (group.deli || 0) + (group.pbj || 0) + value,
-                                };
-                                setEditGroupCollections(
-                                  editGroupCollections.map((g) =>
-                                    g.id === group.id ? updatedGroup : g
-                                  )
-                                );
-                              }}
-                              placeholder="0"
-                              className="h-8"
-                            />
+                            <div className="flex gap-1 items-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={group.generic || ''}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  const updatedGroup = {
+                                    ...group,
+                                    generic: value,
+                                    sandwichCount: (group.deli || 0) + (group.pbj || 0) + value,
+                                  };
+                                  setEditGroupCollections(
+                                    editGroupCollections.map((g) =>
+                                      g.id === group.id ? updatedGroup : g
+                                    )
+                                  );
+                                }}
+                                placeholder="0"
+                                className="h-8 flex-1"
+                              />
+                              <EditCalculatorPopover
+                                fieldId={`group-generic-${group.id}`}
+                                onUseResult={() => {
+                                  if (editCalcDisplay && !isNaN(Number(editCalcDisplay))) {
+                                    const value = Math.round(Number(editCalcDisplay));
+                                    const updatedGroup = {
+                                      ...group,
+                                      generic: value,
+                                      sandwichCount: (group.deli || 0) + (group.pbj || 0) + value,
+                                    };
+                                    setEditGroupCollections(
+                                      editGroupCollections.map((g) =>
+                                        g.id === group.id ? updatedGroup : g
+                                      )
+                                    );
+                                  }
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  className="p-1 hover:bg-gray-200 rounded border border-gray-300"
+                                  onClick={() => openEditCalculator(`group-generic-${group.id}`, group.generic || 0)}
+                                >
+                                  <Calculator className="h-3.5 w-3.5 text-gray-600" />
+                                </button>
+                              </EditCalculatorPopover>
+                            </div>
                           </div>
                         </div>
                         
