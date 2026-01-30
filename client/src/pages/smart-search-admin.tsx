@@ -16,10 +16,16 @@ import {
   Plus,
   Pencil,
   Trash2,
-  BarChart3
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -32,7 +38,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
   Dialog,
@@ -50,7 +56,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface SearchableFeature {
   id: string;
@@ -75,7 +88,12 @@ interface RegenerationProgress {
   failed: number;
   inProgress: boolean;
   currentFeature?: string;
-  errors: Array<{ featureId: string; featureTitle: string; error: string; timestamp: Date }>;
+  errors: Array<{
+    featureId: string;
+    featureTitle: string;
+    error: string;
+    timestamp: Date;
+  }>;
   startTime?: Date;
   estimatedTimeRemaining?: number;
   isPaused?: boolean;
@@ -112,35 +130,45 @@ export default function SmartSearchAdmin() {
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
-  const [regenerationMode, setRegenerationMode] = useState<'all' | 'missing' | 'failed' | 'selected'>('missing');
+  const [regenerationMode, setRegenerationMode] = useState<
+    'all' | 'missing' | 'failed' | 'selected'
+  >('missing');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [costEstimate, setCostEstimate] = useState<CostEstimate | null>(null);
   const [searchTestQuery, setSearchTestQuery] = useState('');
   const [searchTestResults, setSearchTestResults] = useState<any>(null);
-  const [editingFeature, setEditingFeature] = useState<SearchableFeature | null>(null);
+  const [editingFeature, setEditingFeature] =
+    useState<SearchableFeature | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   // Fetch all features
-  const { data: featuresData, isLoading: featuresLoading, refetch: refetchFeatures } = useQuery({
+  const {
+    data: featuresData,
+    isLoading: featuresLoading,
+    refetch: refetchFeatures,
+  } = useQuery({
     queryKey: ['/api/smart-search/features'],
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 5 * 60 * 1000, // Poll every 5 minutes (reduced from 5 seconds)
   });
 
   // Fetch regeneration progress
   const { data: progressData } = useQuery<RegenerationProgress | null>({
     queryKey: ['/api/smart-search/regeneration-progress'],
-    refetchInterval: 2000, // Poll every 2 seconds
+    refetchInterval: 5 * 60 * 1000, // Poll every 5 minutes (reduced from 2 seconds)
   });
 
   // Fetch analytics summary
-  const { data: analyticsData, refetch: refetchAnalytics } = useQuery<AnalyticsSummary>({
-    queryKey: ['/api/smart-search/analytics-summary'],
-    enabled: activeTab === 'analytics',
-  });
+  const { data: analyticsData, refetch: refetchAnalytics } =
+    useQuery<AnalyticsSummary>({
+      queryKey: ['/api/smart-search/analytics-summary'],
+      enabled: activeTab === 'analytics',
+    });
 
   // Fetch quality metrics
-  const { data: qualityMetrics, refetch: refetchQuality } = useQuery<QualityMetric[]>({
+  const { data: qualityMetrics, refetch: refetchQuality } = useQuery<
+    QualityMetric[]
+  >({
     queryKey: ['/api/smart-search/quality-metrics'],
     enabled: activeTab === 'quality',
   });
@@ -149,10 +177,19 @@ export default function SmartSearchAdmin() {
   const embeddingStatus: EmbeddingStatus | null = featuresData?.features
     ? {
         total: featuresData.features.length,
-        withEmbeddings: featuresData.features.filter((f: SearchableFeature) => f.embedding).length,
-        percentage: featuresData.features.length > 0
-          ? Math.round((featuresData.features.filter((f: SearchableFeature) => f.embedding).length / featuresData.features.length) * 100)
-          : 0,
+        withEmbeddings: featuresData.features.filter(
+          (f: SearchableFeature) => f.embedding
+        ).length,
+        percentage:
+          featuresData.features.length > 0
+            ? Math.round(
+                (featuresData.features.filter(
+                  (f: SearchableFeature) => f.embedding
+                ).length /
+                  featuresData.features.length) *
+                  100
+              )
+            : 0,
       }
     : null;
 
@@ -164,7 +201,11 @@ export default function SmartSearchAdmin() {
         options.featureIds = selectedFeatures;
       }
 
-      const estimate = await apiRequest('POST', '/api/smart-search/cost-estimate', options);
+      const estimate = await apiRequest(
+        'POST',
+        '/api/smart-search/cost-estimate',
+        options
+      );
       setCostEstimate(estimate);
     } catch (error: any) {
       toast({
@@ -182,7 +223,11 @@ export default function SmartSearchAdmin() {
       if (regenerationMode === 'selected' && selectedFeatures.length > 0) {
         options.featureIds = selectedFeatures;
       }
-      return apiRequest('POST', '/api/smart-search/regenerate-embeddings-advanced', options);
+      return apiRequest(
+        'POST',
+        '/api/smart-search/regenerate-embeddings-advanced',
+        options
+      );
     },
     onSuccess: () => {
       toast({
@@ -202,20 +247,25 @@ export default function SmartSearchAdmin() {
 
   // Pause regeneration
   const pauseMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/smart-search/pause-regeneration'),
-    onSuccess: () => toast({ title: 'Paused', description: 'Regeneration paused' }),
+    mutationFn: () =>
+      apiRequest('POST', '/api/smart-search/pause-regeneration'),
+    onSuccess: () =>
+      toast({ title: 'Paused', description: 'Regeneration paused' }),
   });
 
   // Resume regeneration
   const resumeMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/smart-search/resume-regeneration'),
-    onSuccess: () => toast({ title: 'Resumed', description: 'Regeneration resumed' }),
+    mutationFn: () =>
+      apiRequest('POST', '/api/smart-search/resume-regeneration'),
+    onSuccess: () =>
+      toast({ title: 'Resumed', description: 'Regeneration resumed' }),
   });
 
   // Stop regeneration
   const stopMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/smart-search/stop-regeneration'),
-    onSuccess: () => toast({ title: 'Stopped', description: 'Regeneration stopped' }),
+    onSuccess: () =>
+      toast({ title: 'Stopped', description: 'Regeneration stopped' }),
   });
 
   // Test search
@@ -241,7 +291,9 @@ export default function SmartSearchAdmin() {
   const exportFeatures = async () => {
     try {
       const features = await apiRequest('GET', '/api/smart-search/export');
-      const blob = new Blob([JSON.stringify(features, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(features, null, 2)], {
+        type: 'application/json',
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -250,13 +302,18 @@ export default function SmartSearchAdmin() {
       URL.revokeObjectURL(url);
       toast({ title: 'Success', description: 'Features exported' });
     } catch (error: any) {
-      toast({ title: 'Error', description: 'Failed to export features', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: 'Failed to export features',
+        variant: 'destructive',
+      });
     }
   };
 
   // Delete feature
   const deleteFeatureMutation = useMutation({
-    mutationFn: (id: string) => apiRequest('DELETE', `/api/smart-search/feature/${id}`),
+    mutationFn: (id: string) =>
+      apiRequest('DELETE', `/api/smart-search/feature/${id}`),
     onSuccess: () => {
       toast({ title: 'Success', description: 'Feature deleted' });
       refetchFeatures();
@@ -308,7 +365,9 @@ export default function SmartSearchAdmin() {
           <Sparkles className="w-6 h-6 text-purple-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">SmartSearch AI Admin</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            SmartSearch AI Admin
+          </h1>
           <p className="text-sm text-gray-600">
             Comprehensive AI embeddings and search management
           </p>
@@ -348,13 +407,17 @@ export default function SmartSearchAdmin() {
                   {/* Stats */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-blue-50 rounded-lg">
-                      <div className="text-sm text-gray-600 mb-1">Total Features</div>
+                      <div className="text-sm text-gray-600 mb-1">
+                        Total Features
+                      </div>
                       <div className="text-2xl font-bold text-gray-900">
                         {embeddingStatus.total}
                       </div>
                     </div>
                     <div className="p-4 bg-green-50 rounded-lg">
-                      <div className="text-sm text-gray-600 mb-1">With Embeddings</div>
+                      <div className="text-sm text-gray-600 mb-1">
+                        With Embeddings
+                      </div>
                       <div className="text-2xl font-bold text-green-600">
                         {embeddingStatus.withEmbeddings}
                       </div>
@@ -366,10 +429,20 @@ export default function SmartSearchAdmin() {
                           {embeddingStatus.percentage}%
                         </div>
                         <Badge
-                          variant={embeddingStatus.percentage === 100 ? 'default' : 'secondary'}
-                          className={embeddingStatus.percentage === 100 ? 'bg-green-500' : ''}
+                          variant={
+                            embeddingStatus.percentage === 100
+                              ? 'default'
+                              : 'secondary'
+                          }
+                          className={
+                            embeddingStatus.percentage === 100
+                              ? 'bg-green-500'
+                              : ''
+                          }
                         >
-                          {embeddingStatus.percentage === 100 ? 'Complete' : 'Incomplete'}
+                          {embeddingStatus.percentage === 100
+                            ? 'Complete'
+                            : 'Incomplete'}
                         </Badge>
                       </div>
                     </div>
@@ -380,10 +453,14 @@ export default function SmartSearchAdmin() {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Embedding Coverage</span>
                       <span className="font-medium">
-                        {embeddingStatus.withEmbeddings} / {embeddingStatus.total}
+                        {embeddingStatus.withEmbeddings} /{' '}
+                        {embeddingStatus.total}
                       </span>
                     </div>
-                    <Progress value={embeddingStatus.percentage} className="h-2" />
+                    <Progress
+                      value={embeddingStatus.percentage}
+                      className="h-2"
+                    />
                   </div>
                 </>
               ) : null}
@@ -395,18 +472,23 @@ export default function SmartSearchAdmin() {
             <CardHeader>
               <CardTitle>Generate AI Embeddings</CardTitle>
               <CardDescription>
-                Pre-generate embeddings for features to improve search performance
+                Pre-generate embeddings for features to improve search
+                performance
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Mode Selection */}
               <div className="space-y-3">
                 <Label>Regeneration Mode</Label>
-                <RadioGroup value={regenerationMode} onValueChange={(v: any) => setRegenerationMode(v)}>
+                <RadioGroup
+                  value={regenerationMode}
+                  onValueChange={(v: any) => setRegenerationMode(v)}
+                >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="missing" id="missing" />
                     <Label htmlFor="missing" className="font-normal">
-                      Missing Only - Generate only for features without embeddings (Recommended)
+                      Missing Only - Generate only for features without
+                      embeddings (Recommended)
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -424,7 +506,8 @@ export default function SmartSearchAdmin() {
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="selected" id="selected" />
                     <Label htmlFor="selected" className="font-normal">
-                      Selected Features - Choose specific features (Go to Features tab)
+                      Selected Features - Choose specific features (Go to
+                      Features tab)
                     </Label>
                   </div>
                 </RadioGroup>
@@ -437,10 +520,21 @@ export default function SmartSearchAdmin() {
                   <AlertTitle>Cost Estimate</AlertTitle>
                   <AlertDescription>
                     <div className="space-y-1 mt-2">
-                      <p><strong>Features to process:</strong> {costEstimate.totalFeatures}</p>
-                      <p><strong>Estimated tokens:</strong> {costEstimate.estimatedTokens.toLocaleString()}</p>
-                      <p><strong>Estimated cost:</strong> ${costEstimate.estimatedCost.toFixed(4)} USD</p>
-                      <p className="text-xs text-muted-foreground">Model: {costEstimate.model}</p>
+                      <p>
+                        <strong>Features to process:</strong>{' '}
+                        {costEstimate.totalFeatures}
+                      </p>
+                      <p>
+                        <strong>Estimated tokens:</strong>{' '}
+                        {costEstimate.estimatedTokens.toLocaleString()}
+                      </p>
+                      <p>
+                        <strong>Estimated cost:</strong> $
+                        {costEstimate.estimatedCost.toFixed(4)} USD
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Model: {costEstimate.model}
+                      </p>
                     </div>
                   </AlertDescription>
                 </Alert>
@@ -474,7 +568,13 @@ export default function SmartSearchAdmin() {
                   <div className="flex justify-between text-xs text-gray-600">
                     <span>{progressData.currentFeature}</span>
                     {progressData.estimatedTimeRemaining && (
-                      <span>~{formatTimeRemaining(progressData.estimatedTimeRemaining)} remaining</span>
+                      <span>
+                        ~
+                        {formatTimeRemaining(
+                          progressData.estimatedTimeRemaining
+                        )}{' '}
+                        remaining
+                      </span>
                     )}
                   </div>
                   {progressData.failed > 0 && (
@@ -541,7 +641,11 @@ export default function SmartSearchAdmin() {
                 ) : (
                   <Button
                     onClick={() => regenerateMutation.mutate()}
-                    disabled={regenerateMutation.isPending || (regenerationMode === 'selected' && selectedFeatures.length === 0)}
+                    disabled={
+                      regenerateMutation.isPending ||
+                      (regenerationMode === 'selected' &&
+                        selectedFeatures.length === 0)
+                    }
                     className="gap-2"
                     data-testid="button-regenerate-embeddings"
                   >
@@ -568,11 +672,18 @@ export default function SmartSearchAdmin() {
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">Feature Management</h2>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={exportFeatures} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={exportFeatures}
+                className="gap-2"
+              >
                 <Download className="w-4 h-4" />
                 Export
               </Button>
-              <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                className="gap-2"
+              >
                 <Plus className="w-4 h-4" />
                 Add Feature
               </Button>
@@ -585,7 +696,9 @@ export default function SmartSearchAdmin() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      {regenerationMode === 'selected' && <TableHead className="w-12"></TableHead>}
+                      {regenerationMode === 'selected' && (
+                        <TableHead className="w-12"></TableHead>
+                      )}
                       <TableHead>Title</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Embedding</TableHead>
@@ -593,81 +706,97 @@ export default function SmartSearchAdmin() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {featuresData?.features.map((feature: SearchableFeature) => (
-                      <TableRow key={feature.id}>
-                        {regenerationMode === 'selected' && (
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              checked={selectedFeatures.includes(feature.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedFeatures([...selectedFeatures, feature.id]);
-                                } else {
-                                  setSelectedFeatures(selectedFeatures.filter(id => id !== feature.id));
-                                }
-                              }}
-                            />
-                          </TableCell>
-                        )}
-                        <TableCell className="font-medium">{feature.title}</TableCell>
-                        <TableCell>{feature.category}</TableCell>
-                        <TableCell>
-                          {feature.embedding ? (
-                            <Badge className="bg-green-500">
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Yes
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              No
-                            </Badge>
+                    {featuresData?.features.map(
+                      (feature: SearchableFeature) => (
+                        <TableRow key={feature.id}>
+                          {regenerationMode === 'selected' && (
+                            <TableCell>
+                              <input
+                                type="checkbox"
+                                checked={selectedFeatures.includes(feature.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedFeatures([
+                                      ...selectedFeatures,
+                                      feature.id,
+                                    ]);
+                                  } else {
+                                    setSelectedFeatures(
+                                      selectedFeatures.filter(
+                                        (id) => id !== feature.id
+                                      )
+                                    );
+                                  }
+                                }}
+                              />
+                            </TableCell>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setEditingFeature(feature);
-                                setIsEditDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                >
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Feature</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{feature.title}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteFeatureMutation.mutate(feature.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          <TableCell className="font-medium">
+                            {feature.title}
+                          </TableCell>
+                          <TableCell>{feature.category}</TableCell>
+                          <TableCell>
+                            {feature.embedding ? (
+                              <Badge className="bg-green-500">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Yes
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                No
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingFeature(feature);
+                                  setIsEditDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Delete Feature
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "
+                                      {feature.title}"? This action cannot be
+                                      undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        deleteFeatureMutation.mutate(feature.id)
+                                      }
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -679,7 +808,11 @@ export default function SmartSearchAdmin() {
         <TabsContent value="analytics" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">Search Analytics</h2>
-            <Button variant="outline" onClick={() => refetchAnalytics()} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetchAnalytics()}
+              className="gap-2"
+            >
               <RefreshCw className="w-4 h-4" />
               Refresh
             </Button>
@@ -697,14 +830,21 @@ export default function SmartSearchAdmin() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {analyticsData.topSearches.slice(0, 10).map((search, i) => (
-                        <div key={i} className="flex justify-between items-center">
-                          <span className="text-sm">{search.query}</span>
-                          <Badge>{search.count}</Badge>
-                        </div>
-                      ))}
+                      {analyticsData.topSearches
+                        .slice(0, 10)
+                        .map((search, i) => (
+                          <div
+                            key={i}
+                            className="flex justify-between items-center"
+                          >
+                            <span className="text-sm">{search.query}</span>
+                            <Badge>{search.count}</Badge>
+                          </div>
+                        ))}
                       {analyticsData.topSearches.length === 0 && (
-                        <p className="text-sm text-gray-500">No search data yet</p>
+                        <p className="text-sm text-gray-500">
+                          No search data yet
+                        </p>
                       )}
                     </div>
                   </CardContent>
@@ -719,12 +859,20 @@ export default function SmartSearchAdmin() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="p-3 bg-blue-50 rounded-lg">
-                      <div className="text-sm text-gray-600">Total Searches</div>
-                      <div className="text-2xl font-bold">{analyticsData.totalSearches}</div>
+                      <div className="text-sm text-gray-600">
+                        Total Searches
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {analyticsData.totalSearches}
+                      </div>
                     </div>
                     <div className="p-3 bg-orange-50 rounded-lg">
-                      <div className="text-sm text-gray-600">Unused Features</div>
-                      <div className="text-2xl font-bold">{analyticsData.deadFeatures.length}</div>
+                      <div className="text-sm text-gray-600">
+                        Unused Features
+                      </div>
+                      <div className="text-2xl font-bold">
+                        {analyticsData.deadFeatures.length}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -737,7 +885,11 @@ export default function SmartSearchAdmin() {
         <TabsContent value="quality" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">Embedding Quality Metrics</h2>
-            <Button variant="outline" onClick={() => refetchQuality()} className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => refetchQuality()}
+              className="gap-2"
+            >
               <RefreshCw className="w-4 h-4" />
               Refresh
             </Button>
@@ -758,7 +910,9 @@ export default function SmartSearchAdmin() {
                   <TableBody>
                     {qualityMetrics?.map((metric) => (
                       <TableRow key={metric.featureId}>
-                        <TableCell className="font-medium">{metric.featureTitle}</TableCell>
+                        <TableCell className="font-medium">
+                          {metric.featureTitle}
+                        </TableCell>
                         <TableCell>
                           {metric.hasEmbedding ? (
                             <Badge className="bg-green-500">Yes</Badge>
@@ -766,12 +920,19 @@ export default function SmartSearchAdmin() {
                             <Badge variant="secondary">No</Badge>
                           )}
                         </TableCell>
-                        <TableCell>{metric.embeddingDimension || '-'}</TableCell>
+                        <TableCell>
+                          {metric.embeddingDimension || '-'}
+                        </TableCell>
                         <TableCell>
                           {metric.qualityScore !== undefined ? (
                             <div className="flex items-center gap-2">
-                              <Progress value={metric.qualityScore * 100} className="w-24 h-2" />
-                              <span className="text-sm">{Math.round(metric.qualityScore * 100)}%</span>
+                              <Progress
+                                value={metric.qualityScore * 100}
+                                className="w-24 h-2"
+                              />
+                              <span className="text-sm">
+                                {Math.round(metric.qualityScore * 100)}%
+                              </span>
                             </div>
                           ) : (
                             '-'
@@ -816,9 +977,14 @@ export default function SmartSearchAdmin() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-4 text-sm text-gray-600">
                     <span>
-                      Found {searchTestResults.results.length} results in {searchTestResults.queryTime}ms
+                      Found {searchTestResults.results.length} results in{' '}
+                      {searchTestResults.queryTime}ms
                     </span>
-                    <Badge variant={searchTestResults.usedAI ? 'default' : 'secondary'}>
+                    <Badge
+                      variant={
+                        searchTestResults.usedAI ? 'default' : 'secondary'
+                      }
+                    >
                       {searchTestResults.usedAI ? 'AI Search' : 'Fuzzy Search'}
                     </Badge>
                   </div>
@@ -827,7 +993,9 @@ export default function SmartSearchAdmin() {
                     {searchTestResults.results.map((result: any, i: number) => (
                       <div key={i} className="p-3 border rounded-lg">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium">{result.feature.title}</h3>
+                          <h3 className="font-medium">
+                            {result.feature.title}
+                          </h3>
                           <div className="flex gap-2 items-center">
                             <Badge variant="outline">{result.matchType}</Badge>
                             <span className="text-sm text-gray-600">
@@ -835,13 +1003,21 @@ export default function SmartSearchAdmin() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600">{result.feature.description}</p>
+                        <p className="text-sm text-gray-600">
+                          {result.feature.description}
+                        </p>
                         <div className="flex gap-1 mt-2">
-                          {result.feature.keywords.slice(0, 5).map((kw: string, ki: number) => (
-                            <Badge key={ki} variant="secondary" className="text-xs">
-                              {kw}
-                            </Badge>
-                          ))}
+                          {result.feature.keywords
+                            .slice(0, 5)
+                            .map((kw: string, ki: number) => (
+                              <Badge
+                                key={ki}
+                                variant="secondary"
+                                className="text-xs"
+                              >
+                                {kw}
+                              </Badge>
+                            ))}
                         </div>
                       </div>
                     ))}
@@ -859,7 +1035,8 @@ export default function SmartSearchAdmin() {
           <DialogHeader>
             <DialogTitle>Add New Feature</DialogTitle>
             <DialogDescription>
-              Add a new searchable feature to the index. Embedding will be generated on next regeneration.
+              Add a new searchable feature to the index. Embedding will be
+              generated on next regeneration.
             </DialogDescription>
           </DialogHeader>
           <AddFeatureForm
@@ -879,7 +1056,8 @@ export default function SmartSearchAdmin() {
           <DialogHeader>
             <DialogTitle>Edit Feature</DialogTitle>
             <DialogDescription>
-              Modify feature details. Embedding will be regenerated if content changes.
+              Modify feature details. Embedding will be regenerated if content
+              changes.
             </DialogDescription>
           </DialogHeader>
           {editingFeature && (
@@ -904,7 +1082,13 @@ export default function SmartSearchAdmin() {
 }
 
 // Add Feature Form Component
-function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+function AddFeatureForm({
+  onSuccess,
+  onCancel,
+}: {
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -914,7 +1098,8 @@ function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
   });
 
   const addMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('POST', '/api/smart-search/feature', data),
+    mutationFn: (data: any) =>
+      apiRequest('POST', '/api/smart-search/feature', data),
     onSuccess,
   });
 
@@ -922,7 +1107,10 @@ function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
     e.preventDefault();
     addMutation.mutate({
       ...formData,
-      keywords: formData.keywords.split(',').map(k => k.trim()).filter(Boolean),
+      keywords: formData.keywords
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean),
     });
   };
 
@@ -944,7 +1132,9 @@ function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
           placeholder="Describe what this feature does..."
           rows={3}
           required
@@ -956,7 +1146,9 @@ function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
         <Input
           id="category"
           value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, category: e.target.value })
+          }
           placeholder="e.g., Admin, Users, Settings"
           required
         />
@@ -978,7 +1170,9 @@ function AddFeatureForm({ onSuccess, onCancel }: { onSuccess: () => void; onCanc
         <Input
           id="keywords"
           value={formData.keywords}
-          onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, keywords: e.target.value })
+          }
           placeholder="e.g., user, manage, admin, people"
         />
         <p className="text-xs text-muted-foreground">
@@ -1017,7 +1211,8 @@ function EditFeatureForm({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('PUT', `/api/smart-search/feature/${feature.id}`, data),
+    mutationFn: (data: any) =>
+      apiRequest('PUT', `/api/smart-search/feature/${feature.id}`, data),
     onSuccess,
   });
 
@@ -1025,7 +1220,10 @@ function EditFeatureForm({
     e.preventDefault();
     updateMutation.mutate({
       ...formData,
-      keywords: formData.keywords.split(',').map(k => k.trim()).filter(Boolean),
+      keywords: formData.keywords
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean),
     });
   };
 
@@ -1046,7 +1244,9 @@ function EditFeatureForm({
         <Textarea
           id="edit-description"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
           rows={3}
           required
         />
@@ -1057,7 +1257,9 @@ function EditFeatureForm({
         <Input
           id="edit-category"
           value={formData.category}
-          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, category: e.target.value })
+          }
           required
         />
       </div>
@@ -1077,7 +1279,9 @@ function EditFeatureForm({
         <Input
           id="edit-keywords"
           value={formData.keywords}
-          onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, keywords: e.target.value })
+          }
         />
       </div>
 
@@ -1085,7 +1289,8 @@ function EditFeatureForm({
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Modifying this feature will invalidate its embedding. You'll need to regenerate it.
+            Modifying this feature will invalidate its embedding. You'll need to
+            regenerate it.
           </AlertDescription>
         </Alert>
       )}
