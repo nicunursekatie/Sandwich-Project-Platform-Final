@@ -94,10 +94,10 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
 
   return (
     <div className="mx-4 mb-8">
-      <div className="premium-card-elevated p-6" style={{ borderTop: hasUrgentItems ? '4px solid #ef4444' : '4px solid #007E8C' }}>
+      <div className="premium-card-elevated p-6" style={{ borderTop: '4px solid #007E8C' }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 ${hasUrgentItems ? 'bg-red-500' : 'bg-brand-teal'} rounded-lg flex items-center justify-center`}>
+            <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -236,14 +236,14 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                   key={deadline.id}
                   className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg cursor-pointer transition-all gap-2 ${
                     deadline.isToday
-                      ? 'bg-red-50 border border-red-200 hover:border-red-400'
+                      ? 'bg-blue-50 border border-blue-200 hover:border-blue-400'
                       : 'bg-white border border-gray-200 hover:border-brand-primary'
                   }`}
                   onClick={() => onNavigate('event-requests')}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     {deadline.isToday ? (
-                      <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                      <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0" />
                     ) : (
                       <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
                     )}
