@@ -575,6 +575,7 @@ export async function sendStandbyFollowupEmail(
 
 /**
  * Send escalation notification to admin when event is stale for 2+ weeks
+ * @deprecated Use sendBatchedStaleEventEscalation instead
  */
 export async function sendStaleEventEscalation(
   adminUserIds: string[],
@@ -651,6 +652,137 @@ export async function sendStaleEventEscalation(
       logger.log(`Escalation sent to admin ${admin.email} for ${organizationName}`);
     } catch (error) {
       logger.error(`Error sending escalation to admin ${admin.email}:`, error);
+    }
+  }
+
+  return sentCount;
+}
+
+/**
+ * Event info for batched escalation
+ */
+interface StaleEventInfo {
+  eventId: number;
+  organizationName: string;
+  tspContactName: string;
+  tspContactEmail: string;
+  daysSinceContact: number;
+}
+
+/**
+ * Send ONE batched escalation email to admins summarizing all stale events
+ * grouped by TSP contact. Prevents email spam by consolidating all escalations
+ * into a single weekly summary.
+ */
+export async function sendBatchedStaleEventEscalation(
+  adminUserIds: string[],
+  staleEvents: StaleEventInfo[]
+): Promise<number> {
+  if (!process.env.SENDGRID_API_KEY || staleEvents.length === 0) return 0;
+
+  const baseUrl = getAppBaseUrl();
+
+  // Group events by TSP contact
+  const eventsByContact = new Map<string, { name: string; email: string; events: StaleEventInfo[] }>();
+  for (const event of staleEvents) {
+    const key = event.tspContactEmail;
+    if (!eventsByContact.has(key)) {
+      eventsByContact.set(key, {
+        name: event.tspContactName,
+        email: event.tspContactEmail,
+        events: [],
+      });
+    }
+    eventsByContact.get(key)!.events.push(event);
+  }
+
+  // Build HTML for all events grouped by contact
+  let eventsHtml = '';
+  let eventsText = '';
+  
+  for (const [, contact] of eventsByContact) {
+    eventsHtml += `
+      <div style="margin-bottom: 20px;">
+        <h3 style="color: #DC2626; margin-bottom: 10px;">${contact.name} (${contact.email}) - ${contact.events.length} stalled event${contact.events.length > 1 ? 's' : ''}</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+    `;
+    eventsText += `\n${contact.name} (${contact.email}) - ${contact.events.length} stalled event(s):\n`;
+    
+    for (const event of contact.events) {
+      const eventUrl = `${baseUrl}/event-requests-v2?eventId=${event.eventId}`;
+      eventsHtml += `<li><a href="${eventUrl}">${event.organizationName}</a> - ${event.daysSinceContact} days since contact</li>`;
+      eventsText += `  - ${event.organizationName} (${event.daysSinceContact} days): ${eventUrl}\n`;
+    }
+    
+    eventsHtml += `</ul></div>`;
+  }
+
+  let sentCount = 0;
+
+  for (const adminId of adminUserIds) {
+    const [admin] = await db.select().from(users).where(eq(users.id, adminId)).limit(1);
+    if (!admin?.email) continue;
+
+    const adminName = admin.displayName || admin.firstName || 'there';
+
+    try {
+      const msg = {
+        to: admin.preferredEmail || admin.email,
+        from: 'katie@thesandwichproject.org',
+        subject: `⚠️ Weekly Escalation Summary: ${staleEvents.length} Stalled Event${staleEvents.length > 1 ? 's' : ''} Need Attention`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: #DC2626; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #FEF2F2; padding: 20px; border-radius: 0 0 8px 8px; }
+              .summary-box { background: white; padding: 15px; border-left: 4px solid #DC2626; margin: 15px 0; }
+              .btn { display: inline-block; background: #DC2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; }
+              h3 { margin-top: 0; }
+              a { color: #236383; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>⚠️ Weekly Stalled Events Summary</h1>
+              </div>
+              <div class="content">
+                <p>Hi ${adminName}!</p>
+                
+                <div class="summary-box">
+                  <strong>${staleEvents.length} event${staleEvents.length > 1 ? 's have' : ' has'}</strong> had no contact logged for 2+ weeks despite automated reminders.
+                  These are grouped by the TSP contact they're assigned to.
+                </div>
+
+                ${eventsHtml}
+
+                <p><strong>Recommended actions:</strong></p>
+                <ul>
+                  <li>Check in with the assigned contacts about progress</li>
+                  <li>Consider reassigning stalled events</li>
+                  <li>Review if organizations are still responsive</li>
+                </ul>
+
+                <a href="${baseUrl}/event-requests-v2?filter=in_process" class="btn">View All In-Process Events →</a>
+
+                ${EMAIL_FOOTER_HTML}
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+        text: `Weekly Stalled Events Summary\n\nHi ${adminName}!\n\n${staleEvents.length} event(s) have had no contact logged for 2+ weeks:\n${eventsText}\n\nPlease review and follow up with the assigned contacts.\n\n---\nThe Sandwich Project`,
+      };
+
+      await sgMail.send(msg);
+      sentCount++;
+      logger.log(`Batched escalation summary sent to admin ${admin.email} for ${staleEvents.length} events`);
+    } catch (error) {
+      logger.error(`Error sending batched escalation to admin ${admin.email}:`, error);
     }
   }
 
@@ -796,6 +928,10 @@ export async function processApproachingIncompleteEvents(): Promise<{ sent: numb
 
 /**
  * Process in-process events that need weekly contact reminders
+ * 
+ * BATCHING: Escalation emails are now batched into ONE summary email per admin
+ * instead of individual emails per stale event. This prevents email spam when
+ * multiple events need escalation (e.g., 17+ emails per day → 1 weekly summary).
  */
 export async function processWeeklyContactReminders(): Promise<{ sent: number; skipped: number; escalated: number }> {
   logger.log('📞 Processing weekly contact reminders...');
@@ -820,12 +956,16 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     .where(inArray(users.email, escalationEmails));
   const adminIds = admins.map((a) => a.id);
 
+  // Collect stale events for batched escalation email
+  const staleEventsForEscalation: StaleEventInfo[] = [];
+  const eventIdsToMarkEscalated: number[] = [];
+
   for (const event of events) {
     const contactLog = event.contactAttemptsLog as ContactAttemptLogEntry[] | null;
 
     // Check if needs escalation (2+ weeks no contact)
     if (shouldEscalateToAdmin(event.status || 'new', event.lastContactAttempt, contactLog)) {
-      // Rate limit escalations: only send once per week (7 days)
+      // Rate limit escalations: only include events not escalated in the past 7 days
       const lastEscalation = event.adminEscalationSentAt 
         ? new Date(event.adminEscalationSentAt).getTime()
         : 0;
@@ -846,21 +986,15 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
             ? Math.floor((Date.now() - new Date(event.lastContactAttempt).getTime()) / (1000 * 60 * 60 * 24))
             : 99;
 
-          await sendStaleEventEscalation(
-            adminIds,
-            tspUser.displayName || tspUser.firstName || tspUser.email || 'Unknown',
-            tspUser.email || 'unknown',
-            event.id,
-            event.organizationName || 'Unknown',
-            daysSinceContact
-          );
-
-          // Update the escalation sent timestamp to prevent repeated emails
-          await db.update(eventRequests)
-            .set({ adminEscalationSentAt: new Date() })
-            .where(eq(eventRequests.id, event.id));
-
-          results.escalated++;
+          // Collect for batched email instead of sending individually
+          staleEventsForEscalation.push({
+            eventId: event.id,
+            organizationName: event.organizationName || 'Unknown',
+            tspContactName: tspUser.displayName || tspUser.firstName || tspUser.email || 'Unknown',
+            tspContactEmail: tspUser.email || 'unknown',
+            daysSinceContact,
+          });
+          eventIdsToMarkEscalated.push(event.id);
         }
       }
       continue;
@@ -896,7 +1030,27 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     }
   }
 
-  logger.log(`📞 Weekly reminders processed: ${results.sent} sent, ${results.escalated} escalated, ${results.skipped} skipped`);
+  // Send ONE batched escalation email with all stale events
+  if (staleEventsForEscalation.length > 0) {
+    logger.log(`📧 Sending batched escalation for ${staleEventsForEscalation.length} stale events to ${adminIds.length} admins`);
+    
+    const sentCount = await sendBatchedStaleEventEscalation(adminIds, staleEventsForEscalation);
+    
+    if (sentCount > 0) {
+      // Mark all escalated events with timestamp to prevent repeated emails
+      for (const eventId of eventIdsToMarkEscalated) {
+        await db.update(eventRequests)
+          .set({ adminEscalationSentAt: new Date() })
+          .where(eq(eventRequests.id, eventId));
+      }
+      results.escalated = staleEventsForEscalation.length;
+      logger.log(`✅ Batched escalation sent to ${sentCount} admin(s) covering ${staleEventsForEscalation.length} events`);
+    } else {
+      logger.error('Failed to send batched escalation email');
+    }
+  }
+
+  logger.log(`📞 Weekly reminders processed: ${results.sent} sent, ${results.escalated} events in batched escalation, ${results.skipped} skipped`);
   return results;
 }
 
@@ -908,6 +1062,7 @@ export default {
   sendWeeklyContactReminderEmail,
   sendStandbyFollowupEmail,
   sendStaleEventEscalation,
+  sendBatchedStaleEventEscalation,
   processCorporate24hEscalations,
   processApproachingIncompleteEvents,
   processWeeklyContactReminders,
