@@ -297,18 +297,13 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
   try {
     serviceLogger.info('Starting TSP contact follow-up check...');
     
-    const now = new Date();
-    const skipToolkitReminders = isWeekend(now);
-    
-    if (skipToolkitReminders) {
-      serviceLogger.info('Weekend detected - skipping toolkit follow-up reminders (approaching event reminders will still be processed)');
-    }
-    
     const approachingEvents = await getApproachingInProgressEvents();
-    const toolkitEvents = skipToolkitReminders ? [] : await getToolkitOnlyEvents();
+    // DISABLED: Toolkit follow-up reminders are not yet part of the operational process
+    // When ready to enable, uncomment: const toolkitEvents = await getToolkitOnlyEvents();
+    const toolkitEvents: typeof approachingEvents = [];
     const standbyEvents = await getStandbyEventsNeedingFollowup();
     
-    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${toolkitEvents.length} toolkit-only events${skipToolkitReminders ? ' (toolkit checks skipped on weekend)' : ''}, ${standbyEvents.length} standby events needing follow-up`);
+    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${standbyEvents.length} standby events needing follow-up (toolkit reminders disabled)`);
     
     for (const event of approachingEvents) {
       result.eventsProcessed++;
