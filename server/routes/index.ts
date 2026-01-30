@@ -129,6 +129,61 @@ export function createMainRoutes(deps: RouterDependencies) {
     smsWebhookRoutes
   );
 
+  // ==============================================================================
+  // CRITICAL: Google Sheets webhook - MUST be registered FIRST (before any auth)
+  // This endpoint receives new event requests pushed from Google Apps Script
+  // ==============================================================================
+  router.post('/api/webhook/new-event-request', async (req, res) => {
+    const WEBHOOK_SECRET = process.env.SHEETS_WEBHOOK_SECRET;
+
+    // Verify the secret
+    const providedSecret = req.headers['x-webhook-secret'] || req.body?.secret;
+
+    if (!WEBHOOK_SECRET || providedSecret !== WEBHOOK_SECRET) {
+      logger.warn('Google Sheets webhook called with invalid secret');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+      const { rowIndex, rowData } = req.body;
+
+      logger.info(`📥 Webhook received for new event request from row ${rowIndex}`);
+
+      if (!rowData) {
+        return res.status(400).json({ error: 'No rowData provided' });
+      }
+
+      // Get the sync service and process the new event request
+      const { getEventRequestsGoogleSheetsService } = await import('../google-sheets-event-requests-sync');
+      const { storage } = await import('../storage-wrapper');
+
+      const syncService = getEventRequestsGoogleSheetsService(storage as any);
+
+      if (!syncService) {
+        logger.error('Google Sheets sync service not available');
+        return res.status(500).json({ error: 'Sync service not configured' });
+      }
+
+      // Trigger a sync from Google Sheets to pick up the new row
+      const result = await syncService.syncFromGoogleSheets();
+
+      logger.info(`✅ Webhook sync complete: ${result.created || 0} created, ${result.updated || 0} updated`);
+
+      res.json({
+        success: true,
+        message: 'Event request processed',
+        created: result.created || 0,
+        updated: result.updated || 0
+      });
+    } catch (error) {
+      logger.error('Google Sheets webhook processing failed:', error);
+      res.status(500).json({
+        error: 'Processing failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // ========================================================================
   // AUTHENTICATION - Single consolidated auth router
   // ========================================================================
