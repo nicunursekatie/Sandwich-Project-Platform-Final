@@ -231,8 +231,9 @@ export function hasSuccessfulContact(
   contactAttemptsLog: ContactAttemptLogEntry[] | null,
   corporateFollowUpProtocol: CorporateFollowUpProtocol | null
 ): boolean {
-  // Check 1: Status is 'scheduled' or beyond
-  if (['scheduled', 'completed'].includes(status)) {
+  // Check 1: Status is terminal/inactive - no escalation needed
+  // Include ALL non-active statuses to prevent false escalations
+  if (['scheduled', 'completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby'].includes(status)) {
     return true;
   }
 
