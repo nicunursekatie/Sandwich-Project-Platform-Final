@@ -2035,6 +2035,7 @@ router.patch(
         sql`completed_by_user_id = ${req.user?.id}`,
         sql`communication_method = ${validatedData.communicationMethod}`,
         sql`status = 'contact_completed'`,
+        sql`last_contact_attempt = ${new Date()}`,
         sql`updated_at = NOW()`,
       ];
 
@@ -2305,6 +2306,7 @@ router.post(
         sql`follow_up_method = ${method}`,
         sql`follow_up_date = NOW()`,
         sql`status = 'in_process'`,
+        sql`last_contact_attempt = ${new Date()}`,
         sql`updated_at = NOW()`,
       ];
 
@@ -3296,6 +3298,7 @@ router.put(
 
           await storage.updateEventRequest(id, {
             contactAttemptsLog: [...existingLog, toolkitLogEntry],
+            lastContactAttempt: new Date(),
           });
         }
       }
@@ -3827,6 +3830,7 @@ router.patch(
 
       await storage.updateEventRequest(id, {
         contactAttemptsLog: [...existingLog, toolkitLogEntry],
+        lastContactAttempt: sentDate,
       });
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
