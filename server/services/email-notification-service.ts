@@ -1513,7 +1513,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       } else {
         subject = `Quick Check-in: ${organizationName} Toolkit Follow-up`;
         bodyContent = `
-          <p>We sent the toolkit for <strong>${organizationName}</strong> a couple days ago but haven't heard back yet.</p>
+          <p>You sent the toolkit for <strong>${organizationName}</strong> a couple days ago but haven't heard back yet.</p>
           <p>Would you like to send a follow-up email, or do you need any help moving things along?</p>
         `;
       }
@@ -1562,7 +1562,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
             ? `The event with ${organizationName} is coming up soon and is still in-progress. Let us know if you need help!` 
             : reminderType === 'standby_followup'
               ? `This is a reminder to follow up with ${organizationName} - they're on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!`
-              : `We sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
+              : `You sent the toolkit for ${organizationName} a couple days ago. Would you like to send a follow-up?`
         }\n\nView event: ${eventUrl}\n\n---\nThe Sandwich Project`,
       };
 

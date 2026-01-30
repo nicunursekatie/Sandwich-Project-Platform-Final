@@ -252,7 +252,7 @@ async function sendFollowupNotification(
   } else if (reminderType === 'standby_followup') {
     message = `Hi ${userName}! This is a reminder to follow up with ${organization} - they're on standby and requested to be contacted around now. Time to reach out and see if they're ready to schedule!`;
   } else {
-    message = `Hi ${userName}! Just checking in on the ${organization} event - we sent the toolkit a couple days ago but haven't heard back. Want to send a follow-up email, or do you need any help?`;
+    message = `Hi ${userName}! Just checking in on the ${organization} event - you sent the toolkit a couple days ago but haven't heard back. Want to send a follow-up email, or do you need any help?`;
   }
   
   if (channel === 'sms') {
@@ -297,18 +297,13 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
   try {
     serviceLogger.info('Starting TSP contact follow-up check...');
     
-    const now = new Date();
-    const skipToolkitReminders = isWeekend(now);
-    
-    if (skipToolkitReminders) {
-      serviceLogger.info('Weekend detected - skipping toolkit follow-up reminders (approaching event reminders will still be processed)');
-    }
-    
     const approachingEvents = await getApproachingInProgressEvents();
-    const toolkitEvents = skipToolkitReminders ? [] : await getToolkitOnlyEvents();
+    // DISABLED: Toolkit follow-up reminders are not yet part of the operational process
+    // When ready to enable, uncomment: const toolkitEvents = await getToolkitOnlyEvents();
+    const toolkitEvents: typeof approachingEvents = [];
     const standbyEvents = await getStandbyEventsNeedingFollowup();
     
-    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${toolkitEvents.length} toolkit-only events${skipToolkitReminders ? ' (toolkit checks skipped on weekend)' : ''}, ${standbyEvents.length} standby events needing follow-up`);
+    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${standbyEvents.length} standby events needing follow-up (toolkit reminders disabled)`);
     
     for (const event of approachingEvents) {
       result.eventsProcessed++;

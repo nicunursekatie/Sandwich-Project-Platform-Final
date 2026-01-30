@@ -228,10 +228,49 @@ export default function GrantMetrics() {
       (sum: number, e: any) => sum + (e.actualAttendance || e.estimatedAttendance || 0),
       0
     );
-    const totalActualSandwiches = eventsToAnalyze.reduce(
+    const eventRequestSandwiches = eventsToAnalyze.reduce(
       (sum: number, e: any) => sum + (e.actualSandwichCount || e.estimatedSandwichCount || 0),
       0
     );
+
+    // Include historical "Groups" location data NOT linked to event requests
+    // These are from when group collections were classified as a "location" rather than events
+    let historicalGroupsToAnalyze = collections.filter((c: any) => 
+      c.hostName === 'Groups' && !c.eventRequestId
+    );
+
+    // Apply same year filtering to historical collections
+    if (selectedFiscalYear !== 'all') {
+      const selectedYear = parseInt(selectedFiscalYear);
+      historicalGroupsToAnalyze = historicalGroupsToAnalyze.filter((c: any) => {
+        if (!c.collectionDate) return false;
+        const date = parseCollectionDate(c.collectionDate);
+        if (Number.isNaN(date.getTime())) return false;
+        const year = date.getFullYear();
+        const month = date.getMonth();
+
+        if (yearType === 'fiscal') {
+          if (month >= 6) return year === selectedYear;
+          else return year === selectedYear + 1;
+        } else {
+          return year === selectedYear;
+        }
+      });
+    }
+
+    const historicalGroupSandwiches = historicalGroupsToAnalyze.reduce(
+      (sum: number, c: any) => sum + calculateGroupSandwiches(c),
+      0
+    );
+
+    // Total includes both event_requests and historical "Groups" location collections
+    const totalActualSandwiches = eventRequestSandwiches + historicalGroupSandwiches;
+
+    logger.log('=== HISTORICAL GROUPS DEBUG ===');
+    logger.log('Historical Groups collections (not linked):', historicalGroupsToAnalyze.length);
+    logger.log('Historical Groups sandwiches:', historicalGroupSandwiches);
+    logger.log('Event request sandwiches:', eventRequestSandwiches);
+    logger.log('Combined total:', totalActualSandwiches);
 
     // Debug logging
     logger.log('=== EVENT METRICS DEBUG ===');
