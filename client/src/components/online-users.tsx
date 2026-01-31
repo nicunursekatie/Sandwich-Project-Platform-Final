@@ -41,7 +41,8 @@ function getInitials(user: OnlineUser): string {
 
 function getDisplayName(user: OnlineUser): string {
   if (user.displayName) return user.displayName;
-  if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+  if (user.firstName && user.lastName)
+    return `${user.firstName} ${user.lastName}`;
   if (user.firstName) return user.firstName;
   if (user.email) return user.email.split('@')[0];
   return 'User';
@@ -72,7 +73,7 @@ export function OnlineUsers() {
       // Ensure we always return an array, even if API returns an object or null
       return Array.isArray(response) ? response : [];
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes (reduced from 30 seconds)
   });
 
   const count = onlineUsers.length;
@@ -96,11 +97,7 @@ export function OnlineUsers() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent
-        className="w-72 p-0"
-        align="end"
-        sideOffset={8}
-      >
+      <PopoverContent className="w-72 p-0" align="end" sideOffset={8}>
         <div className="p-3 border-b bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between">
           <div>
             <h4 className="font-semibold text-teal-800 flex items-center gap-2">
@@ -132,47 +129,48 @@ export function OnlineUsers() {
               {onlineUsers
                 .filter((user) => user.id !== currentUser?.id) // Don't show yourself
                 .map((user) => (
-                <li
-                  key={user.id}
-                  className="p-3 hover:bg-slate-50 flex items-center gap-3 cursor-pointer group"
-                  onClick={() => {
-                    openChat(user);
-                    setIsOpen(false);
-                  }}
-                  title={`Message ${getDisplayName(user)}`}
-                >
-                  <div className="relative">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profileImageUrl || undefined} />
-                      <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">
-                        {getInitials(user)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
-                      {getDisplayName(user)}
-                    </p>
-                    <p className="text-xs text-slate-500 truncate">
-                      {getTimeAgo(user.lastActiveAt)}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
+                  <li
+                    key={user.id}
+                    className="p-3 hover:bg-slate-50 flex items-center gap-3 cursor-pointer group"
+                    onClick={() => {
                       openChat(user);
                       setIsOpen(false);
                     }}
+                    title={`Message ${getDisplayName(user)}`}
                   >
-                    <MessageCircle className="h-4 w-4" />
-                  </Button>
-                </li>
-              ))}
-              {onlineUsers.filter((user) => user.id !== currentUser?.id).length === 0 && (
+                    <div className="relative">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.profileImageUrl || undefined} />
+                        <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">
+                          {getInitials(user)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {getDisplayName(user)}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {getTimeAgo(user.lastActiveAt)}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openChat(user);
+                        setIsOpen(false);
+                      }}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              {onlineUsers.filter((user) => user.id !== currentUser?.id)
+                .length === 0 && (
                 <div className="p-4 text-center text-sm text-slate-500">
                   No one else is online right now
                 </div>
