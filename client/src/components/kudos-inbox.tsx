@@ -5,7 +5,15 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Heart, Trophy, CheckCircle, Clock, Plus, Send, Star } from 'lucide-react';
+import {
+  Heart,
+  Trophy,
+  CheckCircle,
+  Clock,
+  Plus,
+  Send,
+  Star,
+} from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/lib/logger';
 import {
@@ -49,7 +57,9 @@ export function KudosInbox() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [kudosMessage, setKudosMessage] = useState('');
-  const [markedAsReadIds, setMarkedAsReadIds] = useState<Set<number>>(new Set());
+  const [markedAsReadIds, setMarkedAsReadIds] = useState<Set<number>>(
+    new Set()
+  );
 
   const {
     data: kudosMessages = [],
@@ -58,7 +68,7 @@ export function KudosInbox() {
   } = useQuery<KudosMessage[]>({
     queryKey: ['/api/messaging/kudos/received'],
     enabled: !!user,
-    refetchInterval: 30000, // Refresh every 30 seconds for new kudos
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes for new kudos (reduced from 30 seconds)
   });
 
   // Fetch all users for the recipient dropdown
@@ -176,7 +186,10 @@ export function KudosInbox() {
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="recipient">Recipient</Label>
-            <Select value={selectedRecipient} onValueChange={setSelectedRecipient}>
+            <Select
+              value={selectedRecipient}
+              onValueChange={setSelectedRecipient}
+            >
               <SelectTrigger id="recipient">
                 <SelectValue placeholder="Select a team member" />
               </SelectTrigger>
@@ -203,15 +216,16 @@ export function KudosInbox() {
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setShowCreateDialog(false)}
-          >
+          <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleSendKudos}
-            disabled={!selectedRecipient || !kudosMessage.trim() || sendKudosMutation.isPending}
+            disabled={
+              !selectedRecipient ||
+              !kudosMessage.trim() ||
+              sendKudosMutation.isPending
+            }
             className="bg-yellow-500 hover:bg-yellow-600 text-white"
           >
             {sendKudosMutation.isPending ? (
@@ -245,10 +259,12 @@ export function KudosInbox() {
         <CreateKudosDialog />
         <div className="text-center p-8">
           <Heart className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No kudos yet</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No kudos yet
+          </h3>
           <p className="text-gray-500 mb-4">
-            When team members send you appreciation for your work, it will appear
-            here!
+            When team members send you appreciation for your work, it will
+            appear here!
           </p>
           <Button
             onClick={() => setShowCreateDialog(true)}
@@ -338,7 +354,10 @@ export function KudosInbox() {
                       )}
                       {kudos.contextType === 'general' && (
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-200">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-yellow-50 border-yellow-200"
+                          >
                             General Recognition
                           </Badge>
                         </div>
@@ -356,7 +375,9 @@ export function KudosInbox() {
                       {!kudos.read && (
                         <div className="flex flex-col items-end gap-1">
                           <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                          <span className="text-[10px] text-yellow-600">Click to mark read</span>
+                          <span className="text-[10px] text-yellow-600">
+                            Click to mark read
+                          </span>
                         </div>
                       )}
                     </div>

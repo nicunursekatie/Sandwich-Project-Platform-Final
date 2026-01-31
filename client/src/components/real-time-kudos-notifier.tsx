@@ -28,18 +28,22 @@ interface KudosToast {
 export function RealTimeKudosNotifier() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [shownKudosIds, setShownKudosIds] = React.useState<Set<number>>(new Set());
+  const [shownKudosIds, setShownKudosIds] = React.useState<Set<number>>(
+    new Set()
+  );
 
   // Poll for unnotified kudos every 30 seconds
   const { data: unnotifiedKudos = [] } = useQuery<UnnotifiedKudos[]>({
     queryKey: ['/api/messaging/kudos/unnotified'],
     enabled: !!user,
-    refetchInterval: 30000, // Poll every 30 seconds
+    refetchInterval: 5 * 60 * 1000, // Poll every 5 minutes (reduced from 30 seconds)
     staleTime: 0, // Always consider data stale to ensure fresh checks
   });
 
   // Ensure unnotifiedKudos is always an array
-  const safeUnnotifiedKudos: UnnotifiedKudos[] = Array.isArray(unnotifiedKudos) ? unnotifiedKudos : [];
+  const safeUnnotifiedKudos: UnnotifiedKudos[] = Array.isArray(unnotifiedKudos)
+    ? unnotifiedKudos
+    : [];
 
   // Mutation to mark kudos as initially notified
   const markInitiallyNotifiedMutation = useMutation({
@@ -66,8 +70,10 @@ export function RealTimeKudosNotifier() {
     }
 
     // Find kudos that we haven't shown yet
-    const newKudos = safeUnnotifiedKudos.filter(k => !shownKudosIds.has(k.id));
-    
+    const newKudos = safeUnnotifiedKudos.filter(
+      (k) => !shownKudosIds.has(k.id)
+    );
+
     if (newKudos.length === 0) {
       return;
     }
@@ -78,9 +84,9 @@ export function RealTimeKudosNotifier() {
     const remainingCount = Math.max(0, newKudos.length - maxToasts);
 
     // Mark these kudos as shown immediately to prevent duplicates
-    setShownKudosIds(prev => {
+    setShownKudosIds((prev) => {
       const updated = new Set(prev);
-      newKudos.forEach(k => updated.add(k.id));
+      newKudos.forEach((k) => updated.add(k.id));
       return updated;
     });
 
@@ -100,7 +106,7 @@ export function RealTimeKudosNotifier() {
 
     // Mark all new kudos as initially notified in the database
     setTimeout(() => {
-      markInitiallyNotifiedMutation.mutate(newKudos.map(k => k.id));
+      markInitiallyNotifiedMutation.mutate(newKudos.map((k) => k.id));
     }, 1000);
   }, [safeUnnotifiedKudos, user, shownKudosIds]);
 

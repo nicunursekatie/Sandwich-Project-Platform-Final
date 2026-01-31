@@ -93,10 +93,10 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
 
   return (
     <div className="mx-4 mb-8">
-      <div className="premium-card-elevated p-6" style={{ borderTop: hasUrgentItems ? '4px solid #ef4444' : '4px solid #007E8C' }}>
+      <div className="premium-card-elevated p-6" style={{ borderTop: '4px solid #007E8C' }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 ${hasUrgentItems ? 'bg-red-500' : 'bg-brand-teal'} rounded-lg flex items-center justify-center`}>
+            <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>

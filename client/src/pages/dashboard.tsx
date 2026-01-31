@@ -843,6 +843,23 @@ export default function Dashboard({
                 })}
               </div>
 
+              {/* Donate Button - PayPal Fundraiser */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href="https://www.paypal.com/us/fundraiser/charity/4490415"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 sm:p-2 rounded-md transition-colors bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-700 hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 shadow-sm flex items-center gap-1"
+                    aria-label="Donate via PayPal"
+                  >
+                    <Gift className="w-4 h-4" />
+                    <span className="hidden lg:inline text-xs font-medium">Donate</span>
+                  </a>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={8}>Donate via PayPal</TooltipContent>
+              </Tooltip>
+
               {/* Group 4: Account Menu */}
               <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-gray-200">
                 <Tooltip>

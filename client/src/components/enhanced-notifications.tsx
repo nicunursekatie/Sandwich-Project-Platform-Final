@@ -14,7 +14,7 @@ import {
   Users,
   Settings,
   Filter,
-  MoreVertical
+  MoreVertical,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,31 +72,46 @@ interface EnhancedNotificationsProps {
 
 const getPriorityIcon = (priority: string) => {
   switch (priority) {
-    case 'urgent': return <AlertCircle className="h-4 w-4 text-red-500" />;
-    case 'high': return <AlertCircle className="h-4 w-4 text-orange-500" />;
-    case 'medium': return <Info className="h-4 w-4 text-blue-500" />;
-    case 'low': return <CheckCircle className="h-4 w-4 text-green-500" />;
-    default: return <Info className="h-4 w-4 text-blue-500" />;
+    case 'urgent':
+      return <AlertCircle className="h-4 w-4 text-red-500" />;
+    case 'high':
+      return <AlertCircle className="h-4 w-4 text-orange-500" />;
+    case 'medium':
+      return <Info className="h-4 w-4 text-blue-500" />;
+    case 'low':
+      return <CheckCircle className="h-4 w-4 text-green-500" />;
+    default:
+      return <Info className="h-4 w-4 text-blue-500" />;
   }
 };
 
 const getCategoryIcon = (category?: string) => {
   switch (category) {
-    case 'social': return <Users className="h-4 w-4" />;
-    case 'system': return <Settings className="h-4 w-4" />;
-    case 'event': return <Calendar className="h-4 w-4" />;
-    case 'task': return <CheckCircle className="h-4 w-4" />;
-    default: return <Bell className="h-4 w-4" />;
+    case 'social':
+      return <Users className="h-4 w-4" />;
+    case 'system':
+      return <Settings className="h-4 w-4" />;
+    case 'event':
+      return <Calendar className="h-4 w-4" />;
+    case 'task':
+      return <CheckCircle className="h-4 w-4" />;
+    default:
+      return <Bell className="h-4 w-4" />;
   }
 };
 
 const getPriorityBadgeColor = (priority: string) => {
   switch (priority) {
-    case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
-    case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'medium': return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
-    case 'low': return 'bg-green-100 text-green-800 border-green-200';
-    default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'urgent':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'high':
+      return 'bg-orange-100 text-orange-800 border-orange-200';
+    case 'medium':
+      return 'bg-brand-primary-light text-brand-primary-dark border-brand-primary-border';
+    case 'low':
+      return 'bg-green-100 text-green-800 border-green-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
 
@@ -118,14 +133,22 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   const { connected: socketConnected } = useNotificationSocket();
 
   // Get Stream Chat unread counts
-  const { totalUnread: streamChatUnread, roomsUnread, dmsUnread, groupsUnread } = useStreamChatUnread();
+  const {
+    totalUnread: streamChatUnread,
+    roomsUnread,
+    dmsUnread,
+    groupsUnread,
+  } = useStreamChatUnread();
 
   // Keyboard navigation support
-  const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape' && isOpen) {
-      setIsOpen(false);
-    }
-  }, [isOpen]);
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    },
+    [isOpen]
+  );
 
   if (!user) return null;
 
@@ -133,7 +156,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   const { data: counts } = useQuery<NotificationCounts>({
     queryKey: ['/api/notifications/counts'],
     enabled: !!user,
-    refetchInterval: 30000,
+    refetchInterval: 5 * 60 * 1000, // Poll every 5 minutes (reduced from 30 seconds)
   });
 
   // Query for notifications with filters
@@ -143,7 +166,8 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (currentTab === 'unread') params.set('unread_only', 'true');
-      if (filters.categories.length > 0) params.set('category', filters.categories[0]);
+      if (filters.categories.length > 0)
+        params.set('category', filters.categories[0]);
       if (filters.unreadOnly) params.set('unread_only', 'true');
 
       return apiRequest('GET', `/api/notifications?${params.toString()}`);
@@ -159,15 +183,22 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
       await queryClient.cancelQueries({ queryKey: ['/api/notifications'] });
 
       // Snapshot previous value
-      const previousNotifications = queryClient.getQueryData(['/api/notifications', currentTab, filters]);
+      const previousNotifications = queryClient.getQueryData([
+        '/api/notifications',
+        currentTab,
+        filters,
+      ]);
 
       // Optimistically update to the new value
-      queryClient.setQueryData(['/api/notifications', currentTab, filters], (old: any) => {
-        if (!old) return old;
-        return old.map((notif: Notification) =>
-          notif.id === notificationId ? { ...notif, isRead: true } : notif
-        );
-      });
+      queryClient.setQueryData(
+        ['/api/notifications', currentTab, filters],
+        (old: any) => {
+          if (!old) return old;
+          return old.map((notif: Notification) =>
+            notif.id === notificationId ? { ...notif, isRead: true } : notif
+          );
+        }
+      );
 
       // Return context with previous value
       return { previousNotifications };
@@ -183,7 +214,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/notifications/counts'],
+      });
     },
   });
 
@@ -196,13 +229,22 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
       await queryClient.cancelQueries({ queryKey: ['/api/notifications'] });
 
       // Snapshot previous value
-      const previousNotifications = queryClient.getQueryData(['/api/notifications', currentTab, filters]);
+      const previousNotifications = queryClient.getQueryData([
+        '/api/notifications',
+        currentTab,
+        filters,
+      ]);
 
       // Optimistically remove from list
-      queryClient.setQueryData(['/api/notifications', currentTab, filters], (old: any) => {
-        if (!old) return old;
-        return old.filter((notif: Notification) => notif.id !== notificationId);
-      });
+      queryClient.setQueryData(
+        ['/api/notifications', currentTab, filters],
+        (old: any) => {
+          if (!old) return old;
+          return old.filter(
+            (notif: Notification) => notif.id !== notificationId
+          );
+        }
+      );
 
       // Return context with previous value
       return { previousNotifications };
@@ -218,14 +260,17 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
       // Show error toast
       toast({
         title: 'Failed to archive notification',
-        description: err?.message || 'An error occurred while archiving the notification',
+        description:
+          err?.message || 'An error occurred while archiving the notification',
         variant: 'destructive',
       });
       console.error('Archive notification error:', err);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/notifications/counts'],
+      });
       // Success is handled by optimistic update - no need for toast
     },
   });
@@ -233,10 +278,14 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: () =>
-      apiRequest('PATCH', '/api/notifications/bulk/read', { notificationIds: [] }),
+      apiRequest('PATCH', '/api/notifications/bulk/read', {
+        notificationIds: [],
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/notifications/counts'],
+      });
     },
   });
 
@@ -266,18 +315,22 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
   const totalUnreadCount = systemUnreadCount + (streamChatUnread || 0);
 
   // Check if we should show the notifications onboarding tooltip
-  const showNotificationsTooltip = totalUnreadCount > 0 &&
+  const showNotificationsTooltip =
+    totalUnreadCount > 0 &&
     !shouldShowStep('nav-badge-intro') && // Don't show until nav intro is done
     shouldShowStep('notifications-badge');
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={(open) => {
-      setIsOpen(open);
-      // Complete the onboarding step when user opens notifications
-      if (open && showNotificationsTooltip) {
-        completeStep('notifications-badge');
-      }
-    }}>
+    <DropdownMenu
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        // Complete the onboarding step when user opens notifications
+        if (open && showNotificationsTooltip) {
+          completeStep('notifications-badge');
+        }
+      }}
+    >
       <OnboardingTooltip
         step="notifications-badge"
         position="bottom"
@@ -290,8 +343,8 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
             variant="ghost"
             size="sm"
             className={cn(
-              "relative h-9 w-9 p-0",
-              showNotificationsTooltip && "animate-pulse"
+              'relative h-9 w-9 p-0',
+              showNotificationsTooltip && 'animate-pulse'
             )}
             data-testid="button-notifications-enhanced"
             aria-label={`Notifications ${totalUnreadCount > 0 ? `(${totalUnreadCount} unread)` : ''}`}
@@ -350,39 +403,56 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
         {showFilters && (
           <div className="px-4 pb-2">
             <div className="flex flex-wrap gap-1">
-              {counts?.byCategory && Object.keys(counts.byCategory).map((category) => (
-                <Badge
-                  key={category}
-                  variant={filters.categories.includes(category) ? "default" : "outline"}
-                  className="text-xs cursor-pointer"
-                  onClick={() => {
-                    setFilters(prev => ({
-                      ...prev,
-                      categories: prev.categories.includes(category)
-                        ? prev.categories.filter(c => c !== category)
-                        : [category]
-                    }));
-                  }}
-                  data-testid={`filter-category-${category}`}
-                >
-                  {category} ({counts.byCategory[category]})
-                </Badge>
-              ))}
+              {counts?.byCategory &&
+                Object.keys(counts.byCategory).map((category) => (
+                  <Badge
+                    key={category}
+                    variant={
+                      filters.categories.includes(category)
+                        ? 'default'
+                        : 'outline'
+                    }
+                    className="text-xs cursor-pointer"
+                    onClick={() => {
+                      setFilters((prev) => ({
+                        ...prev,
+                        categories: prev.categories.includes(category)
+                          ? prev.categories.filter((c) => c !== category)
+                          : [category],
+                      }));
+                    }}
+                    data-testid={`filter-category-${category}`}
+                  >
+                    {category} ({counts.byCategory[category]})
+                  </Badge>
+                ))}
             </div>
           </div>
         )}
 
         <Separator />
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+        <Tabs
+          value={currentTab}
+          onValueChange={setCurrentTab}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-3 m-2 mb-0">
             <TabsTrigger value="all" className="text-xs" data-testid="tab-all">
               All
             </TabsTrigger>
-            <TabsTrigger value="chat" className="text-xs" data-testid="tab-chat">
+            <TabsTrigger
+              value="chat"
+              className="text-xs"
+              data-testid="tab-chat"
+            >
               Chat {streamChatUnread > 0 && `(${streamChatUnread})`}
             </TabsTrigger>
-            <TabsTrigger value="unread" className="text-xs" data-testid="tab-unread">
+            <TabsTrigger
+              value="unread"
+              className="text-xs"
+              data-testid="tab-unread"
+            >
               Unread ({systemUnreadCount})
             </TabsTrigger>
           </TabsList>
@@ -410,10 +480,13 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">Team Rooms</p>
                         <p className="text-xs text-muted-foreground">
-                          {roomsUnread} unread message{roomsUnread !== 1 ? 's' : ''} in team rooms
+                          {roomsUnread} unread message
+                          {roomsUnread !== 1 ? 's' : ''} in team rooms
                         </p>
                       </div>
-                      <Badge variant="destructive" className="text-xs">{roomsUnread}</Badge>
+                      <Badge variant="destructive" className="text-xs">
+                        {roomsUnread}
+                      </Badge>
                     </div>
                   )}
                   {dmsUnread > 0 && (
@@ -430,10 +503,13 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">Direct Messages</p>
                         <p className="text-xs text-muted-foreground">
-                          {dmsUnread} unread direct message{dmsUnread !== 1 ? 's' : ''}
+                          {dmsUnread} unread direct message
+                          {dmsUnread !== 1 ? 's' : ''}
                         </p>
                       </div>
-                      <Badge variant="destructive" className="text-xs">{dmsUnread}</Badge>
+                      <Badge variant="destructive" className="text-xs">
+                        {dmsUnread}
+                      </Badge>
                     </div>
                   )}
                   {groupsUnread > 0 && (
@@ -450,10 +526,13 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">Group Chats</p>
                         <p className="text-xs text-muted-foreground">
-                          {groupsUnread} unread message{groupsUnread !== 1 ? 's' : ''} in group chats
+                          {groupsUnread} unread message
+                          {groupsUnread !== 1 ? 's' : ''} in group chats
                         </p>
                       </div>
-                      <Badge variant="destructive" className="text-xs">{groupsUnread}</Badge>
+                      <Badge variant="destructive" className="text-xs">
+                        {groupsUnread}
+                      </Badge>
                     </div>
                   )}
                 </div>
@@ -474,113 +553,126 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {notifications.map((notification: Notification, index: number) => (
-                    <div
-                      key={notification.id}
-                      className={cn(
-                        "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all duration-200 ease-in-out",
-                        "animate-in fade-in slide-in-from-right-2",
-                        !notification.isRead && "bg-brand-primary-lighter/50"
-                      )}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                      onClick={() => handleNotificationClick(notification)}
-                      data-testid={`notification-${notification.id}`}
-                      role="menuitem"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleNotificationClick(notification);
-                        }
-                      }}
-                    >
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getCategoryIcon(notification.category)}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-sm truncate">
-                            {notification.title}
-                          </p>
-                          {!notification.isRead && (
-                            <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0" />
-                          )}
-                        </div>
-
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {notification.message}
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge
-                            className={cn("text-xs", getPriorityBadgeColor(notification.priority))}
-                          >
-                            {notification.priority}
-                          </Badge>
-
-                          {notification.category && (
-                            <Badge variant="outline" className="text-xs">
-                              {notification.category}
-                            </Badge>
-                          )}
-
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
-                          </span>
-                        </div>
-
-                        {notification.actionText && (
-                          <div className="flex items-center gap-2 mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
-                            <NotificationActionButton
-                              notificationId={notification.id}
-                              actionType={notification.actionText.toLowerCase().replace(/\s+/g, '_')}
-                              actionText={notification.actionText}
-                              actionUrl={notification.actionUrl}
-                              onSuccess={() => {
-                                // Notification list will auto-refresh via query invalidation
-                              }}
-                            />
-                          </div>
+                  {notifications.map(
+                    (notification: Notification, index: number) => (
+                      <div
+                        key={notification.id}
+                        className={cn(
+                          'group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all duration-200 ease-in-out',
+                          'animate-in fade-in slide-in-from-right-2',
+                          !notification.isRead && 'bg-brand-primary-lighter/50'
                         )}
-                      </div>
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => handleNotificationClick(notification)}
+                        data-testid={`notification-${notification.id}`}
+                        role="menuitem"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleNotificationClick(notification);
+                          }
+                        }}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getCategoryIcon(notification.category)}
+                        </div>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
-                            onClick={(e) => e.stopPropagation()}
-                            data-testid={`button-notification-menu-${notification.id}`}
-                          >
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {!notification.isRead && (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                markAsReadMutation.mutate(notification.id);
-                              }}
-                              data-testid={`button-mark-read-${notification.id}`}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm truncate">
+                              {notification.title}
+                            </p>
+                            {!notification.isRead && (
+                              <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {notification.message}
+                          </p>
+
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge
+                              className={cn(
+                                'text-xs',
+                                getPriorityBadgeColor(notification.priority)
+                              )}
                             >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Mark as read
-                            </DropdownMenuItem>
+                              {notification.priority}
+                            </Badge>
+
+                            {notification.category && (
+                              <Badge variant="outline" className="text-xs">
+                                {notification.category}
+                              </Badge>
+                            )}
+
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {format(
+                                new Date(notification.createdAt),
+                                'MMM d, h:mm a'
+                              )}
+                            </span>
+                          </div>
+
+                          {notification.actionText && (
+                            <div
+                              className="flex items-center gap-2 mt-3 pt-3 border-t"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <NotificationActionButton
+                                notificationId={notification.id}
+                                actionType={notification.actionText
+                                  .toLowerCase()
+                                  .replace(/\s+/g, '_')}
+                                actionText={notification.actionText}
+                                actionUrl={notification.actionUrl}
+                                onSuccess={() => {
+                                  // Notification list will auto-refresh via query invalidation
+                                }}
+                              />
+                            </div>
                           )}
-                          <DropdownMenuItem
-                            onClick={(e) => handleArchive(notification, e)}
-                            data-testid={`button-archive-${notification.id}`}
-                          >
-                            <Archive className="h-4 w-4 mr-2" />
-                            Archive
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ))}
+                        </div>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`button-notification-menu-${notification.id}`}
+                            >
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {!notification.isRead && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsReadMutation.mutate(notification.id);
+                                }}
+                                data-testid={`button-mark-read-${notification.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as read
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={(e) => handleArchive(notification, e)}
+                              data-testid={`button-archive-${notification.id}`}
+                            >
+                              <Archive className="h-4 w-4 mr-2" />
+                              Archive
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </ScrollArea>
@@ -598,113 +690,126 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {notifications.map((notification: Notification, index: number) => (
-                    <div
-                      key={notification.id}
-                      className={cn(
-                        "group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all duration-200 ease-in-out",
-                        "animate-in fade-in slide-in-from-right-2",
-                        !notification.isRead && "bg-brand-primary-lighter/50"
-                      )}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                      onClick={() => handleNotificationClick(notification)}
-                      data-testid={`notification-${notification.id}`}
-                      role="menuitem"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleNotificationClick(notification);
-                        }
-                      }}
-                    >
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getCategoryIcon(notification.category)}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-medium text-sm truncate">
-                            {notification.title}
-                          </p>
-                          {!notification.isRead && (
-                            <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0" />
-                          )}
-                        </div>
-                        
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {notification.message}
-                        </p>
-                        
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge 
-                            className={cn("text-xs", getPriorityBadgeColor(notification.priority))}
-                          >
-                            {notification.priority}
-                          </Badge>
-                          
-                          {notification.category && (
-                            <Badge variant="outline" className="text-xs">
-                              {notification.category}
-                            </Badge>
-                          )}
-                          
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {format(new Date(notification.createdAt), 'MMM d, h:mm a')}
-                          </span>
-                        </div>
-
-                        {notification.actionText && (
-                          <div className="flex items-center gap-2 mt-3 pt-3 border-t" onClick={(e) => e.stopPropagation()}>
-                            <NotificationActionButton
-                              notificationId={notification.id}
-                              actionType={notification.actionText.toLowerCase().replace(/\s+/g, '_')}
-                              actionText={notification.actionText}
-                              actionUrl={notification.actionUrl}
-                              onSuccess={() => {
-                                // Notification list will auto-refresh via query invalidation
-                              }}
-                            />
-                          </div>
+                  {notifications.map(
+                    (notification: Notification, index: number) => (
+                      <div
+                        key={notification.id}
+                        className={cn(
+                          'group flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all duration-200 ease-in-out',
+                          'animate-in fade-in slide-in-from-right-2',
+                          !notification.isRead && 'bg-brand-primary-lighter/50'
                         )}
-                      </div>
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => handleNotificationClick(notification)}
+                        data-testid={`notification-${notification.id}`}
+                        role="menuitem"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleNotificationClick(notification);
+                          }
+                        }}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getCategoryIcon(notification.category)}
+                        </div>
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
-                            onClick={(e) => e.stopPropagation()}
-                            data-testid={`button-notification-menu-${notification.id}`}
-                          >
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {!notification.isRead && (
-                            <DropdownMenuItem 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                markAsReadMutation.mutate(notification.id);
-                              }}
-                              data-testid={`button-mark-read-${notification.id}`}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm truncate">
+                              {notification.title}
+                            </p>
+                            {!notification.isRead && (
+                              <div className="w-2 h-2 bg-brand-primary rounded-full flex-shrink-0" />
+                            )}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {notification.message}
+                          </p>
+
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge
+                              className={cn(
+                                'text-xs',
+                                getPriorityBadgeColor(notification.priority)
+                              )}
                             >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Mark as read
-                            </DropdownMenuItem>
+                              {notification.priority}
+                            </Badge>
+
+                            {notification.category && (
+                              <Badge variant="outline" className="text-xs">
+                                {notification.category}
+                              </Badge>
+                            )}
+
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {format(
+                                new Date(notification.createdAt),
+                                'MMM d, h:mm a'
+                              )}
+                            </span>
+                          </div>
+
+                          {notification.actionText && (
+                            <div
+                              className="flex items-center gap-2 mt-3 pt-3 border-t"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <NotificationActionButton
+                                notificationId={notification.id}
+                                actionType={notification.actionText
+                                  .toLowerCase()
+                                  .replace(/\s+/g, '_')}
+                                actionText={notification.actionText}
+                                actionUrl={notification.actionUrl}
+                                onSuccess={() => {
+                                  // Notification list will auto-refresh via query invalidation
+                                }}
+                              />
+                            </div>
                           )}
-                          <DropdownMenuItem 
-                            onClick={(e) => handleArchive(notification, e)}
-                            data-testid={`button-archive-${notification.id}`}
-                          >
-                            <Archive className="h-4 w-4 mr-2" />
-                            Archive
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  ))}
+                        </div>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0"
+                              onClick={(e) => e.stopPropagation()}
+                              data-testid={`button-notification-menu-${notification.id}`}
+                            >
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {!notification.isRead && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsReadMutation.mutate(notification.id);
+                                }}
+                                data-testid={`button-mark-read-${notification.id}`}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Mark as read
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={(e) => handleArchive(notification, e)}
+                              data-testid={`button-archive-${notification.id}`}
+                            >
+                              <Archive className="h-4 w-4 mr-2" />
+                              Archive
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    )
+                  )}
                 </div>
               )}
             </ScrollArea>
@@ -715,9 +820,9 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
           <>
             <Separator />
             <div className="p-2">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="w-full text-xs"
                 onClick={() => {
                   setIsOpen(false);

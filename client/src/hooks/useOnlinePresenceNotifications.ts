@@ -16,7 +16,8 @@ interface OnlineUser {
 
 function getDisplayName(user: OnlineUser): string {
   if (user.displayName) return user.displayName;
-  if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`;
+  if (user.firstName && user.lastName)
+    return `${user.firstName} ${user.lastName}`;
   if (user.firstName) return user.firstName;
   if (user.email) return user.email.split('@')[0];
   return 'Someone';
@@ -62,14 +63,14 @@ export function useOnlinePresenceNotifications() {
       // Ensure we always return an array, even if API returns an object or null
       return Array.isArray(response) ? response : [];
     },
-    refetchInterval: 30000, // Check every 30 seconds
+    refetchInterval: 30 * 1000, // Check every 30 seconds for timely login notifications
     enabled: !!currentUser,
   });
 
   useEffect(() => {
     if (!currentUser || onlineUsers.length === 0) return;
 
-    const currentOnlineIds = new Set(onlineUsers.map(u => u.id));
+    const currentOnlineIds = new Set(onlineUsers.map((u) => u.id));
 
     // Skip notifications on first load
     if (isFirstLoadRef.current) {
@@ -80,9 +81,8 @@ export function useOnlinePresenceNotifications() {
 
     // Find new users who weren't online before
     const newUsers = onlineUsers.filter(
-      user =>
-        user.id !== currentUser.id &&
-        !previousOnlineIdsRef.current.has(user.id)
+      (user) =>
+        user.id !== currentUser.id && !previousOnlineIdsRef.current.has(user.id)
     );
 
     // Show toast for each new user (limit to avoid spam)
@@ -90,11 +90,11 @@ export function useOnlinePresenceNotifications() {
       if (newUsers.length === 1) {
         toast({
           title: `${getDisplayName(newUsers[0])} is now online`,
-          description: "A team member just signed in",
+          description: 'A team member just signed in',
           duration: 4000,
         });
       } else if (newUsers.length <= 3) {
-        const names = newUsers.map(u => getDisplayName(u)).join(', ');
+        const names = newUsers.map((u) => getDisplayName(u)).join(', ');
         toast({
           title: `${names} are now online`,
           description: `${newUsers.length} team members just signed in`,

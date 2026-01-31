@@ -14,17 +14,22 @@ interface UserStats {
   completionPercentage: number;
 }
 
-export default function OnboardingChallengeButton({ onNavigate }: { onNavigate?: (section: string) => void }) {
+export default function OnboardingChallengeButton({
+  onNavigate,
+}: {
+  onNavigate?: (section: string) => void;
+}) {
   const [isOpen, setIsOpen] = useState(false);
 
   const { data: stats } = useQuery<UserStats>({
     queryKey: ['/api/onboarding/stats'],
     queryFn: () => apiRequest('GET', '/api/onboarding/stats'),
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes (reduced from 30 seconds)
   });
 
   const isComplete = stats?.completionPercentage === 100;
-  const hasIncompleteItems = stats && stats.completedChallenges < stats.totalChallenges;
+  const hasIncompleteItems =
+    stats && stats.completedChallenges < stats.totalChallenges;
 
   return (
     <>
@@ -35,8 +40,8 @@ export default function OnboardingChallengeButton({ onNavigate }: { onNavigate?:
             isComplete
               ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600'
               : hasIncompleteItems
-              ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 animate-pulse'
-              : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 animate-pulse'
+                : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
           } text-white shadow-lg`}
           size="sm"
         >
