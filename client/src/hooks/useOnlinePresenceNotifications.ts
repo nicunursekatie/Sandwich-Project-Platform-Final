@@ -63,7 +63,7 @@ export function useOnlinePresenceNotifications() {
       // Ensure we always return an array, even if API returns an object or null
       return Array.isArray(response) ? response : [];
     },
-    refetchInterval: 5 * 60 * 1000, // Check every 5 minutes (reduced from 30 seconds)
+    refetchInterval: 30 * 1000, // Check every 30 seconds for timely login notifications
     enabled: !!currentUser,
   });
 
