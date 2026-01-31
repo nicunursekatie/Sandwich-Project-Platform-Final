@@ -9,7 +9,6 @@ import {
   Mic2,
   Users,
   CheckCircle2,
-  AlertTriangle,
   ArrowRight,
   Clock,
   TrendingUp,
@@ -234,19 +233,11 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
               {stats.upcomingDeadlines.slice(0, 5).map((deadline) => (
                 <div
                   key={deadline.id}
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg cursor-pointer transition-all gap-2 ${
-                    deadline.isToday
-                      ? 'bg-red-50 border border-red-200 hover:border-red-400'
-                      : 'bg-white border border-gray-200 hover:border-brand-primary'
-                  }`}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg cursor-pointer transition-all gap-2 bg-white border border-gray-200 hover:border-brand-primary"
                   onClick={() => onNavigate('event-requests')}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {deadline.isToday ? (
-                      <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                    ) : (
-                      <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
-                    )}
+                    <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
                     <div className="min-w-0">
                       <div className="font-medium text-gray-900 truncate">{deadline.organizationName}</div>
                       <div className="text-sm text-gray-500">
