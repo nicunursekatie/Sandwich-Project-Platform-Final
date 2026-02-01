@@ -45,18 +45,23 @@ export function MultiViewProvider({
 
   // Sync primary panel with initialSection when it changes from URL navigation
   useEffect(() => {
-    if (!isMultiViewEnabled) {
-      setPanels(prev => {
-        const primary = prev.find(p => p.id === 'primary');
-        if (primary && primary.section !== initialSection) {
+    setPanels(prev => {
+      const primary = prev.find(p => p.id === 'primary');
+      if (primary && primary.section !== initialSection) {
+        // In multi-view mode, update the active panel instead of primary
+        if (isMultiViewEnabled && activePanel && activePanel !== 'primary') {
           return prev.map(p =>
-            p.id === 'primary' ? { ...p, section: initialSection } : p
+            p.id === activePanel ? { ...p, section: initialSection } : p
           );
         }
-        return prev;
-      });
-    }
-  }, [initialSection, isMultiViewEnabled]);
+        // In single-view or when primary is active, update primary panel
+        return prev.map(p =>
+          p.id === 'primary' ? { ...p, section: initialSection } : p
+        );
+      }
+      return prev;
+    });
+  }, [initialSection, isMultiViewEnabled, activePanel]);
 
   const canAddPanel = useMemo(() => panels.length < MAX_PANELS, [panels.length]);
 
