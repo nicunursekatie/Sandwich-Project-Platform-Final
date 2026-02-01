@@ -1803,12 +1803,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
   const toggleEditingMode = () => {
     if (editingMode === 'simple') {
-      // Switch to detailed - try to preserve the count
-      const simpleCount = parseInt(editingSandwichCount, 10);
-      if (!isNaN(simpleCount) && simpleCount > 0) {
-        // Put all count in "unknown" category
-        setEditingTypes({ unknown: simpleCount });
-      }
+      // Switch to detailed - start with empty types so user can enter fresh breakdown
+      // Don't pre-populate "unknown" as this causes doubling when user enters specific types
+      setEditingTypes({});
       setEditingMode('detailed');
     } else {
       // Switch to simple - calculate total from types
