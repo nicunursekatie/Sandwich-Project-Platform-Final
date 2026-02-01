@@ -161,12 +161,35 @@ export function setupSocketChat(httpServer: HttpServer) {
 
           // Send confirmation
           socket.emit('joined-channel', { channel, userName });
+
+          // Broadcast user-online event to all connected clients for presence notifications
+          io.emit('user-online', {
+            id: userId,
+            userName,
+            timestamp: new Date().toISOString(),
+          });
+          logger.log(`Broadcasted user-online event for ${userName} (${userId})`);
         } catch (error) {
           logger.error('Error joining channel:', error);
           socket.emit('error', { message: 'Failed to join channel' });
         }
       }
     );
+
+    // Handle getting list of all online users
+    socket.on('get-online-users', () => {
+      try {
+        const onlineUsersList = Array.from(activeUsers.values()).map((user) => ({
+          id: user.id,
+          userName: user.userName,
+        }));
+        socket.emit('online-users-list', onlineUsersList);
+        logger.log(`Sent online users list: ${onlineUsersList.length} users`);
+      } catch (error) {
+        logger.error('Error getting online users:', error);
+        socket.emit('online-users-list', []);
+      }
+    });
 
     // Handle joining notification channel (for real-time notification updates)
     socket.on(
@@ -574,8 +597,22 @@ export function setupSocketChat(httpServer: HttpServer) {
 
     // Handle disconnect
     socket.on('disconnect', () => {
+      // Get user info BEFORE deleting from activeUsers for the offline broadcast
+      const disconnectedUser = activeUsers.get(socket.id);
+      
+      // Delete from activeUsers
       activeUsers.delete(socket.id);
       logger.log(`Socket disconnected: ${socket.id}`);
+
+      // Broadcast user-offline event if we had user info
+      if (disconnectedUser) {
+        io.emit('user-offline', {
+          id: disconnectedUser.id,
+          userName: disconnectedUser.userName,
+          timestamp: new Date().toISOString(),
+        });
+        logger.log(`Broadcasted user-offline event for ${disconnectedUser.userName} (${disconnectedUser.id})`);
+      }
     });
   });
 
