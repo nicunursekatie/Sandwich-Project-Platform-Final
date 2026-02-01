@@ -64,6 +64,8 @@ import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
 import { TextIdeaAnnouncementModal } from '@/components/text-idea-announcement-modal';
+import { MultiViewProvider, useMultiView } from '@/contexts/multi-view-context';
+import { MultiViewContainer, MultiViewToolbar, FloatingViewsContainer } from '@/components/multi-view';
 import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { DashboardBreadcrumbs } from '@/components/dashboard-breadcrumbs';
 import { WhatsNewModal } from '@/components/whats-new-modal';
@@ -347,9 +349,10 @@ export default function Dashboard({
   };
 
 
-  const renderContent = () => {
-    // Extract project ID from activeSection if it's a project detail page
-    const projectIdMatch = activeSection.match(/^project-(\d+)$/);
+  const renderContent = (sectionOverride?: string) => {
+    const section = sectionOverride || activeSection;
+    // Extract project ID from section if it's a project detail page
+    const projectIdMatch = section.match(/^project-(\d+)$/);
     const projectId =
       projectIdMatch && projectIdMatch[1] ? parseInt(projectIdMatch[1]) : null;
 
@@ -358,7 +361,7 @@ export default function Dashboard({
       return <ProjectDetailClean projectId={projectId} />;
     }
 
-    switch (activeSection) {
+    switch (section) {
       case 'dashboard':
         return <DashboardOverview onSectionChange={setActiveSection} />;
       case 'collections':
@@ -626,9 +629,9 @@ export default function Dashboard({
           return <ProjectDetailClean projectId={projectId} />;
         }
         // Handle legacy project routes
-        if (activeSection.startsWith('project-')) {
+        if (section.startsWith('project-')) {
           const legacyProjectId = parseInt(
-            activeSection.replace('project-', '')
+            section.replace('project-', '')
           );
           if (!isNaN(legacyProjectId)) {
             return <ProjectDetailClean projectId={legacyProjectId} />;
@@ -668,6 +671,7 @@ export default function Dashboard({
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
+        <MultiViewProvider initialSection={activeSection}>
         <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
         {/* Reviewer Banner - shows for read-only reviewer accounts */}
         <ReviewerBanner />
@@ -1039,28 +1043,46 @@ export default function Dashboard({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0">
-            <ErrorBoundary>
-              <Suspense fallback={<SectionLoader />}>
-                {activeSection === 'gmail-inbox' || activeSection === 'inbox' || activeSection === 'messages' || activeSection === 'chat' ? (
-                  // Special full-height layout for inbox/chat (interactive, manages its own header/layout + scrolling)
-                  <div className="h-full">{renderContent()}</div>
-                ) : activeSection === 'driver-planning' ? (
-                  // Driver Planning needs a scroll container on smaller screens (especially mobile “desktop mode”)
-                  <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
-                    {renderContent()}
-                  </div>
-                ) : (
+          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0 flex flex-col">
+            {/* Multi-View Toolbar */}
+            <MultiViewToolbar currentSection={activeSection} />
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden">
+              <MultiViewContainer
+                renderContent={(section) => {
+                  // Determine the content wrapper based on section type
+                  const isFullHeightSection = ['gmail-inbox', 'inbox', 'messages', 'chat'].includes(section);
+                  const isDriverPlanning = section === 'driver-planning';
+
+                  if (isFullHeightSection) {
+                    return <div className="h-full">{renderContent(section)}</div>;
+                  }
+
+                  if (isDriverPlanning) {
+                    return (
+                      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+                        {renderContent(section)}
+                      </div>
+                    );
+                  }
+
                   // Normal layout for other content
-                  <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">
-                    <div className="w-full pb-20 min-h-full px-4 sm:px-6 pt-6">
-                      <DashboardBreadcrumbs activeSection={activeSection} />
-                      {renderContent()}
+                  return (
+                    <div className="h-full overflow-y-auto overflow-x-hidden w-full max-w-full">
+                      <div className="w-full pb-20 min-h-full px-4 sm:px-6 pt-6">
+                        <DashboardBreadcrumbs activeSection={section} />
+                        {renderContent(section)}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Suspense>
-            </ErrorBoundary>
+                  );
+                }}
+                onSectionChange={(section, panelId) => {
+                  // Update panel section when navigation happens within a panel
+                  enhancedSetActiveSection(section);
+                }}
+              />
+            </div>
           </div>
         </div>
         </div>
@@ -1084,6 +1106,10 @@ export default function Dashboard({
             ]}
           />
         )}
+
+        {/* Floating Views Container for pop-out windows */}
+        <FloatingViewsContainer renderContent={renderContent} />
+        </MultiViewProvider>
       </DashboardNavigationProvider>
     </>
   );
