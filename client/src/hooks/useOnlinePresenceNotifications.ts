@@ -100,6 +100,14 @@ export function useOnlinePresenceNotifications() {
       logger.log('[OnlinePresence] ✅ WebSocket connected');
       setWsConnected(true);
 
+      // Join a presence channel to register this user and trigger user-online broadcast
+      const userName = currentUser.firstName || currentUser.email || 'Anonymous';
+      newSocket.emit('join-channel', {
+        channel: 'presence',
+        userId: String(currentUser.id),
+        userName: userName,
+      });
+
       // Request current online users list
       newSocket.emit('get-online-users');
     });
