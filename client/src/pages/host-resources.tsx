@@ -549,6 +549,12 @@ export default function HostResources() {
             imageUrl="/images/why-cheese-bottom.png"
             fileName="why-cheese-bottom.png"
           />
+          <ImageGuideCard
+            title="PB&J Assembly"
+            description="Peanut butter on both slices, jelly on one - 3 easy steps"
+            imageUrl="/images/pbj-assembly.png"
+            fileName="pbj-assembly.png"
+          />
         </div>
       </section>
 
