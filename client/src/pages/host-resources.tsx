@@ -32,7 +32,19 @@ import {
   Mail,
   BookOpen,
   HelpCircle,
+  Share2,
+  Eye,
+  X,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+
+// Brand colors: #236383 (dark teal), #47b3cb (light teal), #007e8c (primary teal), #a31c41 (burgundy), #fbad3f (gold)
 
 // Resource card component
 function ResourceCard({
@@ -51,17 +63,23 @@ function ResourceCard({
   variant?: 'default' | 'primary' | 'secondary';
 }) {
   const bgClass = variant === 'primary'
-    ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+    ? 'bg-[#007e8c]/10 border-[#007e8c]/30 hover:bg-[#007e8c]/20'
     : variant === 'secondary'
-    ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+    ? 'bg-[#fbad3f]/10 border-[#fbad3f]/30 hover:bg-[#fbad3f]/20'
     : 'bg-white hover:bg-gray-50';
+
+  const iconColor = variant === 'primary'
+    ? 'text-[#007e8c]'
+    : variant === 'secondary'
+    ? 'text-[#fbad3f]'
+    : 'text-[#236383]';
 
   const content = (
     <Card className={`${bgClass} transition-colors cursor-pointer h-full`}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           <div className="p-2 bg-white rounded-lg shadow-sm">
-            <Icon className="w-5 h-5 text-gray-700" />
+            <Icon className={`w-5 h-5 ${iconColor}`} />
           </div>
           {isExternal && (
             <ExternalLink className="w-4 h-4 text-gray-400" />
@@ -90,7 +108,7 @@ function ResourceCard({
   );
 }
 
-// Document download card
+// Document download card with preview
 function DocumentCard({
   title,
   description,
@@ -102,8 +120,12 @@ function DocumentCard({
   fileType: string;
   downloadUrl: string;
 }) {
+  const [previewOpen, setPreviewOpen] = React.useState(false);
+  const { toast } = useToast();
+
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     try {
       const response = await fetch(downloadUrl);
       const blob = await response.blob();
@@ -122,27 +144,154 @@ function DocumentCard({
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}${downloadUrl}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: description,
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled or share failed, fall back to clipboard
+        await copyToClipboard(shareUrl);
+      }
+    } else {
+      await copyToClipboard(shareUrl);
+    }
+  };
+
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: 'Link copied!',
+        description: 'The document link has been copied to your clipboard.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Copy failed',
+        description: 'Could not copy link. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <Card className="bg-white hover:bg-gray-50 transition-colors">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-red-50 rounded-lg">
-            <FileText className="w-6 h-6 text-red-600" />
+    <>
+      <Card
+        className="bg-white hover:bg-gray-50 transition-colors cursor-pointer border-l-4 border-l-[#a31c41]"
+        onClick={() => setPreviewOpen(true)}
+      >
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* PDF Thumbnail Preview */}
+            <div className="relative w-full sm:w-32 h-40 sm:h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 group">
+              <iframe
+                src={`${downloadUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                className="w-full h-full pointer-events-none"
+                title={`Preview of ${title}`}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2">
+                  <Eye className="w-4 h-4 text-[#007e8c]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0 flex flex-col justify-between">
+              <div>
+                <h4 className="font-medium text-sm">{title}</h4>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{description}</p>
+                <Badge variant="outline" className="mt-2 text-[10px] bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30">
+                  {fileType}
+                </Badge>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1 sm:flex-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewOpen(true);
+                  }}
+                >
+                  <Eye className="w-4 h-4" />
+                  <span className="hidden sm:inline">Preview</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1 sm:flex-none bg-[#007e8c] hover:bg-[#236383] text-white border-none"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Download</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 flex-1 sm:flex-none"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Share</span>
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm">{title}</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-            <Badge variant="outline" className="mt-1 text-[10px]">
-              {fileType}
-            </Badge>
+        </CardContent>
+      </Card>
+
+      {/* Full Preview Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2 border-b bg-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-lg">{title}</DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">{description}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 bg-[#007e8c] hover:bg-[#236383] text-white border-none"
+                  onClick={handleDownload}
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 h-full bg-gray-100">
+            <iframe
+              src={`${downloadUrl}#toolbar=1&navpanes=1`}
+              className="w-full h-[calc(90vh-80px)]"
+              title={`Full preview of ${title}`}
+            />
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleDownload}>
-            <Download className="w-4 h-4" />
-            Download
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -154,8 +303,8 @@ export default function HostResources() {
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center gap-3">
-          <div className="p-3 bg-blue-100 rounded-full">
-            <Building2 className="w-8 h-8 text-blue-600" />
+          <div className="p-3 bg-[#007e8c]/10 rounded-full">
+            <Building2 className="w-8 h-8 text-[#007e8c]" />
           </div>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold">Host Resources</h1>
@@ -168,7 +317,7 @@ export default function HostResources() {
       {/* Quick Links Section */}
       <section>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Sandwich className="w-5 h-5 text-amber-500" />
+          <Sandwich className="w-5 h-5 text-[#fbad3f]" />
           Collection Tools
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -197,7 +346,7 @@ export default function HostResources() {
       {/* Maps Section */}
       <section>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <MapPin className="w-5 h-5 text-green-500" />
+          <MapPin className="w-5 h-5 text-[#007e8c]" />
           Maps & Locations
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -220,7 +369,7 @@ export default function HostResources() {
       {/* Documents Section */}
       <section>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-red-500" />
+          <FileText className="w-5 h-5 text-[#a31c41]" />
           Downloadable Documents
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
@@ -269,10 +418,10 @@ export default function HostResources() {
       {/* Contact Section */}
       <section>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <HelpCircle className="w-5 h-5 text-purple-500" />
+          <HelpCircle className="w-5 h-5 text-[#236383]" />
           Need Help?
         </h2>
-        <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        <Card className="bg-gradient-to-r from-[#47b3cb]/10 to-[#007e8c]/10 border-[#007e8c]/30">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -314,29 +463,29 @@ export default function HostResources() {
 
       {/* Tips Section */}
       <section>
-        <Card className="bg-amber-50 border-amber-200">
+        <Card className="bg-[#fbad3f]/10 border-[#fbad3f]/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Tag className="w-5 h-5 text-amber-600" />
+              <Tag className="w-5 h-5 text-[#fbad3f]" />
               Host Tips
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="text-sm space-y-2 text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="text-amber-500 font-bold">•</span>
+                <span className="text-[#fbad3f] font-bold">•</span>
                 Log your collections promptly so we can track our impact accurately.
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-amber-500 font-bold">•</span>
+                <span className="text-[#fbad3f] font-bold">•</span>
                 Use the sign-in sheets to track volunteer hours for service hour verification.
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-amber-500 font-bold">•</span>
+                <span className="text-[#fbad3f] font-bold">•</span>
                 Labels should include date made and allergen info (especially for PB&J).
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-amber-500 font-bold">•</span>
+                <span className="text-[#fbad3f] font-bold">•</span>
                 Connect with other hosts on the map to share best practices!
               </li>
             </ul>
