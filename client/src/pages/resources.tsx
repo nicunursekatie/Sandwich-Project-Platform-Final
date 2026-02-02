@@ -27,7 +27,11 @@ import {
   BookOpen,
   FileEdit,
   X,
+  Image,
+  Download,
+  Share2,
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 // Category definitions with icons and colors (using brand color scheme)
@@ -121,6 +125,139 @@ interface Tag {
     description: string | null;
   };
   usageCount: number;
+}
+
+// Sandwich Assembly Guides Component
+function SandwichAssemblyGuides() {
+  const { toast } = useToast();
+
+  const guides = [
+    {
+      title: "Sandwich Assembly",
+      description: "Basic sandwich assembly guide showing cheese, meat, and cheese layers",
+      imageUrl: "/images/sandwich-assembly.png",
+      fileName: "sandwich-assembly.png",
+    },
+    {
+      title: "White Bread Sandwich",
+      description: "Complete sandwich with white bread - bread, cheese, meat, cheese, bread",
+      imageUrl: "/images/sandwich-white-bread.png",
+      fileName: "sandwich-white-bread.png",
+    },
+    {
+      title: "Why Cheese on the Bottom",
+      description: "Cheese acts as a moisture barrier to keep bread from getting soggy",
+      imageUrl: "/images/why-cheese-bottom.png",
+      fileName: "why-cheese-bottom.png",
+    },
+  ];
+
+  const handleDownload = async (imageUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast({
+        title: 'Download started',
+        description: `${fileName} is downloading`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(imageUrl, '_blank');
+    }
+  };
+
+  const handleShare = async (title: string, description: string, imageUrl: string) => {
+    const shareUrl = window.location.origin + imageUrl;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: description,
+          url: shareUrl,
+        });
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          await navigator.clipboard.writeText(shareUrl);
+          toast({
+            title: 'Link copied!',
+            description: 'Share link copied to clipboard',
+            duration: 3000,
+          });
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: 'Link copied!',
+        description: 'Share link copied to clipboard',
+        duration: 3000,
+      });
+    }
+  };
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b-2 border-[#007E8C]/30">
+        <div className="bg-[#007E8C]/10 p-3 rounded-lg">
+          <Image className="w-7 h-7 text-[#007E8C]" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Sandwich Assembly Guides
+        </h2>
+        <span className="text-sm font-semibold text-gray-500 ml-auto">
+          3 items
+        </span>
+      </div>
+      <p className="text-sm text-gray-600 mb-4">
+        Visual guides for proper sandwich assembly. Download or share these with your volunteers.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {guides.map((guide) => (
+          <div 
+            key={guide.fileName}
+            className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+          >
+            <div className="aspect-[4/5] relative bg-gray-100">
+              <img
+                src={guide.imageUrl}
+                alt={guide.title}
+                className="w-full h-full object-contain p-2"
+              />
+            </div>
+            <div className="p-4">
+              <h4 className="font-medium text-sm mb-1">{guide.title}</h4>
+              <p className="text-xs text-gray-500 mb-3">{guide.description}</p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleDownload(guide.imageUrl, guide.fileName)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </button>
+                <button 
+                  onClick={() => handleShare(guide.title, guide.description, guide.imageUrl)}
+                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function Resources() {
@@ -744,6 +881,9 @@ export function Resources() {
             </div>
           )}
         </div>
+
+        {/* Sandwich Assembly Guides */}
+        <SandwichAssemblyGuides />
 
         {/* All Resources */}
         {resources.length === 0 ? (

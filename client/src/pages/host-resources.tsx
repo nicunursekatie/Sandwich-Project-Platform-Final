@@ -34,7 +34,7 @@ import {
   HelpCircle,
   Share2,
   Eye,
-  X,
+  Image,
 } from 'lucide-react';
 import {
   Dialog,
@@ -105,6 +105,112 @@ function ResourceCard({
     <Link href={`/${href}`} className="block h-full">
       {content}
     </Link>
+  );
+}
+
+// Image guide card with download and share
+function ImageGuideCard({
+  title,
+  description,
+  imageUrl,
+  fileName,
+}: {
+  title: string;
+  description: string;
+  imageUrl: string;
+  fileName: string;
+}) {
+  const { toast } = useToast();
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast({
+        title: 'Download started',
+        description: `${fileName} is downloading`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(imageUrl, '_blank');
+    }
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const shareUrl = window.location.origin + imageUrl;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: description,
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled or error
+        if ((error as Error).name !== 'AbortError') {
+          await navigator.clipboard.writeText(shareUrl);
+          toast({
+            title: 'Link copied!',
+            description: 'Share link copied to clipboard',
+            duration: 3000,
+          });
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: 'Link copied!',
+        description: 'Share link copied to clipboard',
+        duration: 3000,
+      });
+    }
+  };
+
+  return (
+    <Card className="bg-white hover:shadow-md transition-shadow overflow-hidden border-l-4 border-l-[#007e8c]">
+      <div className="aspect-[4/5] relative bg-gray-100">
+        <img
+          src={imageUrl}
+          alt={title}
+          className="w-full h-full object-contain p-2"
+        />
+      </div>
+      <CardContent className="p-4">
+        <h4 className="font-medium text-sm mb-1">{title}</h4>
+        <p className="text-xs text-muted-foreground mb-3">{description}</p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 gap-1.5 bg-[#007e8c] hover:bg-[#236383] text-white border-none"
+            onClick={handleDownload}
+          >
+            <Download className="w-4 h-4" />
+            Download
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={handleShare}
+          >
+            <Share2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -411,6 +517,37 @@ export default function HostResources() {
             description="Step-by-step guide for making peanut butter & jelly sandwiches"
             fileType="PDF"
             downloadUrl="/attached_assets/20250205-TSP-PBJ Sandwich Making 101_1753670644141.pdf"
+          />
+        </div>
+      </section>
+
+      {/* Sandwich Assembly Guides Section */}
+      <section>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Image className="w-5 h-5 text-[#007e8c]" />
+          Sandwich Assembly Guides
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Visual guides for proper sandwich assembly. Download or share these with your volunteers.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ImageGuideCard
+            title="Sandwich Assembly"
+            description="Basic sandwich assembly guide showing cheese, meat, and cheese layers"
+            imageUrl="/images/sandwich-assembly.png"
+            fileName="sandwich-assembly.png"
+          />
+          <ImageGuideCard
+            title="White Bread Sandwich"
+            description="Complete sandwich with white bread - bread, cheese, meat, cheese, bread"
+            imageUrl="/images/sandwich-white-bread.png"
+            fileName="sandwich-white-bread.png"
+          />
+          <ImageGuideCard
+            title="Why Cheese on the Bottom"
+            description="Cheese acts as a moisture barrier to keep bread from getting soggy"
+            imageUrl="/images/why-cheese-bottom.png"
+            fileName="why-cheese-bottom.png"
           />
         </div>
       </section>
