@@ -45,7 +45,7 @@ async function sendVolunteerSignupNotification(
   eventId: number,
   organizationName: string,
   eventDate: string | null,
-  role: string,
+  roles: string[],
   notes: string | null
 ): Promise<void> {
   if (!process.env.SENDGRID_API_KEY) {
@@ -68,11 +68,15 @@ async function sendVolunteerSignupNotification(
         })
       : 'Date TBD';
 
-    // Format role for display
-    const roleDisplay = role === 'driver' ? 'Driver'
-                      : role === 'speaker' ? 'Speaker'
-                      : role === 'general' ? 'General Volunteer'
-                      : role;
+    // Format roles for display
+    const roleDisplay = roles
+      .map((role) => (
+        role === 'driver' ? 'Driver'
+        : role === 'speaker' ? 'Speaker'
+        : role === 'general' ? 'General Volunteer'
+        : role
+      ))
+      .join(', ');
 
     const msg = {
       to: COORDINATOR_EMAILS,
@@ -106,7 +110,7 @@ async function sendVolunteerSignupNotification(
               <div class="signup-details">
                 <strong>Volunteer:</strong> ${volunteerName}<br>
                 <strong>Email:</strong> ${volunteerEmail}<br>
-                <strong>Role Requested:</strong> ${roleDisplay}
+                <strong>Roles Requested:</strong> ${roleDisplay}
                 ${notes ? `<br><strong>Notes:</strong> ${notes}` : ''}
               </div>
 
@@ -139,7 +143,7 @@ A volunteer has requested to help at an upcoming event:
 
 Volunteer: ${volunteerName}
 Email: ${volunteerEmail}
-Role Requested: ${roleDisplay}
+Roles Requested: ${roleDisplay}
 ${notes ? `Notes: ${notes}` : ''}
 
 Event: ${organizationName}
@@ -369,29 +373,37 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const { role, notes } = req.body;
+    const { role, roles, notes } = req.body;
+    const requestedRoles = Array.isArray(roles) ? roles : (role ? [role] : []);
+    const normalizedRoles = Array.from(new Set(requestedRoles.filter(Boolean)));
 
-    if (!role || !['driver', 'speaker', 'general'].includes(role)) {
-      return res.status(400).json({ error: 'Valid role required (driver, speaker, or general)' });
+    if (normalizedRoles.length === 0) {
+      return res.status(400).json({ error: 'At least one role is required (driver, speaker, or general)' });
     }
 
-    // Check if user already signed up for this event with the same role
-    const existingSignup = await db
+    const invalidRoles = normalizedRoles.filter(r => !['driver', 'speaker', 'general'].includes(r));
+    if (invalidRoles.length > 0) {
+      return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
+    }
+
+    // Check if user already signed up for this event with any requested role
+    const existingSignups = await db
       .select()
       .from(eventVolunteers)
       .where(
         and(
           eq(eventVolunteers.eventRequestId, eventId),
           eq(eventVolunteers.volunteerUserId, userId),
-          eq(eventVolunteers.role, role)
+          inArray(eventVolunteers.role, normalizedRoles)
         )
       )
-      .limit(1);
+      .limit(10);
 
-    if (existingSignup.length > 0) {
+    if (existingSignups.length > 0) {
+      const existingRoles = existingSignups.map((signup) => signup.role).join(', ');
       return res.status(400).json({
-        error: `You have already signed up as a ${role} for this event`,
-        existingSignup: existingSignup[0]
+        error: `You have already signed up for this event as: ${existingRoles}`,
+        existingSignup: existingSignups[0]
       });
     }
 
@@ -401,19 +413,22 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
       user.email?.split('@')[0] ||
       'Unknown';
 
-    const [newSignup] = await db
+    const signedUpAt = new Date();
+    const newSignups = await db
       .insert(eventVolunteers)
-      .values({
-        eventRequestId: eventId,
-        volunteerUserId: userId,
-        volunteerName: volunteerName,
-        volunteerEmail: user.preferredEmail || user.email,
-        volunteerPhone: user.phone,
-        role,
-        status: 'pending', // Coordinators will confirm
-        notes: notes || null,
-        signedUpAt: new Date(),
-      })
+      .values(
+        normalizedRoles.map((requestedRole) => ({
+          eventRequestId: eventId,
+          volunteerUserId: userId,
+          volunteerName: volunteerName,
+          volunteerEmail: user.preferredEmail || user.email,
+          volunteerPhone: user.phone,
+          role: requestedRole,
+          status: 'pending', // Coordinators will confirm
+          notes: notes || null,
+          signedUpAt,
+        }))
+      )
       .returning();
 
     // Send notification to coordinators
@@ -423,16 +438,16 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
       eventId,
       event.organizationName || 'Unknown Organization',
       event.scheduledEventDate || event.desiredEventDate,
-      role,
+      normalizedRoles,
       notes
     );
 
-    logger.info(`Volunteer signup created: ${volunteerName} for event ${eventId} as ${role}`);
+    logger.info(`Volunteer signup created: ${volunteerName} for event ${eventId} as ${normalizedRoles.join(', ')}`);
 
     res.status(201).json({
       success: true,
       message: 'Your signup request has been submitted. A coordinator will confirm your participation.',
-      signup: newSignup,
+      signups: newSignups,
     });
   } catch (error) {
     logger.error('Error creating volunteer signup:', error);

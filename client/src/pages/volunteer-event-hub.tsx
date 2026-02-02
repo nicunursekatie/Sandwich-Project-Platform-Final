@@ -45,7 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -365,10 +364,10 @@ function SignupDialog({
   event: AvailableEvent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (role: string, notes: string) => void;
+  onSubmit: (roles: string[], notes: string) => void;
   isSubmitting: boolean;
 }) {
-  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
   const availableRoles = useMemo(() => {
@@ -411,8 +410,8 @@ function SignupDialog({
 
   useEffect(() => {
     if (open && event) {
-      const defaultRole = availableRoles[0]?.value ?? '';
-      setSelectedRole(defaultRole);
+      const defaultRole = availableRoles[0]?.value;
+      setSelectedRoles(defaultRole ? [defaultRole] : []);
       setNotes('');
     }
   }, [open, event, availableRoles]);
@@ -443,14 +442,10 @@ function SignupDialog({
                 No roles are currently available for this event.
               </div>
             ) : (
-              <RadioGroup
-                value={selectedRole}
-                onValueChange={setSelectedRole}
-                className="gap-2"
-              >
+              <div className="space-y-2">
                 {availableRoles.map((role) => {
                   const Icon = role.icon;
-                  const isSelected = selectedRole === role.value;
+                  const isSelected = selectedRoles.includes(role.value);
                   return (
                     <Label
                       key={role.value}
@@ -461,13 +456,27 @@ function SignupDialog({
                         isSelected ? role.bgClass : 'bg-white'
                       )}
                     >
-                      <RadioGroupItem id={`role-${role.value}`} value={role.value} />
+                      <Checkbox
+                        id={`role-${role.value}`}
+                        checked={isSelected}
+                        onCheckedChange={(checked) => {
+                          setSelectedRoles((prev) => {
+                            if (checked === true) {
+                              return Array.from(new Set([...prev, role.value]));
+                            }
+                            return prev.filter((value) => value !== role.value);
+                          });
+                        }}
+                      />
                       <Icon className={cn('w-4 h-4', role.colorClass)} />
                       <span className="text-sm text-gray-700">{role.label}</span>
                     </Label>
                   );
                 })}
-              </RadioGroup>
+                <p className="text-xs text-muted-foreground">
+                  You can choose more than one role.
+                </p>
+              </div>
             )}
           </div>
 
@@ -503,8 +512,8 @@ function SignupDialog({
             Cancel
           </Button>
           <Button
-            onClick={() => onSubmit(selectedRole, notes)}
-            disabled={!selectedRole || isSubmitting}
+            onClick={() => onSubmit(selectedRoles, notes)}
+            disabled={selectedRoles.length === 0 || isSubmitting}
             className="bg-[#007e8c] hover:bg-[#236383]"
           >
             {isSubmitting ? (
@@ -568,11 +577,11 @@ export default function VolunteerEventHub() {
 
   // Signup mutation
   const signupMutation = useMutation({
-    mutationFn: async ({ eventId, role, notes }: { eventId: number; role: string; notes: string }) => {
+    mutationFn: async ({ eventId, roles, notes }: { eventId: number; roles: string[]; notes: string }) => {
       const response = await fetch(`/api/volunteer-hub/signup/${eventId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, notes }),
+        body: JSON.stringify({ roles, notes }),
         credentials: 'include',
       });
       if (!response.ok) {
@@ -687,9 +696,9 @@ export default function VolunteerEventHub() {
   };
 
   // Handle signup submit
-  const handleSignupSubmit = (role: string, notes: string) => {
+  const handleSignupSubmit = (roles: string[], notes: string) => {
     if (selectedEvent) {
-      signupMutation.mutate({ eventId: selectedEvent.id, role, notes });
+      signupMutation.mutate({ eventId: selectedEvent.id, roles, notes });
     }
   };
 
