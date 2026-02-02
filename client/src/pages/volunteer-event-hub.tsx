@@ -45,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -370,16 +371,51 @@ function SignupDialog({
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [notes, setNotes] = useState('');
 
+  const availableRoles = useMemo(() => {
+    if (!event) return [];
+
+    return [
+      event.speakersUnfilled > 0 && {
+        value: 'speaker',
+        label: `Speaker (${event.speakersUnfilled} needed)`,
+        icon: Mic,
+        colorClass: 'text-[#a31c41]',
+        borderClass: 'border-[#a31c41]/30',
+        bgClass: 'bg-[#a31c41]/5',
+      },
+      event.volunteersUnfilled > 0 && {
+        value: 'general',
+        label: `General Volunteer (${event.volunteersUnfilled} needed)`,
+        icon: UserCheck,
+        colorClass: 'text-[#007e8c]',
+        borderClass: 'border-[#007e8c]/30',
+        bgClass: 'bg-[#007e8c]/5',
+      },
+      event.driversUnfilled > 0 && {
+        value: 'driver',
+        label: `Driver (${event.driversUnfilled} needed)`,
+        icon: Car,
+        colorClass: 'text-[#236383]',
+        borderClass: 'border-[#236383]/30',
+        bgClass: 'bg-[#236383]/5',
+      },
+    ].filter(Boolean) as Array<{
+      value: 'speaker' | 'general' | 'driver';
+      label: string;
+      icon: typeof Mic;
+      colorClass: string;
+      borderClass: string;
+      bgClass: string;
+    }>;
+  }, [event]);
+
   useEffect(() => {
     if (open && event) {
-      // Auto-select the first available role
-      if (event.speakersUnfilled > 0) setSelectedRole('speaker');
-      else if (event.volunteersUnfilled > 0) setSelectedRole('general');
-      else if (event.driversUnfilled > 0) setSelectedRole('driver');
-      else setSelectedRole('');
+      const defaultRole = availableRoles[0]?.value ?? '';
+      setSelectedRole(defaultRole);
       setNotes('');
     }
-  }, [open, event]);
+  }, [open, event, availableRoles]);
 
   if (!event) return null;
 
@@ -402,37 +438,37 @@ function SignupDialog({
           {/* Role selection */}
           <div className="space-y-2">
             <Label>Select your role *</Label>
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a role..." />
-              </SelectTrigger>
-              <SelectContent>
-                {event.speakersUnfilled > 0 && (
-                  <SelectItem value="speaker">
-                    <div className="flex items-center gap-2">
-                      <Mic className="w-4 h-4 text-[#a31c41]" />
-                      <span>Speaker ({event.speakersUnfilled} needed)</span>
-                    </div>
-                  </SelectItem>
-                )}
-                {event.volunteersUnfilled > 0 && (
-                  <SelectItem value="general">
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="w-4 h-4 text-[#007e8c]" />
-                      <span>General Volunteer ({event.volunteersUnfilled} needed)</span>
-                    </div>
-                  </SelectItem>
-                )}
-                {event.driversUnfilled > 0 && (
-                  <SelectItem value="driver">
-                    <div className="flex items-center gap-2">
-                      <Car className="w-4 h-4 text-[#236383]" />
-                      <span>Driver ({event.driversUnfilled} needed)</span>
-                    </div>
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            {availableRoles.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No roles are currently available for this event.
+              </div>
+            ) : (
+              <RadioGroup
+                value={selectedRole}
+                onValueChange={setSelectedRole}
+                className="gap-2"
+              >
+                {availableRoles.map((role) => {
+                  const Icon = role.icon;
+                  const isSelected = selectedRole === role.value;
+                  return (
+                    <Label
+                      key={role.value}
+                      htmlFor={`role-${role.value}`}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors',
+                        role.borderClass,
+                        isSelected ? role.bgClass : 'bg-white'
+                      )}
+                    >
+                      <RadioGroupItem id={`role-${role.value}`} value={role.value} />
+                      <Icon className={cn('w-4 h-4', role.colorClass)} />
+                      <span className="text-sm text-gray-700">{role.label}</span>
+                    </Label>
+                  );
+                })}
+              </RadioGroup>
+            )}
           </div>
 
           {/* Notes */}
