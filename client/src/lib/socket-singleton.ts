@@ -43,6 +43,21 @@ export function getOrCreateSocket(): Socket {
 
   socketInstance.on('connect_error', (error) => {
     logger.error('[SocketSingleton] Connection error:', error.message);
+
+    // If we get a session-related error (400 Bad Request with invalid sid),
+    // force a fresh connection by clearing the socket and reconnecting
+    if (error.message.includes('xhr poll error') || error.message.includes('session')) {
+      logger.log('[SocketSingleton] Session error detected, forcing fresh connection');
+      if (socketInstance) {
+        socketInstance.io.opts.query = {}; // Clear any stale query params
+        socketInstance.disconnect();
+        setTimeout(() => {
+          if (socketInstance) {
+            socketInstance.connect();
+          }
+        }, 1000);
+      }
+    }
   });
 
   return socketInstance;
