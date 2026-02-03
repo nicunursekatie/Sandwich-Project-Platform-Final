@@ -1493,26 +1493,20 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={(e) => {
-                    console.log('[InProcessCard] Log Contact button clicked (action buttons section)');
-                    e.stopPropagation();
-                    onLogContact();
-                  }}
-                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
-                >
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Log Contact
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Log a contact attempt or conversation</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                console.log('[InProcessCard] Log Contact button clicked (action buttons section)');
+                e.stopPropagation();
+                onLogContact();
+              }}
+              className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+              title="Log a contact attempt or conversation"
+            >
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Log Contact
+            </Button>
 
             {onResendToolkit && (
               <Tooltip>
