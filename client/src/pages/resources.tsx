@@ -459,12 +459,28 @@ export function Resources() {
         {/* Document Preview */}
         {previewUrl && (
           <div className="w-full h-48 bg-gray-100 relative overflow-hidden group cursor-pointer" onClick={() => openResource(item)}>
-            <iframe
-              src={previewUrl}
-              className="w-full h-full pointer-events-none"
-              title={`Preview of ${item.resource.title}`}
-              onError={() => setPreviewError(true)}
-            />
+            {item.document?.mimeType === 'application/pdf' ? (
+              <object
+                data={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`}
+                type="application/pdf"
+                className="w-full h-full pointer-events-none"
+                aria-label={`Preview of ${item.resource.title}`}
+              >
+                <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                  <div className="text-center">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                    <span className="text-sm text-gray-500">PDF Preview</span>
+                  </div>
+                </div>
+              </object>
+            ) : (
+              <img
+                src={previewUrl}
+                alt={`Preview of ${item.resource.title}`}
+                className="w-full h-full object-cover pointer-events-none"
+                onError={() => setPreviewError(true)}
+              />
+            )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
               <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-3">
                 <ExternalLink className="w-6 h-6 text-[#236383]" />

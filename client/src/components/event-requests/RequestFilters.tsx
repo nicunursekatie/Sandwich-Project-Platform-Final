@@ -164,6 +164,13 @@ export default function RequestFilters({
   // Add remaining tabs
   tabConfig.push(
     {
+      value: 'my_assignments',
+      label: 'My Assignments',
+      shortLabel: 'Mine',
+      icon: UserCheck,
+      count: statusCounts.my_assignments,
+    },
+    {
       value: 'all',
       label: 'All',
       shortLabel: 'All',
@@ -226,13 +233,6 @@ export default function RequestFilters({
       shortLabel: 'Stalled',
       icon: AlertCircle,
       count: statusCounts.stalled,
-    },
-    {
-      value: 'my_assignments',
-      label: 'My Assignments',
-      shortLabel: 'Mine',
-      icon: UserCheck,
-      count: statusCounts.my_assignments,
     }
   );
 

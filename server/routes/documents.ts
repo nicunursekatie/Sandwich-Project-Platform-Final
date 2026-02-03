@@ -190,6 +190,11 @@ documentsRouter.get(
       );
       res.setHeader('Content-Length', document.fileSize);
 
+      // Allow embedding in iframes/object tags (needed for PDF preview)
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      // Allow caching for better performance
+      res.setHeader('Cache-Control', 'private, max-age=3600');
+
       // Stream the file to the client
       const fileStream = require('fs').createReadStream(document.filePath);
       fileStream.pipe(res);
