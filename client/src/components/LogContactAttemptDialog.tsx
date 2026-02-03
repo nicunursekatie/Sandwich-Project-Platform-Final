@@ -73,7 +73,6 @@ export default function LogContactAttemptDialog({
   eventRequest,
   onLogContact,
 }: LogContactAttemptDialogProps) {
-  console.log('[LogContactAttemptDialog] Render - isOpen:', isOpen, 'eventRequest:', eventRequest?.id, eventRequest?.organizationName);
   const { toast } = useToast();
   const { user } = useAuth();
   const [contactMethod, setContactMethod] = useState<string>('');

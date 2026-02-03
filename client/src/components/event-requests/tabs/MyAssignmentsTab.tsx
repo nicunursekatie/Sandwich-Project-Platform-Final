@@ -261,7 +261,25 @@ export const MyAssignmentsTab: React.FC = () => {
               setTspContactEventRequest(request);
               setShowTspContactAssignmentDialog(true);
             }}
-            onStatusChange={(status) => handleStatusChange(request.id, status)}
+            onLogContact={() => {
+              setLogContactEventRequest(request);
+              setShowLogContactDialog(true);
+            }}
+            onAddNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('add');
+              setShowNextActionDialog(true);
+            }}
+            onEditNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('edit');
+              setShowNextActionDialog(true);
+            }}
+            onCompleteNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('complete');
+              setShowNextActionDialog(true);
+            }}
           />
         );
 

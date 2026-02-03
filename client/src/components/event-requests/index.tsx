@@ -239,11 +239,6 @@ const EventRequestsManagementContent: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Debug logging for Log Contact dialog state
-  useEffect(() => {
-    console.log('[EventRequests/index] showLogContactDialog changed to:', showLogContactDialog, 'logContactEventRequest:', logContactEventRequest?.id);
-  }, [showLogContactDialog, logContactEventRequest]);
-
   // Sync from Google Sheets mutation
   const syncFromSheetsMutation = useMutation({
     mutationFn: async () => {

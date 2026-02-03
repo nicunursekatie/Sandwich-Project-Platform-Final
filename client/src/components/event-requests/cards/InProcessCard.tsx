@@ -929,11 +929,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={(e) => {
-                      console.log('[InProcessCard] Log Contact button clicked (contact attempts section)');
-                      e.stopPropagation();
-                      onLogContact();
-                    }}
+                    onClick={onLogContact}
                     className="h-7 text-xs flex items-center gap-1 border-amber-300 hover:bg-amber-100"
                   >
                     <Phone className="w-3 h-3" />
@@ -1496,11 +1492,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             <Button
               size="sm"
               variant="outline"
-              onClick={(e) => {
-                console.log('[InProcessCard] Log Contact button clicked (action buttons section)');
-                e.stopPropagation();
-                onLogContact();
-              }}
+              onClick={onLogContact}
               className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
               title="Log a contact attempt or conversation"
             >

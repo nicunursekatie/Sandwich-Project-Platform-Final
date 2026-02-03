@@ -387,11 +387,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showTspContactAssignmentDialog, setShowTspContactAssignmentDialog] = useState(false);
   const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
   const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
-  const [showLogContactDialog, setShowLogContactDialogInternal] = useState(false);
-  const setShowLogContactDialog = useCallback((show: boolean) => {
-    console.log('[EventRequestContext] setShowLogContactDialog called with:', show);
-    setShowLogContactDialogInternal(show);
-  }, []);
+  const [showLogContactDialog, setShowLogContactDialog] = useState(false);
   const [showEditContactDialog, setShowEditContactDialog] = useState(false);
   const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
   const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
@@ -404,11 +400,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [collectionLogEventRequest, setCollectionLogEventRequest] = useState<EventRequest | null>(null);
   const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
   const [tspContactEventRequest, setTspContactEventRequest] = useState<EventRequest | null>(null);
-  const [logContactEventRequest, setLogContactEventRequestInternal] = useState<EventRequest | null>(null);
-  const setLogContactEventRequest = useCallback((event: EventRequest | null) => {
-    console.log('[EventRequestContext] setLogContactEventRequest called with:', event?.id, event?.organizationName);
-    setLogContactEventRequestInternal(event);
-  }, []);
+  const [logContactEventRequest, setLogContactEventRequest] = useState<EventRequest | null>(null);
   const [editContactEventRequest, setEditContactEventRequest] = useState<EventRequest | null>(null);
   const [editContactAttemptData, setEditContactAttemptData] = useState<any | null>(null);
   const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
