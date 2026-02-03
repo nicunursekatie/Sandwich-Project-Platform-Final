@@ -406,7 +406,10 @@ export const InProcessTab: React.FC = () => {
                 setShowTspContactAssignmentDialog(true);
               }}
               onLogContact={() => {
+                console.log('[InProcessTab] onLogContact clicked for request:', request.id, request.organizationName);
+                console.log('[InProcessTab] Setting logContactEventRequest:', request);
                 setLogContactEventRequest(request);
+                console.log('[InProcessTab] Setting showLogContactDialog to true');
                 setShowLogContactDialog(true);
               }}
               onEditContactAttempt={(attemptNumber) => {
