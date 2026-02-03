@@ -554,6 +554,11 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
     const newRequestEvents = await getNewRequestsNeedingReminder();
     serviceLogger.info(`Found ${newRequestEvents.length} new requests needing reminder (24h without toolkit)`);
 
+    // Log each event being considered for debugging
+    if (newRequestEvents.length > 0) {
+      serviceLogger.info(`📋 New request events being processed: ${newRequestEvents.map(e => `${e.id}:${e.organizationName}`).join(', ')}`);
+    }
+
     for (const event of newRequestEvents) {
       result.eventsProcessed++;
       const tspContactId = event.tspContactAssigned || event.tspContact;
@@ -602,6 +607,11 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
     // 2. Check in-process events (7 days without activity)
     const inProcessEvents = await getInProcessEventsNeedingReminder();
     serviceLogger.info(`Found ${inProcessEvents.length} in-process events needing reminder (7d without activity)`);
+
+    // Log each in-process event being considered for debugging
+    if (inProcessEvents.length > 0) {
+      serviceLogger.info(`📋 In-process events being processed: ${inProcessEvents.map(e => `${e.id}:${e.organizationName}:status=${e.status}`).join(', ')}`);
+    }
 
     for (const event of inProcessEvents) {
       result.eventsProcessed++;

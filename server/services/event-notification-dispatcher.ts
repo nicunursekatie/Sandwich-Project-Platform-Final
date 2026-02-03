@@ -967,6 +967,12 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     .from(eventRequests)
     .where(eq(eventRequests.status, 'in_process'));
 
+  // Log ALL in-process events for debugging
+  logger.log(`📋 Found ${events.length} in_process events total`);
+  if (events.length > 0) {
+    logger.log(`📋 In-process events: ${events.map(e => `ID:${e.id} "${e.organizationName}"`).join(', ')}`);
+  }
+
   // Get escalation recipients - only Katie and Christine
   const escalationEmails = [
     'katie@thesandwichproject.org',

@@ -56,6 +56,7 @@ import { createHostsRouter } from './hosts';
 import { createEventRemindersRouter } from './event-reminders';
 import { createEmailRouter } from './email-routes';
 import { createAdminMigrationsRouter } from './admin-migrations';
+import { createAdminEventsRouter } from './admin-events';
 import { createOnboardingRouter } from './onboarding';
 import { createGoogleSheetsRouter } from './google-sheets';
 import { createGoogleCalendarRouter } from './google-calendar';
@@ -958,6 +959,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     adminMigrationsRouter
   );
   router.use('/api/admin/migrations', createErrorHandler('admin-migrations'));
+
+  // Admin events management (debugging/fixing notification issues)
+  const adminEventsRouter = createAdminEventsRouter({ isAuthenticated: deps.isAuthenticated });
+  router.use(
+    '/api/admin/events',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    adminEventsRouter
+  );
+  router.use('/api/admin/events', createErrorHandler('admin-events'));
 
   // Onboarding challenges
   const onboardingRouter = createOnboardingRouter(deps);
