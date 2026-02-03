@@ -215,9 +215,9 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
       } else if (weekOffset === 1) {
         weekLabel = 'Next Week';
       } else if (weekOffset === 2) {
-        weekLabel = 'In 2 Weeks';
+        weekLabel = '2 Weeks Out';
       } else {
-        weekLabel = 'In 3 Weeks';
+        weekLabel = '3 Weeks Out';
       }
 
       forecasts.push({
@@ -360,15 +360,27 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
         </div>
 
         {/* Alert message for low volume weeks */}
-        {hasLowVolumeWeeks && urgentWeek && (
-          <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-800 dark:text-amber-200">
-              <strong>Heads up:</strong> The forecast for {urgentWeek.weekLabel.toLowerCase()} is{' '}
-              <strong>{percentBelow}% below</strong> typical volume. Consider a callout to add{' '}
-              <strong>~{shortfall.toLocaleString()} individual sandwiches</strong>.
-            </p>
-          </div>
-        )}
+        {hasLowVolumeWeeks && urgentWeek && (() => {
+          // Calculate the Friday before the low week (weekStart is Monday, so Friday before is 3 days earlier)
+          const calloutDate = new Date(urgentWeek.weekStart);
+          calloutDate.setDate(calloutDate.getDate() - 3); // Go back to Friday
+          const calloutDateStr = calloutDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          });
+
+          return (
+            <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                <strong>Heads up:</strong> The week of{' '}
+                <strong>{urgentWeek.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong> is{' '}
+                <strong>{percentBelow}% below</strong> typical volume. Consider a callout for more individual sandwiches by{' '}
+                <strong>{calloutDateStr}</strong>.
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Action button */}
         {onNavigateToEvents && (
