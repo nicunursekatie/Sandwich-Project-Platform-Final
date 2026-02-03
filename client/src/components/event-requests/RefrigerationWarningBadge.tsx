@@ -7,6 +7,7 @@ import {
   hasCriticalRefrigerationIssue,
   needsRefrigerationConfirmation,
   getRefrigerationMessage,
+  hasPerishableSandwiches,
   type SandwichType
 } from '@/lib/refrigeration-utils';
 import {
@@ -31,9 +32,11 @@ export function RefrigerationWarningBadge({
 }: RefrigerationWarningBadgeProps) {
   const hasCriticalIssue = hasCriticalRefrigerationIssue(sandwichTypes, hasRefrigeration);
   const needsConfirmation = needsRefrigerationConfirmation(hasRefrigeration);
+  const hasPerishable = hasPerishableSandwiches(sandwichTypes);
+  const showConfirmed = hasRefrigeration === true && hasPerishable;
   const message = getRefrigerationMessage(sandwichTypes, hasRefrigeration);
 
-  if (!hasCriticalIssue && !needsConfirmation) {
+  if (!hasCriticalIssue && !needsConfirmation && !showConfirmed) {
     return null;
   }
 
@@ -56,6 +59,16 @@ export function RefrigerationWarningBadge({
         >
           <HelpCircle className="h-3 w-3" />
           <span>Refrigeration?</span>
+        </Badge>
+      )}
+
+      {!hasCriticalIssue && !needsConfirmation && showConfirmed && (
+        <Badge
+          variant="secondary"
+          className={`gap-1 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700 ${className}`}
+        >
+          <Snowflake className="h-3 w-3" />
+          <span>Refrigeration confirmed</span>
         </Badge>
       )}
     </>
