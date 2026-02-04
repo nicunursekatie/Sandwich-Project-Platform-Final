@@ -89,6 +89,8 @@ import { createEmailTemplatesRouter } from './email-templates';
 import volunteerEventHubRouter from './volunteer-event-hub';
 import { createEventContactsRouter } from './event-contacts';
 import { createPermissionRequestsRouter } from './permission-requests';
+import { apiKeysRouter } from './api-keys';
+import { apiKeyAuth, requireApiKeyOrSession } from '../middleware/api-key-auth';
 
 // Import centralized middleware
 import {
@@ -201,6 +203,25 @@ export function createMainRoutes(deps: RouterDependencies) {
     ...createPublicMiddleware(),
     passwordResetRouter
   );
+
+  // ========================================================================
+  // API KEY AUTHENTICATION - Extract API key from Authorization header
+  // ========================================================================
+  router.use(apiKeyAuth);
+
+  // API Keys management routes (admin only)
+  router.use('/api/api-keys', apiKeysRouter);
+
+  // ========================================================================
+  // API KEY ACCESS TO EVENT REQUESTS - External apps can access via API key
+  // ========================================================================
+  router.use(
+    '/api/external/event-requests',
+    requireApiKeyOrSession,
+    ...createStandardMiddleware(),
+    eventRequestsRouter
+  );
+  router.use('/api/external/event-requests', createErrorHandler('external-event-requests'));
 
   // Legacy routes - preserve existing functionality
   const adminRoutes = createAdminRoutes({
