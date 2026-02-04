@@ -1,39 +1,58 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { eventRequests } from '@shared/schema';
-import { eq, and, inArray, isNull } from 'drizzle-orm';
+import { eq, and, or, inArray, isNull, like, sql } from 'drizzle-orm';
 
 const router = Router();
 
 /**
  * External API for Intake Workflow App
- * 
+ *
  * GET /api/external/event-requests
- *   - Fetches event requests assigned to a specific user
- *   - Query params: assignedTo (required), status (optional)
- * 
+ *   - Fetches event requests for a specific user
+ *   - Query params:
+ *     - assignedTo: Filter by assignedTo field (user ID)
+ *     - tspContact: Filter by tspContact OR customTspContact containing the user ID
+ *     - status: Comma-separated list of statuses (optional, defaults to 'new,in_process')
+ *   - At least one of assignedTo or tspContact is required
+ *
  * PATCH /api/external/event-requests/:id
  *   - Updates an event request with intake data
  *   - Typically used to complete intake and move to 'scheduled' status
  */
 
-// GET - Fetch event requests assigned to a user
+// GET - Fetch event requests assigned to a user or by TSP contact
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { assignedTo, status } = req.query;
+    const { assignedTo, tspContact, status } = req.query;
 
-    if (!assignedTo) {
+    if (!assignedTo && !tspContact) {
       return res.status(400).json({
-        message: 'assignedTo query parameter is required',
-        code: 'MISSING_ASSIGNED_TO',
+        message: 'Either assignedTo or tspContact query parameter is required',
+        code: 'MISSING_FILTER',
       });
     }
 
     // Build query conditions
-    const conditions = [
-      eq(eventRequests.assignedTo, assignedTo as string),
+    const conditions: any[] = [
       isNull(eventRequests.deletedAt),
     ];
+
+    // Add user filter - either by assignedTo or tspContact
+    if (assignedTo) {
+      conditions.push(eq(eventRequests.assignedTo, assignedTo as string));
+    }
+
+    if (tspContact) {
+      // Filter by tspContact field OR if user appears in customTspContact
+      const tspId = tspContact as string;
+      conditions.push(
+        or(
+          eq(eventRequests.tspContact, tspId),
+          like(eventRequests.customTspContact, `%${tspId}%`)
+        )
+      );
+    }
 
     // Filter by status if provided, otherwise default to active intake statuses
     if (status) {
