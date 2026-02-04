@@ -129,3 +129,22 @@ export function requireApiKeyOrSession(
     code: 'AUTH_REQUIRED',
   });
 }
+
+export function apiKeyReadOnly(
+  req: ApiKeyRequest,
+  res: Response,
+  next: NextFunction
+) {
+  if (req.user) {
+    return next();
+  }
+
+  if (req.apiKey && req.method !== 'GET') {
+    return res.status(403).json({
+      message: 'API keys have read-only access. Only GET requests are allowed.',
+      code: 'API_KEY_READ_ONLY',
+    });
+  }
+
+  next();
+}
