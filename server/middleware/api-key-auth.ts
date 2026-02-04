@@ -148,6 +148,12 @@ export function apiKeyReadOnly(
       allowedMethods.push('POST');
     }
     
+    // Allow PATCH/PUT if API key has UPDATE permission
+    if (req.apiKey.permissions.includes('EVENT_REQUESTS_UPDATE') || 
+        req.apiKey.permissions.includes('*')) {
+      allowedMethods.push('PATCH', 'PUT');
+    }
+    
     if (!allowedMethods.includes(req.method)) {
       return res.status(403).json({
         message: `API key does not have permission for ${req.method} requests.`,
