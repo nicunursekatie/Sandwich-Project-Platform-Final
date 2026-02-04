@@ -139,11 +139,22 @@ export function apiKeyReadOnly(
     return next();
   }
 
-  if (req.apiKey && req.method !== 'GET') {
-    return res.status(403).json({
-      message: 'API keys have read-only access. Only GET requests are allowed.',
-      code: 'API_KEY_READ_ONLY',
-    });
+  if (req.apiKey) {
+    const allowedMethods = ['GET'];
+    
+    // Allow POST if API key has CREATE permission
+    if (req.apiKey.permissions.includes('EVENT_REQUESTS_CREATE') || 
+        req.apiKey.permissions.includes('*')) {
+      allowedMethods.push('POST');
+    }
+    
+    if (!allowedMethods.includes(req.method)) {
+      return res.status(403).json({
+        message: `API key does not have permission for ${req.method} requests.`,
+        code: 'API_KEY_INSUFFICIENT_PERMISSION',
+        allowedMethods,
+      });
+    }
   }
 
   next();
