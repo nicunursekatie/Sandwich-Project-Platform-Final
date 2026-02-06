@@ -994,65 +994,67 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                         return (
                           <div
                             key={attempt.attemptNumber || attempt.timestamp}
-                            className="group bg-white rounded px-2.5 py-1.5 border border-amber-200 text-xs flex items-center justify-between gap-2 hover:bg-amber-50 transition-colors"
+                            className="group bg-white rounded px-2.5 py-1.5 border border-amber-200 text-xs hover:bg-amber-50 transition-colors"
                           >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <span className="font-semibold text-amber-900 flex-shrink-0">
-                                #{attempt.attemptNumber || '?'}
-                              </span>
-                              {attempt.method && (
-                                <div className="flex items-center gap-1 text-amber-700 flex-shrink-0">
-                                  {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
-                                  <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
-                                </div>
-                              )}
-                              {attempt.outcome && (
-                                <span className="text-gray-700 flex-shrink-0">
-                                  • {outcomeLabels[attempt.outcome] || attempt.outcome}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 flex-1 min-w-0">
+                                <span className="font-semibold text-amber-900 flex-shrink-0">
+                                  #{attempt.attemptNumber || '?'}
                                 </span>
-                              )}
-                              {parsedDate && (
-                                <span className="text-gray-500 flex-shrink-0">
-                                  • {parsedDate.toLocaleDateString()} {parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              )}
-                              {hasNotes && (
-                                <span className="text-gray-400 italic truncate max-w-[150px]" title={attempt.notes}>
-                                  • {attempt.notes.substring(0, 30)}{attempt.notes.length > 30 ? '...' : ''}
-                                </span>
-                              )}
+                                {attempt.method && (
+                                  <div className="flex items-center gap-1 text-amber-700 flex-shrink-0">
+                                    {methodIcons[attempt.method as keyof typeof methodIcons] || <Phone className="w-3 h-3" />}
+                                    <span className="text-xs">{methodLabels[attempt.method as keyof typeof methodLabels] || attempt.method}</span>
+                                  </div>
+                                )}
+                                {attempt.outcome && (
+                                  <span className="text-gray-700 flex-shrink-0">
+                                    • {outcomeLabels[attempt.outcome] || attempt.outcome}
+                                  </span>
+                                )}
+                                {parsedDate && (
+                                  <span className="text-gray-500 flex-shrink-0">
+                                    • {parsedDate.toLocaleDateString()} {parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                              </div>
+                              {/* Edit/Delete buttons - show on hover */}
+                              <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {onEditContactAttempt && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-5 w-5 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onEditContactAttempt(attempt.attemptNumber);
+                                    }}
+                                    title="Edit contact attempt"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                )}
+                                {onDeleteContactAttempt && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onDeleteContactAttempt(attempt.attemptNumber);
+                                    }}
+                                    title="Delete contact attempt"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                            {/* Edit/Delete buttons - show on hover */}
-                            <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {onEditContactAttempt && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-5 w-5 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onEditContactAttempt(attempt.attemptNumber);
-                                  }}
-                                  title="Edit contact attempt"
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                </Button>
-                              )}
-                              {onDeleteContactAttempt && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteContactAttempt(attempt.attemptNumber);
-                                  }}
-                                  title="Delete contact attempt"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
+                            {hasNotes && (
+                              <div className="mt-1 text-gray-600 italic">
+                                {attempt.notes}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
