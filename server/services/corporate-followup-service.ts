@@ -441,11 +441,13 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
         lastName: eventRequests.lastName,
         status: eventRequests.status,
         corporateFollowUpProtocol: eventRequests.corporateFollowUpProtocol,
+        isCorporatePriority: eventRequests.isCorporatePriority,
       })
       .from(eventRequests)
       .where(
         and(
-          eq(eventRequests.isCorporatePriority, true),
+          // Explicitly check for true (not null, not false)
+          sql`${eventRequests.isCorporatePriority} IS TRUE`,
           isNotNull(eventRequests.tspContact),
           inArray(eventRequests.status, ['new', 'in_process']),
           isNull(eventRequests.deletedAt)
@@ -454,7 +456,7 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
 
     serviceLogger.info(`Found ${corporateEvents.length} corporate priority events to process`);
     if (corporateEvents.length > 0) {
-      serviceLogger.info(`Corporate events being processed: ${corporateEvents.map(e => `${e.id}:${e.organizationName}`).join(', ')}`);
+      serviceLogger.info(`Corporate events being processed: ${corporateEvents.map(e => `${e.id}:${e.organizationName} (isCorporatePriority=${e.isCorporatePriority})`).join(', ')}`);
     }
 
     for (const event of corporateEvents) {
