@@ -405,6 +405,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
   const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
+  const [showCorporatePriorityConfirmDialog, setShowCorporatePriorityConfirmDialog] = useState(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1849,37 +1850,81 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
           {/* Corporate Priority */}
           <div className={`flex items-center space-x-3 p-3 rounded-lg border ${
-            (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
-              ? 'bg-amber-100/70 border-amber-300' 
+            (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority
+              ? 'bg-amber-100/70 border-amber-300'
               : 'bg-amber-50/50'
           }`}>
             <input
               type="checkbox"
               id="isCorporatePriority"
               checked={formData.isCorporatePriority}
-              onChange={(e) => setFormData(prev => ({ ...prev, isCorporatePriority: e.target.checked }))}
+              onChange={(e) => {
+                // If trying to enable corporate priority, show confirmation dialog
+                if (e.target.checked && !formData.isCorporatePriority) {
+                  setShowCorporatePriorityConfirmDialog(true);
+                } else {
+                  // Disabling - let it through (server will verify permissions)
+                  setFormData(prev => ({ ...prev, isCorporatePriority: e.target.checked }));
+                }
+              }}
               disabled={(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority}
               className={`h-5 w-5 rounded border-amber-300 text-amber-600 focus:ring-amber-500 ${
-                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
-                  ? 'opacity-60 cursor-not-allowed' 
+                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority
+                  ? 'opacity-60 cursor-not-allowed'
                   : ''
               }`}
             />
             <div>
               <Label htmlFor="isCorporatePriority" className={`text-amber-900 font-medium ${
-                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
-                  ? 'cursor-not-allowed' 
+                (eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority
+                  ? 'cursor-not-allowed'
                   : 'cursor-pointer'
               }`}>
                 Corporate Priority Event
               </Label>
               <p className="text-xs text-amber-700">
-                {(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority 
-                  ? 'Only Christine and Katie can remove the corporate priority flag.' 
+                {(eventRequest as any)?.isCorporatePriority && !canRemoveCorporatePriority
+                  ? 'Only Christine and Katie can remove the corporate priority flag.'
                   : 'Mark this as a corporate priority event requiring immediate attention and core team member attendance.'}
               </p>
             </div>
           </div>
+
+          {/* Corporate Priority Confirmation Dialog */}
+          <AlertDialog open={showCorporatePriorityConfirmDialog} onOpenChange={setShowCorporatePriorityConfirmDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-amber-800">Mark as Corporate Priority?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p>
+                    This will flag <strong>{eventRequest?.organizationName}</strong> as a Corporate Priority event.
+                  </p>
+                  <p>Corporate priority events:</p>
+                  <ul className="list-disc list-inside ml-2 text-sm">
+                    <li>Trigger strict follow-up protocols</li>
+                    <li>Send notifications to Katie and Christine</li>
+                    <li>Require a core team member to attend</li>
+                    <li>Can only be unmarked by Katie or Christine</li>
+                  </ul>
+                  <p className="font-medium pt-2">Are you sure this event should be marked as Corporate Priority?</p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShowCorporatePriorityConfirmDialog(false)}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, isCorporatePriority: true }));
+                    setShowCorporatePriorityConfirmDialog(false);
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  Yes, Mark as Corporate Priority
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Toolkit Status Section */}
           <div className="space-y-4">

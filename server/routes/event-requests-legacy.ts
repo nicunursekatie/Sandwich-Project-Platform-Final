@@ -2750,6 +2750,37 @@ router.patch(
       // DEBUG: Log department field specifically before save
       logger.info(`[PATCH /:id] DEPARTMENT DEBUG: Before save, processedUpdates.department = "${processedUpdates.department}", type = ${typeof processedUpdates.department}`);
 
+      // Track corporate priority changes with audit info
+      if (processedUpdates.isCorporatePriority !== undefined) {
+        // Check if corporate priority is being changed
+        if (processedUpdates.isCorporatePriority && !originalEvent.isCorporatePriority) {
+          // Being set to true
+          processedUpdates.corporatePriorityMarkedAt = new Date();
+          processedUpdates.corporatePriorityMarkedBy = req.user?.id || null;
+          logger.info(`[PATCH /:id] Corporate priority ENABLED by ${req.user?.email || 'unknown'} for event ${id}`);
+        } else if (!processedUpdates.isCorporatePriority && originalEvent.isCorporatePriority) {
+          // Being set to false - verify permissions
+          const userEmail = req.user?.email;
+          const allowedEmails = [
+            'admin@sandwich.project',
+            'katielong2316@gmail.com',
+            'katie@thesandwichproject.org',
+            'christine@thesandwichproject.org'
+          ];
+
+          if (!userEmail || !allowedEmails.includes(userEmail.toLowerCase())) {
+            return res.status(403).json({
+              message: 'Only Christine and Katie can remove the corporate priority flag from an event.',
+              error: 'Insufficient permissions',
+            });
+          }
+
+          processedUpdates.corporatePriorityMarkedAt = null;
+          processedUpdates.corporatePriorityMarkedBy = null;
+          logger.info(`[PATCH /:id] Corporate priority DISABLED by ${req.user?.email || 'unknown'} for event ${id}`);
+        }
+      }
+
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
