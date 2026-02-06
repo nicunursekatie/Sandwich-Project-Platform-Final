@@ -53,6 +53,8 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **React Query Cache Management**: Uses `queryClient.refetchQueries` in mutation success handlers for immediate UI updates.
 - **Organization Merge System**: Admin tool to merge duplicate organizations, including similarity scoring, merge preview, and batch updates.
 - **Email Template Customization System**: Allows admins to customize key text sections of follow-up HTML emails via a dedicated UI, with content stored in `email_template_sections` and supporting placeholders.
+- **External API Key Authentication**: Supports API key authentication for external app integrations. API keys are managed via `/api/api-keys` (super_admin only). External apps access event requests via `/api/external/event-requests` with Bearer token authentication. API keys are stored as SHA-256 hashes and follow `tsp_` prefix format. Permissions control access: `EVENT_REQUESTS_VIEW` for GET, `EVENT_REQUESTS_CREATE` for POST, `EVENT_REQUESTS_UPDATE` for PATCH. Schema table: `api_keys`.
+- **Intake Workflow App Integration**: External intake app pulls assigned event requests (GET with `assignedTo` param), allows coordinators to complete intake forms, then pushes collected data back (PATCH) to update events to 'scheduled' status.
 
 ### External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`

@@ -56,6 +56,28 @@ export const users = pgTable('users', {
   passwordBackup20241023: text('password_backup_20241023'),
 });
 
+// API Keys table for external app integrations
+export const apiKeys = pgTable('api_keys', {
+  id: serial('id').primaryKey(),
+  name: varchar('name').notNull(), // Descriptive name for the API key (e.g., "Intake Workflow App")
+  keyHash: varchar('key_hash').notNull().unique(), // Hashed API key for secure storage
+  keyPrefix: varchar('key_prefix').notNull(), // First 8 chars of key for identification (e.g., "tsp_1234...")
+  permissions: jsonb('permissions').default('["EVENT_REQUESTS_VIEW"]'), // Array of allowed permissions
+  createdBy: varchar('created_by').notNull(), // User who created the key
+  lastUsedAt: timestamp('last_used_at'), // Track when key was last used
+  expiresAt: timestamp('expires_at'), // Optional expiration date
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const insertApiKeySchema = createInsertSchema(apiKeys).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
+});
+export type InsertApiKey = z.infer<typeof insertApiKeySchema>;
+export type ApiKey = typeof apiKeys.$inferSelect;
+
 // Audit logging table for tracking all data changes
 export const auditLogs = pgTable('audit_logs', {
   id: serial('id').primaryKey(),
