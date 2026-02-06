@@ -956,17 +956,23 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                           email: <Mail className="w-3 h-3" />,
                           text: <MessageCircle className="w-3 h-3" />,
                           both: <MessageSquare className="w-3 h-3" />,
+                          phone_and_toolkit: <MessageSquare className="w-3 h-3" />,
+                          email_and_toolkit: <Mail className="w-3 h-3" />,
                         };
 
                         const methodLabels = {
                           phone: 'Phone',
                           email: 'Email',
                           text: 'Text',
-                          both: 'Both',
+                          both: 'Phone & Email',
+                          phone_and_toolkit: 'Phone + Toolkit',
+                          email_and_toolkit: 'Email + Toolkit',
                         };
 
                         const outcomeLabels: { [key: string]: string } = {
                           successful: 'Success',
+                          toolkit_sent: 'Toolkit Sent',
+                          toolkit_sent_left_message: 'Toolkit + Voicemail',
                           no_answer: 'No answer',
                           left_message: 'Left message',
                           wrong_number: 'Wrong number',
@@ -1076,6 +1082,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                             email: <Mail className="w-3 h-3" />,
                             text: <MessageCircle className="w-3 h-3" />,
                             both: <MessageSquare className="w-3 h-3" />,
+                            phone_and_toolkit: <MessageSquare className="w-3 h-3" />,
+                            email_and_toolkit: <Mail className="w-3 h-3" />,
                           };
 
                           const methodLabels = {
@@ -1083,10 +1091,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                             email: 'Email',
                             text: 'Text',
                             both: 'Phone & Email',
+                            phone_and_toolkit: 'Phone + Toolkit Email',
+                            email_and_toolkit: 'Email + Toolkit',
                           };
 
                           const outcomeLabels: { [key: string]: string } = {
                             successful: 'Successfully contacted - Got response',
+                            toolkit_sent: 'Toolkit sent',
+                            toolkit_sent_left_message: 'Toolkit sent + Left voicemail',
                             no_answer: 'No answer - No response',
                             left_message: 'Left voicemail/message',
                             wrong_number: 'Wrong/disconnected number',
