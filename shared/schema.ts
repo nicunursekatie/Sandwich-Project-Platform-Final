@@ -4508,13 +4508,13 @@ export const ambassadorCandidates = pgTable('ambassador_candidates', {
   priority: varchar('priority').default('normal'), // 'high', 'normal', 'low'
 
   // Outreach history
-  addedBy: integer('added_by').references(() => users.id),
+  addedBy: varchar('added_by').references(() => users.id),
   addedAt: timestamp('added_at').defaultNow().notNull(),
   addedReason: text('added_reason'), // Why this org was added (e.g., "High engagement score", "Referred by X")
 
   // Contact attempts
   lastContactedAt: timestamp('last_contacted_at'),
-  lastContactedBy: integer('last_contacted_by').references(() => users.id),
+  lastContactedBy: varchar('last_contacted_by').references(() => users.id),
   contactMethod: varchar('contact_method'), // 'email', 'phone', 'in_person', 'event'
   nextFollowUpDate: timestamp('next_follow_up_date'),
 
