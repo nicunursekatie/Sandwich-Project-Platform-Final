@@ -198,17 +198,27 @@ export const useEventMutations = () => {
     mutationFn: ({
       id,
       toolkitSentDate,
+      contactAttempt,
     }: {
       id: number;
       toolkitSentDate: string;
+      contactAttempt?: {
+        method: string;
+        outcome: string;
+        notes?: string;
+      };
     }) =>
       apiRequest('PATCH', `/api/event-requests/${id}/toolkit-sent`, {
         toolkitSentDate,
+        contactAttempt,
       }),
     onSuccess: async (updatedEvent, variables) => {
+      const message = variables.contactAttempt
+        ? 'Toolkit marked as sent and phone call logged.'
+        : 'Event status updated to "In Process".';
       toast({
         title: 'Toolkit marked as sent',
-        description: 'Event status updated to "In Process".',
+        description: message,
       });
       invalidateEventRequestQueries(queryClient);
 

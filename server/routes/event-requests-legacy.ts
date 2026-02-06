@@ -3774,7 +3774,7 @@ router.patch(
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { toolkitSentDate } = req.body;
+      const { toolkitSentDate, contactAttempt } = req.body;
 
 
       // Get original data for audit logging
@@ -3816,12 +3816,14 @@ router.patch(
         ? Math.max(...existingLog.map((a: any) => a.attemptNumber || 0)) + 1
         : 1;
 
+      // Use custom contact attempt data if provided (for phone + toolkit combo)
+      // Otherwise default to email-only toolkit sent entry
       const toolkitLogEntry = {
         attemptNumber: nextAttemptNumber,
         timestamp: sentDate.toISOString(),
-        method: 'email',
-        outcome: 'Toolkit Sent',
-        notes: `Toolkit sent and event moved to In Process`,
+        method: contactAttempt?.method || 'email',
+        outcome: contactAttempt?.outcome || 'toolkit_sent',
+        notes: contactAttempt?.notes || `Toolkit sent and event moved to In Process`,
         createdBy: req.user?.id || 'system',
         createdByName: req.user?.firstName && req.user?.lastName
           ? `${req.user.firstName} ${req.user.lastName}`
@@ -3831,6 +3833,7 @@ router.patch(
       await storage.updateEventRequest(id, {
         contactAttemptsLog: [...existingLog, toolkitLogEntry],
         lastContactAttempt: sentDate,
+        contactAttempts: nextAttemptNumber, // Update contact attempts count
       });
 
       // REMOVED: No longer updating Google Sheets - one-way sync only

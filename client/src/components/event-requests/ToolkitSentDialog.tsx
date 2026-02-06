@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -10,23 +11,45 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
   CheckCircle,
   Shield,
   Mail,
   Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { EventEmailComposer } from '@/components/event-email-composer';
 import type { EventRequest } from '@shared/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+// Contact attempt info to log along with toolkit
+interface ContactAttemptInfo {
+  method: string;
+  outcome: string;
+  notes?: string;
+}
 
 // ToolkitSentDialog Component - handles marking toolkit as sent and optionally sending email
 interface ToolkitSentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   eventRequest: EventRequest | null;
-  onToolkitSent: (toolkitSentDate: string) => void;
+  onToolkitSent: (toolkitSentDate: string, contactAttempt?: ContactAttemptInfo) => void;
   isLoading: boolean;
 }
+
+const CALL_OUTCOMES = [
+  { value: 'successful', label: 'Spoke with contact' },
+  { value: 'left_message', label: 'Left voicemail' },
+  { value: 'no_answer', label: 'No answer' },
+];
 
 const ToolkitSentDialog = ({
   isOpen,
@@ -41,6 +64,11 @@ const ToolkitSentDialog = ({
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  // Phone call logging
+  const [alsoLoggedCall, setAlsoLoggedCall] = useState(false);
+  const [callOutcome, setCallOutcome] = useState('');
+  const [callNotes, setCallNotes] = useState('');
+
   // Initialize date/time when dialog opens
   useEffect(() => {
     if (isOpen && eventRequest) {
@@ -51,17 +79,31 @@ const ToolkitSentDialog = ({
       setToolkitSentTime(timeStr);
       setShowEmailComposer(false);
       setEmailSent(false);
+      setAlsoLoggedCall(false);
+      setCallOutcome('');
+      setCallNotes('');
     }
   }, [isOpen, eventRequest]);
 
   const handleSubmit = () => {
     if (!toolkitSentDate || !toolkitSentTime) return;
+    if (alsoLoggedCall && !callOutcome) return; // Require outcome if logging call
 
     // Combine date and time into ISO string
     const combinedDateTime = new Date(
       `${toolkitSentDate}T${toolkitSentTime}`
     ).toISOString();
-    onToolkitSent(combinedDateTime);
+
+    // Build contact attempt info if logging a call
+    const contactAttempt = alsoLoggedCall ? {
+      method: 'phone_and_toolkit',
+      outcome: callOutcome === 'successful' ? 'toolkit_sent' :
+               callOutcome === 'left_message' ? 'toolkit_sent_left_message' :
+               'toolkit_sent',
+      notes: callNotes || `Toolkit sent${callOutcome === 'left_message' ? ' and left voicemail' : callOutcome === 'successful' ? ' after speaking with contact' : ''}`,
+    } : undefined;
+
+    onToolkitSent(combinedDateTime, contactAttempt);
   };
 
   const handleEmailSent = () => {
@@ -128,6 +170,67 @@ const ToolkitSentDialog = ({
                 <p className="text-sm text-[#236383] mt-1">
                   The toolkit email has been sent to {eventRequest?.email}
                 </p>
+              </div>
+            )}
+
+            {/* Also Log Phone Call Option */}
+            {eventRequest?.phone && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="also-logged-call"
+                    checked={alsoLoggedCall}
+                    onCheckedChange={(checked) => setAlsoLoggedCall(checked === true)}
+                    className="border-amber-400 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                  />
+                  <Label
+                    htmlFor="also-logged-call"
+                    className="text-amber-800 font-medium cursor-pointer flex items-center gap-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    I also called {eventRequest.firstName}
+                  </Label>
+                </div>
+
+                {alsoLoggedCall && (
+                  <div className="ml-7 space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="call-outcome" className="text-amber-800 text-sm">
+                        What happened on the call? *
+                      </Label>
+                      <Select value={callOutcome} onValueChange={setCallOutcome}>
+                        <SelectTrigger id="call-outcome" className="w-full border-amber-300">
+                          <SelectValue placeholder="Select call outcome" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CALL_OUTCOMES.map((outcome) => (
+                            <SelectItem key={outcome.value} value={outcome.value}>
+                              {outcome.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="call-notes" className="text-amber-800 text-sm">
+                        Call notes (optional)
+                      </Label>
+                      <Textarea
+                        id="call-notes"
+                        placeholder="Any notes from the call..."
+                        value={callNotes}
+                        onChange={(e) => setCallNotes(e.target.value)}
+                        rows={2}
+                        className="resize-none border-amber-300"
+                      />
+                    </div>
+
+                    <p className="text-xs text-amber-600">
+                      This will log a contact attempt with method &quot;Phone + Toolkit&quot;
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

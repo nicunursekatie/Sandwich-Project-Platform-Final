@@ -901,12 +901,13 @@ const EventRequestsManagementContent: React.FC = () => {
               setShowToolkitSentDialog(false);
               setToolkitEventRequest(null);
             }}
-            onToolkitSent={(toolkitSentDate: string) => {
+            onToolkitSent={(toolkitSentDate: string, contactAttempt?: { method: string; outcome: string; notes?: string }) => {
               if (toolkitEventRequest) {
                 trackButtonClick('mark_toolkit_sent', 'event_requests');
                 markToolkitSentMutation.mutate({
                   id: toolkitEventRequest.id,
                   toolkitSentDate,
+                  contactAttempt,
                 });
               }
             }}
