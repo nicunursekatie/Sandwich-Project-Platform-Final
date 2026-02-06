@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../db';
-import { eventRequests } from '@shared/schema';
+import { eventRequests, users } from '@shared/schema';
 import { eq, and, or, inArray, isNull, like, sql } from 'drizzle-orm';
 
 const router = Router();
@@ -12,14 +12,81 @@ const router = Router();
  *   - Fetches event requests for a specific user
  *   - Query params:
  *     - assignedTo: Filter by assignedTo field (user ID)
- *     - tspContact: Filter by tspContact OR customTspContact containing the user ID
+ *     - tspContact: Filter by tspContactAssigned, tspContact, OR customTspContact containing the user ID
  *     - status: Comma-separated list of statuses (optional, defaults to 'new,in_process')
  *   - At least one of assignedTo or tspContact is required
  *
  * PATCH /api/external/event-requests/:id
  *   - Updates an event request with intake data
  *   - Typically used to complete intake and move to 'scheduled' status
+ *
+ * GET /api/external/event-requests/user-lookup
+ *   - Looks up a user's platform ID by email address
+ *   - Query params:
+ *     - email: The user's email address
+ *   - Returns the user's ID, name, and role
  */
+
+// GET - Look up a user's platform ID by email address
+router.get('/user-lookup', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.query;
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({
+        message: 'Email query parameter is required',
+        code: 'MISSING_EMAIL',
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        displayName: users.displayName,
+        role: users.role,
+        isActive: users.isActive,
+      })
+      .from(users)
+      .where(eq(sql`LOWER(${users.email})`, normalizedEmail));
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'No user found with that email address',
+        code: 'USER_NOT_FOUND',
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({
+        message: 'User account is inactive',
+        code: 'USER_INACTIVE',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        displayName: user.displayName,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error('Error looking up user:', error);
+    res.status(500).json({
+      message: 'Failed to look up user',
+      code: 'LOOKUP_ERROR',
+    });
+  }
+});
 
 // GET - Fetch event requests assigned to a user or by TSP contact
 router.get('/', async (req: Request, res: Response) => {
@@ -44,10 +111,10 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     if (tspContact) {
-      // Filter by tspContact field OR if user appears in customTspContact
       const tspId = tspContact as string;
       conditions.push(
         or(
+          eq(eventRequests.tspContactAssigned, tspId),
           eq(eventRequests.tspContact, tspId),
           like(eventRequests.customTspContact, `%${tspId}%`)
         )
