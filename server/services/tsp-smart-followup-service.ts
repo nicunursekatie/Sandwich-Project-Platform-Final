@@ -239,26 +239,40 @@ function hasRecentActivity(event: any, sinceDate: Date): boolean {
     return true;
   }
 
-  // Check if scheduling notes were added/updated
-  if (event.updatedAt && new Date(event.updatedAt) > sinceDate) {
+  // Check if last contact attempt was recent (most reliable field)
+  if (event.lastContactAttempt && new Date(event.lastContactAttempt) > sinceDate) {
+    serviceLogger.info(`Event ${event.id} has recent lastContactAttempt: ${event.lastContactAttempt}`);
     return true;
   }
 
-  // Check if contact attempts were logged
-  if (event.contactAttemptsLog && Array.isArray(event.contactAttemptsLog)) {
-    const recentAttempts = event.contactAttemptsLog.filter((attempt: any) => {
+  // Check if contact attempts were logged - handle both parsed object and JSON string
+  let contactLog = event.contactAttemptsLog;
+  if (typeof contactLog === 'string') {
+    try {
+      contactLog = JSON.parse(contactLog);
+    } catch {
+      contactLog = null;
+    }
+  }
+
+  if (contactLog && Array.isArray(contactLog) && contactLog.length > 0) {
+    const recentAttempts = contactLog.filter((attempt: any) => {
+      if (!attempt.timestamp) return false;
       const attemptDate = new Date(attempt.timestamp);
       return attemptDate > sinceDate;
     });
     if (recentAttempts.length > 0) {
+      serviceLogger.info(`Event ${event.id} has ${recentAttempts.length} recent contact attempts in log`);
       return true;
     }
   }
 
-  // Check if last contact attempt was recent
-  if (event.lastContactAttempt && new Date(event.lastContactAttempt) > sinceDate) {
-    return true;
-  }
+  // Check if scheduling notes were added/updated recently
+  // BUT only if there's meaningful content change (not just automated timestamp updates)
+  // Skip this check as it's too broad and catches automated updates
+  // if (event.updatedAt && new Date(event.updatedAt) > sinceDate) {
+  //   return true;
+  // }
 
   return false;
 }
@@ -322,7 +336,13 @@ async function getInProcessEventsNeedingReminder() {
     if (daysElapsed < 7) return false;
 
     // Check if there's been any activity in the last 7 days
-    return !hasRecentActivity(event, sevenDaysAgo);
+    const hasActivity = hasRecentActivity(event, sevenDaysAgo);
+
+    if (!hasActivity) {
+      serviceLogger.info(`Event ${event.id} (${event.organizationName}) flagged as needing reminder: lastContactAttempt=${event.lastContactAttempt}, contactAttemptsLog entries=${Array.isArray(event.contactAttemptsLog) ? event.contactAttemptsLog.length : 'not array'}`);
+    }
+
+    return !hasActivity;
   });
 }
 

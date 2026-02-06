@@ -453,6 +453,9 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
       );
 
     serviceLogger.info(`Found ${corporateEvents.length} corporate priority events to process`);
+    if (corporateEvents.length > 0) {
+      serviceLogger.info(`Corporate events being processed: ${corporateEvents.map(e => `${e.id}:${e.organizationName}`).join(', ')}`);
+    }
 
     for (const event of corporateEvents) {
       result.eventsProcessed++;
