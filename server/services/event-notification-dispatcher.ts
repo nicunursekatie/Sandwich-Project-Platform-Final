@@ -973,11 +973,9 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     logger.log(`📋 In-process events: ${events.map(e => `ID:${e.id} "${e.organizationName}"`).join(', ')}`);
   }
 
-  // Get escalation recipients - only Katie and Christine
+  // Get escalation recipients - Katie only
   const escalationEmails = [
-    'katie@thesandwichproject.org',
-    'katielong2316@gmail.com',
-    'christine@thesandwichproject.org'
+    'katie@thesandwichproject.org'
   ];
   const admins = await db
     .select()

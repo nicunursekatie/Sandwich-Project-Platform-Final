@@ -710,10 +710,9 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
     }
 
     try {
-      // Send to Christine and Katie
+      // Send to Katie only
       const recipients = [
-        'christine@thesandwichproject.org',
-        'katielong2316@gmail.com'
+        'katie@thesandwichproject.org'
       ];
 
       const formattedEventDate = eventDate

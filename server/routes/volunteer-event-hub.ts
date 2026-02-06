@@ -28,7 +28,6 @@ const router = Router();
 
 // Coordinator emails for notifications
 const COORDINATOR_EMAILS = [
-  'christine@thesandwichproject.org',
   'katie@thesandwichproject.org'
 ];
 
