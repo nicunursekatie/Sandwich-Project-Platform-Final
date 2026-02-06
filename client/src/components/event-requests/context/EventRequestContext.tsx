@@ -12,8 +12,8 @@ interface EventRequestContextType {
   eventRequests: EventRequest[];
   isLoading: boolean;
   isPlaceholderData?: boolean;
-  quickFilter: 'week' | 'today' | 'needsDriver' | null;
-  setQuickFilter: (filter: 'week' | 'today' | 'needsDriver' | null) => void;
+  quickFilter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null;
+  setQuickFilter: (filter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null) => void;
 
   // View state
   viewMode: 'list' | 'calendar';
@@ -238,7 +238,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   }, [user?.role, user?.id]);
 
   // Quick filter state for special date ranges (This Week, Today, etc.)
-  const [quickFilter, setQuickFilter] = useState<'week' | 'today' | 'needsDriver' | null>(null);
+  const [quickFilter, setQuickFilter] = useState<'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null>(null);
 
   // View state - use role-based defaults if no initialTab provided
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');

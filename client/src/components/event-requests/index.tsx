@@ -22,7 +22,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck, MapPin } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import {
@@ -786,6 +786,22 @@ const EventRequestsManagementContent: React.FC = () => {
               >
                 <Calendar className="w-4 h-4 mr-1.5" />
                 Today
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority');
+                }}
+                className={`${
+                  quickFilter === 'corporatePriority'
+                    ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
+                    : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                }`}
+              >
+                <Shield className="w-4 h-4 mr-1.5" />
+                Corporate Priority
               </Button>
               <Link href="/driver-planning">
                 <Button

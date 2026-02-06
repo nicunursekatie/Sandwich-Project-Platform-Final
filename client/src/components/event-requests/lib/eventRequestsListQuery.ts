@@ -1,4 +1,4 @@
-export type EventRequestsQuickFilter = 'week' | 'today' | 'needsDriver' | 'needsVan' | null;
+export type EventRequestsQuickFilter = 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null;
 
 export type EventRequestsListFilterParams = {
   days?: number;
@@ -6,6 +6,7 @@ export type EventRequestsListFilterParams = {
   needsAction?: string;
   needsDriver?: string;
   needsVan?: string;
+  corporatePriority?: string;
 };
 
 function buildQueryString(filterParams: EventRequestsListFilterParams): string {
@@ -15,6 +16,7 @@ function buildQueryString(filterParams: EventRequestsListFilterParams): string {
   if (filterParams.needsAction) queryParams.set('needsAction', filterParams.needsAction);
   if (filterParams.needsDriver) queryParams.set('needsDriver', filterParams.needsDriver);
   if (filterParams.needsVan) queryParams.set('needsVan', filterParams.needsVan);
+  if (filterParams.corporatePriority) queryParams.set('corporatePriority', filterParams.corporatePriority);
   return queryParams.toString();
 }
 
@@ -55,6 +57,11 @@ export function buildEventRequestsListFilterParams(
   if (quickFilter === 'needsVan') {
     // Show ALL scheduled events that need a van (no date restriction)
     return { status: 'scheduled', needsVan: 'true' };
+  }
+
+  if (quickFilter === 'corporatePriority') {
+    // Show ALL corporate priority events across all active statuses
+    return { status: 'new,in_process,scheduled', corporatePriority: 'true' };
   }
 
   // Status-based tabs (no date restrictions)

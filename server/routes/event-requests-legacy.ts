@@ -1397,6 +1397,12 @@ router.get(
         eventRequests = eventRequests.filter(event => event.vanDriverNeeded === true);
       }
 
+      // Filter for corporate priority events
+      const corporatePriorityParam = req.query.corporatePriority as string | undefined;
+      if (corporatePriorityParam === 'true') {
+        eventRequests = eventRequests.filter(event => event.isCorporatePriority === true);
+      }
+
       // Map to lightweight format - see FIELD CONTRACT comment above
       const lightweightEvents = eventRequests.map(event => ({
         // ========== IDENTITY ==========
