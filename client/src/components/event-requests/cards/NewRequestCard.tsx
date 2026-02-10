@@ -769,7 +769,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
     request.id,
     request.email,        // contactEmail - to check if this is a returning contact
     contactFullName,      // contactName - fallback for contact matching
-    request.status === 'new' // Only check for new requests
+    ['new', 'in_process', 'scheduled'].includes(request.status || '') // Check for new, in-process, and scheduled requests
   );
 
   // Date population hook - to show warnings for busy dates
