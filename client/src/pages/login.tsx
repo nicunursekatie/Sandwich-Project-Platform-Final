@@ -22,7 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Link } from 'wouter';
-import { AlertCircle, Clock, LogIn } from 'lucide-react';
+import { AlertCircle, Clock, LogIn, Eye, EyeOff } from 'lucide-react';
 import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 import { AuthPageLayout } from '@/components/layout/responsive-page-layout';
 
@@ -37,6 +37,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<LoginForm>({
@@ -200,13 +201,27 @@ export default function LoginPage() {
                     <FormItem>
                       <FormLabel className="text-gray-700">Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter your password"
-                          data-testid="input-password"
-                          className="border-gray-300 focus:border-amber-500 focus:ring-amber-500 h-11 text-base"
-                          {...field}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Enter your password"
+                            data-testid="input-password"
+                            className="border-gray-300 focus:border-amber-500 focus:ring-amber-500 h-11 text-base pr-10"
+                            {...field}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="w-5 h-5" />
+                            ) : (
+                              <Eye className="w-5 h-5" />
+                            )}
+                          </button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
