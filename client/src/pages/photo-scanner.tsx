@@ -12,9 +12,6 @@ import {
   Loader2,
   CheckCircle,
   AlertTriangle,
-  X,
-  Edit2,
-  Save,
   ArrowLeft,
   Image as ImageIcon,
 } from 'lucide-react';
@@ -44,6 +41,14 @@ interface EditableEntry {
   isEditing: boolean;
 }
 
+// Combined entry for the new bulk location mode
+interface CombinedEntry {
+  location: string;
+  collectionDate: string;
+  totalSandwiches: number;
+  originalEntries: Array<{ volunteerName?: string; sandwichCount: number }>;
+}
+
 type ScanStage = 'upload' | 'scanning' | 'review' | 'saving' | 'success';
 
 export default function PhotoScanner() {
@@ -56,6 +61,9 @@ export default function PhotoScanner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // New state for bulk location mode - combines all entries into one
+  const [combinedEntry, setCombinedEntry] = useState<CombinedEntry | null>(null);
 
   // Cleanup blob URL on unmount or when it changes
   useEffect(() => {
@@ -85,15 +93,29 @@ export default function PhotoScanner() {
       if (data.success) {
         setScanResult(data.data);
         // Initialize editable entries with extracted data
-        setEditableEntries(
-          data.data.entries.map((entry: ExtractedEntry) => ({
-            location: entry.location,
-            sandwichCount: entry.sandwichCount,
-            collectionDate: entry.date || data.data.suggestedDate,
-            volunteerName: entry.volunteerName,
-            isEditing: false,
-          }))
-        );
+        const entries = data.data.entries.map((entry: ExtractedEntry) => ({
+          location: entry.location,
+          sandwichCount: entry.sandwichCount,
+          collectionDate: entry.date || data.data.suggestedDate,
+          volunteerName: entry.volunteerName,
+          isEditing: false,
+        }));
+        setEditableEntries(entries);
+
+        // Initialize combined entry for bulk location mode
+        // Use the first location found or empty string, and total all sandwiches
+        const totalSandwiches = entries.reduce((sum: number, e: EditableEntry) => sum + e.sandwichCount, 0);
+        const firstLocation = entries.find((e: EditableEntry) => e.location)?.location || '';
+        setCombinedEntry({
+          location: firstLocation,
+          collectionDate: data.data.suggestedDate,
+          totalSandwiches,
+          originalEntries: entries.map((e: EditableEntry) => ({
+            volunteerName: e.volunteerName,
+            sandwichCount: e.sandwichCount,
+          })),
+        });
+
         setStage('review');
       } else {
         toast({
@@ -114,16 +136,15 @@ export default function PhotoScanner() {
     },
   });
 
-  // Confirm mutation
+  // Confirm mutation - now sends a single combined entry
   const confirmMutation = useMutation({
-    mutationFn: async (entries: EditableEntry[]) => {
+    mutationFn: async (entry: CombinedEntry) => {
       return apiRequest('POST', '/api/photo-scanner/confirm', {
-        entries: entries.map((e) => ({
-          location: e.location,
-          sandwichCount: e.sandwichCount,
-          collectionDate: e.collectionDate,
-          volunteerName: e.volunteerName,
-        })),
+        entries: [{
+          location: entry.location,
+          sandwichCount: entry.totalSandwiches,
+          collectionDate: entry.collectionDate,
+        }],
       });
     },
     onSuccess: (data) => {
@@ -218,55 +239,19 @@ export default function PhotoScanner() {
     }
   }, []);
 
-  const updateEntry = (index: number, field: keyof EditableEntry, value: string | number) => {
-    setEditableEntries((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
-    });
-  };
-
-  const toggleEditing = (index: number) => {
-    setEditableEntries((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], isEditing: !updated[index].isEditing };
-      return updated;
-    });
-  };
-
-  const removeEntry = (index: number) => {
-    setEditableEntries((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const addEntry = () => {
-    setEditableEntries((prev) => [
-      ...prev,
-      {
-        location: '',
-        sandwichCount: 0,
-        collectionDate: scanResult?.suggestedDate || new Date().toISOString().split('T')[0],
-        isEditing: true,
-      },
-    ]);
-  };
-
   const handleConfirm = () => {
-    // Validate entries
-    const validEntries = editableEntries.filter(
-      (e) => e.location.trim() && e.sandwichCount > 0
-    );
-
-    if (validEntries.length === 0) {
+    // Validate combined entry
+    if (!combinedEntry || !combinedEntry.location.trim() || combinedEntry.totalSandwiches <= 0) {
       toast({
-        title: 'No valid entries',
-        description: 'Please ensure at least one entry has a location and count',
+        title: 'Missing information',
+        description: 'Please ensure location is set and there are sandwiches to record',
         variant: 'destructive',
       });
       return;
     }
 
     setStage('saving');
-    confirmMutation.mutate(validEntries);
+    confirmMutation.mutate(combinedEntry);
   };
 
   const handleReset = () => {
@@ -277,6 +262,7 @@ export default function PhotoScanner() {
     setPreviewUrl(null);
     setScanResult(null);
     setEditableEntries([]);
+    setCombinedEntry(null);
     setContextHint('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -409,7 +395,7 @@ export default function PhotoScanner() {
         )}
 
         {/* Review Stage */}
-        {stage === 'review' && scanResult && (
+        {stage === 'review' && scanResult && combinedEntry && (
           <div className="space-y-4">
             {/* Preview image */}
             {previewUrl && (
@@ -424,24 +410,23 @@ export default function PhotoScanner() {
               </Card>
             )}
 
-            {/* Summary */}
+            {/* Combined Entry Card */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center justify-between">
-                  <span>Extracted Data</span>
+                  <span>Collection Summary</span>
                   <span className={`text-sm font-normal ${getConfidenceColor(scanResult.overallConfidence)}`}>
                     {getConfidenceLabel(scanResult.overallConfidence)} Confidence
                   </span>
                 </CardTitle>
                 <CardDescription>
-                  Found {editableEntries.length} entries totaling{' '}
-                  {editableEntries.reduce((sum, e) => sum + e.sandwichCount, 0)} sandwiches
+                  Found {editableEntries.length} entries on this sheet
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 {/* Warnings */}
                 {scanResult.warnings.length > 0 && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                     <div className="flex items-start gap-2">
                       <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                       <div>
@@ -456,103 +441,101 @@ export default function PhotoScanner() {
                   </div>
                 )}
 
-                {/* Entries list */}
-                <div className="space-y-3">
-                  {editableEntries.map((entry, index) => (
-                    <div
-                      key={index}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                    >
-                      {entry.isEditing ? (
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs font-medium text-gray-600">Location</label>
-                              <Input
-                                value={entry.location}
-                                onChange={(e) => updateEntry(index, 'location', e.target.value)}
-                                placeholder="Location name"
-                                list={`hosts-${index}`}
-                                className="h-10"
-                              />
-                              <datalist id={`hosts-${index}`}>
-                                {knownHosts.map((host) => (
-                                  <option key={host.id} value={host.name} />
-                                ))}
-                              </datalist>
-                            </div>
-                            <div>
-                              <label className="text-xs font-medium text-gray-600">Count</label>
-                              <Input
-                                type="number"
-                                value={entry.sandwichCount || ''}
-                                onChange={(e) => updateEntry(index, 'sandwichCount', parseInt(e.target.value, 10) || 0)}
-                                placeholder="0"
-                                className="h-10"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-gray-600">Date</label>
-                            <Input
-                              type="date"
-                              value={entry.collectionDate}
-                              onChange={(e) => updateEntry(index, 'collectionDate', e.target.value)}
-                              className="h-10"
-                            />
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => removeEntry(index)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <X className="w-4 h-4 mr-1" />
-                              Remove
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => toggleEditing(index)}
-                              className="bg-brand-primary hover:bg-brand-primary-dark"
-                            >
-                              <Save className="w-4 h-4 mr-1" />
-                              Done
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-lg text-brand-primary">
-                              {entry.location || 'Unknown Location'}
-                            </p>
-                            <p className="text-2xl font-bold text-gray-800">
-                              {entry.sandwichCount} sandwiches
-                            </p>
-                            <p className="text-sm text-gray-500">{entry.collectionDate}</p>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => toggleEditing(index)}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Add entry button */}
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={addEntry}
-                  >
-                    + Add Entry
-                  </Button>
+                {/* Location field - applies to entire sheet */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Location (applies to entire sheet)
+                  </label>
+                  <Input
+                    value={combinedEntry.location}
+                    onChange={(e) => setCombinedEntry({ ...combinedEntry, location: e.target.value })}
+                    placeholder="Enter location name"
+                    list="hosts-combined"
+                    className="h-12"
+                  />
+                  <datalist id="hosts-combined">
+                    {knownHosts.map((host) => (
+                      <option key={host.id} value={host.name} />
+                    ))}
+                  </datalist>
                 </div>
+
+                {/* Date field */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">
+                    Collection Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={combinedEntry.collectionDate}
+                    onChange={(e) => setCombinedEntry({ ...combinedEntry, collectionDate: e.target.value })}
+                    className="h-12"
+                  />
+                </div>
+
+                {/* Total sandwiches - large display */}
+                <div className="bg-gradient-to-r from-brand-primary/10 to-brand-orange/10 rounded-lg p-6 text-center">
+                  <p className="text-sm font-medium text-gray-600 mb-1">Total Sandwiches</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCombinedEntry({
+                        ...combinedEntry,
+                        totalSandwiches: Math.max(0, combinedEntry.totalSandwiches - 1)
+                      })}
+                      className="h-10 w-10 p-0"
+                    >
+                      -
+                    </Button>
+                    <Input
+                      type="number"
+                      value={combinedEntry.totalSandwiches || ''}
+                      onChange={(e) => setCombinedEntry({
+                        ...combinedEntry,
+                        totalSandwiches: parseInt(e.target.value, 10) || 0
+                      })}
+                      className="h-14 w-24 text-center text-3xl font-bold"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCombinedEntry({
+                        ...combinedEntry,
+                        totalSandwiches: combinedEntry.totalSandwiches + 1
+                      })}
+                      className="h-10 w-10 p-0"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Individual entries breakdown (read-only) */}
+                {editableEntries.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-2">
+                      Extracted entries from sheet:
+                    </p>
+                    <div className="bg-gray-50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                      <div className="space-y-1">
+                        {editableEntries.map((entry, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-600">
+                              {entry.volunteerName || entry.location || `Entry ${index + 1}`}
+                            </span>
+                            <span className="font-medium text-gray-800">
+                              {entry.sandwichCount} sandwiches
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      These entries have been totaled above. You can adjust the total if needed.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -569,7 +552,7 @@ export default function PhotoScanner() {
               <Button
                 className="flex-1 bg-gradient-to-r from-brand-orange to-[#e89b2e] hover:from-[#e89b2e] hover:to-brand-orange text-white"
                 onClick={handleConfirm}
-                disabled={editableEntries.filter((e) => e.location.trim() && e.sandwichCount > 0).length === 0}
+                disabled={!combinedEntry.location.trim() || combinedEntry.totalSandwiches <= 0}
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Confirm & Save
