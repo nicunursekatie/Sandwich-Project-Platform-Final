@@ -86,7 +86,9 @@ export function organizationNamesMatch(
  *
  * Scoring:
  * - 1.0: Exact match after canonicalization
- * - 0.85-0.95: Substring match (scaled by length ratio)
+ * - 0.85-0.95: Substring match (only if shorter name is >= 60% of longer name's length
+ *   AND both names are at least 8 chars — prevents false positives from generic
+ *   substrings like "School" or "High School" matching inside longer names)
  * - 0.0-0.85: Levenshtein distance based similarity
  *
  * @param name1 - First organization name
@@ -97,6 +99,7 @@ export function organizationNamesMatch(
  * calculateSimilarity("First Baptist Church", "First Baptist Church") => 1.0
  * calculateSimilarity("Allied World", "Allied World Assurance") => ~0.90
  * calculateSimilarity("FBC", "First Baptist Church") => ~0.30
+ * calculateSimilarity("High School", "Johns Creek High School Lacrosse Team") => ~0.45 (Levenshtein, not substring)
  */
 export function calculateSimilarity(name1: string, name2: string): number {
   const canon1 = canonicalizeOrgName(name1);
@@ -107,12 +110,22 @@ export function calculateSimilarity(name1: string, name2: string): number {
   // Exact match
   if (canon1 === canon2) return 1.0;
 
-  // Substring match - scale by length ratio
-  if (canon1.includes(canon2) || canon2.includes(canon1)) {
-    const shorter = Math.min(canon1.length, canon2.length);
-    const longer = Math.max(canon1.length, canon2.length);
+  // Substring match - only valid when the shorter name is a substantial portion
+  // of the longer name. This prevents generic fragments like "highschool" (10 chars)
+  // from matching inside "johnscreekhighschoollacrosseteam" (31 chars) at 32% ratio.
+  const shorter = Math.min(canon1.length, canon2.length);
+  const longer = Math.max(canon1.length, canon2.length);
+  const lengthRatio = shorter / longer;
+  const MIN_SUBSTRING_LENGTH = 8;
+  const MIN_LENGTH_RATIO = 0.6;
+
+  if (
+    shorter >= MIN_SUBSTRING_LENGTH &&
+    lengthRatio >= MIN_LENGTH_RATIO &&
+    (canon1.includes(canon2) || canon2.includes(canon1))
+  ) {
     // Score between 0.85 and 0.95 based on length ratio
-    return 0.85 + (0.10 * (shorter / longer));
+    return 0.85 + (0.10 * lengthRatio);
   }
 
   // Levenshtein distance based similarity

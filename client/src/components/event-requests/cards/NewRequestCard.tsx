@@ -179,6 +179,7 @@ interface CardHeaderProps {
   datePopulationInfo?: DatePopulationInfo;
   returningOrgData?: {
     isReturning: boolean;
+    isReturningContact: boolean;
     pastEventCount: number;
     collectionCount: number;
     mostRecentEvent?: {
@@ -187,6 +188,7 @@ interface CardHeaderProps {
       status: string | null;
     };
     similarNames?: string[];
+    pastContactName?: string;
   };
 }
 
@@ -300,16 +302,24 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
-            {/* Returning Organization Indicator */}
+            {/* Returning Organization Indicator - two-tier: same contact vs new contact */}
             {returningOrgData?.isReturning && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge
                     variant="outline"
-                    className="bg-purple-50 text-purple-700 border-purple-300 whitespace-nowrap cursor-help"
+                    className={`whitespace-nowrap cursor-help ${
+                      returningOrgData.isReturningContact
+                        ? 'bg-purple-50 text-purple-700 border-purple-300'
+                        : 'bg-amber-50 text-amber-700 border-amber-300'
+                    }`}
                   >
                     <RefreshCw className="w-3 h-3 mr-1" />
                     Returning Org
+                    {returningOrgData.isReturningContact
+                      ? <span className="ml-1 text-xs opacity-80">&middot; Same Contact</span>
+                      : <span className="ml-1 text-xs opacity-80">&middot; New Contact</span>
+                    }
                     {returningOrgData.pastEventCount > 0 && (
                       <span className="ml-1 text-xs opacity-80">
                         ({returningOrgData.pastEventCount} past event{returningOrgData.pastEventCount !== 1 ? 's' : ''})
@@ -338,14 +348,27 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         {returningOrgData.mostRecentEvent.status && ` (${returningOrgData.mostRecentEvent.status})`}
                       </p>
                     )}
+                    {returningOrgData.isReturningContact ? (
+                      <p className="text-xs text-purple-600 font-medium mt-2">
+                        Same contact as a previous event &mdash; personalize your outreach!
+                      </p>
+                    ) : (
+                      <div className="mt-2">
+                        {returningOrgData.pastContactName && (
+                          <p className="text-xs text-muted-foreground">
+                            Past contact: {returningOrgData.pastContactName}
+                          </p>
+                        )}
+                        <p className="text-xs text-amber-600 font-medium">
+                          New contact for this org &mdash; treat as a first-time outreach
+                        </p>
+                      </div>
+                    )}
                     {returningOrgData.similarNames && returningOrgData.similarNames.length > 0 && (
                       <p className="text-xs text-muted-foreground">
                         Similar names: {returningOrgData.similarNames.slice(0, 3).join(', ')}
                       </p>
                     )}
-                    <p className="text-xs text-purple-600 font-medium mt-2">
-                      Personalize your outreach - don't send a generic first-time email!
-                    </p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -760,10 +783,13 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
 
-  // Check if this organization is returning (has past events)
+  // Check if this organization is returning (has past events) and if the contact is the same
+  const contactFullName = [request.firstName, request.lastName].filter(Boolean).join(' ') || null;
   const { data: returningOrgData } = useReturningOrganization(
     request.organizationName,
     request.id,
+    request.email,        // contactEmail - to check if this is a returning contact
+    contactFullName,      // contactName - fallback for contact matching
     request.status === 'new' // Only check for new requests
   );
 

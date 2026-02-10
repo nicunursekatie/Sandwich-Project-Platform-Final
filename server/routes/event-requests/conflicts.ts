@@ -80,35 +80,40 @@ router.get('/conflicts-for-date', isAuthenticated, async (req, res) => {
 
 /**
  * Check if an organization is a returning organization
- * GET /api/event-requests/check-returning-org?orgName=...&currentEventId=...
+ * GET /api/event-requests/check-returning-org?orgName=...&currentEventId=...&contactEmail=...&contactName=...
  *
  * This endpoint helps the intake team identify organizations that have worked with us before,
  * so they can personalize their outreach instead of sending generic first-time emails.
  *
  * Returns:
  * - isReturning: boolean - Whether the organization has past events/collections
+ * - isReturningContact: boolean - Whether the contact person has been involved in past events
  * - pastEventCount: number - Number of past events
  * - collectionCount: number - Number of sandwich collections
  * - mostRecentEvent: object - Most recent event info (if any)
  * - similarNames: string[] - Similar organization names found (for fuzzy matching)
+ * - pastContactName: string - Name of the most recent past contact (for context)
  */
 router.get('/check-returning-org', isAuthenticated, async (req, res) => {
   try {
     const orgName = req.query.orgName as string;
     const currentEventId = req.query.currentEventId ? parseInt(req.query.currentEventId as string) : undefined;
+    const contactEmail = req.query.contactEmail as string | undefined;
+    const contactName = req.query.contactName as string | undefined;
 
     if (!orgName) {
       return res.status(400).json({ error: 'Organization name required' });
     }
 
     const { checkReturningOrganization } = await import('../../services/organizations/duplicate-detection');
-    const result = await checkReturningOrganization(orgName, currentEventId);
+    const result = await checkReturningOrganization(orgName, currentEventId, contactEmail, contactName);
 
     res.json(result);
   } catch (error) {
     logger.error('Error checking returning organization:', error);
     res.status(500).json({
       isReturning: false,
+      isReturningContact: false,
       pastEventCount: 0,
       collectionCount: 0,
       error: error instanceof Error ? error.message : 'Unknown error',

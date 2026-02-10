@@ -286,9 +286,12 @@ export async function getOrganizationDetails(orgName: string) {
  */
 export async function checkReturningOrganization(
   orgName: string,
-  currentEventId?: number
+  currentEventId?: number,
+  contactEmail?: string,
+  contactName?: string
 ): Promise<{
   isReturning: boolean;
+  isReturningContact: boolean;
   inCatalog: boolean;
   pastEventCount: number;
   collectionCount: number;
@@ -302,12 +305,14 @@ export async function checkReturningOrganization(
     dateCollected: string | null;
   };
   similarNames?: string[];
+  pastContactName?: string;
 }> {
   try {
     // Validate input
     if (!orgName || typeof orgName !== 'string' || orgName.trim().length === 0) {
       return {
         isReturning: false,
+        isReturningContact: false,
         inCatalog: false,
         pastEventCount: 0,
         collectionCount: 0,
@@ -318,6 +323,7 @@ export async function checkReturningOrganization(
     if (!canonicalName) {
       return {
         isReturning: false,
+        isReturningContact: false,
         inCatalog: false,
         pastEventCount: 0,
         collectionCount: 0,
@@ -335,7 +341,7 @@ export async function checkReturningOrganization(
             AND ${eventRequests.organizationName} != ''`;
 
     // Wrapped in try/catch to handle potential Drizzle column resolution issues
-    let pastEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null }[] = [];
+    let pastEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null }[] = [];
     try {
       pastEvents = await db
         .select({
@@ -344,6 +350,9 @@ export async function checkReturningOrganization(
           desiredEventDate: eventRequests.desiredEventDate,
           scheduledEventDate: eventRequests.scheduledEventDate,
           status: eventRequests.status,
+          firstName: eventRequests.firstName,
+          lastName: eventRequests.lastName,
+          email: eventRequests.email,
         })
         .from(eventRequests)
         .where(eventCondition)
@@ -420,8 +429,50 @@ export async function checkReturningOrganization(
     const mostRecentEvent = matchingEvents[0];
     const mostRecentCollection = matchingCollections[0];
 
+    // Check if the current contact matches any past event contacts
+    // Match by email first (most reliable), fall back to first+last name
+    let isReturningContact = false;
+    let pastContactName: string | undefined;
+
+    if (isReturning && matchingEvents.length > 0) {
+      const normalizedContactEmail = contactEmail?.trim().toLowerCase();
+      const normalizedContactName = contactName?.trim().toLowerCase();
+
+      for (const event of matchingEvents) {
+        const eventEmail = event.email?.trim().toLowerCase();
+        const eventFullName = [event.firstName, event.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim()
+          .toLowerCase();
+
+        // Email match is strongest signal
+        if (normalizedContactEmail && eventEmail && normalizedContactEmail === eventEmail) {
+          isReturningContact = true;
+          pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
+          break;
+        }
+
+        // Fall back to name match if no email match found
+        if (normalizedContactName && eventFullName && normalizedContactName === eventFullName) {
+          isReturningContact = true;
+          pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
+          break;
+        }
+      }
+
+      // If not a returning contact, grab the most recent past contact name for context
+      if (!isReturningContact && mostRecentEvent) {
+        const recentName = [mostRecentEvent.firstName, mostRecentEvent.lastName].filter(Boolean).join(' ');
+        if (recentName) {
+          pastContactName = recentName;
+        }
+      }
+    }
+
     return {
       isReturning,
+      isReturningContact,
       inCatalog: false, // TODO: Check organizations table when properly implemented
       pastEventCount: matchingEvents.length,
       collectionCount: matchingCollections.length,
@@ -435,6 +486,7 @@ export async function checkReturningOrganization(
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
       similarNames: similarNames.size > 0 ? Array.from(similarNames).slice(0, 5) : undefined,
+      pastContactName,
     };
   } catch (error) {
     logger.error('Error checking returning organization', { orgName, currentEventId, error });
