@@ -284,46 +284,67 @@ export const useEventAssignments = () => {
           originalData.assignedVanDriverId = eventRequest.assignedVanDriverId;
           updateData.assignedVanDriverId = null;
         } else {
-          // Regular driver - remove from assignedDriverIds array
-          const currentDrivers = eventRequest.assignedDriverIds || [];
-          originalData.assignedDriverIds = [...currentDrivers];
-          updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
+          // Check if it's a tentative driver
+          const currentTentativeDrivers = eventRequest.tentativeDriverIds || [];
+          if (currentTentativeDrivers.includes(personId)) {
+            originalData.tentativeDriverIds = [...currentTentativeDrivers];
+            updateData.tentativeDriverIds = currentTentativeDrivers.filter(id => id !== personId);
+          } else {
+            // Regular driver - remove from assignedDriverIds array
+            const currentDrivers = eventRequest.assignedDriverIds || [];
+            originalData.assignedDriverIds = [...currentDrivers];
+            updateData.assignedDriverIds = currentDrivers.filter(id => id !== personId);
 
-          const currentDriverDetails = eventRequest.driverDetails || {};
-          originalData.driverDetails = { ...currentDriverDetails };
-          const newDriverDetails = { ...currentDriverDetails };
-          delete newDriverDetails[personId];
-          updateData.driverDetails = newDriverDetails;
+            const currentDriverDetails = eventRequest.driverDetails || {};
+            originalData.driverDetails = { ...currentDriverDetails };
+            const newDriverDetails = { ...currentDriverDetails };
+            delete newDriverDetails[personId];
+            updateData.driverDetails = newDriverDetails;
+          }
         }
       } else if (type === 'speaker') {
-        const currentSpeakerDetails = eventRequest.speakerDetails || {};
-        originalData.speakerDetails = { ...currentSpeakerDetails };
-        const newSpeakerDetails = { ...currentSpeakerDetails };
-        delete newSpeakerDetails[personId];
-        updateData.speakerDetails = newSpeakerDetails;
+        // Check if it's a tentative speaker
+        const currentTentativeSpeakers = eventRequest.tentativeSpeakerIds || [];
+        if (currentTentativeSpeakers.includes(personId)) {
+          originalData.tentativeSpeakerIds = [...currentTentativeSpeakers];
+          updateData.tentativeSpeakerIds = currentTentativeSpeakers.filter(id => id !== personId);
+        } else {
+          const currentSpeakerDetails = eventRequest.speakerDetails || {};
+          originalData.speakerDetails = { ...currentSpeakerDetails };
+          const newSpeakerDetails = { ...currentSpeakerDetails };
+          delete newSpeakerDetails[personId];
+          updateData.speakerDetails = newSpeakerDetails;
 
-        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-        originalData.speakerAssignments = [...currentSpeakerAssignments];
-        const speakerName = currentSpeakerDetails[personId]?.name;
-        if (speakerName) {
-          updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
+          const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
+          originalData.speakerAssignments = [...currentSpeakerAssignments];
+          const speakerName = currentSpeakerDetails[personId]?.name;
+          if (speakerName) {
+            updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
+          }
         }
       } else if (type === 'volunteer') {
-        const currentVolunteers = eventRequest.assignedVolunteerIds || [];
-        originalData.assignedVolunteerIds = [...currentVolunteers];
-        updateData.assignedVolunteerIds = currentVolunteers.filter(id => id !== personId);
+        // Check if it's a tentative volunteer
+        const currentTentativeVolunteers = eventRequest.tentativeVolunteerIds || [];
+        if (currentTentativeVolunteers.includes(personId)) {
+          originalData.tentativeVolunteerIds = [...currentTentativeVolunteers];
+          updateData.tentativeVolunteerIds = currentTentativeVolunteers.filter(id => id !== personId);
+        } else {
+          const currentVolunteers = eventRequest.assignedVolunteerIds || [];
+          originalData.assignedVolunteerIds = [...currentVolunteers];
+          updateData.assignedVolunteerIds = currentVolunteers.filter(id => id !== personId);
 
-        const currentVolunteerDetails = eventRequest.volunteerDetails || {};
-        originalData.volunteerDetails = { ...currentVolunteerDetails };
-        const newVolunteerDetails = { ...currentVolunteerDetails };
-        delete newVolunteerDetails[personId];
-        updateData.volunteerDetails = newVolunteerDetails;
+          const currentVolunteerDetails = eventRequest.volunteerDetails || {};
+          originalData.volunteerDetails = { ...currentVolunteerDetails };
+          const newVolunteerDetails = { ...currentVolunteerDetails };
+          delete newVolunteerDetails[personId];
+          updateData.volunteerDetails = newVolunteerDetails;
 
-        const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
-        originalData.volunteerAssignments = [...currentVolunteerAssignments];
-        const volunteerName = currentVolunteerDetails[personId]?.name;
-        if (volunteerName) {
-          updateData.volunteerAssignments = currentVolunteerAssignments.filter(name => name !== volunteerName);
+          const currentVolunteerAssignments = eventRequest.volunteerAssignments || [];
+          originalData.volunteerAssignments = [...currentVolunteerAssignments];
+          const volunteerName = currentVolunteerDetails[personId]?.name;
+          if (volunteerName) {
+            updateData.volunteerAssignments = currentVolunteerAssignments.filter(name => name !== volunteerName);
+          }
         }
       }
 

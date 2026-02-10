@@ -46,6 +46,7 @@ import {
   Sparkles,
   Plus,
   Check,
+  HelpCircle,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -2532,11 +2533,46 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </div>
                             );
                           })}
-                          {parsePostgresArray(request.assignedDriverIds).length === 0 && driverNeeded > 0 && (
+                          {parsePostgresArray(request.assignedDriverIds).length === 0 && driverNeeded > 0 && parsePostgresArray(request.tentativeDriverIds).length === 0 && (
                             <Badge variant="outline" className="bg-[#236383]/20 text-[#236383] border-[#236383] font-medium">
                               <Car className="w-3 h-3 mr-1" />None assigned
                             </Badge>
                           )}
+                          {/* Tentative Drivers */}
+                          {parsePostgresArray(request.tentativeDriverIds).map((id) => {
+                            const isCustom = id.startsWith('custom-');
+                            const idLooksLikeName = id &&
+                              !id.startsWith('user_') &&
+                              !id.startsWith('driver_') &&
+                              !id.startsWith('driver-') &&
+                              !id.startsWith('custom-') &&
+                              !id.startsWith('host-contact-') &&
+                              !/^\d+$/.test(id) &&
+                              id.includes(' ');
+                            const resolvedName = resolveUserName(id);
+                            const displayName = isCustom
+                              ? extractCustomName(id)
+                              : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                            return (
+                            <div key={`tentative-${id}`} className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                              <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
+                                <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                                {displayName}
+                                <span className="text-xs text-amber-500">(tentative)</span>
+                              </span>
+                              {canEdit && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleRemoveAssignment('driver', id)}
+                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -2722,7 +2758,41 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           </div>
                         );
                       })}
-                      {speakerAssigned === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      {speakerAssigned === 0 && parsePostgresArray(request.tentativeSpeakerIds).length === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      {/* Tentative Speakers */}
+                      {parsePostgresArray(request.tentativeSpeakerIds).map((id) => {
+                        const isCustom = id.startsWith('custom-');
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') &&
+                          !id.startsWith('driver_') &&
+                          !id.startsWith('custom-') &&
+                          !id.startsWith('host-contact-') &&
+                          !/^\d+$/.test(id) &&
+                          id.includes(' ');
+                        const resolvedName = resolveUserName(id);
+                        const displayName = isCustom
+                          ? extractCustomName(id)
+                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        return (
+                        <div key={`tentative-${id}`} className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                          <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
+                            <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                            {displayName}
+                            <span className="text-xs text-amber-500">(tentative)</span>
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('speaker', id)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : canEdit ? (
@@ -2838,7 +2908,43 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         </div>
                         );
                       })}
-                      {volunteerAssigned === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      {volunteerAssigned === 0 && parsePostgresArray(request.tentativeVolunteerIds).length === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
+                      {/* Tentative Volunteers */}
+                      {parsePostgresArray(request.tentativeVolunteerIds).map((id) => {
+                        const isCustom = id.startsWith('custom-');
+                        const idLooksLikeName = id &&
+                          !id.startsWith('user_') &&
+                          !id.startsWith('driver_') &&
+                          !id.startsWith('volunteer_') &&
+                          !id.startsWith('volunteer-') &&
+                          !id.startsWith('custom-') &&
+                          !id.startsWith('host-contact-') &&
+                          !/^\d+$/.test(id) &&
+                          id.includes(' ');
+                        const resolvedName = resolveUserName(id);
+                        const displayName = isCustom
+                          ? extractCustomName(id)
+                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        return (
+                        <div key={`tentative-${id}`} className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                          <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
+                            <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                            {displayName}
+                            <span className="text-xs text-amber-500">(tentative)</span>
+                          </span>
+                          {canEdit && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveAssignment('volunteer', id)}
+                              className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ) : canEdit ? (

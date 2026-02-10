@@ -2293,8 +2293,10 @@ export const eventRequests = pgTable(
     driverNotes: text('driver_notes'), // Notes for drivers
     driversArranged: boolean('drivers_arranged').default(false), // Whether drivers are confirmed
     assignedSpeakerIds: text('assigned_speaker_ids').array(), // Array of assigned speaker IDs/names
+    tentativeSpeakerIds: text('tentative_speaker_ids').array(), // Array of speaker IDs that are tentatively assigned (shown with ? badge)
     // NOTE: assigned_driver_speakers was removed in migration 0024
     assignedVolunteerIds: text('assigned_volunteer_ids').array(), // Array of assigned volunteer IDs/names
+    tentativeVolunteerIds: text('tentative_volunteer_ids').array(), // Array of volunteer IDs that are tentatively assigned (shown with ? badge)
     volunteerDetails: jsonb('volunteer_details'), // Additional volunteer assignment details (mirrors driverDetails/speakerDetails)
     assignedRecipientIds: text('assigned_recipient_ids').array(), // Array of assigned recipient IDs
     recipientAllocations: jsonb('recipient_allocations').$type<Array<{

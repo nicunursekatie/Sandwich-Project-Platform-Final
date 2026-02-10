@@ -1166,7 +1166,7 @@ const EventRequestsManagementContent: React.FC = () => {
           selectedAssignees={selectedAssignees}
           setSelectedAssignees={setSelectedAssignees}
           isVanDriverAssignment={isVanDriverAssignment}
-          onAssign={async (assignees: string[]) => {
+          onAssign={async (assignees: string[], isTentative: boolean = false) => {
             if (!assignmentEventId || !assignmentType) return;
 
             // Prevent double submission
@@ -1179,6 +1179,7 @@ const EventRequestsManagementContent: React.FC = () => {
             logger.log('Event ID:', assignmentEventId);
             logger.log('Assignment Type:', assignmentType);
             logger.log('Selected Assignees:', assignees);
+            logger.log('Is Tentative:', isTentative);
             logger.log('Available drivers:', (drivers ?? []).map((d: any) => ({ id: d.id, name: d.name })));
             logger.log('Available users:', (users ?? []).map((u: any) => ({ id: u.id, name: `${u.firstName} ${u.lastName}` })));
 
@@ -1220,7 +1221,7 @@ const EventRequestsManagementContent: React.FC = () => {
               const isVanDriver = isVanDriverAssignment;
 
               if (isVanDriver) {
-                // Assign as van driver
+                // Assign as van driver (van drivers can't be tentative for now)
                 updateData.assignedVanDriverId = assignees[0];
                 // Also set vanDriverNeeded to true if not already set
                 if (!currentEvent.vanDriverNeeded) {
@@ -1228,6 +1229,11 @@ const EventRequestsManagementContent: React.FC = () => {
                   // Default to no additional regular drivers when van driver is newly needed
                   updateData.driversNeeded = 0;
                 }
+              } else if (isTentative) {
+                // Tentative driver assignment - add to tentativeDriverIds
+                const existingTentativeDrivers = currentEvent.tentativeDriverIds || [];
+                const allTentativeDriverIds = [...new Set([...existingTentativeDrivers, ...assignees])];
+                updateData.tentativeDriverIds = allTentativeDriverIds;
               } else {
                 // Regular driver assignment
                 // Get existing drivers and merge with new ones
@@ -1277,6 +1283,12 @@ const EventRequestsManagementContent: React.FC = () => {
               }
 
             } else if (assignmentType === 'speaker') {
+              if (isTentative) {
+                // Tentative speaker assignment - add to tentativeSpeakerIds
+                const existingTentativeSpeakers = currentEvent.tentativeSpeakerIds || [];
+                const allTentativeSpeakerIds = [...new Set([...existingTentativeSpeakers, ...assignees])];
+                updateData.tentativeSpeakerIds = allTentativeSpeakerIds;
+              } else {
               // Get existing speakers and merge with new ones
               const existingSpeakers = currentEvent.assignedSpeakerIds || [];
               const existingSpeakerDetails = currentEvent.speakerDetails || {};
@@ -1343,8 +1355,15 @@ const EventRequestsManagementContent: React.FC = () => {
 
               updateData.speakerDetails = speakerDetails;
               updateData.speakerAssignments = speakerAssignments;
+              }
 
             } else if (assignmentType === 'volunteer') {
+              if (isTentative) {
+                // Tentative volunteer assignment - add to tentativeVolunteerIds
+                const existingTentativeVolunteers = currentEvent.tentativeVolunteerIds || [];
+                const allTentativeVolunteerIds = [...new Set([...existingTentativeVolunteers, ...assignees])];
+                updateData.tentativeVolunteerIds = allTentativeVolunteerIds;
+              } else {
               // Get existing volunteers and merge with new ones
               const existingVolunteers = currentEvent.assignedVolunteerIds || [];
               const existingVolunteerDetails = currentEvent.volunteerDetails || {};
@@ -1411,6 +1430,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
               updateData.volunteerDetails = volunteerDetails;
               updateData.volunteerAssignments = volunteerAssignments;
+              }
             }
 
             try {
@@ -1431,7 +1451,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
               toast({
                 title: 'Success',
-                description: `${assignmentType}s assigned successfully`,
+                description: isTentative
+                  ? `${assignmentType}s added as tentative (?)`
+                  : `${assignmentType}s assigned successfully`,
               });
             } catch (error) {
               logger.error('Assignment error:', error);

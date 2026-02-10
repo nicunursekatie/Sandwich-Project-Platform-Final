@@ -1451,6 +1451,7 @@ router.get(
         estimatedSandwichRangeType: event.estimatedSandwichRangeType, // ScheduledCard
         actualSandwichCount: event.actualSandwichCount,
         sandwichTypes: event.sandwichTypes, // NewRequestCard, ScheduledCard, CompletedCard
+        hasRefrigeration: event.hasRefrigeration, // RefrigerationWarningBadge on all cards
         volunteerCount: event.volunteerCount,
         actualAttendance: event.actualAttendance,
 
@@ -1464,11 +1465,13 @@ router.get(
         // ========== SPEAKER STAFFING ==========
         speakersNeeded: event.speakersNeeded,
         assignedSpeakerIds: event.assignedSpeakerIds,
+        tentativeSpeakerIds: event.tentativeSpeakerIds,
         speakerDetails: event.speakerDetails,
 
         // ========== VOLUNTEER STAFFING ==========
         volunteersNeeded: event.volunteersNeeded,
         assignedVolunteerIds: event.assignedVolunteerIds,
+        tentativeVolunteerIds: event.tentativeVolunteerIds,
         volunteerDetails: event.volunteerDetails,
 
         // ========== VAN DRIVER ==========

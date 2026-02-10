@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ import {
   HelpCircle,
   ExternalLink,
   Loader2,
+  CircleHelp,
 } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import type { AvailabilitySlot } from '@shared/schema';
@@ -442,7 +445,7 @@ interface AssignmentDialogProps {
   assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
   selectedAssignees: string[];
   setSelectedAssignees: (assignees: string[]) => void;
-  onAssign: (assignees: string[]) => void;
+  onAssign: (assignees: string[], isTentative: boolean) => void;
   isVanDriverAssignment?: boolean;
 }
 
@@ -455,6 +458,9 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   onAssign,
   isVanDriverAssignment = false,
 }) => {
+  // Tentative assignment state
+  const [isTentative, setIsTentative] = useState(false);
+
   // Get context to find the event date
   const { assignmentEventId, eventRequests } = useEventRequestContext();
 
@@ -495,6 +501,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
       if (!open) {
         onClose();
         setSelectedAssignees([]);
+        setIsTentative(false);
       }
     }}>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] flex flex-col">
@@ -539,23 +546,50 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           vanDriverNeeded={isVanDriverAssignment}
         />
 
-        <div className="flex justify-end space-x-2 pt-4 border-t border-[#007E8C]/10">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => onAssign(selectedAssignees)}
-            className="bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm"
-            disabled={selectedAssignees.length === 0}
-          >
-            <UserPlus className="w-4 h-4 mr-2" aria-hidden="true" />
-            Assign {selectedAssignees.length} {assignmentType}
-            {selectedAssignees.length !== 1 ? 's' : ''}
-          </Button>
+        <div className="flex items-center justify-between pt-4 border-t border-[#007E8C]/10">
+          {/* Tentative checkbox */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="tentative-assignment"
+              checked={isTentative}
+              onCheckedChange={(checked) => setIsTentative(checked === true)}
+              className="border-amber-500 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+            />
+            <Label
+              htmlFor="tentative-assignment"
+              className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-1.5"
+            >
+              <CircleHelp className="w-4 h-4 text-amber-500" aria-hidden="true" />
+              Mark as tentative
+              <span className="text-xs text-gray-500">(shown with ? badge)</span>
+            </Label>
+          </div>
+
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => onAssign(selectedAssignees, isTentative)}
+              className={isTentative
+                ? "bg-amber-500 hover:bg-amber-600 text-white shadow-sm"
+                : "bg-[#007E8C] hover:bg-[#236383] text-white shadow-sm"
+              }
+              disabled={selectedAssignees.length === 0}
+            >
+              {isTentative ? (
+                <CircleHelp className="w-4 h-4 mr-2" aria-hidden="true" />
+              ) : (
+                <UserPlus className="w-4 h-4 mr-2" aria-hidden="true" />
+              )}
+              {isTentative ? 'Add Tentative' : 'Assign'} {selectedAssignees.length} {assignmentType}
+              {selectedAssignees.length !== 1 ? 's' : ''}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
