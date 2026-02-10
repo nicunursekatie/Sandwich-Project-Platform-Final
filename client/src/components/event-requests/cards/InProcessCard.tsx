@@ -469,6 +469,26 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </Tooltip>
           )}
 
+          {/* Corporate Priority Badge */}
+          {(request as any).isCorporatePriority && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  className="px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap bg-gradient-to-br from-[#B8860B] to-[#DAA520] text-white"
+                >
+                  <Building className="w-3 h-3 mr-1" />
+                  Corporate Priority
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <div className="space-y-1">
+                  <p className="font-medium">This is a Corporate Priority Event</p>
+                  <p className="text-sm">Requires immediate contact and core team member attendance.</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {/* Validation badges for missing intake info */}
           {(() => {
             const missingInfo = getMissingIntakeInfo(request);
@@ -1452,7 +1472,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             <div className="space-y-3">
               {request.message && (
                 <div>
-                  <p className="text-sm font-medium mb-1">Initial Request Notes:</p>
+                  <p className="text-sm font-medium mb-1">
+                    Initial Request Notes
+                    {request.createdAt && (
+                      <span className="text-gray-500 font-normal ml-2">
+                        (Submitted {new Date(request.createdAt).toLocaleDateString()})
+                      </span>
+                    )}
+                  </p>
                   <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded border-l-4 border-blue-400 whitespace-pre-wrap">
                     {request.message}
                   </p>

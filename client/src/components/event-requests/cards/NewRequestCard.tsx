@@ -896,6 +896,28 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           )
         )}
 
+        {/* Scheduled Call Info */}
+        {request.scheduledCallDate && (
+          <div className="mb-4 bg-brand-primary-lighter rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-brand-primary-muted" />
+              <span className="text-sm font-medium">Call scheduled:</span>
+              <span className="text-sm">
+                {(() => {
+                  const date = new Date(request.scheduledCallDate);
+                  const hours = date.getHours();
+                  const minutes = date.getMinutes();
+                  // If time is midnight (00:00), show date only
+                  if (hours === 0 && minutes === 0) {
+                    return date.toLocaleDateString();
+                  }
+                  return date.toLocaleString();
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {/* Left Column - Event Details */}

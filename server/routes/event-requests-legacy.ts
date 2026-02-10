@@ -1438,6 +1438,7 @@ router.get(
         assignedTo: event.assignedTo,
         nextAction: event.nextAction, // NewRequestCard
         message: event.message, // NewRequestCard
+        scheduledCallDate: event.scheduledCallDate, // InProcessCard - scheduled call with organizer
 
         // ========== LOCATION (ScheduledCard, NewRequestCard) ==========
         eventAddress: event.eventAddress,
@@ -2421,6 +2422,32 @@ router.patch(
         processedUpdates.tspContactAssignedDate = new Date();
       }
 
+      // Automatically increment contactAttempts when toolkit is marked as sent (if not already sent)
+      if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&
+          !originalEvent.toolkitSent) {
+        const existingLog = Array.isArray(originalEvent.contactAttemptsLog)
+          ? (originalEvent.contactAttemptsLog as any[])
+          : [];
+        const currentAttempts = originalEvent.contactAttempts || 0;
+        const nextAttemptNumber = Math.max(currentAttempts, existingLog.length) + 1;
+
+        const toolkitLogEntry = {
+          attemptNumber: nextAttemptNumber,
+          timestamp: new Date().toISOString(),
+          method: 'email',
+          outcome: 'toolkit_sent',
+          notes: 'Toolkit sent',
+          createdBy: req.user?.id || 'system',
+          createdByName: req.user?.firstName && req.user?.lastName
+            ? `${req.user.firstName} ${req.user.lastName}`
+            : req.user?.email || 'System',
+        };
+
+        processedUpdates.contactAttemptsLog = [...existingLog, toolkitLogEntry];
+        processedUpdates.contactAttempts = nextAttemptNumber;
+        processedUpdates.lastContactAttempt = new Date();
+      }
+
       // Always update the updatedAt timestamp
       const updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
@@ -2695,6 +2722,34 @@ router.patch(
           req.user?.id) {
         processedUpdates.tspContact = req.user.id;
         processedUpdates.tspContactAssignedDate = new Date();
+      }
+
+      // Automatically increment contactAttempts when toolkit is marked as sent (if not already sent)
+      // This ensures toolkit sending counts as a contact attempt
+      if ((processedUpdates.toolkitSent === true || processedUpdates.toolkitStatus === 'sent') &&
+          !originalEvent.toolkitSent) {
+        const existingLog = Array.isArray(originalEvent.contactAttemptsLog)
+          ? (originalEvent.contactAttemptsLog as any[])
+          : [];
+        const currentAttempts = originalEvent.contactAttempts || 0;
+        const nextAttemptNumber = Math.max(currentAttempts, existingLog.length) + 1;
+
+        // Add toolkit sent entry to contact attempts log
+        const toolkitLogEntry = {
+          attemptNumber: nextAttemptNumber,
+          timestamp: new Date().toISOString(),
+          method: 'email',
+          outcome: 'toolkit_sent',
+          notes: 'Toolkit sent',
+          createdBy: req.user?.id || 'system',
+          createdByName: req.user?.firstName && req.user?.lastName
+            ? `${req.user.firstName} ${req.user.lastName}`
+            : req.user?.email || 'System',
+        };
+
+        processedUpdates.contactAttemptsLog = [...existingLog, toolkitLogEntry];
+        processedUpdates.contactAttempts = nextAttemptNumber;
+        processedUpdates.lastContactAttempt = new Date();
       }
 
       // Validate and auto-adjust "needed" fields to prevent impossible states
