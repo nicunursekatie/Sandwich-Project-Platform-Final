@@ -494,8 +494,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       </TooltipContent>
                     </Tooltip>
                   )}
-                  {/* Date Flexibility Indicator */}
-                  {displayDate && (
+                  {/* Date Flexibility Indicator - only show when explicitly set */}
+                  {displayDate && request.dateFlexible !== null && request.dateFlexible !== undefined && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Badge

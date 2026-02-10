@@ -8,6 +8,7 @@ import { db } from './db';
 import { eq, sql, and } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
 import { geocodeAddress } from './utils/geocoding';
+import { detectDateFlexibility } from './utils/date-flexibility-detection';
 
 export interface EventRequestSheetRow {
   externalId: string;
@@ -653,12 +654,17 @@ export class EventRequestsGoogleSheetsService {
         // Convert row to event request data
         const eventRequestData = this.sheetRowToEventRequest(row);
 
+        // Detect date flexibility from message text
+        const flexibilityResult = detectDateFlexibility(eventRequestData.message);
+
         // Ensure dates are valid before saving to database
         const sanitizedData = {
           ...eventRequestData,
           createdBy: 'google_sheets_sync',
           googleSheetRowId: row.rowIndex?.toString(),
           lastSyncedAt: new Date(),
+          // Auto-detect date flexibility from message (null if no clear indicator)
+          dateFlexible: flexibilityResult.dateFlexible,
           // Ensure all date fields are either valid Date objects or null
           desiredEventDate:
             eventRequestData.desiredEventDate &&
@@ -672,6 +678,11 @@ export class EventRequestsGoogleSheetsService {
               : new Date(),
           updatedAt: new Date(),
         };
+
+        // Log when flexibility is detected for visibility
+        if (flexibilityResult.dateFlexible !== null) {
+          logger.info(`📅 Date flexibility detected for ${eventRequestData.organizationName}: ${flexibilityResult.dateFlexible ? 'FLEXIBLE' : 'FIXED'} (matched: "${flexibilityResult.matchedPhrase}")`);
+        }
 
         try {
           // Check if record exists by EITHER hash format (old base64 or new SHA256)

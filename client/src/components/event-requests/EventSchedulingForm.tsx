@@ -176,7 +176,7 @@ function buildFormDataFromEventRequest(
 
   return {
     eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
-    dateFlexible: eventRequest?.dateFlexible !== false, // Default to true/flexible
+    dateFlexible: eventRequest?.dateFlexible ?? null, // null = unknown, true = flexible, false = fixed
     backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
     eventStartTime: eventRequest?.eventStartTime || '',
     eventEndTime: eventRequest?.eventEndTime || '',
@@ -1261,7 +1261,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
-      dateFlexible: formData.dateFlexible !== false, // true = flexible, false = inflexible
+      dateFlexible: formData.dateFlexible, // null = unknown, true = flexible, false = fixed
       backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
       // If status is scheduled, also set scheduledEventDate
       ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
@@ -2028,19 +2028,38 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   data-testid="input-event-date"
                 />
                 <div className="flex items-center gap-2 mt-2">
-                  <Checkbox
-                    id="dateFlexible"
-                    checked={formData.dateFlexible !== false}
-                    onCheckedChange={(checked) => {
-                      setFormData(prev => ({ ...prev, dateFlexible: checked === true }));
-                    }}
-                  />
-                  <Label
-                    htmlFor="dateFlexible"
-                    className="text-sm font-normal text-gray-600 cursor-pointer"
-                  >
-                    Date is flexible
+                  <Label className="text-sm font-normal text-gray-600">
+                    Date flexibility:
                   </Label>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={formData.dateFlexible === null ? "default" : "outline"}
+                      className={`h-7 px-2 text-xs ${formData.dateFlexible === null ? 'bg-gray-500 hover:bg-gray-600' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, dateFlexible: null }))}
+                    >
+                      Unknown
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={formData.dateFlexible === true ? "default" : "outline"}
+                      className={`h-7 px-2 text-xs ${formData.dateFlexible === true ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, dateFlexible: true }))}
+                    >
+                      Flexible
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={formData.dateFlexible === false ? "default" : "outline"}
+                      className={`h-7 px-2 text-xs ${formData.dateFlexible === false ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                      onClick={() => setFormData(prev => ({ ...prev, dateFlexible: false }))}
+                    >
+                      Fixed
+                    </Button>
+                  </div>
                 </div>
               </div>
 
