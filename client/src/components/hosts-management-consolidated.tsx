@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
+import { lazyWithRetry } from '@/lib/lazy-with-retry';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -24,8 +25,8 @@ import {
 } from 'lucide-react';
 
 // Lazy load map and cooler tracking components
-const HostLocationsMap = lazy(() => import('@/pages/route-map'));
-const CoolerTracking = lazy(() => import('@/pages/cooler-tracking'));
+const HostLocationsMap = lazyWithRetry(() => import('@/pages/route-map'));
+const CoolerTracking = lazyWithRetry(() => import('@/pages/cooler-tracking'));
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

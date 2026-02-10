@@ -35,6 +35,21 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error('Error caught by boundary:', error, errorInfo);
     this.props.onError?.(error, errorInfo);
+
+    // If this is a stale chunk error from a rebuild, auto-reload once
+    const msg = error.message || '';
+    if (
+      msg.includes('Failed to fetch dynamically imported module') ||
+      msg.includes('Loading chunk') ||
+      msg.includes('Loading CSS chunk')
+    ) {
+      const lastReload = sessionStorage.getItem('chunk-reload-timestamp');
+      const now = Date.now();
+      if (!lastReload || now - parseInt(lastReload, 10) > 30_000) {
+        sessionStorage.setItem('chunk-reload-timestamp', String(now));
+        window.location.reload();
+      }
+    }
   }
 
   handleReload = () => {

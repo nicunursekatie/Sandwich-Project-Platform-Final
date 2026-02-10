@@ -1,6 +1,7 @@
 import { Switch, Route } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
+import { lazyWithRetry } from '@/lib/lazy-with-retry';
 
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -36,25 +37,25 @@ import YearlyCalendar from '@/pages/yearly-calendar';
 import { logger } from '@/lib/logger';
 
 // Mobile app lazy-loaded components
-const MobileHome = lazy(() => import('@/mobile/pages/mobile-home'));
-const MobileCollections = lazy(() => import('@/mobile/pages/mobile-collections'));
-const MobileCollectionEntry = lazy(() => import('@/mobile/pages/mobile-collection-entry'));
-const MobileChat = lazy(() => import('@/mobile/pages/mobile-chat'));
-const MobileEvents = lazy(() => import('@/mobile/pages/mobile-events'));
-const MobileMore = lazy(() => import('@/mobile/pages/mobile-more'));
-const MobileHoldingZone = lazy(() => import('@/mobile/pages/mobile-holding-zone'));
-const MobileHoldingZoneAdd = lazy(() => import('@/mobile/pages/mobile-holding-zone-add'));
+const MobileHome = lazyWithRetry(() => import('@/mobile/pages/mobile-home'));
+const MobileCollections = lazyWithRetry(() => import('@/mobile/pages/mobile-collections'));
+const MobileCollectionEntry = lazyWithRetry(() => import('@/mobile/pages/mobile-collection-entry'));
+const MobileChat = lazyWithRetry(() => import('@/mobile/pages/mobile-chat'));
+const MobileEvents = lazyWithRetry(() => import('@/mobile/pages/mobile-events'));
+const MobileMore = lazyWithRetry(() => import('@/mobile/pages/mobile-more'));
+const MobileHoldingZone = lazyWithRetry(() => import('@/mobile/pages/mobile-holding-zone'));
+const MobileHoldingZoneAdd = lazyWithRetry(() => import('@/mobile/pages/mobile-holding-zone-add'));
 import { MobileDriverPlanning } from '@/mobile/pages/mobile-driver-planning';
-const MobileResources = lazy(() => import('@/mobile/pages/mobile-resources'));
-const MobileQuickTools = lazy(() => import('@/mobile/pages/mobile-quick-tools'));
-const MobileEventDetail = lazy(() => import('@/mobile/pages/mobile-event-detail'));
-const MobileCollectionDetail = lazy(() => import('@/mobile/pages/mobile-collection-detail'));
-const MobileInbox = lazy(() => import('@/mobile/pages/mobile-inbox'));
-const MobileProfile = lazy(() => import('@/mobile/pages/mobile-profile'));
-const MobileNotifications = lazy(() => import('@/mobile/pages/mobile-notifications'));
+const MobileResources = lazyWithRetry(() => import('@/mobile/pages/mobile-resources'));
+const MobileQuickTools = lazyWithRetry(() => import('@/mobile/pages/mobile-quick-tools'));
+const MobileEventDetail = lazyWithRetry(() => import('@/mobile/pages/mobile-event-detail'));
+const MobileCollectionDetail = lazyWithRetry(() => import('@/mobile/pages/mobile-collection-detail'));
+const MobileInbox = lazyWithRetry(() => import('@/mobile/pages/mobile-inbox'));
+const MobileProfile = lazyWithRetry(() => import('@/mobile/pages/mobile-profile'));
+const MobileNotifications = lazyWithRetry(() => import('@/mobile/pages/mobile-notifications'));
 
 // Mobile layout prompt (shows for mobile users on desktop routes)
-const MobileLayoutPrompt = lazy(() => import('@/mobile/components/mobile-layout-prompt'));
+const MobileLayoutPrompt = lazyWithRetry(() => import('@/mobile/components/mobile-layout-prompt'));
 
 // Mobile loading component
 const MobileLoader = () => (
@@ -123,17 +124,17 @@ function Router() {
   }
 
   // Lazy-loaded components
-  const SMSOptIn = lazy(() => import('./pages/sms-opt-in'));
-  const SMSSignup = lazy(() => import('./pages/sms-signup'));
-  const SMSEvents = lazy(() => import('./pages/sms-events'));
-  const SMSVerificationDocs = lazy(() => import('./pages/sms-verification-docs'));
-  const GenerateServiceHours = lazy(() => import('./pages/generate-service-hours'));
-  const EventImpactReports = lazy(() => import('./pages/event-impact-reports'));
-  const PhotoScanner = lazy(() => import('./pages/photo-scanner'));
-  const EmailTemplatesAdmin = lazy(() => import('./pages/admin/email-templates'));
-  const NotificationsPage = lazy(() => import('./pages/notifications'));
-  const VolunteerEventHub = lazy(() => import('./pages/volunteer-event-hub'));
-  const HostResources = lazy(() => import('./pages/host-resources'));
+  const SMSOptIn = lazyWithRetry(() => import('./pages/sms-opt-in'));
+  const SMSSignup = lazyWithRetry(() => import('./pages/sms-signup'));
+  const SMSEvents = lazyWithRetry(() => import('./pages/sms-events'));
+  const SMSVerificationDocs = lazyWithRetry(() => import('./pages/sms-verification-docs'));
+  const GenerateServiceHours = lazyWithRetry(() => import('./pages/generate-service-hours'));
+  const EventImpactReports = lazyWithRetry(() => import('./pages/event-impact-reports'));
+  const PhotoScanner = lazyWithRetry(() => import('./pages/photo-scanner'));
+  const EmailTemplatesAdmin = lazyWithRetry(() => import('./pages/admin/email-templates'));
+  const NotificationsPage = lazyWithRetry(() => import('./pages/notifications'));
+  const VolunteerEventHub = lazyWithRetry(() => import('./pages/volunteer-event-hub'));
+  const HostResources = lazyWithRetry(() => import('./pages/host-resources'));
 
   // If not authenticated, show public routes with login option
   if (!isAuthenticated) {
