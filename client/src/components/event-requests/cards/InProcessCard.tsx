@@ -355,13 +355,13 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           {/* Department - with inline editing */}
           {(request.department || isEditingDepartment || canEditOrgDetails) && (
             <>
-              <span className="text-gray-600">&bull;</span>
+              <span className="text-gray-500 text-lg">&bull;</span>
               {isEditingDepartment ? (
                 <div className="flex items-center gap-2">
                   <Input
                     value={editingValue}
                     onChange={(e) => setEditingValue?.(e.target.value)}
-                    className="h-8 text-sm font-normal text-gray-600"
+                    className="h-8 text-base sm:text-lg font-medium text-[#236383]"
                     placeholder="Department"
                     autoFocus
                     data-testid="input-department"
@@ -376,9 +376,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               ) : (
                 <div className="flex items-center gap-2 group">
                   {request.department ? (
-                    <span className="text-sm font-normal text-gray-600 break-words">{request.department}</span>
+                    <span className="text-base sm:text-lg font-medium text-[#236383] break-words">{request.department}</span>
                   ) : canEditOrgDetails ? (
-                    <span className="text-sm font-normal text-gray-400 italic">No department</span>
+                    <span className="text-base sm:text-lg font-normal text-gray-400 italic">No department</span>
                   ) : null}
                   {canEditOrgDetails && startEditing && (
                     <Button

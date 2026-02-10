@@ -275,10 +275,57 @@ export async function getOrganizationDetails(orgName: string) {
 }
 
 /**
+ * Umbrella organization keywords — orgs that have many local chapters/troops/packs.
+ * When the org name matches one of these but has NO distinguishing identifier (number),
+ * we require a contact match to flag as "returning." Otherwise a generic "Girl Scouts"
+ * entry would incorrectly match every other "Girl Scouts" entry regardless of troop.
+ *
+ * If the name DOES include a number (e.g. "Girl Scout Troop 25126"), exact matching
+ * already ensures only the same troop matches, so it's treated normally.
+ */
+const UMBRELLA_ORG_KEYWORDS = [
+  'girl scout',
+  'boy scout',
+  'cub scout',
+  'eagle scout',
+  'brownie',
+  'daisy troop',
+  'jack and jill',   // & is already normalized to 'and'
+  'jack & jill',
+  'lions club',
+  'rotary club',
+  'kiwanis',
+  'elks lodge',
+  'vfw',
+  'moose lodge',
+  'knights of columbus',
+];
+
+/**
+ * Check whether an org name is a generic umbrella org without a distinguishing
+ * identifier (troop number, pack number, lodge number, etc.).
+ * If true, we should only flag it as "returning" when the contact also matches.
+ */
+function isGenericUmbrellaOrg(orgName: string): boolean {
+  const normalized = orgName.trim().toLowerCase().replace(/&/g, 'and');
+
+  const matchesUmbrella = UMBRELLA_ORG_KEYWORDS.some(kw => normalized.includes(kw));
+  if (!matchesUmbrella) return false;
+
+  // If the name contains a number, it likely has a troop/pack/lodge/chapter identifier
+  // e.g. "Girl Scout Troop 25126", "Cub Scout Pack 100", "Elks Lodge 1234"
+  const hasNumber = /\d+/.test(normalized);
+  return !hasNumber;
+}
+
+/**
  * Check if an organization is returning (has past events or exists in catalog)
  *
  * This is used to flag new requests from organizations that have worked with us before,
  * so the intake team can personalize their outreach instead of sending generic first-time emails.
+ *
+ * For umbrella organizations (Girl Scouts, Cub Scouts, Jack & Jill, etc.) without a
+ * distinguishing troop/chapter number, a contact match is required to flag as returning.
  *
  * @param orgName - Organization name to check
  * @param currentEventId - Optional current event request ID to exclude from counts
@@ -413,22 +460,29 @@ export async function checkReturningOrganization(
       }
     }
 
+    // For umbrella orgs without a distinguishing identifier (no troop/pack/chapter number),
+    // only flag as returning if the contact also matches. A generic "Girl Scouts" entry
+    // should not match every other "Girl Scouts" from a different troop.
+    const effectiveIsReturning = isReturning && (
+      !isGenericUmbrellaOrg(orgName) || isReturningContact
+    );
+
     return {
-      isReturning,
+      isReturning: effectiveIsReturning,
       isReturningContact,
       inCatalog: false, // TODO: Check organizations table when properly implemented
-      pastEventCount: matchingEvents.length,
-      collectionCount: matchingCollections.length,
-      mostRecentEvent: mostRecentEvent ? {
+      pastEventCount: effectiveIsReturning ? matchingEvents.length : 0,
+      collectionCount: effectiveIsReturning ? matchingCollections.length : 0,
+      mostRecentEvent: effectiveIsReturning && mostRecentEvent ? {
         id: mostRecentEvent.id,
         eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,
         status: mostRecentEvent.status,
       } : undefined,
-      mostRecentCollection: mostRecentCollection ? {
+      mostRecentCollection: effectiveIsReturning && mostRecentCollection ? {
         id: mostRecentCollection.id,
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
-      pastContactName,
+      pastContactName: effectiveIsReturning ? pastContactName : undefined,
     };
   } catch (error) {
     logger.error('Error checking returning organization', { orgName, currentEventId, error });
