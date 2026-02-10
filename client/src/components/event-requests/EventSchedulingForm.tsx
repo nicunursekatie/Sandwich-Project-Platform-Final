@@ -349,6 +349,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     followUpOneMonthDate: '',
     followUpNotes: '',
     assignedRecipientIds: [] as string[],
+    // Manual entry source tracking
+    manualEntrySource: '',
     // Contact information fields
     firstName: '',
     lastName: '',
@@ -1240,7 +1242,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     
     logger.log('✅ Speaker warning check passed');
 
-    // All fields are optional - no validation required
+    // Require manual entry source for new event creation
+    if (isCreateMode && !formData.manualEntrySource) {
+      alert('Please select where this request came from before submitting.');
+      setIsSubmitting(false);
+      // Auto-expand contact section so the field is visible
+      setShowContactInfo(true);
+      return;
+    }
 
     // Construct data explicitly without client-only fields
     const eventData: any = {
@@ -1289,6 +1298,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       driverInstructions: formData.driverInstructions || null,
       volunteerInstructions: formData.volunteerInstructions || null,
       speakerInstructions: formData.speakerInstructions || null,
+      // Manual entry source tracking
+      manualEntrySource: formData.manualEntrySource || null,
       // Contact information fields
       firstName: formData.firstName || null,
       lastName: formData.lastName || null,
@@ -1616,6 +1627,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // For create mode, we can work with null eventRequest
   const isCreateMode = mode === 'create' || !eventRequest;
 
+  // Auto-expand contact info section in create mode so the required source field is visible
+  useEffect(() => {
+    if (isCreateMode) {
+      setShowContactInfo(true);
+    }
+  }, [isCreateMode]);
+
   // Handle real-time field updates from other users
   useEffect(() => {
     if (!isCollaborationEnabled || !collaboration) return;
@@ -1817,6 +1835,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             isExpanded={showContactInfo}
             onToggle={() => setShowContactInfo(!showContactInfo)}
             isComplete={sectionStatus.contact}
+            isCreateMode={isCreateMode}
           />
 
           {/* Backup Contact Information Section - Extracted Component */}

@@ -26,6 +26,8 @@ interface ContactInfoSectionProps extends FormSectionProps {
   onToggle: () => void;
   /** Whether section is complete (shows checkmark) */
   isComplete?: boolean;
+  /** Whether the form is in create mode (manual entry) */
+  isCreateMode?: boolean;
 }
 
 export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
@@ -34,6 +36,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
   isExpanded,
   onToggle,
   isComplete,
+  isCreateMode,
 }) => {
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -53,6 +56,37 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
 
       {isExpanded && (
         <div className="p-4 border-t bg-[#e6f2f5] grid grid-cols-1 md:grid-cols-2 gap-4">
+          {isCreateMode && (
+            <div className="md:col-span-2">
+              <Label htmlFor="manualEntrySource" className="text-sm font-semibold">
+                How did this request come in? <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.manualEntrySource || ''}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, manualEntrySource: value }))}
+              >
+                <SelectTrigger
+                  id="manualEntrySource"
+                  className={!formData.manualEntrySource ? 'border-red-300' : ''}
+                >
+                  <SelectValue placeholder="Select request source" />
+                </SelectTrigger>
+                <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                  <SelectItem value="phone_call">Phone Call</SelectItem>
+                  <SelectItem value="text_message">Text Message</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="social_media">Social Media DM</SelectItem>
+                  <SelectItem value="in_person">In Person</SelectItem>
+                  <SelectItem value="referral">Referral</SelectItem>
+                  <SelectItem value="website_form">Website Form (manual re-entry)</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {!formData.manualEntrySource && (
+                <p className="text-xs text-red-500 mt-1">Required — record where this request came from</p>
+              )}
+            </div>
+          )}
           <div>
             <Label htmlFor="contactFirstName">First Name</Label>
             <Input

@@ -173,7 +173,6 @@ interface CardHeaderProps {
   cancelEdit?: () => void;
   setEditingValue?: (value: string) => void;
   handleConfirmToggleClick?: () => void;
-  handleCorporatePriorityToggle?: () => void;
   presentUsers?: Array<{ userId: string; userName: string; joinedAt: Date; lastHeartbeat: Date; socketId: string }>;
   currentUserId?: string;
   datePopulationInfo?: DatePopulationInfo;
@@ -203,7 +202,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   cancelEdit,
   setEditingValue,
   handleConfirmToggleClick,
-  handleCorporatePriorityToggle,
   presentUsers = [],
   currentUserId = '',
   datePopulationInfo,
@@ -412,37 +410,25 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            {/* Corporate Priority Badge - Click to toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  onClick={handleCorporatePriorityToggle}
-                  className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
-                    (request as any).isCorporatePriority
-                      ? 'bg-gradient-to-br from-[#B8860B] to-[#DAA520] text-white'
-                      : 'bg-white text-gray-500 border border-gray-300 hover:border-[#B8860B] hover:text-[#B8860B]'
-                  }`}
-                >
-                  <Building className="w-3 h-3 mr-1" />
-                  {(request as any).isCorporatePriority ? 'Corporate Priority' : 'Mark Corporate'}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                {(request as any).isCorporatePriority ? (
+            {/* Corporate Priority Badge - Display only (toggle via edit form) */}
+            {(request as any).isCorporatePriority && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    className="px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap bg-gradient-to-br from-[#B8860B] to-[#DAA520] text-white"
+                  >
+                    <Building className="w-3 h-3 mr-1" />
+                    Corporate Priority
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
                   <div className="space-y-1">
                     <p className="font-medium">This is a Corporate Priority Event</p>
                     <p className="text-sm">Requires immediate contact and core team member attendance.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Click to remove corporate priority status</p>
                   </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p className="font-medium">Mark as Corporate Priority</p>
-                    <p className="text-sm">Corporate events require strict follow-up protocol and core team attendance.</p>
-                    <p className="text-xs text-muted-foreground mt-1">Click to mark as corporate priority</p>
-                  </div>
-                )}
-              </TooltipContent>
-            </Tooltip>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <div className="text-sm text-[#007E8C] mt-1 space-y-1">
             <div className="flex items-center gap-1">
@@ -770,7 +756,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   const [showConfirmToggle, setShowConfirmToggle] = useState(false);
   const [pendingConfirmValue, setPendingConfirmValue] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showCorporatePriorityConfirm, setShowCorporatePriorityConfirm] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -815,19 +800,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
     setShowConfirmToggle(true);
   };
 
-  // Handler for corporate priority toggle
-  const handleCorporatePriorityToggleClick = () => {
-    if (onToggleCorporatePriority) {
-      // Show confirmation dialog for marking as corporate (not for unmarking)
-      if (!(request as any).isCorporatePriority) {
-        setShowCorporatePriorityConfirm(true);
-      } else {
-        // Directly unmark without confirmation
-        onToggleCorporatePriority(false);
-      }
-    }
-  };
-
   // Use shared reference data from useEventQueries (eliminates duplicate API calls)
   const { users } = useEventQueries();
 
@@ -865,7 +837,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           cancelEdit={cancelEdit}
           setEditingValue={setEditingValue}
           handleConfirmToggleClick={handleConfirmToggleClick}
-          handleCorporatePriorityToggle={handleCorporatePriorityToggleClick}
           presentUsers={collaboration.presentUsers}
           currentUserId={user?.id}
           datePopulationInfo={datePopulationInfo}
@@ -1330,22 +1301,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               : 'Are you sure you want to mark this date as pending?'
           }
           confirmText="Yes, Update"
-          cancelText="Cancel"
-        />
-
-        {/* Corporate Priority Confirmation Dialog */}
-        <ConfirmationDialog
-          isOpen={showCorporatePriorityConfirm}
-          onClose={() => setShowCorporatePriorityConfirm(false)}
-          onConfirm={() => {
-            if (onToggleCorporatePriority) {
-              onToggleCorporatePriority(true);
-            }
-            setShowCorporatePriorityConfirm(false);
-          }}
-          title="Mark as Corporate Priority"
-          message="Corporate events require immediate attention and core team member attendance. This will notify Christine and Katie. The TSP contact must call the organizer immediately upon assignment."
-          confirmText="Yes, Mark as Corporate"
           cancelText="Cancel"
         />
       </CardContent>

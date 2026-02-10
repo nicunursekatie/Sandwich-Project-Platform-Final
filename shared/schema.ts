@@ -2386,6 +2386,9 @@ export const eventRequests = pgTable(
     // Past date notification tracking for in-process events
     pastDateNotificationSentAt: timestamp('past_date_notification_sent_at'), // When TSP contact was notified about passed event date
 
+    // Manual entry tracking
+    manualEntrySource: varchar('manual_entry_source'), // Where this manual request came from: 'phone_call', 'text_message', 'email', 'social_media', 'in_person', 'referral', 'other'
+
     // Google Sheets sync tracking
     googleSheetRowId: text('google_sheet_row_id'), // Stable identifier: Google Sheets row number for duplicate detection
     externalId: varchar('external_id').notNull().unique(), // External ID from Google Sheets for duplicate prevention
@@ -2712,6 +2715,7 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
       .transform((val) => val || undefined)
       .optional(),
     organizationName: z.string().nullable().optional(),
+    manualEntrySource: z.string().nullable().optional(),
     previouslyHosted: z.string().optional(),
     status: z.string().optional(),
     // Allow desiredEventDate to be either a Date object or a string that can be converted to a Date

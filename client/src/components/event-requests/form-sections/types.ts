@@ -66,6 +66,8 @@ export interface EventFormData {
   followUpOneMonthDate: string;
   followUpNotes: string;
   assignedRecipientIds: string[];
+  // Manual entry source tracking
+  manualEntrySource: string;
   // Contact information fields
   firstName: string;
   lastName: string;
