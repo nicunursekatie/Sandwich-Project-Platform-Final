@@ -1,827 +1,1420 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import { useAuth } from '@/hooks/useAuth';
-import { PERMISSIONS } from '@shared/auth-utils';
-import { hasPermission } from '@shared/unified-auth-utils';
-import { useActivityTracker } from '@/hooks/useActivityTracker';
-import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
-import { useEffect } from 'react';
-import {
-  Copy,
-  ExternalLink,
-  Share2,
-  Plus,
-  Gift,
-  Users,
-  TrendingUp,
-  MessageCircle,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Shield,
-} from 'lucide-react';
-import { logger } from '@/lib/logger';
 
-export default function WishlistPage() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const { trackView, trackClick } = useActivityTracker();
-  const { track } = useOnboardingTracker();
+const COLORS = {
+  navy: '#236383',
+  teal: '#007E8C',
+  sky: '#47B3CB',
+  crimson: '#A31C41',
+  gold: '#FBAD3F',
+  white: '#FFFFFF',
+  lightBg: '#F7F8FA',
+  darkText: '#1a1a1a',
+  midGray: '#6b7280',
+};
 
-  useEffect(() => {
-    trackView(
-      'Wishlist',
-      'Wishlist',
-      'Amazon Wishlist',
-      'User accessed wishlist page'
-    );
-    track('view_wishlist');
-  }, [trackView]);
+interface WishlistItem {
+  name: string;
+  price: string;
+  need: number;
+  has: number;
+  category: string;
+  emoji: string;
+  urgent?: boolean;
+}
 
-  const [newSuggestion, setNewSuggestion] = useState({
-    item: '',
-    reason: '',
-    priority: 'medium' as 'high' | 'medium' | 'low',
-  });
+const WISHLIST_ITEMS: WishlistItem[] = [
+  {
+    name: 'Zbar Chocolate Chip (24pk)',
+    price: '$16.99',
+    need: 75,
+    has: 60,
+    category: 'bars',
+    emoji: '🍫',
+  },
+  {
+    name: 'Nature Valley Sweet & Salty (24ct)',
+    price: '$9.57',
+    need: 75,
+    has: 86,
+    category: 'bars',
+    emoji: '🥜',
+  },
+  {
+    name: 'Nutri-Grain Variety (32ct)',
+    price: '$9.98',
+    need: 75,
+    has: 77,
+    category: 'bars',
+    emoji: '🍓',
+  },
+  {
+    name: 'CLIF Bar Chocolate Chip (12pk)',
+    price: '~$12',
+    need: 15,
+    has: 5,
+    category: 'bars',
+    emoji: '💪',
+    urgent: true,
+  },
+  {
+    name: 'Zbar Protein Variety (18pk)',
+    price: '~$15',
+    need: 25,
+    has: 10,
+    category: 'bars',
+    emoji: '⚡',
+    urgent: true,
+  },
+  {
+    name: 'Dole Diced Peaches (12ct)',
+    price: '$9.74',
+    need: 50,
+    has: 44,
+    category: 'fruit',
+    emoji: '🍑',
+  },
+  {
+    name: 'Del Monte Fruit Cups Variety (12ct)',
+    price: '~$10',
+    need: 45,
+    has: 27,
+    category: 'fruit',
+    emoji: '🍊',
+    urgent: true,
+  },
+  {
+    name: 'Dole Mandarin Oranges (12ct)',
+    price: '$9.49',
+    need: 75,
+    has: 60,
+    category: 'fruit',
+    emoji: '🍊',
+  },
+  {
+    name: "Mott's Applesauce (18ct)",
+    price: '~$8',
+    need: 130,
+    has: 149,
+    category: 'fruit',
+    emoji: '🍎',
+  },
+  {
+    name: 'GoGo squeeZ Variety (20pk)',
+    price: '$10.99',
+    need: 50,
+    has: 59,
+    category: 'fruit',
+    emoji: '🍏',
+  },
+  {
+    name: "Jack Link's Meat Sticks (20ct)",
+    price: '~$15',
+    need: 75,
+    has: 88,
+    category: 'protein',
+    emoji: '🥩',
+  },
+  {
+    name: 'KIND Nut Bars Variety (12ct)',
+    price: '$13.67',
+    need: 25,
+    has: 32,
+    category: 'bars',
+    emoji: '🌰',
+  },
+  {
+    name: "Nature's Bakery Fig Bars (12pk)",
+    price: '$8.06',
+    need: 25,
+    has: 28,
+    category: 'bars',
+    emoji: '🫐',
+  },
+];
 
-  // Fetch wishlist suggestions
-  const {
-    data: suggestions = [],
-    isLoading,
-    error: suggestionsError,
-  } = useQuery<any[]>({
-    queryKey: ['/api/wishlist-suggestions'],
-    retry: 1,
-    staleTime: 30000,
-  });
+const URGENT_ITEMS = WISHLIST_ITEMS.filter((i) => i.urgent);
 
-  // Fetch recent activity
-  const { data: activity = [], error: activityError } = useQuery<any[]>({
-    queryKey: ['/api/wishlist-activity'],
-    retry: 1,
-    staleTime: 30000,
-  });
+interface Template {
+  id: string;
+  name: string;
+  frequency: string;
+  description: string;
+  platform: string;
+  bgColor: string;
+  accentColor: string;
+}
 
-  // Create suggestion mutation
-  const createSuggestionMutation = useMutation({
-    mutationFn: async (data: typeof newSuggestion) => {
-      return apiRequest('POST', '/api/wishlist-suggestions', {
-        item: data.item,
-        reason: data.reason,
-        priority: data.priority,
-        status: 'pending',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['/api/wishlist-suggestions'],
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-activity'] });
-      toast({
-        title: 'Suggestion Submitted',
-        description: 'Your wishlist suggestion has been recorded for review',
-      });
-      setNewSuggestion({
-        item: '',
-        reason: '',
-        priority: 'medium',
-      });
-    },
-    onError: (error) => {
-      logger.error('Wishlist submission error:', error);
-      toast({
-        title: 'Submission Failed',
-        description:
-          'There was an error submitting your suggestion. Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
+const TEMPLATES: Template[] = [
+  {
+    id: 'supply-sunday',
+    name: 'Supply Sunday',
+    frequency: 'Weekly',
+    description:
+      'Recurring weekly post featuring 1-2 items. Same format every week builds recognition.',
+    platform: 'Instagram Post + Story',
+    bgColor: COLORS.navy,
+    accentColor: COLORS.gold,
+  },
+  {
+    id: 'cant-make',
+    name: "Can't Make Sandwiches?",
+    frequency: '2x/month',
+    description:
+      "Targets people who want to help but don't have time to make sandwiches. The wishlist is their on-ramp.",
+    platform: 'Instagram Post',
+    bgColor: COLORS.white,
+    accentColor: COLORS.teal,
+  },
+  {
+    id: 'by-the-numbers',
+    name: 'By The Numbers',
+    frequency: '2x/month',
+    description:
+      'Pairs a consumption stat with a specific item ask. Makes the need tangible and ongoing.',
+    platform: 'Instagram Post + Story',
+    bgColor: COLORS.teal,
+    accentColor: COLORS.gold,
+  },
+  {
+    id: 'urgent-need',
+    name: 'Urgent Need',
+    frequency: 'As needed',
+    description:
+      'When specific items are critically low. Drives immediate action with clear urgency.',
+    platform: 'Instagram Story + Post',
+    bgColor: COLORS.crimson,
+    accentColor: COLORS.gold,
+  },
+  {
+    id: 'thank-you',
+    name: 'Wishlist Wins',
+    frequency: 'Monthly',
+    description:
+      'Celebrate fulfillment milestones. Shows donors their impact and normalizes wishlist giving.',
+    platform: 'Instagram Post',
+    bgColor: COLORS.gold,
+    accentColor: COLORS.navy,
+  },
+];
 
-  // Admin review mutation
-  const reviewSuggestionMutation = useMutation({
-    mutationFn: async ({
-      id,
-      action,
-      notes,
-    }: {
-      id: number;
-      action: 'approve' | 'reject';
-      notes?: string;
-    }) => {
-      return apiRequest('PATCH', `/api/wishlist-suggestions/${id}`, {
-        status: action === 'approve' ? 'approved' : 'rejected',
-        adminNotes: notes,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['/api/wishlist-suggestions'],
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-activity'] });
-      toast({
-        title: 'Review Completed',
-        description: 'Suggestion status has been updated',
-      });
-    },
-    onError: (error) => {
-      logger.error('Review error:', error);
-      toast({
-        title: 'Review Failed',
-        description: 'There was an error updating the suggestion',
-        variant: 'destructive',
-      });
-    },
-  });
+interface CalendarEntry {
+  week: number;
+  day: string;
+  template: string;
+  note: string;
+}
 
-  // Delete suggestion mutation
-  const deleteSuggestionMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest('DELETE', `/api/wishlist-suggestions/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['/api/wishlist-suggestions'],
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/wishlist-activity'] });
-      toast({
-        title: 'Suggestion Deleted',
-        description: 'The suggestion has been permanently removed',
-      });
-    },
-    onError: (error) => {
-      logger.error('Delete error:', error);
-      toast({
-        title: 'Delete Failed',
-        description: 'There was an error deleting the suggestion',
-        variant: 'destructive',
-      });
-    },
-  });
+const CALENDAR: CalendarEntry[] = [
+  {
+    week: 1,
+    day: 'Sunday',
+    template: 'supply-sunday',
+    note: 'Feature 1 item from urgent list',
+  },
+  {
+    week: 1,
+    day: 'Wednesday',
+    template: 'cant-make',
+    note: 'Post after volunteer content',
+  },
+  {
+    week: 2,
+    day: 'Sunday',
+    template: 'supply-sunday',
+    note: 'Feature fruit cups or applesauce',
+  },
+  {
+    week: 2,
+    day: 'Thursday',
+    template: 'by-the-numbers',
+    note: 'Pair with weekly impact stats',
+  },
+  {
+    week: 3,
+    day: 'Sunday',
+    template: 'supply-sunday',
+    note: 'Feature protein bars',
+  },
+  {
+    week: 3,
+    day: 'Tuesday',
+    template: 'cant-make',
+    note: 'Different angle than week 1',
+  },
+  {
+    week: 4,
+    day: 'Sunday',
+    template: 'supply-sunday',
+    note: 'Feature GoGo squeeZ or fruit',
+  },
+  {
+    week: 4,
+    day: 'Friday',
+    template: 'thank-you',
+    note: 'Monthly fulfillment celebration',
+  },
+];
 
-  // Amazon wishlists
-  const WISHLISTS = [
-    {
-      name: 'Main TSP Wishlist',
-      description: 'Essential supplies and equipment for The Sandwich Project',
-      url: 'https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share',
-    },
-    {
-      name: 'UGA Wishlist',
-      description: 'University of Georgia specific supplies and materials',
-      url: 'https://www.amazon.com/hz/wishlist/ls/16YMNRMG1WHHS?ref_=wl_share',
-    },
-  ];
-
-  const copyToClipboard = async (text: string, wishlistName?: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: 'Copied!',
-        description: `${wishlistName ? wishlistName + ' link' : 'Wishlist link'} copied to clipboard`,
-      });
-    } catch (err) {
-      toast({
-        title: 'Copy Failed',
-        description: 'Please copy the link manually',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const shareWishlist = async (wishlist: typeof WISHLISTS[0]) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `The Sandwich Project - ${wishlist.name}`,
-          text: `Help support The Sandwich Project by checking out our ${wishlist.name}!`,
-          url: wishlist.url,
-        });
-      } catch (err) {
-        // User cancelled sharing or sharing failed
-        copyToClipboard(wishlist.url, wishlist.name);
-      }
-    } else {
-      // Fallback to copying
-      copyToClipboard(wishlist.url, wishlist.name);
-    }
-  };
-
-  const handleSuggestionSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSuggestion.item.trim()) return;
-
-    createSuggestionMutation.mutate(newSuggestion);
-  };
-
-  // Show error states if needed
-  if (suggestionsError || activityError) {
-    return (
-      <div className="container mx-auto p-6 max-w-4xl">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold text-red-600">
-            Error Loading Wishlist
-          </h1>
-          <p className="text-slate-600">
-            {suggestionsError && 'Failed to load suggestions. '}
-            {activityError && 'Failed to load activity. '}
-            Please refresh the page or try again later.
-          </p>
-          <Button onClick={() => window.location.reload()}>Refresh Page</Button>
+function SupplySundayPreview() {
+  const item = URGENT_ITEMS[0];
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 380,
+        aspectRatio: '1/1',
+        background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.teal} 100%)`,
+        borderRadius: 16,
+        padding: 32,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        color: COLORS.white,
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: -40,
+          right: -40,
+          width: 160,
+          height: 160,
+          borderRadius: '50%',
+          background: COLORS.gold,
+          opacity: 0.15,
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -60,
+          left: -30,
+          width: 200,
+          height: 200,
+          borderRadius: '50%',
+          background: COLORS.sky,
+          opacity: 0.1,
+        }}
+      />
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: 2.5,
+            textTransform: 'uppercase',
+            color: COLORS.gold,
+            marginBottom: 8,
+          }}
+        >
+          Supply Sunday
+        </div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 28,
+            lineHeight: 1.2,
+            marginBottom: 8,
+          }}
+        >
+          This week
+          <br />
+          we need
         </div>
       </div>
-    );
-  }
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ fontSize: 48, marginBottom: 4 }}>{item.emoji}</div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 22,
+            marginBottom: 4,
+          }}
+        >
+          CLIF Bars
+        </div>
+        <div
+          style={{
+            fontFamily: "'Open Sans', sans-serif",
+            fontSize: 15,
+            opacity: 0.85,
+            marginBottom: 16,
+          }}
+        >
+          Only 5 of 15 fulfilled
+        </div>
+        <div
+          style={{
+            background: COLORS.gold,
+            color: COLORS.navy,
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 14,
+            padding: '10px 20px',
+            borderRadius: 24,
+            display: 'inline-block',
+          }}
+        >
+          Shop our Amazon Wishlist →
+        </div>
+      </div>
+      <div
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          fontFamily: "'Open Sans', sans-serif",
+          fontSize: 11,
+          opacity: 0.6,
+          marginTop: 8,
+        }}
+      >
+        🥪 thesandwichprojectatl 💛
+      </div>
+    </div>
+  );
+}
+
+function CantMakePreview() {
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 380,
+        aspectRatio: '1/1',
+        background: COLORS.white,
+        borderRadius: 16,
+        padding: 32,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        position: 'relative',
+        overflow: 'hidden',
+        border: `3px solid ${COLORS.navy}10`,
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 8,
+          background: `linear-gradient(90deg, ${COLORS.navy}, ${COLORS.teal}, ${COLORS.sky}, ${COLORS.gold})`,
+        }}
+      />
+      <div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 26,
+            color: COLORS.navy,
+            lineHeight: 1.25,
+            marginBottom: 12,
+          }}
+        >
+          Can't make
+          <br />
+          sandwiches?
+        </div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 22,
+            color: COLORS.teal,
+            lineHeight: 1.3,
+          }}
+        >
+          You can still feed
+          <br />
+          our neighbors. 💛
+        </div>
+      </div>
+      <div>
+        <div
+          style={{
+            fontFamily: "'Open Sans', sans-serif",
+            fontSize: 14,
+            color: COLORS.midGray,
+            marginBottom: 16,
+            lineHeight: 1.5,
+          }}
+        >
+          Ship supplies directly to us through
+          <br />
+          our Amazon Wishlist — starting at $8.
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+            marginBottom: 16,
+          }}
+        >
+          {['🍫 Bars', '🍑 Fruit cups', '🍎 Applesauce', '🥩 Protein'].map(
+            (tag) => (
+              <span
+                key={tag}
+                style={{
+                  background: `${COLORS.sky}20`,
+                  color: COLORS.navy,
+                  fontFamily: "'Open Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  borderRadius: 20,
+                }}
+              >
+                {tag}
+              </span>
+            )
+          )}
+        </div>
+        <div
+          style={{
+            background: COLORS.teal,
+            color: COLORS.white,
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 14,
+            padding: '10px 20px',
+            borderRadius: 24,
+            display: 'inline-block',
+          }}
+        >
+          Link in bio 🥪
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ByTheNumbersPreview() {
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 380,
+        aspectRatio: '1/1',
+        background: `linear-gradient(160deg, ${COLORS.teal} 0%, ${COLORS.navy} 100%)`,
+        borderRadius: 16,
+        padding: 32,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        color: COLORS.white,
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: 200,
+          opacity: 0.06,
+          fontFamily: "'Montserrat', sans-serif",
+          fontWeight: 900,
+        }}
+      >
+        500
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: 2.5,
+            textTransform: 'uppercase',
+            color: COLORS.gold,
+            marginBottom: 16,
+          }}
+        >
+          By the numbers
+        </div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 800,
+            fontSize: 52,
+            lineHeight: 1,
+            color: COLORS.gold,
+          }}
+        >
+          500+
+        </div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 600,
+            fontSize: 20,
+            marginTop: 4,
+          }}
+        >
+          snack bars distributed
+          <br />
+          every single week
+        </div>
+      </div>
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <div
+          style={{
+            fontFamily: "'Open Sans', sans-serif",
+            fontSize: 15,
+            opacity: 0.85,
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
+          That's why our Amazon Wishlist
+          <br />
+          isn't a one-time ask.
+        </div>
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(4px)',
+            padding: '10px 20px',
+            borderRadius: 24,
+            display: 'inline-block',
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 14,
+          }}
+        >
+          Help us stay stocked →
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UrgentPreview() {
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 380,
+        aspectRatio: '1/1',
+        background: COLORS.crimson,
+        borderRadius: 16,
+        padding: 32,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        color: COLORS.white,
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          background: COLORS.gold,
+          color: COLORS.crimson,
+          fontFamily: "'Montserrat', sans-serif",
+          fontWeight: 800,
+          fontSize: 11,
+          padding: '6px 14px',
+          borderRadius: 20,
+          letterSpacing: 1,
+        }}
+      >
+        URGENT NEED
+      </div>
+      <div style={{ marginTop: 40 }}>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 24,
+            lineHeight: 1.25,
+            marginBottom: 20,
+          }}
+        >
+          We're running low
+          <br />
+          on 3 items this week
+        </div>
+        {URGENT_ITEMS.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 10,
+              background: 'rgba(255,255,255,0.12)',
+              padding: '8px 14px',
+              borderRadius: 10,
+            }}
+          >
+            <span style={{ fontSize: 20 }}>{item.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontFamily: "'Open Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {item.name.split('(')[0].trim()}
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.7 }}>
+                {item.has}/{item.need} fulfilled
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          background: COLORS.gold,
+          color: COLORS.crimson,
+          fontFamily: "'Montserrat', sans-serif",
+          fontWeight: 700,
+          fontSize: 14,
+          padding: '10px 20px',
+          borderRadius: 24,
+          display: 'inline-block',
+          textAlign: 'center',
+        }}
+      >
+        Shop our Amazon Wishlist 💛
+      </div>
+    </div>
+  );
+}
+
+function ThankYouPreview() {
+  return (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 380,
+        aspectRatio: '1/1',
+        background: `linear-gradient(135deg, ${COLORS.gold} 0%, #f5c563 100%)`,
+        borderRadius: 16,
+        padding: 32,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        color: COLORS.navy,
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          top: -30,
+          right: -30,
+          width: 140,
+          height: 140,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.2)',
+        }}
+      />
+      <div>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>💛🥪</div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 700,
+            fontSize: 26,
+            lineHeight: 1.2,
+          }}
+        >
+          Wishlist Win!
+        </div>
+      </div>
+      <div>
+        <div
+          style={{
+            fontFamily: "'Montserrat', sans-serif",
+            fontWeight: 800,
+            fontSize: 40,
+            lineHeight: 1.1,
+            marginBottom: 4,
+          }}
+        >
+          12 items
+        </div>
+        <div
+          style={{
+            fontFamily: "'Open Sans', sans-serif",
+            fontSize: 16,
+            marginBottom: 16,
+            lineHeight: 1.4,
+          }}
+        >
+          fully stocked this month
+          <br />
+          thanks to YOU
+        </div>
+        <div
+          style={{
+            fontFamily: "'Open Sans', sans-serif",
+            fontSize: 14,
+            opacity: 0.7,
+          }}
+        >
+          Every bar, every fruit cup — it all
+          <br />
+          goes straight to our neighbors.
+        </div>
+      </div>
+      <div
+        style={{
+          fontFamily: "'Open Sans', sans-serif",
+          fontSize: 12,
+          opacity: 0.5,
+        }}
+      >
+        thesandwichprojectatl 🥪
+      </div>
+    </div>
+  );
+}
+
+const PREVIEW_MAP: Record<string, React.FC> = {
+  'supply-sunday': SupplySundayPreview,
+  'cant-make': CantMakePreview,
+  'by-the-numbers': ByTheNumbersPreview,
+  'urgent-need': UrgentPreview,
+  'thank-you': ThankYouPreview,
+};
+
+const CAPTIONS: Record<string, string> = {
+  'supply-sunday': `Supply Sunday 🥪💛
+
+This week, we need CLIF Bars. We're at 5 out of 15 — that's not enough to get through the week.
+
+Every bar goes straight to a neighbor. Shop our Amazon Wishlist (link in bio) and it ships right to us. Takes 30 seconds.
+
+#TheSandwichProject #FightHunger #Atlanta #FoodInsecurity #SupplySunday`,
+  'cant-make': `Not everyone can make sandwiches — and that's okay. 💛
+
+You can still help feed our neighbors by shopping our Amazon Wishlist. Snack bars, fruit cups, and applesauce starting at $8, shipped directly to us.
+
+No kitchen required. Just a couple clicks.
+
+🔗 Link in bio
+
+#TheSandwichProject #Atlanta #FoodInsecurity #FightHunger`,
+  'by-the-numbers': `500+ snack bars go out the door every single week. That's not a one-time need — it's every Wednesday, all year long.
+
+Our Amazon Wishlist makes it easy to keep us stocked. One order from you = meals for our neighbors.
+
+🔗 Link in bio
+
+#TheSandwichProject #ByTheNumbers #Atlanta #FoodInsecurity`,
+  'urgent-need': `🚨 We're running low this week.
+
+3 items on our Amazon Wishlist are critically low — CLIF Bars, Zbar Protein packs, and Del Monte Fruit Cups.
+
+These go directly to our neighbors through 70+ partner charities across Metro Atlanta. Can you help us restock?
+
+🔗 Link in bio
+
+#TheSandwichProject #UrgentNeed #Atlanta #FoodInsecurity`,
+  'thank-you': `YOU did this. 💛
+
+This month, 12 wishlist items were fully stocked by people just like you — people who took 30 seconds to click a link and ship a box of snack bars.
+
+Every single one went straight to a neighbor in Metro Atlanta. Thank you for showing up, even from your couch. 🥪
+
+#TheSandwichProject #WishlistWin #Atlanta #FightHunger`,
+};
+
+export default function WishlistToolkit() {
+  const [activeTab, setActiveTab] = useState('templates');
+  const [activeTemplate, setActiveTemplate] = useState('supply-sunday');
+  const [showCaption, setShowCaption] = useState(false);
+
+  const template = TEMPLATES.find((t) => t.id === activeTemplate)!;
+  const PreviewComponent = PREVIEW_MAP[activeTemplate];
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
-            <Gift className="w-8 h-8 text-brand-orange" />
-            Amazon Wishlist
-          </h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">
-            Help support The Sandwich Project! Our Amazon wishlist contains
-            essential supplies and equipment that help us serve our community
-            more effectively.
-          </p>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: COLORS.lightBg,
+        fontFamily: "'Open Sans', 'Helvetica Neue', sans-serif",
+      }}
+    >
+      <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&display=swap"
+        rel="stylesheet"
+      />
+
+      {/* Header */}
+      <div
+        style={{
+          background: `linear-gradient(135deg, ${COLORS.navy} 0%, ${COLORS.teal} 100%)`,
+          padding: '32px 24px 24px',
+          color: COLORS.white,
+        }}
+      >
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div
+            style={{
+              fontFamily: "'Montserrat', sans-serif",
+              fontWeight: 800,
+              fontSize: 24,
+              marginBottom: 4,
+            }}
+          >
+            Amazon Wishlist Marketing Kit
+          </div>
+          <div style={{ fontSize: 14, opacity: 0.8 }}>
+            The Sandwich Project — Social Media Templates & Strategy
+          </div>
         </div>
+      </div>
 
-        {/* Amazon Wishlists Section */}
-        <div className="space-y-4">
-          {WISHLISTS.map((wishlist, index) => (
-            <Card key={index} className="border-brand-primary border-2">
-              <CardHeader className="bg-brand-primary text-white">
-                <CardTitle className="flex items-center gap-2">
-                  <Share2 className="w-5 h-5" />
-                  {wishlist.name}
-                </CardTitle>
-                <p className="text-brand-primary-light text-sm">
-                  {wishlist.description}
-                </p>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <div className="flex-1 text-sm font-mono text-slate-700 break-all">
-                      {wishlist.url}
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => copyToClipboard(wishlist.url, wishlist.name)}
-                      className="flex-shrink-0"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Copy
-                    </Button>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button onClick={() => shareWishlist(wishlist)} className="flex-1">
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share Wishlist
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => window.open(wishlist.url, '_blank')}
-                      className="flex-1"
-                    >
-                      <ExternalLink className="w-4 h-4 mr-2" />
-                      View on Amazon
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Tabs */}
+      <div
+        style={{
+          background: COLORS.white,
+          borderBottom: `1px solid #e5e7eb`,
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+        }}
+      >
+        <div
+          style={{ maxWidth: 900, margin: '0 auto', display: 'flex', gap: 0 }}
+        >
+          {[
+            { id: 'templates', label: 'Post Templates' },
+            { id: 'calendar', label: 'Content Calendar' },
+            { id: 'inventory', label: 'Current Inventory' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: '14px 20px',
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                fontSize: 13,
+                color: activeTab === tab.id ? COLORS.teal : COLORS.midGray,
+                background: 'none',
+                border: 'none',
+                borderBottom:
+                  activeTab === tab.id
+                    ? `3px solid ${COLORS.teal}`
+                    : '3px solid transparent',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <Users className="w-8 h-8 text-brand-primary" />
-                <div>
-                  <p className="text-2xl font-bold">{suggestions.length}</p>
-                  <p className="text-xs text-slate-600">Items Suggested</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-8 h-8 text-brand-orange" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {suggestions.filter((s) => s.status === 'approved').length}
-                  </p>
-                  <p className="text-xs text-slate-600">Items Approved</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <Gift className="w-8 h-8 text-brand-burgundy" />
-                <div>
-                  <p className="text-2xl font-bold">
-                    {suggestions.filter((s) => s.priority === 'high').length}
-                  </p>
-                  <p className="text-xs text-slate-600">High Priority</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-brand-primary" />
-              Current Wishlist Suggestions ({suggestions.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {suggestions.length === 0 ? (
-              <p className="text-slate-500 text-center py-4">
-                No suggestions yet. Be the first to suggest an item!
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {suggestions.map((suggestion: any) => (
-                  <div
-                    key={suggestion.id}
-                    className={`p-4 rounded-lg border ${
-                      suggestion.status === 'approved'
-                        ? 'bg-green-50 border-green-200'
-                        : suggestion.status === 'rejected'
-                          ? 'bg-red-50 border-red-200'
-                          : 'bg-yellow-50 border-yellow-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium">{suggestion.item}</h4>
-                          <Badge
-                            variant={
-                              suggestion.priority === 'high'
-                                ? 'destructive'
-                                : suggestion.priority === 'medium'
-                                  ? 'default'
-                                  : 'secondary'
-                            }
-                          >
-                            {suggestion.priority}
-                          </Badge>
-                          <Badge
-                            variant={
-                              suggestion.status === 'approved'
-                                ? 'default'
-                                : suggestion.status === 'rejected'
-                                  ? 'destructive'
-                                  : 'secondary'
-                            }
-                          >
-                            {suggestion.status}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-slate-600 mb-1">
-                          {suggestion.reason}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Suggested by{' '}
-                          {suggestion.suggestedByFirstName
-                            ? `${suggestion.suggestedByFirstName} ${suggestion.suggestedByLastName}`
-                            : 'Unknown User'}{' '}
-                          on{' '}
-                          {new Date(suggestion.createdAt).toLocaleDateString()}
-                        </p>
-                        {suggestion.adminNotes && (
-                          <p className="text-xs text-slate-700 mt-1 font-medium">
-                            Admin note: {suggestion.adminNotes}
-                          </p>
-                        )}
-                        {/* Admin Management Buttons - Show for all suggestions if user has permissions */}
-                        {user &&
-                          ((user as any)?.permissions?.includes?.(
-                            'manage_wishlist'
-                          ) ||
-                            (user as any)?.role === 'super_admin' ||
-                            (user as any)?.role === 'admin') && (
-                            <div className="flex gap-2 mt-3">
-                              {suggestion.status === 'pending' ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() =>
-                                      reviewSuggestionMutation.mutate({
-                                        id: suggestion.id,
-                                        action: 'approve',
-                                      })
-                                    }
-                                    disabled={
-                                      reviewSuggestionMutation.isPending
-                                    }
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() =>
-                                      reviewSuggestionMutation.mutate({
-                                        id: suggestion.id,
-                                        action: 'reject',
-                                      })
-                                    }
-                                    disabled={
-                                      reviewSuggestionMutation.isPending
-                                    }
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  {suggestion.status === 'approved' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        reviewSuggestionMutation.mutate({
-                                          id: suggestion.id,
-                                          action: 'reject',
-                                        })
-                                      }
-                                      disabled={
-                                        reviewSuggestionMutation.isPending
-                                      }
-                                    >
-                                      <XCircle className="w-4 h-4 mr-1" />
-                                      Mark as Rejected
-                                    </Button>
-                                  )}
-                                  {suggestion.status === 'rejected' && (
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() =>
-                                        reviewSuggestionMutation.mutate({
-                                          id: suggestion.id,
-                                          action: 'approve',
-                                        })
-                                      }
-                                      disabled={
-                                        reviewSuggestionMutation.isPending
-                                      }
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-1" />
-                                      Mark as Approved
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() =>
-                                      deleteSuggestionMutation.mutate(
-                                        suggestion.id
-                                      )
-                                    }
-                                    disabled={
-                                      deleteSuggestionMutation.isPending
-                                    }
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Delete
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {suggestion.status === 'pending' && (
-                          <Clock className="w-4 h-4 text-yellow-600" />
-                        )}
-                        {suggestion.status === 'approved' && (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                        )}
-                        {suggestion.status === 'rejected' && (
-                          <XCircle className="w-4 h-4 text-red-600" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Suggest New Items */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-brand-primary" />
-              Suggest New Items
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSuggestionSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="item">Item Name/Description</Label>
-                <Input
-                  id="item"
-                  value={newSuggestion.item}
-                  onChange={(e) =>
-                    setNewSuggestion({ ...newSuggestion, item: e.target.value })
-                  }
-                  placeholder="e.g., Disposable gloves (size L), Insulated food containers"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="reason">Why is this needed?</Label>
-                <Textarea
-                  id="reason"
-                  value={newSuggestion.reason}
-                  onChange={(e) =>
-                    setNewSuggestion({
-                      ...newSuggestion,
-                      reason: e.target.value,
-                    })
-                  }
-                  placeholder="Explain how this item would help our operations..."
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label>Priority Level</Label>
-                <div className="flex gap-2 mt-2">
-                  {['high', 'medium', 'low'].map((priority) => (
-                    <Button
-                      key={priority}
-                      type="button"
-                      variant={
-                        newSuggestion.priority === priority
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() =>
-                        setNewSuggestion({
-                          ...newSuggestion,
-                          priority: priority as any,
-                        })
-                      }
-                    >
-                      {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={
-                  createSuggestionMutation.isPending ||
-                  !newSuggestion.item.trim()
-                }
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {createSuggestionMutation.isPending
-                  ? 'Submitting...'
-                  : 'Submit Suggestion'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Sharing Tips */}
-        <Card className="bg-gradient-to-r from-brand-primary/5 to-brand-orange/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
-              Amplify Our Reach
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <Badge variant="outline" className="text-xs">
-                  1
-                </Badge>
-                <div>
-                  <p className="font-medium">Share on Social Media</p>
-                  <p className="text-sm text-slate-600">
-                    Post our wishlist link on Facebook, Instagram, or LinkedIn
-                    with a personal message about our mission.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Badge variant="outline" className="text-xs">
-                  2
-                </Badge>
-                <div>
-                  <p className="font-medium">Email Your Network</p>
-                  <p className="text-sm text-slate-600">
-                    Send the wishlist to friends, family, or colleagues who
-                    might be interested in supporting our cause.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Badge variant="outline" className="text-xs">
-                  3
-                </Badge>
-                <div>
-                  <p className="font-medium">Workplace Announcements</p>
-                  <p className="text-sm text-slate-600">
-                    Share with your work team, church group, or community
-                    organizations that support local nonprofits.
-                  </p>
-                </div>
-              </div>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
+        {/* TEMPLATES TAB */}
+        {activeTab === 'templates' && (
+          <div>
+            {/* Template selector */}
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                marginBottom: 24,
+                overflowX: 'auto',
+                paddingBottom: 4,
+              }}
+            >
+              {TEMPLATES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setActiveTemplate(t.id);
+                    setShowCaption(false);
+                  }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 20,
+                    fontFamily: "'Open Sans', sans-serif",
+                    fontWeight: 600,
+                    fontSize: 13,
+                    color: activeTemplate === t.id ? COLORS.white : COLORS.navy,
+                    background:
+                      activeTemplate === t.id ? COLORS.navy : `${COLORS.sky}20`,
+                    border: 'none',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {t.name}
+                </button>
+              ))}
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Admin Review Section - Only visible to admins */}
-        {user &&
-          hasPermission(
-            (user as any)?.permissions || 0,
-            PERMISSIONS.ADMIN_ACCESS
-          ) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-brand-burgundy" />
-                  Admin Review - Pending Suggestions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {suggestions.filter((s) => s.status === 'pending').length ===
-                  0 ? (
-                    <p className="text-slate-500 text-center py-4">
-                      No pending suggestions to review
-                    </p>
-                  ) : (
-                    suggestions
-                      .filter((s) => s.status === 'pending')
-                      .map((suggestion: any) => (
-                        <div
-                          key={suggestion.id}
-                          className="border rounded-lg p-4 bg-yellow-50"
-                        >
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h4 className="font-medium">
-                                  {suggestion.item}
-                                </h4>
-                                <Badge
-                                  variant={
-                                    suggestion.priority === 'high'
-                                      ? 'destructive'
-                                      : suggestion.priority === 'medium'
-                                        ? 'default'
-                                        : 'secondary'
-                                  }
-                                >
-                                  {suggestion.priority} priority
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-slate-600 mb-2">
-                                {suggestion.reason}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                Suggested on{' '}
-                                {new Date(
-                                  suggestion.createdAt
-                                ).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                reviewSuggestionMutation.mutate({
-                                  id: suggestion.id,
-                                  action: 'approve',
-                                })
-                              }
-                              disabled={reviewSuggestionMutation.isPending}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <CheckCircle className="w-4 h-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() =>
-                                reviewSuggestionMutation.mutate({
-                                  id: suggestion.id,
-                                  action: 'reject',
-                                })
-                              }
-                              disabled={reviewSuggestionMutation.isPending}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      ))
-                  )}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+                gap: 24,
+                alignItems: 'start',
+              }}
+            >
+              {/* Preview */}
+              <div>
+                <PreviewComponent />
+              </div>
+
+              {/* Details */}
+              <div>
+                <div
+                  style={{
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 20,
+                    color: COLORS.navy,
+                    marginBottom: 4,
+                  }}
+                >
+                  {template.name}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
-              Recent Activity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 text-sm">
-              {activity.length === 0 ? (
-                <p className="text-slate-500 text-center py-4">
-                  No recent activity to show
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      background: `${COLORS.teal}15`,
+                      color: COLORS.teal,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '3px 10px',
+                      borderRadius: 12,
+                    }}
+                  >
+                    {template.frequency}
+                  </span>
+                  <span
+                    style={{
+                      background: `${COLORS.navy}10`,
+                      color: COLORS.navy,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '3px 10px',
+                      borderRadius: 12,
+                    }}
+                  >
+                    {template.platform}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    color: COLORS.midGray,
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    marginBottom: 20,
+                    marginTop: 0,
+                  }}
+                >
+                  {template.description}
                 </p>
-              ) : (
-                activity.map((item: any, index: number) => (
+
+                <button
+                  onClick={() => setShowCaption(!showCaption)}
+                  style={{
+                    background: showCaption ? COLORS.navy : COLORS.white,
+                    color: showCaption ? COLORS.white : COLORS.navy,
+                    border: `2px solid ${COLORS.navy}`,
+                    fontFamily: "'Montserrat', sans-serif",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    width: '100%',
+                    marginBottom: 12,
+                  }}
+                >
+                  {showCaption ? 'Hide Caption' : 'Show Sample Caption'}
+                </button>
+
+                {showCaption && (
                   <div
-                    key={index}
-                    className={`flex items-center justify-between p-3 rounded-lg ${
-                      item.type === 'suggestion'
-                        ? 'bg-brand-primary-lighter'
-                        : item.status === 'approved'
-                          ? 'bg-green-50'
-                          : 'bg-orange-50'
-                    }`}
+                    style={{
+                      background: COLORS.white,
+                      border: `1px solid #e5e7eb`,
+                      borderRadius: 12,
+                      padding: 16,
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      {item.type === 'suggestion' ? (
-                        <Plus
-                          className={`w-4 h-4 ${
-                            item.status === 'approved'
-                              ? 'text-green-600'
-                              : item.status === 'pending'
-                                ? 'text-brand-primary'
-                                : 'text-orange-600'
-                          }`}
-                        />
-                      ) : (
-                        <Gift className="w-4 h-4 text-green-600" />
-                      )}
-                      <span>
-                        {item.description ||
-                          `${item.item} ${
-                            item.type === 'suggestion' ? 'suggested' : 'updated'
-                          }`}
-                      </span>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: COLORS.teal,
+                        textTransform: 'uppercase',
+                        letterSpacing: 1,
+                        marginBottom: 8,
+                      }}
+                    >
+                      Sample Caption
                     </div>
-                    <span className="text-xs text-slate-500">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
+                    <pre
+                      style={{
+                        fontFamily: "'Open Sans', sans-serif",
+                        fontSize: 13,
+                        color: COLORS.darkText,
+                        whiteSpace: 'pre-wrap',
+                        lineHeight: 1.6,
+                        margin: 0,
+                      }}
+                    >
+                      {CAPTIONS[activeTemplate]}
+                    </pre>
                   </div>
-                ))
-              )}
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        )}
+
+        {/* CALENDAR TAB */}
+        {activeTab === 'calendar' && (
+          <div>
+            <div
+              style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                fontSize: 18,
+                color: COLORS.navy,
+                marginBottom: 4,
+              }}
+            >
+              Monthly Content Calendar
+            </div>
+            <p
+              style={{
+                color: COLORS.midGray,
+                fontSize: 14,
+                lineHeight: 1.5,
+                marginTop: 4,
+                marginBottom: 20,
+              }}
+            >
+              8 wishlist-related posts per month. That's 2 per week — enough to
+              build a rhythm without overwhelming your feed.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[1, 2, 3, 4].map((week) => (
+                <div
+                  key={week}
+                  style={{
+                    background: COLORS.white,
+                    borderRadius: 12,
+                    padding: 16,
+                    border: `1px solid #e5e7eb`,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'Montserrat', sans-serif",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      color: COLORS.navy,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Week {week}
+                  </div>
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    {CALENDAR.filter((c) => c.week === week).map((entry, i) => {
+                      const tmpl = TEMPLATES.find(
+                        (t) => t.id === entry.template
+                      )!;
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            background: `${tmpl.bgColor}10`,
+                            padding: '10px 14px',
+                            borderRadius: 8,
+                            borderLeft: `4px solid ${tmpl.bgColor === '#FFFFFF' ? COLORS.teal : tmpl.bgColor}`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: "'Montserrat', sans-serif",
+                              fontWeight: 700,
+                              fontSize: 12,
+                              color: COLORS.midGray,
+                              width: 80,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {entry.day}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div
+                              style={{
+                                fontFamily: "'Montserrat', sans-serif",
+                                fontWeight: 700,
+                                fontSize: 13,
+                                color: COLORS.navy,
+                              }}
+                            >
+                              {tmpl.name}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: COLORS.midGray,
+                                marginTop: 2,
+                              }}
+                            >
+                              {entry.note}
+                            </div>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color:
+                                tmpl.bgColor === '#FFFFFF'
+                                  ? COLORS.teal
+                                  : tmpl.bgColor,
+                              background: `${tmpl.bgColor === '#FFFFFF' ? COLORS.teal : tmpl.bgColor}15`,
+                              padding: '3px 8px',
+                              borderRadius: 8,
+                            }}
+                          >
+                            {tmpl.platform.split('+')[0].trim()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* INVENTORY TAB */}
+        {activeTab === 'inventory' && (
+          <div>
+            <div
+              style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontWeight: 700,
+                fontSize: 18,
+                color: COLORS.navy,
+                marginBottom: 4,
+              }}
+            >
+              Wishlist Inventory Snapshot
+            </div>
+            <p
+              style={{
+                color: COLORS.midGray,
+                fontSize: 14,
+                lineHeight: 1.5,
+                marginTop: 4,
+                marginBottom: 20,
+              }}
+            >
+              Current fulfillment status — use this to decide what to feature
+              each week.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[...WISHLIST_ITEMS]
+                .sort((a, b) => a.has / a.need - b.has / b.need)
+                .map((item, i) => {
+                  const pct = Math.min((item.has / item.need) * 100, 100);
+                  const isLow = pct < 50;
+                  const isOver = item.has >= item.need;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: COLORS.white,
+                        borderRadius: 10,
+                        padding: '12px 16px',
+                        border: `1px solid ${isLow ? COLORS.crimson + '30' : '#e5e7eb'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                      }}
+                    >
+                      <span
+                        style={{ fontSize: 20, width: 28, textAlign: 'center' }}
+                      >
+                        {item.emoji}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontFamily: "'Open Sans', sans-serif",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: COLORS.darkText,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {item.name}
+                        </div>
+                        <div
+                          style={{
+                            height: 6,
+                            background: '#e5e7eb',
+                            borderRadius: 3,
+                            marginTop: 6,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <div
+                            style={{
+                              height: '100%',
+                              width: `${pct}%`,
+                              background: isOver
+                                ? COLORS.teal
+                                : isLow
+                                  ? COLORS.crimson
+                                  : COLORS.gold,
+                              borderRadius: 3,
+                              transition: 'width 0.3s',
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          textAlign: 'right',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: "'Montserrat', sans-serif",
+                            fontWeight: 700,
+                            fontSize: 14,
+                            color: isOver
+                              ? COLORS.teal
+                              : isLow
+                                ? COLORS.crimson
+                                : COLORS.navy,
+                          }}
+                        >
+                          {item.has}/{item.need}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: COLORS.midGray,
+                          }}
+                        >
+                          {item.price}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                padding: 14,
+                background: `${COLORS.crimson}08`,
+                borderRadius: 10,
+                border: `1px solid ${COLORS.crimson}20`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Montserrat', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: COLORS.crimson,
+                  marginBottom: 4,
+                }}
+              >
+                🔴 Priority items to feature
+              </div>
+              <div
+                style={{ fontSize: 13, color: COLORS.midGray, lineHeight: 1.5 }}
+              >
+                CLIF Bars (33%), Zbar Protein (40%), Del Monte Fruit Cups (60%),
+                and Mott's Mighty Applesauce (60%) are your best candidates for
+                Supply Sunday and Urgent Need posts.
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                padding: 14,
+                background: `${COLORS.teal}08`,
+                borderRadius: 10,
+                border: `1px solid ${COLORS.teal}20`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Montserrat', sans-serif",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: COLORS.teal,
+                  marginBottom: 4,
+                }}
+              >
+                ✅ Over-fulfilled — refresh quantities
+              </div>
+              <div
+                style={{ fontSize: 13, color: COLORS.midGray, lineHeight: 1.5 }}
+              >
+                Nature Valley Sweet & Salty, Mott's Applesauce 18ct, Jack
+                Link's, and several others are at or above target. Update
+                quantities on Amazon to keep the list looking current and
+                urgent.
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
