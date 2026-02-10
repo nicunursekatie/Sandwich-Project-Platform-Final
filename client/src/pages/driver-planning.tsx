@@ -48,6 +48,11 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { EventEditDialog } from '@/components/event-requests/dialogs/EventEditDialog';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@/components/ui/resizable';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -2529,9 +2534,10 @@ export default function DriverPlanningDashboard() {
       </div>
 
       {/* Main Content - Desktop 3-Panel Layout */}
-      <div className="flex-1 hidden lg:flex overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 hidden lg:flex overflow-hidden">
         {/* Left Panel - Event List */}
-        <div className="w-80 border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list" onClick={() => setFocusedItem(null)}>
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
+        <div className="h-full border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list" onClick={() => setFocusedItem(null)}>
           <div className="p-3 border-b bg-white space-y-2">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -2924,9 +2930,13 @@ export default function DriverPlanningDashboard() {
             </div>
           </ScrollArea>
         </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* Center Panel - Map */}
-        <div className="flex-1 flex flex-col" data-testid="driver-planning-map">
+        <ResizablePanel defaultSize={55} minSize={30}>
+        <div className="h-full flex flex-col" data-testid="driver-planning-map">
           <div className="relative flex-1">
           <MapContainer
             center={mapCenter}
@@ -4031,9 +4041,13 @@ export default function DriverPlanningDashboard() {
             </div>
           </div>
         </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
 
         {/* Right Panel - Driver Suggestions */}
-        <div className="w-96 border-l bg-gray-50 flex flex-col" onClick={() => setFocusedItem(null)}>
+        <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+        <div className="h-full border-l bg-gray-50 flex flex-col" onClick={() => setFocusedItem(null)}>
           <div className="p-3 border-b bg-white">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -4809,7 +4823,8 @@ export default function DriverPlanningDashboard() {
             )}
           </ScrollArea>
         </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       {/* Main Content - Tablet 2-Panel Layout (md to lg) */}
       <div className="flex-1 hidden md:flex lg:hidden overflow-hidden">
