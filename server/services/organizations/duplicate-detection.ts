@@ -320,12 +320,13 @@ export async function checkReturningOrganization(
 
     // Exact match (case-insensitive) against past events
     // Data has been cleaned so we can rely on exact org name matching
-    const normalizedOrgName = orgName.trim().toLowerCase();
+    // Normalize & → and so "William & Reed" matches "William and Reed"
+    const normalizedOrgName = orgName.trim().toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
 
     const eventCondition = currentEventId
-      ? sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrgName}
+      ? sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}
             AND ${eventRequests.id} != ${currentEventId}`
-      : sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrgName}`;
+      : sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}`;
 
     let matchingEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null }[] = [];
     try {
@@ -359,8 +360,8 @@ export async function checkReturningOrganization(
         })
         .from(sandwichCollections)
         .where(
-          sql`LOWER(TRIM(${sandwichCollections.group1Name})) = ${normalizedOrgName}
-              OR LOWER(TRIM(${sandwichCollections.group2Name})) = ${normalizedOrgName}`
+          sql`REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and') = ${normalizedOrgName}
+              OR REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and') = ${normalizedOrgName}`
         )
         .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {

@@ -375,9 +375,10 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
   // Populate form when event changes
   useEffect(() => {
     if (event) {
-      setDriversNeeded(event.driversNeeded?.toString() || '');
-      setSpeakersNeeded(event.speakersNeeded?.toString() || '');
-      setVolunteersNeeded(event.volunteersNeeded?.toString() || '');
+      // Use '0' as display for null/undefined count fields (consistent with save behavior)
+      setDriversNeeded((event.driversNeeded ?? 0).toString());
+      setSpeakersNeeded((event.speakersNeeded ?? 0).toString());
+      setVolunteersNeeded((event.volunteersNeeded ?? 0).toString());
       setPickupTime(formatTimeForInput(event.pickupTime));
       setEventStartTime(formatTimeForInput(event.eventStartTime));
       setEventEndTime(formatTimeForInput(event.eventEndTime));
@@ -446,15 +447,16 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     console.log('[EventEditDialog] Original event - tspContact:', event?.tspContact, ', customTspContact:', event?.customTspContact);
     console.log('[EventEditDialog] vanDriverNeeded state:', vanDriverNeeded, 'event.vanDriverNeeded:', event?.vanDriverNeeded);
 
-    // Logistics
-    if (driversNeeded !== (event?.driversNeeded?.toString() || '')) {
-      updates.driversNeeded = driversNeeded ? parseInt(driversNeeded) : null;
+    // Logistics - use 0 as default for empty count fields (not null)
+    // Compare against normalized values (null/undefined treated as 0)
+    if (driversNeeded !== (event?.driversNeeded ?? 0).toString()) {
+      updates.driversNeeded = driversNeeded ? parseInt(driversNeeded) : 0;
     }
-    if (speakersNeeded !== (event?.speakersNeeded?.toString() || '')) {
-      updates.speakersNeeded = speakersNeeded ? parseInt(speakersNeeded) : null;
+    if (speakersNeeded !== (event?.speakersNeeded ?? 0).toString()) {
+      updates.speakersNeeded = speakersNeeded ? parseInt(speakersNeeded) : 0;
     }
-    if (volunteersNeeded !== (event?.volunteersNeeded?.toString() || '')) {
-      updates.volunteersNeeded = volunteersNeeded ? parseInt(volunteersNeeded) : null;
+    if (volunteersNeeded !== (event?.volunteersNeeded ?? 0).toString()) {
+      updates.volunteersNeeded = volunteersNeeded ? parseInt(volunteersNeeded) : 0;
     }
     if (pickupTime !== formatTimeForInput(event?.pickupTime)) {
       updates.pickupTime = pickupTime || null;
