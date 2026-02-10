@@ -171,6 +171,75 @@ const SectionLoader = () => (
   </div>
 );
 
+// Bridge component that sits inside MultiViewProvider and routes sidebar clicks
+// to the currently focused panel instead of always the primary panel
+function MultiViewSidebar({
+  navigationItems,
+  isCollapsed,
+  onMobileClose,
+  onTrackNavigation,
+  dashboardSetActiveSection,
+}: {
+  navigationItems: typeof NAV_ITEMS;
+  isCollapsed: boolean;
+  onMobileClose: () => void;
+  onTrackNavigation: (section: string, from: string) => void;
+  dashboardSetActiveSection: (section: string) => void;
+}) {
+  const [location, setLocation] = useLocation();
+  const { isMultiViewEnabled, activePanel, panels, navigateActivePanel } = useMultiView();
+
+  // In multi-view mode, show the focused panel's section as the active highlight
+  const effectiveActiveSection = React.useMemo(() => {
+    if (isMultiViewEnabled && activePanel) {
+      const focusedPanel = panels.find(p => p.id === activePanel);
+      if (focusedPanel) return focusedPanel.section;
+    }
+    // Fall back to primary panel's section
+    const primary = panels.find(p => p.id === 'primary');
+    return primary?.section || 'dashboard';
+  }, [isMultiViewEnabled, activePanel, panels]);
+
+  const handleSectionChange = React.useCallback((section: string) => {
+    logger.log('MultiViewSidebar navigation:', section, 'multiView:', isMultiViewEnabled, 'activePanel:', activePanel);
+
+    // Track navigation
+    onTrackNavigation(section, effectiveActiveSection);
+
+    // Handle standalone routes (navigate away from dashboard)
+    if (section === 'help') {
+      setLocation('/help');
+      onMobileClose();
+      return;
+    }
+
+    if (isMultiViewEnabled) {
+      // In multi-view: navigate the focused panel directly
+      navigateActivePanel(section);
+    } else {
+      // Single view: use the dashboard-level state as before
+      dashboardSetActiveSection(section);
+    }
+
+    onMobileClose();
+
+    // Update URL for back button support (reflects the navigated section)
+    const newUrl = section === 'dashboard'
+      ? '/dashboard'
+      : `/dashboard?section=${section}`;
+    window.history.pushState({}, '', newUrl);
+  }, [isMultiViewEnabled, activePanel, navigateActivePanel, dashboardSetActiveSection, effectiveActiveSection, onTrackNavigation, onMobileClose, setLocation]);
+
+  return (
+    <SimpleNav
+      navigationItems={navigationItems}
+      activeSection={effectiveActiveSection}
+      onSectionChange={handleSectionChange}
+      isCollapsed={isCollapsed}
+    />
+  );
+}
+
 export default function Dashboard({
   initialSection = 'dashboard',
 }: {
@@ -953,36 +1022,12 @@ export default function Dashboard({
 
             {/* Simple Navigation with enhanced mobile scrolling */}
             <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto">
-              <SimpleNav
+              <MultiViewSidebar
                 navigationItems={NAV_ITEMS}
-                activeSection={activeSection}
-                onSectionChange={(section) => {
-                  logger.log(
-                    'Dashboard setActiveSection called with:',
-                    section
-                  );
-
-                  // Track navigation
-                  trackNavigation(section, activeSection);
-
-                  // Handle standalone routes (navigate away from dashboard)
-                  if (section === 'help') {
-                    setLocation('/help');
-                    setIsMobileMenuOpen(false);
-                    return;
-                  }
-
-                  setActiveSection(section);
-                  // Close mobile menu when navigation item is clicked
-                  setIsMobileMenuOpen(false);
-                  // Also update URL for back button support
-                  const newUrl =
-                    section === 'dashboard'
-                      ? '/dashboard'
-                      : `/dashboard?section=${section}`;
-                  window.history.pushState({}, '', newUrl);
-                }}
                 isCollapsed={isSidebarCollapsed}
+                onMobileClose={() => setIsMobileMenuOpen(false)}
+                onTrackNavigation={trackNavigation}
+                dashboardSetActiveSection={setActiveSection}
               />
 
               {/* EIN Information - Always visible at bottom */}

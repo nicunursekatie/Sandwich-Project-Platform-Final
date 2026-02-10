@@ -29,10 +29,14 @@ interface ReturningOrganizationData {
  * - Returning org + same contact = strong signal, personalize heavily
  * - Returning org + new contact = org has history but treat contact as first-time
  *
+ * IMPORTANT: Contact matching requires email OR (name + phone) match to prevent
+ * false positives from people with the same name.
+ *
  * @param organizationName - The organization name to check
  * @param currentEventId - Optional event ID to exclude from the check (for current request)
  * @param contactEmail - Optional contact email to check for returning contact
  * @param contactName - Optional contact full name to check for returning contact
+ * @param contactPhone - Optional contact phone to use as secondary validation with name
  * @param enabled - Whether to enable the query (default: true)
  */
 export function useReturningOrganization(
@@ -40,10 +44,11 @@ export function useReturningOrganization(
   currentEventId?: number,
   contactEmail?: string | null,
   contactName?: string | null,
+  contactPhone?: string | null,
   enabled: boolean = true
 ) {
   return useQuery<ReturningOrganizationData>({
-    queryKey: ['returning-organization', organizationName, currentEventId, contactEmail, contactName],
+    queryKey: ['returning-organization', organizationName, currentEventId, contactEmail, contactName, contactPhone],
     queryFn: async () => {
       if (!organizationName) {
         return {
@@ -60,6 +65,7 @@ export function useReturningOrganization(
         ...(currentEventId && { currentEventId: currentEventId.toString() }),
         ...(contactEmail && { contactEmail }),
         ...(contactName && { contactName }),
+        ...(contactPhone && { contactPhone }),
       });
 
       const response = await fetch(`/api/event-requests/check-returning-org?${params}`, {

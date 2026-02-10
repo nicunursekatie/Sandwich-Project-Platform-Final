@@ -63,7 +63,7 @@ export function MultiViewContainer({
   onSectionChange,
   className,
 }: MultiViewContainerProps) {
-  const { panels, isMultiViewEnabled, splitLayout, updatePanelSection } = useMultiView();
+  const { panels, activePanel, setActivePanel, isMultiViewEnabled, splitLayout, updatePanelSection } = useMultiView();
 
   // Handle section change - update panel section in multi-view, or call parent handler
   const handleSectionChange = (section: string, panelId?: string) => {
@@ -96,25 +96,47 @@ export function MultiViewContainer({
         direction={splitLayout}
         className="h-full"
       >
-        {panels.map((panel, index) => (
-          <React.Fragment key={panel.id}>
-            <ResizablePanel
-              defaultSize={100 / panels.length}
-              minSize={20}
-              className="flex flex-col"
-            >
-              <SinglePanelContent
-                panel={panel}
-                renderContent={renderContent}
-                onSectionChange={handleSectionChange}
-                isMultiView={true}
-              />
-            </ResizablePanel>
-            {index < panels.length - 1 && (
-              <ResizableHandle withHandle />
-            )}
-          </React.Fragment>
-        ))}
+        {panels.map((panel, index) => {
+          const isActive = activePanel === panel.id;
+          return (
+            <React.Fragment key={panel.id}>
+              <ResizablePanel
+                defaultSize={100 / panels.length}
+                minSize={20}
+                className="flex flex-col"
+              >
+                {/* Click-to-focus wrapper: clicking a panel makes it the sidebar target */}
+                <div
+                  className={cn(
+                    'h-full flex flex-col relative',
+                    isActive
+                      ? 'ring-2 ring-teal-400 ring-inset'
+                      : 'ring-1 ring-transparent hover:ring-slate-300 ring-inset'
+                  )}
+                  onClick={() => {
+                    if (!isActive) {
+                      setActivePanel(panel.id);
+                    }
+                  }}
+                >
+                  {/* Active panel indicator bar */}
+                  {isActive && (
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-teal-500 z-10" />
+                  )}
+                  <SinglePanelContent
+                    panel={panel}
+                    renderContent={renderContent}
+                    onSectionChange={handleSectionChange}
+                    isMultiView={true}
+                  />
+                </div>
+              </ResizablePanel>
+              {index < panels.length - 1 && (
+                <ResizableHandle withHandle />
+              )}
+            </React.Fragment>
+          );
+        })}
       </ResizablePanelGroup>
     </div>
   );

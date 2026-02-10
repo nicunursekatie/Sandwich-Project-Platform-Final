@@ -80,10 +80,13 @@ router.get('/conflicts-for-date', isAuthenticated, async (req, res) => {
 
 /**
  * Check if an organization is a returning organization
- * GET /api/event-requests/check-returning-org?orgName=...&currentEventId=...&contactEmail=...&contactName=...
+ * GET /api/event-requests/check-returning-org?orgName=...&currentEventId=...&contactEmail=...&contactName=...&contactPhone=...
  *
  * This endpoint helps the intake team identify organizations that have worked with us before,
  * so they can personalize their outreach instead of sending generic first-time emails.
+ *
+ * IMPORTANT: Contact matching requires email OR (name + phone) match to prevent
+ * false positives from people with the same name.
  *
  * Returns:
  * - isReturning: boolean - Whether the organization has past events/collections
@@ -99,13 +102,14 @@ router.get('/check-returning-org', isAuthenticated, async (req, res) => {
     const currentEventId = req.query.currentEventId ? parseInt(req.query.currentEventId as string) : undefined;
     const contactEmail = req.query.contactEmail as string | undefined;
     const contactName = req.query.contactName as string | undefined;
+    const contactPhone = req.query.contactPhone as string | undefined;
 
     if (!orgName) {
       return res.status(400).json({ error: 'Organization name required' });
     }
 
     const { checkReturningOrganization } = await import('../../services/organizations/duplicate-detection');
-    const result = await checkReturningOrganization(orgName, currentEventId, contactEmail, contactName);
+    const result = await checkReturningOrganization(orgName, currentEventId, contactEmail, contactName, contactPhone);
 
     res.json(result);
   } catch (error) {

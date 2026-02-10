@@ -329,13 +329,17 @@ function isGenericUmbrellaOrg(orgName: string): boolean {
  *
  * @param orgName - Organization name to check
  * @param currentEventId - Optional current event request ID to exclude from counts
+ * @param contactEmail - Optional contact email for returning contact check
+ * @param contactName - Optional contact name for returning contact check (requires email or phone match too)
+ * @param contactPhone - Optional contact phone for returning contact check (used with name match)
  * @returns Object with returning status, past event count, and most recent event info
  */
 export async function checkReturningOrganization(
   orgName: string,
   currentEventId?: number,
   contactEmail?: string,
-  contactName?: string
+  contactName?: string,
+  contactPhone?: string
 ): Promise<{
   isReturning: boolean;
   isReturningContact: boolean;
@@ -375,7 +379,7 @@ export async function checkReturningOrganization(
             AND ${eventRequests.id} != ${currentEventId}`
       : sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}`;
 
-    let matchingEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null }[] = [];
+    let matchingEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
     try {
       matchingEvents = await db
         .select({
@@ -387,6 +391,7 @@ export async function checkReturningOrganization(
           firstName: eventRequests.firstName,
           lastName: eventRequests.lastName,
           email: eventRequests.email,
+          phone: eventRequests.phone,
         })
         .from(eventRequests)
         .where(eventCondition)
@@ -420,13 +425,19 @@ export async function checkReturningOrganization(
     const mostRecentCollection = matchingCollections[0];
 
     // Check if the current contact matches any past event contacts
-    // Match by email first (most reliable), fall back to first+last name
+    // IMPORTANT: Name-only matching is NOT sufficient since people can share names.
+    // We require either:
+    // 1. Email match (strongest signal), OR
+    // 2. Name match + phone match (secondary validation)
+    // Name alone is NOT enough to flag as returning contact.
     let isReturningContact = false;
     let pastContactName: string | undefined;
 
     if (isReturning && matchingEvents.length > 0) {
       const normalizedContactEmail = contactEmail?.trim().toLowerCase();
       const normalizedContactName = contactName?.trim().toLowerCase();
+      // Normalize phone by removing all non-digits for comparison
+      const normalizedContactPhone = contactPhone?.replace(/\D/g, '');
 
       for (const event of matchingEvents) {
         const eventEmail = event.email?.trim().toLowerCase();
@@ -435,23 +446,31 @@ export async function checkReturningOrganization(
           .join(' ')
           .trim()
           .toLowerCase();
+        const eventPhone = event.phone?.replace(/\D/g, '');
 
-        // Email match is strongest signal
+        // Email match is strongest signal - if emails match, it's the same person
         if (normalizedContactEmail && eventEmail && normalizedContactEmail === eventEmail) {
           isReturningContact = true;
           pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
           break;
         }
 
-        // Fall back to name match if no email match found
+        // Name + phone match is secondary validation
+        // Two people can have the same name, but name + phone is much more reliable
         if (normalizedContactName && eventFullName && normalizedContactName === eventFullName) {
-          isReturningContact = true;
-          pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
-          break;
+          // Name matches - now verify with phone
+          if (normalizedContactPhone && eventPhone && normalizedContactPhone === eventPhone) {
+            isReturningContact = true;
+            pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
+            break;
+          }
+          // Name matches but phone doesn't match or isn't available - don't flag as returning contact
+          // This prevents false positives from people with the same name
         }
       }
 
       // If not a returning contact, grab the most recent past contact name for context
+      // This helps the team know who the previous contact was (even if it's a different person)
       if (!isReturningContact && mostRecentEvent) {
         const recentName = [mostRecentEvent.firstName, mostRecentEvent.lastName].filter(Boolean).join(' ');
         if (recentName) {

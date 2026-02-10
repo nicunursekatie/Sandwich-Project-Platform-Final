@@ -19,6 +19,7 @@ interface MultiViewContextType {
   setMultiViewEnabled: (enabled: boolean) => void;
   splitLayout: 'horizontal' | 'vertical';
   setSplitLayout: (layout: 'horizontal' | 'vertical') => void;
+  navigateActivePanel: (section: string, title?: string) => void;
 }
 
 const MultiViewContext = createContext<MultiViewContextType | undefined>(undefined);
@@ -124,6 +125,19 @@ export function MultiViewProvider({
     );
   }, []);
 
+  // Navigate whichever panel is currently focused (active)
+  // This is the method sidebar navigation should call in multi-view mode
+  const navigateActivePanel = useCallback((section: string, title?: string) => {
+    const targetPanelId = activePanel || 'primary';
+    setPanels(prev =>
+      prev.map(panel =>
+        panel.id === targetPanelId
+          ? { ...panel, section, title: title || section }
+          : panel
+      )
+    );
+  }, [activePanel]);
+
   const value = useMemo(() => ({
     panels,
     activePanel,
@@ -137,6 +151,7 @@ export function MultiViewProvider({
     setMultiViewEnabled,
     splitLayout,
     setSplitLayout,
+    navigateActivePanel,
   }), [
     panels,
     activePanel,
@@ -146,6 +161,7 @@ export function MultiViewProvider({
     canAddPanel,
     isMultiViewEnabled,
     splitLayout,
+    navigateActivePanel,
   ]);
 
   return (

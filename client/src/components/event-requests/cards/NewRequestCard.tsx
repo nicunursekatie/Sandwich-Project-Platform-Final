@@ -763,12 +763,14 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   const collaboration = useEventCollaboration(request.id);
 
   // Check if this organization is returning (has past events) and if the contact is the same
+  // Contact matching requires email OR (name + phone) to prevent false positives from same names
   const contactFullName = [request.firstName, request.lastName].filter(Boolean).join(' ') || null;
   const { data: returningOrgData } = useReturningOrganization(
     request.organizationName,
     request.id,
-    request.email,        // contactEmail - to check if this is a returning contact
-    contactFullName,      // contactName - fallback for contact matching
+    request.email,        // contactEmail - primary way to identify returning contact
+    contactFullName,      // contactName - used with phone for secondary matching
+    request.phone,        // contactPhone - used with name for secondary matching
     ['new', 'in_process', 'scheduled'].includes(request.status || '') // Check for new, in-process, and scheduled requests
   );
 

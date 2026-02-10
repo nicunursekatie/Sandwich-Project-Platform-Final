@@ -844,12 +844,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   const collaboration = useEventCollaboration(request.id);
 
   // Check if this organization is returning (has past events) and if the contact is the same
+  // Contact matching requires email OR (name + phone) to prevent false positives from same names
   const contactFullName = [request.firstName, request.lastName].filter(Boolean).join(' ') || null;
   const { data: returningOrgData } = useReturningOrganization(
     request.organizationName,
     request.id,
     request.email,
     contactFullName,
+    request.phone,        // contactPhone - used with name for secondary matching
     ['in_process', 'scheduled'].includes(request.status || '')
   );
 
