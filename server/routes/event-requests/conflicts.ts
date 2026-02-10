@@ -91,7 +91,6 @@ router.get('/conflicts-for-date', isAuthenticated, async (req, res) => {
  * - pastEventCount: number - Number of past events
  * - collectionCount: number - Number of sandwich collections
  * - mostRecentEvent: object - Most recent event info (if any)
- * - similarNames: string[] - Similar organization names found (for fuzzy matching)
  * - pastContactName: string - Name of the most recent past contact (for context)
  */
 router.get('/check-returning-org', isAuthenticated, async (req, res) => {

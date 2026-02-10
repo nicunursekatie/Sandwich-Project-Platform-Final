@@ -187,7 +187,6 @@ interface CardHeaderProps {
       eventDate: string | null;
       status: string | null;
     };
-    similarNames?: string[];
     pastContactName?: string;
   };
 }
@@ -363,11 +362,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                           New contact for this org &mdash; treat as a first-time outreach
                         </p>
                       </div>
-                    )}
-                    {returningOrgData.similarNames && returningOrgData.similarNames.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        Similar names: {returningOrgData.similarNames.slice(0, 3).join(', ')}
-                      </p>
                     )}
                   </div>
                 </TooltipContent>

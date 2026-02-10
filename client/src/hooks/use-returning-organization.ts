@@ -15,7 +15,6 @@ interface ReturningOrganizationData {
     id: number;
     dateCollected: string | null;
   };
-  similarNames?: string[];
   pastContactName?: string;
 }
 

@@ -304,7 +304,6 @@ export async function checkReturningOrganization(
     id: number;
     dateCollected: string | null;
   };
-  similarNames?: string[];
   pastContactName?: string;
 }> {
   try {
@@ -319,31 +318,18 @@ export async function checkReturningOrganization(
       };
     }
 
-    const canonicalName = canonicalizeOrgName(orgName);
-    if (!canonicalName) {
-      return {
-        isReturning: false,
-        isReturningContact: false,
-        inCatalog: false,
-        pastEventCount: 0,
-        collectionCount: 0,
-      };
-    }
+    // Exact match (case-insensitive) against past events
+    // Data has been cleaned so we can rely on exact org name matching
+    const normalizedOrgName = orgName.trim().toLowerCase();
 
-    // Check for exact matches and similar names in past events
-    // Exclude the current event request if provided
-    // Limit results for performance - we only need to detect if there are past events
     const eventCondition = currentEventId
-      ? sql`${eventRequests.organizationName} IS NOT NULL
-            AND ${eventRequests.organizationName} != ''
+      ? sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrgName}
             AND ${eventRequests.id} != ${currentEventId}`
-      : sql`${eventRequests.organizationName} IS NOT NULL
-            AND ${eventRequests.organizationName} != ''`;
+      : sql`LOWER(TRIM(${eventRequests.organizationName})) = ${normalizedOrgName}`;
 
-    // Wrapped in try/catch to handle potential Drizzle column resolution issues
-    let pastEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null }[] = [];
+    let matchingEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null }[] = [];
     try {
-      pastEvents = await db
+      matchingEvents = await db
         .select({
           id: eventRequests.id,
           organizationName: eventRequests.organizationName,
@@ -356,38 +342,15 @@ export async function checkReturningOrganization(
         })
         .from(eventRequests)
         .where(eventCondition)
-        .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`)
-        .limit(500); // Limit to prevent performance issues
+        .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
     } catch (eventQueryError) {
       logger.warn('Failed to query event requests for returning org check, skipping event check', { error: eventQueryError });
-      // Continue with empty events - we'll just return that it's not a returning org
     }
 
-    // Find events with matching or similar organization names
-    const matchingEvents: typeof pastEvents = [];
-    const similarNames = new Set<string>();
-
-    for (const event of pastEvents) {
-      if (!event.organizationName) continue;
-
-      const eventCanonical = canonicalizeOrgName(event.organizationName);
-      const similarity = calculateSimilarity(canonicalName, eventCanonical);
-
-      // Include exact matches and high similarity matches (>0.85)
-      if (similarity > 0.85 || event.organizationName.toLowerCase() === orgName.toLowerCase()) {
-        matchingEvents.push(event);
-        if (event.organizationName.toLowerCase() !== orgName.toLowerCase()) {
-          similarNames.add(event.organizationName);
-        }
-      }
-    }
-
-    // Check sandwich collections for matching organization
-    // Limit to recent collections for performance
-    // Note: Wrapped in try/catch to handle potential Drizzle column resolution issues
-    let collections: { id: number; dateCollected: string | null; group1Name: string | null; group2Name: string | null }[] = [];
+    // Exact match against sandwich collections
+    let matchingCollections: { id: number; dateCollected: string | null; group1Name: string | null; group2Name: string | null }[] = [];
     try {
-      collections = await db
+      matchingCollections = await db
         .select({
           id: sandwichCollections.id,
           dateCollected: sandwichCollections.collectionDate,
@@ -395,34 +358,13 @@ export async function checkReturningOrganization(
           group2Name: sandwichCollections.group2Name,
         })
         .from(sandwichCollections)
-        .orderBy(sql`${sandwichCollections.collectionDate} DESC`)
-        .limit(500);
+        .where(
+          sql`LOWER(TRIM(${sandwichCollections.group1Name})) = ${normalizedOrgName}
+              OR LOWER(TRIM(${sandwichCollections.group2Name})) = ${normalizedOrgName}`
+        )
+        .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {
       logger.warn('Failed to query sandwich collections for returning org check, skipping collection check', { error: collectionQueryError });
-      // Continue with empty collections - we'll just check event requests
-    }
-
-    // Find collections with matching organization names
-    const matchingCollections: typeof collections = [];
-
-    for (const collection of collections) {
-      const group1Canonical = collection.group1Name ? canonicalizeOrgName(collection.group1Name) : '';
-      const group2Canonical = collection.group2Name ? canonicalizeOrgName(collection.group2Name) : '';
-
-      const similarity1 = group1Canonical ? calculateSimilarity(canonicalName, group1Canonical) : 0;
-      const similarity2 = group2Canonical ? calculateSimilarity(canonicalName, group2Canonical) : 0;
-
-      if (similarity1 > 0.85 || similarity2 > 0.85 ||
-          (collection.group1Name && collection.group1Name.toLowerCase() === orgName.toLowerCase()) ||
-          (collection.group2Name && collection.group2Name.toLowerCase() === orgName.toLowerCase())) {
-        matchingCollections.push(collection);
-        if (collection.group1Name && collection.group1Name.toLowerCase() !== orgName.toLowerCase() && similarity1 > 0.85) {
-          similarNames.add(collection.group1Name);
-        }
-        if (collection.group2Name && collection.group2Name.toLowerCase() !== orgName.toLowerCase() && similarity2 > 0.85) {
-          similarNames.add(collection.group2Name);
-        }
-      }
     }
 
     const isReturning = matchingEvents.length > 0 || matchingCollections.length > 0;
@@ -485,7 +427,6 @@ export async function checkReturningOrganization(
         id: mostRecentCollection.id,
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
-      similarNames: similarNames.size > 0 ? Array.from(similarNames).slice(0, 5) : undefined,
       pastContactName,
     };
   } catch (error) {
