@@ -108,7 +108,7 @@ router.get('/check-returning-org', isAuthenticated, async (req, res) => {
       return res.status(400).json({ error: 'Organization name required' });
     }
 
-    const { checkReturningOrganization } = await import('../../services/organizations/duplicate-detection');
+    const { checkReturningOrganization } = await import('../../services/organizations/returning-organization');
     const result = await checkReturningOrganization(orgName, currentEventId, contactEmail, contactName, contactPhone);
 
     res.json(result);

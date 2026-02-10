@@ -378,25 +378,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 ))}
               </div>
             )}
-            {/* Confirmation Status Badge - Click to toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  onClick={handleConfirmToggleClick}
-                  className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
-                    request.isConfirmed
-                      ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
-                      : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
-                  }`}
-                >
-                  {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
-                <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
-              </TooltipContent>
-            </Tooltip>
             {isInProcessStale && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -418,12 +399,12 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     className="px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap bg-gradient-to-br from-[#B8860B] to-[#DAA520] text-white"
                   >
                     <Building className="w-3 h-3 mr-1" />
-                    Corporate Priority
+                    Corporate
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <div className="space-y-1">
-                    <p className="font-medium">This is a Corporate Priority Event</p>
+                    <p className="font-medium">This is a Corporate Event</p>
                     <p className="text-sm">Requires immediate contact and core team member attendance.</p>
                   </div>
                 </TooltipContent>

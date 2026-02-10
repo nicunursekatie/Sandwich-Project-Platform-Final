@@ -61,7 +61,8 @@
       "Read(//Users/katielong/**)",
       "Bash(git log:*)",
       "Bash(/usr/local/bin/npm run check)",
-      "Bash(/usr/local/bin/npm run build)"
+      "Bash(/usr/local/bin/npm run build)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

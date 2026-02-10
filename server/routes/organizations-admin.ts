@@ -7,7 +7,7 @@
 
 import { Router, Response } from 'express';
 import type { AuthenticatedRequest } from '../types/express';
-import { findPotentialDuplicates, getOrganizationDetails } from '../services/organizations/duplicate-detection';
+import { findPotentialDuplicates, getOrganizationDetails } from '../services/organizations/returning-organization';
 import { mergeOrganizations, getMergeHistory, previewMerge } from '../services/organizations/merge-service';
 import { logger } from '../utils/production-safe-logger';
 import { PERMISSIONS } from '../../shared/auth-utils';

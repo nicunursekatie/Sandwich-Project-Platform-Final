@@ -477,12 +477,12 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   className="px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap bg-gradient-to-br from-[#B8860B] to-[#DAA520] text-white"
                 >
                   <Building className="w-3 h-3 mr-1" />
-                  Corporate Priority
+                  Corporate
                 </Badge>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <div className="space-y-1">
-                  <p className="font-medium">This is a Corporate Priority Event</p>
+                  <p className="font-medium">This is a Corporate Event</p>
                   <p className="text-sm">Requires immediate contact and core team member attendance.</p>
                 </div>
               </TooltipContent>

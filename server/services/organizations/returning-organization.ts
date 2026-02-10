@@ -1,9 +1,11 @@
 /**
- * Organization Duplicate Detection Service
+ * Organization Services
  *
- * Scans event requests and sandwich collections to find potential duplicate
- * organizations. Uses canonicalization and similarity scoring to identify
- * organizations that likely refer to the same entity.
+ * Contains functions for:
+ * 1. Returning Organization Detection - Identifies organizations that have worked with TSP before
+ *    so intake team can personalize outreach (checkReturningOrganization)
+ * 2. Duplicate Organization Detection - Finds potential duplicate org entries in the database
+ *    for admin merging/cleanup (findPotentialDuplicates, getOrganizationDetails)
  */
 
 import { db } from '../../db';
@@ -480,28 +482,29 @@ export async function checkReturningOrganization(
     }
 
     // For umbrella orgs without a distinguishing identifier (no troop/pack/chapter number),
-    // only flag as returning if the contact also matches. A generic "Girl Scouts" entry
-    // should not match every other "Girl Scouts" from a different troop.
-    const effectiveIsReturning = isReturning && (
-      !isGenericUmbrellaOrg(orgName) || isReturningContact
-    );
+    // we still show them as returning orgs, but with a caveat that it might be a different chapter.
+    // The isReturningContact flag tells the team whether it's the same contact person.
+    const isUmbrellaOrg = isGenericUmbrellaOrg(orgName);
 
     return {
-      isReturning: effectiveIsReturning,
+      // Always show org as returning if we have matching events/collections
+      // The team needs to know the org has worked with us before, even if contact is different
+      isReturning: isReturning,
       isReturningContact,
       inCatalog: false, // TODO: Check organizations table when properly implemented
-      pastEventCount: effectiveIsReturning ? matchingEvents.length : 0,
-      collectionCount: effectiveIsReturning ? matchingCollections.length : 0,
-      mostRecentEvent: effectiveIsReturning && mostRecentEvent ? {
+      pastEventCount: isReturning ? matchingEvents.length : 0,
+      collectionCount: isReturning ? matchingCollections.length : 0,
+      mostRecentEvent: isReturning && mostRecentEvent ? {
         id: mostRecentEvent.id,
         eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,
         status: mostRecentEvent.status,
       } : undefined,
-      mostRecentCollection: effectiveIsReturning && mostRecentCollection ? {
+      mostRecentCollection: isReturning && mostRecentCollection ? {
         id: mostRecentCollection.id,
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
-      pastContactName: effectiveIsReturning ? pastContactName : undefined,
+      // Always show past contact name when org is returning - helps team know who to reference
+      pastContactName: isReturning ? pastContactName : undefined,
     };
   } catch (error) {
     logger.error('Error checking returning organization', { orgName, currentEventId, error });
