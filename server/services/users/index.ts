@@ -78,17 +78,20 @@ export class UserService implements IUserService {
     try {
       const users = await storage.getAllUsers();
       // Return basic user info needed for assignments
-      const assignableUsers = users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        displayName:
-          user.firstName && user.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user.displayName || user.email,
-      }));
+      // Only include active, approved users (exclude pending/rejected)
+      const assignableUsers = users
+        .filter((user) => user.isActive === true)
+        .map((user) => ({
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          displayName:
+            user.firstName && user.lastName
+              ? `${user.firstName} ${user.lastName}`
+              : user.displayName || user.email,
+        }));
       return assignableUsers;
     } catch (error) {
       logger.error('Error fetching users for assignments:', error);

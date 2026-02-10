@@ -103,29 +103,30 @@ router.post(
         customRecipients,
       } = sendShoutoutSchema.parse(req.body);
 
-      // Get all users
+      // Get all users and filter to only active/approved users
       const allUsers = await storage.getAllUsers();
+      const activeUsers = allUsers.filter((user) => user.isActive === true);
 
       // Filter recipients based on group selection
       let recipients: any[] = [];
       switch (recipientGroup) {
         case 'all':
-          recipients = allUsers;
+          recipients = activeUsers;
           break;
         case 'super_admins':
-          recipients = allUsers.filter((user) => user.role === 'super_admin');
+          recipients = activeUsers.filter((user) => user.role === 'super_admin');
           break;
         case 'admins':
-          recipients = allUsers.filter((user) => user.role === 'admin');
+          recipients = activeUsers.filter((user) => user.role === 'admin');
           break;
         case 'hosts':
-          recipients = allUsers.filter((user) => user.role === 'host');
+          recipients = activeUsers.filter((user) => user.role === 'host');
           break;
         case 'volunteers':
-          recipients = allUsers.filter((user) => user.role === 'volunteer');
+          recipients = activeUsers.filter((user) => user.role === 'volunteer');
           break;
         case 'committee':
-          recipients = allUsers.filter(
+          recipients = activeUsers.filter(
             (user) => user.role === 'committee_member'
           );
           break;
@@ -136,7 +137,7 @@ router.post(
                 'Custom recipients list is required when using custom selection',
             });
           }
-          recipients = allUsers.filter((user) =>
+          recipients = activeUsers.filter((user) =>
             customRecipients.includes(user.id)
           );
           break;

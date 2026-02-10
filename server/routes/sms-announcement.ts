@@ -29,11 +29,11 @@ router.post(
         return res.status(400).json({ error: 'Sender email not found' });
       }
 
-      // Get all active users with email addresses
+      // Get all active users with email addresses (exclude pending/unapproved users)
       const allUsers = await storage.getAllUsers();
       let recipients = allUsers.filter(
         (user) =>
-          user.email && user.email.includes('@') && user.isActive !== false
+          user.email && user.email.includes('@') && user.isActive === true
       );
 
       // In test mode, only send to specified test email or sender

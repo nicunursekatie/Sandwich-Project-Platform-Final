@@ -473,9 +473,9 @@ streamRoutes.post('/sync-members', requirePermission(PERMISSIONS.ADMIN_PANEL_ACC
 
     logger.log('🔄 Starting Stream Chat member sync...');
 
-    // Get all active users
+    // Get all active users (exclude pending/unapproved users)
     const allUsers = await storage.getAllUsers();
-    const activeUsers = allUsers.filter(u => u.isActive !== false);
+    const activeUsers = allUsers.filter(u => u.isActive === true);
 
     logger.log(`Found ${activeUsers.length} active users to process`);
 
