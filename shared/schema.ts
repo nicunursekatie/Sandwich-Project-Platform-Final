@@ -3026,7 +3026,7 @@ export const importFromSheetsSchema = z.object({
   // Contact info
   'Contact Name': z.string().optional(),
   'Email Address': z.string().optional(),
-  'Contact Cell Number': z.string().optional(),
+  'Contact Cell Number': z.union([z.string(), z.number()]).optional().transform(val => val != null ? String(val) : undefined),
 
   // TSP and logistics
   'TSP Contact': z.string().optional(),

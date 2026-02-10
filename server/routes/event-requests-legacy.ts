@@ -1521,6 +1521,7 @@ router.get(
 
         // ========== SPECIAL FLAGS ==========
         isMlkDayEvent: event.isMlkDayEvent, // ScheduledCardEnhanced
+        isCorporatePriority: event.isCorporatePriority, // EventEditDialog, CorporatePriorityBadge
         externalId: event.externalId, // ScheduledCard
         overnightHoldingLocation: event.overnightHoldingLocation, // ScheduledCard
 

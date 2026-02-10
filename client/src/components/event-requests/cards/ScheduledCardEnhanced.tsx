@@ -91,6 +91,8 @@ import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event
 import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
+import { useReturningOrganization } from '@/hooks/use-returning-organization';
+import { RefreshCw } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 
 interface ScheduledCardEnhancedProps {
@@ -227,6 +229,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   // Collaboration hook for comments
   const collaboration = useEventCollaboration(request.id);
+
+  // Check if this organization is returning (has past events) and if the contact is the same
+  const contactFullName = [request.firstName, request.lastName].filter(Boolean).join(' ') || null;
+  const { data: returningOrgData } = useReturningOrganization(
+    request.organizationName,
+    request.id,
+    request.email,
+    contactFullName,
+    request.status === 'scheduled'
+  );
 
   // Check if there's any communication/notes content to show
   // Safely check if contactAttemptsLog is an array with items
@@ -911,6 +923,72 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
                   {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
+              )}
+              {/* Returning Organization Indicator */}
+              {returningOrgData?.isReturning && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={`whitespace-nowrap cursor-help mt-1 ${
+                        returningOrgData.isReturningContact
+                          ? 'bg-purple-50 text-purple-700 border-purple-300'
+                          : 'bg-amber-50 text-amber-700 border-amber-300'
+                      }`}
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Returning Org
+                      {returningOrgData.isReturningContact
+                        ? <span className="ml-1 text-xs opacity-80">&middot; Same Contact</span>
+                        : <span className="ml-1 text-xs opacity-80">&middot; New Contact</span>
+                      }
+                      {returningOrgData.pastEventCount > 0 && (
+                        <span className="ml-1 text-xs opacity-80">
+                          ({returningOrgData.pastEventCount} past event{returningOrgData.pastEventCount !== 1 ? 's' : ''})
+                        </span>
+                      )}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">This organization has worked with us before!</p>
+                      {returningOrgData.pastEventCount > 0 && (
+                        <p className="text-sm">
+                          {returningOrgData.pastEventCount} previous event{returningOrgData.pastEventCount !== 1 ? 's' : ''} on file
+                        </p>
+                      )}
+                      {returningOrgData.collectionCount > 0 && (
+                        <p className="text-sm">
+                          {returningOrgData.collectionCount} sandwich collection{returningOrgData.collectionCount !== 1 ? 's' : ''} recorded
+                        </p>
+                      )}
+                      {returningOrgData.mostRecentEvent && (
+                        <p className="text-xs text-muted-foreground">
+                          Most recent: {returningOrgData.mostRecentEvent.eventDate
+                            ? new Date(returningOrgData.mostRecentEvent.eventDate).toLocaleDateString()
+                            : 'Date unknown'}
+                          {returningOrgData.mostRecentEvent.status && ` (${returningOrgData.mostRecentEvent.status})`}
+                        </p>
+                      )}
+                      {returningOrgData.isReturningContact ? (
+                        <p className="text-xs text-purple-600 font-medium mt-2">
+                          Same contact as a previous event &mdash; personalize your outreach!
+                        </p>
+                      ) : (
+                        <div className="mt-2">
+                          {returningOrgData.pastContactName && (
+                            <p className="text-xs text-muted-foreground">
+                              Past contact: {returningOrgData.pastContactName}
+                            </p>
+                          )}
+                          <p className="text-xs text-amber-600 font-medium">
+                            New contact for this org &mdash; treat as a first-time outreach
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               )}
               {/* Partner Organizations - inline on same row */}
               {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
