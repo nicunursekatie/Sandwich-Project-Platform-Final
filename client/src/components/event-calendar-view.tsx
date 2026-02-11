@@ -7,12 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
-  Clock,
-  MapPin,
   Users,
-  Car,
-  Mic,
-  UserCheck,
   Sandwich,
   Filter,
   AlertTriangle,
@@ -37,7 +32,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
-import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '@/lib/assignment-utils';
+import { getUnfilledCounts } from '@/lib/assignment-utils';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -80,82 +75,19 @@ const getStatusColor = (status: string) => {
 };
 
 // Helper function to calculate unfilled needs for an event using centralized utils
+// Self-transport suppresses driver needs since the group handles their own transport
 const getUnfilledNeeds = (event: EventRequest) => {
   const counts = getUnfilledCounts(event);
+  const driversSuppressed = !!event.selfTransport;
 
   return {
     needsSpeaker: counts.speakersUnfilled > 0,
     needsVolunteer: counts.volunteersUnfilled > 0,
-    needsDriver: counts.driversUnfilled > 0,
+    needsDriver: !driversSuppressed && counts.driversUnfilled > 0,
     speakersUnfilled: counts.speakersUnfilled,
     volunteersUnfilled: counts.volunteersUnfilled,
-    driversUnfilled: counts.driversUnfilled,
+    driversUnfilled: driversSuppressed ? 0 : counts.driversUnfilled,
   };
-};
-
-// Helper function to get staffing indicators for an event
-const getStaffingIndicators = (event: EventRequest) => {
-  const indicators = [];
-
-  // Self-transport indicator - group is handling their own transportation
-  if (event.selfTransport) {
-    indicators.push({
-      icon: null,
-      emoji: '📦',
-      count: null,
-      color: 'text-amber-600',
-      tooltip: 'Self-transport - group will pick up sandwiches',
-    });
-  }
-
-  if (event.driversNeeded && event.driversNeeded > 0) {
-    indicators.push({
-      icon: Car,
-      count: event.driversNeeded,
-      color: 'text-blue-600',
-      tooltip: `${event.driversNeeded} driver${event.driversNeeded > 1 ? 's' : ''} needed`,
-    });
-  }
-
-  // Add van emoji if van driver is assigned
-  if (event.assignedVanDriverId) {
-    indicators.push({
-      icon: null, // We'll render the emoji directly
-      emoji: '🚐',
-      count: null,
-      color: 'text-blue-700',
-      tooltip: 'Van driver assigned',
-    });
-  }
-
-  if (event.isDhlVan) {
-    indicators.push({
-      icon: Truck,
-      count: null,
-      color: 'text-amber-700',
-      tooltip: 'DHL van assigned',
-    });
-  }
-
-  if (event.speakersNeeded && event.speakersNeeded > 0) {
-    indicators.push({
-      icon: Mic,
-      count: event.speakersNeeded,
-      color: 'text-purple-600',
-      tooltip: `${event.speakersNeeded} speaker${event.speakersNeeded > 1 ? 's' : ''} needed`,
-    });
-  }
-
-  if (event.volunteersNeeded && event.volunteersNeeded > 0) {
-    indicators.push({
-      icon: UserCheck,
-      count: event.volunteersNeeded,
-      color: 'text-green-600',
-      tooltip: `${event.volunteersNeeded} volunteer${event.volunteersNeeded > 1 ? 's' : ''} needed`,
-    });
-  }
-
-  return indicators;
 };
 
 // Helper function to get assigned staff names for an event
@@ -517,6 +449,49 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     return grouped;
   }, [filteredEvents]);
 
+  // Compute weekly sandwich summaries for the at-a-glance panel
+  const weeklySandwichSummary = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Build weeks: each week is Sun-Sat within this month
+    const weeks: { start: number; end: number; sandwiches: number; events: number }[] = [];
+    let weekStart = 1;
+
+    while (weekStart <= daysInMonth) {
+      const startDate = new Date(year, month, weekStart);
+      const dayOfWeek = startDate.getDay(); // 0=Sun
+      // End of week = Saturday or end of month
+      const daysUntilSat = 6 - dayOfWeek;
+      const weekEnd = Math.min(weekStart + daysUntilSat, daysInMonth);
+
+      let sandwiches = 0;
+      let eventCount = 0;
+
+      // Sum sandwiches from all non-cancelled events in this week
+      for (let d = weekStart; d <= weekEnd; d++) {
+        const dateStr = new Date(year, month, d).toISOString().split('T')[0];
+        const dayEvts = eventsByDate.get(dateStr) || [];
+        dayEvts.forEach((evt) => {
+          if (evt.status === 'cancelled') return;
+          eventCount++;
+          if (evt.estimatedSandwichCount && evt.estimatedSandwichCount > 0) {
+            sandwiches += evt.estimatedSandwichCount;
+          } else if (evt.actualSandwichCount && evt.actualSandwichCount > 0) {
+            sandwiches += evt.actualSandwichCount;
+          }
+        });
+      }
+
+      weeks.push({ start: weekStart, end: weekEnd, sandwiches, events: eventCount });
+      weekStart = weekEnd + 1;
+    }
+
+    const totalSandwiches = weeks.reduce((sum, w) => sum + w.sandwiches, 0);
+    return { weeks, totalSandwiches };
+  }, [currentDate, eventsByDate]);
+
   const goToPreviousMonth = () => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
@@ -692,23 +667,18 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             <span className="text-sm font-semibold text-gray-800">
               Unfilled Needs:
             </span>
+            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#1e40af' }}>
+              Need Driver
+            </span>
+            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#7e22ce' }}>
+              Need Speaker
+            </span>
+            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#15803d' }}>
+              Need Volunteer
+            </span>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-600 text-white">
-                <Mic className="w-3 h-3" />
-              </span>
-              <span className="text-xs text-gray-700">Needs Speaker</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-600 text-white">
-                <UserCheck className="w-3 h-3" />
-              </span>
-              <span className="text-xs text-gray-700">Needs Volunteer</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white">
-                <Car className="w-3 h-3" />
-              </span>
-              <span className="text-xs text-gray-700">Needs Driver</span>
+              <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+              <span className="text-xs text-gray-700">Day has unfilled needs</span>
             </div>
           </div>
 
@@ -743,6 +713,31 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
           </div>
         </div>
 
+        {/* Month At-a-Glance Sandwich Summary */}
+        <div className="hidden sm:block mb-4 rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a365d, #2c5282)' }}>
+          <div className="px-4 py-3 flex items-center justify-between">
+            <span className="text-white font-bold text-sm tracking-wide uppercase">
+              {MONTH_NAMES[currentDate.getMonth()]} At-a-Glance
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: '#fbad3f', color: '#1a365d' }}>
+              {weeklySandwichSummary.totalSandwiches.toLocaleString()} sandwiches
+            </span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 pb-3">
+            {weeklySandwichSummary.weeks.map((week, idx) => (
+              <div key={idx} className="rounded-md px-3 py-2" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                <div className="text-white/70 text-[11px] font-medium">
+                  Week {idx + 1}: {MONTH_NAMES[currentDate.getMonth()].slice(0, 3)} {week.start}-{week.end}
+                </div>
+                <div className="text-lg font-bold" style={{ color: '#fbad3f' }}>
+                  {week.sandwiches > 0 ? `${week.sandwiches.toLocaleString()}` : '0'}
+                </div>
+                <div className="text-white/50 text-[10px]">{week.events} events</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
           {/* Day headers */}
@@ -764,6 +759,31 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             const isTodayDay = isToday(date);
             const isExpanded = expandedDates.has(dateKey);
             const dayConflicts = detectDayConflicts(dayEvents);
+            const isSaturday = index % 7 === 6;
+            // Check if any event on this day has truly unfilled needs
+            const dayHasUnfilledNeeds = dayEvents.some((evt) => {
+              if (evt.status === 'cancelled' || evt.status === 'completed') return false;
+              const needs = getUnfilledNeeds(evt);
+              return needs.needsSpeaker || needs.needsVolunteer || needs.needsDriver;
+            });
+            // Calculate Saturday weekly sandwich totals
+            const saturdaySandwichTotal = isSaturday ? (() => {
+              let total = 0;
+              for (let d = index - 6; d <= index; d++) {
+                if (d < 0 || d >= calendarDays.length) continue;
+                const dk = getDateKey(calendarDays[d]);
+                const evts = eventsByDate.get(dk) || [];
+                evts.forEach((evt) => {
+                  if (evt.status === 'cancelled') return;
+                  if (evt.estimatedSandwichCount && evt.estimatedSandwichCount > 0) {
+                    total += evt.estimatedSandwichCount;
+                  } else if (evt.actualSandwichCount && evt.actualSandwichCount > 0) {
+                    total += evt.actualSandwichCount;
+                  }
+                });
+              }
+              return total;
+            })() : 0;
 
             return (
               <div
@@ -775,20 +795,27 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                     : 'bg-gray-50 border-gray-100',
                   isTodayDay && 'ring-2 ring-blue-500',
                   dayConflicts.vanConflicts > 0 && 'border-red-300 bg-red-50/50',
-                  dayConflicts.highVolume && !dayConflicts.vanConflicts && 'border-yellow-300 bg-yellow-50/30'
+                  dayConflicts.highVolume && !dayConflicts.vanConflicts && 'border-yellow-300 bg-yellow-50/30',
+                  isSaturday && 'border-b-[3px] border-b-[#1a365d]'
                 )}
+                style={dayHasUnfilledNeeds ? { border: '2px solid #ef4444' } : undefined}
               >
                 {/* Date number and conflict indicator */}
                 <div className="flex items-center justify-between mb-1">
-                  <div
-                    className={cn(
-                      'text-sm font-semibold',
-                      isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
-                      isTodayDay &&
-                        'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                  <div className="flex items-center gap-1">
+                    {dayHasUnfilledNeeds && (
+                      <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: '#ef4444' }} />
                     )}
-                  >
-                    {date.getDate()}
+                    <div
+                      className={cn(
+                        'text-sm font-semibold',
+                        isCurrentMonthDay ? 'text-gray-900' : 'text-gray-400',
+                        isTodayDay &&
+                          'bg-brand-primary-lighter text-white rounded-full w-6 h-6 flex items-center justify-center text-xs'
+                      )}
+                    >
+                      {date.getDate()}
+                    </div>
                   </div>
                   {/* Conflict indicator with tooltip */}
                   {dayConflicts.hasConflicts && (
@@ -844,10 +871,12 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                 {/* Events for this day - 2 on mobile, 3 on desktop */}
                 <div className="space-y-0.5 sm:space-y-1">
                   {(isExpanded ? dayEvents : dayEvents.slice(0, isMobile ? 2 : 3)).map((event) => {
-                    const staffingIndicators = getStaffingIndicators(event);
                     const sandwichInfo = getSandwichInfo(event);
                     const assignedStaff = getAssignedStaffNames(event, resolveUserName);
                     const unfilledNeeds = getUnfilledNeeds(event);
+                    const hasSandwichData = !!(event.estimatedSandwichCount || event.actualSandwichCount ||
+                      (event.sandwichTypes && Array.isArray(event.sandwichTypes) && event.sandwichTypes.length > 0));
+                    const isDetailsPending = event.status === 'in_process' && !hasSandwichData;
 
                     return (
                       <button
@@ -856,8 +885,16 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                         className={cn(
                           'w-full text-left text-[10px] sm:text-xs p-1 sm:p-1.5 rounded border hover:shadow-md transition-shadow',
                           getStatusColor(event.status),
-                          event.status === 'cancelled' && 'opacity-75'
+                          event.status === 'cancelled' && 'opacity-50',
+                          event.status === 'completed' && 'opacity-70',
                         )}
+                        style={{
+                          borderLeft: event.status === 'cancelled' ? '3px solid #ef4444'
+                            : event.status === 'completed' ? '3px solid #9ca3af'
+                            : event.status === 'scheduled' ? '3px solid #22c55e'
+                            : event.status === 'in_process' ? '3px solid #f59e0b'
+                            : undefined
+                        }}
                         title={`${event.organizationName} - ${event.status}`}
                       >
                         {event.status === 'cancelled' && (
@@ -872,57 +909,34 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           {event.organizationName}
                         </div>
 
-                        {/* Unfilled needs badges - prominent display */}
+                        {/* Unfilled needs text badges */}
                         {(unfilledNeeds.needsSpeaker || unfilledNeeds.needsVolunteer || unfilledNeeds.needsDriver) && (
                           <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 mb-0.5 sm:mb-1">
+                            {unfilledNeeds.needsDriver && (
+                              <span className="inline-block px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#1e40af' }}>
+                                Need Driver
+                              </span>
+                            )}
                             {unfilledNeeds.needsSpeaker && (
-                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-purple-600 text-white">
-                                <Mic className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                <span className="hidden sm:inline">{unfilledNeeds.speakersUnfilled > 1 ? `${unfilledNeeds.speakersUnfilled}` : ''}</span>
+                              <span className="inline-block px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#7e22ce' }}>
+                                Need Speaker
                               </span>
                             )}
                             {unfilledNeeds.needsVolunteer && (
-                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-green-600 text-white">
-                                <UserCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                <span className="hidden sm:inline">{unfilledNeeds.volunteersUnfilled > 1 ? `${unfilledNeeds.volunteersUnfilled}` : ''}</span>
-                              </span>
-                            )}
-                            {unfilledNeeds.needsDriver && (
-                              <span className="inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold bg-blue-600 text-white">
-                                <Car className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                <span className="hidden sm:inline">{unfilledNeeds.driversUnfilled > 1 ? `${unfilledNeeds.driversUnfilled}` : ''}</span>
+                              <span className="inline-block px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#15803d' }}>
+                                Need Volunteer
                               </span>
                             )}
                           </div>
                         )}
 
-                        {/* Staffing indicators row - only show if no unfilled needs (assigned staff) */}
-                        {staffingIndicators.length > 0 && !unfilledNeeds.needsSpeaker && !unfilledNeeds.needsVolunteer && !unfilledNeeds.needsDriver && (
-                          <div className="flex items-center gap-1.5 mt-1">
-                            {staffingIndicators.map((indicator, idx) => {
-                              const IconComponent = indicator.icon;
-                              return (
-                                <div
-                                  key={idx}
-                                  className={cn(
-                                    'flex items-center',
-                                    indicator.color
-                                  )}
-                                  title={indicator.tooltip}
-                                >
-                                  {indicator.emoji ? (
-                                    <span className="text-lg">{indicator.emoji}</span>
-                                  ) : IconComponent ? (
-                                    <IconComponent className="w-5 h-5" />
-                                  ) : null}
-                                  {indicator.count && indicator.count > 1 && (
-                                    <span className="text-sm ml-1 font-semibold">
-                                      {indicator.count}
-                                    </span>
-                                  )}
-                                </div>
-                              );
-                            })}
+                        {/* Details pending badge for in-process events missing sandwich data */}
+                        {isDetailsPending && (
+                          <div
+                            className="mt-0.5 sm:mt-1 inline-block rounded text-[8px] sm:text-[9px] font-bold uppercase"
+                            style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px dashed #f59e0b', padding: '1px 4px' }}
+                          >
+                            Details Pending
                           </div>
                         )}
 
@@ -1005,7 +1019,10 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                         )}
 
                         {event.eventStartTime && (
-                          <div className="text-[10px] opacity-75 mt-0.5 font-semibold">
+                          <div
+                            className="mt-0.5 sm:mt-1 inline-block rounded font-extrabold text-[10px] sm:text-[13px]"
+                            style={{ color: '#1e40af', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 6px' }}
+                          >
                             {event.eventStartTime}
                           </div>
                         )}
@@ -1026,6 +1043,15 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                     </button>
                   )}
                 </div>
+                {/* Saturday weekly sandwich total */}
+                {isSaturday && saturdaySandwichTotal > 0 && (
+                  <div
+                    className="hidden sm:block mt-1 rounded text-[10px] font-bold text-center truncate"
+                    style={{ background: 'linear-gradient(135deg, #92400e, #b45309)', color: '#fef3c7', padding: '2px 4px' }}
+                  >
+                    {saturdaySandwichTotal.toLocaleString()} / wk
+                  </div>
+                )}
               </div>
             );
           })}
