@@ -464,8 +464,11 @@ export async function checkReturningOrganization(
         })
         .from(sandwichCollections)
         .where(
-          sql`REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
-              OR REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}`
+          sql`(
+              REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              OR REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+            )
+            AND ${sandwichCollections.deletedAt} IS NULL`
         )
         .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {
@@ -640,9 +643,9 @@ export async function checkReturningOrganization(
     // Check if the department matches any past event's department
     let isDepartmentMatch = false;
     if (isUmbrellaOrg && department && matchingEvents.length > 0) {
-      const normalizedDept = department.trim().toLowerCase();
+      const normalizedDept = department.trim().replace(/\s+/g, ' ').toLowerCase();
       isDepartmentMatch = matchingEvents.some(evt => {
-        const evtDept = evt.department?.trim().toLowerCase();
+        const evtDept = evt.department?.trim().replace(/\s+/g, ' ').toLowerCase();
         return evtDept && evtDept === normalizedDept;
       });
     }
@@ -654,10 +657,12 @@ export async function checkReturningOrganization(
       : isReturning;
 
     // Collect unique past departments from matching events (for "new department" detection)
+    // Normalize departments (trim, collapse whitespace, lowercase) to avoid duplicates like "Outreach" vs "outreach"
     const pastDepartments = isReturning
       ? [...new Set(matchingEvents
           .map(e => e.department)
           .filter((d): d is string => !!d && d.trim().length > 0)
+          .map(d => d.trim().replace(/\s+/g, ' ').toLowerCase())
         )]
       : [];
 
