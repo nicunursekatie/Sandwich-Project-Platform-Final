@@ -20,6 +20,7 @@ import {
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ReturningOrgBadge } from '@/components/event-requests/ReturningOrgBadge';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -177,6 +178,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
+            <ReturningOrgBadge
+              organizationName={request.organizationName}
+              eventId={request.id}
+              email={request.email}
+              firstName={request.firstName}
+              lastName={request.lastName}
+              phone={request.phone}
+              department={request.department}
+            />
             {/* Partner Organizations */}
             {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
               <div className="text-sm text-gray-600 mt-1">

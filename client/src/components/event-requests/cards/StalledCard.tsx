@@ -18,6 +18,7 @@ import {
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ReturningOrgBadge } from '@/components/event-requests/ReturningOrgBadge';
 import {
   Dialog,
   DialogContent,
@@ -96,6 +97,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               )}
             </h3>
+            <ReturningOrgBadge
+              organizationName={request.organizationName}
+              eventId={request.id}
+              email={request.email}
+              firstName={request.firstName}
+              lastName={request.lastName}
+              phone={request.phone}
+              department={request.department}
+            />
             <Badge className="inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700 border border-gray-400/50 text-sm whitespace-nowrap">
               <StatusIcon className="w-3 h-3 mr-1" />
               {getStatusLabel(request.status)}

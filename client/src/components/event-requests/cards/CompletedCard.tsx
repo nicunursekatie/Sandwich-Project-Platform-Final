@@ -38,6 +38,7 @@ import { useEventQueries } from '../hooks/useEventQueries';
 import { formatSandwichTypesDisplay, parseSandwichTypes } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ReturningOrgBadge } from '@/components/event-requests/ReturningOrgBadge';
 import { statusIcons, statusOptions, statusBorderColors, SANDWICH_TYPES, statusTooltips, indicatorTooltips } from '@/components/event-requests/constants';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -281,6 +282,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <h3 className="font-semibold text-sm sm:text-base md:text-lg text-[#1A2332] break-words">
                   {request.organizationName}
                 </h3>
+                <ReturningOrgBadge
+                  organizationName={request.organizationName}
+                  eventId={request.id}
+                  email={request.email}
+                  firstName={request.firstName}
+                  lastName={request.lastName}
+                  phone={request.phone}
+                  department={request.department}
+                />
                 {canEditOrgDetails && startEditing && (
                   <Button
                     size="sm"

@@ -27,6 +27,7 @@ import { formatTime12Hour, formatEventDate } from '@/components/event-requests/u
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { ReturningOrgBadge } from '@/components/event-requests/ReturningOrgBadge';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import {
@@ -132,6 +133,15 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
                   </span>
                 )}
               </h3>
+              <ReturningOrgBadge
+                organizationName={request.organizationName}
+                eventId={request.id}
+                email={request.email}
+                firstName={request.firstName}
+                lastName={request.lastName}
+                phone={request.phone}
+                department={request.department}
+              />
               {/* Partner Organizations */}
               {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
                 <div className="text-xs text-gray-600 mt-1">
