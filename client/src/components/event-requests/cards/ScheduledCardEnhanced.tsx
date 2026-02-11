@@ -973,6 +973,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           {returningOrgData.mostRecentEvent.status && ` (${returningOrgData.mostRecentEvent.status})`}
                         </p>
                       )}
+                      {returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && (
+                        <p className="text-xs text-muted-foreground">
+                          Past department{returningOrgData.pastDepartments.length !== 1 ? 's' : ''}: {returningOrgData.pastDepartments.join(', ')}
+                        </p>
+                      )}
                       {returningOrgData.isReturningContact ? (
                         <p className="text-xs text-purple-600 font-medium mt-2">
                           Same contact as a previous event &mdash; personalize your outreach!
@@ -992,6 +997,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </div>
                   </TooltipContent>
                 </Tooltip>
+              )}
+              {/* New Department Indicator */}
+              {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
+                d => d.trim().toLowerCase() === (request.department || '').trim().toLowerCase()
+              ) && (
+                <Badge
+                  variant="outline"
+                  className="whitespace-nowrap bg-blue-50 text-blue-700 border-blue-300 mt-1"
+                >
+                  New Department
+                </Badge>
               )}
               {/* Partner Organizations - inline on same row */}
               {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
