@@ -373,7 +373,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             )}
             {/* New Department Indicator - shows when returning org has a department not seen in past events */}
             {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
-              d => d.trim().toLowerCase() === (request.department || '').trim().toLowerCase()
+              d => d === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
             ) && (
               <Badge
                 variant="outline"
