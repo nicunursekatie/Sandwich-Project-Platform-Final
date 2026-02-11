@@ -2204,10 +2204,27 @@ export const eventRequests = pgTable(
     nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)
     nextActionUpdatedAt: timestamp('next_action_updated_at'), // When nextAction was last updated
 
+    // Declined tracking (for 'declined' status)
+    declinedReason: text('declined_reason'), // Reason why the request was declined or the organizer decided not to proceed
+    declinedNotes: text('declined_notes'), // Additional notes about the decline
+    declinedAt: timestamp('declined_at'), // When the event was declined
+    declinedBy: varchar('declined_by'), // User ID who marked it as declined
+
+    // Cancelled tracking (for 'cancelled' status - only from scheduled)
+    cancelledReason: text('cancelled_reason'), // Reason why the scheduled event was cancelled
+    cancelledNotes: text('cancelled_notes'), // Additional notes about the cancellation
+    cancelledAt: timestamp('cancelled_at'), // When the event was cancelled
+    cancelledBy: varchar('cancelled_by'), // User ID who marked it as cancelled
+
     // Postponement tracking (for 'postponed' status)
     postponementReason: text('postponement_reason'), // Reason why event was postponed
     tentativeNewDate: timestamp('tentative_new_date'), // Tentative new date for the event (optional)
     postponementNotes: text('postponement_notes'), // Free text notes describing the postponement situation
+    originalScheduledDate: timestamp('original_scheduled_date'), // The original scheduled date before postponement (preserved for reference)
+    postponedAt: timestamp('postponed_at'), // When the event was postponed
+    postponedBy: varchar('postponed_by'), // User ID who marked it as postponed
+    wasPostponed: boolean('was_postponed').default(false), // Flag indicating this event was previously postponed (stays true even after rescheduling)
+    postponementCount: integer('postponement_count').default(0), // How many times this event has been postponed
 
     // Standby tracking (for 'standby' status - waiting on organizer who is working things out)
     standbyReason: text('standby_reason'), // Reason why we're on standby (e.g., "Waiting for budget approval")

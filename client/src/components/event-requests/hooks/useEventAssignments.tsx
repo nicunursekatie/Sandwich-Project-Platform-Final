@@ -8,6 +8,8 @@ import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
+import { isValidTransition, getTransitionError, STATUS_DEFINITIONS } from '../constants';
+import type { EventStatus } from '@shared/event-status-workflow';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();
@@ -609,32 +611,51 @@ export const useEventAssignments = () => {
     return false;
   };
 
-  // Handle status change with confirmation and undo
-  const handleStatusChange = async (id: number, status: string) => {
-    const request = eventRequests.find(r => r.id === id);
-    if (!request) return;
+  // Format status labels for display
+  const formatStatus = (s: string) => {
+    return STATUS_DEFINITIONS[s as EventStatus]?.label || s;
+  };
 
-    const previousStatus = request.status;
+  /**
+   * Handle status change with validation, reason-capture dialogs, and undo.
+   *
+   * For declined, cancelled, and postponed: returns 'needs_reason' so the caller
+   * can open the appropriate reason dialog instead of doing the change inline.
+   *
+   * Returns: 'done' | 'needs_reason' | 'blocked'
+   */
+  const handleStatusChange = async (
+    id: number,
+    status: string,
+    additionalData?: Record<string, any>
+  ): Promise<'done' | 'needs_reason' | 'blocked'> => {
+    const request = eventRequests.find(r => r.id === id);
+    if (!request) return 'blocked';
+
+    const previousStatus = request.status as EventStatus;
+    const targetStatus = status as EventStatus;
     const orgName = request.organizationName || 'Event';
 
-    // Format status labels for display
-    const formatStatus = (s: string) => {
-      const labels: Record<string, string> = {
-        'new-request': 'New Request',
-        'in_process': 'In Process',
-        'scheduled': 'Scheduled',
-        'completed': 'Completed',
-        'postponed': 'Postponed',
-        'declined': 'Declined',
-        'cancelled': 'Cancelled',
-      };
-      return labels[s] || s;
-    };
+    // Validate the transition
+    if (!isValidTransition(previousStatus, targetStatus)) {
+      const errorMsg = getTransitionError(previousStatus, targetStatus);
+      toast({
+        title: 'Invalid Status Change',
+        description: errorMsg,
+        variant: 'destructive',
+        duration: 8000,
+      });
+      return 'blocked';
+    }
+
+    // For declined, cancelled, and postponed: signal to caller to open reason dialog
+    if (status === 'declined' || status === 'cancelled' || status === 'postponed') {
+      return 'needs_reason';
+    }
 
     // When moving to scheduled, check for incomplete next actions
     if (status === 'scheduled') {
       if (request.nextAction && request.nextAction.trim()) {
-        // Show confirmation dialog asking if they've completed the next action
         const confirmed = window.confirm(
           `This event has a next action that hasn't been marked complete:\n\n"${request.nextAction}"\n\nHave you completed this action? If not, please complete it before marking as scheduled.`
         );
@@ -645,21 +666,20 @@ export const useEventAssignments = () => {
             description: 'Please complete or clear the next action before marking this event as scheduled.',
             variant: 'destructive',
           });
-          return; // Don't proceed with status change
+          return 'blocked';
         }
       }
     }
 
-    // Confirm significant status changes (completed, cancelled, declined)
-    const significantStatuses = ['completed', 'cancelled', 'declined'];
-    if (significantStatuses.includes(status)) {
+    // Confirm completed status
+    if (status === 'completed') {
       const confirmed = window.confirm(
         `Are you sure you want to mark "${orgName}" as ${formatStatus(status)}?`
       );
-      if (!confirmed) return;
+      if (!confirmed) return 'blocked';
     }
 
-    const data: any = { status };
+    const data: any = { status, ...additionalData };
 
     // When marking as scheduled, set scheduledEventDate to desiredEventDate if not already set
     if (status === 'scheduled') {
@@ -684,7 +704,6 @@ export const useEventAssignments = () => {
             onClick={async () => {
               try {
                 const undoData: any = { status: previousStatus };
-                // If we set scheduledEventDate, don't undo that separately
                 await updateEventRequestMutation.mutateAsync({
                   id,
                   data: undoData,
@@ -708,13 +727,20 @@ export const useEventAssignments = () => {
           </button>
         ),
       });
-    } catch (error) {
+      return 'done';
+    } catch (error: any) {
       logger.error('Failed to change status:', error);
+
+      // Use server error message if available (includes transition validation errors)
+      const serverMessage = error?.data?.message || error?.message || 'Failed to update event status. Please try again.';
+
       toast({
         title: 'Status change failed',
-        description: 'Failed to update event status. Please try again.',
+        description: serverMessage,
         variant: 'destructive',
+        duration: 8000,
       });
+      return 'blocked';
     }
   };
 

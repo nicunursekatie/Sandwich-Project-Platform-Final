@@ -324,9 +324,14 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                 </span>
               )}
             </div>
-            {request.declineReason && (
+            {(request.declineReason || (request as any).declinedReason || (request as any).cancelledReason) && (
               <p className="text-sm text-red-600 mt-2">
-                Reason: {request.declineReason}
+                Reason: {(request as any).declinedReason || (request as any).cancelledReason || request.declineReason}
+              </p>
+            )}
+            {((request as any).declinedNotes || (request as any).cancelledNotes) && (
+              <p className="text-xs text-red-500 mt-1 italic">
+                {(request as any).declinedNotes || (request as any).cancelledNotes}
               </p>
             )}
           </div>

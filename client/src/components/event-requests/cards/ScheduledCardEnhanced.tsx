@@ -1010,6 +1010,36 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   New Department
                 </Badge>
               )}
+              {/* Rescheduled from postponement indicator */}
+              {(request as any).wasPostponed && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="whitespace-nowrap bg-amber-50 text-amber-700 border-amber-300 mt-1 cursor-help"
+                    >
+                      <History className="w-3 h-3 mr-1" />
+                      Rescheduled
+                      {(request as any).postponementCount > 1 && ` (${(request as any).postponementCount}x)`}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">This event was previously postponed and rescheduled</p>
+                      {(request as any).originalScheduledDate && (
+                        <p className="text-sm">
+                          Originally scheduled: {new Date((request as any).originalScheduledDate).toLocaleDateString()}
+                        </p>
+                      )}
+                      {(request as any).postponementReason && (
+                        <p className="text-sm">
+                          Reason: {(request as any).postponementReason}
+                        </p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {/* Partner Organizations - inline on same row */}
               {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
                 <div className="flex items-center flex-wrap gap-1 mt-1">

@@ -72,9 +72,11 @@ import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { PostponementDialog } from './dialogs/PostponementDialog';
+import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import IntakeCallDialog from './IntakeCallDialog';
 import NextActionDialog from './NextActionDialog';
 import { DashboardSummaryCards } from './DashboardSummaryCards';
+import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
 import { logger } from '@/lib/logger';
 import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
@@ -170,6 +172,10 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
+    showDeclineDialog,
+    setShowDeclineDialog,
+    showCancelDialog,
+    setShowCancelDialog,
     showNextActionDialog,
     setShowNextActionDialog,
     nextActionEventRequest,
@@ -216,6 +222,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
+    reasonDialogEventRequest,
+    setReasonDialogEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -261,22 +269,27 @@ const EventRequestsManagementContent: React.FC = () => {
     },
   });
 
-  // Postpone event mutation
+  // Postpone event mutation (supports both postpone-to-status and immediate-reschedule)
   const postponeEventMutation = useMutation({
     mutationFn: async ({ eventId, data }: {
       eventId: number;
       data: {
         postponementReason: string;
+        hasNewDate?: boolean;
+        newScheduledDate?: string;
         tentativeNewDate?: string;
         postponementNotes?: string;
       };
     }) => {
       return apiRequest('POST', `/api/event-requests/${eventId}/postpone`, data);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const wasRescheduled = variables.data.hasNewDate && variables.data.newScheduledDate;
       toast({
-        title: 'Event postponed',
-        description: 'The event has been marked as postponed.',
+        title: wasRescheduled ? 'Event rescheduled' : 'Event postponed',
+        description: wasRescheduled
+          ? 'The event has been rescheduled to the new date. The original date is preserved for reference.'
+          : 'The event has been marked as postponed.',
       });
       invalidateEventRequestQueries(queryClient);
     },
@@ -284,7 +297,7 @@ const EventRequestsManagementContent: React.FC = () => {
       logger.error('Error postponing event:', error);
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to postpone event',
+        description: error?.data?.message || error?.message || 'Failed to postpone event',
         variant: 'destructive',
       });
     },
@@ -487,6 +500,8 @@ const EventRequestsManagementContent: React.FC = () => {
   // Handle postponement using standardized mutation pattern
   const handlePostpone = (eventId: number, data: {
     postponementReason: string;
+    hasNewDate?: boolean;
+    newScheduledDate?: string;
     tentativeNewDate?: string;
     postponementNotes?: string;
   }) => {
@@ -814,6 +829,9 @@ const EventRequestsManagementContent: React.FC = () => {
                 </Button>
               </Link>
             </div>
+            {/* Status Definitions Reference */}
+            <StatusDefinitionsPanel />
+
             {/* Filters and Tabs */}
             <RequestFilters
             searchQuery={searchQuery}
@@ -1097,6 +1115,42 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
             request={postponementEventRequest}
             onPostpone={handlePostpone}
+          />
+        )}
+
+        {/* Decline Reason Dialog */}
+        {reasonDialogEventRequest && (
+          <StatusReasonDialog
+            isOpen={showDeclineDialog}
+            onClose={() => {
+              setShowDeclineDialog(false);
+              setReasonDialogEventRequest(null);
+            }}
+            request={reasonDialogEventRequest}
+            type="declined"
+            onConfirm={async (eventId, data) => {
+              await updateEventRequestMutation.mutateAsync({ id: eventId, data });
+              setShowDeclineDialog(false);
+              setReasonDialogEventRequest(null);
+            }}
+          />
+        )}
+
+        {/* Cancel Reason Dialog */}
+        {reasonDialogEventRequest && (
+          <StatusReasonDialog
+            isOpen={showCancelDialog}
+            onClose={() => {
+              setShowCancelDialog(false);
+              setReasonDialogEventRequest(null);
+            }}
+            request={reasonDialogEventRequest}
+            type="cancelled"
+            onConfirm={async (eventId, data) => {
+              await updateEventRequestMutation.mutateAsync({ id: eventId, data });
+              setShowCancelDialog(false);
+              setReasonDialogEventRequest(null);
+            }}
           />
         )}
 

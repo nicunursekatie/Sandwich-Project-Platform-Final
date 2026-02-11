@@ -124,11 +124,11 @@ export const PostponedTab: React.FC = () => {
             }}
             onCall={() => handleCall(request)}
             onReactivate={() => {
-              if (window.confirm('Do you want to reactivate this event request?')) {
-                handleStatusChange(request.id, 'new');
+              if (window.confirm('Has a new date been confirmed? This will move the event back to Scheduled.')) {
+                handleStatusChange(request.id, 'scheduled');
                 toast({
-                  title: 'Event reactivated',
-                  description: 'The event request has been moved back to New Requests.',
+                  title: 'Event rescheduled',
+                  description: 'The event has been moved back to Scheduled.',
                 });
               }
             }}
