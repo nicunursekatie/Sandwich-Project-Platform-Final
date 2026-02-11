@@ -40,12 +40,14 @@ import {
   Building,
   User,
   Package,
+  History,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 import { getDriverIds, getSpeakerIds, getVolunteerIds } from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
+import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
 interface EventEditDialogProps {
   isOpen: boolean;
@@ -591,7 +593,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
         <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
           <Tabs defaultValue="logistics" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="logistics">
                 <Clock className="w-4 h-4 mr-2" />
                 Logistics
@@ -599,6 +601,10 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
               <TabsTrigger value="staffing">
                 <Users className="w-4 h-4 mr-2" />
                 Staffing
+              </TabsTrigger>
+              <TabsTrigger value="activity">
+                <History className="w-4 h-4 mr-2" />
+                Activity
               </TabsTrigger>
             </TabsList>
 
@@ -978,6 +984,14 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                   />
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="activity" className="mt-4">
+              <EventRequestAuditLog
+                eventId={event.id?.toString()}
+                showFilters={false}
+                compact={true}
+              />
             </TabsContent>
           </Tabs>
         </div>

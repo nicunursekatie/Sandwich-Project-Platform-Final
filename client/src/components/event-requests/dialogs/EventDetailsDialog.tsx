@@ -137,9 +137,9 @@ export function EventDetailsDialog({
               </h3>
               <p className="text-base pl-6">
                 {event.scheduledEventDate
-                  ? formatEventDate(event.scheduledEventDate)
+                  ? formatEventDate(event.scheduledEventDate).text
                   : event.desiredEventDate
-                  ? formatEventDate(event.desiredEventDate) + ' (Requested)'
+                  ? formatEventDate(event.desiredEventDate).text + ' (Requested)'
                   : 'Not set'}
               </p>
             </div>
