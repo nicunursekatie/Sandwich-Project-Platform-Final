@@ -239,6 +239,21 @@ export const InProcessTab: React.FC = () => {
             id: editingInProcessId,
             data: { partnerOrganizations: partnerOrgs.length > 0 ? partnerOrgs : [] },
           });
+        } else if (editingField === 'attendanceBreakdown') {
+          const [adults, teens, kids] = editingValue.split(',').map(v => {
+            const parsed = parseInt(v);
+            return isNaN(parsed) ? null : parsed;
+          });
+          const total = (adults || 0) + (teens || 0) + (kids || 0);
+          updateEventRequestMutation.mutate({
+            id: editingInProcessId,
+            data: {
+              attendanceAdults: adults,
+              attendanceTeens: teens,
+              attendanceKids: kids,
+              estimatedAttendance: total > 0 ? total : null,
+            },
+          });
         } else {
           // Default handling for other fields
           updateEventRequestMutation.mutate({

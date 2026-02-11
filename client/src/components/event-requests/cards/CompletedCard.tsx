@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';
-import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
+import { formatSandwichTypesDisplay, parseSandwichTypes } from '@/lib/sandwich-utils';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { statusIcons, statusOptions, statusBorderColors, SANDWICH_TYPES, statusTooltips, indicatorTooltips } from '@/components/event-requests/constants';
@@ -2356,20 +2356,19 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                     <div className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl break-words">
                       {(() => {
                         const count = request.actualSandwichCount;
-                        const types = request.actualSandwichTypes;
+                        const typesRaw = request.actualSandwichTypes;
+                        const typesParsed = parseSandwichTypes(typesRaw);
 
-                        if (!count && (!types || !Array.isArray(types) || types.length === 0)) {
+                        const hasCount = count != null && count > 0;
+                        const hasTypes = typesParsed && typesParsed.length > 0;
+
+                        if (!hasCount && !hasTypes) {
                           return <span className="text-gray-400 italic text-base">Not recorded</span>;
                         }
 
-                        // If we have types, show breakdown (no separate total - it's already in the breakdown)
-                        if (types && Array.isArray(types) && types.length > 0) {
-                          const typeDisplay = formatSandwichTypesDisplay(types, count || undefined);
-                          return <div>{typeDisplay}</div>;
-                        }
-
-                        // Otherwise just show count
-                        return <span>{count}</span>;
+                        // formatSandwichTypesDisplay handles string/array/object from DB and shows type names
+                        const typeDisplay = formatSandwichTypesDisplay(typesRaw, count ?? undefined);
+                        return <div>{typeDisplay}</div>;
                       })()}
                     </div>
                   </div>

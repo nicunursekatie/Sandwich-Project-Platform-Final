@@ -240,6 +240,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     request.email,
     contactFullName,
     request.phone,        // contactPhone - used with name for secondary matching
+    request.department,   // department - used for umbrella org matching (churches, scouts)
     request.status === 'scheduled'
   );
 

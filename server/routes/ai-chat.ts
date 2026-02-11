@@ -260,7 +260,30 @@ function formatDataItem(item: any, contextType: string, index: number): string {
     const date = item.collectionDate || '';
     const count = getCollectionSandwichCount(item);
 
-    return `${index + 1}. **${host}** - Date: ${date}, Sandwiches: ${count}\n`;
+    // Aggregate sandwich type breakdown (individual + groupCollections) for PBJ/deli/turkey/ham percentage questions
+    let deli = item.individualDeli ?? 0;
+    let turkey = item.individualTurkey ?? 0;
+    let ham = item.individualHam ?? 0;
+    let pbj = item.individualPbj ?? 0;
+    let generic = item.individualGeneric ?? 0;
+    if (item.groupCollections && Array.isArray(item.groupCollections)) {
+      item.groupCollections.forEach((group: any) => {
+        deli += group.deli ?? 0;
+        turkey += group.turkey ?? 0;
+        ham += group.ham ?? 0;
+        pbj += group.pbj ?? 0;
+        generic += group.generic ?? 0;
+      });
+    }
+    const typeParts: string[] = [];
+    if (deli > 0) typeParts.push(`deli: ${deli}`);
+    if (turkey > 0) typeParts.push(`turkey: ${turkey}`);
+    if (ham > 0) typeParts.push(`ham: ${ham}`);
+    if (pbj > 0) typeParts.push(`pbj: ${pbj}`);
+    if (generic > 0) typeParts.push(`generic: ${generic}`);
+    const typeStr = typeParts.length > 0 ? ` | Types: ${typeParts.join(', ')}` : '';
+
+    return `${index + 1}. **${host}** - Date: ${date}, Sandwiches: ${count}${typeStr}\n`;
   }
 
   // For projects
@@ -1929,7 +1952,7 @@ COMMUNICATION STYLE:
 
 DATA GUIDELINES:
 - Work with the data provided below. If something isn't in the data, just let the user know naturally: "I don't see that in the current data" rather than formal disclaimers
-- The Sandwich Project tracks total sandwich counts (not types like vegetarian, turkey, etc.)
+- Sandwich type breakdown (deli, turkey, ham, pbj, generic) is tracked when available - use it for questions like "what percentage were PBJ?" or "how many deli vs pbj?"
 - Avoid comparing or ranking hosts against each other - TSP values all contributors equally
 - Wednesday is the standard weekly collection day, with most logged Wednesday or Thursday
 - Use today's date (shown above) as your reference point
@@ -1954,7 +1977,9 @@ Keep responses concise and helpful. Focus on what's useful to the user.
   const contextDescriptions: Record<string, string> = {
     collections: `You're helping with The Sandwich Project's collection log - tracking when sandwiches were collected and how many.
 Collections come from hosts (individuals or groups) who organize sandwich-making sessions.
-Focus on overall totals and trends rather than comparing individual hosts.`,
+Focus on overall totals and trends rather than comparing individual hosts.
+
+SANDWICH TYPES: When the data includes type breakdown (deli, turkey, ham, pbj, generic), you can answer questions like "what percentage were PBJ?" or "how many deli vs pbj?" by summing the type counts across collections and calculating percentages. Filter by collectionDate year when the user asks about a specific year (e.g., 2025).`,
 
     events: `You're helping with The Sandwich Project's event management - tracking organizations requesting sandwich-making events, scheduling, and categories.
 Focus on overall trends rather than comparing organizations.

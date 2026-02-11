@@ -35,6 +35,14 @@ interface LocationBreakdown {
   groupEventCount: number;
 }
 
+interface SandwichTypeBreakdown {
+  deli: number;
+  turkey: number;
+  ham: number;
+  pbj: number;
+  generic: number;
+}
+
 interface WeeklyData {
   weekStartDate: string;
   weekEndDate: string;
@@ -43,6 +51,7 @@ interface WeeklyData {
   individual: number;
   groupCollections: number;
   locationBreakdowns: LocationBreakdown[];
+  sandwichTypes: SandwichTypeBreakdown;
 }
 
 interface WeeklyReportResponse {
@@ -51,6 +60,7 @@ interface WeeklyReportResponse {
   weeks: WeeklyData[];
   totalWeeks: number;
   grandTotal: number;
+  grandTotalSandwichTypes: SandwichTypeBreakdown;
 }
 
 export default function WeeklyCollectionsReport() {
@@ -180,6 +190,43 @@ export default function WeeklyCollectionsReport() {
     const grandGroup = sortedLocations.reduce((sum, [, t]) => sum + t.groupTotal, 0);
     const grandEvents = sortedLocations.reduce((sum, [, t]) => sum + t.groupEventCount, 0);
     rows.push(['GRAND TOTAL', grandIndividual, grandGroup, grandEvents, data.grandTotal]);
+    rows.push([]);
+
+    // SECTION 4: Sandwich Type Breakdown
+    rows.push(['=== SANDWICH TYPE BREAKDOWN ===']);
+    rows.push(['Week Starting', 'Week Ending', 'Deli', 'Turkey', 'Ham', 'PB&J', 'Other/Generic', 'Total Typed']);
+    data.weeks.forEach((week) => {
+      const weekTypes = week.sandwichTypes || { deli: 0, turkey: 0, ham: 0, pbj: 0, generic: 0 };
+      const typedTotal = weekTypes.deli + weekTypes.turkey + weekTypes.ham + weekTypes.pbj + weekTypes.generic;
+      rows.push([
+        week.weekStartDate,
+        week.weekEndDate,
+        weekTypes.deli,
+        weekTypes.turkey,
+        weekTypes.ham,
+        weekTypes.pbj,
+        weekTypes.generic,
+        typedTotal,
+      ]);
+    });
+    // Sandwich type grand totals
+    if (data.grandTotalSandwichTypes) {
+      const typedGrandTotal = data.grandTotalSandwichTypes.deli +
+        data.grandTotalSandwichTypes.turkey +
+        data.grandTotalSandwichTypes.ham +
+        data.grandTotalSandwichTypes.pbj +
+        data.grandTotalSandwichTypes.generic;
+      rows.push([
+        'GRAND TOTAL',
+        '',
+        data.grandTotalSandwichTypes.deli,
+        data.grandTotalSandwichTypes.turkey,
+        data.grandTotalSandwichTypes.ham,
+        data.grandTotalSandwichTypes.pbj,
+        data.grandTotalSandwichTypes.generic,
+        typedGrandTotal,
+      ]);
+    }
 
     const csv = rows.map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -291,6 +338,116 @@ export default function WeeklyCollectionsReport() {
       tableWidth: 'auto',
       margin: { left: 14, right: 14 },
     });
+
+    // Get the Y position after the first table
+    const firstTableEndY = (doc as any).lastAutoTable?.finalY || 150;
+
+    // Add sandwich type breakdown section if there's data
+    if (data.grandTotalSandwichTypes) {
+      const typedTotal = data.grandTotalSandwichTypes.deli +
+        data.grandTotalSandwichTypes.turkey +
+        data.grandTotalSandwichTypes.ham +
+        data.grandTotalSandwichTypes.pbj +
+        data.grandTotalSandwichTypes.generic;
+
+      if (typedTotal > 0) {
+        // Check if we need a new page
+        if (firstTableEndY > 220) {
+          doc.addPage();
+        }
+
+        const sandwichTypeStartY = firstTableEndY > 220 ? 20 : firstTableEndY + 15;
+
+        // Section header
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(26, 79, 97);
+        doc.text('Sandwich Type Breakdown', 14, sandwichTypeStartY);
+
+        // Sandwich type summary box
+        doc.setFillColor(255, 250, 240); // Light cream
+        doc.roundedRect(14, sandwichTypeStartY + 5, pageWidth - 28, 25, 3, 3, 'F');
+
+        const typeBoxWidth = (pageWidth - 28) / 5;
+        const types = [
+          { name: 'Deli', count: data.grandTotalSandwichTypes.deli, color: [180, 130, 70] },
+          { name: 'Turkey', count: data.grandTotalSandwichTypes.turkey, color: [200, 120, 60] },
+          { name: 'Ham', count: data.grandTotalSandwichTypes.ham, color: [190, 90, 90] },
+          { name: 'PB&J', count: data.grandTotalSandwichTypes.pbj, color: [130, 90, 170] },
+          { name: 'Other', count: data.grandTotalSandwichTypes.generic, color: [100, 100, 100] },
+        ];
+
+        types.forEach((type, idx) => {
+          const x = 14 + typeBoxWidth * idx + typeBoxWidth / 2;
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(100, 100, 100);
+          doc.text(type.name, x, sandwichTypeStartY + 14, { align: 'center' });
+
+          doc.setFontSize(12);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(type.color[0], type.color[1], type.color[2]);
+          doc.text(type.count.toLocaleString(), x, sandwichTypeStartY + 24, { align: 'center' });
+        });
+
+        // Weekly breakdown table for sandwich types
+        const sandwichTypeTableData = data.weeks.map((week) => {
+          const wt = week.sandwichTypes || { deli: 0, turkey: 0, ham: 0, pbj: 0, generic: 0 };
+          return [
+            week.weekStartDate,
+            wt.deli.toString(),
+            wt.turkey.toString(),
+            wt.ham.toString(),
+            wt.pbj.toString(),
+            wt.generic.toString(),
+          ];
+        });
+
+        autoTable(doc, {
+          startY: sandwichTypeStartY + 35,
+          head: [['Week Start', 'Deli', 'Turkey', 'Ham', 'PB&J', 'Other']],
+          body: sandwichTypeTableData,
+          foot: [[
+            'Total',
+            data.grandTotalSandwichTypes.deli.toLocaleString(),
+            data.grandTotalSandwichTypes.turkey.toLocaleString(),
+            data.grandTotalSandwichTypes.ham.toLocaleString(),
+            data.grandTotalSandwichTypes.pbj.toLocaleString(),
+            data.grandTotalSandwichTypes.generic.toLocaleString(),
+          ]],
+          theme: 'striped',
+          headStyles: {
+            fillColor: [180, 130, 70],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+            halign: 'center',
+          },
+          footStyles: {
+            fillColor: [100, 80, 50],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 9,
+          },
+          bodyStyles: {
+            fontSize: 7,
+          },
+          alternateRowStyles: {
+            fillColor: [255, 252, 245],
+          },
+          columnStyles: {
+            0: { halign: 'left' },
+            1: { halign: 'right' },
+            2: { halign: 'right' },
+            3: { halign: 'right' },
+            4: { halign: 'right' },
+            5: { halign: 'right' },
+          },
+          tableWidth: 'auto',
+          margin: { left: 14, right: 14 },
+        });
+      }
+    }
 
     // Add footer
     const pageCount = (doc as any).internal.getNumberOfPages();
@@ -485,6 +642,63 @@ export default function WeeklyCollectionsReport() {
               </div>
             </div>
           </Card>
+
+          {/* Sandwich Type Breakdown */}
+          {data.grandTotalSandwichTypes && (
+            <Card className="bg-white overflow-hidden">
+              <div className="p-4 sm:p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Sandwich Type Breakdown</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                    <p className="text-xs text-amber-700 font-medium">Deli</p>
+                    <p className="text-xl font-bold text-amber-900">{data.grandTotalSandwichTypes.deli.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-xs text-orange-700 font-medium">Turkey</p>
+                    <p className="text-xl font-bold text-orange-900">{data.grandTotalSandwichTypes.turkey.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 bg-rose-50 rounded-lg border border-rose-200">
+                    <p className="text-xs text-rose-700 font-medium">Ham</p>
+                    <p className="text-xl font-bold text-rose-900">{data.grandTotalSandwichTypes.ham.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 bg-violet-50 rounded-lg border border-violet-200">
+                    <p className="text-xs text-violet-700 font-medium">PB&J</p>
+                    <p className="text-xl font-bold text-violet-900">{data.grandTotalSandwichTypes.pbj.toLocaleString()}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                    <p className="text-xs text-slate-700 font-medium">Other/Generic</p>
+                    <p className="text-xl font-bold text-slate-900">{data.grandTotalSandwichTypes.generic.toLocaleString()}</p>
+                  </div>
+                </div>
+                {/* Show percentage breakdown if there are any typed sandwiches */}
+                {(() => {
+                  const total = data.grandTotalSandwichTypes.deli +
+                    data.grandTotalSandwichTypes.turkey +
+                    data.grandTotalSandwichTypes.ham +
+                    data.grandTotalSandwichTypes.pbj +
+                    data.grandTotalSandwichTypes.generic;
+                  const untyped = data.grandTotal - total;
+                  if (total > 0) {
+                    return (
+                      <div className="mt-4 text-sm text-slate-600">
+                        <span className="font-medium">{total.toLocaleString()}</span> sandwiches with type breakdown recorded
+                        {untyped > 0 && (
+                          <span className="ml-1">
+                            ({untyped.toLocaleString()} without type information)
+                          </span>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="mt-4 text-sm text-slate-500 italic">
+                      No sandwich type breakdown data recorded for this period.
+                    </div>
+                  );
+                })()}
+              </div>
+            </Card>
+          )}
 
           {/* Visual Chart */}
           <Card className="bg-white overflow-hidden">

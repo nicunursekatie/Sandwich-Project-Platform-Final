@@ -4475,6 +4475,11 @@ export default function SandwichCollectionLog() {
             hostName: c.hostName,
             collectionDate: c.collectionDate,
             individualSandwiches: c.individualSandwiches,
+            individualDeli: c.individualDeli,
+            individualTurkey: c.individualTurkey,
+            individualHam: c.individualHam,
+            individualPbj: c.individualPbj,
+            individualGeneric: c.individualGeneric,
             group1Name: c.group1Name,
             group1Count: c.group1Count,
             group2Name: c.group2Name,
@@ -4485,6 +4490,7 @@ export default function SandwichCollectionLog() {
         })}
         suggestedQuestions={[
           "What's our total sandwich count this month?",
+          "What percentage of our sandwiches in 2025 were PBJ?",
           "What's our average collection size?",
           "Show collections by month",
           "How are we trending compared to last month?",
