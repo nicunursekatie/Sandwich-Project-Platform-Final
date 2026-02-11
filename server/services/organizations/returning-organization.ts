@@ -464,8 +464,8 @@ export async function checkReturningOrganization(
         })
         .from(sandwichCollections)
         .where(
-          sql`REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and') = ${normalizedOrgName}
-              OR REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and') = ${normalizedOrgName}`
+          sql`REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              OR REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}`
         )
         .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {
@@ -482,7 +482,7 @@ export async function checkReturningOrganization(
           const allEventOrgs = await db
             .selectDistinct({ organizationName: eventRequests.organizationName })
             .from(eventRequests)
-            .where(sql`${eventRequests.organizationName} IS NOT NULL`);
+            .where(sql`${eventRequests.organizationName} IS NOT NULL AND ${eventRequests.deletedAt} IS NULL`);
 
           let fuzzyEventMatches = allEventOrgs
             .filter(row => row.organizationName && organizationNamesMatch(orgName, row.organizationName))
@@ -515,7 +515,7 @@ export async function checkReturningOrganization(
                 phone: eventRequests.phone,
               })
               .from(eventRequests)
-              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(fuzzyEventMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)})`)
+              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(fuzzyEventMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)}) AND ${eventRequests.deletedAt} IS NULL`)
               .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
 
             // Exclude current event if specified
