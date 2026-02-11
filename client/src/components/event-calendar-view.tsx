@@ -227,6 +227,27 @@ const parseTimeToMinutes = (timeStr: string | null | undefined): number | null =
   return null;
 };
 
+// Helper function to format a time string to 12-hour AM/PM format
+const formatTimeTo12Hour = (timeStr: string | null | undefined): string | null => {
+  if (!timeStr) return null;
+
+  // Already in AM/PM format — just return as-is
+  if (/AM|PM/i.test(timeStr)) return timeStr;
+
+  // Parse "HH:MM" (24-hour) format
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const period = hours >= 12 ? 'PM' : 'AM';
+    if (hours === 0) hours = 12;
+    else if (hours > 12) hours -= 12;
+    return `${hours}:${minutes} ${period}`;
+  }
+
+  return timeStr; // Return original if unparseable
+};
+
 // Helper function to check if two time ranges overlap
 const timesOverlap = (
   start1: number | null,
@@ -719,7 +740,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             <span className="text-white font-bold text-sm tracking-wide uppercase">
               {MONTH_NAMES[currentDate.getMonth()]} At-a-Glance
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold" style={{ backgroundColor: '#fbad3f', color: '#1a365d' }}>
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-base font-extrabold" style={{ backgroundColor: '#fbad3f', color: '#1a365d' }}>
               {weeklySandwichSummary.totalSandwiches.toLocaleString()} sandwiches
             </span>
           </div>
@@ -729,7 +750,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                 <div className="text-white/70 text-[11px] font-medium">
                   Week {idx + 1}: {MONTH_NAMES[currentDate.getMonth()].slice(0, 3)} {week.start}-{week.end}
                 </div>
-                <div className="text-lg font-bold" style={{ color: '#fbad3f' }}>
+                <div className="text-2xl font-extrabold" style={{ color: '#fbad3f' }}>
                   {week.sandwiches > 0 ? `${week.sandwiches.toLocaleString()}` : '0'}
                 </div>
                 <div className="text-white/50 text-[10px]">{week.events} events</div>
@@ -1018,12 +1039,36 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                           </div>
                         )}
 
-                        {event.eventStartTime && (
-                          <div
-                            className="mt-0.5 sm:mt-1 inline-block rounded font-extrabold text-[10px] sm:text-[13px]"
-                            style={{ color: '#1e40af', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 6px' }}
-                          >
-                            {event.eventStartTime}
+                        {/* Event times with labels */}
+                        {(event.eventStartTime || event.eventEndTime || event.pickupTime) && (
+                          <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
+                            {event.pickupTime && (
+                              <div
+                                className="inline-block rounded font-extrabold text-[9px] sm:text-[12px]"
+                                style={{ color: '#92400e', backgroundColor: '#fef3c7', border: '1px solid #fbbf24', padding: '1px 4px' }}
+                              >
+                                <span className="font-semibold text-[8px] sm:text-[10px] uppercase">Pickup </span>
+                                {formatTimeTo12Hour(event.pickupTime)}
+                              </div>
+                            )}
+                            {event.eventStartTime && (
+                              <div
+                                className="inline-block rounded font-extrabold text-[9px] sm:text-[12px]"
+                                style={{ color: '#1e40af', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '1px 4px' }}
+                              >
+                                <span className="font-semibold text-[8px] sm:text-[10px] uppercase">Start </span>
+                                {formatTimeTo12Hour(event.eventStartTime)}
+                              </div>
+                            )}
+                            {event.eventEndTime && (
+                              <div
+                                className="inline-block rounded font-extrabold text-[9px] sm:text-[12px]"
+                                style={{ color: '#166534', backgroundColor: '#f0fdf4', border: '1px solid #86efac', padding: '1px 4px' }}
+                              >
+                                <span className="font-semibold text-[8px] sm:text-[10px] uppercase">End </span>
+                                {formatTimeTo12Hour(event.eventEndTime)}
+                              </div>
+                            )}
                           </div>
                         )}
                       </button>
@@ -1046,8 +1091,8 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                 {/* Saturday weekly sandwich total */}
                 {isSaturday && saturdaySandwichTotal > 0 && (
                   <div
-                    className="hidden sm:block mt-1 rounded text-[10px] font-bold text-center truncate"
-                    style={{ background: 'linear-gradient(135deg, #92400e, #b45309)', color: '#fef3c7', padding: '2px 4px' }}
+                    className="hidden sm:block mt-1 rounded text-sm font-extrabold text-center truncate"
+                    style={{ background: 'linear-gradient(135deg, #92400e, #b45309)', color: '#fef3c7', padding: '4px 6px' }}
                   >
                     {saturdaySandwichTotal.toLocaleString()} / wk
                   </div>
