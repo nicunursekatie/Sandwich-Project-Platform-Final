@@ -36,6 +36,7 @@ import {
   MessageCircle,
   Lock,
   Unlock,
+  Users,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -1407,6 +1408,29 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       )}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* Audience / Estimated Attendance */}
+            {((request as any).estimatedAttendance > 0 || (request as any).adultCount > 0 || (request as any).childrenCount > 0) && (
+              <div className="bg-teal-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="w-4 h-4 text-teal-600" />
+                  <span className="font-medium">Estimated Audience:</span>
+                  <span>
+                    {(request as any).adultCount > 0 || (request as any).childrenCount > 0 ? (
+                      <>
+                        {(request as any).adultCount > 0 && `${(request as any).adultCount} adults`}
+                        {(request as any).adultCount > 0 && (request as any).childrenCount > 0 && ', '}
+                        {(request as any).childrenCount > 0 && `${(request as any).childrenCount} children`}
+                        {(request as any).kidsAgeRange && ` (ages ${(request as any).kidsAgeRange})`}
+                        {' '}({((request as any).adultCount || 0) + ((request as any).childrenCount || 0)} total)
+                      </>
+                    ) : (
+                      `${(request as any).estimatedAttendance} people`
+                    )}
+                  </span>
                 </div>
               </div>
             )}
