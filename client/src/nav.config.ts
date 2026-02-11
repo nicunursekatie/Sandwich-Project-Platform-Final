@@ -95,12 +95,11 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     id: 'wishlist',
-    label: 'Amazon Wishlist',
+    label: 'Wishlist Manager',
     icon: Gift,
     href: 'wishlist',
     permission: PERMISSIONS.NAV_WISHLIST,
     group: 'quick-links',
-    highlighted: true,
   },
   {
     id: 'quick-sms-links',

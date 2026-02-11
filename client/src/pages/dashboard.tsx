@@ -1053,30 +1053,26 @@ export default function Dashboard({
                       </div>
                     </div>
                     <div className="flex gap-1.5">
-                      <button
-                        onClick={() => {
-                          setActiveSection('wishlist');
-                          window.history.pushState({}, '', '/dashboard?section=wishlist');
-                          setIsMobileMenuOpen(false);
-                        }}
+                      <a
+                        href="https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV/ref=nav_wishlist_lists_4"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex-1 bg-[#FBAD3F] hover:bg-[#E89A2F] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
-                        title="View wishlist and share with supporters"
+                        title="Open Amazon Wishlist"
                       >
                         <ExternalLink className="w-3 h-3" />
-                        View & Share
-                      </button>
+                        Open on Amazon
+                      </a>
                       <button
                         onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText('https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV?ref_=wl_share');
-                            // Show toast notification (you'll need to add toast hook)
-                            logger.log('Wishlist link copied!');
+                            await navigator.clipboard.writeText('https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV/ref=nav_wishlist_lists_4');
                           } catch (err) {
                             logger.error('Copy failed:', err);
                           }
                         }}
                         className="bg-[#FBAD3F]/20 hover:bg-[#FBAD3F]/30 text-[#FBAD3F] px-2 py-1.5 rounded transition-colors"
-                        title="Copy main wishlist link"
+                        title="Copy wishlist link to clipboard"
                       >
                         <Copy className="w-3 h-3" />
                       </button>
