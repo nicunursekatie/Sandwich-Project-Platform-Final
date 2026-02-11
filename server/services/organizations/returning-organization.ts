@@ -419,15 +419,17 @@ export async function checkReturningOrganization(
     // Data has been cleaned so we can rely on exact org name matching
     // Normalize & → and so "William & Reed" matches "William and Reed"
     // Also collapse multiple spaces to single space for consistent matching
-    const normalizedOrgName = orgName.trim().toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
+    // Replace non-breaking spaces (U+00A0, common from web forms/Google Sheets) with regular spaces
+    const normalizedOrgName = orgName.trim().replace(/\u00A0/g, ' ').toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
 
-    // SQL normalization: lowercase, trim, replace & with 'and', AND collapse multiple spaces
-    // REGEXP_REPLACE(str, '\\s+', ' ', 'g') collapses whitespace in PostgreSQL
+    // SQL normalization: lowercase, trim, replace non-breaking spaces (chr(160)) with regular spaces,
+    // replace & with 'and', AND collapse all whitespace including tabs/newlines
+    // chr(160) handles non-breaking spaces that PostgreSQL's \s doesn't match in the C locale
     const eventCondition = currentEventId
-      ? sql`REGEXP_REPLACE(REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+      ? sql`REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(${eventRequests.organizationName})), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
             AND ${eventRequests.id} != ${currentEventId}
             AND ${eventRequests.deletedAt} IS NULL`
-      : sql`REGEXP_REPLACE(REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+      : sql`REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(${eventRequests.organizationName})), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
             AND ${eventRequests.deletedAt} IS NULL`;
 
     let matchingEvents: { id: number; organizationName: string | null; department: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
@@ -449,8 +451,10 @@ export async function checkReturningOrganization(
         .where(eventCondition)
         .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
     } catch (eventQueryError) {
-      logger.warn('Failed to query event requests for returning org check, skipping event check', { error: eventQueryError });
+      logger.warn('Failed to query event requests for returning org check, skipping event check', { orgName, normalizedOrgName, error: eventQueryError });
     }
+
+    logger.info(`Returning org check [exact events]: "${orgName}" → normalized: "${normalizedOrgName}" → ${matchingEvents.length} matches${currentEventId ? ` (excluding id=${currentEventId})` : ''}`);
 
     // Exact match against sandwich collections
     let matchingCollections: { id: number; dateCollected: string | null; group1Name: string | null; group2Name: string | null }[] = [];
@@ -465,15 +469,17 @@ export async function checkReturningOrganization(
         .from(sandwichCollections)
         .where(
           sql`(
-              REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
-              OR REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              OR REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
             )
             AND ${sandwichCollections.deletedAt} IS NULL`
         )
         .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {
-      logger.warn('Failed to query sandwich collections for returning org check, skipping collection check', { error: collectionQueryError });
+      logger.warn('Failed to query sandwich collections for returning org check, skipping collection check', { orgName, error: collectionQueryError });
     }
+
+    logger.info(`Returning org check [exact collections]: "${orgName}" → ${matchingCollections.length} matches`);
 
     // Fuzzy fallback: if exact match found nothing, try canonical/substring matching
     // This handles cases like "OpenText Sandwich Project" matching "OpenText" in the catalog
@@ -502,6 +508,19 @@ export async function checkReturningOrganization(
             });
           }
 
+          // If substring matching found nothing, try Levenshtein similarity (>= 0.80)
+          // This catches cases like abbreviations or minor typos
+          if (fuzzyEventMatches.length === 0) {
+            fuzzyEventMatches = allEventOrgs
+              .filter(row => row.organizationName && calculateSimilarity(orgName, row.organizationName) >= 0.80)
+              .map(row => row.organizationName!);
+            if (fuzzyEventMatches.length > 0) {
+              logger.info(`Returning org check [levenshtein events]: "${orgName}" → ${fuzzyEventMatches.length} similarity matches: ${fuzzyEventMatches.join(', ')}`);
+            }
+          }
+
+          logger.info(`Returning org check [fuzzy events]: "${orgName}" → canonical: "${canonicalSearch}" → checked ${allEventOrgs.length} distinct orgs → ${fuzzyEventMatches.length} fuzzy matches${fuzzyEventMatches.length > 0 ? ': ' + fuzzyEventMatches.join(', ') : ''}`);
+
           if (fuzzyEventMatches.length > 0) {
             // Re-query events with the matched org names
             matchingEvents = await db
@@ -527,11 +546,12 @@ export async function checkReturningOrganization(
             }
           }
 
-          // Also check collections with fuzzy matching
+          // Also check collections with fuzzy matching (group1Name, group2Name, AND groupCollections JSON array)
           const allCollectionOrgs = await db
-            .selectDistinct({
+            .select({
               group1Name: sandwichCollections.group1Name,
               group2Name: sandwichCollections.group2Name,
+              groupCollections: sandwichCollections.groupCollections,
             })
             .from(sandwichCollections);
 
@@ -550,6 +570,17 @@ export async function checkReturningOrganization(
                 continue;
               }
               fuzzyCollectionNames.add(row.group2Name.trim().toLowerCase());
+            }
+            // Also check groupCollections JSON array for org names
+            if (row.groupCollections && Array.isArray(row.groupCollections)) {
+              for (const groupItem of row.groupCollections) {
+                if (groupItem && typeof groupItem === 'object' && 'name' in groupItem) {
+                  const groupName = (groupItem as any).name as string;
+                  if (groupName && organizationNamesMatch(orgName, groupName)) {
+                    fuzzyCollectionNames.add(groupName.trim().toLowerCase());
+                  }
+                }
+              }
             }
           }
 
@@ -575,9 +606,59 @@ export async function checkReturningOrganization(
       }
     }
 
+    // Last-resort fallback: if still no matches, try including soft-deleted records
+    // An org that had past events (even if those records were deleted/cleaned up) is still a returning org
+    if (matchingEvents.length === 0 && matchingCollections.length === 0) {
+      try {
+        const canonicalSearch = canonicalizeOrgName(orgName);
+        if (canonicalSearch.length >= 6) {
+          const allEventOrgsIncDeleted = await db
+            .selectDistinct({ organizationName: eventRequests.organizationName })
+            .from(eventRequests)
+            .where(sql`${eventRequests.organizationName} IS NOT NULL`);
+
+          const deletedFuzzyMatches = allEventOrgsIncDeleted
+            .filter(row => row.organizationName && (
+              organizationNamesMatch(orgName, row.organizationName) ||
+              calculateSimilarity(orgName, row.organizationName) >= 0.80
+            ))
+            .map(row => row.organizationName!);
+
+          if (deletedFuzzyMatches.length > 0) {
+            logger.info(`Returning org check [including deleted]: "${orgName}" → found ${deletedFuzzyMatches.length} matches (may include soft-deleted records): ${deletedFuzzyMatches.join(', ')}`);
+            // Re-query including deleted records
+            matchingEvents = await db
+              .select({
+                id: eventRequests.id,
+                organizationName: eventRequests.organizationName,
+                department: eventRequests.department,
+                desiredEventDate: eventRequests.desiredEventDate,
+                scheduledEventDate: eventRequests.scheduledEventDate,
+                status: eventRequests.status,
+                firstName: eventRequests.firstName,
+                lastName: eventRequests.lastName,
+                email: eventRequests.email,
+                phone: eventRequests.phone,
+              })
+              .from(eventRequests)
+              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(deletedFuzzyMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)})`)
+              .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
+
+            if (currentEventId) {
+              matchingEvents = matchingEvents.filter(e => e.id !== currentEventId);
+            }
+          }
+        }
+      } catch (deletedFallbackError) {
+        logger.warn('Deleted records fallback failed', { error: deletedFallbackError });
+      }
+    }
+
     const isReturning = matchingEvents.length > 0 || matchingCollections.length > 0;
     const mostRecentEvent = matchingEvents[0];
     const mostRecentCollection = matchingCollections[0];
+
+    logger.info(`Returning org check [result]: "${orgName}" → isReturning=${isReturning}, events=${matchingEvents.length}, collections=${matchingCollections.length}`);
 
     // Check if the current contact matches any past event contacts
     // IMPORTANT: Name-only matching is NOT sufficient since people can share names.

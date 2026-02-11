@@ -26,7 +26,8 @@
 export function canonicalizeOrgName(name: string): string {
   if (!name || typeof name !== 'string') return '';
 
-  let canonical = name.trim().toLowerCase();
+  // Replace non-breaking spaces and other Unicode whitespace with regular spaces first
+  let canonical = name.replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, ' ').trim().toLowerCase();
 
   // Remove leading "The" or "The " (common prefix that shouldn't affect matching)
   canonical = canonical.replace(/^the\s+/, '');
