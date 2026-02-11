@@ -3,8 +3,12 @@ import { db } from '../db';
 import { userActivityLogs } from '@shared/schema';
 import { sql, desc, and, gte, eq } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { isAuthenticated } from '../auth';
 
 const router = Router();
+
+// All routes require authentication
+router.use(isAuthenticated);
 
 // Helper function to calculate date threshold
 function getDateThreshold(days: number): Date {

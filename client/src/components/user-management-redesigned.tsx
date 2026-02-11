@@ -45,6 +45,7 @@ import {
   Phone,
   Mail,
   MapPin,
+  Activity,
 } from 'lucide-react';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
 import BulkPermissionsManager from '@/components/bulk-permissions-manager';
@@ -59,6 +60,7 @@ import { PasswordDialog } from '@/components/user-management/PasswordDialog';
 import { SMSDialog } from '@/components/user-management/SMSDialog';
 import { SimplifiedUserTableRow } from '@/components/user-management/SimplifiedUserTableRow';
 import { IndividualUserActivity } from '@/components/individual-user-activity';
+import { UserActivityMonitor } from '@/components/user-management/UserActivityMonitor';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 // Import custom hooks
@@ -91,7 +93,7 @@ export default function UserManagementFinal() {
     context: { currentUserRole: currentUser?.role },
   });
 
-  const [activeTab, setActiveTab] = useState<'users' | 'pending' | 'permissions' | 'impact'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'pending' | 'permissions' | 'activity' | 'impact'>('users');
   const [viewingActivityFor, setViewingActivityFor] = useState<User | null>(null);
   const queryClient = useQueryClient();
 
@@ -440,6 +442,11 @@ export default function UserManagementFinal() {
             <span className="hidden sm:inline">Permissions</span>
             <span className="sm:hidden">Perms</span>
           </TabsTrigger>
+          <TabsTrigger value="activity" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Activity</span>
+            <span className="sm:hidden">Activity</span>
+          </TabsTrigger>
           <TabsTrigger value="impact" className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
             <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Impact
@@ -787,6 +794,11 @@ export default function UserManagementFinal() {
               <BulkPermissionsManager />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Activity Tab - User Activity Monitoring */}
+        <TabsContent value="activity">
+          <UserActivityMonitor />
         </TabsContent>
 
         {/* Impact Tab - Contribution Metrics */}
