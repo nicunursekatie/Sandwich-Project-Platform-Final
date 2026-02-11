@@ -32,16 +32,32 @@ interface MultiViewToolbarProps {
   className?: string;
 }
 
-// Group nav items for the dropdown
-function getQuickAccessItems() {
-  // Return commonly used items for quick access
-  return NAV_ITEMS.filter(item =>
-    item.href &&
-    !item.external &&
-    !item.topNav &&
-    ['dashboard', 'collections', 'event-requests', 'chat', 'my-actions', 'projects'].includes(item.href)
-  );
+// Group all nav items by their group for the dropdown
+function getGroupedNavItems() {
+  const groups: Record<string, typeof NAV_ITEMS> = {};
+
+  NAV_ITEMS.forEach(item => {
+    if (!item.href || item.external || item.topNav) return;
+
+    const group = item.group || 'other';
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group].push(item);
+  });
+
+  return groups;
 }
+
+const GROUP_LABELS: Record<string, string> = {
+  'dashboard': 'Dashboard',
+  'quick-links': 'Quick Links',
+  'workspace': 'Workspace',
+  'logistics': 'Logistics',
+  'network': 'Network',
+  'operations': 'Operations',
+  'admin': 'Admin & Resources',
+};
 
 export function MultiViewToolbar({ currentSection, className }: MultiViewToolbarProps) {
   const {
@@ -55,7 +71,7 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
   } = useMultiView();
   const { openView, views } = useFloatingViews();
 
-  const quickAccessItems = getQuickAccessItems();
+  const groupedItems = getGroupedNavItems();
 
   return (
     <div className={cn(
@@ -99,26 +115,26 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
                 <span className="hidden sm:inline text-xs">Add Panel</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-48">
-              <DropdownMenuLabel className="text-xs">Quick Access</DropdownMenuLabel>
-              {quickAccessItems.map(item => (
-                <DropdownMenuItem
-                  key={item.id}
-                  onClick={() => addPanel(item.href, item.label)}
-                  disabled={panels.some(p => p.section === item.href)}
-                  className="flex items-center gap-2"
-                >
-                  {item.icon && <item.icon className="h-4 w-4 opacity-60" />}
-                  <span>{item.label}</span>
-                </DropdownMenuItem>
+            <DropdownMenuContent align="start" className="w-56 max-h-[400px] overflow-y-auto">
+              {Object.entries(groupedItems).map(([group, items]) => (
+                <React.Fragment key={group}>
+                  <DropdownMenuLabel className="text-xs text-slate-500">
+                    {GROUP_LABELS[group] || group}
+                  </DropdownMenuLabel>
+                  {items.map(item => (
+                    <DropdownMenuItem
+                      key={item.id}
+                      onClick={() => addPanel(item.href, item.label)}
+                      disabled={panels.some(p => p.section === item.href)}
+                      className="flex items-center gap-2"
+                    >
+                      {item.icon && <item.icon className="h-4 w-4 opacity-60" />}
+                      <span className="truncate">{item.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                </React.Fragment>
               ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => addPanel('dashboard', 'Dashboard')}
-                disabled={panels.some(p => p.section === 'dashboard')}
-              >
-                Add Dashboard Panel
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
