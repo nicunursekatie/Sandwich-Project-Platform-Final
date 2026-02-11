@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEventFilters } from '../hooks/useEventFilters';
+import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +47,7 @@ const statusStyles: Record<string, string> = {
 
 export const AllEventsTab: React.FC = () => {
   const { paginatedRequests } = useEventFilters();
+  const { resolveUserName } = useEventAssignments();
   const {
     setSelectedEventRequest,
     setIsEditing,
@@ -210,10 +212,10 @@ export const AllEventsTab: React.FC = () => {
                         </>
                       )}
                     </div>
-                    {request.tspContact && (
+                    {(request.tspContactAssigned || request.tspContact || request.customTspContact) && (
                       <div className="mt-1 text-sm text-gray-600 flex items-center gap-1">
                         <UserCheck className="w-4 h-4" />
-                        <span>TSP Contact: {request.tspContactName || request.tspContact}</span>
+                        <span>TSP Contact: {request.customTspContact || resolveUserName(request.tspContactAssigned || request.tspContact || '')}</span>
                       </div>
                     )}
                   </div>
