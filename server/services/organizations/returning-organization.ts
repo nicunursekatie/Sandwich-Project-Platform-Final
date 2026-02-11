@@ -11,7 +11,7 @@
 import { db } from '../../db';
 import { eventRequests, sandwichCollections } from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
-import { canonicalizeOrgName, calculateSimilarity } from '../../utils/organization-canonicalization';
+import { canonicalizeOrgName, calculateSimilarity, organizationNamesMatch } from '../../utils/organization-canonicalization';
 import { logger } from '../../utils/production-safe-logger';
 
 export interface DuplicatePair {
@@ -301,6 +301,9 @@ const UMBRELLA_ORG_KEYWORDS = [
   'vfw',
   'moose lodge',
   'knights of columbus',
+  'church of jesus christ',        // LDS / Latter-day Saints
+  'latter day saints',
+  'latter-day saints',
 ];
 
 /**
@@ -318,6 +321,44 @@ function isGenericUmbrellaOrg(orgName: string): boolean {
   // e.g. "Girl Scout Troop 25126", "Cub Scout Pack 100", "Elks Lodge 1234"
   const hasNumber = /\d+/.test(normalized);
   return !hasNumber;
+}
+
+/**
+ * Check if an org name contains any umbrella org keywords (with or without number).
+ * Unlike isGenericUmbrellaOrg, this returns true for ALL umbrella orgs including
+ * those with specific identifiers like "Cub Scout Pack 100".
+ */
+function isUmbrellaRelated(orgName: string): boolean {
+  const normalized = orgName.trim().toLowerCase().replace(/&/g, 'and');
+  return UMBRELLA_ORG_KEYWORDS.some(kw => normalized.includes(kw));
+}
+
+/**
+ * Extract identifier numbers from an umbrella org name.
+ * e.g. "Cub Scout Pack 100" → ["100"], "Girl Scout Troop 25126" → ["25126"],
+ * "Girl Scouts" → []
+ */
+function extractUmbrellaIdentifiers(orgName: string): string[] {
+  return orgName.trim().match(/\d+/g) || [];
+}
+
+/**
+ * Check if two umbrella org names refer to the same specific chapter/troop/pack.
+ * Returns true only if both have the same identifier numbers, or both are generic (no numbers).
+ * Returns false if one has a number and the other doesn't, or if numbers differ.
+ */
+function umbrellaIdentifiersMatch(orgName1: string, orgName2: string): boolean {
+  const ids1 = extractUmbrellaIdentifiers(orgName1);
+  const ids2 = extractUmbrellaIdentifiers(orgName2);
+
+  // Both generic (no identifiers) — could be same chapter but uncertain
+  if (ids1.length === 0 && ids2.length === 0) return true;
+
+  // One has identifiers, the other doesn't — different specificity, don't match
+  if (ids1.length === 0 || ids2.length === 0) return false;
+
+  // Both have identifiers — at least one number must match
+  return ids1.some(id => ids2.includes(id));
 }
 
 /**
@@ -341,7 +382,8 @@ export async function checkReturningOrganization(
   currentEventId?: number,
   contactEmail?: string,
   contactName?: string,
-  contactPhone?: string
+  contactPhone?: string,
+  department?: string
 ): Promise<{
   isReturning: boolean;
   isReturningContact: boolean;
@@ -381,12 +423,13 @@ export async function checkReturningOrganization(
             AND ${eventRequests.id} != ${currentEventId}`
       : sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}`;
 
-    let matchingEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
+    let matchingEvents: { id: number; organizationName: string | null; department: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
     try {
       matchingEvents = await db
         .select({
           id: eventRequests.id,
           organizationName: eventRequests.organizationName,
+          department: eventRequests.department,
           desiredEventDate: eventRequests.desiredEventDate,
           scheduledEventDate: eventRequests.scheduledEventDate,
           status: eventRequests.status,
@@ -420,6 +463,106 @@ export async function checkReturningOrganization(
         .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {
       logger.warn('Failed to query sandwich collections for returning org check, skipping collection check', { error: collectionQueryError });
+    }
+
+    // Fuzzy fallback: if exact match found nothing, try canonical/substring matching
+    // This handles cases like "OpenText Sandwich Project" matching "OpenText" in the catalog
+    if (matchingEvents.length === 0 && matchingCollections.length === 0) {
+      try {
+        const canonicalSearch = canonicalizeOrgName(orgName);
+        if (canonicalSearch.length >= 6) {
+          // Fetch distinct org names from events to check against
+          const allEventOrgs = await db
+            .selectDistinct({ organizationName: eventRequests.organizationName })
+            .from(eventRequests)
+            .where(sql`${eventRequests.organizationName} IS NOT NULL`);
+
+          let fuzzyEventMatches = allEventOrgs
+            .filter(row => row.organizationName && organizationNamesMatch(orgName, row.organizationName))
+            .map(row => row.organizationName!);
+
+          // For umbrella orgs, filter fuzzy matches to only those with matching identifiers.
+          // This prevents "Girl Scouts" from matching "Girl Scout Troop 25126" or
+          // "Cub Scout Pack 100" from matching "Cub Scout Pack 200".
+          if (isUmbrellaRelated(orgName) && fuzzyEventMatches.length > 0) {
+            fuzzyEventMatches = fuzzyEventMatches.filter(matchName => {
+              // Non-umbrella matches pass through (e.g. unrelated org that substring-matches)
+              if (!isUmbrellaRelated(matchName)) return true;
+              return umbrellaIdentifiersMatch(orgName, matchName);
+            });
+          }
+
+          if (fuzzyEventMatches.length > 0) {
+            // Re-query events with the matched org names
+            matchingEvents = await db
+              .select({
+                id: eventRequests.id,
+                organizationName: eventRequests.organizationName,
+                department: eventRequests.department,
+                desiredEventDate: eventRequests.desiredEventDate,
+                scheduledEventDate: eventRequests.scheduledEventDate,
+                status: eventRequests.status,
+                firstName: eventRequests.firstName,
+                lastName: eventRequests.lastName,
+                email: eventRequests.email,
+                phone: eventRequests.phone,
+              })
+              .from(eventRequests)
+              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(fuzzyEventMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)})`)
+              .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
+
+            // Exclude current event if specified
+            if (currentEventId) {
+              matchingEvents = matchingEvents.filter(e => e.id !== currentEventId);
+            }
+          }
+
+          // Also check collections with fuzzy matching
+          const allCollectionOrgs = await db
+            .selectDistinct({
+              group1Name: sandwichCollections.group1Name,
+              group2Name: sandwichCollections.group2Name,
+            })
+            .from(sandwichCollections);
+
+          const fuzzyCollectionNames = new Set<string>();
+          const incomingIsUmbrella = isUmbrellaRelated(orgName);
+          for (const row of allCollectionOrgs) {
+            if (row.group1Name && organizationNamesMatch(orgName, row.group1Name)) {
+              // Filter umbrella orgs to require matching identifiers
+              if (incomingIsUmbrella && isUmbrellaRelated(row.group1Name) && !umbrellaIdentifiersMatch(orgName, row.group1Name)) {
+                continue;
+              }
+              fuzzyCollectionNames.add(row.group1Name.trim().toLowerCase());
+            }
+            if (row.group2Name && organizationNamesMatch(orgName, row.group2Name)) {
+              if (incomingIsUmbrella && isUmbrellaRelated(row.group2Name) && !umbrellaIdentifiersMatch(orgName, row.group2Name)) {
+                continue;
+              }
+              fuzzyCollectionNames.add(row.group2Name.trim().toLowerCase());
+            }
+          }
+
+          if (fuzzyCollectionNames.size > 0) {
+            const fuzzyNames = Array.from(fuzzyCollectionNames);
+            matchingCollections = await db
+              .select({
+                id: sandwichCollections.id,
+                dateCollected: sandwichCollections.collectionDate,
+                group1Name: sandwichCollections.group1Name,
+                group2Name: sandwichCollections.group2Name,
+              })
+              .from(sandwichCollections)
+              .where(
+                sql`LOWER(TRIM(${sandwichCollections.group1Name})) IN (${sql.join(fuzzyNames.map(n => sql`${n}`), sql`, `)})
+                    OR LOWER(TRIM(${sandwichCollections.group2Name})) IN (${sql.join(fuzzyNames.map(n => sql`${n}`), sql`, `)})`
+              )
+              .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
+          }
+        }
+      } catch (fuzzyError) {
+        logger.warn('Fuzzy matching fallback failed, continuing with exact match results', { error: fuzzyError });
+      }
     }
 
     const isReturning = matchingEvents.length > 0 || matchingCollections.length > 0;
@@ -482,29 +625,45 @@ export async function checkReturningOrganization(
     }
 
     // For umbrella orgs without a distinguishing identifier (no troop/pack/chapter number),
-    // we still show them as returning orgs, but with a caveat that it might be a different chapter.
-    // The isReturningContact flag tells the team whether it's the same contact person.
+    // only flag as returning if the department or contact also matches. This prevents generic
+    // "Girl Scouts" or "Church of Jesus Christ of Latter-day Saints" from being flagged as
+    // returning just because a different troop/ward worked with us.
     const isUmbrellaOrg = isGenericUmbrellaOrg(orgName);
 
+    // Check if the department matches any past event's department
+    let isDepartmentMatch = false;
+    if (isUmbrellaOrg && department && matchingEvents.length > 0) {
+      const normalizedDept = department.trim().toLowerCase();
+      isDepartmentMatch = matchingEvents.some(evt => {
+        const evtDept = evt.department?.trim().toLowerCase();
+        return evtDept && evtDept === normalizedDept;
+      });
+    }
+
+    // For generic umbrella orgs, require department match OR contact match
+    // to confirm it's the same chapter/ward/troop
+    const effectiveIsReturning = isUmbrellaOrg
+      ? (isReturning && (isDepartmentMatch || isReturningContact))
+      : isReturning;
+
     return {
-      // Always show org as returning if we have matching events/collections
-      // The team needs to know the org has worked with us before, even if contact is different
-      isReturning: isReturning,
+      isReturning: effectiveIsReturning,
       isReturningContact,
-      inCatalog: false, // TODO: Check organizations table when properly implemented
-      pastEventCount: isReturning ? matchingEvents.length : 0,
-      collectionCount: isReturning ? matchingCollections.length : 0,
-      mostRecentEvent: isReturning && mostRecentEvent ? {
+      // inCatalog stays based on raw match — the org type IS in our system even if we
+      // can't confirm it's the exact same chapter
+      inCatalog: isReturning,
+      pastEventCount: effectiveIsReturning ? matchingEvents.length : 0,
+      collectionCount: effectiveIsReturning ? matchingCollections.length : 0,
+      mostRecentEvent: effectiveIsReturning && mostRecentEvent ? {
         id: mostRecentEvent.id,
         eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,
         status: mostRecentEvent.status,
       } : undefined,
-      mostRecentCollection: isReturning && mostRecentCollection ? {
+      mostRecentCollection: effectiveIsReturning && mostRecentCollection ? {
         id: mostRecentCollection.id,
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
-      // Always show past contact name when org is returning - helps team know who to reference
-      pastContactName: isReturning ? pastContactName : undefined,
+      pastContactName: effectiveIsReturning ? pastContactName : undefined,
     };
   } catch (error) {
     logger.error('Error checking returning organization', { orgName, currentEventId, error });
