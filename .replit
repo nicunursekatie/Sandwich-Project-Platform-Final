@@ -8,7 +8,7 @@ packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", 
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
+build = ["sh", "-c", "NODE_OPTIONS=--max-old-space-size=4096 npm run build"]
 run = "NODE_ENV=production node dist/index.js"
 
 [[ports]]
