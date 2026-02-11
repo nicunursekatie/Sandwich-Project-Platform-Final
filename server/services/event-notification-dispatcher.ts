@@ -9,6 +9,7 @@ import sgMail from '@sendgrid/mail';
 import { db } from '../db';
 import { eventRequests, users } from '@shared/schema';
 import { eq, and, or, inArray, lt, gte, isNull, sql } from 'drizzle-orm';
+import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
@@ -348,6 +349,9 @@ export async function sendEventChangedNotification(
   let sentCount = 0;
 
   for (const contactId of tspContactIds) {
+    // Skip users with suppressed event notifications (only get assignments + comments)
+    if (isNotificationSuppressed(contactId)) continue;
+
     const [user] = await db.select().from(users).where(eq(users.id, contactId)).limit(1);
     if (!user?.email) continue;
 
@@ -852,8 +856,8 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
       continue;
     }
 
-    // Skip Christine - notifications disabled per admin request
-    if (tspContactId === 'christine-cooper') {
+    // Skip users with suppressed event notifications (only get assignments + comments)
+    if (isNotificationSuppressed(tspContactId)) {
       results.skipped++;
       continue;
     }
@@ -932,6 +936,12 @@ export async function processApproachingIncompleteEvents(): Promise<{ sent: numb
 
     const tspContactId = event.tspContactAssigned || event.tspContact;
     if (!tspContactId) {
+      results.skipped++;
+      continue;
+    }
+
+    // Skip users with suppressed event notifications (only get assignments + comments)
+    if (isNotificationSuppressed(tspContactId)) {
       results.skipped++;
       continue;
     }
@@ -1041,8 +1051,8 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
         continue;
       }
 
-      // Skip Christine - notifications disabled per admin request
-      if (tspContactId === 'christine-cooper') {
+      // Skip users with suppressed event notifications (only get assignments + comments)
+      if (isNotificationSuppressed(tspContactId)) {
         results.skipped++;
         continue;
       }

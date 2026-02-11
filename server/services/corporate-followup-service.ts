@@ -24,6 +24,7 @@ import { getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import { EmailNotificationService } from './email-notification-service';
 import sgMail from '@sendgrid/mail';
 import { getAppBaseUrl } from '../config/constants';
+import { isNotificationSuppressed } from '../utils/notification-suppression';
 
 const serviceLogger = {
   info: (msg: string, ...args: any[]) => logger.info(`[CorporateFollowup] ${msg}`, ...args),
@@ -462,8 +463,8 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
     for (const event of corporateEvents) {
       result.eventsProcessed++;
 
-      // Skip Christine - notifications disabled per admin request
-      if (event.tspContact === 'christine-cooper') continue;
+      // Skip users with suppressed event notifications (only get assignments + comments)
+      if (event.tspContact && isNotificationSuppressed(event.tspContact)) continue;
 
       try {
         // Parse protocol - handle both string and object

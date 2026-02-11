@@ -24,6 +24,7 @@ import {
   processApproachingIncompleteEvents,
   processWeeklyContactReminders,
 } from './event-notification-dispatcher';
+import { isNotificationSuppressed } from '../utils/notification-suppression';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -750,6 +751,9 @@ export async function notifyPastDateInProcessEvents(): Promise<{
 
         // Send notification to each TSP contact
         for (const contactId of uniqueContactIds) {
+          // Skip users with suppressed event notifications (only get assignments + comments)
+          if (isNotificationSuppressed(contactId)) continue;
+
           try {
             const [contact] = await db
               .select()

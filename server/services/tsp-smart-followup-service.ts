@@ -28,6 +28,7 @@ import { getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import { EmailNotificationService } from './email-notification-service';
 import { getMissingIntakeInfo, getPrimaryContextualAction } from '@shared/event-validation-utils';
+import { isNotificationSuppressed } from '../utils/notification-suppression';
 
 const serviceLogger = {
   info: (msg: string, ...args: any[]) => logger.info(`[SmartFollowup] ${msg}`, ...args),
@@ -584,8 +585,8 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) continue;
 
-      // Skip Christine - notifications disabled per admin request
-      if (tspContactId === 'christine-cooper') continue;
+      // Skip users with suppressed event notifications (only get assignments + comments)
+      if (isNotificationSuppressed(tspContactId)) continue;
 
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'new_request_24h');
@@ -641,8 +642,8 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) continue;
 
-      // Skip Christine - notifications disabled per admin request
-      if (tspContactId === 'christine-cooper') continue;
+      // Skip users with suppressed event notifications (only get assignments + comments)
+      if (isNotificationSuppressed(tspContactId)) continue;
 
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'in_process_7d');
@@ -698,8 +699,8 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) continue;
 
-      // Skip Christine - notifications disabled per admin request
-      if (tspContactId === 'christine-cooper') continue;
+      // Skip users with suppressed event notifications (only get assignments + comments)
+      if (isNotificationSuppressed(tspContactId)) continue;
 
       try {
         const user = await getTspContactUser(tspContactId);

@@ -18,6 +18,7 @@ import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import { EmailNotificationService } from './email-notification-service';
+import { isNotificationSuppressed } from '../utils/notification-suppression';
 
 const serviceLogger = {
   info: (msg: string, ...args: any[]) => logger.info(`[TSP-Followup] ${msg}`, ...args),
@@ -308,9 +309,11 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     for (const event of approachingEvents) {
       result.eventsProcessed++;
       const tspContactId = event.tspContactAssigned || event.tspContact;
-      
+
       if (!tspContactId) continue;
-      
+      // Skip users with suppressed event notifications (only get assignments + comments)
+      if (isNotificationSuppressed(tspContactId)) continue;
+
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'approaching_event');
         if (alreadySent) {
@@ -355,9 +358,10 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     for (const event of toolkitEvents) {
       result.eventsProcessed++;
       const tspContactId = event.tspContactAssigned || event.tspContact;
-      
+
       if (!tspContactId) continue;
-      
+      if (isNotificationSuppressed(tspContactId)) continue;
+
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'toolkit_followup');
         if (alreadySent) {
@@ -403,9 +407,10 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     for (const event of standbyEvents) {
       result.eventsProcessed++;
       const tspContactId = event.tspContactAssigned || event.tspContact;
-      
+
       if (!tspContactId) continue;
-      
+      if (isNotificationSuppressed(tspContactId)) continue;
+
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'standby_followup');
         if (alreadySent) {
