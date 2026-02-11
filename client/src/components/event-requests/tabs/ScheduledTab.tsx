@@ -260,7 +260,10 @@ export const ScheduledTab: React.FC = () => {
         });
       } else if (editingField === 'attendanceBreakdown') {
         // Special handling for attendance breakdown - parse comma-separated values
-        const [adults, teens, kids] = editingValue.split(',').map(v => parseInt(v) || null);
+        const [adults, teens, kids] = editingValue.split(',').map(v => {
+          const parsed = parseInt(v);
+          return isNaN(parsed) ? null : parsed;
+        });
         const total = (adults || 0) + (teens || 0) + (kids || 0);
         updateEventRequestMutation.mutate({
           id: editingScheduledId,

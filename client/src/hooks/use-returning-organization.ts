@@ -46,10 +46,11 @@ export function useReturningOrganization(
   contactEmail?: string | null,
   contactName?: string | null,
   contactPhone?: string | null,
+  department?: string | null,
   enabled: boolean = true
 ) {
   return useQuery<ReturningOrganizationData>({
-    queryKey: ['returning-organization', organizationName, currentEventId, contactEmail, contactName, contactPhone],
+    queryKey: ['returning-organization', organizationName, currentEventId, contactEmail, contactName, contactPhone, department],
     queryFn: async () => {
       if (!organizationName) {
         return {
@@ -68,6 +69,7 @@ export function useReturningOrganization(
         ...(contactEmail && { contactEmail }),
         ...(contactName && { contactName }),
         ...(contactPhone && { contactPhone }),
+        ...(department && { department }),
       });
 
       const response = await fetch(`/api/event-requests/check-returning-org?${params}`, {

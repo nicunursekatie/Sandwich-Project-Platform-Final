@@ -1454,10 +1454,6 @@ router.get(
         sandwichTypes: event.sandwichTypes, // NewRequestCard, ScheduledCard, CompletedCard
         hasRefrigeration: event.hasRefrigeration, // RefrigerationWarningBadge on all cards
         volunteerCount: event.volunteerCount,
-        estimatedAttendance: event.estimatedAttendance,
-        adultCount: event.adultCount,
-        childrenCount: event.childrenCount,
-        kidsAgeRange: event.kidsAgeRange,
         actualAttendance: event.actualAttendance,
 
         // ========== DRIVER STAFFING ==========

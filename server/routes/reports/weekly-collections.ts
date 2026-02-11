@@ -7,6 +7,14 @@ import { isInExcludedWeek, getExcludedWeeksInRange } from '../../utils/excluded-
 
 const weeklyCollectionsRouter = Router();
 
+interface SandwichTypeBreakdown {
+  deli: number;
+  turkey: number;
+  ham: number;
+  pbj: number;
+  generic: number;
+}
+
 interface LocationBreakdown {
   location: string;
   individual: number;
@@ -22,6 +30,7 @@ interface WeeklyData {
   individual: number;
   groupCollections: number;
   locationBreakdowns: LocationBreakdown[];
+  sandwichTypes: SandwichTypeBreakdown;
   isExcludedWeek?: boolean;
   excludedReason?: string;
 }
@@ -116,6 +125,7 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
           individual: 0,
           groupCollections: 0,
           locationBreakdowns: [],
+          sandwichTypes: { deli: 0, turkey: 0, ham: 0, pbj: 0, generic: 0 },
         });
         locationMap.set(weekKey, new Map());
       }
@@ -127,13 +137,32 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       const individual = collection.individualSandwiches || 0;
       const location = collection.hostName || 'Unknown';
 
+      // Track individual sandwich types
+      const individualDeli = collection.individualDeli || 0;
+      const individualTurkey = collection.individualTurkey || 0;
+      const individualHam = collection.individualHam || 0;
+      const individualPbj = collection.individualPbj || 0;
+      const individualGeneric = collection.individualGeneric || 0;
+
       // Handle both new groupCollections array and legacy group1/group2 fields
       let groupColl = 0;
       let groupEventCount = 0;
+      let groupDeli = 0;
+      let groupTurkey = 0;
+      let groupHam = 0;
+      let groupPbj = 0;
+      let groupGeneric = 0;
 
       if (collection.groupCollections && Array.isArray(collection.groupCollections) && collection.groupCollections.length > 0) {
         // NEW FORMAT: Use groupCollections JSON array - sum ALL groups
-        groupColl = collection.groupCollections.reduce((sum: number, g: any) => sum + (g.count || 0), 0);
+        for (const g of collection.groupCollections as any[]) {
+          groupColl += g.count || 0;
+          groupDeli += g.deli || 0;
+          groupTurkey += g.turkey || 0;
+          groupHam += g.ham || 0;
+          groupPbj += g.pbj || 0;
+          groupGeneric += g.generic || 0;
+        }
         groupEventCount = collection.groupCollections.length;
       } else {
         // LEGACY FORMAT: Use old group1Count and group2Count fields
@@ -163,6 +192,13 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
       week.groupCollections += groupColl;
       // Total is individual + all group collections
       week.totalSandwiches += individual + groupColl;
+
+      // Add sandwich type totals (individual + group)
+      week.sandwichTypes.deli += individualDeli + groupDeli;
+      week.sandwichTypes.turkey += individualTurkey + groupTurkey;
+      week.sandwichTypes.ham += individualHam + groupHam;
+      week.sandwichTypes.pbj += individualPbj + groupPbj;
+      week.sandwichTypes.generic += individualGeneric + groupGeneric;
     }
 
     // Attach location breakdowns to each week and mark excluded weeks
@@ -203,12 +239,22 @@ weeklyCollectionsRouter.get('/', async (req, res) => {
     const grandTotal = result.reduce((sum, week) => sum + week.totalSandwiches, 0);
     const averagePerWeek = result.length > 0 ? Math.round(grandTotal / result.length) : 0;
 
+    // Calculate grand totals for sandwich types
+    const grandTotalSandwichTypes: SandwichTypeBreakdown = {
+      deli: result.reduce((sum, week) => sum + week.sandwichTypes.deli, 0),
+      turkey: result.reduce((sum, week) => sum + week.sandwichTypes.turkey, 0),
+      ham: result.reduce((sum, week) => sum + week.sandwichTypes.ham, 0),
+      pbj: result.reduce((sum, week) => sum + week.sandwichTypes.pbj, 0),
+      generic: result.reduce((sum, week) => sum + week.sandwichTypes.generic, 0),
+    };
+
     res.json({
       startDate,
       endDate,
       weeks: result,
       totalWeeks: result.length,
       grandTotal,
+      grandTotalSandwichTypes,
       averagePerWeek,
       // Include info about excluded weeks
       excludedWeeks: {
