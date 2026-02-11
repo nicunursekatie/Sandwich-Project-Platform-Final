@@ -301,6 +301,9 @@ const UMBRELLA_ORG_KEYWORDS = [
   'vfw',
   'moose lodge',
   'knights of columbus',
+  'church of jesus christ',        // LDS / Latter-day Saints
+  'latter day saints',
+  'latter-day saints',
 ];
 
 /**
@@ -379,7 +382,8 @@ export async function checkReturningOrganization(
   currentEventId?: number,
   contactEmail?: string,
   contactName?: string,
-  contactPhone?: string
+  contactPhone?: string,
+  department?: string
 ): Promise<{
   isReturning: boolean;
   isReturningContact: boolean;
@@ -419,12 +423,13 @@ export async function checkReturningOrganization(
             AND ${eventRequests.id} != ${currentEventId}`
       : sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}`;
 
-    let matchingEvents: { id: number; organizationName: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
+    let matchingEvents: { id: number; organizationName: string | null; department: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
     try {
       matchingEvents = await db
         .select({
           id: eventRequests.id,
           organizationName: eventRequests.organizationName,
+          department: eventRequests.department,
           desiredEventDate: eventRequests.desiredEventDate,
           scheduledEventDate: eventRequests.scheduledEventDate,
           status: eventRequests.status,
@@ -493,6 +498,7 @@ export async function checkReturningOrganization(
               .select({
                 id: eventRequests.id,
                 organizationName: eventRequests.organizationName,
+                department: eventRequests.department,
                 desiredEventDate: eventRequests.desiredEventDate,
                 scheduledEventDate: eventRequests.scheduledEventDate,
                 status: eventRequests.status,
@@ -619,13 +625,25 @@ export async function checkReturningOrganization(
     }
 
     // For umbrella orgs without a distinguishing identifier (no troop/pack/chapter number),
-    // only flag as returning if the contact also matches. This prevents generic "Girl Scouts"
-    // from being flagged as returning just because a different Girl Scout troop worked with us.
+    // only flag as returning if the department or contact also matches. This prevents generic
+    // "Girl Scouts" or "Church of Jesus Christ of Latter-day Saints" from being flagged as
+    // returning just because a different troop/ward worked with us.
     const isUmbrellaOrg = isGenericUmbrellaOrg(orgName);
 
-    // For generic umbrella orgs, require contact match to confirm it's the same chapter
+    // Check if the department matches any past event's department
+    let isDepartmentMatch = false;
+    if (isUmbrellaOrg && department && matchingEvents.length > 0) {
+      const normalizedDept = department.trim().toLowerCase();
+      isDepartmentMatch = matchingEvents.some(evt => {
+        const evtDept = evt.department?.trim().toLowerCase();
+        return evtDept && evtDept === normalizedDept;
+      });
+    }
+
+    // For generic umbrella orgs, require department match OR contact match
+    // to confirm it's the same chapter/ward/troop
     const effectiveIsReturning = isUmbrellaOrg
-      ? (isReturning && isReturningContact)
+      ? (isReturning && (isDepartmentMatch || isReturningContact))
       : isReturning;
 
     return {

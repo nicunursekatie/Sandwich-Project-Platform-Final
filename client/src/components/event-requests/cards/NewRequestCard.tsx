@@ -752,6 +752,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
     request.email,        // contactEmail - primary way to identify returning contact
     contactFullName,      // contactName - used with phone for secondary matching
     request.phone,        // contactPhone - used with name for secondary matching
+    request.department,   // department - used for umbrella org matching (churches, scouts)
     ['new', 'in_process', 'scheduled'].includes(request.status || '') // Check for new, in-process, and scheduled requests
   );
 

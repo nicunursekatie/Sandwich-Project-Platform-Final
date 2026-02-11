@@ -852,6 +852,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
     request.email,
     contactFullName,
     request.phone,        // contactPhone - used with name for secondary matching
+    request.department,   // department - used for umbrella org matching (churches, scouts)
     ['in_process', 'scheduled'].includes(request.status || '')
   );
 
