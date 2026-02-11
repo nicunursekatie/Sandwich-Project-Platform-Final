@@ -11,7 +11,7 @@
 import { db } from '../../db';
 import { eventRequests, sandwichCollections } from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
-import { canonicalizeOrgName, calculateSimilarity } from '../../utils/organization-canonicalization';
+import { canonicalizeOrgName, calculateSimilarity, organizationNamesMatch } from '../../utils/organization-canonicalization';
 import { logger } from '../../utils/production-safe-logger';
 
 export interface DuplicatePair {
@@ -422,6 +422,86 @@ export async function checkReturningOrganization(
       logger.warn('Failed to query sandwich collections for returning org check, skipping collection check', { error: collectionQueryError });
     }
 
+    // Fuzzy fallback: if exact match found nothing, try canonical/substring matching
+    // This handles cases like "OpenText Sandwich Project" matching "OpenText" in the catalog
+    if (matchingEvents.length === 0 && matchingCollections.length === 0) {
+      try {
+        const canonicalSearch = canonicalizeOrgName(orgName);
+        if (canonicalSearch.length >= 6) {
+          // Fetch distinct org names from events to check against
+          const allEventOrgs = await db
+            .selectDistinct({ organizationName: eventRequests.organizationName })
+            .from(eventRequests)
+            .where(sql`${eventRequests.organizationName} IS NOT NULL`);
+
+          const fuzzyEventMatches = allEventOrgs
+            .filter(row => row.organizationName && organizationNamesMatch(orgName, row.organizationName))
+            .map(row => row.organizationName!);
+
+          if (fuzzyEventMatches.length > 0) {
+            // Re-query events with the matched org names
+            matchingEvents = await db
+              .select({
+                id: eventRequests.id,
+                organizationName: eventRequests.organizationName,
+                desiredEventDate: eventRequests.desiredEventDate,
+                scheduledEventDate: eventRequests.scheduledEventDate,
+                status: eventRequests.status,
+                firstName: eventRequests.firstName,
+                lastName: eventRequests.lastName,
+                email: eventRequests.email,
+                phone: eventRequests.phone,
+              })
+              .from(eventRequests)
+              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(fuzzyEventMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)})`)
+              .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
+
+            // Exclude current event if specified
+            if (currentEventId) {
+              matchingEvents = matchingEvents.filter(e => e.id !== currentEventId);
+            }
+          }
+
+          // Also check collections with fuzzy matching
+          const allCollectionOrgs = await db
+            .selectDistinct({
+              group1Name: sandwichCollections.group1Name,
+              group2Name: sandwichCollections.group2Name,
+            })
+            .from(sandwichCollections);
+
+          const fuzzyCollectionNames = new Set<string>();
+          for (const row of allCollectionOrgs) {
+            if (row.group1Name && organizationNamesMatch(orgName, row.group1Name)) {
+              fuzzyCollectionNames.add(row.group1Name.trim().toLowerCase());
+            }
+            if (row.group2Name && organizationNamesMatch(orgName, row.group2Name)) {
+              fuzzyCollectionNames.add(row.group2Name.trim().toLowerCase());
+            }
+          }
+
+          if (fuzzyCollectionNames.size > 0) {
+            const fuzzyNames = Array.from(fuzzyCollectionNames);
+            matchingCollections = await db
+              .select({
+                id: sandwichCollections.id,
+                dateCollected: sandwichCollections.collectionDate,
+                group1Name: sandwichCollections.group1Name,
+                group2Name: sandwichCollections.group2Name,
+              })
+              .from(sandwichCollections)
+              .where(
+                sql`LOWER(TRIM(${sandwichCollections.group1Name})) IN (${sql.join(fuzzyNames.map(n => sql`${n}`), sql`, `)})
+                    OR LOWER(TRIM(${sandwichCollections.group2Name})) IN (${sql.join(fuzzyNames.map(n => sql`${n}`), sql`, `)})`
+              )
+              .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
+          }
+        }
+      } catch (fuzzyError) {
+        logger.warn('Fuzzy matching fallback failed, continuing with exact match results', { error: fuzzyError });
+      }
+    }
+
     const isReturning = matchingEvents.length > 0 || matchingCollections.length > 0;
     const mostRecentEvent = matchingEvents[0];
     const mostRecentCollection = matchingCollections[0];
@@ -491,7 +571,7 @@ export async function checkReturningOrganization(
       // The team needs to know the org has worked with us before, even if contact is different
       isReturning: isReturning,
       isReturningContact,
-      inCatalog: false, // TODO: Check organizations table when properly implemented
+      inCatalog: isReturning,
       pastEventCount: isReturning ? matchingEvents.length : 0,
       collectionCount: isReturning ? matchingCollections.length : 0,
       mostRecentEvent: isReturning && mostRecentEvent ? {
