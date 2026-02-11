@@ -321,6 +321,44 @@ function isGenericUmbrellaOrg(orgName: string): boolean {
 }
 
 /**
+ * Check if an org name contains any umbrella org keywords (with or without number).
+ * Unlike isGenericUmbrellaOrg, this returns true for ALL umbrella orgs including
+ * those with specific identifiers like "Cub Scout Pack 100".
+ */
+function isUmbrellaRelated(orgName: string): boolean {
+  const normalized = orgName.trim().toLowerCase().replace(/&/g, 'and');
+  return UMBRELLA_ORG_KEYWORDS.some(kw => normalized.includes(kw));
+}
+
+/**
+ * Extract identifier numbers from an umbrella org name.
+ * e.g. "Cub Scout Pack 100" → ["100"], "Girl Scout Troop 25126" → ["25126"],
+ * "Girl Scouts" → []
+ */
+function extractUmbrellaIdentifiers(orgName: string): string[] {
+  return orgName.trim().match(/\d+/g) || [];
+}
+
+/**
+ * Check if two umbrella org names refer to the same specific chapter/troop/pack.
+ * Returns true only if both have the same identifier numbers, or both are generic (no numbers).
+ * Returns false if one has a number and the other doesn't, or if numbers differ.
+ */
+function umbrellaIdentifiersMatch(orgName1: string, orgName2: string): boolean {
+  const ids1 = extractUmbrellaIdentifiers(orgName1);
+  const ids2 = extractUmbrellaIdentifiers(orgName2);
+
+  // Both generic (no identifiers) — could be same chapter but uncertain
+  if (ids1.length === 0 && ids2.length === 0) return true;
+
+  // One has identifiers, the other doesn't — different specificity, don't match
+  if (ids1.length === 0 || ids2.length === 0) return false;
+
+  // Both have identifiers — at least one number must match
+  return ids1.some(id => ids2.includes(id));
+}
+
+/**
  * Check if an organization is returning (has past events or exists in catalog)
  *
  * This is used to flag new requests from organizations that have worked with us before,
@@ -434,9 +472,20 @@ export async function checkReturningOrganization(
             .from(eventRequests)
             .where(sql`${eventRequests.organizationName} IS NOT NULL`);
 
-          const fuzzyEventMatches = allEventOrgs
+          let fuzzyEventMatches = allEventOrgs
             .filter(row => row.organizationName && organizationNamesMatch(orgName, row.organizationName))
             .map(row => row.organizationName!);
+
+          // For umbrella orgs, filter fuzzy matches to only those with matching identifiers.
+          // This prevents "Girl Scouts" from matching "Girl Scout Troop 25126" or
+          // "Cub Scout Pack 100" from matching "Cub Scout Pack 200".
+          if (isUmbrellaRelated(orgName) && fuzzyEventMatches.length > 0) {
+            fuzzyEventMatches = fuzzyEventMatches.filter(matchName => {
+              // Non-umbrella matches pass through (e.g. unrelated org that substring-matches)
+              if (!isUmbrellaRelated(matchName)) return true;
+              return umbrellaIdentifiersMatch(orgName, matchName);
+            });
+          }
 
           if (fuzzyEventMatches.length > 0) {
             // Re-query events with the matched org names
@@ -471,11 +520,19 @@ export async function checkReturningOrganization(
             .from(sandwichCollections);
 
           const fuzzyCollectionNames = new Set<string>();
+          const incomingIsUmbrella = isUmbrellaRelated(orgName);
           for (const row of allCollectionOrgs) {
             if (row.group1Name && organizationNamesMatch(orgName, row.group1Name)) {
+              // Filter umbrella orgs to require matching identifiers
+              if (incomingIsUmbrella && isUmbrellaRelated(row.group1Name) && !umbrellaIdentifiersMatch(orgName, row.group1Name)) {
+                continue;
+              }
               fuzzyCollectionNames.add(row.group1Name.trim().toLowerCase());
             }
             if (row.group2Name && organizationNamesMatch(orgName, row.group2Name)) {
+              if (incomingIsUmbrella && isUmbrellaRelated(row.group2Name) && !umbrellaIdentifiersMatch(orgName, row.group2Name)) {
+                continue;
+              }
               fuzzyCollectionNames.add(row.group2Name.trim().toLowerCase());
             }
           }
@@ -562,29 +619,33 @@ export async function checkReturningOrganization(
     }
 
     // For umbrella orgs without a distinguishing identifier (no troop/pack/chapter number),
-    // we still show them as returning orgs, but with a caveat that it might be a different chapter.
-    // The isReturningContact flag tells the team whether it's the same contact person.
+    // only flag as returning if the contact also matches. This prevents generic "Girl Scouts"
+    // from being flagged as returning just because a different Girl Scout troop worked with us.
     const isUmbrellaOrg = isGenericUmbrellaOrg(orgName);
 
+    // For generic umbrella orgs, require contact match to confirm it's the same chapter
+    const effectiveIsReturning = isUmbrellaOrg
+      ? (isReturning && isReturningContact)
+      : isReturning;
+
     return {
-      // Always show org as returning if we have matching events/collections
-      // The team needs to know the org has worked with us before, even if contact is different
-      isReturning: isReturning,
+      isReturning: effectiveIsReturning,
       isReturningContact,
+      // inCatalog stays based on raw match — the org type IS in our system even if we
+      // can't confirm it's the exact same chapter
       inCatalog: isReturning,
-      pastEventCount: isReturning ? matchingEvents.length : 0,
-      collectionCount: isReturning ? matchingCollections.length : 0,
-      mostRecentEvent: isReturning && mostRecentEvent ? {
+      pastEventCount: effectiveIsReturning ? matchingEvents.length : 0,
+      collectionCount: effectiveIsReturning ? matchingCollections.length : 0,
+      mostRecentEvent: effectiveIsReturning && mostRecentEvent ? {
         id: mostRecentEvent.id,
         eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,
         status: mostRecentEvent.status,
       } : undefined,
-      mostRecentCollection: isReturning && mostRecentCollection ? {
+      mostRecentCollection: effectiveIsReturning && mostRecentCollection ? {
         id: mostRecentCollection.id,
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
-      // Always show past contact name when org is returning - helps team know who to reference
-      pastContactName: isReturning ? pastContactName : undefined,
+      pastContactName: effectiveIsReturning ? pastContactName : undefined,
     };
   } catch (error) {
     logger.error('Error checking returning organization', { orgName, currentEventId, error });
