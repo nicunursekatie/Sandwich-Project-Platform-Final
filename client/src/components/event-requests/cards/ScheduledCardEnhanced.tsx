@@ -1001,7 +1001,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
               {/* New Department Indicator */}
               {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
-                d => d.trim().replace(/\s+/g, ' ').toLowerCase() === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
+                d => d === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
               ) && (
                 <Badge
                   variant="outline"
