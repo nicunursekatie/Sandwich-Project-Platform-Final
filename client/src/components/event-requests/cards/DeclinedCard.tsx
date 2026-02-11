@@ -316,7 +316,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
             <div className="flex items-center gap-2">
               <XCircle className="w-4 h-4 text-red-600" />
               <span className="text-sm font-medium text-red-700">
-                Status: {request.status === 'declined' ? 'Declined' : 'Postponed'}
+                Status: {request.status === 'declined' ? 'Declined' : request.status === 'cancelled' ? 'Cancelled' : 'Postponed'}
               </span>
               {request.statusChangedAt && (
                 <span className="text-sm text-red-600">

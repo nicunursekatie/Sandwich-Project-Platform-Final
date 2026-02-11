@@ -136,6 +136,12 @@ export const AllEventsTab: React.FC = () => {
                   Postponed
                 </div>
               </SelectItem>
+              <SelectItem value="cancelled">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-rose-500" />
+                  Cancelled
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -78,7 +78,12 @@ export function buildEventRequestsListFilterParams(
     return { status: activeTab };
   }
 
-  // For "all", "my_assignments", admin_overview, planning, etc:
+  // "all" tab includes active statuses plus cancelled so they're not invisible
+  if (activeTab === 'all') {
+    return { status: 'new,followed_up,in_process,scheduled,cancelled' };
+  }
+
+  // For "my_assignments", admin_overview, planning, etc:
   // Only load active events (new, in_process, scheduled) by default.
   // Completed/declined/postponed events are lazy-loaded when those tabs are clicked.
   return { status: 'new,in_process,scheduled' };
