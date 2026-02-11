@@ -17,6 +17,8 @@ import {
   Filter,
   AlertTriangle,
   Truck,
+  EyeOff,
+  Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { EventRequest } from '@shared/schema';
@@ -396,6 +398,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     'completed',
     'cancelled',
   ]);
+  const [hideCancelled, setHideCancelled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   // Track screen size for responsive event display
@@ -421,20 +424,25 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   // Filter events by selected statuses and optionally by speaker/volunteer needs
   const filteredEvents = useMemo(() => {
     let filtered = events.filter((event) => statusFilters.includes(event.status));
-    
+
+    // Hide cancelled events when the toggle is active
+    if (hideCancelled) {
+      filtered = filtered.filter((event) => event.status !== 'cancelled');
+    }
+
     // If filterByNeeds is true, only show events that need speakers or volunteers
     if (filterByNeeds) {
       filtered = filtered.filter((event) => {
-        const needsSpeaker = !event.speakerId || event.speakerId === null || event.speakerId === '' || 
+        const needsSpeaker = !event.speakerId || event.speakerId === null || event.speakerId === '' ||
           (event.speakersNeeded && event.speakersNeeded > 0);
         const needsVolunteer = !event.volunteerId || event.volunteerId === null || event.volunteerId === '' ||
           (event.volunteersNeeded && event.volunteersNeeded > 0);
         return needsSpeaker || needsVolunteer;
       });
     }
-    
+
     return filtered;
-  }, [events, statusFilters, filterByNeeds]);
+  }, [events, statusFilters, filterByNeeds, hideCancelled]);
 
   const toggleStatusFilter = (status: string) => {
     setStatusFilters((prev) =>
@@ -481,7 +489,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     return days;
   }, [firstDayOfMonth, lastDayOfMonth, currentDate]);
 
-  // Group events by date
+  // Group events by date, sorting cancelled events to the bottom
   const eventsByDate = useMemo(() => {
     const grouped = new Map<string, EventRequest[]>();
 
@@ -495,6 +503,15 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
         grouped.set(dateStr, []);
       }
       grouped.get(dateStr)!.push(event);
+    });
+
+    // Sort each date's events so cancelled events appear at the bottom
+    grouped.forEach((events, dateStr) => {
+      events.sort((a, b) => {
+        const aIsCancelled = a.status === 'cancelled' ? 1 : 0;
+        const bIsCancelled = b.status === 'cancelled' ? 1 : 0;
+        return aIsCancelled - bIsCancelled;
+      });
     });
 
     return grouped;
@@ -555,6 +572,25 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             Event Calendar
           </CardTitle>
           <div className="flex items-center gap-1.5 sm:gap-3">
+            <Button
+              variant={hideCancelled ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setHideCancelled(!hideCancelled)}
+              className={cn(
+                'px-2 sm:px-3',
+                hideCancelled && 'bg-red-600 hover:bg-red-700 text-white'
+              )}
+              title={hideCancelled ? 'Show cancelled events' : 'Hide cancelled events'}
+            >
+              {hideCancelled ? (
+                <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+              ) : (
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+              )}
+              <span className="hidden sm:inline">
+                {hideCancelled ? 'Cancelled Hidden' : 'Hide Cancelled'}
+              </span>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="px-2 sm:px-3">
@@ -819,11 +855,20 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                         onClick={() => onEventClick?.(event)}
                         className={cn(
                           'w-full text-left text-[10px] sm:text-xs p-1 sm:p-1.5 rounded border hover:shadow-md transition-shadow',
-                          getStatusColor(event.status)
+                          getStatusColor(event.status),
+                          event.status === 'cancelled' && 'opacity-75'
                         )}
                         title={`${event.organizationName} - ${event.status}`}
                       >
-                        <div className="font-semibold mb-0.5 sm:mb-1 text-[11px] sm:text-[14px] break-words leading-tight line-clamp-2">
+                        {event.status === 'cancelled' && (
+                          <div className="font-bold text-[9px] sm:text-[11px] uppercase tracking-wide text-red-900 bg-red-200/80 rounded px-1 py-0.5 mb-0.5 text-center">
+                            Cancelled
+                          </div>
+                        )}
+                        <div className={cn(
+                          "font-semibold mb-0.5 sm:mb-1 text-[11px] sm:text-[14px] break-words leading-tight line-clamp-2",
+                          event.status === 'cancelled' && 'line-through'
+                        )}>
                           {event.organizationName}
                         </div>
 
