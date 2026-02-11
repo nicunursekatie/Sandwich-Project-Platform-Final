@@ -584,6 +584,9 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) continue;
 
+      // Skip Christine - notifications disabled per admin request
+      if (tspContactId === 'christine-cooper') continue;
+
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'new_request_24h');
         if (alreadySent) {
@@ -638,6 +641,9 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) continue;
 
+      // Skip Christine - notifications disabled per admin request
+      if (tspContactId === 'christine-cooper') continue;
+
       try {
         const alreadySent = await wasNotificationSent(event.id, tspContactId, 'in_process_7d');
         if (alreadySent) {
@@ -691,6 +697,9 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
       result.eventsProcessed++;
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) continue;
+
+      // Skip Christine - notifications disabled per admin request
+      if (tspContactId === 'christine-cooper') continue;
 
       try {
         const user = await getTspContactUser(tspContactId);

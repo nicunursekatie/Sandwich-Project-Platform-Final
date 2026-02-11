@@ -462,6 +462,9 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
     for (const event of corporateEvents) {
       result.eventsProcessed++;
 
+      // Skip Christine - notifications disabled per admin request
+      if (event.tspContact === 'christine-cooper') continue;
+
       try {
         // Parse protocol - handle both string and object
         let protocol: CorporateFollowupProtocol;

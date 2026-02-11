@@ -852,6 +852,12 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
       continue;
     }
 
+    // Skip Christine - notifications disabled per admin request
+    if (tspContactId === 'christine-cooper') {
+      results.skipped++;
+      continue;
+    }
+
     const success = await sendCorporate24hEscalationSMS(
       tspContactId,
       event.id,
@@ -1031,6 +1037,12 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     if (needsWeeklyContactReminder(event.status || 'new', event.lastContactAttempt, contactLog)) {
       const tspContactId = event.tspContactAssigned || event.tspContact;
       if (!tspContactId) {
+        results.skipped++;
+        continue;
+      }
+
+      // Skip Christine - notifications disabled per admin request
+      if (tspContactId === 'christine-cooper') {
         results.skipped++;
         continue;
       }
