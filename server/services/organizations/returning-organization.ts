@@ -390,6 +390,7 @@ export async function checkReturningOrganization(
   inCatalog: boolean;
   pastEventCount: number;
   collectionCount: number;
+  pastDepartments: string[];
   mostRecentEvent?: {
     id: number;
     eventDate: Date | null;
@@ -410,18 +411,24 @@ export async function checkReturningOrganization(
         inCatalog: false,
         pastEventCount: 0,
         collectionCount: 0,
+        pastDepartments: [],
       };
     }
 
     // Exact match (case-insensitive) against past events
     // Data has been cleaned so we can rely on exact org name matching
     // Normalize & → and so "William & Reed" matches "William and Reed"
+    // Also collapse multiple spaces to single space for consistent matching
     const normalizedOrgName = orgName.trim().toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
 
+    // SQL normalization: lowercase, trim, replace & with 'and', AND collapse multiple spaces
+    // REGEXP_REPLACE(str, '\\s+', ' ', 'g') collapses whitespace in PostgreSQL
     const eventCondition = currentEventId
-      ? sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}
-            AND ${eventRequests.id} != ${currentEventId}`
-      : sql`REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and') = ${normalizedOrgName}`;
+      ? sql`REGEXP_REPLACE(REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+            AND ${eventRequests.id} != ${currentEventId}
+            AND ${eventRequests.deletedAt} IS NULL`
+      : sql`REGEXP_REPLACE(REPLACE(LOWER(TRIM(${eventRequests.organizationName})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+            AND ${eventRequests.deletedAt} IS NULL`;
 
     let matchingEvents: { id: number; organizationName: string | null; department: string | null; desiredEventDate: Date | null; scheduledEventDate: Date | null; status: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null }[] = [];
     try {
@@ -457,8 +464,11 @@ export async function checkReturningOrganization(
         })
         .from(sandwichCollections)
         .where(
-          sql`REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and') = ${normalizedOrgName}
-              OR REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and') = ${normalizedOrgName}`
+          sql`(
+              REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              OR REGEXP_REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+            )
+            AND ${sandwichCollections.deletedAt} IS NULL`
         )
         .orderBy(sql`${sandwichCollections.collectionDate} DESC`);
     } catch (collectionQueryError) {
@@ -475,7 +485,7 @@ export async function checkReturningOrganization(
           const allEventOrgs = await db
             .selectDistinct({ organizationName: eventRequests.organizationName })
             .from(eventRequests)
-            .where(sql`${eventRequests.organizationName} IS NOT NULL`);
+            .where(sql`${eventRequests.organizationName} IS NOT NULL AND ${eventRequests.deletedAt} IS NULL`);
 
           let fuzzyEventMatches = allEventOrgs
             .filter(row => row.organizationName && organizationNamesMatch(orgName, row.organizationName))
@@ -508,7 +518,7 @@ export async function checkReturningOrganization(
                 phone: eventRequests.phone,
               })
               .from(eventRequests)
-              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(fuzzyEventMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)})`)
+              .where(sql`LOWER(TRIM(${eventRequests.organizationName})) IN (${sql.join(fuzzyEventMatches.map(n => sql`${n.trim().toLowerCase()}`), sql`, `)}) AND ${eventRequests.deletedAt} IS NULL`)
               .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
 
             // Exclude current event if specified
@@ -633,9 +643,9 @@ export async function checkReturningOrganization(
     // Check if the department matches any past event's department
     let isDepartmentMatch = false;
     if (isUmbrellaOrg && department && matchingEvents.length > 0) {
-      const normalizedDept = department.trim().toLowerCase();
+      const normalizedDept = department.trim().replace(/\s+/g, ' ').toLowerCase();
       isDepartmentMatch = matchingEvents.some(evt => {
-        const evtDept = evt.department?.trim().toLowerCase();
+        const evtDept = evt.department?.trim().replace(/\s+/g, ' ').toLowerCase();
         return evtDept && evtDept === normalizedDept;
       });
     }
@@ -646,6 +656,16 @@ export async function checkReturningOrganization(
       ? (isReturning && (isDepartmentMatch || isReturningContact))
       : isReturning;
 
+    // Collect unique past departments from matching events (for "new department" detection)
+    // Normalize departments (trim, collapse whitespace, lowercase) to avoid duplicates like "Outreach" vs "outreach"
+    const pastDepartments = isReturning
+      ? [...new Set(matchingEvents
+          .map(e => e.department)
+          .filter((d): d is string => !!d && d.trim().length > 0)
+          .map(d => d.trim().replace(/\s+/g, ' ').toLowerCase())
+        )]
+      : [];
+
     return {
       isReturning: effectiveIsReturning,
       isReturningContact,
@@ -654,6 +674,7 @@ export async function checkReturningOrganization(
       inCatalog: isReturning,
       pastEventCount: effectiveIsReturning ? matchingEvents.length : 0,
       collectionCount: effectiveIsReturning ? matchingCollections.length : 0,
+      pastDepartments,
       mostRecentEvent: effectiveIsReturning && mostRecentEvent ? {
         id: mostRecentEvent.id,
         eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,

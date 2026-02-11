@@ -6,6 +6,7 @@ interface ReturningOrganizationData {
   inCatalog: boolean;
   pastEventCount: number;
   collectionCount: number;
+  pastDepartments: string[];
   mostRecentEvent?: {
     id: number;
     eventDate: string | null;
@@ -58,6 +59,7 @@ export function useReturningOrganization(
           inCatalog: false,
           pastEventCount: 0,
           collectionCount: 0,
+          pastDepartments: [],
         };
       }
 

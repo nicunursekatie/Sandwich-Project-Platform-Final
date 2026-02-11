@@ -181,6 +181,7 @@ interface CardHeaderProps {
     isReturningContact: boolean;
     pastEventCount: number;
     collectionCount: number;
+    pastDepartments?: string[];
     mostRecentEvent?: {
       id: number;
       eventDate: string | null;
@@ -345,6 +346,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         {returningOrgData.mostRecentEvent.status && ` (${returningOrgData.mostRecentEvent.status})`}
                       </p>
                     )}
+                    {returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Past department{returningOrgData.pastDepartments.length !== 1 ? 's' : ''}: {returningOrgData.pastDepartments.join(', ')}
+                      </p>
+                    )}
                     {returningOrgData.isReturningContact ? (
                       <p className="text-xs text-purple-600 font-medium mt-2">
                         Same contact as a previous event &mdash; personalize your outreach!
@@ -364,6 +370,17 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   </div>
                 </TooltipContent>
               </Tooltip>
+            )}
+            {/* New Department Indicator - shows when returning org has a department not seen in past events */}
+            {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
+              d => d === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
+            ) && (
+              <Badge
+                variant="outline"
+                className="whitespace-nowrap bg-blue-50 text-blue-700 border-blue-300"
+              >
+                New Department
+              </Badge>
             )}
             {/* Partner Organizations */}
             {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
