@@ -4,11 +4,18 @@ import { useAuth } from './useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
+interface RoomUnreadDetail {
+  id: string;
+  name: string;
+  unread: number;
+}
+
 interface StreamChatUnreadCounts {
   totalUnread: number;
   roomsUnread: number;
   dmsUnread: number;
   groupsUnread: number;
+  roomDetails: RoomUnreadDetail[];
 }
 
 let globalClient: StreamChat | null = null;
@@ -17,6 +24,7 @@ let globalUnreadCounts: StreamChatUnreadCounts = {
   roomsUnread: 0,
   dmsUnread: 0,
   groupsUnread: 0,
+  roomDetails: [],
 };
 let listeners: Set<(counts: StreamChatUnreadCounts) => void> = new Set();
 
@@ -119,9 +127,17 @@ async function updateUnreadCounts(client: StreamChat, streamUserId: string) {
       { limit: 30 }
     );
 
+    const roomDetails: RoomUnreadDetail[] = [];
     for (const channel of teamChannels) {
       const unread = channel.countUnread();
       roomsUnread += unread;
+      if (unread > 0) {
+        roomDetails.push({
+          id: channel.id || '',
+          name: ((channel.data as any)?.name as string) || channel.id || 'Chat Room',
+          unread,
+        });
+      }
     }
 
     // Query DM channels (2 members)
@@ -153,6 +169,7 @@ async function updateUnreadCounts(client: StreamChat, streamUserId: string) {
       roomsUnread,
       dmsUnread,
       groupsUnread,
+      roomDetails,
     };
 
     notifyListeners();

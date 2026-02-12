@@ -52,10 +52,11 @@ function getAllowedOrigins(): string[] {
     origins.push(...additionalOrigins);
   }
 
-  // CRITICAL: Ensure the exact production URL is always allowed
+  // CRITICAL: Ensure the exact production URLs are always allowed
   if (process.env.NODE_ENV === 'production') {
     origins.push(
-      'https://sandwich-project-platform-final-katielong2316.replit.app'
+      'https://sandwich-project-platform-final-katielong2316.replit.app',
+      'https://sandwich-project-platform-final.replit.app'
     );
   }
 

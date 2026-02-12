@@ -12,7 +12,7 @@ import { logger } from '@/lib/logger';
 export function LoginMessageNotifier() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { totalUnread, roomsUnread, dmsUnread, groupsUnread } = useStreamChatUnread();
+  const { totalUnread, roomsUnread, dmsUnread, groupsUnread, roomDetails } = useStreamChatUnread();
   const hasShownNotification = useRef(false);
   const previousUserId = useRef<string | null>(null);
   const checkTimer = useRef<NodeJS.Timeout | null>(null);
@@ -53,17 +53,28 @@ export function LoginMessageNotifier() {
           // Build the message based on what types of unread messages exist
           const parts: string[] = [];
           if (roomsUnread > 0) {
-            parts.push(`${roomsUnread} unread message${roomsUnread !== 1 ? 's' : ''} in team room${roomsUnread !== 1 ? 's' : ''}`);
+            if (roomDetails.length > 0) {
+              // Show specific room names (up to 3, then "and X more")
+              const roomNames = roomDetails.slice(0, 3).map(r => r.name);
+              const remaining = roomDetails.length - 3;
+              let roomText = roomNames.join(', ');
+              if (remaining > 0) {
+                roomText += ` and ${remaining} more`;
+              }
+              parts.push(`New messages in ${roomText}`);
+            } else {
+              parts.push(`${roomsUnread} unread message${roomsUnread !== 1 ? 's' : ''} in team rooms`);
+            }
           }
           if (dmsUnread > 0) {
             parts.push(`${dmsUnread} unread direct message${dmsUnread !== 1 ? 's' : ''}`);
           }
           if (groupsUnread > 0) {
-            parts.push(`${groupsUnread} unread message${groupsUnread !== 1 ? 's' : ''} in group chat${groupsUnread !== 1 ? 's' : ''}`);
+            parts.push(`${groupsUnread} unread message${groupsUnread !== 1 ? 's' : ''} in group chats`);
           }
 
-          const description = parts.length > 0 
-            ? parts.join(', ')
+          const description = parts.length > 0
+            ? parts.join('. ')
             : `${totalUnread} unread message${totalUnread !== 1 ? 's' : ''}`;
 
           toast({
@@ -97,6 +108,7 @@ export function LoginMessageNotifier() {
             roomsUnread,
             dmsUnread,
             groupsUnread,
+            roomDetails: roomDetails.map(r => `${r.name} (${r.unread})`),
           });
         }
         
@@ -110,7 +122,7 @@ export function LoginMessageNotifier() {
         checkTimer.current = null;
       }
     };
-  }, [user?.id, totalUnread, roomsUnread, dmsUnread, groupsUnread, toast]);
+  }, [user?.id, totalUnread, roomsUnread, dmsUnread, groupsUnread, roomDetails, toast]);
 
   // This component doesn't render anything visible - it only manages toast notifications
   return null;

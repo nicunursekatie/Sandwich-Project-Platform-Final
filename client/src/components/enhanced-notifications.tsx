@@ -15,6 +15,7 @@ import {
   Settings,
   Filter,
   MoreVertical,
+  Hash,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -138,6 +139,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     roomsUnread,
     dmsUnread,
     groupsUnread,
+    roomDetails,
   } = useStreamChatUnread();
 
   // Keyboard navigation support
@@ -466,28 +468,31 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {roomsUnread > 0 && (
-                    <div
-                      className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all bg-brand-primary-lighter/50"
-                      onClick={() => {
-                        setIsOpen(false);
-                        window.location.href = '/dashboard?section=chat';
-                      }}
-                    >
-                      <div className="flex-shrink-0 mt-0.5">
-                        <Users className="h-4 w-4 text-[#236383]" />
+                  {roomsUnread > 0 && roomDetails.length > 0 && (
+                    roomDetails.map((room) => (
+                      <div
+                        key={room.id}
+                        className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-all bg-brand-primary-lighter/50"
+                        onClick={() => {
+                          setIsOpen(false);
+                          window.location.href = `/dashboard?section=chat&channel=${room.id}`;
+                        }}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          <Hash className="h-4 w-4 text-[#236383]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{room.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {room.unread} new message
+                            {room.unread !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <Badge variant="destructive" className="text-xs">
+                          {room.unread}
+                        </Badge>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm">Team Rooms</p>
-                        <p className="text-xs text-muted-foreground">
-                          {roomsUnread} unread message
-                          {roomsUnread !== 1 ? 's' : ''} in team rooms
-                        </p>
-                      </div>
-                      <Badge variant="destructive" className="text-xs">
-                        {roomsUnread}
-                      </Badge>
-                    </div>
+                    ))
                   )}
                   {dmsUnread > 0 && (
                     <div

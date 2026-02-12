@@ -7,6 +7,10 @@ import { NotificationService } from '../notification-service';
 import { getUserMetadata } from '@shared/types';
 import { requirePermission } from '../middleware/auth';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { db } from '../db';
+import { notifications } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import { getSocketInstance } from '../socket-chat';
 
 export const streamRoutes = Router();
 
@@ -422,6 +426,91 @@ streamRoutes.post('/webhook', async (req, res) => {
             } catch (emailError) {
               logger.error(`Failed to send email notification to ${recipientUser.email}:`, emailError);
             }
+          }
+
+          // Create in-app notification (deduped per user+channel)
+          try {
+            // Check for existing unread chat_message notification for this user+channel
+            const existingNotifications = await db
+              .select()
+              .from(notifications)
+              .where(
+                and(
+                  eq(notifications.userId, appUserId),
+                  eq(notifications.type, 'chat_message'),
+                  eq(notifications.isRead, false),
+                  eq(notifications.isArchived, false)
+                )
+              );
+
+            // Find one matching this channel (stored in metadata)
+            const existingForChannel = existingNotifications.find(
+              (n) => {
+                const meta = n.metadata as any;
+                return meta?.channelId === channelId;
+              }
+            );
+
+            const messagePreview = truncatedMessage.length > 80
+              ? truncatedMessage.substring(0, 80) + '...'
+              : truncatedMessage;
+
+            if (existingForChannel) {
+              // Update existing notification with latest message info
+              const currentMeta = (existingForChannel.metadata as any) || {};
+              const messageCount = (currentMeta.messageCount || 1) + 1;
+              await db
+                .update(notifications)
+                .set({
+                  message: `${senderName}: ${messagePreview}`,
+                  title: `${messageCount} new messages in ${channelName}`,
+                  metadata: {
+                    ...currentMeta,
+                    channelId,
+                    channelName,
+                    lastSenderName: senderName,
+                    messageCount,
+                    lastMessageAt: new Date().toISOString(),
+                  },
+                  createdAt: new Date(), // Bump to top of list
+                })
+                .where(eq(notifications.id, existingForChannel.id));
+              logger.log(`✅ Updated existing in-app notification for ${appUserId} in ${channelName} (${messageCount} messages)`);
+            } else {
+              // Create new notification
+              await storage.createNotification({
+                userId: appUserId,
+                type: 'chat_message',
+                priority: 'low',
+                title: `New message in ${channelName}`,
+                message: `${senderName}: ${messagePreview}`,
+                isRead: false,
+                isArchived: false,
+                category: 'social',
+                actionUrl: `/dashboard?section=chat&channel=${channelId}`,
+                metadata: {
+                  channelId,
+                  channelName,
+                  channelType,
+                  lastSenderName: senderName,
+                  messageCount: 1,
+                  lastMessageAt: new Date().toISOString(),
+                },
+              });
+              logger.log(`✅ Created in-app notification for ${appUserId} in ${channelName}`);
+            }
+
+            // Emit real-time notification update via Socket.IO
+            const io = getSocketInstance();
+            if (io) {
+              io.to(`notifications:${appUserId}`).emit('notification_update', {
+                type: 'chat_message',
+                channelId,
+                channelName,
+              });
+            }
+          } catch (notifError) {
+            logger.error(`Failed to create in-app notification for ${appUserId}:`, notifError);
           }
         } catch (userError) {
           logger.error(`Error processing notification for user ${appUserId}:`, userError);
