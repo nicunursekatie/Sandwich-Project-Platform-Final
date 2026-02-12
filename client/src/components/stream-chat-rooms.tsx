@@ -241,6 +241,33 @@ const customChatStyles = `
     color: #007E8C !important;
   }
 
+  /* @mention styling - must override default royal blue for readability on teal bubbles */
+  .str-chat__message--me .str-chat__message-bubble .str-chat__message-mention {
+    color: #A3E8FF !important;
+    font-weight: 700 !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    padding: 0 3px !important;
+    border-radius: 3px !important;
+  }
+
+  .str-chat__message--me .str-chat__message-bubble .str-chat__message-mention:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .str-chat__message--other .str-chat__message-bubble .str-chat__message-mention {
+    color: #236383 !important;
+    font-weight: 700 !important;
+    background: rgba(35, 99, 131, 0.1) !important;
+    padding: 0 3px !important;
+    border-radius: 3px !important;
+  }
+
+  .str-chat__message--other .str-chat__message-bubble .str-chat__message-mention:hover {
+    color: #007E8C !important;
+    background: rgba(35, 99, 131, 0.2) !important;
+  }
+
   .read-receipt-indicator {
     display: flex;
     align-items: center;
