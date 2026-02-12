@@ -1011,7 +1011,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </Badge>
               )}
               {/* Rescheduled from postponement indicator */}
-              {(request as any).wasPostponed && (
+              {request.wasPostponed && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Badge
@@ -1020,20 +1020,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     >
                       <History className="w-3 h-3 mr-1" />
                       Rescheduled
-                      {(request as any).postponementCount > 1 && ` (${(request as any).postponementCount}x)`}
+                      {request.postponementCount && request.postponementCount > 1 && ` (${request.postponementCount}x)`}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
                     <div className="space-y-1">
                       <p className="font-medium">This event was previously postponed and rescheduled</p>
-                      {(request as any).originalScheduledDate && (
+                      {request.originalScheduledDate && (
                         <p className="text-sm">
-                          Originally scheduled: {new Date((request as any).originalScheduledDate).toLocaleDateString()}
+                          Originally scheduled: {new Date(request.originalScheduledDate).toLocaleDateString()}
                         </p>
                       )}
-                      {(request as any).postponementReason && (
+                      {request.postponementReason && (
                         <p className="text-sm">
-                          Reason: {(request as any).postponementReason}
+                          Reason: {request.postponementReason}
                         </p>
                       )}
                     </div>

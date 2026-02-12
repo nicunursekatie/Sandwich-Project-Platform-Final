@@ -10,13 +10,13 @@ import {
 import {
   STATUS_DEFINITIONS,
   VALID_STATUS_TRANSITIONS,
-  statusColors,
   statusBorderColors,
 } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
 
 const statusOrder: EventStatus[] = [
   'new',
+  'followed_up',
   'in_process',
   'scheduled',
   'completed',

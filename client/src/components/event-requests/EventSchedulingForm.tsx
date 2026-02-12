@@ -48,7 +48,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
-import { SANDWICH_TYPES, VALID_STATUS_TRANSITIONS, STATUS_DEFINITIONS } from './constants';
+import { VALID_STATUS_TRANSITIONS, STATUS_DEFINITIONS } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
