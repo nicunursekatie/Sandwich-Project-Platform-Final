@@ -93,7 +93,9 @@ streamRoutes.post('/credentials', async (req, res) => {
       // Create or update user in Stream
       await streamServerClient.upsertUser({
         id: streamUserId,
-        name: `${user.firstName} ${user.lastName}` || user.email,
+        name: user.firstName && user.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user.fullName || user.email || 'User',
         email: user.email,
         role: streamRole,
       });

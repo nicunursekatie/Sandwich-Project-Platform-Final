@@ -27,6 +27,8 @@ export const StalledTab: React.FC = () => {
     setContactEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setShowDeclineDialog,
+    setReasonDialogEventRequest,
   } = useEventRequestContext();
 
   const stalledRequests = filterRequestsByStatus('stalled');
@@ -144,13 +146,11 @@ export const StalledTab: React.FC = () => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);
             }}
-            onDecline={() => {
-              if (window.confirm('Mark this event as officially declined? This indicates they are no longer interested.')) {
-                handleStatusChange(request.id, 'declined');
-                toast({
-                  title: 'Event declined',
-                  description: 'The event request has been marked as declined.',
-                });
+            onDecline={async () => {
+              const result = await handleStatusChange(request.id, 'declined');
+              if (result === 'needs_reason') {
+                setReasonDialogEventRequest(request);
+                setShowDeclineDialog(true);
               }
             }}
           />

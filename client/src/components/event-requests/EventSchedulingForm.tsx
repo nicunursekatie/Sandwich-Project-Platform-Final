@@ -48,7 +48,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
-import { SANDWICH_TYPES } from './constants';
+import { VALID_STATUS_TRANSITIONS, STATUS_DEFINITIONS } from './constants';
+import type { EventStatus } from '@shared/event-status-workflow';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { RecipientSelector } from '@/components/ui/recipient-selector';
@@ -1555,6 +1556,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
+  // Handle status changes that require reason dialogs
+  const handleStatusChange = (newStatus: EventStatus) => {
+    const oldStatus = eventRequest?.status;
+    
+    // If changing to cancelled, declined, or postponed, show a warning
+    // TODO: Wire these status changes to open the appropriate reason dialog
+    // For now, we just warn the user and allow the change through the form
+    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'postponed') {
+      const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
+      toast({
+        title: `Status Change Requires Documentation`,
+        description: `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
+        duration: 6000,
+      });
+    }
+    
+    setFormData(prev => ({ ...prev, status: newStatus }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1849,22 +1869,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Status */}
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+            <Select value={formData.status} onValueChange={handleStatusChange}>
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                <SelectItem value="new">New Request</SelectItem>
-                <SelectItem value="in_process">In Process</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="declined">Declined</SelectItem>
-                <SelectItem value="postponed">Postponed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="standby">Standby</SelectItem>
-                <SelectItem value="stalled">Stalled</SelectItem>
+                {/* Current status is always shown */}
+                <SelectItem value={formData.status}>
+                  {STATUS_DEFINITIONS[formData.status as EventStatus]?.label || formData.status} (Current)
+                </SelectItem>
+                {/* Only show valid transitions from current status */}
+                {(VALID_STATUS_TRANSITIONS[formData.status as EventStatus] || [])
+                  .filter(s => s !== formData.status)
+                  .map(status => (
+                    <SelectItem key={status} value={status}>
+                      {STATUS_DEFINITIONS[status]?.label || status}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
+            {formData.status && STATUS_DEFINITIONS[formData.status as EventStatus] && (
+              <p className="text-xs text-gray-500 mt-1">
+                {STATUS_DEFINITIONS[formData.status as EventStatus].definition}
+              </p>
+            )}
           </div>
 
           {/* Corporate Priority */}

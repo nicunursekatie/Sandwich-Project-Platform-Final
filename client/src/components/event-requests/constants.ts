@@ -8,6 +8,15 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+// Re-export shared status workflow definitions for client use
+export {
+  STATUS_DEFINITIONS,
+  VALID_STATUS_TRANSITIONS,
+  isValidTransition,
+  getTransitionError,
+} from '@shared/event-status-workflow';
+export type { EventStatus } from '@shared/event-status-workflow';
+
 // Standardized sandwich types - only these 5 options allowed
 export const SANDWICH_TYPES = [
   { value: 'pbj', label: 'PB&J' },
@@ -116,12 +125,12 @@ export const statusOptions = [
 // Status tooltips for accessibility - explains what each status means to non-technical users
 export const statusTooltips: Record<string, string> = {
   new: 'New request awaiting initial review and contact',
-  in_process: 'Currently being coordinated - intake call scheduled or in progress',
+  in_process: 'Actively being coordinated - intake call scheduled or in progress',
   scheduled: 'Event date confirmed and logistics being finalized',
   completed: 'Event successfully completed',
-  declined: 'Request was declined or could not be accommodated',
-  postponed: 'Event temporarily delayed - will be rescheduled',
-  cancelled: 'Event was cancelled and will not take place',
+  declined: 'Request was declined or the organizer decided not to proceed (never reached Scheduled)',
+  postponed: 'A previously scheduled event has been delayed - no new date confirmed yet',
+  cancelled: 'A previously scheduled event has been cancelled and will not take place',
   standby: 'Waiting for organizer to work out details on their end - check back periodically',
   stalled: 'No response after multiple outreach attempts - kept for periodic follow-up',
 };
