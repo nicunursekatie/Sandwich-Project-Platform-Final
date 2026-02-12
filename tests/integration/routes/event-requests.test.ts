@@ -299,11 +299,12 @@ describe('Event Requests Routes', () => {
     it('should handle postponement with immediate reschedule', async () => {
       const agent = request.agent(app);
 
+      const DAYS_AHEAD = 14; // 2 weeks in the future
       const postponeData = {
         postponementReason: 'Organizer requested date change',
         postponementNotes: 'Moving to next week',
         hasNewDate: true,
-        newScheduledDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        newScheduledDate: new Date(Date.now() + DAYS_AHEAD * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       };
 
       const response = await agent
@@ -354,10 +355,11 @@ describe('Event Requests Routes', () => {
     it('should track postponement count and original date', async () => {
       const agent = request.agent(app);
 
+      const DAYS_AHEAD = 7; // 1 week in the future
       const postponeData = {
         postponementReason: 'Testing postponement tracking',
         hasNewDate: true,
-        newScheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        newScheduledDate: new Date(Date.now() + DAYS_AHEAD * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       };
 
       const response = await agent
