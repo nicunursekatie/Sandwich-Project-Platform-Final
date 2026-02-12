@@ -92,7 +92,7 @@ class StorageWrapper implements IStorage {
       }
       return result;
     } catch (error) {
-      logger.warn('Primary storage operation failed, using fallback:', error);
+      logger.error('Primary storage operation failed, using fallback. DATA MAY NOT BE PERSISTED:', error);
       return fallbackOperation();
     }
   }
