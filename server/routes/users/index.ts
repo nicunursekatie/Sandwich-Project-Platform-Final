@@ -3,6 +3,9 @@ import { userService } from '../../services/users';
 import { requirePermission, createErrorHandler } from '../../middleware';
 import { applyPermissionDependencies } from '@shared/auth-utils';
 import { storage } from '../../storage';
+import { db } from '../../db';
+import { userActivityLogs } from '@shared/schema';
+import { sql, gte } from 'drizzle-orm';
 
 const usersRouter = Router();
 
@@ -174,13 +177,54 @@ usersRouter.patch(
   }
 );
 
-// Get online users (active in last 5 minutes by default)
-// No special permission required - just need to be logged in
+// Get online users (active in last 15 minutes by default)
+// Queries BOTH in-memory heartbeat map AND persistent userActivityLogs DB table
+// so online users are shown even after a server restart/deployment
 usersRouter.get('/online', async (req, res, next) => {
   try {
-    const sinceMinutes = parseInt(req.query.minutes as string) || 5;
-    const onlineUsers = await storage.getOnlineUsers(sinceMinutes);
-    res.json(onlineUsers);
+    const sinceMinutes = parseInt(req.query.minutes as string) || 15;
+
+    // Source 1: In-memory heartbeat map (populated by POST /heartbeat)
+    const heartbeatUsers = await storage.getOnlineUsers(sinceMinutes);
+
+    // Source 2: Persistent database activity logs
+    const cutoff = new Date(Date.now() - sinceMinutes * 60 * 1000);
+    const dbUsers = await db
+      .select({
+        userId: userActivityLogs.userId,
+        firstName: sql<string | null>`(SELECT first_name FROM users WHERE id = ${userActivityLogs.userId})`,
+        lastName: sql<string | null>`(SELECT last_name FROM users WHERE id = ${userActivityLogs.userId})`,
+        displayName: sql<string | null>`(SELECT display_name FROM users WHERE id = ${userActivityLogs.userId})`,
+        email: sql<string | null>`(SELECT email FROM users WHERE id = ${userActivityLogs.userId})`,
+        profileImageUrl: sql<string | null>`(SELECT profile_image_url FROM users WHERE id = ${userActivityLogs.userId})`,
+        lastActivity: sql<string>`max(${userActivityLogs.createdAt})::text`,
+      })
+      .from(userActivityLogs)
+      .where(gte(userActivityLogs.createdAt, cutoff))
+      .groupBy(userActivityLogs.userId);
+
+    // Merge both sources, heartbeat takes priority (fresher data)
+    const userMap = new Map<string, any>();
+
+    // Add DB users first
+    for (const dbUser of dbUsers) {
+      userMap.set(dbUser.userId, {
+        id: dbUser.userId,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        displayName: dbUser.displayName,
+        email: dbUser.email,
+        profileImageUrl: dbUser.profileImageUrl,
+        lastActiveAt: dbUser.lastActivity,
+      });
+    }
+
+    // Heartbeat users override (fresher data)
+    for (const hbUser of heartbeatUsers) {
+      userMap.set(hbUser.id, hbUser);
+    }
+
+    res.json(Array.from(userMap.values()));
   } catch (error) {
     next(error);
   }
