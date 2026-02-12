@@ -24,5 +24,6 @@ echo "" >> "$MIGRATION_FILE"
 echo "-- Add your SQL here" >> "$MIGRATION_FILE"
 
 echo "✅ Migration file created: $MIGRATION_FILE"
-echo "📝 Edit the file and add your SQL, then run: npx drizzle-kit push"
+echo "📝 Edit the file and add your SQL. It will run automatically on next server start."
+echo "   To run manually: npm run db:migrate"
 
