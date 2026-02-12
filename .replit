@@ -7,7 +7,7 @@ channel = "stable-22_11"
 packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", "tree", "nano", "sqlite-interactive", "zip"]
 
 [deployment]
-deploymentTarget = "autoscale"
+deploymentTarget = "gce"
 build = ["sh", "-c", "NODE_OPTIONS=--max-old-space-size=4096 npm run build"]
 run = "NODE_ENV=production node dist/index.js"
 
@@ -17,7 +17,6 @@ externalPort = 80
 
 [[ports]]
 localPort = 3000
-externalPort = 3000
 
 [[ports]]
 localPort = 4242
