@@ -62,7 +62,8 @@
       "Bash(git log:*)",
       "Bash(/usr/local/bin/npm run check)",
       "Bash(/usr/local/bin/npm run build)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(npx:*)"
     ],
     "deny": [],
     "ask": []

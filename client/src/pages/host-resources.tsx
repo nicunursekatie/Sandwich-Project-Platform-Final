@@ -483,6 +483,12 @@ export default function HostResources() {
         </p>
         <div className="space-y-3">
           <DocumentCard
+            title="TSP Host Handbook"
+            description="Complete guide for host collection sites — everything you need to know about hosting a sandwich collection"
+            fileType="PDF"
+            downloadUrl="/attached_assets/TSP-Host-Handbook (8).pdf"
+          />
+          <DocumentCard
             title="Deli Sandwich Labels"
             description="Pre-formatted labels for deli meat sandwiches with ingredient info"
             fileType="PDF"
