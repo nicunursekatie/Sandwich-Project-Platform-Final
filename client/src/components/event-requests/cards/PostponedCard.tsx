@@ -353,12 +353,12 @@ export const PostponedCard: React.FC<PostponedCardProps> = ({
 
           {/* Original Date Info */}
           <div className="bg-white/70 rounded-lg p-3 space-y-2">
-            {(request as any).originalScheduledDate && (
+            {request.originalScheduledDate && (
               <div>
                 <p className="text-sm text-gray-500">Was Scheduled For</p>
                 <p className="font-medium flex items-center gap-1">
                   <Calendar className="w-4 h-4" />
-                  {new Date((request as any).originalScheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {new Date(request.originalScheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
             )}

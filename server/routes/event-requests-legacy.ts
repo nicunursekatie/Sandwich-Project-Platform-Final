@@ -4950,7 +4950,7 @@ router.post('/:id/postpone', isAuthenticated, requirePermission('EVENT_REQUESTS_
         status: 'scheduled', // stays scheduled
         postponementReason: postponementReason,
         postponementNotes: postponementNotes || null,
-        scheduledEventDate: new Date(newScheduledDate),
+        scheduledEventDate: parseDateOnly(newScheduledDate),
         originalScheduledDate: originalEvent.scheduledEventDate || originalEvent.desiredEventDate || null,
         wasPostponed: true,
         postponementCount: (originalEvent.postponementCount || 0) + 1,
@@ -4997,6 +4997,7 @@ router.post('/:id/postpone', isAuthenticated, requirePermission('EVENT_REQUESTS_
         status: 'postponed',
         postponementReason: postponementReason,
         postponementNotes: postponementNotes || null,
+        scheduledEventDate: null, // Clear the scheduled date since there's no confirmed date
         originalScheduledDate: originalEvent.scheduledEventDate || originalEvent.desiredEventDate || null,
         wasPostponed: true,
         postponementCount: (originalEvent.postponementCount || 0) + 1,
@@ -5007,7 +5008,7 @@ router.post('/:id/postpone', isAuthenticated, requirePermission('EVENT_REQUESTS_
 
       // Add tentative new date if provided
       if (tentativeNewDate) {
-        updateData.tentativeNewDate = new Date(tentativeNewDate);
+        updateData.tentativeNewDate = parseDateOnly(tentativeNewDate);
       }
 
       const updatedEventRequest = await storage.updateEventRequest(id, updateData);

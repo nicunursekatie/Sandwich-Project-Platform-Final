@@ -27,6 +27,8 @@ export const PostponedTab: React.FC = () => {
     setContactEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setPostponementEventRequest,
+    setShowPostponementDialog,
   } = useEventRequestContext();
 
   const postponedRequests = filterRequestsByStatus('postponed');
@@ -124,13 +126,9 @@ export const PostponedTab: React.FC = () => {
             }}
             onCall={() => handleCall(request)}
             onReactivate={() => {
-              if (window.confirm('Has a new date been confirmed? This will move the event back to Scheduled.')) {
-                handleStatusChange(request.id, 'scheduled');
-                toast({
-                  title: 'Event rescheduled',
-                  description: 'The event has been moved back to Scheduled.',
-                });
-              }
+              // Open postponement dialog to capture new date
+              setPostponementEventRequest(request);
+              setShowPostponementDialog(true);
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);

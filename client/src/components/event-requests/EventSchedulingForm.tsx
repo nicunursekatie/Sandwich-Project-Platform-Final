@@ -48,7 +48,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
-import { SANDWICH_TYPES, VALID_STATUS_TRANSITIONS, STATUS_DEFINITIONS } from './constants';
+import { VALID_STATUS_TRANSITIONS, STATUS_DEFINITIONS } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
 import { DateTimePicker } from '@/components/ui/datetime-picker';
 import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
@@ -1556,6 +1556,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
+  // Handle status changes that require reason dialogs
+  const handleStatusChange = (newStatus: EventStatus) => {
+    const oldStatus = eventRequest?.status;
+    
+    // If changing to cancelled, declined, or postponed, show a warning
+    // TODO: Wire these status changes to open the appropriate reason dialog
+    // For now, we just warn the user and allow the change through the form
+    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'postponed') {
+      const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
+      toast({
+        title: `Status Change Requires Documentation`,
+        description: `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
+        duration: 6000,
+      });
+    }
+    
+    setFormData(prev => ({ ...prev, status: newStatus }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1850,7 +1869,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Status */}
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+            <Select value={formData.status} onValueChange={handleStatusChange}>
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>

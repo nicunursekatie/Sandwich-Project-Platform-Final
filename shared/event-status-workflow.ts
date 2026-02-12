@@ -100,7 +100,7 @@ export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   scheduled: ['completed', 'cancelled', 'postponed'],
   completed: ['scheduled'],  // Reopen if needed (e.g., data entry error)
   declined: ['new', 'in_process'],  // Can reactivate if they come back
-  postponed: ['scheduled', 'cancelled', 'declined'],  // Reschedule, cancel, or decline
+  postponed: ['scheduled', 'cancelled'],  // Reschedule or cancel
   cancelled: ['scheduled'],  // Can reinstate if the group comes back
   standby: ['in_process', 'declined', 'stalled'],
   stalled: ['in_process', 'declined', 'new'],
