@@ -277,16 +277,33 @@ const customChatStyles = `
     font-size: 11px;
   }
 
-  /* Make sender names more prominent in messages */
+  /* Make sender names more prominent and always visible in messages */
   .str-chat__message-sender-name {
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 13px !important;
     color: #236383 !important;
+    display: inline !important;
+    visibility: visible !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  /* Always show sender name above messages (including own messages) */
+  .str-chat__message--me .str-chat__message-sender-name,
+  .str-chat__message--other .str-chat__message-sender-name {
+    display: inline !important;
+    visibility: visible !important;
   }
 
   /* Avatar styling with better visibility */
   .str-chat__avatar {
     font-size: 11px !important;
+  }
+
+  /* Show full name text next to avatar in message */
+  .str-chat__avatar-fallback {
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
   }
 
   /* Ensure message metadata (name + time) is always visible */
