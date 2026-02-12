@@ -30,7 +30,7 @@ function getAllowedOrigins(): string[] {
     origins.push(replitDevDomain);
 
     // CRITICAL: Also allow the .replit.app production domain format
-    const replitAppDomain = `https://${process.env.REPL_SLUG}-${process.env.REPL_OWNER}.replit.app`;
+    const replitAppDomain = `https://${process.env.REPL_SLUG}.replit.app`;
     origins.push(replitAppDomain);
   }
 
@@ -52,11 +52,19 @@ function getAllowedOrigins(): string[] {
     origins.push(...additionalOrigins);
   }
 
-  // CRITICAL: Ensure the exact production URL is always allowed
+  // CRITICAL: Ensure the exact production URLs are always allowed
+  // Both the original long-form domain and the newer short domain
   if (process.env.NODE_ENV === 'production') {
     origins.push(
+      'https://sandwich-project-platform-final.replit.app',
       'https://sandwich-project-platform-final-katielong2316.replit.app'
     );
+  }
+
+  // Also allow any *.replit.app domain for this project in all environments
+  if (process.env.REPLIT_DEPLOYMENT) {
+    const deploymentDomain = `https://${process.env.REPLIT_DEPLOYMENT}.replit.app`;
+    origins.push(deploymentDomain);
   }
 
   return [...new Set(origins)]; // Remove duplicates
@@ -89,8 +97,11 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     }
   }
 
-  // In production, only allow explicitly configured domains
-  // The production domain is already in allowedOrigins from getAllowedOrigins()
+  // In production, also allow any .replit.app domain for this project
+  if (origin.endsWith('.replit.app') && origin.includes('sandwich-project-platform-final')) {
+    return true;
+  }
+
   return false;
 }
 

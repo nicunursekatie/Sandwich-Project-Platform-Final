@@ -241,6 +241,33 @@ const customChatStyles = `
     color: #007E8C !important;
   }
 
+  /* @mention styling - must override default royal blue for readability on teal bubbles */
+  .str-chat__message--me .str-chat__message-bubble .str-chat__message-mention {
+    color: #A3E8FF !important;
+    font-weight: 700 !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    padding: 0 3px !important;
+    border-radius: 3px !important;
+  }
+
+  .str-chat__message--me .str-chat__message-bubble .str-chat__message-mention:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.25) !important;
+  }
+
+  .str-chat__message--other .str-chat__message-bubble .str-chat__message-mention {
+    color: #236383 !important;
+    font-weight: 700 !important;
+    background: rgba(35, 99, 131, 0.1) !important;
+    padding: 0 3px !important;
+    border-radius: 3px !important;
+  }
+
+  .str-chat__message--other .str-chat__message-bubble .str-chat__message-mention:hover {
+    color: #007E8C !important;
+    background: rgba(35, 99, 131, 0.2) !important;
+  }
+
   .read-receipt-indicator {
     display: flex;
     align-items: center;
@@ -250,16 +277,33 @@ const customChatStyles = `
     font-size: 11px;
   }
 
-  /* Make sender names more prominent in messages */
+  /* Make sender names more prominent and always visible in messages */
   .str-chat__message-sender-name {
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     font-size: 13px !important;
     color: #236383 !important;
+    display: inline !important;
+    visibility: visible !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  /* Always show sender name above messages (including own messages) */
+  .str-chat__message--me .str-chat__message-sender-name,
+  .str-chat__message--other .str-chat__message-sender-name {
+    display: inline !important;
+    visibility: visible !important;
   }
 
   /* Avatar styling with better visibility */
   .str-chat__avatar {
     font-size: 11px !important;
+  }
+
+  /* Show full name text next to avatar in message */
+  .str-chat__avatar-fallback {
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
   }
 
   /* Ensure message metadata (name + time) is always visible */
