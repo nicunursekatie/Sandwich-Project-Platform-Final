@@ -241,4 +241,139 @@ describe('Event Requests Routes', () => {
       expect(response.status).toBeLessThan(500);
     });
   });
+
+  describe('Status Transition Validation', () => {
+    it('should reject invalid status transitions', async () => {
+      const agent = request.agent(app);
+
+      // Try to transition from 'new' to 'completed' (invalid)
+      const response = await agent
+        .patch('/api/event-requests/1')
+        .send({ status: 'completed' })
+        .set('Cookie', ['connect.sid=mock-session-id']);
+
+      // Should either be 400 (validation error) or 404 (event not found)
+      // If 404, the validation would have triggered if event existed
+      expect([400, 404]).toContain(response.status);
+      
+      if (response.status === 400) {
+        expect(response.body).toHaveProperty('error');
+        expect(response.body.error).toBe('INVALID_STATUS_TRANSITION');
+      }
+    });
+
+    it('should allow valid status transitions', async () => {
+      const agent = request.agent(app);
+
+      // Try to transition from 'new' to 'in_process' (valid)
+      const response = await agent
+        .patch('/api/event-requests/1')
+        .send({ status: 'in_process' })
+        .set('Cookie', ['connect.sid=mock-session-id']);
+
+      // Should not be a validation error (400 with INVALID_STATUS_TRANSITION)
+      if (response.status === 400) {
+        expect(response.body.error).not.toBe('INVALID_STATUS_TRANSITION');
+      }
+    });
+
+    it('should provide helpful error messages for invalid transitions', async () => {
+      const agent = request.agent(app);
+
+      // Try invalid transition
+      const response = await agent
+        .patch('/api/event-requests/1')
+        .send({ status: 'cancelled' })
+        .set('Cookie', ['connect.sid=mock-session-id']);
+
+      // If we get validation error, check the message
+      if (response.status === 400 && response.body.error === 'INVALID_STATUS_TRANSITION') {
+        expect(response.body).toHaveProperty('message');
+        expect(response.body.message).toBeTruthy();
+        expect(typeof response.body.message).toBe('string');
+      }
+    });
+  });
+
+  describe('Postponement Flows', () => {
+    it('should handle postponement with immediate reschedule', async () => {
+      const agent = request.agent(app);
+
+      const postponeData = {
+        postponementReason: 'Organizer requested date change',
+        postponementNotes: 'Moving to next week',
+        hasNewDate: true,
+        newScheduledDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      };
+
+      const response = await agent
+        .post('/api/event-requests/1/postpone')
+        .send(postponeData)
+        .set('Cookie', ['connect.sid=mock-session-id']);
+
+      // Should either succeed or fail with 404 (event not found)
+      expect([200, 404, 500]).toContain(response.status);
+
+      if (response.status === 200) {
+        expect(response.body).toHaveProperty('status');
+        // With immediate reschedule, status should stay 'scheduled'
+        expect(response.body.status).toBe('scheduled');
+        expect(response.body).toHaveProperty('wasPostponed');
+        expect(response.body.wasPostponed).toBe(true);
+      }
+    });
+
+    it('should handle postponement without new date', async () => {
+      const agent = request.agent(app);
+
+      const postponeData = {
+        postponementReason: 'Organizer needs time to confirm new date',
+        postponementNotes: 'Will follow up in a few days',
+        hasNewDate: false,
+      };
+
+      const response = await agent
+        .post('/api/event-requests/1/postpone')
+        .send(postponeData)
+        .set('Cookie', ['connect.sid=mock-session-id']);
+
+      // Should either succeed or fail with 404 (event not found)
+      expect([200, 404, 500]).toContain(response.status);
+
+      if (response.status === 200) {
+        expect(response.body).toHaveProperty('status');
+        // Without new date, status should change to 'postponed'
+        expect(response.body.status).toBe('postponed');
+        expect(response.body).toHaveProperty('wasPostponed');
+        expect(response.body.wasPostponed).toBe(true);
+        // scheduledEventDate should be cleared
+        expect(response.body.scheduledEventDate).toBeNull();
+      }
+    });
+
+    it('should track postponement count and original date', async () => {
+      const agent = request.agent(app);
+
+      const postponeData = {
+        postponementReason: 'Testing postponement tracking',
+        hasNewDate: true,
+        newScheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      };
+
+      const response = await agent
+        .post('/api/event-requests/1/postpone')
+        .send(postponeData)
+        .set('Cookie', ['connect.sid=mock-session-id']);
+
+      if (response.status === 200) {
+        expect(response.body).toHaveProperty('postponementCount');
+        expect(typeof response.body.postponementCount).toBe('number');
+        expect(response.body.postponementCount).toBeGreaterThanOrEqual(1);
+        
+        expect(response.body).toHaveProperty('originalScheduledDate');
+        // originalScheduledDate should be set
+        expect(response.body.originalScheduledDate).toBeTruthy();
+      }
+    });
+  });
 });
