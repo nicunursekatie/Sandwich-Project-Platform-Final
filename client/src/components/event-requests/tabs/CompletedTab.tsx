@@ -153,10 +153,10 @@ export const CompletedTab: React.FC = () => {
             onReschedule={() => {
               if (
                 window.confirm(
-                  'Do you want to create a new event request based on this completed event?'
+                  'Do you want to reopen this event and move it back to Scheduled? (This is for data entry corrections.)'
                 )
               ) {
-                handleStatusChange(request.id, 'new');
+                handleStatusChange(request.id, 'scheduled');
               }
             }}
             onAssignTspContact={() => {

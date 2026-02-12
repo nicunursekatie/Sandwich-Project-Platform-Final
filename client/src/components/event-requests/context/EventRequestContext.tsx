@@ -83,6 +83,10 @@ interface EventRequestContextType {
   setShowPostponementDialog: (show: boolean) => void;
   showIntakeCallDialog: boolean;
   setShowIntakeCallDialog: (show: boolean) => void;
+  showDeclineDialog: boolean;
+  setShowDeclineDialog: (show: boolean) => void;
+  showCancelDialog: boolean;
+  setShowCancelDialog: (show: boolean) => void;
 
   // Event being acted upon
   schedulingEventRequest: EventRequest | null;
@@ -109,6 +113,8 @@ interface EventRequestContextType {
   setPostponementEventRequest: (event: EventRequest | null) => void;
   intakeCallEventRequest: EventRequest | null;
   setIntakeCallEventRequest: (event: EventRequest | null) => void;
+  reasonDialogEventRequest: EventRequest | null;
+  setReasonDialogEventRequest: (event: EventRequest | null) => void;
   showNextActionDialog: boolean;
   setShowNextActionDialog: (show: boolean) => void;
   nextActionEventRequest: EventRequest | null;
@@ -393,6 +399,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
   const [showPostponementDialog, setShowPostponementDialog] = useState(false);
   const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Event being acted upon
   const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
@@ -407,6 +415,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
   const [postponementEventRequest, setPostponementEventRequest] = useState<EventRequest | null>(null);
   const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
+  const [reasonDialogEventRequest, setReasonDialogEventRequest] = useState<EventRequest | null>(null);
   const [showNextActionDialog, setShowNextActionDialog] = useState(false);
   const [nextActionEventRequest, setNextActionEventRequest] = useState<EventRequest | null>(null);
   const [nextActionMode, setNextActionMode] = useState<'add' | 'edit' | 'complete'>('add');
@@ -733,6 +742,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
+    showDeclineDialog,
+    setShowDeclineDialog,
+    showCancelDialog,
+    setShowCancelDialog,
 
     // Event references
     schedulingEventRequest,
@@ -759,6 +772,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
+    reasonDialogEventRequest,
+    setReasonDialogEventRequest,
     showNextActionDialog,
     setShowNextActionDialog,
     nextActionEventRequest,

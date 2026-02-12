@@ -95,6 +95,10 @@ export const MyAssignmentsTab: React.FC = () => {
     setEditingCompletedId,
     completedEdit,
     setCompletedEdit,
+
+    // Status reason dialogs
+    setShowDeclineDialog,
+    setReasonDialogEventRequest,
   } = useEventRequestContext();
 
   // Helper functions for ScheduledCardEnhanced
@@ -205,7 +209,13 @@ export const MyAssignmentsTab: React.FC = () => {
               setShowTspContactAssignmentDialog(true);
             }}
             onApprove={() => handleStatusChange(request.id, 'in_process')}
-            onDecline={() => handleStatusChange(request.id, 'declined')}
+            onDecline={async () => {
+                const result = await handleStatusChange(request.id, 'declined');
+                if (result === 'needs_reason') {
+                  setReasonDialogEventRequest(request);
+                  setShowDeclineDialog(true);
+                }
+              }}
             onLogContact={() => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);
@@ -481,7 +491,13 @@ export const MyAssignmentsTab: React.FC = () => {
               setShowTspContactAssignmentDialog(true);
             }}
             onApprove={() => handleStatusChange(request.id, 'in_process')}
-            onDecline={() => handleStatusChange(request.id, 'declined')}
+            onDecline={async () => {
+                const result = await handleStatusChange(request.id, 'declined');
+                if (result === 'needs_reason') {
+                  setReasonDialogEventRequest(request);
+                  setShowDeclineDialog(true);
+                }
+              }}
             onLogContact={() => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);

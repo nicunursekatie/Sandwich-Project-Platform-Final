@@ -27,6 +27,8 @@ export const PostponedTab: React.FC = () => {
     setContactEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setPostponementEventRequest,
+    setShowPostponementDialog,
   } = useEventRequestContext();
 
   const postponedRequests = filterRequestsByStatus('postponed');
@@ -124,13 +126,9 @@ export const PostponedTab: React.FC = () => {
             }}
             onCall={() => handleCall(request)}
             onReactivate={() => {
-              if (window.confirm('Do you want to reactivate this event request?')) {
-                handleStatusChange(request.id, 'new');
-                toast({
-                  title: 'Event reactivated',
-                  description: 'The event request has been moved back to New Requests.',
-                });
-              }
+              // Open postponement dialog to capture new date
+              setPostponementEventRequest(request);
+              setShowPostponementDialog(true);
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
