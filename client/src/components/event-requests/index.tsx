@@ -1119,7 +1119,7 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Decline Reason Dialog */}
-        {reasonDialogEventRequest && (
+        {reasonDialogEventRequest && showDeclineDialog && (
           <StatusReasonDialog
             isOpen={showDeclineDialog}
             onClose={() => {
@@ -1137,7 +1137,7 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Cancel Reason Dialog */}
-        {reasonDialogEventRequest && (
+        {reasonDialogEventRequest && showCancelDialog && (
           <StatusReasonDialog
             isOpen={showCancelDialog}
             onClose={() => {
