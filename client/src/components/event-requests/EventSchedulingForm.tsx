@@ -105,6 +105,11 @@ function intelligentMergeFormData(
   // (for backwards compatibility with old cache format)
   if (!originalServerData) {
     logger.log('⚠️ No original server data in cache - using cached form data directly');
+    // Guard: status must never be empty — fall back to server's current status
+    if (!cachedFormData.status) {
+      cachedFormData.status = currentServerData.status || 'new';
+      logger.log('🛡️ Fixed empty status in cached form data, using:', cachedFormData.status);
+    }
     return {
       mergedData: cachedFormData,
       conflicts: [],
@@ -151,6 +156,12 @@ function intelligentMergeFormData(
       logger.log(`📥 Using server update on "${key}": "${currentValue}"`);
     }
     // If neither changed, currentServerData already has the right value
+  }
+
+  // Guard: status must never be empty after merge — fall back to server value
+  if (!mergedData.status) {
+    mergedData.status = currentServerData.status || 'new';
+    logger.log('🛡️ Fixed empty status after merge, using:', mergedData.status);
   }
 
   return { mergedData, conflicts, serverUpdates, userChangesPreserved };
@@ -1866,21 +1877,24 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             onToggle={() => setShowBackupContactInfo(!showBackupContactInfo)}
           />
 
-          {/* Status */}
+          {/* Status — defensive fallback: prefer server status over hardcoded 'new' to avoid silently resetting status */}
+          {(() => {
+            const effectiveStatus = formData.status || eventRequest?.status || 'new';
+            return (
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status || 'new'} onValueChange={handleStatusChange}>
+            <Select value={effectiveStatus} onValueChange={handleStatusChange}>
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {/* Current status is always shown */}
-                <SelectItem value={formData.status || 'new'}>
-                  {STATUS_DEFINITIONS[(formData.status || 'new') as EventStatus]?.label || formData.status || 'New'} (Current)
+                <SelectItem value={effectiveStatus}>
+                  {STATUS_DEFINITIONS[effectiveStatus as EventStatus]?.label || effectiveStatus} (Current)
                 </SelectItem>
                 {/* Only show valid transitions from current status */}
-                {(VALID_STATUS_TRANSITIONS[formData.status as EventStatus] || [])
-                  .filter(s => s !== formData.status)
+                {(VALID_STATUS_TRANSITIONS[effectiveStatus as EventStatus] || [])
+                  .filter(s => s !== effectiveStatus)
                   .map(status => (
                     <SelectItem key={status} value={status}>
                       {STATUS_DEFINITIONS[status]?.label || status}
@@ -1888,12 +1902,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   ))}
               </SelectContent>
             </Select>
-            {formData.status && STATUS_DEFINITIONS[formData.status as EventStatus] && (
+            {effectiveStatus && STATUS_DEFINITIONS[effectiveStatus as EventStatus] && (
               <p className="text-xs text-gray-500 mt-1">
-                {STATUS_DEFINITIONS[formData.status as EventStatus].definition}
+                {STATUS_DEFINITIONS[effectiveStatus as EventStatus].definition}
               </p>
             )}
           </div>
+            );
+          })()}
 
           {/* Corporate Priority */}
           <div className={`flex items-center space-x-3 p-3 rounded-lg border ${
