@@ -3003,6 +3003,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setShowSpeakerWarningDialog(false);
+              setIsSubmitting(false); // Reset so save button isn't permanently stuck
             }}>
               Cancel
             </AlertDialogCancel>

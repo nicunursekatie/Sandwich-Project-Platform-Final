@@ -97,7 +97,7 @@ export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   new: ['in_process', 'followed_up', 'declined', 'standby', 'stalled'],
   followed_up: ['in_process', 'declined', 'standby', 'stalled'],
   in_process: ['scheduled', 'declined', 'standby', 'stalled'],
-  scheduled: ['completed', 'cancelled', 'postponed'],
+  scheduled: ['completed', 'cancelled', 'postponed', 'in_process'],  // in_process allows undoing accidental scheduling
   completed: ['scheduled'],  // Reopen if needed (e.g., data entry error)
   declined: ['new', 'in_process'],  // Can reactivate if they come back
   postponed: ['scheduled', 'cancelled'],  // Reschedule or cancel
