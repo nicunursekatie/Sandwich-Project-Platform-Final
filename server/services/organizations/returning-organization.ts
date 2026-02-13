@@ -419,8 +419,13 @@ export async function checkReturningOrganization(
     // Data has been cleaned so we can rely on exact org name matching
     // Normalize & → and so "William & Reed" matches "William and Reed"
     // Also collapse multiple spaces to single space for consistent matching
-    // Use canonicalizeOrgName for comprehensive Unicode whitespace normalization (incl. U+00A0, U+2000–U+200A, U+202F, U+205F, U+3000)
-    const normalizedOrgName = canonicalizeOrgName(orgName).toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
+    // Replace Unicode whitespace chars (U+00A0, U+2000–U+200A, U+202F, U+205F, U+3000) with regular spaces
+    const normalizedOrgName = orgName
+      .replace(/[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/\s+/g, ' ');
 
     // SQL normalization: lowercase, trim, replace non-breaking spaces (chr(160)) with regular spaces,
     // replace & with 'and', AND collapse all whitespace including tabs/newlines
