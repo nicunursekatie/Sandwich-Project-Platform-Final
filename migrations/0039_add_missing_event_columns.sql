@@ -5,6 +5,6 @@
 
 ALTER TABLE event_requests
 ADD COLUMN IF NOT EXISTS admin_escalation_sent_at TIMESTAMP;
-
+--> statement-breakpoint
 ALTER TABLE event_requests
 ADD COLUMN IF NOT EXISTS manual_entry_source VARCHAR;

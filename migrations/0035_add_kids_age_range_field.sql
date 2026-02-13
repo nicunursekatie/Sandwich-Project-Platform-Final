@@ -4,6 +4,6 @@
 
 ALTER TABLE event_requests
 ADD COLUMN IF NOT EXISTS kids_age_range VARCHAR(100);
-
+--> statement-breakpoint
 -- Add comment for documentation
 COMMENT ON COLUMN event_requests.kids_age_range IS 'Age range of kids participating in the event (e.g., "5-12", "Elementary school")';

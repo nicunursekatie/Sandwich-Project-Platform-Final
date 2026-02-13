@@ -15,7 +15,7 @@ SET
     unavailable_start_date = NULL,
     unavailable_reason = NULL
 WHERE is_active = true;
-
+--> statement-breakpoint
 -- Step 2: Now mark drivers who SHOULD be unavailable back to unavailable
 -- These are drivers who have BOTH:
 -- - An unavailable_note (explanation of why they're unavailable)
@@ -31,14 +31,8 @@ WHERE is_active = true
     check_in_date IS NOT NULL 
     OR unavailable_until IS NOT NULL
   );
-
+--> statement-breakpoint
 -- Step 3: Make sure inactive drivers are marked as 'inactive'
 UPDATE drivers
 SET availability_status = 'inactive'
 WHERE is_active = false;
-
--- Log summary (these comments help understand what happened)
--- After this migration:
--- - All active drivers WITHOUT notes+dates = 'available'
--- - Active drivers WITH notes AND check-in/until dates = 'pending_checkin' (temporarily unavailable)
--- - Inactive drivers = 'inactive'
