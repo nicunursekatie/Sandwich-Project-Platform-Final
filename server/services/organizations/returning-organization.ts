@@ -419,8 +419,8 @@ export async function checkReturningOrganization(
     // Data has been cleaned so we can rely on exact org name matching
     // Normalize & → and so "William & Reed" matches "William and Reed"
     // Also collapse multiple spaces to single space for consistent matching
-    // Replace non-breaking spaces (U+00A0, common from web forms/Google Sheets) with regular spaces
-    const normalizedOrgName = orgName.trim().replace(/\u00A0/g, ' ').toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
+    // Use canonicalizeOrgName for comprehensive Unicode whitespace normalization (incl. U+00A0, U+2000–U+200A, U+202F, U+205F, U+3000)
+    const normalizedOrgName = canonicalizeOrgName(orgName).toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ');
 
     // SQL normalization: lowercase, trim, replace non-breaking spaces (chr(160)) with regular spaces,
     // replace & with 'and', AND collapse all whitespace including tabs/newlines
@@ -471,6 +471,11 @@ export async function checkReturningOrganization(
           sql`(
               REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group1Name})), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
               OR REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(${sandwichCollections.group2Name})), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              OR EXISTS (
+                SELECT 1
+                FROM json_array_elements_text(${sandwichCollections.groupCollections}) AS gc(name)
+                WHERE REGEXP_REPLACE(REPLACE(REPLACE(LOWER(TRIM(gc.name)), chr(160), ' '), '&', 'and'), '\\s+', ' ', 'g') = ${normalizedOrgName}
+              )
             )
             AND ${sandwichCollections.deletedAt} IS NULL`
         )
@@ -548,7 +553,7 @@ export async function checkReturningOrganization(
 
           // Also check collections with fuzzy matching (group1Name, group2Name, AND groupCollections JSON array)
           const allCollectionOrgs = await db
-            .select({
+            .selectDistinct({
               group1Name: sandwichCollections.group1Name,
               group2Name: sandwichCollections.group2Name,
               groupCollections: sandwichCollections.groupCollections,
@@ -577,6 +582,10 @@ export async function checkReturningOrganization(
                 if (groupItem && typeof groupItem === 'object' && 'name' in groupItem) {
                   const groupName = (groupItem as any).name as string;
                   if (groupName && organizationNamesMatch(orgName, groupName)) {
+                    // Filter umbrella orgs to require matching identifiers (same as group1Name/group2Name)
+                    if (incomingIsUmbrella && isUmbrellaRelated(groupName) && !umbrellaIdentifiersMatch(orgName, groupName)) {
+                      continue;
+                    }
                     fuzzyCollectionNames.add(groupName.trim().toLowerCase());
                   }
                 }
@@ -608,6 +617,9 @@ export async function checkReturningOrganization(
 
     // Last-resort fallback: if still no matches, try including soft-deleted records
     // An org that had past events (even if those records were deleted/cleaned up) is still a returning org
+    // PERFORMANCE NOTE: This query scans all event requests including soft-deleted records without filtering on deletedAt.
+    // Consider adding an index on (organization_name, deleted_at) if this becomes a bottleneck.
+    // This fallback only runs when no other matches are found and the canonicalized org name is >= 6 chars.
     if (matchingEvents.length === 0 && matchingCollections.length === 0) {
       try {
         const canonicalSearch = canonicalizeOrgName(orgName);
