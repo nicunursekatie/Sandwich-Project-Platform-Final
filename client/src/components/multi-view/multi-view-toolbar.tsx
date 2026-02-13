@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Plus,
   Columns,
@@ -26,27 +26,14 @@ import { useMultiView } from '@/contexts/multi-view-context';
 import { useFloatingViews } from '@/contexts/floating-views-context';
 import { NAV_ITEMS } from '@/nav.config';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission } from '@shared/unified-auth-utils';
+import type { UserForPermissions } from '@shared/types';
+import type { NavItem } from '@/nav.types';
 
 interface MultiViewToolbarProps {
   currentSection: string;
   className?: string;
-}
-
-// Group all nav items by their group for the dropdown
-function getGroupedNavItems() {
-  const groups: Record<string, typeof NAV_ITEMS> = {};
-
-  NAV_ITEMS.forEach(item => {
-    if (!item.href || item.external || item.topNav) return;
-
-    const group = item.group || 'other';
-    if (!groups[group]) {
-      groups[group] = [];
-    }
-    groups[group].push(item);
-  });
-
-  return groups;
 }
 
 const GROUP_LABELS: Record<string, string> = {
@@ -57,9 +44,50 @@ const GROUP_LABELS: Record<string, string> = {
   'network': 'Network',
   'operations': 'Operations',
   'admin': 'Admin & Resources',
+  'help': 'Help',
+  'communication': 'Communication',
 };
 
+// Build the same list the sidebar shows: permission-filtered, including topNav (Help, Suggestions)
+function getGroupedNavItemsForUser(user: unknown): Record<string, NavItem[]> {
+  const u = user as { id: string; email?: string | null; role: string; permissions?: string[] | number | null; isActive?: boolean } | null | undefined;
+  const userForPermissions: UserForPermissions | null | undefined = u ? {
+    id: u.id,
+    email: u.email ?? '',
+    role: u.role,
+    permissions: (u.permissions as string[] | null | undefined) ?? null,
+    isActive: u.isActive,
+  } : null;
+
+  const permissionFiltered = NAV_ITEMS.filter(item => {
+    if (!item.href || item.external) return false;
+    if (!item.permission) return true;
+    return hasPermission(userForPermissions, item.permission);
+  });
+
+  // Hide parents that have no visible children (match SimpleNav behavior)
+  const filtered = permissionFiltered.filter(item => {
+    if (item.isSubItem) return true;
+    const hasChildrenInConfig = NAV_ITEMS.some(navItem => navItem.parentId === item.id);
+    if (!hasChildrenInConfig) return true;
+    const hasVisibleChildren = permissionFiltered.some(navItem => navItem.parentId === item.id);
+    return hasVisibleChildren;
+  });
+
+  const groups: Record<string, NavItem[]> = {};
+  filtered.forEach(item => {
+    const group = item.group || 'other';
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group].push(item);
+  });
+
+  return groups;
+}
+
 export function MultiViewToolbar({ currentSection, className }: MultiViewToolbarProps) {
+  const { user } = useAuth();
   const {
     panels,
     addPanel,
@@ -71,7 +99,7 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
   } = useMultiView();
   const { openView, views } = useFloatingViews();
 
-  const groupedItems = getGroupedNavItems();
+  const groupedItems = useMemo(() => getGroupedNavItemsForUser(user), [user]);
 
   return (
     <div className={cn(
@@ -121,17 +149,24 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
                   <DropdownMenuLabel className="text-xs text-slate-500">
                     {GROUP_LABELS[group] || group}
                   </DropdownMenuLabel>
-                  {items.map(item => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      onClick={() => addPanel(item.href, item.label)}
-                      disabled={panels.some(p => p.section === item.href)}
-                      className="flex items-center gap-2"
-                    >
-                      {item.icon && <item.icon className="h-4 w-4 opacity-60" />}
-                      <span className="truncate">{item.label}</span>
-                    </DropdownMenuItem>
-                  ))}
+                  {items.map(item => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={item.id}
+                        onClick={() => addPanel(item.href, item.label)}
+                        disabled={panels.some(p => p.section === item.href)}
+                        className="flex items-center gap-2"
+                      >
+                        {item.customIcon ? (
+                          <img src={item.customIcon} alt="" className="h-4 w-4 opacity-60 flex-shrink-0" />
+                        ) : Icon ? (
+                          <Icon className="h-4 w-4 opacity-60 flex-shrink-0" />
+                        ) : null}
+                        <span className="truncate">{item.label}</span>
+                      </DropdownMenuItem>
+                    );
+                  })}
                   <DropdownMenuSeparator />
                 </React.Fragment>
               ))}

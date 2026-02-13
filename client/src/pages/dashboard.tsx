@@ -419,7 +419,9 @@ export default function Dashboard({
 
 
   const renderContent = (sectionOverride?: string) => {
-    const section = sectionOverride || activeSection;
+    const rawSection = sectionOverride || activeSection;
+    // Use base path for switch (strip query string) so panels with e.g. event-requests?tab=admin_overview render correctly
+    const section = rawSection.includes('?') ? rawSection.split('?')[0] : rawSection;
     // Extract project ID from section if it's a project detail page
     const projectIdMatch = section.match(/^project-(\d+)$/);
     const projectId =
@@ -595,6 +597,8 @@ export default function Dashboard({
         return <WishlistPage />;
       case 'team-board':
         return <HoldingZone />;
+      case 'calendars':
+        return <YearlyCalendar />;
       case 'yearly-calendar':
         return <YearlyCalendar />;
       case 'promotion':

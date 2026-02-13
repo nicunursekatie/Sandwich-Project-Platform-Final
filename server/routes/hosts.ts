@@ -239,7 +239,7 @@ export function createHostsRouter(deps: RouterDependencies) {
       );
     }
 
-    const host = await storage.createHost(result.data);
+    let host = await storage.createHost(result.data);
 
     // Audit log
     await AuditLogger.logCreate(
@@ -254,22 +254,26 @@ export function createHostsRouter(deps: RouterDependencies) {
       }
     );
 
-    // Auto-geocode address (async, don't block response)
+    // Auto-geocode address SYNCHRONOUSLY so coordinates are set before response
     if (result.data.address) {
-      geocodeAddress(result.data.address)
-        .then(async (coords) => {
-          if (coords) {
-            await storage.updateHost(host.id, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              geocodedAt: new Date(),
-            });
-            logger.info(`✅ Geocoded new host ${host.id}: ${result.data.address}`);
+      try {
+        const coords = await geocodeAddress(result.data.address);
+        if (coords) {
+          const updated = await storage.updateHost(host.id, {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            geocodedAt: new Date(),
+          });
+          if (updated) {
+            host = updated;
           }
-        })
-        .catch((err) => {
-          logger.error(`Failed to geocode host ${host.id}:`, err);
-        });
+          logger.info(`✅ Geocoded new host ${host.id}: ${result.data.address}`);
+        } else {
+          logger.warn(`⚠️ Geocoding returned no results for new host ${host.id}: ${result.data.address}`);
+        }
+      } catch (err) {
+        logger.error(`Failed to geocode host ${host.id}:`, err);
+      }
     }
 
     res.status(201).json(host);
@@ -313,26 +317,31 @@ export function createHostsRouter(deps: RouterDependencies) {
       }
     );
 
-    // Re-geocode if address changed (async, don't block response)
+    // Re-geocode synchronously if address changed
     const addressChanged = updates.address && updates.address !== oldHost.address;
+    let finalHost = host;
     if (addressChanged) {
-      geocodeAddress(updates.address)
-        .then(async (coords) => {
-          if (coords) {
-            await storage.updateHost(id, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              geocodedAt: new Date(),
-            });
-            logger.info(`✅ Re-geocoded host ${id}: ${updates.address}`);
+      try {
+        const coords = await geocodeAddress(updates.address);
+        if (coords) {
+          const updated = await storage.updateHost(id, {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            geocodedAt: new Date(),
+          });
+          if (updated) {
+            finalHost = updated;
           }
-        })
-        .catch((err) => {
-          logger.error(`Failed to re-geocode host ${id}:`, err);
-        });
+          logger.info(`✅ Re-geocoded host ${id}: ${updates.address}`);
+        } else {
+          logger.warn(`⚠️ Geocoding returned no results for host ${id}: ${updates.address}`);
+        }
+      } catch (err) {
+        logger.error(`Failed to re-geocode host ${id}:`, err);
+      }
     }
 
-    res.json(host);
+    res.json(finalHost);
   })
 );
 
@@ -518,24 +527,56 @@ export function createHostsRouter(deps: RouterDependencies) {
       }
     );
 
-    // Auto-geocode contact address (async, don't block response)
+    // Auto-geocode contact address SYNCHRONOUSLY so coordinates are set before response
+    let finalContact = contact;
     if (result.data.address) {
-      geocodeAddress(result.data.address)
-        .then(async (coords) => {
-          if (coords) {
-            await storage.updateHostContact(contact.id, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            });
-            logger.info(`✅ Geocoded new host contact ${contact.id}: ${result.data.address}`);
+      try {
+        const coords = await geocodeAddress(result.data.address);
+        if (coords) {
+          const updated = await storage.updateHostContact(contact.id, {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          });
+          if (updated) {
+            finalContact = updated;
           }
-        })
-        .catch((err) => {
-          logger.error(`Failed to geocode host contact ${contact.id}:`, err);
-        });
+          logger.info(`✅ Geocoded new host contact ${contact.id}: ${result.data.address}`);
+
+          // Also backfill the parent host's address and coordinates if it doesn't have any.
+          // This happens when hosts are auto-created for new areas (they get no address).
+          if (result.data.hostId) {
+            try {
+              const parentHost = await storage.getHost(result.data.hostId);
+              if (parentHost && !parentHost.address) {
+                await storage.updateHost(parentHost.id, {
+                  address: result.data.address,
+                  latitude: coords.latitude,
+                  longitude: coords.longitude,
+                  geocodedAt: new Date(),
+                });
+                logger.info(`✅ Backfilled host ${parentHost.id} address from contact ${contact.id}`);
+              } else if (parentHost && (!parentHost.latitude || !parentHost.longitude)) {
+                // Host has address but no coordinates — geocode using contact's coords
+                await storage.updateHost(parentHost.id, {
+                  latitude: coords.latitude,
+                  longitude: coords.longitude,
+                  geocodedAt: new Date(),
+                });
+                logger.info(`✅ Backfilled host ${parentHost.id} coordinates from contact ${contact.id}`);
+              }
+            } catch (backfillErr) {
+              logger.error(`Failed to backfill host from contact ${contact.id}:`, backfillErr);
+            }
+          }
+        } else {
+          logger.warn(`⚠️ Geocoding returned no results for contact ${contact.id}: ${result.data.address}`);
+        }
+      } catch (err) {
+        logger.error(`Failed to geocode host contact ${contact.id}:`, err);
+      }
     }
 
-    res.status(201).json(contact);
+    res.status(201).json(finalContact);
   })
 );
 
@@ -601,25 +642,30 @@ export function createHostsRouter(deps: RouterDependencies) {
       }
     );
 
-    // Re-geocode if address changed (async, don't block response)
+    // Re-geocode synchronously if address changed
     const addressChanged = updates.address && updates.address !== oldContact.address;
+    let finalContact = contact;
     if (addressChanged) {
-      geocodeAddress(updates.address)
-        .then(async (coords) => {
-          if (coords) {
-            await storage.updateHostContact(id, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            });
-            logger.info(`✅ Re-geocoded host contact ${id}: ${updates.address}`);
+      try {
+        const coords = await geocodeAddress(updates.address);
+        if (coords) {
+          const updated = await storage.updateHostContact(id, {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          });
+          if (updated) {
+            finalContact = updated;
           }
-        })
-        .catch((err) => {
-          logger.error(`Failed to re-geocode host contact ${id}:`, err);
-        });
+          logger.info(`✅ Re-geocoded host contact ${id}: ${updates.address}`);
+        } else {
+          logger.warn(`⚠️ Geocoding returned no results for contact ${id}: ${updates.address}`);
+        }
+      } catch (err) {
+        logger.error(`Failed to re-geocode host contact ${id}:`, err);
+      }
     }
 
-    res.json(contact);
+    res.json(finalContact);
   })
 );
 

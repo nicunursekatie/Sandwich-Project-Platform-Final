@@ -1952,21 +1952,22 @@ router.post(
         createdBy: user?.id || 1,
       });
 
-      // Geocode address asynchronously (don't block response)
+      // Geocode address synchronously so coordinates are set before response
       if (validatedData.eventAddress) {
-        geocodeAddress(validatedData.eventAddress)
-          .then(async (coords) => {
-            if (coords) {
-              await storage.updateEventRequest(newEventRequest.id!, {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-              });
-              logger.log(`✅ Geocoded event ${newEventRequest.id}: ${validatedData.eventAddress}`);
-            }
-          })
-          .catch((error) => {
-            logger.error(`Failed to geocode event ${newEventRequest.id}:`, error);
-          });
+        try {
+          const coords = await geocodeAddress(validatedData.eventAddress);
+          if (coords) {
+            await storage.updateEventRequest(newEventRequest.id!, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
+            logger.log(`✅ Geocoded event ${newEventRequest.id}: ${validatedData.eventAddress}`);
+          } else {
+            logger.warn(`⚠️ Geocoding returned no results for event ${newEventRequest.id}: ${validatedData.eventAddress}`);
+          }
+        } catch (error) {
+          logger.error(`Failed to geocode event ${newEventRequest.id}:`, error);
+        }
       }
 
       // Enhanced audit logging for create operation
@@ -2098,21 +2099,24 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Geocode address asynchronously if it was updated and doesn't have coordinates
-      if (validatedData.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
-        geocodeAddress(validatedData.eventAddress)
-          .then(async (coords) => {
-            if (coords) {
-              await storage.updateEventRequest(id, {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-              });
-              logger.log(`✅ Geocoded event ${id}: ${validatedData.eventAddress}`);
-            }
-          })
-          .catch((error) => {
-            logger.error(`Failed to geocode event ${id}:`, error);
-          });
+      // Re-geocode if address was provided and either changed or coordinates are missing
+      const addressChanged1 = validatedData.eventAddress && validatedData.eventAddress !== originalEvent.eventAddress;
+      const missingCoords1 = validatedData.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude);
+      if (addressChanged1 || missingCoords1) {
+        try {
+          const coords = await geocodeAddress(validatedData.eventAddress);
+          if (coords) {
+            await storage.updateEventRequest(id, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
+            logger.log(`✅ Geocoded event ${id}: ${validatedData.eventAddress}`);
+          } else {
+            logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${validatedData.eventAddress}`);
+          }
+        } catch (error) {
+          logger.error(`Failed to geocode event ${id}:`, error);
+        }
       }
 
       // Enhanced audit logging for contact completion
@@ -2463,21 +2467,24 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Geocode address asynchronously if it was updated and doesn't have coordinates
-      if (processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
-        geocodeAddress(processedUpdates.eventAddress)
-          .then(async (coords) => {
-            if (coords) {
-              await storage.updateEventRequest(id, {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-              });
-              logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
-            }
-          })
-          .catch((error) => {
-            logger.error(`Failed to geocode event ${id}:`, error);
-          });
+      // Re-geocode if address was provided and either changed or coordinates are missing
+      const addressChanged2 = processedUpdates.eventAddress && processedUpdates.eventAddress !== originalEvent.eventAddress;
+      const missingCoords2 = processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude);
+      if (addressChanged2 || missingCoords2) {
+        try {
+          const coords = await geocodeAddress(processedUpdates.eventAddress);
+          if (coords) {
+            await storage.updateEventRequest(id, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
+            logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
+          } else {
+            logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${processedUpdates.eventAddress}`);
+          }
+        } catch (error) {
+          logger.error(`Failed to geocode event ${id}:`, error);
+        }
       }
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
@@ -3362,21 +3369,24 @@ router.put(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
-      // Geocode address asynchronously if it was updated and doesn't have coordinates
-      if (processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude)) {
-        geocodeAddress(processedUpdates.eventAddress)
-          .then(async (coords) => {
-            if (coords) {
-              await storage.updateEventRequest(id, {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-              });
-              logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
-            }
-          })
-          .catch((error) => {
-            logger.error(`Failed to geocode event ${id}:`, error);
-          });
+      // Re-geocode if address was provided and either changed or coordinates are missing
+      const addressChanged3 = processedUpdates.eventAddress && processedUpdates.eventAddress !== originalEvent.eventAddress;
+      const missingCoords3 = processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude);
+      if (addressChanged3 || missingCoords3) {
+        try {
+          const coords = await geocodeAddress(processedUpdates.eventAddress);
+          if (coords) {
+            await storage.updateEventRequest(id, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
+            logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
+          } else {
+            logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${processedUpdates.eventAddress}`);
+          }
+        } catch (error) {
+          logger.error(`Failed to geocode event ${id}:`, error);
+        }
       }
 
       // Determine action type based on changes
