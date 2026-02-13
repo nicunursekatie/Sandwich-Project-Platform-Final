@@ -17,6 +17,19 @@ import { AuditLogger } from '../audit-logger';
 import { logger } from '../utils/production-safe-logger';
 import { geocodeAddress } from '../utils/geocoding';
 
+// Normalize freeform contact role values to standardized ones
+// Must match the client-side normalizeContactRole function
+function normalizeContactRole(raw: string | null | undefined): string {
+  if (!raw) return 'host';
+  const lower = raw.toLowerCase().trim();
+  if (lower === 'lead') return 'lead';
+  if (lower === 'primary' || lower === 'primary contact') return 'primary';
+  if (lower === 'alternate' || lower === 'alternate contact') return 'alternate';
+  if (lower === 'volunteer') return 'volunteer';
+  if (lower.includes('host')) return 'host';
+  return 'host';
+}
+
 export function createHostsRouter(deps: RouterDependencies) {
   const router = Router();
   const { storage, requirePermission } = deps;
@@ -475,6 +488,11 @@ export function createHostsRouter(deps: RouterDependencies) {
   asyncHandler(async (req: any, res) => {
     validateRequired(req.body, ['name', 'role', 'phone', 'hostId'], 'host contact creation');
 
+    // Normalize role before validation
+    if (req.body.role) {
+      req.body.role = normalizeContactRole(req.body.role);
+    }
+
     const result = insertHostContactSchema.safeParse(req.body);
     if (!result.success) {
       throw createHostsError(
@@ -528,6 +546,11 @@ export function createHostsRouter(deps: RouterDependencies) {
   asyncHandler(async (req: any, res) => {
     const id = validateId(req.params.id, 'host contact');
     const updates = req.body;
+
+    // Normalize role on update
+    if (updates.role) {
+      updates.role = normalizeContactRole(updates.role);
+    }
 
     logger.info(`Updating host contact ${id} with data:`, updates);
 

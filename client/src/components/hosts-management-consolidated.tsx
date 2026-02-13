@@ -99,6 +99,32 @@ const CONTACT_ROLES = [
   { value: 'alternate', label: 'Alternate Contact' },
 ] as const;
 
+// Normalize legacy freeform role values to standardized ones
+// Old data has: "Host", "Host Home", "Host Collection Site", "head of school", etc.
+function normalizeContactRole(raw: string | null | undefined): string {
+  if (!raw) return 'host';
+  const lower = raw.toLowerCase().trim();
+
+  // Direct matches
+  if (lower === 'lead') return 'lead';
+  if (lower === 'primary' || lower === 'primary contact') return 'primary';
+  if (lower === 'alternate' || lower === 'alternate contact') return 'alternate';
+  if (lower === 'volunteer') return 'volunteer';
+
+  // Legacy values that are all just "host" with extra words
+  if (lower.includes('host')) return 'host';
+
+  // Anything else that doesn't match a known role → default to host
+  // (these are contacts ON host locations, so "host" is the safest default)
+  return 'host';
+}
+
+// Get display label for a normalized role
+function roleLabel(role: string): string {
+  const found = CONTACT_ROLES.find((r) => r.value === role);
+  return found ? found.label : role.charAt(0).toUpperCase() + role.slice(1);
+}
+
 export default function HostsManagementConsolidated() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -224,6 +250,14 @@ export default function HostsManagementConsolidated() {
   >({
     queryKey: ['/api/hosts-with-contacts'],
     // Use global defaults (5 min staleTime, 10 min gcTime) - proper cache invalidation after mutations
+    select: (data) =>
+      data.map((host) => ({
+        ...host,
+        contacts: host.contacts.map((contact) => ({
+          ...contact,
+          role: normalizeContactRole(contact.role),
+        })),
+      })),
   });
 
   const { data: recipients = [] } = useQuery<Recipient[]>({
@@ -386,8 +420,7 @@ export default function HostsManagementConsolidated() {
         );
       } else if (roleFilter === 'alternates') {
         filtered = filtered.filter(
-          (contact) =>
-            contact.role === 'alternate' || contact.role === 'alternate contact'
+          (contact) => contact.role === 'alternate'
         );
       }
     }
@@ -1063,7 +1096,7 @@ export default function HostsManagementConsolidated() {
                           </div>
                           {contact.role && (
                             <div className="text-xs text-slate-600">
-                              {contact.role === 'lead' ? 'Lead' : contact.role}
+                              {roleLabel(contact.role)}
                             </div>
                           )}
                           <div className="flex items-center text-xs text-slate-600">
@@ -1626,7 +1659,7 @@ export default function HostsManagementConsolidated() {
                                       : 'bg-gray-100 text-gray-800 border-gray-200'
                               }`}
                             >
-                              {contact.role}
+                              {roleLabel(contact.role)}
                             </Badge>
                             {contact.isPrimary && (
                               <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary-border text-xs">
@@ -2300,9 +2333,7 @@ export default function HostsManagementConsolidated() {
                               </div>
                               {contact.role && (
                                 <div className="text-sm text-slate-600">
-                                  {contact.role === 'lead'
-                                    ? 'Lead'
-                                    : contact.role}
+                                  {roleLabel(contact.role)}
                                 </div>
                               )}
                               <div className="flex items-center text-sm text-slate-600">
