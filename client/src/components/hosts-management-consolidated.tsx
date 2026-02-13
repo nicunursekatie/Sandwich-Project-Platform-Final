@@ -413,6 +413,7 @@ export default function HostsManagementConsolidated() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
       setNewHost({ name: '', address: '', status: 'active', notes: '' });
       setIsAddModalOpen(false);
       toast({
@@ -435,6 +436,7 @@ export default function HostsManagementConsolidated() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
       setEditingHost(null);
       toast({
         title: 'Host updated',
@@ -466,6 +468,7 @@ export default function HostsManagementConsolidated() {
 
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
       toast({
         title: 'Host deleted',
         description: 'Host has been deleted successfully.',
@@ -522,6 +525,7 @@ export default function HostsManagementConsolidated() {
       await queryClient.invalidateQueries({
         queryKey: ['/api/hosts-with-contacts'],
       });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
       await queryClient.refetchQueries({
         queryKey: ['/api/hosts-with-contacts'],
       });
@@ -610,6 +614,7 @@ export default function HostsManagementConsolidated() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
       setEditingContact(null);
       toast({
         title: 'Contact updated',
@@ -678,6 +683,7 @@ export default function HostsManagementConsolidated() {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/host-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
 
       // Update selectedHost immediately to show the contact is gone
       if (selectedHost && !editingHost) {
