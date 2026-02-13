@@ -53,8 +53,9 @@ export function createHostsRouter(deps: RouterDependencies) {
   asyncHandler(async (req, res) => {
     const hostsWithContacts = await storage.getAllHostsWithContacts();
 
+    // Show all hosts visible on the host management page (everything except 'hidden')
     const mapData = hostsWithContacts
-      .filter(host => host.status === 'active')
+      .filter(host => host.status !== 'hidden')
       .flatMap(host => {
         // Get contacts that have valid coordinates
         const geocodedContacts = host.contacts
