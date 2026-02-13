@@ -753,10 +753,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  // Helper function to serialize date to ISO midnight string for backend
+  // Helper function to serialize date for backend
+  // Send bare YYYY-MM-DD so parseDateOnly uses its safe local-noon path
+  // (appending T00:00:00.000Z would hit the unsafe UTC path and shift dates near timezone boundaries)
   const serializeDateToISO = (dateString: string) => {
     if (!dateString) return null;
-    return `${dateString}T00:00:00.000Z`;
+    // Extract just the YYYY-MM-DD portion in case it already has a time component
+    const dateOnly = dateString.split('T')[0];
+    return dateOnly;
   };
 
   // Initialize form with existing data when dialog opens
@@ -1269,8 +1273,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       ...(eventRequest && mode === 'schedule' ? { status: 'scheduled' } : {}),
       // For new events (create mode), use the status from form data
       ...(!eventRequest ? { status: formData.status || 'new' } : {}),
-      // For edit mode, include the status from form data
-      ...(eventRequest && mode === 'edit' ? { status: formData.status } : {}),
+      // For edit mode, include the status from form data (with fallback to prevent empty status)
+      ...(eventRequest && mode === 'edit' ? { status: formData.status || eventRequest.status || 'new' } : {}),
       // Serialize date properly to avoid timezone issues
       desiredEventDate: serializeDateToISO(formData.eventDate),
       dateFlexible: formData.dateFlexible, // null = unknown, true = flexible, false = fixed
@@ -1421,6 +1425,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           description: 'Event request ID is missing. Please refresh the page and try again.',
           variant: 'destructive',
         });
+        setIsSubmitting(false);
         return;
       }
       
@@ -1671,7 +1676,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     const cleanup = collaboration.onFieldUpdate?.((fieldName, value, version) => {
       logger.log(`[EventSchedulingForm] Field ${fieldName} updated by another user:`, value);
-      
+
+      // Validate critical fields before applying — never allow empty status
+      if (fieldName === 'status' && !value) {
+        logger.warn(`[EventSchedulingForm] Rejected empty status from collaboration update`);
+        return;
+      }
+
       // Update formData with the new value from another user
       setFormData(prev => ({
         ...prev,
