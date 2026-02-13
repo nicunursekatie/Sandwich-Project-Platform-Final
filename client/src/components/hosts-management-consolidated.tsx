@@ -736,6 +736,36 @@ export default function HostsManagementConsolidated() {
     },
   });
 
+  const geocodeAllMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/hosts/geocode-all');
+    },
+    onSuccess: (result: any) => {
+      // Refresh map and hosts data after geocoding starts
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
+
+      if (result.hostsProcessed === 0 && result.contactsProcessed === 0) {
+        toast({
+          title: 'All Geocoded',
+          description: 'All hosts and contacts with addresses already have coordinates.',
+        });
+      } else {
+        toast({
+          title: 'Geocoding Started',
+          description: `Geocoding ${result.hostsProcessed} hosts and ${result.contactsProcessed} contacts in background. Refresh the page in a minute to see updated map pins.`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: `Failed to start geocoding: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleAddHost = () => {
     if (!newHost.name.trim()) return;
     createHostMutation.mutate(newHost);
@@ -1364,6 +1394,15 @@ export default function HostsManagementConsolidated() {
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshAvailabilityMutation.isPending ? 'animate-spin' : ''}`} />
           {refreshAvailabilityMutation.isPending ? 'Refreshing...' : 'Refresh Availability'}
+        </Button>
+
+        <Button
+          variant="outline"
+          disabled={!canEdit || geocodeAllMutation.isPending}
+          onClick={() => geocodeAllMutation.mutate()}
+        >
+          <MapPin className={`w-4 h-4 mr-2 ${geocodeAllMutation.isPending ? 'animate-spin' : ''}`} />
+          {geocodeAllMutation.isPending ? 'Geocoding...' : 'Geocode All Addresses'}
         </Button>
       </div>
       </div>

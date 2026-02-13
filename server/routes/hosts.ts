@@ -97,6 +97,104 @@ export function createHostsRouter(deps: RouterDependencies) {
   })
 );
 
+// Bulk geocode all hosts and contacts that have addresses but no coordinates
+  // This backfills existing records that were created before auto-geocoding was added
+  router.post(
+  '/hosts/geocode-all',
+  requirePermission(PERMISSIONS.HOSTS_EDIT),
+  asyncHandler(async (req, res) => {
+    const allHosts = await storage.getAllHosts();
+    const allHostsWithContacts = await storage.getAllHostsWithContacts();
+
+    // Find hosts with address but no coordinates
+    const hostsToGeocode = allHosts.filter(
+      (h) => h.address && h.address.trim() !== '' && (!h.latitude || !h.longitude)
+    );
+
+    // Find contacts with address but no coordinates
+    const contactsToGeocode = allHostsWithContacts.flatMap((host) =>
+      host.contacts.filter(
+        (c) => c.address && c.address.trim() !== '' && (!c.latitude || !c.longitude)
+      )
+    );
+
+    const totalToProcess = hostsToGeocode.length + contactsToGeocode.length;
+
+    if (totalToProcess === 0) {
+      res.json({
+        message: 'All hosts and contacts with addresses already have coordinates',
+        hostsProcessed: 0,
+        contactsProcessed: 0,
+      });
+      return;
+    }
+
+    // Return immediately, geocode in background
+    res.json({
+      message: `Geocoding ${hostsToGeocode.length} hosts and ${contactsToGeocode.length} contacts in background`,
+      hostsProcessed: hostsToGeocode.length,
+      contactsProcessed: contactsToGeocode.length,
+    });
+
+    // Background geocoding for hosts
+    (async () => {
+      let hostsSuccess = 0;
+      let hostsFailed = 0;
+
+      for (const host of hostsToGeocode) {
+        try {
+          const coords = await geocodeAddress(host.address!);
+          if (coords) {
+            await storage.updateHost(host.id, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+              geocodedAt: new Date(),
+            });
+            hostsSuccess++;
+            logger.info(`✅ Bulk geocoded host ${host.id}: ${host.address}`);
+          } else {
+            hostsFailed++;
+            logger.warn(`⚠️ Bulk geocode returned no results for host ${host.id}: ${host.address}`);
+          }
+          // Rate limit between requests
+          await new Promise((resolve) => setTimeout(resolve, 1100));
+        } catch (err) {
+          hostsFailed++;
+          logger.error(`Failed to bulk geocode host ${host.id}:`, err);
+        }
+      }
+
+      // Background geocoding for contacts
+      let contactsSuccess = 0;
+      let contactsFailed = 0;
+
+      for (const contact of contactsToGeocode) {
+        try {
+          const coords = await geocodeAddress(contact.address!);
+          if (coords) {
+            await storage.updateHostContact(contact.id, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
+            contactsSuccess++;
+            logger.info(`✅ Bulk geocoded host contact ${contact.id}: ${contact.address}`);
+          } else {
+            contactsFailed++;
+            logger.warn(`⚠️ Bulk geocode returned no results for contact ${contact.id}: ${contact.address}`);
+          }
+          // Rate limit between requests
+          await new Promise((resolve) => setTimeout(resolve, 1100));
+        } catch (err) {
+          contactsFailed++;
+          logger.error(`Failed to bulk geocode host contact ${contact.id}:`, err);
+        }
+      }
+
+      logger.info(`🗺️ Bulk geocode complete: ${hostsSuccess}/${hostsToGeocode.length} hosts, ${contactsSuccess}/${contactsToGeocode.length} contacts`);
+    })();
+  })
+);
+
   router.get(
   '/hosts/:id',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
