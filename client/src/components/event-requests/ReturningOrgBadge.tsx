@@ -41,6 +41,7 @@ export function ReturningOrgBadge({
     email,
     contactFullName,
     phone,
+    department,
   );
 
   if (!returningOrgData?.isReturning) return null;
@@ -49,7 +50,7 @@ export function ReturningOrgBadge({
     returningOrgData.pastDepartments &&
     returningOrgData.pastDepartments.length > 0 &&
     !returningOrgData.pastDepartments.some(
-      d => d === (department || '').trim().replace(/\s+/g, ' ').toLowerCase()
+      d => d === department?.trim().replace(/\s+/g, ' ').toLowerCase()
     );
 
   return (
