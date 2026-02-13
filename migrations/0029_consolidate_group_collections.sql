@@ -38,12 +38,12 @@ WHERE
     OR sc.group1_name IS NOT NULL
     OR sc.group2_name IS NOT NULL
   );
-
+--> statement-breakpoint
 -- Step 2: Set group_collections to default empty array for any remaining NULL values
 UPDATE sandwich_collections
 SET group_collections = '[]'::jsonb
 WHERE group_collections IS NULL OR group_collections = 'null'::jsonb;
-
+--> statement-breakpoint
 -- Step 3: Now that data is migrated, set all legacy group fields to NULL
 -- This prevents double-counting going forward
 UPDATE sandwich_collections
@@ -61,9 +61,12 @@ WHERE
     OR group1_name IS NOT NULL
     OR group2_name IS NOT NULL
   );
-
+--> statement-breakpoint
 -- Step 4: Add a comment to the table documenting this change
 COMMENT ON COLUMN sandwich_collections.group1_name IS 'DEPRECATED: Use group_collections JSONB column instead. This field should remain NULL to prevent double-counting.';
+--> statement-breakpoint
 COMMENT ON COLUMN sandwich_collections.group1_count IS 'DEPRECATED: Use group_collections JSONB column instead. This field should remain NULL to prevent double-counting.';
+--> statement-breakpoint
 COMMENT ON COLUMN sandwich_collections.group2_name IS 'DEPRECATED: Use group_collections JSONB column instead. This field should remain NULL to prevent double-counting.';
+--> statement-breakpoint
 COMMENT ON COLUMN sandwich_collections.group2_count IS 'DEPRECATED: Use group_collections JSONB column instead. This field should remain NULL to prevent double-counting.';
