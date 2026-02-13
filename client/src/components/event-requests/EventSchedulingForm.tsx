@@ -1869,14 +1869,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           {/* Status */}
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={handleStatusChange}>
+            <Select value={formData.status || 'new'} onValueChange={handleStatusChange}>
               <SelectTrigger data-testid="select-status">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                 {/* Current status is always shown */}
-                <SelectItem value={formData.status}>
-                  {STATUS_DEFINITIONS[formData.status as EventStatus]?.label || formData.status} (Current)
+                <SelectItem value={formData.status || 'new'}>
+                  {STATUS_DEFINITIONS[(formData.status || 'new') as EventStatus]?.label || formData.status || 'New'} (Current)
                 </SelectItem>
                 {/* Only show valid transitions from current status */}
                 {(VALID_STATUS_TRANSITIONS[formData.status as EventStatus] || [])
@@ -2556,7 +2556,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <SelectValue placeholder="Select TSP contact" />
                   </SelectTrigger>
                   <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                    {users.map((user) => (
+                    {users.filter((user) => user.id).map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.firstName && user.lastName
                           ? `${user.firstName} ${user.lastName}`

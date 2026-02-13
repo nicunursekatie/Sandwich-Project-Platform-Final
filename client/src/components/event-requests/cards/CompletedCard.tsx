@@ -467,7 +467,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                           <SelectValue placeholder="Select user..." />
                         </SelectTrigger>
                         <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                          {users.map((user) => (
+                          {users.filter((user) => user.id).map((user) => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.name}
                             </SelectItem>

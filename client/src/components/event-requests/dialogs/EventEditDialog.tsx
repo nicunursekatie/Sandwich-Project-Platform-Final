@@ -775,7 +775,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                     <SelectItem value="none">
                       <span className="text-gray-500">No TSP contact assigned</span>
                     </SelectItem>
-                    {usersBasic.map((u: any) => {
+                    {usersBasic.filter((u: any) => u.id).map((u: any) => {
                       const name = u.displayName || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || u.id;
                       return (
                         <SelectItem key={u.id} value={u.id}>
