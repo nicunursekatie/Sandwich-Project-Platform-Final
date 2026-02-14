@@ -379,29 +379,20 @@ export default function MonthlyComparisonAnalytics() {
           previousMonth.totalSandwiches) * 100
       : null;
 
-    // Choose the less drastic comparison (smaller absolute percent change)
+    // Always prefer year-over-year comparison (same month last year)
+    // MoM is only a fallback when no prior year data exists
     let useMoMComparison = false;
     let comparisonChange = yearOverYearChange;
     let comparisonPercent = yearOverYearPercent;
     let comparisonBase = prevYearMonth;
-    // For partial months, show the same-period comparison label (e.g., "Jan 1-25, 2025")
-    let comparisonLabel = prevYearMonth 
-      ? (isCurrentMonth 
-          ? `${months[selectedMonth].substring(0, 3)} 1-${dayOfMonth}, ${selectedYear - 1}` 
+    let comparisonLabel = prevYearMonth
+      ? (isCurrentMonth
+          ? `${months[selectedMonth].substring(0, 3)} 1-${dayOfMonth}, ${selectedYear - 1}`
           : `${months[selectedMonth]} ${selectedYear - 1}`)
       : null;
 
-    if (yearOverYearPercent !== null && monthOverMonthPercent !== null) {
-      // Both comparisons available - pick less drastic
-      if (Math.abs(monthOverMonthPercent) < Math.abs(yearOverYearPercent)) {
-        useMoMComparison = true;
-        comparisonChange = monthOverMonthChange;
-        comparisonPercent = monthOverMonthPercent;
-        comparisonBase = previousMonth;
-        comparisonLabel = `${months[prevMonth]} ${prevMonthYear}`;
-      }
-    } else if (monthOverMonthPercent !== null && yearOverYearPercent === null) {
-      // Only month-over-month available
+    if (yearOverYearPercent === null && monthOverMonthPercent !== null) {
+      // Only fall back to month-over-month when no year-over-year data exists
       useMoMComparison = true;
       comparisonChange = monthOverMonthChange;
       comparisonPercent = monthOverMonthPercent;
@@ -879,10 +870,10 @@ export default function MonthlyComparisonAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Smart Comparison Analysis
+                Year-over-Year Comparison
               </CardTitle>
               <CardDescription>
-                Showing the most relevant comparison (less drastic change)
+                Comparing {selectedMonthName} {selectedYear} to {selectedMonthName} {selectedYear - 1}{selectedMonthAnalysis?.isCurrentMonth ? ' (same period)' : ''}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -984,10 +975,12 @@ export default function MonthlyComparisonAnalytics() {
                       <div className="p-3 bg-brand-primary-lighter border border-brand-primary-border rounded-lg">
                         <div className="flex items-center gap-2 mb-1">
                           <Activity className="h-3 w-3 text-brand-primary-muted" />
-                          <span className="text-xs font-medium text-brand-primary-dark">Alternative: Month-over-Month</span>
+                          <span className="text-xs font-medium text-brand-primary-dark">
+                            Also: Month-over-Month{selectedMonthAnalysis.isCurrentMonth ? ' (projected)' : ''}
+                          </span>
                         </div>
                         <p className="text-xs text-brand-primary">
-                          vs {selectedMonthAnalysis.comparisonLabel}: {selectedMonthAnalysis.monthOverMonthPercent > 0 ? '+' : ''}{selectedMonthAnalysis.monthOverMonthPercent.toFixed(1)}%
+                          vs {months[selectedMonth === 0 ? 11 : selectedMonth - 1]} {selectedMonth === 0 ? selectedYear - 1 : selectedYear}: {selectedMonthAnalysis.monthOverMonthPercent > 0 ? '+' : ''}{selectedMonthAnalysis.monthOverMonthPercent.toFixed(1)}%
                           ({Math.abs(selectedMonthAnalysis.monthOverMonthChange!).toLocaleString()} sandwiches)
                         </p>
                       </div>
