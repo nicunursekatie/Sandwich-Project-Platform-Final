@@ -40,6 +40,7 @@ import {
   BarChart3,
   PieChart as PieChartIcon,
   Activity,
+  Info,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
 import {
@@ -477,6 +478,7 @@ export default function MonthlyComparisonAnalytics() {
       // Partial month indicators
       isCurrentMonth,
       monthProgressRatio,
+      projectedTotal: projectedSelectedMonthTotal,
       projectedSelectedMonthTotal,
       // Same-period comparison data (for partial months)
       prevYearSamePeriodTotal: isCurrentMonth ? prevYearSamePeriodTotal : (prevYearMonth?.totalSandwiches || 0),
@@ -594,18 +596,37 @@ export default function MonthlyComparisonAnalytics() {
           </div>
         </div>
 
+        {/* Partial Month Banner */}
+        {selectedMonthAnalysis.isCurrentMonth && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+            <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-blue-800">
+                Viewing an incomplete month — {Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of {selectedMonthName} recorded so far
+              </p>
+              <p className="text-xs text-blue-600 mt-0.5">
+                Totals shown are actuals to date. Comparisons use projected full-month estimates based on current pace.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Primary Impact Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-4">
           <div className="bg-white p-4 rounded-lg border border-green-200 border-l-4 min-w-0 overflow-hidden">
-            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">People Fed</div>
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">People Fed{selectedMonthAnalysis.isCurrentMonth ? ' (so far)' : ''}</div>
             <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
             </div>
-            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">Sandwiches collected</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">
+              {selectedMonthAnalysis.isCurrentMonth
+                ? `On pace for ~${selectedMonthAnalysis.projectedTotal.toLocaleString()}`
+                : 'Sandwiches collected'}
+            </p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary-border border-l-4 min-w-0 overflow-hidden">
-            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 truncate">Individual vs Group Split</div>
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 truncate">Individual vs Group Split{selectedMonthAnalysis.isCurrentMonth ? ' (to date)' : ''}</div>
 
             <div className="space-y-3">
               {/* Individual Row */}
@@ -645,9 +666,9 @@ export default function MonthlyComparisonAnalytics() {
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4 min-w-0 overflow-hidden">
             <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Collection Sites</div>
             <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-              {selectedMonthAnalysis.selectedMonthData.totalCollections}
+              38
             </div>
-            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">38 hosts recording data</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">{selectedMonthAnalysis.selectedMonthData.totalCollections} collections{selectedMonthAnalysis.isCurrentMonth ? ' so far' : ''} this month</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4 min-w-0 overflow-hidden">
@@ -803,38 +824,43 @@ export default function MonthlyComparisonAnalytics() {
                 {selectedMonthName} Performance Breakdown
               </CardTitle>
               <CardDescription>
-                Collection types and participation metrics
+                Collection types and participation metrics{selectedMonthAnalysis.isCurrentMonth ? ` — ${Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month complete` : ''}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-brand-primary-lighter rounded-lg border border-brand-primary-border min-w-0 overflow-hidden">
-                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Total Sandwiches</div>
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Total Sandwiches{selectedMonthAnalysis.isCurrentMonth ? ' (to date)' : ''}</div>
                   <div className="text-xl md:text-2xl font-bold text-brand-primary-darker break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()}
                   </div>
                   <div className="text-brand-primary-muted mt-1 text-sm sm:text-base truncate">
                     From {selectedMonthAnalysis.selectedMonthData.totalCollections} collections
+                    {selectedMonthAnalysis.isCurrentMonth && ` (${Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month)`}
                   </div>
                 </div>
 
                 <div className="p-4 bg-green-50 rounded-lg border border-green-200 min-w-0 overflow-hidden">
-                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Individual Collections</div>
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Individual Collections{selectedMonthAnalysis.isCurrentMonth ? ' (to date)' : ''}</div>
                   <div className="text-xl md:text-2xl font-bold text-green-900 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {selectedMonthAnalysis.selectedMonthData.individualCount.toLocaleString()}
                   </div>
                   <div className="text-green-600 mt-1 text-sm sm:text-base truncate">
-                    {((selectedMonthAnalysis.selectedMonthData.individualCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total
+                    {selectedMonthAnalysis.selectedMonthData.totalSandwiches > 0
+                      ? ((selectedMonthAnalysis.selectedMonthData.individualCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)
+                      : '0.0'}% of total
                   </div>
                 </div>
 
                 <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 min-w-0 overflow-hidden">
-                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Group Events</div>
+                  <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Group Events{selectedMonthAnalysis.isCurrentMonth ? ' (to date)' : ''}</div>
                   <div className="text-xl md:text-2xl font-bold text-purple-900 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {selectedMonthAnalysis.selectedMonthData.groupCount.toLocaleString()}
                   </div>
                   <div className="text-xs text-purple-600 mt-1 truncate">
-                    {selectedMonthAnalysis.selectedMonthData.groupEventCount} events ({((selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of total)
+                    {selectedMonthAnalysis.selectedMonthData.groupEventCount} events ({selectedMonthAnalysis.selectedMonthData.totalSandwiches > 0
+                      ? ((selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)
+                      : '0.0'}% of total)
                   </div>
                 </div>
               </div>
@@ -918,10 +944,11 @@ export default function MonthlyComparisonAnalytics() {
                           </span>
                         </div>
                         <p className="text-sm text-gray-700">
-                          {selectedMonthName} shows a {Math.abs(selectedMonthAnalysis.comparisonPercent).toFixed(1)}%
-                          {selectedMonthAnalysis.comparisonChange! >= 0 ? ' increase' : ' change'} compared to {selectedMonthAnalysis.comparisonLabel}.
-                          This represents {Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()}
-                          {selectedMonthAnalysis.comparisonChange! >= 0 ? ' more' : ' fewer'} sandwiches.
+                          {selectedMonthAnalysis.isCurrentMonth && selectedMonthAnalysis.comparisonType === 'month-over-month'
+                            ? `At current pace, ${selectedMonthName} is projected to show a ${Math.abs(selectedMonthAnalysis.comparisonPercent).toFixed(1)}% ${selectedMonthAnalysis.comparisonChange! >= 0 ? 'increase' : 'change'} compared to ${selectedMonthAnalysis.comparisonLabel}. That would be ${Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()} ${selectedMonthAnalysis.comparisonChange! >= 0 ? 'more' : 'fewer'} sandwiches.`
+                            : selectedMonthAnalysis.isCurrentMonth && selectedMonthAnalysis.comparisonType === 'year-over-year'
+                              ? `Through ${months[selectedMonth].substring(0, 3)} ${new Date().getDate()}, ${selectedMonthName} shows a ${Math.abs(selectedMonthAnalysis.comparisonPercent).toFixed(1)}% ${selectedMonthAnalysis.comparisonChange! >= 0 ? 'increase' : 'change'} compared to the same period in ${selectedMonthAnalysis.comparisonLabel}. That's ${Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()} ${selectedMonthAnalysis.comparisonChange! >= 0 ? 'more' : 'fewer'} sandwiches.`
+                              : `${selectedMonthName} shows a ${Math.abs(selectedMonthAnalysis.comparisonPercent).toFixed(1)}% ${selectedMonthAnalysis.comparisonChange! >= 0 ? 'increase' : 'change'} compared to ${selectedMonthAnalysis.comparisonLabel}. This represents ${Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()} ${selectedMonthAnalysis.comparisonChange! >= 0 ? 'more' : 'fewer'} sandwiches.`}
                         </p>
                       </div>
                     ) : (
@@ -1286,11 +1313,17 @@ export default function MonthlyComparisonAnalytics() {
                         <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
                           <h5 className="font-medium text-purple-800 mb-2">💡 {selectedMonthName} Takeaway</h5>
                           <p className="text-sm text-purple-700">
-                            {isAboveAvg
-                              ? `${selectedMonthName} ${selectedYear} outperformed the recent 6-month average by ${Math.abs(shortfall).toLocaleString()} sandwiches. ${groupPct >= 20 ? 'Group events were a strong contributor — consider replicating this outreach approach in future months.' : 'Growth came primarily from individual collections — adding more group events could push results even higher.'}`
-                              : data.totalSandwiches === 0
-                                ? `No collection data recorded for ${selectedMonthName} ${selectedYear}. This may be due to a seasonal break or data not yet being entered.`
-                                : `${selectedMonthName} ${selectedYear} collected ${data.totalSandwiches.toLocaleString()} sandwiches across ${data.totalCollections} collections. ${shortfall > 2000 ? `This was ${Math.abs(shortfall).toLocaleString()} below the recent average — ` : 'Slightly below average — '}${groupPct < 20 ? 'increasing group event outreach could help close the gap.' : 'maintaining strong group event participation will be key to recovery.'}`
+                            {selectedMonthAnalysis.isCurrentMonth
+                              ? isAboveAvg
+                                ? `At current pace, ${selectedMonthName} ${selectedYear} is projected to exceed the recent 6-month average by ~${Math.abs(shortfall).toLocaleString()} sandwiches (${Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of month complete). ${groupPct >= 20 ? 'Group events are contributing well — keep the momentum going.' : 'Growth is coming primarily from individual collections — scheduling group events this month could push results even higher.'}`
+                                : data.totalSandwiches === 0
+                                  ? `No collection data recorded yet for ${selectedMonthName} ${selectedYear}. Data may not have been entered yet.`
+                                  : `With ${Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% of the month complete, ${selectedMonthName} ${selectedYear} has collected ${data.totalSandwiches.toLocaleString()} sandwiches. At current pace, the projected total is ~${selectedMonthAnalysis.projectedTotal.toLocaleString()}, which would be ${Math.abs(shortfall).toLocaleString()} below the recent average. ${groupPct < 20 ? 'Scheduling more group events this month could help close the gap.' : 'Maintaining group event participation will be key to closing the gap.'}`
+                              : isAboveAvg
+                                ? `${selectedMonthName} ${selectedYear} outperformed the recent 6-month average by ${Math.abs(shortfall).toLocaleString()} sandwiches. ${groupPct >= 20 ? 'Group events were a strong contributor — consider replicating this outreach approach in future months.' : 'Growth came primarily from individual collections — adding more group events could push results even higher.'}`
+                                : data.totalSandwiches === 0
+                                  ? `No collection data recorded for ${selectedMonthName} ${selectedYear}. This may be due to a seasonal break or data not yet being entered.`
+                                  : `${selectedMonthName} ${selectedYear} collected ${data.totalSandwiches.toLocaleString()} sandwiches across ${data.totalCollections} collections. ${shortfall > 2000 ? `This was ${Math.abs(shortfall).toLocaleString()} below the recent average — ` : 'Slightly below average — '}${groupPct < 20 ? 'increasing group event outreach could help close the gap.' : 'maintaining strong group event participation will be key to recovery.'}`
                             }
                           </p>
                         </div>
@@ -1451,24 +1484,50 @@ export default function MonthlyComparisonAnalytics() {
               <CardContent className="space-y-3">
                 <div className="p-3 bg-brand-primary-lighter rounded">
                   <h4 className="font-semibold text-brand-primary-dark mb-1">
-                    Comparison Analysis
+                    Comparison Analysis{selectedMonthAnalysis.isCurrentMonth ? ' (in progress)' : ''}
                   </h4>
                   <p className="text-sm text-brand-primary">
                     {selectedMonthAnalysis.comparisonChange !== null ? (
-                      selectedMonthAnalysis.comparisonChange < 0 ? (
-                        <>
-                          {selectedMonthName} collected{' '}
-                          {Math.abs(selectedMonthAnalysis.comparisonChange).toLocaleString()} fewer
-                          sandwiches ({Math.abs(selectedMonthAnalysis.comparisonPercent?.toFixed(1) || 0)}%
-                          decrease) compared to {selectedMonthAnalysis.comparisonLabel}.
-                        </>
+                      selectedMonthAnalysis.isCurrentMonth ? (
+                        selectedMonthAnalysis.comparisonType === 'year-over-year' ? (
+                          <>
+                            Through {months[selectedMonth].substring(0, 3)} {new Date().getDate()}, {selectedMonthName} has collected{' '}
+                            {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()} sandwiches —{' '}
+                            {selectedMonthAnalysis.comparisonChange >= 0
+                              ? `${Math.abs(selectedMonthAnalysis.comparisonChange).toLocaleString()} more`
+                              : `${Math.abs(selectedMonthAnalysis.comparisonChange).toLocaleString()} fewer`}
+                            {' '}than the same period last year ({Math.abs(Number(selectedMonthAnalysis.comparisonPercent?.toFixed(1)) || 0)}%
+                            {selectedMonthAnalysis.comparisonChange >= 0 ? ' increase' : ' decrease'}).
+                            {' '}At current pace, the projected monthly total is ~{selectedMonthAnalysis.projectedTotal.toLocaleString()} sandwiches.
+                          </>
+                        ) : (
+                          <>
+                            {selectedMonthName} is {Math.round(selectedMonthAnalysis.monthProgressRatio * 100)}% complete with{' '}
+                            {selectedMonthAnalysis.selectedMonthData.totalSandwiches.toLocaleString()} sandwiches collected so far.
+                            {' '}At current pace, the projected total (~{selectedMonthAnalysis.projectedTotal.toLocaleString()}) would be{' '}
+                            {selectedMonthAnalysis.comparisonChange! >= 0
+                              ? `${Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()} more`
+                              : `${Math.abs(selectedMonthAnalysis.comparisonChange!).toLocaleString()} fewer`}
+                            {' '}than {selectedMonthAnalysis.comparisonLabel} ({Math.abs(Number(selectedMonthAnalysis.comparisonPercent?.toFixed(1)) || 0)}%
+                            {selectedMonthAnalysis.comparisonChange! >= 0 ? ' increase' : ' decrease'}).
+                          </>
+                        )
                       ) : (
-                        <>
-                          {selectedMonthName} collected{' '}
-                          {selectedMonthAnalysis.comparisonChange.toLocaleString()} more
-                          sandwiches ({selectedMonthAnalysis.comparisonPercent?.toFixed(1)}%
-                          increase) compared to {selectedMonthAnalysis.comparisonLabel}.
-                        </>
+                        selectedMonthAnalysis.comparisonChange < 0 ? (
+                          <>
+                            {selectedMonthName} collected{' '}
+                            {Math.abs(selectedMonthAnalysis.comparisonChange).toLocaleString()} fewer
+                            sandwiches ({Math.abs(Number(selectedMonthAnalysis.comparisonPercent?.toFixed(1)) || 0)}%
+                            decrease) compared to {selectedMonthAnalysis.comparisonLabel}.
+                          </>
+                        ) : (
+                          <>
+                            {selectedMonthName} collected{' '}
+                            {selectedMonthAnalysis.comparisonChange.toLocaleString()} more
+                            sandwiches ({selectedMonthAnalysis.comparisonPercent?.toFixed(1)}%
+                            increase) compared to {selectedMonthAnalysis.comparisonLabel}.
+                          </>
+                        )
                       )
                     ) : (
                       'No comparison data available.'
@@ -1506,15 +1565,133 @@ export default function MonthlyComparisonAnalytics() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="p-3 bg-brand-primary-lighter rounded">
-                  <h4 className="font-semibold text-brand-primary-dark mb-1">
-                    Plan Ahead for Next Month
-                  </h4>
-                  <p className="text-sm text-brand-primary">
-                    Review {months[(selectedMonth + 1) % 12]} {selectedMonth === 11 ? selectedYear + 1 : selectedYear} patterns from previous years.
-                    Identify potential challenges and opportunities early.
-                  </p>
-                </div>
+                {(() => {
+                  const nextMonth = (selectedMonth + 1) % 12;
+                  const nextMonthYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
+                  const nextMonthName = months[nextMonth];
+
+                  // Look up last year's data for the next month
+                  const lastYearNextMonthKey = `${nextMonthYear - 1}-${String(nextMonth + 1).padStart(2, '0')}`;
+                  const lastYearNextMonth = monthlyAnalytics ? monthlyAnalytics[lastYearNextMonthKey] : null;
+
+                  // Two years ago for trend context
+                  const twoYearsAgoKey = `${nextMonthYear - 2}-${String(nextMonth + 1).padStart(2, '0')}`;
+                  const twoYearsAgoMonth = monthlyAnalytics ? monthlyAnalytics[twoYearsAgoKey] : null;
+
+                  // Get holidays/seasonal factors for next month
+                  const nextMonthHolidays = getHolidaysForMonth(nextMonth, nextMonthYear);
+
+                  // Current month's data for trend context
+                  const currentData = selectedMonthAnalysis?.selectedMonthData;
+                  const avgRecent = selectedMonthAnalysis?.avgRecentMonth || 0;
+
+                  // Calculate a suggested target
+                  const lastYearTotal = lastYearNextMonth?.totalSandwiches || 0;
+                  const suggestedTarget = lastYearTotal > 0
+                    ? Math.round(lastYearTotal * 1.1) // 10% growth over last year
+                    : avgRecent > 0
+                      ? Math.round(avgRecent) // match recent average if no prior year data
+                      : null;
+
+                  // Group event insight
+                  const lastYearGroupPct = lastYearNextMonth && lastYearNextMonth.totalSandwiches > 0
+                    ? (lastYearNextMonth.groupCount / lastYearNextMonth.totalSandwiches) * 100
+                    : null;
+                  const currentGroupPct = currentData && currentData.totalSandwiches > 0
+                    ? (currentData.groupCount / currentData.totalSandwiches) * 100
+                    : null;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-brand-primary-lighter rounded">
+                        <h4 className="font-semibold text-brand-primary-dark mb-2">
+                          {nextMonthName} {nextMonthYear} Preview
+                        </h4>
+
+                        {/* Last year's benchmark */}
+                        {lastYearNextMonth ? (
+                          <div className="mb-3 p-2 bg-white/60 rounded">
+                            <p className="text-sm font-medium text-brand-primary mb-1">
+                              {nextMonthName} {nextMonthYear - 1} Benchmark
+                            </p>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div>
+                                <div className="text-lg font-bold text-brand-primary">{lastYearNextMonth.totalSandwiches.toLocaleString()}</div>
+                                <div className="text-xs text-gray-600">sandwiches</div>
+                              </div>
+                              <div>
+                                <div className="text-lg font-bold text-brand-primary">{lastYearNextMonth.totalCollections}</div>
+                                <div className="text-xs text-gray-600">collections</div>
+                              </div>
+                              <div>
+                                <div className="text-lg font-bold text-brand-primary">{lastYearNextMonth.groupEventCount}</div>
+                                <div className="text-xs text-gray-600">group events</div>
+                              </div>
+                            </div>
+                            {twoYearsAgoMonth && twoYearsAgoMonth.totalSandwiches > 0 && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {nextMonthName} {nextMonthYear - 2}: {twoYearsAgoMonth.totalSandwiches.toLocaleString()} sandwiches
+                                ({lastYearTotal > twoYearsAgoMonth.totalSandwiches ? '+' : ''}{((lastYearTotal - twoYearsAgoMonth.totalSandwiches) / twoYearsAgoMonth.totalSandwiches * 100).toFixed(0)}% YoY)
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-brand-primary mb-2">
+                            No {nextMonthName} data from previous years to benchmark against.
+                          </p>
+                        )}
+
+                        {/* Suggested target */}
+                        {suggestedTarget && (
+                          <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded">
+                            <p className="text-sm font-medium text-green-800">
+                              Suggested Target: {suggestedTarget.toLocaleString()} sandwiches
+                            </p>
+                            <p className="text-xs text-green-700">
+                              {lastYearTotal > 0
+                                ? `Based on 10% growth over ${nextMonthName} ${nextMonthYear - 1}`
+                                : 'Based on recent 6-month average'}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Group event recommendation */}
+                        {currentGroupPct !== null && (
+                          <div className="mb-3 p-2 bg-purple-50 border border-purple-200 rounded">
+                            <p className="text-sm font-medium text-purple-800 mb-1">Group Event Strategy</p>
+                            <p className="text-xs text-purple-700">
+                              {lastYearGroupPct !== null
+                                ? `Last ${nextMonthName}, group events were ${lastYearGroupPct.toFixed(0)}% of volume. `
+                                : ''}
+                              {currentGroupPct >= 25
+                                ? `Currently at ${currentGroupPct.toFixed(0)}% group share — maintain this momentum by scheduling group events early in the month.`
+                                : `Currently at ${currentGroupPct.toFixed(0)}% group share — boosting group event outreach for ${nextMonthName} could significantly increase totals.`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Holidays & seasonal factors */}
+                      {nextMonthHolidays.length > 0 && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded">
+                          <h4 className="font-semibold text-amber-800 mb-2">
+                            {nextMonthName} Factors to Consider
+                          </h4>
+                          <ul className="space-y-1">
+                            {nextMonthHolidays.map((h, i) => (
+                              <li key={i} className="text-xs text-amber-700 flex items-start gap-1.5">
+                                <span className={`inline-block w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
+                                  h.impact === 'high' ? 'bg-red-400' : h.impact === 'medium' ? 'bg-amber-400' : 'bg-blue-400'
+                                }`} />
+                                <span><strong>{h.name}</strong> — {h.description}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
