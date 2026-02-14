@@ -139,6 +139,22 @@ export default function MonthlyComparisonAnalytics() {
       11: [{ name: 'Hanukkah', description: 'Eight-day Festival of Lights' }],
     };
 
+    const jewishHolidays2026: Record<number, Array<{name: string; description: string}>> = {
+      8: [
+        { name: 'Rosh Hashanah', description: 'Jewish New Year (Sep 11-13) - two-day observance, high community impact' },
+        { name: 'Yom Kippur', description: 'Day of Atonement (Sep 20-21) - most solemn Jewish holiday, highest impact' }
+      ],
+      9: [{ name: 'Sukkot', description: 'Feast of Tabernacles (Sep 25 - Oct 2) - week-long holiday period' }],
+      3: [{ name: 'Passover', description: 'Eight-day festival (Apr 1-9) with significant community observance' }],
+      11: [{ name: 'Hanukkah', description: 'Eight-day Festival of Lights (Dec 4-12)' }],
+    };
+
+    const jewishHolidaysByYearMap: Record<number, Record<number, Array<{name: string; description: string}>>> = {
+      2024: jewishHolidays2024,
+      2025: jewishHolidays2025,
+      2026: jewishHolidays2026,
+    };
+
     // Add federal holidays
     if (federalHolidays[month]) {
       federalHolidays[month].forEach(holiday => {
@@ -152,8 +168,8 @@ export default function MonthlyComparisonAnalytics() {
       });
     }
 
-    // Add Jewish holidays
-    const jewishHolidaysByYear = year === 2024 ? jewishHolidays2024 : jewishHolidays2025;
+    // Add Jewish holidays (fall back to most recent year's data for future years)
+    const jewishHolidaysByYear = jewishHolidaysByYearMap[year] || jewishHolidaysByYearMap[2026];
     if (jewishHolidaysByYear[month]) {
       jewishHolidaysByYear[month].forEach(holiday => {
         holidays.push({
@@ -444,12 +460,8 @@ export default function MonthlyComparisonAnalytics() {
       ? recentMonths.reduce((sum, m) => sum + m.totalSandwiches, 0) / recentMonths.length
       : comparisonBase?.totalSandwiches || 0;
 
-    // Calculate top months for 2024-2025
+    // Calculate top months across all available data
     const topMonths = Object.entries(monthlyAnalytics)
-      .filter(([key]) => {
-        const [year] = key.split('-').map(Number);
-        return year === 2024 || year === 2025;
-      })
       .map(([key, month]) => ({
         month: key,
         totalSandwiches: month.totalSandwiches,
@@ -507,7 +519,6 @@ export default function MonthlyComparisonAnalytics() {
           collections: m.totalCollections,
           hosts: m.uniqueHosts,
           avgPerCollection: m.avgPerCollection,
-          isAugust2025: m.year === 2025 && m.month.includes('August'),
         };
       });
   }, [monthlyAnalytics]);
@@ -1189,7 +1200,7 @@ export default function MonthlyComparisonAnalytics() {
                           if (!c.collectionDate) return false;
                           const date = parseCollectionDate(c.collectionDate);
                           if (Number.isNaN(date.getTime())) return false;
-                          return date.getFullYear() === 2025 && date.getMonth() === 7 && (c.individualSandwiches || 0) > 0;
+                          return date.getFullYear() === selectedYear && date.getMonth() === selectedMonth && (c.individualSandwiches || 0) > 0;
                         }).length) : 0} sandwiches per event</li>
                         <li>• Group events represent {((selectedMonthAnalysis.selectedMonthData.groupEventCount / selectedMonthAnalysis.selectedMonthData.totalCollections) * 100).toFixed(1)}% of all events, but {((selectedMonthAnalysis.selectedMonthData.groupCount / selectedMonthAnalysis.selectedMonthData.totalSandwiches) * 100).toFixed(1)}% of sandwich volume</li>
                       </ul>
@@ -1247,29 +1258,64 @@ export default function MonthlyComparisonAnalytics() {
                   <h4 className="font-semibold text-brand-primary mb-3">
                     📊 Performance Patterns
                   </h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">Seasonal Impact</span>
-                      <Badge variant="destructive">High Risk</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">Group Event Efficiency</span>
-                      <Badge className="bg-brand-primary-light text-brand-primary">Strong</Badge>
-                    </div>
+                  {(() => {
+                    const data = selectedMonthAnalysis.selectedMonthData;
+                    const groupPct = data.totalCollections > 0
+                      ? (data.groupEventCount / data.totalCollections) * 100
+                      : 0;
+                    const groupEfficiency = groupPct >= 30 ? 'Strong' : groupPct >= 15 ? 'Moderate' : 'Low';
+                    const groupEfficiencyColor = groupPct >= 30
+                      ? 'bg-brand-primary-light text-brand-primary'
+                      : groupPct >= 15 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
 
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm font-medium">Growth Potential</span>
-                      <Badge className="bg-indigo-100 text-indigo-700">Good</Badge>
-                    </div>
-                    
-                    <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                      <h5 className="font-medium text-purple-800 mb-2">💡 Success Strategy</h5>
-                      <p className="text-sm text-purple-700">
-                        Based on trends, targeting group organizations in September with compelling back-to-school messaging could generate {Math.round(selectedMonthAnalysis.shortfall * 0.6)?.toLocaleString()}+ additional sandwiches by October.
-                      </p>
-                    </div>
-                  </div>
+                    const shortfall = selectedMonthAnalysis.shortfall;
+                    const isAboveAvg = shortfall <= 0;
+                    const growthLabel = isAboveAvg ? 'Above Average' : shortfall > 2000 ? 'Significant' : 'Moderate';
+                    const growthColor = isAboveAvg
+                      ? 'bg-green-100 text-green-700'
+                      : shortfall > 2000 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
+
+                    const trendPercent = selectedMonthAnalysis.comparisonPercent;
+                    const trendLabel = trendPercent === null ? 'No Data'
+                      : trendPercent >= 10 ? 'Strong Growth'
+                      : trendPercent >= 0 ? 'Stable'
+                      : trendPercent >= -10 ? 'Slight Decline' : 'Declining';
+                    const trendColor = trendPercent === null ? 'bg-gray-100 text-gray-600'
+                      : trendPercent >= 10 ? 'bg-green-100 text-green-700'
+                      : trendPercent >= 0 ? 'bg-brand-primary-light text-brand-primary'
+                      : trendPercent >= -10 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
+
+                    return (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">Overall Trend</span>
+                          <Badge className={trendColor}>{trendLabel}</Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">Group Event Share</span>
+                          <Badge className={groupEfficiencyColor}>{groupEfficiency} ({groupPct.toFixed(0)}%)</Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm font-medium">vs 6-Month Average</span>
+                          <Badge className={growthColor}>{isAboveAvg ? `+${Math.abs(shortfall).toLocaleString()}` : `-${Math.abs(shortfall).toLocaleString()}`} sandwiches</Badge>
+                        </div>
+
+                        <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                          <h5 className="font-medium text-purple-800 mb-2">💡 {selectedMonthName} Takeaway</h5>
+                          <p className="text-sm text-purple-700">
+                            {isAboveAvg
+                              ? `${selectedMonthName} ${selectedYear} outperformed the recent 6-month average by ${Math.abs(shortfall).toLocaleString()} sandwiches. ${groupPct >= 20 ? 'Group events were a strong contributor — consider replicating this outreach approach in future months.' : 'Growth came primarily from individual collections — adding more group events could push results even higher.'}`
+                              : data.totalSandwiches === 0
+                                ? `No collection data recorded for ${selectedMonthName} ${selectedYear}. This may be due to a seasonal break or data not yet being entered.`
+                                : `${selectedMonthName} ${selectedYear} collected ${data.totalSandwiches.toLocaleString()} sandwiches across ${data.totalCollections} collections. ${shortfall > 2000 ? `This was ${Math.abs(shortfall).toLocaleString()} below the recent average — ` : 'Slightly below average — '}${groupPct < 20 ? 'increasing group event outreach could help close the gap.' : 'maintaining strong group event participation will be key to recovery.'}`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </CardContent>
