@@ -25,6 +25,7 @@ import {
   processWeeklyContactReminders,
 } from './event-notification-dispatcher';
 import { isNotificationSuppressed } from '../utils/notification-suppression';
+import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -1434,6 +1435,71 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // ============================================================
+  // ADMIN PROACTIVE NOTIFICATIONS
+  // Weekly digest email + Monday morning SMS pulse
+  // ============================================================
+
+  // Admin weekly digest email - Sundays at 6:00 PM ET
+  // Comprehensive email with pipeline snapshot, calendar, stalled events, and action items
+  // Cron format: '0 18 * * 0' = At 6:00 PM every Sunday
+  const adminDigestJob = cron.schedule('0 18 * * 0', async () => {
+    cronLogger.info('Running admin weekly digest email...');
+    try {
+      const result = await processAdminWeeklyDigest();
+      cronLogger.info('Admin weekly digest email completed', {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running admin weekly digest cron job',
+        undefined,
+        { jobType: 'admin-weekly-digest' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Admin weekly digest job scheduled successfully', {
+    schedule: 'Sundays at 6:00 PM',
+    timezone: 'America/New_York',
+  });
+
+  // Admin Monday morning SMS pulse - Mondays at 8:00 AM ET
+  // Concise text with pipeline numbers, stalled count, and top priority
+  // Cron format: '0 8 * * 1' = At 8:00 AM every Monday
+  const adminSmsPulseJob = cron.schedule('0 8 * * 1', async () => {
+    cronLogger.info('Running admin Monday SMS pulse...');
+    try {
+      const result = await processAdminWeeklySms();
+      cronLogger.info('Admin Monday SMS pulse completed', {
+        success: result.success,
+        message: result.message,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running admin SMS pulse cron job',
+        undefined,
+        { jobType: 'admin-sms-pulse' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Admin SMS pulse job scheduled successfully', {
+    schedule: 'Mondays at 8:00 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1448,6 +1514,8 @@ export function initializeCronJobs() {
     corporate24hEscalationJob,
     eventApproachingJob,
     weeklyContactReminderJob,
+    adminDigestJob,
+    adminSmsPulseJob,
   };
 }
 
@@ -1468,5 +1536,7 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.corporate24hEscalationJob.stop();
   jobs.eventApproachingJob.stop();
   jobs.weeklyContactReminderJob.stop();
+  jobs.adminDigestJob.stop();
+  jobs.adminSmsPulseJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }
