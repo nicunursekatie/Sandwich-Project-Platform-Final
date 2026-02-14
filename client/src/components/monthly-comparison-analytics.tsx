@@ -312,28 +312,9 @@ export default function MonthlyComparisonAnalytics() {
     const selectedMonthData = monthlyAnalytics[monthKey];
     if (!selectedMonthData) return null;
 
-    // Calculate Wed/Thu vs Other Days split for selected month
-    let wedThuSandwiches = 0;
-    let otherDaysSandwiches = 0;
-
-    collections.forEach((collection: any) => {
-      if (!collection.collectionDate) return;
-
-      const date = parseCollectionDate(collection.collectionDate);
-      if (Number.isNaN(date.getTime())) return;
-
-      // Check if this collection is in the selected month
-      if (date.getFullYear() === selectedYear && date.getMonth() === selectedMonth) {
-        const total = calculateTotalSandwiches(collection);
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 3 = Wednesday, 4 = Thursday
-
-        if (dayOfWeek === 3 || dayOfWeek === 4) {
-          wedThuSandwiches += total;
-        } else {
-          otherDaysSandwiches += total;
-        }
-      }
-    });
+    // Individual vs Group split for selected month (from already-computed monthly data)
+    const individualSandwiches = selectedMonthData.individualCount;
+    const groupSandwiches = selectedMonthData.groupCount;
 
     // Year-over-year comparison (same month last year)
     const prevYearMonthKey = `${selectedYear - 1}-${String(selectedMonth + 1).padStart(2, '0')}`;
@@ -487,12 +468,12 @@ export default function MonthlyComparisonAnalytics() {
       yearOverYearPercent,
       monthOverMonthChange,
       monthOverMonthPercent,
-      shortfall: avgRecentMonth - selectedMonthData.totalSandwiches,
+      shortfall: avgRecentMonth - projectedSelectedMonthTotal,
       shortfallPercent:
-        ((avgRecentMonth - selectedMonthData.totalSandwiches) / avgRecentMonth) * 100,
-      // Wed/Thu vs Other Days split
-      wedThuSandwiches,
-      otherDaysSandwiches,
+        avgRecentMonth > 0 ? ((avgRecentMonth - projectedSelectedMonthTotal) / avgRecentMonth) * 100 : 0,
+      // Individual vs Group split
+      individualSandwiches,
+      groupSandwiches,
       // Partial month indicators
       isCurrentMonth,
       monthProgressRatio,
@@ -624,39 +605,39 @@ export default function MonthlyComparisonAnalytics() {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-brand-primary-border border-l-4 min-w-0 overflow-hidden">
-            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 truncate">Wed/Thu vs Off-Day Split</div>
-            
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3 truncate">Individual vs Group Split</div>
+
             <div className="space-y-3">
-              {/* Wed/Thu Row */}
-              <div className="flex items-center justify-between bg-brand-primary-lighter rounded-lg p-3 min-w-0 gap-2">
+              {/* Individual Row */}
+              <div className="flex items-center justify-between bg-[#FBAD3F]/10 rounded-lg p-3 min-w-0 gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-shrink">
-                  <div className="w-3 h-3 bg-brand-primary-lighter0 rounded-full flex-shrink-0"></div>
-                  <span className="text-sm font-medium text-gray-700 truncate">Wed/Thu</span>
+                  <div className="w-3 h-3 bg-[#FBAD3F] rounded-full flex-shrink-0"></div>
+                  <span className="text-sm font-medium text-gray-700 truncate">Individual</span>
                 </div>
                 <div className="text-lg md:text-xl font-bold text-brand-primary whitespace-nowrap flex-shrink-0 ml-2">
-                  {selectedMonthAnalysis.wedThuSandwiches.toLocaleString()}
+                  {selectedMonthAnalysis.individualSandwiches.toLocaleString()}
                 </div>
               </div>
-              
-              {/* Other Days Row */}
-              <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 min-w-0 gap-2">
+
+              {/* Group Row */}
+              <div className="flex items-center justify-between bg-brand-primary-lighter rounded-lg p-3 min-w-0 gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-shrink">
-                  <div className="w-3 h-3 bg-gray-500 rounded-full flex-shrink-0"></div>
-                  <span className="text-sm font-medium text-gray-700 truncate">Other days</span>
+                  <div className="w-3 h-3 bg-[#236383] rounded-full flex-shrink-0"></div>
+                  <span className="text-sm font-medium text-gray-700 truncate">Group Events</span>
                 </div>
                 <div className="text-lg md:text-xl font-bold text-brand-primary whitespace-nowrap flex-shrink-0 ml-2">
-                  {selectedMonthAnalysis.otherDaysSandwiches.toLocaleString()}
+                  {selectedMonthAnalysis.groupSandwiches.toLocaleString()}
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-3 pt-3 border-t border-gray-200 min-w-0 overflow-hidden">
               <div className="text-center min-w-0">
-                <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Total Distribution</div>
+                <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Total</div>
                 <div className="text-base md:text-lg font-semibold text-gray-800 break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-                  {(selectedMonthAnalysis.wedThuSandwiches + selectedMonthAnalysis.otherDaysSandwiches).toLocaleString()}
+                  {(selectedMonthAnalysis.individualSandwiches + selectedMonthAnalysis.groupSandwiches).toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-500 truncate mt-1">Collection days</div>
+                <div className="text-xs text-gray-500 truncate mt-1">Total sandwiches</div>
               </div>
             </div>
           </div>
@@ -1268,7 +1249,7 @@ export default function MonthlyComparisonAnalytics() {
                       ? 'bg-brand-primary-light text-brand-primary'
                       : groupPct >= 15 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700';
 
-                    const shortfall = selectedMonthAnalysis.shortfall;
+                    const shortfall = Math.round(selectedMonthAnalysis.shortfall);
                     const isAboveAvg = shortfall <= 0;
                     const growthLabel = isAboveAvg ? 'Above Average' : shortfall > 2000 ? 'Significant' : 'Moderate';
                     const growthColor = isAboveAvg
@@ -1298,7 +1279,7 @@ export default function MonthlyComparisonAnalytics() {
                         </div>
 
                         <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm font-medium">vs 6-Month Average</span>
+                          <span className="text-sm font-medium">vs 6-Month Average{selectedMonthAnalysis.isCurrentMonth ? ' (projected)' : ''}</span>
                           <Badge className={growthColor}>{isAboveAvg ? `+${Math.abs(shortfall).toLocaleString()}` : `-${Math.abs(shortfall).toLocaleString()}`} sandwiches</Badge>
                         </div>
 
