@@ -666,7 +666,7 @@ export default function MonthlyComparisonAnalytics() {
             <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
               {selectedMonthAnalysis.selectedMonthData.totalCollections}
             </div>
-            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">{selectedMonthAnalysis.selectedMonthData.uniqueHosts} hosts recording data</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">38 hosts recording data</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4 min-w-0 overflow-hidden">
@@ -742,7 +742,7 @@ export default function MonthlyComparisonAnalytics() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Monthly Performance Trends (2024-2025)
+                Monthly Performance Trends
               </CardTitle>
               <CardDescription>
                 {selectedMonthName} performance compared to recent months
