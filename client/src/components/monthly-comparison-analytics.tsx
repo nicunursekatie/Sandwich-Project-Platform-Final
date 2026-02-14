@@ -664,11 +664,11 @@ export default function MonthlyComparisonAnalytics() {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-purple-200 border-l-4 min-w-0 overflow-hidden">
-            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Collection Sites{selectedMonthAnalysis.isCurrentMonth ? ' (so far)' : ''}</div>
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Collection Sites</div>
             <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-              {selectedMonthAnalysis.selectedMonthData.totalCollections}
+              38
             </div>
-            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">38 hosts recording data</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">{selectedMonthAnalysis.selectedMonthData.totalCollections} collections{selectedMonthAnalysis.isCurrentMonth ? ' so far' : ''} this month</p>
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4 min-w-0 overflow-hidden">
