@@ -813,7 +813,8 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
     .where(
       and(
         eq(eventRequests.isCorporatePriority, true),
-        inArray(eventRequests.status, ['new', 'in_process'])
+        inArray(eventRequests.status, ['new', 'in_process']),
+        isNull(eventRequests.deletedAt)
       )
     );
 
@@ -908,6 +909,7 @@ export async function processApproachingIncompleteEvents(): Promise<{ sent: numb
     .where(
       and(
         inArray(eventRequests.status, ['new', 'in_process']),
+        isNull(eventRequests.deletedAt),
         or(
           and(
             gte(eventRequests.desiredEventDate, now.toISOString().split('T')[0]),
@@ -981,7 +983,7 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
   const events = await db
     .select()
     .from(eventRequests)
-    .where(eq(eventRequests.status, 'in_process'));
+    .where(and(eq(eventRequests.status, 'in_process'), isNull(eventRequests.deletedAt)));
 
   // Log ALL in-process events for debugging
   logger.log(`📋 Found ${events.length} in_process events total`);

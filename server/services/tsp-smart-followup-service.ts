@@ -289,6 +289,7 @@ async function getNewRequestsNeedingReminder() {
     .where(
       and(
         eq(eventRequests.status, 'new'),
+        isNull(eventRequests.deletedAt),
         or(
           sql`${eventRequests.tspContact} IS NOT NULL`,
           sql`${eventRequests.tspContactAssigned} IS NOT NULL`
@@ -321,6 +322,7 @@ async function getInProcessEventsNeedingReminder() {
     .where(
       and(
         eq(eventRequests.status, 'in_process'),
+        isNull(eventRequests.deletedAt),
         or(
           sql`${eventRequests.tspContact} IS NOT NULL`,
           sql`${eventRequests.tspContactAssigned} IS NOT NULL`
@@ -363,6 +365,7 @@ async function getEventsNeedingEscalation() {
           eq(eventRequests.status, 'new'),
           eq(eventRequests.status, 'in_process')
         ),
+        isNull(eventRequests.deletedAt),
         or(
           sql`${eventRequests.tspContact} IS NOT NULL`,
           sql`${eventRequests.tspContactAssigned} IS NOT NULL`
