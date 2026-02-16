@@ -689,27 +689,44 @@ export class EventRequestsGoogleSheetsService {
           // This ensures we detect existing records regardless of which hash format was used
           // IMPORTANT: Fetch ALL matches, then prioritize new-style hash matches over old-style
           const existingByHashAll = await db
-            .select({ 
-              id: eventRequests.id, 
+            .select({
+              id: eventRequests.id,
               status: eventRequests.status,
               externalId: eventRequests.externalId,
               organizationName: eventRequests.organizationName,
-              message: eventRequests.message  // Include message for backfill check
+              message: eventRequests.message,  // Include message for backfill check
+              desiredEventDate: eventRequests.desiredEventDate  // Include date for old-hash validation
             })
             .from(eventRequests)
             .where(
               sql`${eventRequests.externalId} IN (${externalIdTrimmed}, ${oldStyleHash}, ${newStyleHash})`
             );
-          
+
           // Prioritize exact match (newStyleHash or externalIdTrimmed) over old-style hash match
           // This ensures we backfill the CORRECT record when same email is used for multiple events
-          let existingByHash = existingByHashAll.filter(r => 
+          let existingByHash = existingByHashAll.filter(r =>
             r.externalId === newStyleHash || r.externalId === externalIdTrimmed
           );
-          
-          // If no new-style match, fall back to old-style match
+
+          // If no new-style match, fall back to old-style match ONLY if the event date also matches.
+          // The old-style hash is email-only, so without a date check, repeat contacts (same email,
+          // different event) are incorrectly treated as duplicates and their new requests get skipped.
           if (existingByHash.length === 0 && existingByHashAll.length > 0) {
-            existingByHash = existingByHashAll;
+            const incomingDate = (sanitizedData as any).desiredEventDate;
+            const oldHashDateMatches = existingByHashAll.filter(r => {
+              if (!incomingDate || !r.desiredEventDate) return true; // if either date is missing, be conservative and treat as match
+              const existingDateStr = r.desiredEventDate instanceof Date
+                ? r.desiredEventDate.toISOString().split('T')[0]
+                : String(r.desiredEventDate).split('T')[0];
+              const incomingDateStr = incomingDate instanceof Date
+                ? incomingDate.toISOString().split('T')[0]
+                : String(incomingDate).split('T')[0];
+              return existingDateStr === incomingDateStr;
+            });
+            existingByHash = oldHashDateMatches;
+            if (oldHashDateMatches.length === 0 && existingByHashAll.length > 0) {
+              logger.info(`🆕 Old-style hash matched existing record(s) but event dates differ — treating as NEW request (email: ${normalizedEmail}, incoming date: ${incomingDate})`);
+            }
           }
 
           // ALSO check by org + date + contact name to catch duplicates when email changes in Google Sheet

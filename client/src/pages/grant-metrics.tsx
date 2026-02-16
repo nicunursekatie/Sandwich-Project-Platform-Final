@@ -2058,15 +2058,15 @@ export default function GrantMetrics() {
                 <div className="flex items-start gap-4">
                   <UserCheck className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Executive Leadership (Priority)</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">Executive Leadership (Achieved)</h3>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Need:</strong> Full-time Executive Director to manage operations, fundraising, and strategic partnerships
+                      <strong>Status:</strong> Full-time Executive Director hired September 2025 to manage operations, fundraising, and strategic partnerships
                     </p>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Impact:</strong> Currently operating with volunteer leadership at 107x our founding scale - professionalization will unlock next phase of growth
+                      <strong>Impact:</strong> Professional leadership now in place after scaling to 107x our founding capacity — enabling structured growth, grant pursuit, and operational efficiency
                     </p>
-                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
-                      Est. Cost: $65K-85K annually
+                    <Badge className="bg-green-100 text-green-700 border-green-300">
+                      Hired Sept 2025
                     </Badge>
                   </div>
                 </div>
