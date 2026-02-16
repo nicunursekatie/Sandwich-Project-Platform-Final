@@ -14,7 +14,7 @@ import {
 } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
-import { parseDateOnly } from '@shared/date-utils';
+import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
 import { isValidTransition, getTransitionError, type EventStatus } from '@shared/event-status-workflow';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
@@ -5098,8 +5098,9 @@ router.get(
     try {
       const allEventRequests = await storage.getAllEventRequests();
 
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // Use timezone-safe date handling (Eastern Time)
+      const todayString = getTodayString(); // "YYYY-MM-DD" in Eastern Time
+      const today = parseDateOnly(todayString)!;
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dayAfterTomorrow = new Date(today);
@@ -5134,7 +5135,8 @@ router.get(
         if (!activeStatuses.includes(event.status || '')) return false;
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
         if (!eventDate) return false;
-        const date = new Date(eventDate);
+        const date = parseDateOnly(eventDate);
+        if (!date) return false;
         return date >= startOfWeek && date <= endOfWeek;
       });
 
@@ -5152,7 +5154,8 @@ router.get(
         }
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
         if (!eventDate) return false;
-        const date = new Date(eventDate);
+        const date = parseDateOnly(eventDate);
+        if (!date) return false;
         return date >= today && date < dayAfterTomorrow;
       }).map(event => {
         const driversNeeded = event.driversNeeded || 0;
@@ -5170,11 +5173,11 @@ router.get(
           needsDriver: (driversNeeded - assignedDrivers) > 0 && !event.selfTransport,
           needsSpeaker: (speakersNeeded - assignedSpeakers) > 0,
           needsVolunteer: (volunteersNeeded - assignedVolunteers) > 0,
-          isToday: new Date(event.scheduledEventDate || event.desiredEventDate || '').toDateString() === today.toDateString(),
+          isToday: toDateOnlyString(event.scheduledEventDate || event.desiredEventDate) === todayString,
         };
       }).sort((a, b) => {
-        const dateA = new Date(a.eventDate || '').getTime();
-        const dateB = new Date(b.eventDate || '').getTime();
+        const dateA = parseDateOnly(a.eventDate)?.getTime() || 0;
+        const dateB = parseDateOnly(b.eventDate)?.getTime() || 0;
         return dateA - dateB;
       });
 
@@ -5225,8 +5228,8 @@ router.get(
       const lastWeekEvents = allEventRequests.filter(event => {
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
         if (!eventDate) return false;
-        const date = new Date(eventDate);
-        if (date < startOfLastWeek || date > endOfLastWeek) return false;
+        const date = parseDateOnly(eventDate);
+        if (!date || date < startOfLastWeek || date > endOfLastWeek) return false;
         // Exclude events that were intentionally not attempted
         if (event.status === 'cancelled' || event.status === 'declined' || event.status === 'postponed') {
           return false;

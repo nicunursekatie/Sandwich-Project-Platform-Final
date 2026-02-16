@@ -15,6 +15,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
+import { parseDateOnly } from '@shared/date-utils';
 
 interface UpcomingDeadline {
   id: number;
@@ -63,8 +64,8 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
 
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      return isValid(date) ? format(date, 'EEE, MMM d') : '';
+      const date = parseDateOnly(dateString);
+      return date && isValid(date) ? format(date, 'EEE, MMM d') : '';
     } catch {
       return '';
     }
