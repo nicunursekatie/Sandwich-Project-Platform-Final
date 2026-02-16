@@ -54,7 +54,8 @@ async function sendVolunteerReminders(): Promise<{
         and(
           sql`${eventRequests.scheduledEventDate} >= ${now}`,
           sql`${eventRequests.scheduledEventDate} <= ${fortyEightHoursFromNow}`,
-          eq(eventRequests.status, 'scheduled')
+          eq(eventRequests.status, 'scheduled'),
+          isNull(eventRequests.deletedAt)
         )
       );
 
@@ -669,6 +670,7 @@ export async function notifyPastDateInProcessEvents(): Promise<{
         and(
           eq(eventRequests.status, 'in_process'),
           isNull(eventRequests.pastDateNotificationSentAt),
+          isNull(eventRequests.deletedAt),
           or(
             // Check scheduled date if set, otherwise check desired date
             sql`${eventRequests.scheduledEventDate} IS NOT NULL AND ${eventRequests.scheduledEventDate} < ${today}`,
@@ -835,7 +837,8 @@ export async function autoCompletePassedEvents(): Promise<{
       .where(
         and(
           eq(eventRequests.status, 'scheduled'),
-          sql`${eventRequests.scheduledEventDate} < ${today}`
+          sql`${eventRequests.scheduledEventDate} < ${today}`,
+          isNull(eventRequests.deletedAt)
         )
       );
 

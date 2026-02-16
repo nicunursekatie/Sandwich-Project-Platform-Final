@@ -137,6 +137,7 @@ async function getApproachingInProgressEvents() {
     .where(
       and(
         eq(eventRequests.status, 'in_progress'),
+        isNull(eventRequests.deletedAt),
         gte(eventRequests.scheduledEventDate, now),
         lte(eventRequests.scheduledEventDate, sevenDaysFromNow),
         or(
@@ -162,6 +163,7 @@ async function getToolkitOnlyEvents() {
     .where(
       and(
         eq(eventRequests.status, 'in_progress'),
+        isNull(eventRequests.deletedAt),
         eq(eventRequests.toolkitSent, true),
         gte(eventRequests.toolkitSentAt, oneWeekAgo),
         eq(eventRequests.followUpEmailSent, false),
@@ -219,6 +221,7 @@ async function getStandbyEventsNeedingFollowup(): Promise<any[]> {
     .where(
       and(
         eq(eventRequests.status, 'standby'),
+        isNull(eventRequests.deletedAt),
         sql`${eventRequests.standbyExpectedDate} IS NOT NULL`,
         sql`${eventRequests.standbyExpectedDate}::date <= ${today.toISOString().split('T')[0]}::date`
       )
