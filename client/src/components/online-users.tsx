@@ -73,10 +73,15 @@ export function OnlineUsers() {
       // Ensure we always return an array, even if API returns an object or null
       return Array.isArray(response) ? response : [];
     },
-    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes (reduced from 30 seconds)
+    refetchInterval: isOpen ? 30 * 1000 : 2 * 60 * 1000, // 30s when open, 2min when closed
+    refetchOnWindowFocus: true,
   });
 
-  const count = onlineUsers.length;
+  // Filter out current user for display, but show count including self
+  const otherUsers = onlineUsers.filter(
+    (user) => String(user.id) !== String(currentUser?.id)
+  );
+  const count = otherUsers.length;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -97,7 +102,7 @@ export function OnlineUsers() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="end" sideOffset={8}>
+      <PopoverContent className="w-72 p-0 z-[10000]" align="end" sideOffset={8}>
         <div className="p-3 border-b bg-gradient-to-r from-teal-50 to-cyan-50 flex items-center justify-between">
           <div>
             <h4 className="font-semibold text-teal-800 flex items-center gap-2">
@@ -120,15 +125,13 @@ export function OnlineUsers() {
             <div className="p-4 text-center text-sm text-slate-500">
               Loading...
             </div>
-          ) : count === 0 ? (
+          ) : otherUsers.length === 0 ? (
             <div className="p-4 text-center text-sm text-slate-500">
               No one else is online right now
             </div>
           ) : (
             <ul className="divide-y">
-              {onlineUsers
-                .filter((user) => user.id !== currentUser?.id) // Don't show yourself
-                .map((user) => (
+              {otherUsers.map((user) => (
                   <li
                     key={user.id}
                     className="p-3 hover:bg-slate-50 flex items-center gap-3 cursor-pointer group"
@@ -169,12 +172,6 @@ export function OnlineUsers() {
                     </Button>
                   </li>
                 ))}
-              {onlineUsers.filter((user) => user.id !== currentUser?.id)
-                .length === 0 && (
-                <div className="p-4 text-center text-sm text-slate-500">
-                  No one else is online right now
-                </div>
-              )}
             </ul>
           )}
         </div>
