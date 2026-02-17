@@ -26,6 +26,7 @@ import {
 } from './event-notification-dispatcher';
 import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
+import { processPredictionAlerts } from './prediction-alert-service';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -1503,6 +1504,44 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // ============================================================
+  // AI PREDICTION DEMAND ALERTS
+  // Monthly forecast with email to Katie when alert level is high/low
+  // ============================================================
+
+  // Prediction demand alert - 1st of each month at 10:00 AM ET
+  // Runs AI prediction for next month, emails Katie if demand is projected
+  // 30%+ above or below the 12-month average (includes AI recommendations)
+  // Cron format: '0 10 1 * *' = At 10:00 AM on the 1st day of every month
+  const predictionAlertJob = cron.schedule('0 10 1 * *', async () => {
+    cronLogger.info('Running monthly prediction demand alert...');
+    try {
+      const result = await processPredictionAlerts();
+      cronLogger.info('Prediction alert job completed', {
+        monthChecked: result.monthChecked,
+        alertLevel: result.alertLevel,
+        emailSent: result.emailSent,
+        error: result.error,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running prediction alert cron job',
+        undefined,
+        { jobType: 'prediction-alert' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Prediction demand alert job scheduled successfully', {
+    schedule: '1st of each month at 10:00 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1519,6 +1558,7 @@ export function initializeCronJobs() {
     weeklyContactReminderJob,
     adminDigestJob,
     adminSmsPulseJob,
+    predictionAlertJob,
   };
 }
 
@@ -1541,5 +1581,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.weeklyContactReminderJob.stop();
   jobs.adminDigestJob.stop();
   jobs.adminSmsPulseJob.stop();
+  jobs.predictionAlertJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }
