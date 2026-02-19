@@ -1097,7 +1097,7 @@ export default function Dashboard({
               <MultiViewContainer
                 renderContent={(section) => {
                   // Determine the content wrapper based on section type
-                  const isFullHeightSection = ['gmail-inbox', 'inbox', 'messages', 'chat'].includes(section);
+                  const isFullHeightSection = ['gmail-inbox', 'inbox', 'messages', 'chat', 'route-map', 'recipient-map'].includes(section);
                   const isDriverPlanning = section === 'driver-planning';
 
                   if (isFullHeightSection) {

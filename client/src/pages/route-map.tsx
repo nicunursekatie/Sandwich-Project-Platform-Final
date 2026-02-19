@@ -401,7 +401,7 @@ export default function LocationsMapView() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex flex-col">
+      <div className="h-full flex flex-col">
         <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
           <div className="flex items-center gap-4">
             <Skeleton className="h-12 w-12 rounded-xl" />
@@ -419,7 +419,7 @@ export default function LocationsMapView() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto">
