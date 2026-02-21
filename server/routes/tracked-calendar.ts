@@ -27,6 +27,23 @@ const schoolBreakSchema = z.object({
 
 const schoolBreaksImportSchema = z.array(schoolBreakSchema);
 
+// Schema for religious holiday import
+const religiousHolidaySchema = z.object({
+  id: z.string(),
+  tradition: z.string(), // "Christian", "Jewish"
+  type: z.string(),
+  label: z.string(),
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid start date format',
+  }),
+  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid end date format',
+  }),
+  notes: z.string().optional(),
+});
+
+const religiousHolidaysImportSchema = z.array(religiousHolidaySchema);
+
 // GET /api/tracked-calendar - Get tracked items for a year
 router.get('/', requirePermission(PERMISSIONS.YEARLY_CALENDAR_VIEW), async (req: Request, res: Response) => {
   try {
@@ -150,6 +167,83 @@ router.post('/import-school-breaks', requirePermission(PERMISSIONS.YEARLY_CALEND
   } catch (error) {
     logger.error('Failed to import school breaks:', error);
     res.status(500).json({ message: 'Failed to import school breaks' });
+  }
+});
+
+// POST /api/tracked-calendar/import-religious-holidays - Import religious holidays from JSON
+router.post('/import-religious-holidays', requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT), async (req: Request, res: Response) => {
+  try {
+    const parseResult = religiousHolidaysImportSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+      return res.status(400).json({
+        message: 'Invalid religious holidays data',
+        errors: parseResult.error.errors,
+      });
+    }
+
+    const holidays = parseResult.data;
+    const results = {
+      created: 0,
+      updated: 0,
+      errors: [] as string[],
+    };
+
+    for (const holiday of holidays) {
+      try {
+        const externalId = `religious_holiday_${holiday.id}`;
+
+        // Check if item exists
+        const existing = await db
+          .select()
+          .from(trackedCalendarItems)
+          .where(eq(trackedCalendarItems.externalId, externalId))
+          .limit(1);
+
+        const itemData = {
+          externalId,
+          category: 'religious_holidays',
+          title: holiday.label,
+          startDate: holiday.startDate,
+          endDate: holiday.endDate,
+          notes: holiday.notes || null,
+          metadata: {
+            type: holiday.type,
+            tradition: holiday.tradition,
+            originalId: holiday.id,
+          },
+          updatedAt: new Date(),
+        };
+
+        if (existing.length > 0) {
+          // Update existing
+          await db
+            .update(trackedCalendarItems)
+            .set(itemData)
+            .where(eq(trackedCalendarItems.externalId, externalId));
+          results.updated++;
+        } else {
+          // Insert new
+          await db.insert(trackedCalendarItems).values({
+            ...itemData,
+            createdAt: new Date(),
+          });
+          results.created++;
+        }
+      } catch (itemError) {
+        results.errors.push(`Failed to process item ${holiday.id}: ${itemError}`);
+      }
+    }
+
+    logger.log(`Religious holidays import: ${results.created} created, ${results.updated} updated, ${results.errors.length} errors`);
+
+    res.json({
+      message: 'Import completed',
+      ...results,
+    });
+  } catch (error) {
+    logger.error('Failed to import religious holidays:', error);
+    res.status(500).json({ message: 'Failed to import religious holidays' });
   }
 });
 

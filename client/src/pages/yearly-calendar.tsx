@@ -91,11 +91,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   // Tracked calendar categories
   school_breaks: 'bg-amber-100 text-amber-800 border-amber-300',
   school_markers: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  religious_holidays: 'bg-violet-100 text-violet-800 border-violet-300',
 };
 
 const TRACKED_CATEGORY_LABELS: Record<string, string> = {
   school_breaks: 'School Breaks',
   school_markers: 'School Dates',
+  religious_holidays: 'Religious Holidays',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -207,8 +209,11 @@ export default function YearlyCalendar() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<YearlyCalendarItem | null>(null);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isImportHolidaysDialogOpen, setIsImportHolidaysDialogOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
+  const [importHolidaysJsonText, setImportHolidaysJsonText] = useState('');
   const [showTrackedItems, setShowTrackedItems] = useState(true);
+  const [showReligiousHolidays, setShowReligiousHolidays] = useState(true);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -318,11 +323,18 @@ export default function YearlyCalendar() {
     );
   }, [deduplicatedItems, searchQuery]);
 
-  // Filter tracked items based on search query
+  // Filter tracked items based on search query and toggle states
   const filteredTrackedItems = useMemo(() => {
-    if (!searchQuery.trim()) return trackedItems;
+    // First filter by toggle states
+    let filtered = trackedItems.filter(item => {
+      if (item.category === 'religious_holidays') return showReligiousHolidays;
+      // school_breaks and school_markers follow the showTrackedItems toggle
+      return showTrackedItems;
+    });
+
+    if (!searchQuery.trim()) return filtered;
     const query = searchQuery.toLowerCase();
-    return trackedItems.filter(item => {
+    return filtered.filter(item => {
       // Search in title
       if (item.title.toLowerCase().includes(query)) return true;
       // Search in notes
@@ -336,9 +348,12 @@ export default function YearlyCalendar() {
       // Search for common break types
       const breakTypes = ['spring', 'winter', 'fall', 'summer', 'thanksgiving', 'christmas', 'mlk', 'presidents', 'memorial', 'labor'];
       if (breakTypes.some(bt => bt.includes(query) && item.title.toLowerCase().includes(bt))) return true;
+      // Search for religious holiday terms
+      const holidayTerms = ['easter', 'passover', 'hanukkah', 'chanukah', 'rosh', 'yom kippur', 'sukkot', 'shavuot', 'purim', 'lent', 'ash wednesday', 'good friday', 'palm sunday', 'christmas', 'jewish', 'christian'];
+      if (holidayTerms.some(ht => ht.includes(query) && (item.title.toLowerCase().includes(ht) || (item.metadata as any)?.tradition?.toLowerCase().includes(ht)))) return true;
       return false;
     });
-  }, [trackedItems, searchQuery]);
+  }, [trackedItems, searchQuery, showTrackedItems, showReligiousHolidays]);
 
   // Group items by month and sort them (uses filtered items)
   const itemsByMonth = useMemo(() => {
@@ -379,8 +394,6 @@ export default function YearlyCalendar() {
       grouped[i] = {};
     }
 
-    if (!showTrackedItems) return grouped;
-
     filteredTrackedItems.forEach(item => {
       for (let month = 1; month <= 12; month++) {
         if (dateRangeOverlapsMonth(item.startDate, item.endDate, selectedYear, month)) {
@@ -403,7 +416,7 @@ export default function YearlyCalendar() {
     });
 
     return grouped;
-  }, [filteredTrackedItems, selectedYear, showTrackedItems]);
+  }, [filteredTrackedItems, selectedYear]);
 
   // Toggle category collapse
   const toggleCategory = (category: string) => {
@@ -539,6 +552,50 @@ export default function YearlyCalendar() {
       });
     },
   });
+
+  // Import religious holidays mutation
+  const importReligiousHolidaysMutation = useMutation({
+    mutationFn: async (data: any[]) => {
+      return await apiRequest('POST', '/api/tracked-calendar/import-religious-holidays', data);
+    },
+    onSuccess: (result: { created: number; updated: number; errors: string[] }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
+      setIsImportHolidaysDialogOpen(false);
+      setImportHolidaysJsonText('');
+      toast({
+        title: 'Religious holidays imported',
+        description: `Created: ${result.created}, Updated: ${result.updated}${result.errors.length > 0 ? `, Errors: ${result.errors.length}` : ''}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Import failed',
+        description: error?.message || 'Failed to import religious holidays',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleImportReligiousHolidays = () => {
+    try {
+      const data = JSON.parse(importHolidaysJsonText);
+      if (!Array.isArray(data)) {
+        toast({
+          title: 'Invalid format',
+          description: 'JSON must be an array of religious holiday objects',
+          variant: 'destructive',
+        });
+        return;
+      }
+      importReligiousHolidaysMutation.mutate(data);
+    } catch (e) {
+      toast({
+        title: 'Invalid JSON',
+        description: 'Please check your JSON format',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleImportSchoolBreaks = () => {
     try {
@@ -730,14 +787,32 @@ export default function YearlyCalendar() {
             <Filter className="h-4 w-4 mr-2" />
             {showTrackedItems ? 'Hide' : 'Show'} School Breaks
           </Button>
+          <Button
+            variant={showReligiousHolidays ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowReligiousHolidays(!showReligiousHolidays)}
+            className={showReligiousHolidays ? 'bg-violet-500 hover:bg-violet-600' : ''}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            {showReligiousHolidays ? 'Hide' : 'Show'} Religious Holidays
+          </Button>
           {canEditAll && (
-            <Button
-              variant="outline"
-              onClick={() => setIsImportDialogOpen(true)}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import School Breaks
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsImportDialogOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import School Breaks
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsImportHolidaysDialogOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import Religious Holidays
+              </Button>
+            </>
           )}
           {canAdd && (
             <Button
@@ -795,7 +870,7 @@ export default function YearlyCalendar() {
           </Badge>
           <span className="text-sm text-gray-600">
             Found {filteredYearlyItems.length} calendar item{filteredYearlyItems.length !== 1 ? 's' : ''}
-            {showTrackedItems && ` and ${filteredTrackedItems.length} school break${filteredTrackedItems.length !== 1 ? 's' : ''}`}
+            {(showTrackedItems || showReligiousHolidays) && ` and ${filteredTrackedItems.length} tracked item${filteredTrackedItems.length !== 1 ? 's' : ''}`}
           </span>
           <button
             onClick={() => setSearchQuery('')}
@@ -982,15 +1057,16 @@ export default function YearlyCalendar() {
                               // Single item - show compactly
                               const item = group[0];
                               const districts = item.metadata?.districts || [];
-                              
+                              const tradition = (item.metadata as any)?.tradition as string | undefined;
+
                               return (
                                 <div
                                   key={`tracked-${item.id}`}
                                   className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
                                 >
                                   <div className="flex items-start gap-2 mb-2">
-                                    <Badge 
-                                      variant="outline" 
+                                    <Badge
+                                      variant="outline"
                                       className="text-xs font-semibold px-2 py-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 flex-shrink-0"
                                     >
                                       {formatDateRange(item.startDate, item.endDate)}
@@ -1000,15 +1076,23 @@ export default function YearlyCalendar() {
                                       {districts.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
                                           {districts.map(district => (
-                                            <Badge 
-                                              key={district} 
-                                              variant="outline" 
+                                            <Badge
+                                              key={district}
+                                              variant="outline"
                                               className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
                                             >
                                               {district}
                                             </Badge>
                                           ))}
                                         </div>
+                                      )}
+                                      {tradition && (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-xs px-1.5 py-0 bg-violet-50 text-violet-700 border-violet-300"
+                                        >
+                                          {tradition}
+                                        </Badge>
                                       )}
                                     </div>
                                   </div>
@@ -1552,6 +1636,60 @@ export default function YearlyCalendar() {
               className="bg-amber-500 hover:bg-amber-600"
             >
               {importSchoolBreaksMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
+              ) : (
+                <><Upload className="h-4 w-4 mr-2" /> Import</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Religious Holidays Dialog */}
+      <Dialog open={isImportHolidaysDialogOpen} onOpenChange={setIsImportHolidaysDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Import Religious Holidays</DialogTitle>
+            <DialogDescription>
+              Paste JSON data to import religious holidays. Each item should have: id, tradition, type, label, startDate, endDate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="import-holidays-json">JSON Data</Label>
+              <Textarea
+                id="import-holidays-json"
+                value={importHolidaysJsonText}
+                onChange={(e) => setImportHolidaysJsonText(e.target.value)}
+                placeholder={`[
+  {
+    "id": "christian-2026-easter",
+    "tradition": "Christian",
+    "type": "religious_holiday",
+    "label": "Easter Sunday",
+    "startDate": "2026-04-05",
+    "endDate": "2026-04-05",
+    "notes": "Major Christian holiday."
+  }
+]`}
+                rows={12}
+                className="font-mono text-sm"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              Items with matching IDs will be updated. New items will be created.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsImportHolidaysDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleImportReligiousHolidays}
+              disabled={importReligiousHolidaysMutation.isPending || !importHolidaysJsonText.trim()}
+              className="bg-violet-500 hover:bg-violet-600"
+            >
+              {importReligiousHolidaysMutation.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
               ) : (
                 <><Upload className="h-4 w-4 mr-2" /> Import</>
