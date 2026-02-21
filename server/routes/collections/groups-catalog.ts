@@ -1227,7 +1227,8 @@ export function createGroupsCatalogRoutes(deps: GroupsCatalogDependencies) {
       // Skip collection updates if:
       // - we're in single-event or aggregated-card mode (editing specific events)
       // - we're editing a department-level card (collections don't have departments)
-      const isDepartmentEdit = trimmedOldDept !== null || trimmedNewDept !== null;
+      // Note: empty string departments ("") mean "no department" and should NOT be treated as a department edit
+      const isDepartmentEdit = (trimmedOldDept !== null && trimmedOldDept !== '') || (trimmedNewDept !== null && trimmedNewDept !== '');
       if (!specificEventId && !specificEventIds && !isDepartmentEdit) {
         const allCollections = await storage.getAllSandwichCollections();
         for (const collection of allCollections) {
