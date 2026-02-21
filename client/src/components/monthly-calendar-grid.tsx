@@ -23,6 +23,7 @@ interface TrackedCalendarItem {
     type?: string;
     districts?: string[];
     academicYear?: string | null;
+    tradition?: string; // "Christian", "Jewish" for religious holidays
   };
 }
 
@@ -96,6 +97,7 @@ const CATEGORY_COLORS: Record<string, ColorStyle> = {
   // Tracked calendar categories
   school_breaks: { bg: '#fef6e8', text: '#b8860b', border: '#fbad3f' },   // Golden/amber
   school_markers: { bg: '#e6f7f8', text: '#007e8c', border: '#007e8c' },  // Teal
+  religious_holidays: { bg: '#f3e8ff', text: '#6d28d9', border: '#8b5cf6' }, // Violet
   holiday: { bg: '#f9e8ec', text: '#a31c41', border: '#a31c41' },         // Burgundy
   // TSP calendar item categories
   preparation: { bg: '#e8f4f8', text: '#236383', border: '#236383' },     // Primary blue
@@ -174,8 +176,13 @@ function formatDateShort(dateStr: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// Get color for an item based on its district(s)
+// Get color for an item based on its district(s) or category
 function getItemColor(item: TrackedCalendarItem): { bg: string; text: string; border: string } {
+  // Religious holidays use category color directly
+  if (item.category === 'religious_holidays') {
+    return CATEGORY_COLORS.religious_holidays;
+  }
+
   const districts = item.metadata?.districts || [];
 
   // If multiple districts or "All", use amber
@@ -210,8 +217,16 @@ function getBreakType(title: string): string {
   return 'Break'; // Generic fallback
 }
 
-// Get display label for an item (district name + break type)
+// Get display label for an item (district name + break type, or holiday name)
 function getItemLabel(item: TrackedCalendarItem): string {
+  // Religious holidays show a compact label
+  if (item.category === 'religious_holidays') {
+    // Shorten long names for the calendar bar
+    const title = item.title;
+    if (title.includes('(')) return title.split('(')[0].trim();
+    return title;
+  }
+
   const districts = item.metadata?.districts || [];
   const isBreak = item.category === 'school_breaks' || item.title.toLowerCase().includes('break');
 
@@ -297,6 +312,7 @@ interface UnifiedCalendarItem {
   label: string;
   // Tracked item specific
   districts?: string[];
+  tradition?: string; // "Christian", "Jewish" for religious holidays
   notes?: string | null;
   // Yearly item specific
   description?: string | null;
@@ -337,6 +353,7 @@ export function MonthlyCalendarGrid({
           colors: getItemColor(item),
           label: getItemLabel(item),
           districts: item.metadata?.districts,
+          tradition: item.metadata?.tradition,
           notes: item.notes,
         });
       }
@@ -513,14 +530,18 @@ export function MonthlyCalendarGrid({
            today.getDate() === day;
   };
 
-  // Get unique districts and categories for legend
-  const { uniqueDistricts, uniqueCategories } = useMemo(() => {
+  // Get unique districts, tracked categories, and yearly categories for legend
+  const { uniqueDistricts, uniqueCategories, uniqueTrackedCategories } = useMemo(() => {
     const districts = new Set<string>();
     const categories = new Set<string>();
+    const trackedCategories = new Set<string>();
 
     allItems.forEach(item => {
-      if (item.type === 'tracked' && item.districts) {
-        item.districts.forEach(d => districts.add(d));
+      if (item.type === 'tracked') {
+        if (item.districts) {
+          item.districts.forEach(d => districts.add(d));
+        }
+        trackedCategories.add(item.category);
       }
       if (item.type === 'yearly') {
         categories.add(item.category);
@@ -530,6 +551,7 @@ export function MonthlyCalendarGrid({
     return {
       uniqueDistricts: Array.from(districts).sort(),
       uniqueCategories: Array.from(categories).sort(),
+      uniqueTrackedCategories: Array.from(trackedCategories).sort(),
     };
   }, [allItems]);
 
@@ -542,6 +564,7 @@ export function MonthlyCalendarGrid({
     staffing: 'Staffing',
     board: 'Board',
     seasonal: 'Seasonal',
+    religious_holidays: 'Religious Holidays',
     other: 'Other',
   };
 
@@ -757,10 +780,24 @@ export function MonthlyCalendarGrid({
                                     })}
                                   </div>
                                 )}
+                                {/* Religious holiday: show tradition */}
+                                {item.type === 'tracked' && item.category === 'religious_holidays' && item.tradition && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs"
+                                    style={{
+                                      backgroundColor: '#f3e8ff',
+                                      color: '#6d28d9',
+                                      borderColor: '#8b5cf6',
+                                    }}
+                                  >
+                                    {item.tradition}
+                                  </Badge>
+                                )}
                                 {/* School break impact note */}
                                 {item.type === 'tracked' && item.category === 'school_breaks' && (
                                   <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
-                                    <p className="font-medium text-amber-800">⚠️ Volunteer Impact</p>
+                                    <p className="font-medium text-amber-800">Volunteer Impact</p>
                                     <p className="text-amber-700 mt-1">
                                       School breaks often mean lower volunteer availability. Consider scheduling extra group events or targeted outreach to maintain collection numbers.
                                     </p>
@@ -802,8 +839,8 @@ export function MonthlyCalendarGrid({
         })}
       </div>
 
-      {/* Legend showing districts and categories */}
-      {(uniqueDistricts.length > 0 || uniqueCategories.length > 0) && (
+      {/* Legend showing districts, tracked categories, and yearly categories */}
+      {(uniqueDistricts.length > 0 || uniqueCategories.length > 0 || uniqueTrackedCategories.length > 0) && (
         <div className="p-3 border-t bg-gray-50 space-y-3">
           {uniqueDistricts.length > 0 && (
             <div>
@@ -823,6 +860,30 @@ export function MonthlyCalendarGrid({
                       }}
                     >
                       {district}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          {uniqueTrackedCategories.filter(c => c !== 'school_breaks' && c !== 'school_markers').length > 0 && (
+            <div>
+              <div className="text-xs text-gray-500 mb-2">Tracked Calendars:</div>
+              <div className="flex flex-wrap gap-2">
+                {uniqueTrackedCategories.filter(c => c !== 'school_breaks' && c !== 'school_markers').map(category => {
+                  const colors = CATEGORY_COLORS[category] || CATEGORY_COLORS['default'];
+                  return (
+                    <Badge
+                      key={category}
+                      variant="outline"
+                      className="text-xs"
+                      style={{
+                        backgroundColor: colors.bg,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      }}
+                    >
+                      {CATEGORY_LABELS[category] || category}
                     </Badge>
                   );
                 })}

@@ -401,7 +401,7 @@ export default function LocationsMapView() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="h-screen flex flex-col">
+      <div className="h-full flex flex-col">
         <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
           <div className="flex items-center gap-4">
             <Skeleton className="h-12 w-12 rounded-xl" />
@@ -419,23 +419,23 @@ export default function LocationsMapView() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
+      <div className="flex-shrink-0 px-4 py-2 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto">
           <PageBreadcrumbs segments={[
             { label: 'Operations' },
             { label: 'Locations Map' }
           ]} />
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-                <MapPin className="w-6 h-6 text-[#007E8C]" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-teal-100">
+                <MapPin className="w-5 h-5 text-[#007E8C]" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Locations Map</h1>
-                <p className="text-sm text-gray-600">
+                <h1 className="text-lg font-bold text-gray-900 leading-tight">Locations Map</h1>
+                <p className="text-xs text-gray-600">
                   {showHosts ? hosts.length : 0} hosts, {showRecipients ? recipientsWithCoords.length : 0} recipients shown
                 </p>
               </div>
@@ -557,18 +557,18 @@ export default function LocationsMapView() {
                   </div>
                 </div>
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-2 space-y-1">
+                  <div className="p-1.5 space-y-0.5">
                     {filteredHosts.map(contact => (
                       <div
                         key={contact.id}
-                        className={`cursor-pointer hover:bg-gray-50 transition-all p-2 rounded-md border ${
+                        className={`cursor-pointer hover:bg-gray-50 transition-all px-2 py-1.5 rounded-md border ${
                           selectedId === `host-${contact.id}` ? 'ring-2 ring-blue-500 bg-blue-50 border-blue-200' : 'border-gray-100'
                         }`}
                         onClick={() => handleHostClick(contact)}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 text-sm truncate">{contact.contactName}</div>
+                            <div className="font-medium text-gray-900 text-sm truncate leading-tight">{contact.contactName}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-1">
                               <Building2 className="w-3 h-3 flex-shrink-0" />
                               <span className="truncate">{contact.hostLocationName}</span>
@@ -582,7 +582,7 @@ export default function LocationsMapView() {
                           )}
                         </div>
                         {contact.address && (
-                          <div className="text-xs text-gray-400 mt-0.5 truncate">📍 {contact.address}</div>
+                          <div className="text-xs text-gray-400 truncate leading-tight">📍 {contact.address}</div>
                         )}
                       </div>
                     ))}
@@ -607,7 +607,7 @@ export default function LocationsMapView() {
                   </div>
                 </div>
                 <ScrollArea className="flex-1 min-h-0">
-                  <div className="p-3 space-y-2">
+                  <div className="p-1.5 space-y-0.5">
                     {filteredRecipients.map(recipient => (
                       <Card
                         key={recipient.id}
@@ -616,7 +616,7 @@ export default function LocationsMapView() {
                         }`}
                         onClick={() => handleRecipientClick(recipient)}
                       >
-                        <CardContent className="p-3">
+                        <CardContent className="px-2 py-1.5">
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="font-semibold text-gray-900 text-sm">{recipient.name}</div>
