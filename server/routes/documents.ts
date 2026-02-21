@@ -8,6 +8,8 @@ import { logger } from '../middleware/logger';
 import { createStandardMiddleware, createErrorHandler } from '../middleware';
 import { storage } from '../storage-wrapper';
 import type { AuthenticatedRequest } from '../types/express';
+import { hasPermission } from '@shared/unified-auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
 
 // Custom multer configuration for documents
 const documentsUpload = multer({
@@ -88,7 +90,13 @@ documentsRouter.get(
 
       const documents = await storage.getAllDocuments();
 
-      const activeDocuments = documents.filter((doc) => doc.isActive !== false);
+      const canViewConfidential = hasPermission(user, PERMISSIONS.DOCUMENTS_CONFIDENTIAL);
+
+      const activeDocuments = documents.filter((doc) => {
+        if (doc.isActive === false) return false;
+        if (doc.category === 'confidential' && !canViewConfidential) return false;
+        return true;
+      });
 
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       res.setHeader('Pragma', 'no-cache');
@@ -200,6 +208,10 @@ documentsRouter.get(
         return res.status(403).json({ error: 'Document is not active' });
       }
 
+      if (document.category === 'confidential' && !hasPermission(user, PERMISSIONS.DOCUMENTS_CONFIDENTIAL)) {
+        return res.status(403).json({ error: 'You do not have permission to view confidential documents' });
+      }
+
       // Check if file exists on disk
       if (!existsSync(document.filePath)) {
         logger.error(`File not found on disk: ${document.filePath}`);
@@ -270,6 +282,11 @@ documentsRouter.get(
           `Inactive document access attempt: ID ${documentId} by ${user.email}`
         );
         return res.status(403).json({ error: 'Document is not active' });
+      }
+
+      if (document.category === 'confidential' && !hasPermission(user, PERMISSIONS.DOCUMENTS_CONFIDENTIAL)) {
+        logger.warn(`Unauthorized confidential document download attempt: ${user.email} for document ID ${documentId}`);
+        return res.status(403).json({ error: 'You do not have permission to download confidential documents' });
       }
 
       // Check if file exists on disk
