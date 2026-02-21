@@ -75,6 +75,33 @@ const getUser = (req: AuthenticatedRequest) => {
   return req.user || req.session?.user;
 };
 
+// GET /api/documents - List all documents
+documentsRouter.get(
+  '/',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+
+      if (!user || !user.email) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const documents = await storage.getAllDocuments();
+
+      const activeDocuments = documents.filter((doc) => doc.isActive !== false);
+
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
+      res.json(activeDocuments);
+    } catch (error: any) {
+      logger.error('Error fetching documents:', error);
+      res.status(500).json({ error: 'Failed to fetch documents' });
+    }
+  }
+);
+
 // POST /api/documents - Upload new document
 documentsRouter.post(
   '/',
