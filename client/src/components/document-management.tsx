@@ -42,6 +42,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { hasPermission } from '@shared/unified-auth-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { DocumentPreviewModal } from '@/components/document-preview-modal';
 
 export interface Document {
   id: number;
@@ -619,13 +623,23 @@ function DocumentPermissionsDialog({
   );
 }
 
+function getDocumentTypeFromMime(mimeType: string): string {
+  if (mimeType === 'application/pdf') return 'pdf';
+  if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || mimeType === 'application/msword') return 'docx';
+  if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || mimeType === 'application/vnd.ms-excel') return 'xlsx';
+  if (mimeType?.startsWith('image/')) return 'image';
+  return 'other';
+}
+
 export default function DocumentManagement() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
     null
   );
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const { data: documents = [], refetch } = useQuery({
     queryKey: ['/api/documents'],
@@ -753,17 +767,19 @@ export default function DocumentManagement() {
                       {new Date(document.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => setSelectedDocument(document)}
+                          title="Preview"
+                          onClick={() => setPreviewDocument(document)}
                         >
-                          <Users className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"
                           variant="ghost"
+                          title="Download"
                           onClick={() =>
                             window.open(
                               `/api/documents/${document.id}/download`,
@@ -773,16 +789,29 @@ export default function DocumentManagement() {
                         >
                           <Download className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            deleteDocumentMutation.mutate(document.id)
-                          }
-                          disabled={deleteDocumentMutation.isPending}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {user && (user.role === 'admin' || user.role === 'super_admin') && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            title="Permissions"
+                            onClick={() => setSelectedDocument(document)}
+                          >
+                            <Users className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {user && (user.role === 'admin' || user.role === 'super_admin' || document.uploadedBy === user.id) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            title="Delete"
+                            onClick={() =>
+                              deleteDocumentMutation.mutate(document.id)
+                            }
+                            disabled={deleteDocumentMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -804,6 +833,16 @@ export default function DocumentManagement() {
         <DocumentPermissionsDialog
           document={selectedDocument}
           onClose={() => setSelectedDocument(null)}
+        />
+      )}
+
+      {previewDocument && (
+        <DocumentPreviewModal
+          isOpen={true}
+          onClose={() => setPreviewDocument(null)}
+          documentPath={`/api/documents/${previewDocument.id}/preview`}
+          documentName={previewDocument.originalName || previewDocument.title}
+          documentType={getDocumentTypeFromMime(previewDocument.mimeType)}
         />
       )}
     </div>
