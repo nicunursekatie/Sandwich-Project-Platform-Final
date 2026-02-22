@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,6 +45,7 @@ function getDisplayName(user: OnlineUser): string {
 export function useOnlinePresenceNotifications() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const previousOnlineIdsRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef(true);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -160,6 +161,9 @@ export function useOnlinePresenceNotifications() {
 
       // Update previous IDs
       previousOnlineIdsRef.current.add(data.id);
+
+      // Invalidate the online users query so the dropdown refreshes immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
     });
 
     // Handle user going offline
@@ -175,6 +179,9 @@ export function useOnlinePresenceNotifications() {
 
       // Remove from previous IDs
       previousOnlineIdsRef.current.delete(data.id);
+
+      // Invalidate the online users query so the dropdown refreshes immediately
+      queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
     });
 
     setSocket(newSocket);
@@ -185,7 +192,7 @@ export function useOnlinePresenceNotifications() {
       setSocket(null);
       setWsConnected(false);
     };
-  }, [currentUser, toast]);
+  }, [currentUser, toast, queryClient]);
 
   // Fallback polling - reduced to 5 minutes since WebSocket handles real-time updates
   const { data: polledOnlineUsers = [] } = useQuery<OnlineUser[]>({
