@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, FileText, Trophy, Database, MessageSquare, BarChart3 } from 'lucide-react';
+import { Settings, Shield, FileText, Trophy, Database, MessageSquare, BarChart3, HandHeart } from 'lucide-react';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
@@ -8,6 +8,7 @@ import { TollFreeVerificationPanel } from '@/components/toll-free-verification-p
 import { SMSTestPanel } from '@/components/sms-test-panel';
 import { ChatSyncPanel } from '@/components/chat-sync-panel';
 import SpreadsheetAnalyticsDashboard from '@/components/spreadsheet-analytics-dashboard';
+import VolunteerSignupAdmin from '@/components/volunteer-signup-admin';
 import { adminDocuments } from '@/pages/important-documents';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -84,7 +85,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="analytics" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
+          <TabsList className="grid w-full grid-cols-7 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
             <TabsTrigger
               value="analytics"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
@@ -139,6 +140,15 @@ export default function AdminSettings() {
               <MessageSquare className="h-4 w-4" />
               Communications
             </TabsTrigger>
+            <TabsTrigger
+              value="volunteer-signups"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-testid="tab-volunteer-signups"
+              onClick={() => trackClick('Volunteer Signups Tab', 'Admin', 'Tab Navigation', 'Switched to volunteer signups tab')}
+            >
+              <HandHeart className="h-4 w-4" />
+              Volunteer Signups
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
@@ -177,6 +187,10 @@ export default function AdminSettings() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="volunteer-signups" className="space-y-8">
+            <VolunteerSignupAdmin />
           </TabsContent>
         </Tabs>
       </div>

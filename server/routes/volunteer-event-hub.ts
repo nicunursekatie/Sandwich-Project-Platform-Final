@@ -173,31 +173,25 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
 
 /**
  * Get all events available for volunteer signup
- * Returns scheduled and in_process events with unfilled volunteer/speaker/driver needs
+ * Returns only scheduled events (not new requests or in-process ones)
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Get events that are scheduled or in_process
-    // Date filtering is optional - we show all active events and let frontend filter if needed
+    // Only show scheduled events to volunteers - not new requests or in_process
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    logger.log(`[VolunteerHub] Fetching scheduled/in_process events`);
+    logger.log(`[VolunteerHub] Fetching scheduled events`);
 
-    // First, just get events by status (the core requirement)
     const events = await db
       .select()
       .from(eventRequests)
       .where(
-        // Include both scheduled and in_process events
-        or(
-          eq(eventRequests.status, 'scheduled'),
-          eq(eventRequests.status, 'in_process')
-        )
+        eq(eventRequests.status, 'scheduled')
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/in_process status`);
+    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled status`);
 
     // Filter to events with dates today or in the future
     // Include events with no date set (they're still active)
@@ -546,19 +540,24 @@ router.get('/my-signups', isAuthenticated, async (req: AuthenticatedRequest, res
 // ============================================================================
 
 /**
- * Get all pending volunteer signups (for coordinators)
+ * Get volunteer signups (for coordinators)
+ * By default returns only pending signups. Pass ?all=true for all signups.
  */
 router.get('/pending-signups', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const signups = await db
+    const showAll = req.query.all === 'true';
+
+    const query = db
       .select({
         signup: eventVolunteers,
         event: eventRequests,
       })
       .from(eventVolunteers)
-      .innerJoin(eventRequests, eq(eventVolunteers.eventRequestId, eventRequests.id))
-      .where(eq(eventVolunteers.status, 'pending'))
-      .orderBy(desc(eventVolunteers.signedUpAt));
+      .innerJoin(eventRequests, eq(eventVolunteers.eventRequestId, eventRequests.id));
+
+    const signups = showAll
+      ? await query.orderBy(desc(eventVolunteers.signedUpAt))
+      : await query.where(eq(eventVolunteers.status, 'pending')).orderBy(desc(eventVolunteers.signedUpAt));
 
     const enrichedSignups = signups.map(({ signup, event }) => ({
       ...signup,
