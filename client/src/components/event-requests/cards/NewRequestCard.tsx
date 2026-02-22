@@ -976,15 +976,26 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                       )}
                     </div>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onLogContact}
-                    className="h-7 text-xs flex items-center gap-1 self-end sm:self-auto"
-                  >
-                    <Phone className="w-3 h-3" />
-                    Log Contact
-                  </Button>
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onScheduleCall}
+                      className="h-7 text-xs flex items-center gap-1 border-blue-300 hover:bg-blue-50 text-blue-700"
+                    >
+                      <Calendar className="w-3 h-3" />
+                      {request.scheduledCallDate ? 'Reschedule' : 'Schedule Call'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onLogContact}
+                      className="h-7 text-xs flex items-center gap-1"
+                    >
+                      <Phone className="w-3 h-3" />
+                      Log Contact
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
