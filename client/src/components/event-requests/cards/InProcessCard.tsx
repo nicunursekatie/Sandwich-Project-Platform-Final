@@ -136,6 +136,7 @@ interface CardHeaderProps {
     collectionCount: number;
     pastDepartments?: string[];
     mostRecentEvent?: { id: number; eventDate: string | null; status: string | null };
+    mostRecentCollection?: { id: number; dateCollected: string | null };
     pastContactName?: string;
   };
 }
@@ -287,7 +288,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           )}
 
           {/* Returning Organization Indicator */}
-          {returningOrgData?.isReturning && (
+          {returningOrgData?.isReturning && (() => {
+            const eventDate = returningOrgData.mostRecentEvent?.eventDate ? new Date(returningOrgData.mostRecentEvent.eventDate) : null;
+            const collectionDate = returningOrgData.mostRecentCollection?.dateCollected ? new Date(returningOrgData.mostRecentCollection.dateCollected) : null;
+            const lastDate = eventDate && collectionDate
+              ? (eventDate > collectionDate ? eventDate : collectionDate)
+              : eventDate || collectionDate;
+            const lastDateLabel = lastDate && !isNaN(lastDate.getTime())
+              ? lastDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              : null;
+            return (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge
@@ -300,6 +310,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 >
                   <RefreshCw className="w-3 h-3 mr-1" />
                   Returning Org
+                  {lastDateLabel && (
+                    <span className="ml-1 text-xs opacity-80">&middot; Last: {lastDateLabel}</span>
+                  )}
                   {returningOrgData.isReturningContact
                     ? <span className="ml-1 text-xs opacity-80">&middot; Same Contact</span>
                     : <span className="ml-1 text-xs opacity-80">&middot; New Contact</span>
@@ -356,7 +369,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </div>
               </TooltipContent>
             </Tooltip>
-          )}
+            );
+          })()}
           {/* New Department Indicator - shows when returning org has a department not seen in past events */}
           {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
             d => d === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
