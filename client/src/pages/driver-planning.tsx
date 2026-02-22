@@ -2040,35 +2040,55 @@ export default function DriverPlanningDashboard() {
     return nearbyRecipients.filter((r) => !designatedIds.has(r.id));
   }, [effectiveSelectedEvent, designatedRecipients, nearbyRecipients]);
 
-  // Assigned speakers for the selected event, resolved from volunteers table
-  const assignedSpeakers = useMemo(() => {
-    if (!effectiveSelectedEvent) return [];
-    const speakerIds = getSpeakerIds(effectiveSelectedEvent);
-    if (speakerIds.length === 0) return [];
+  // All speakers near the selected event (volunteers with isSpeaker=true that have coordinates)
+  const nearbySpeakers = useMemo(() => {
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
-    const eventLat = effectiveSelectedEvent.latitude ? parseFloat(effectiveSelectedEvent.latitude) : null;
-    const eventLng = effectiveSelectedEvent.longitude ? parseFloat(effectiveSelectedEvent.longitude) : null;
+    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
+    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
-    return speakerIds
-      .map(rawId => {
-        const strId = String(rawId);
-        const numericId = strId.replace(/^(volunteer-|speaker-)/, '');
-        const vol = volunteers.find(v => String(v.id) === numericId);
-        if (!vol) return null;
-        const name = resolvePersonName(strId) || vol.name;
-        const distance = (eventLat && eventLng && vol.latitude && vol.longitude)
-          ? calculateDistanceInMiles(eventLat, eventLng, parseFloat(vol.latitude), parseFloat(vol.longitude))
-          : null;
-        return {
-          id: vol.id,
-          name,
-          phone: vol.phone,
-          latitude: vol.latitude,
-          longitude: vol.longitude,
-          distance,
-        };
+    // Get IDs of speakers already assigned to this event
+    const assignedIds = new Set(
+      getSpeakerIds(effectiveSelectedEvent).map(id => {
+        const strId = String(id);
+        return strId.replace(/^(volunteer-|speaker-)/, '');
       })
-      .filter((s): s is NonNullable<typeof s> => s !== null);
+    );
+
+    const speakersWithDistance = volunteers
+      .filter(v => v.isSpeaker && v.isActive && v.latitude && v.longitude)
+      .map(v => ({
+        id: v.id,
+        name: v.name,
+        phone: v.phone,
+        latitude: v.latitude!,
+        longitude: v.longitude!,
+        isAssigned: assignedIds.has(String(v.id)),
+        distance: calculateDistanceInMiles(
+          eventLat,
+          eventLng,
+          parseFloat(v.latitude!),
+          parseFloat(v.longitude!)
+        ),
+      }))
+      .sort((a, b) => {
+        // Assigned speakers first, then by distance
+        if (a.isAssigned && !b.isAssigned) return -1;
+        if (!a.isAssigned && b.isAssigned) return 1;
+        return a.distance - b.distance;
+      });
+
+    // Try progressively larger radii until we have at least 3 speakers (or run out of options)
+    const radii = [15, 30, 50, 75];
+    for (const radius of radii) {
+      const speakersInRadius = speakersWithDistance.filter(s => s.distance < radius || s.isAssigned);
+      if (speakersInRadius.length >= 3) {
+        return speakersInRadius.slice(0, 10);
+      }
+    }
+
+    // If still not enough, just return whatever we have (sorted by distance)
+    return speakersWithDistance.slice(0, 10);
   }, [effectiveSelectedEvent, volunteers]);
 
   // Assigned driver(s) explicitly assigned on the event (if any)
@@ -4576,40 +4596,38 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
-                {/* Assigned Speakers */}
-                {assignedSpeakers.length > 0 && (
-                  <div data-testid="driver-planning-assigned-speakers">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                        <Megaphone className="w-4 h-4 text-indigo-600" />
-                        Assigned Speaker{assignedSpeakers.length > 1 ? 's' : ''}
-                      </h3>
-                      {assignedSpeakers.some(s => s.distance !== null) && (
-                        <span className="text-[9px] text-gray-400 italic">click for driving distance</span>
-                      )}
-                    </div>
+                {/* Nearby Speakers */}
+                <div data-testid="driver-planning-nearby-speakers">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-indigo-600" />
+                      Nearby Speakers
+                    </h3>
+                    <span className="text-[9px] text-gray-400 italic" title="Click to preview driving route">click for driving distance</span>
+                  </div>
+                  {nearbySpeakers.length > 0 ? (
                     <div className="space-y-2">
-                      {(showAllSpeakers ? assignedSpeakers : assignedSpeakers.slice(0, 3)).map((speaker) => (
+                      {(showAllSpeakers ? nearbySpeakers : nearbySpeakers.slice(0, 3)).map((speaker) => (
                         <div
                           key={`speaker-${speaker.id}`}
                           className={`flex items-stretch text-xs border rounded transition-colors ${
                             focusedItem?.type === 'speaker' && focusedItem?.id === speaker.id
                               ? 'bg-indigo-100 border-indigo-400'
-                              : 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
+                              : speaker.isAssigned
+                                ? 'bg-indigo-100 border-indigo-300 hover:bg-indigo-200'
+                                : 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
                           }`}
                         >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (speaker.latitude && speaker.longitude) {
-                                handleItemClick({
-                                  type: 'speaker',
-                                  id: speaker.id,
-                                  latitude: speaker.latitude!,
-                                  longitude: speaker.longitude!,
-                                  name: speaker.name
-                                });
-                              }
+                              handleItemClick({
+                                type: 'speaker',
+                                id: speaker.id,
+                                latitude: speaker.latitude,
+                                longitude: speaker.longitude,
+                                name: speaker.name
+                              });
                             }}
                             className="flex-1 text-left p-2"
                           >
@@ -4617,10 +4635,13 @@ export default function DriverPlanningDashboard() {
                               <div className="flex items-center gap-2">
                                 <Megaphone className="w-3.5 h-3.5 text-indigo-600" />
                                 <span className="font-medium">{speaker.name}</span>
+                                {speaker.isAssigned && (
+                                  <span className="text-[9px] bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
+                                    Assigned
+                                  </span>
+                                )}
                               </div>
-                              {speaker.distance !== null && (
-                                <span className="text-indigo-700">{speaker.distance.toFixed(1)} mi</span>
-                              )}
+                              <span className="text-indigo-700">{speaker.distance.toFixed(1)} mi</span>
                             </div>
                             {speaker.phone && (
                               <div className="text-gray-500 pl-5 mt-0.5 text-[10px] flex items-center gap-1">
@@ -4628,25 +4649,24 @@ export default function DriverPlanningDashboard() {
                                 {speaker.phone}
                               </div>
                             )}
-                            {!speaker.latitude && (
-                              <div className="text-gray-400 pl-5 mt-0.5 text-[10px] italic">
-                                No address on file
-                              </div>
-                            )}
                           </button>
                         </div>
                       ))}
-                      {assignedSpeakers.length > 3 && (
+                      {nearbySpeakers.length > 3 && (
                         <button
                           onClick={() => setShowAllSpeakers(!showAllSpeakers)}
                           className="w-full text-xs text-indigo-700 hover:text-indigo-900 font-medium py-1"
                         >
-                          {showAllSpeakers ? 'Show less' : `View ${assignedSpeakers.length - 3} more speakers`}
+                          {showAllSpeakers ? 'Show less' : `View ${nearbySpeakers.length - 3} more speakers`}
                         </button>
                       )}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
+                      No speakers with map coordinates nearby.
+                    </div>
+                  )}
+                </div>
 
                 {/* Driver Search */}
                 <div className="space-y-1">
