@@ -22,6 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { formatTimeForDisplay } from '@/lib/date-utils';
 
 // UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -255,8 +256,8 @@ function EventCard({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="w-4 h-4 shrink-0 text-[#007e8c]" />
             <span>
-              {event.eventStartTime}
-              {event.eventEndTime && ` - ${event.eventEndTime}`}
+              {formatTimeForDisplay(event.eventStartTime)}
+              {event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}
             </span>
           </div>
         )}
@@ -286,7 +287,7 @@ function EventCard({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Car className="w-4 h-4 shrink-0 text-[#236383]" />
             <span>
-              {event.selfTransport ? 'Self-transport' : event.pickupTime ? `Pickup at ${event.pickupTime}` : 'Transportation TBD'}
+              {event.selfTransport ? 'Self-transport' : event.pickupTime ? `Pickup at ${formatTimeForDisplay(event.pickupTime)}` : 'Transportation TBD'}
             </span>
           </div>
         )}
@@ -298,30 +299,55 @@ function EventCard({
           </div>
         )}
 
-        {/* Needs badges */}
-        <div className="flex flex-wrap gap-1.5">
-          {event.speakersUnfilled > 0 && (
-            <Badge className="bg-[#a31c41] hover:bg-[#a31c41]/90 text-white gap-1">
-              <Mic className="w-3 h-3" />
-              {event.speakersUnfilled} Speaker{event.speakersUnfilled > 1 ? 's' : ''} Needed
-            </Badge>
+        {/* Staffing roles */}
+        <div className="space-y-1.5">
+          {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
+            <div className="flex items-center gap-2 text-sm">
+              <Mic className="w-3.5 h-3.5 text-[#a31c41] shrink-0" />
+              <span className="font-medium text-[#a31c41]">Speakers</span>
+              <span className={`text-xs ${event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}`}>
+                {event.speakersAssigned}/{event.speakersNeeded} filled
+              </span>
+              {event.speakersUnfilled > 0 && (
+                <Badge className="bg-[#a31c41] text-white text-[10px] px-1.5 py-0">
+                  {event.speakersUnfilled} needed
+                </Badge>
+              )}
+            </div>
           )}
-          {event.volunteersUnfilled > 0 && (
-            <Badge className="bg-[#007e8c] hover:bg-[#007e8c]/90 text-white gap-1">
-              <UserCheck className="w-3 h-3" />
-              {event.volunteersUnfilled} Volunteer{event.volunteersUnfilled > 1 ? 's' : ''} Needed
-            </Badge>
+          {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
+            <div className="flex items-center gap-2 text-sm">
+              <UserCheck className="w-3.5 h-3.5 text-[#007e8c] shrink-0" />
+              <span className="font-medium text-[#007e8c]">Volunteers</span>
+              <span className={`text-xs ${event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}`}>
+                {event.volunteersAssigned}/{event.volunteersNeeded} filled
+              </span>
+              {event.volunteersUnfilled > 0 && (
+                <Badge className="bg-[#007e8c] text-white text-[10px] px-1.5 py-0">
+                  {event.volunteersUnfilled} needed
+                </Badge>
+              )}
+            </div>
           )}
-          {event.driversUnfilled > 0 && (
-            <Badge className="bg-[#236383] hover:bg-[#236383]/90 text-white gap-1">
-              <Car className="w-3 h-3" />
-              {event.driversUnfilled} Driver{event.driversUnfilled > 1 ? 's' : ''} Needed
-            </Badge>
+          {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
+            <div className="flex items-center gap-2 text-sm">
+              <Car className="w-3.5 h-3.5 text-[#236383] shrink-0" />
+              <span className="font-medium text-[#236383]">Drivers</span>
+              <span className={`text-xs ${event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}`}>
+                {event.driversAssigned}/{event.driversNeeded} filled
+              </span>
+              {event.driversUnfilled > 0 && (
+                <Badge className="bg-[#236383] text-white text-[10px] px-1.5 py-0">
+                  {event.driversUnfilled} needed
+                </Badge>
+              )}
+            </div>
           )}
           {event.vanDriverNeeded && (
-            <Badge className="bg-[#fbad3f] hover:bg-[#fbad3f]/90 text-white gap-1">
-              🚐 Van Driver Needed
-            </Badge>
+            <div className="flex items-center gap-2 text-sm">
+              <Car className="w-3.5 h-3.5 text-[#fbad3f] shrink-0" />
+              <span className="font-medium text-[#fbad3f]">Van Driver Needed</span>
+            </div>
           )}
         </div>
 
@@ -341,10 +367,9 @@ function EventCard({
             <Button
               className="w-full bg-[#007e8c] hover:bg-[#236383]"
               onClick={() => onSignup(event.id)}
-              disabled={!event.hasUnfilledNeeds}
             >
               <HandHeart className="w-4 h-4 mr-2" />
-              Volunteer for this Event
+              {event.hasUnfilledNeeds ? 'Volunteer for this Event' : 'Sign Up to Help'}
             </Button>
           )}
         </div>
@@ -373,39 +398,58 @@ function SignupDialog({
   const availableRoles = useMemo(() => {
     if (!event) return [];
 
-    return [
-      event.speakersUnfilled > 0 && {
-        value: 'speaker',
-        label: `Speaker (${event.speakersUnfilled} needed)`,
-        icon: Mic,
-        colorClass: 'text-[#a31c41]',
-        borderClass: 'border-[#a31c41]/30',
-        bgClass: 'bg-[#a31c41]/5',
-      },
-      event.volunteersUnfilled > 0 && {
-        value: 'general',
-        label: `General Volunteer (${event.volunteersUnfilled} needed)`,
-        icon: UserCheck,
-        colorClass: 'text-[#007e8c]',
-        borderClass: 'border-[#007e8c]/30',
-        bgClass: 'bg-[#007e8c]/5',
-      },
-      event.driversUnfilled > 0 && {
-        value: 'driver',
-        label: `Driver (${event.driversUnfilled} needed)`,
-        icon: Car,
-        colorClass: 'text-[#236383]',
-        borderClass: 'border-[#236383]/30',
-        bgClass: 'bg-[#236383]/5',
-      },
-    ].filter(Boolean) as Array<{
+    const roles: Array<{
       value: 'speaker' | 'general' | 'driver';
       label: string;
       icon: typeof Mic;
       colorClass: string;
       borderClass: string;
       bgClass: string;
-    }>;
+    }> = [];
+
+    // Always show speaker role if event has any speaker need or assigned speakers
+    if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
+      roles.push({
+        value: 'speaker',
+        label: event.speakersUnfilled > 0
+          ? `Speaker (${event.speakersUnfilled} needed)`
+          : `Speaker (${event.speakersAssigned}/${event.speakersNeeded} filled — extra help welcome)`,
+        icon: Mic,
+        colorClass: 'text-[#a31c41]',
+        borderClass: 'border-[#a31c41]/30',
+        bgClass: 'bg-[#a31c41]/5',
+      });
+    }
+
+    // Always show volunteer role
+    roles.push({
+      value: 'general',
+      label: event.volunteersUnfilled > 0
+        ? `General Volunteer (${event.volunteersUnfilled} needed)`
+        : event.volunteersNeeded > 0
+          ? `General Volunteer (${event.volunteersAssigned}/${event.volunteersNeeded} filled — extra help welcome)`
+          : 'General Volunteer (extra help always welcome)',
+      icon: UserCheck,
+      colorClass: 'text-[#007e8c]',
+      borderClass: 'border-[#007e8c]/30',
+      bgClass: 'bg-[#007e8c]/5',
+    });
+
+    // Show driver role if event needs drivers
+    if (event.driversNeeded > 0 || event.driversAssigned > 0) {
+      roles.push({
+        value: 'driver',
+        label: event.driversUnfilled > 0
+          ? `Driver (${event.driversUnfilled} needed)`
+          : `Driver (${event.driversAssigned}/${event.driversNeeded} filled — extra help welcome)`,
+        icon: Car,
+        colorClass: 'text-[#236383]',
+        borderClass: 'border-[#236383]/30',
+        bgClass: 'bg-[#236383]/5',
+      });
+    }
+
+    return roles;
   }, [event]);
 
   useEffect(() => {
@@ -988,7 +1032,7 @@ export default function VolunteerEventHub() {
                               <TooltipContent side="right" className="max-w-xs">
                                 <p className="font-medium">{event.organizationName}</p>
                                 {event.organizationCategory && <p className="text-xs text-muted-foreground">{event.organizationCategory}</p>}
-                                {event.eventStartTime && <p className="text-xs mt-1">{event.eventStartTime}{event.eventEndTime && ` - ${event.eventEndTime}`}</p>}
+                                {event.eventStartTime && <p className="text-xs mt-1">{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</p>}
                                 {event.eventAddress && <p className="text-xs text-muted-foreground">{event.city || event.eventAddress}</p>}
                                 {event.estimatedSandwichCount && <p className="text-xs mt-1">{event.estimatedSandwichCount.toLocaleString()} sandwiches</p>}
                                 <div className="flex gap-1 mt-1">
@@ -1078,7 +1122,7 @@ export default function VolunteerEventHub() {
                               {event.scheduledEventDate && (
                                 <p className="text-sm text-muted-foreground">
                                   {format(parseISO(event.scheduledEventDate), 'MMM d, yyyy')}
-                                  {event.eventStartTime && ` at ${event.eventStartTime}`}
+                                  {event.eventStartTime && ` at ${formatTimeForDisplay(event.eventStartTime)}`}
                                 </p>
                               )}
                               <p className="text-sm">{event.eventAddress}</p>
@@ -1190,7 +1234,7 @@ export default function VolunteerEventHub() {
                           {signup.event.scheduledEventDate
                             ? format(parseISO(signup.event.scheduledEventDate), 'MMM d, yyyy')
                             : 'Date TBD'}
-                          {signup.event.eventStartTime && ` at ${signup.event.eventStartTime}`}
+                          {signup.event.eventStartTime && ` at ${formatTimeForDisplay(signup.event.eventStartTime)}`}
                         </p>
                       </div>
                     </div>
@@ -1265,7 +1309,7 @@ export default function VolunteerEventHub() {
                       {event.eventStartTime && (
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
-                          <span>{event.eventStartTime}{event.eventEndTime && ` - ${event.eventEndTime}`}</span>
+                          <span>{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</span>
                         </div>
                       )}
                       {event.eventAddress && (
