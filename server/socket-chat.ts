@@ -624,14 +624,22 @@ export function setupSocketChat(httpServer: HttpServer) {
       activeUsers.delete(socket.id);
       logger.log(`Socket disconnected: ${socket.id}`);
 
-      // Broadcast user-offline event if we had user info
+      // Broadcast user-offline event only if no other connections exist for this user
+      // (prevents false offline events when a user has multiple tabs open)
       if (disconnectedUser) {
-        io.emit('user-offline', {
-          id: disconnectedUser.id,
-          userName: disconnectedUser.userName,
-          timestamp: new Date().toISOString(),
-        });
-        logger.log(`Broadcasted user-offline event for ${disconnectedUser.userName} (${disconnectedUser.id})`);
+        const hasOtherConnections = Array.from(activeUsers.values()).some(
+          u => u.id === disconnectedUser.id
+        );
+        if (!hasOtherConnections) {
+          io.emit('user-offline', {
+            id: disconnectedUser.id,
+            userName: disconnectedUser.userName,
+            timestamp: new Date().toISOString(),
+          });
+          logger.log(`Broadcasted user-offline event for ${disconnectedUser.userName} (${disconnectedUser.id})`);
+        } else {
+          logger.log(`Skipped user-offline broadcast for ${disconnectedUser.userName} (${disconnectedUser.id}) - still has other connections`);
+        }
       }
     });
   });
