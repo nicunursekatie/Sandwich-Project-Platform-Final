@@ -149,6 +149,29 @@ collectionsRouter.get('/stats', async (req, res) => {
 
         let individualTotal = 0;
         let groupTotal = 0;
+        let ytdTotal = 0;
+        let currentMonthTotal = 0;
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth(); // 0-indexed
+
+        function getCollectionTotal(collection: any): number {
+          let total = collection.individualSandwiches || 0;
+          if (
+            collection.groupCollections &&
+            Array.isArray(collection.groupCollections) &&
+            collection.groupCollections.length > 0
+          ) {
+            total += collection.groupCollections.reduce(
+              (sum: number, group: any) => sum + (group.count || 0),
+              0
+            );
+          } else {
+            total += (collection.group1Count || 0) + (collection.group2Count || 0);
+          }
+          return total;
+        }
 
         collections.forEach((collection) => {
           individualTotal += collection.individualSandwiches || 0;
@@ -163,7 +186,7 @@ collectionsRouter.get('/stats', async (req, res) => {
             collection.groupCollections.length > 0
           ) {
             collectionGroupTotal = collection.groupCollections.reduce(
-              (sum, group) => {
+              (sum: number, group: any) => {
                 return sum + (group.count || 0);
               },
               0
@@ -176,16 +199,38 @@ collectionsRouter.get('/stats', async (req, res) => {
           }
 
           groupTotal += collectionGroupTotal;
+
+          // Year-to-date and current month calculations
+          if (collection.collectionDate) {
+            const dateParts = String(collection.collectionDate).split('-');
+            const year = parseInt(dateParts[0], 10);
+            const month = parseInt(dateParts[1], 10) - 1; // 0-indexed
+            if (year === currentYear) {
+              const collTotal = getCollectionTotal(collection);
+              ytdTotal += collTotal;
+              if (month === currentMonth) {
+                currentMonthTotal += collTotal;
+              }
+            }
+          }
         });
 
         // Data recovery completed: 148,907 sandwiches recovered, exceeding the 50K adjustment
         // Removing temporary adjustment since actual missing data was recovered
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'];
 
         return {
           totalEntries: collections.length,
           individualSandwiches: individualTotal,
           groupSandwiches: groupTotal,
           completeTotalSandwiches: individualTotal + groupTotal,
+          ytdSandwiches: ytdTotal,
+          ytdYear: currentYear,
+          currentMonthSandwiches: currentMonthTotal,
+          currentMonthName: monthNames[currentMonth],
+          currentMonthYear: currentYear,
         };
       },
       60000 // Cache for 1 minute since this data doesn't change frequently

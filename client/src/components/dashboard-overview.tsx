@@ -493,6 +493,32 @@ export default function DashboardOverview({
               </div>
             </div>
             <div className="premium-divider my-4 sm:my-6"></div>
+            {/* Year-to-date and current month stats */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-4">
+              {statsData?.ytdSandwiches != null && (
+                <div className="text-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-brand-primary">
+                    {(statsData.ytdSandwiches).toLocaleString()}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                    in {statsData.ytdYear} so far
+                  </p>
+                </div>
+              )}
+              {statsData?.ytdSandwiches != null && statsData?.currentMonthSandwiches != null && (
+                <div className="hidden sm:block w-px h-10 bg-gray-200"></div>
+              )}
+              {statsData?.currentMonthSandwiches != null && (
+                <div className="text-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-brand-primary">
+                    {(statsData.currentMonthSandwiches).toLocaleString()}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                    in {statsData.currentMonthName} {statsData.currentMonthYear}
+                  </p>
+                </div>
+              )}
+            </div>
             <div className="premium-text-body-sm text-gray-600">
               Real data from verified collection records
             </div>

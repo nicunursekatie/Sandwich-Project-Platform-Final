@@ -1,5 +1,5 @@
 import { logger } from './production-safe-logger';
-import { RATE_LIMITS } from '../config/constants';
+import { RATE_LIMITS, normalizeAddressForGeocoding } from '../config/constants';
 
 export type GeocodingResult = {
   latitude: string;
@@ -68,10 +68,13 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
     return null;
   }
 
+  // Normalize address: append "Georgia, USA" if no state/region info present
+  const normalizedAddress = normalizeAddressForGeocoding(address.trim());
+
   try {
     // Try Google first (more accurate, handles address variations better)
-    logger.log(`🗺️ Trying Google Geocoding for: ${address}`);
-    const googleResult = await geocodeWithGoogle(address);
+    logger.log(`🗺️ Trying Google Geocoding for: ${normalizedAddress}`);
+    const googleResult = await geocodeWithGoogle(normalizedAddress);
 
     if (googleResult) {
       return { ...googleResult, source: 'google' };
@@ -79,10 +82,10 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
 
     // Fallback to OpenStreetMap if Google fails or is not configured
     // Track that we're about to hit OpenStreetMap for rate limiting purposes
-    logger.log(`🔄 Falling back to OpenStreetMap for: ${address}`);
+    logger.log(`🔄 Falling back to OpenStreetMap for: ${normalizedAddress}`);
 
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalizedAddress)}&limit=1`,
       {
         headers: {
           'User-Agent': 'TheSandwichProject/1.0 (nonprofit organization)',
@@ -111,8 +114,8 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
       };
     }
 
-    logger.warn(`OpenStreetMap returned 0 results for: "${address}"`);
-    logger.error(`❌ ALL GEOCODING FAILED for address: "${address}"`);
+    logger.warn(`OpenStreetMap returned 0 results for: "${normalizedAddress}"`);
+    logger.error(`❌ ALL GEOCODING FAILED for address: "${normalizedAddress}" (original: "${address}")`);
     return null;
   } catch (error) {
     logger.error('Error geocoding address:', error);
