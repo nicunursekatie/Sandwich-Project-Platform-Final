@@ -115,11 +115,18 @@ export function setupSocketChat(httpServer: HttpServer) {
         try {
           const { channel, userId, userName } = data;
 
+          // Check if this user was already tracked (reconnect or joining additional channel)
+          const existingUser = activeUsers.get(socket.id);
+          const wasAlreadyOnline = existingUser ||
+            Array.from(activeUsers.values()).some(u => u.id === userId);
+
           // Store user info
           activeUsers.set(socket.id, {
             id: userId,
             userName,
-            channels: [channel],
+            channels: existingUser
+              ? [...new Set([...existingUser.channels, channel])]
+              : [channel],
           });
 
           // Join the channel
@@ -128,6 +135,14 @@ export function setupSocketChat(httpServer: HttpServer) {
           logger.log(
             `User ${userName} (${userId}) joined channel: ${channel}`
           );
+
+          // Update lastActiveAt in the database so the HTTP /api/users/online endpoint
+          // reflects this user as online immediately (not just after next heartbeat)
+          try {
+            await storage.updateUserLastActive(userId);
+          } catch (err) {
+            logger.error('Error updating lastActiveAt on channel join:', err);
+          }
 
           // Load and send message history (latest 50 messages in reverse chronological order)
           try {
@@ -162,13 +177,18 @@ export function setupSocketChat(httpServer: HttpServer) {
           // Send confirmation
           socket.emit('joined-channel', { channel, userName });
 
-          // Broadcast user-online event to all connected clients for presence notifications
-          io.emit('user-online', {
-            id: userId,
-            userName,
-            timestamp: new Date().toISOString(),
-          });
-          logger.log(`Broadcasted user-online event for ${userName} (${userId})`);
+          // Only broadcast user-online for genuinely new connections (not reconnects
+          // or additional channel joins) to avoid repeated toast notifications
+          if (!wasAlreadyOnline) {
+            io.emit('user-online', {
+              id: userId,
+              userName,
+              timestamp: new Date().toISOString(),
+            });
+            logger.log(`Broadcasted user-online event for ${userName} (${userId})`);
+          } else {
+            logger.log(`Skipped user-online broadcast for ${userName} (${userId}) - already online`);
+          }
         } catch (error) {
           logger.error('Error joining channel:', error);
           socket.emit('error', { message: 'Failed to join channel' });
