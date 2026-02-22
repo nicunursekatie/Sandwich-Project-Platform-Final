@@ -41,6 +41,7 @@ const profileSchema = z.object({
   email: z.string().email('Invalid email address'),
   preferredEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   phoneNumber: z.string().optional(),
+  address: z.string().optional(),
 });
 
 const passwordSchema = z
@@ -104,6 +105,7 @@ export default function UserProfile() {
       email: '',
       preferredEmail: '',
       phoneNumber: '',
+      address: '',
     },
   });
 
@@ -140,6 +142,7 @@ export default function UserProfile() {
         email: profile.email || '',
         preferredEmail: profile.preferredEmail || '',
         phoneNumber: profile.phoneNumber || '',
+        address: profile.address || '',
       });
     }
   }, [userProfile, profileForm]);
@@ -529,6 +532,28 @@ export default function UserProfile() {
                         </FormControl>
                         <p className="text-sm text-muted-foreground">
                           Your contact phone number. This will be included in email signatures and is separate from SMS notifications.
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={profileForm.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Home Address (Optional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            placeholder="123 Main St, Atlanta, GA 30309"
+                            {...field}
+                            data-testid="input-address"
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Your home address is used to show your location on the driver planning map so the team can coordinate logistics.
                         </p>
                         <FormMessage />
                       </FormItem>

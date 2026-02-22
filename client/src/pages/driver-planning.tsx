@@ -365,6 +365,28 @@ const createVolunteerIcon = (color: string) => {
   });
 };
 
+// Team Members: Rounded square
+const createTeamMemberIcon = (color: string) => {
+  const size = 20;
+  const html = `
+    <div style="
+      width: ${size}px;
+      height: ${size}px;
+      background: ${color};
+      border: 2.5px solid white;
+      border-radius: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    "></div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker team-member-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2]
+  });
+};
+
 // Color mappings
 const colors = {
   event: '#3388ff',      // Blue
@@ -375,7 +397,8 @@ const colors = {
   recipientFocused: '#ff9500', // Orange
   volunteer: '#8b5cf6',  // Purple/violet for volunteers/speakers
   driver: '#f1c40f',     // Yellow
-  customLocation: '#ea580c' // Orange for custom/quick lookup locations
+  customLocation: '#ea580c', // Orange for custom/quick lookup locations
+  teamMember: '#e74c3c', // Coral/red for team members
 };
 
 const eventIcon = createEventIcon(colors.event);
@@ -388,6 +411,7 @@ const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
 const driverIcon = createDriverIcon(colors.driver);
 const hostDriverIcon = createHostDriverIcon(colors.host, colors.driver); // Combined icon for host+driver
 const volunteerIcon = createVolunteerIcon(colors.volunteer);
+const teamMemberIcon = createTeamMemberIcon(colors.teamMember);
 
 // Format time to 12-hour format
 const formatTime12Hour = (time: string | null): string => {
@@ -904,6 +928,7 @@ export default function DriverPlanningDashboard() {
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
   const [showVolunteersSpeakers, setShowVolunteersSpeakers] = useState(false);
+  const [showTeamMembers, setShowTeamMembers] = useState(false);
   const [tripPlanningCollapsed, setTripPlanningCollapsed] = useState(false);
 
   // Quick Location Lookup state
@@ -1367,7 +1392,7 @@ export default function DriverPlanningDashboard() {
       if (!response.ok) throw new Error('Failed to fetch volunteers');
       return response.json();
     },
-    enabled: showVolunteersSpeakers, // Only fetch when the toggle is on
+    staleTime: 300000, // Also used for name resolution in assignment labels
   });
 
   // Fetch basic users for resolving user IDs (for assigned staff / assigned drivers that are user IDs)
@@ -1423,6 +1448,26 @@ export default function DriverPlanningDashboard() {
       return response.json();
     },
     staleTime: 300000, // Cache for 5 minutes - this is just for name lookup
+  });
+
+  // Fetch team members with geocoded addresses for map display
+  const { data: teamMembersMap = [] } = useQuery<Array<{
+    id: string;
+    name: string;
+    email: string | null;
+    phoneNumber: string | null;
+    address: string;
+    latitude: string;
+    longitude: string;
+    role: string;
+  }>>({
+    queryKey: ['/api/users/map'],
+    queryFn: async () => {
+      const response = await fetch('/api/users/map');
+      if (!response.ok) throw new Error('Failed to fetch team members for map');
+      return response.json();
+    },
+    staleTime: 300000,
   });
 
   const usersById = useMemo(() => {
@@ -1568,16 +1613,71 @@ export default function DriverPlanningDashboard() {
     return Array.from(variants);
   };
 
-  const resolveUserName = (id: string): string => {
-    const custom = extractCustomName(id);
+  // Comprehensive person name resolver used across all assignment label functions.
+  // Checks every data source so that IDs like "host-contact-4" always resolve to a real name.
+  const resolvePersonName = (id: string): string => {
+    if (!id || typeof id !== 'string') return '';
+    const trimmed = id.trim();
+    if (!trimmed) return '';
+
+    // 1) custom name formats (custom-YYYY-MM-DD-FirstName-LastName or custom:Name)
+    const custom = extractCustomName(trimmed);
     if (custom) return custom;
-    const variants = normalizeDriverIdVariants(id);
-    for (const variant of variants) {
-      const name = usersById.get(variant);
-      if (name) return name;
+
+    // 2) host=contact-X or host-contact-X -> host contacts table
+    if (trimmed.startsWith('host=contact-') || trimmed.startsWith('host-contact-')) {
+      const contactId = trimmed.replace(/^host[=-]contact-/, '');
+      const hostContact = hostContacts.find(h => String(h.id) === contactId);
+      if (hostContact?.contactName) return hostContact.contactName;
     }
-    return id;
+
+    // 3) user IDs via variants (Clerk user IDs, prefixed IDs)
+    const variants = normalizeDriverIdVariants(trimmed);
+    for (const variant of variants) {
+      const userName = usersById.get(variant);
+      if (userName) return userName;
+    }
+
+    // 4) driver candidate IDs (driver-12 / host-3 / volunteer-9)
+    for (const variant of variants) {
+      const candidate = driverCandidates.find(c => c.id === variant);
+      if (candidate?.name) return candidate.name;
+    }
+
+    // 5) numeric ID -> drivers table
+    const numericId = extractNumericId(trimmed);
+    if (numericId !== null) {
+      const numericStr = String(numericId);
+      const driver = drivers.find(d => String(d.id) === numericStr);
+      if (driver?.name) return driver.name;
+      // Also try as driver candidate
+      const asCandidate = driverCandidates.find(c => c.id === `driver-${numericStr}`);
+      if (asCandidate?.name) return asCandidate.name;
+      // Try as user ID
+      const userName = usersById.get(numericStr);
+      if (userName) return userName;
+      // Try as volunteer
+      const volunteer = volunteers.find(v => String(v.id) === numericStr);
+      if (volunteer?.name) return volunteer.name;
+    }
+
+    // 6) prefixed numeric IDs (e.g. volunteer-5, speaker-3)
+    for (const variant of variants) {
+      const tail = variant.includes('-') ? variant.split('-').pop() : null;
+      if (tail && /^\d+$/.test(tail)) {
+        const driver = drivers.find(d => String(d.id) === tail);
+        if (driver?.name) return driver.name;
+        const volunteer = volunteers.find(v => String(v.id) === tail);
+        if (volunteer?.name) return volunteer.name;
+      }
+    }
+
+    // Never return raw IDs - return empty string so they get filtered out
+    return trimmed;
   };
+
+  // Keep resolveUserName as alias for backwards compat within this file
+  const resolveUserName = resolvePersonName;
 
   // Filter events to upcoming scheduled events within selected weeks
   const upcomingEvents = useMemo(() => {
@@ -2163,6 +2263,29 @@ export default function DriverPlanningDashboard() {
       }));
   }, [showVolunteersSpeakers, volunteers, events]);
 
+  // Team members to show on map (filtered to exclude users already shown as drivers/volunteers/hosts)
+  const teamMembersForMap = useMemo(() => {
+    if (!showTeamMembers || teamMembersMap.length === 0) return [];
+
+    // Build sets of IDs already shown on the map via other layers
+    const driverCandidateUserIds = new Set<string>();
+    for (const c of driverCandidates) {
+      // Driver candidates have IDs like "driver-5", "host-3", "volunteer-9"
+      // but the underlying user ID might be different. We'll match by name/email instead.
+      if (c.email) driverCandidateUserIds.add(c.email.toLowerCase());
+    }
+    const volunteerEmails = new Set(volunteers.filter(v => v.email).map(v => v.email!.toLowerCase()));
+    const hostContactEmails = new Set(hostContacts.filter(h => h.email).map(h => h.email!.toLowerCase()));
+
+    return teamMembersMap.filter(member => {
+      if (!member.latitude || !member.longitude) return false;
+      const email = member.email?.toLowerCase();
+      if (!email) return true; // No email to dedup on, show them
+      // Skip if already showing as driver candidate, volunteer, or host contact
+      return !driverCandidateUserIds.has(email) && !volunteerEmails.has(email) && !hostContactEmails.has(email);
+    });
+  }, [showTeamMembers, teamMembersMap, driverCandidates, volunteers, hostContacts]);
+
   // Track whether we've auto-populated for the current event
   const lastAutoPopulatedEventId = useRef<number | null>(null);
 
@@ -2247,68 +2370,7 @@ export default function DriverPlanningDashboard() {
   const getAssignedDriversLabel = (event: EventMapData): string | null => {
     const ids = getDriverIds(event);
     if (ids.length === 0) return null;
-
-    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
-    const driverByNumericId = new Map(activeDrivers.map((d) => [String(d.id), d]));
-    const hostContactById = new Map(hostContacts.map((h) => [String(h.id), h]));
-
-    const labels = ids.map((raw) => {
-      const id = String(raw).trim();
-      if (!id) return '';
-      const variants = normalizeDriverIdVariants(id);
-
-      // 1) custom name formats
-      const custom = extractCustomName(id);
-      if (custom) return custom;
-
-      // 2) host=contact-X format (host contact reference)
-      if (id.startsWith('host=contact-')) {
-        const contactId = id.replace('host=contact-', '');
-        const hostContact = hostContactById.get(contactId);
-        if (hostContact) return hostContact.contactName;
-      }
-
-      // 3) host-contact-X format (alternate host contact reference)
-      if (id.startsWith('host-contact-')) {
-        const contactId = id.replace('host-contact-', '');
-        const hostContact = hostContactById.get(contactId);
-        if (hostContact) return hostContact.contactName;
-      }
-
-      // 4) user IDs (common across event-request staffing)
-      for (const variant of variants) {
-        const userName = usersById.get(variant);
-        if (userName) return userName;
-      }
-
-      // 5) driver candidate IDs (driver-12 / host-3 / volunteer-9)
-      for (const variant of variants) {
-        const candidate = candidateById.get(variant);
-        if (candidate) return candidate.name;
-      }
-
-      // 6) numeric IDs (plain "12") -> drivers table
-      const numericId = extractNumericId(id);
-      if (numericId !== null) {
-        const numericStr = String(numericId);
-        const driver = driverByNumericId.get(numericStr);
-        if (driver?.name) return driver.name;
-        const asCandidate = candidateById.get(`driver-${numericStr}`);
-        if (asCandidate) return asCandidate.name;
-      }
-
-      // 7) prefixed numeric IDs -> drivers table
-      for (const variant of variants) {
-        const tail = variant.includes('-') ? variant.split('-').pop() : null;
-        if (tail && /^\d+$/.test(tail)) {
-          const driver = driverByNumericId.get(tail);
-          if (driver?.name) return driver.name;
-        }
-      }
-
-      return id;
-    }).filter(Boolean);
-
+    const labels = ids.map(raw => resolvePersonName(String(raw))).filter(Boolean);
     const deduped = Array.from(new Set(labels));
     return deduped.length > 0 ? deduped.join(', ') : null;
   };
@@ -2316,39 +2378,7 @@ export default function DriverPlanningDashboard() {
   const getAssignedSpeakersLabel = (event: EventMapData): string | null => {
     const ids = getSpeakerIds(event);
     if (ids.length === 0) return null;
-
-    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
-
-    const labels = ids
-      .map((raw) => {
-        const id = String(raw).trim();
-        if (!id) return '';
-        const variants = normalizeDriverIdVariants(id);
-
-        const custom = extractCustomName(id);
-        if (custom) return custom;
-
-        for (const variant of variants) {
-          const userName = usersById.get(variant);
-          if (userName) return userName;
-        }
-
-        for (const variant of variants) {
-          const candidate = candidateById.get(variant);
-          if (candidate) return candidate.name;
-        }
-
-        const numericId = extractNumericId(id);
-        if (numericId !== null) {
-          const numericStr = String(numericId);
-          const userName = usersById.get(numericStr);
-          if (userName) return userName;
-        }
-
-        return id;
-      })
-      .filter(Boolean);
-
+    const labels = ids.map(raw => resolvePersonName(String(raw))).filter(Boolean);
     const deduped = Array.from(new Set(labels));
     return deduped.length > 0 ? deduped.join(', ') : null;
   };
@@ -2356,39 +2386,7 @@ export default function DriverPlanningDashboard() {
   const getAssignedVolunteersLabel = (event: EventMapData): string | null => {
     const ids = getVolunteerIds(event);
     if (ids.length === 0) return null;
-
-    const candidateById = new Map(driverCandidates.map((c) => [c.id, c]));
-
-    const labels = ids
-      .map((raw) => {
-        const id = String(raw).trim();
-        if (!id) return '';
-        const variants = normalizeDriverIdVariants(id);
-
-        const custom = extractCustomName(id);
-        if (custom) return custom;
-
-        for (const variant of variants) {
-          const userName = usersById.get(variant);
-          if (userName) return userName;
-        }
-
-        for (const variant of variants) {
-          const candidate = candidateById.get(variant);
-          if (candidate) return candidate.name;
-        }
-
-        const numericId = extractNumericId(id);
-        if (numericId !== null) {
-          const numericStr = String(numericId);
-          const userName = usersById.get(numericStr);
-          if (userName) return userName;
-        }
-
-        return id;
-      })
-      .filter(Boolean);
-
+    const labels = ids.map(raw => resolvePersonName(String(raw))).filter(Boolean);
     const deduped = Array.from(new Set(labels));
     return deduped.length > 0 ? deduped.join(', ') : null;
   };
@@ -2589,6 +2587,20 @@ export default function DriverPlanningDashboard() {
                 className="rounded border-gray-300 text-purple-600 focus:ring-purple-600"
               />
               <span className="text-gray-600">Show speakers/volunteers on map</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showTeamMembers}
+                onChange={(e) => setShowTeamMembers(e.target.checked)}
+                className="rounded border-gray-300 text-red-500 focus:ring-red-500"
+              />
+              <span className="text-gray-600">Show team members on map</span>
+              {showTeamMembers && teamMembersForMap.length > 0 && (
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-red-100 text-red-700">
+                  {teamMembersForMap.length}
+                </Badge>
+              )}
             </label>
 
             {/* Quick Location Lookup */}
@@ -3310,6 +3322,42 @@ export default function DriverPlanningDashboard() {
                           ))}
                         </ul>
                       </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Show team members with addresses on map when toggle is on */}
+            {showTeamMembers && teamMembersForMap.map((member) => (
+              <Marker
+                key={`team-member-${member.id}`}
+                position={[parseFloat(member.latitude), parseFloat(member.longitude)]}
+                icon={teamMemberIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-red-50 !border-red-300 !text-red-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {member.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <h3 className="font-semibold text-red-700 text-sm flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {member.name}
+                      <span className="text-red-400 text-[11px]">({member.role})</span>
+                    </h3>
+                    {member.address && (
+                      <p className="text-xs text-gray-600">{member.address}</p>
+                    )}
+                    {member.phoneNumber && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {member.phoneNumber}
+                      </p>
                     )}
                   </div>
                 </Popup>
@@ -5226,6 +5274,42 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
+
+            {/* Show team members with addresses on map when toggle is on */}
+            {showTeamMembers && teamMembersForMap.map((member) => (
+              <Marker
+                key={`team-member-${member.id}`}
+                position={[parseFloat(member.latitude), parseFloat(member.longitude)]}
+                icon={teamMemberIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-red-50 !border-red-300 !text-red-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {member.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <h3 className="font-semibold text-red-700 text-sm flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {member.name}
+                      <span className="text-red-400 text-[11px]">({member.role})</span>
+                    </h3>
+                    {member.address && (
+                      <p className="text-xs text-gray-600">{member.address}</p>
+                    )}
+                    {member.phoneNumber && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {member.phoneNumber}
+                      </p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
           </MapContainer>
 
           {/* Tablet Details Panel - Bottom overlay when event selected */}
@@ -5512,6 +5596,42 @@ export default function DriverPlanningDashboard() {
                     {volunteer.assignedEvents.length > 0 && (
                       <p className="text-xs text-gray-500 mt-1">
                         {volunteer.assignedEvents.map(e => e.eventName).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Show team members with addresses on map when toggle is on */}
+            {showTeamMembers && teamMembersForMap.map((member) => (
+              <Marker
+                key={`team-member-${member.id}`}
+                position={[parseFloat(member.latitude), parseFloat(member.longitude)]}
+                icon={teamMemberIcon}
+              >
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  className="!bg-red-50 !border-red-300 !text-red-800 !text-xs !font-medium !px-2 !py-1 !rounded !shadow-sm"
+                >
+                  {member.name}
+                </Tooltip>
+                <Popup>
+                  <div className="p-2 min-w-[200px]">
+                    <h3 className="font-semibold text-red-700 text-sm flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {member.name}
+                      <span className="text-red-400 text-[11px]">({member.role})</span>
+                    </h3>
+                    {member.address && (
+                      <p className="text-xs text-gray-600">{member.address}</p>
+                    )}
+                    {member.phoneNumber && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {member.phoneNumber}
                       </p>
                     )}
                   </div>

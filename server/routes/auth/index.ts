@@ -23,6 +23,7 @@ import { db } from '../../db';
 import { passwordResetTokens } from '@shared/schema';
 import { eq, and, gt, isNull } from 'drizzle-orm';
 import { getAppBaseUrl, DEFAULT_HOST } from '../../config/constants';
+import { geocodeAddress } from '../../utils/geocoding';
 
 export function createAuthRouter() {
   const router = Router();
@@ -298,6 +299,7 @@ export function createAuthRouter() {
         displayName: freshUser.displayName,
         preferredEmail: freshUser.preferredEmail,
         phoneNumber: freshUser.phoneNumber,
+        address: freshUser.address,
         profileImageUrl: freshUser.profileImageUrl,
         role: freshUser.role,
         isActive: freshUser.isActive,
@@ -318,7 +320,7 @@ export function createAuthRouter() {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
-      const { firstName, lastName, displayName, preferredEmail, phoneNumber } = req.body;
+      const { firstName, lastName, displayName, preferredEmail, phoneNumber, address } = req.body;
 
       // Build update object with only provided fields
       const updateData: any = {};
@@ -327,6 +329,28 @@ export function createAuthRouter() {
       if (displayName !== undefined) updateData.displayName = displayName;
       if (preferredEmail !== undefined) updateData.preferredEmail = preferredEmail;
       if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+      if (address !== undefined) {
+        updateData.address = address;
+        // Auto-geocode when address changes
+        const existingUser = await storage.getUserById(req.user.id);
+        const addressChanged = address !== existingUser?.address;
+        if (address && address.trim() && addressChanged) {
+          const result = await geocodeAddress(address.trim());
+          if (result) {
+            updateData.latitude = result.latitude;
+            updateData.longitude = result.longitude;
+            updateData.geocodedAt = new Date();
+            logger.log(`Geocoded user ${req.user.id} address: ${address} -> (${result.latitude}, ${result.longitude})`);
+          } else {
+            logger.warn(`Failed to geocode user ${req.user.id} address: ${address}`);
+          }
+        } else if (!address || !address.trim()) {
+          // Clear coordinates when address is removed
+          updateData.latitude = null;
+          updateData.longitude = null;
+          updateData.geocodedAt = null;
+        }
+      }
 
       // Update user profile
       const updatedUser = await storage.updateUser(req.user.id, updateData);
@@ -353,6 +377,7 @@ export function createAuthRouter() {
         displayName: updatedUser.displayName,
         preferredEmail: updatedUser.preferredEmail,
         phoneNumber: updatedUser.phoneNumber,
+        address: updatedUser.address,
         profileImageUrl: updatedUser.profileImageUrl,
         role: updatedUser.role,
         isActive: updatedUser.isActive,

@@ -46,6 +46,10 @@ export const users = pgTable('users', {
   permissions: jsonb('permissions').default('[]'), // Array of specific permissions
   permissionsModifiedAt: timestamp('permissions_modified_at'),
   permissionsModifiedBy: varchar('permissions_modified_by'),
+  address: text('address'), // Home address for map display in driver planning tool
+  latitude: varchar('latitude'), // Geocoded latitude for map display
+  longitude: varchar('longitude'), // Geocoded longitude for map display
+  geocodedAt: timestamp('geocoded_at'), // When coordinates were last geocoded
   metadata: jsonb('metadata').default('{}'), // Additional user data (phone, address, availability, etc.)
   isActive: boolean('is_active').notNull().default(true),
   needsPasswordSetup: boolean('needs_password_setup').default(false), // True for manually created accounts without password

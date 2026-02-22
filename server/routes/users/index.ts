@@ -246,6 +246,28 @@ usersRouter.post('/heartbeat', async (req, res, next) => {
   }
 });
 
+// Get users with geocoded addresses for map display (driver planning tool)
+usersRouter.get('/map', async (req, res, next) => {
+  try {
+    const allUsers = await storage.getAllUsers();
+    const usersWithCoords = allUsers
+      .filter((u: any) => u.isActive && u.latitude && u.longitude && u.address)
+      .map((u: any) => ({
+        id: u.id,
+        name: [u.firstName, u.lastName].filter(Boolean).join(' ') || u.displayName || u.email || 'Unknown',
+        email: u.email,
+        phoneNumber: u.phoneNumber,
+        address: u.address,
+        latitude: String(u.latitude),
+        longitude: String(u.longitude),
+        role: u.role,
+      }));
+    res.json(usersWithCoords);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Apply error handler
 usersRouter.use(errorHandler);
 
