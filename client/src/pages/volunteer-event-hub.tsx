@@ -1035,21 +1035,30 @@ export default function VolunteerEventHub() {
                                 {event.eventStartTime && <p className="text-xs mt-1">{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</p>}
                                 {event.eventAddress && <p className="text-xs text-muted-foreground">{event.city || event.eventAddress}</p>}
                                 {event.estimatedSandwichCount && <p className="text-xs mt-1">{event.estimatedSandwichCount.toLocaleString()} sandwiches</p>}
-                                <div className="flex gap-1 mt-1">
-                                  {event.speakersUnfilled > 0 && (
-                                    <Badge className="text-[10px] bg-[#a31c41] text-white">
-                                      <Mic className="w-2.5 h-2.5 mr-0.5" />{event.speakersUnfilled}
-                                    </Badge>
+                                <div className="space-y-0.5 mt-1">
+                                  {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
+                                    <div className="flex items-center gap-1 text-[10px]">
+                                      <Mic className="w-2.5 h-2.5 text-[#a31c41]" />
+                                      <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
+                                        Speakers {event.speakersAssigned}/{event.speakersNeeded}
+                                      </span>
+                                    </div>
                                   )}
-                                  {event.volunteersUnfilled > 0 && (
-                                    <Badge className="text-[10px] bg-[#007e8c] text-white">
-                                      <UserCheck className="w-2.5 h-2.5 mr-0.5" />{event.volunteersUnfilled}
-                                    </Badge>
+                                  {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
+                                    <div className="flex items-center gap-1 text-[10px]">
+                                      <UserCheck className="w-2.5 h-2.5 text-[#007e8c]" />
+                                      <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
+                                        Volunteers {event.volunteersAssigned}/{event.volunteersNeeded}
+                                      </span>
+                                    </div>
                                   )}
-                                  {event.driversUnfilled > 0 && (
-                                    <Badge className="text-[10px] bg-[#236383] text-white">
-                                      <Car className="w-2.5 h-2.5 mr-0.5" />{event.driversUnfilled}
-                                    </Badge>
+                                  {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
+                                    <div className="flex items-center gap-1 text-[10px]">
+                                      <Car className="w-2.5 h-2.5 text-[#236383]" />
+                                      <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
+                                        Drivers {event.driversAssigned}/{event.driversNeeded}
+                                      </span>
+                                    </div>
                                   )}
                                 </div>
                               </TooltipContent>
@@ -1127,21 +1136,42 @@ export default function VolunteerEventHub() {
                               )}
                               <p className="text-sm">{event.eventAddress}</p>
 
-                              <div className="flex flex-wrap gap-1">
-                                {event.speakersUnfilled > 0 && (
-                                  <Badge className="bg-[#a31c41] text-white text-xs">
-                                    <Mic className="w-3 h-3 mr-1" />{event.speakersUnfilled}
-                                  </Badge>
+                              <div className="space-y-1">
+                                {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <Mic className="w-3 h-3 text-[#a31c41] shrink-0" />
+                                    <span className="font-medium">Speakers</span>
+                                    <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
+                                      {event.speakersAssigned}/{event.speakersNeeded}
+                                    </span>
+                                    {event.speakersUnfilled > 0 && (
+                                      <Badge className="bg-[#a31c41] text-white text-[10px] px-1 py-0">{event.speakersUnfilled} needed</Badge>
+                                    )}
+                                  </div>
                                 )}
-                                {event.volunteersUnfilled > 0 && (
-                                  <Badge className="bg-[#007e8c] text-white text-xs">
-                                    <UserCheck className="w-3 h-3 mr-1" />{event.volunteersUnfilled}
-                                  </Badge>
+                                {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <UserCheck className="w-3 h-3 text-[#007e8c] shrink-0" />
+                                    <span className="font-medium">Volunteers</span>
+                                    <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
+                                      {event.volunteersAssigned}/{event.volunteersNeeded}
+                                    </span>
+                                    {event.volunteersUnfilled > 0 && (
+                                      <Badge className="bg-[#007e8c] text-white text-[10px] px-1 py-0">{event.volunteersUnfilled} needed</Badge>
+                                    )}
+                                  </div>
                                 )}
-                                {event.driversUnfilled > 0 && (
-                                  <Badge className="bg-[#236383] text-white text-xs">
-                                    <Car className="w-3 h-3 mr-1" />{event.driversUnfilled}
-                                  </Badge>
+                                {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
+                                  <div className="flex items-center gap-1.5 text-xs">
+                                    <Car className="w-3 h-3 text-[#236383] shrink-0" />
+                                    <span className="font-medium">Drivers</span>
+                                    <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
+                                      {event.driversAssigned}/{event.driversNeeded}
+                                    </span>
+                                    {event.driversUnfilled > 0 && (
+                                      <Badge className="bg-[#236383] text-white text-[10px] px-1 py-0">{event.driversUnfilled} needed</Badge>
+                                    )}
+                                  </div>
                                 )}
                               </div>
 
@@ -1320,21 +1350,48 @@ export default function VolunteerEventHub() {
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {event.speakersUnfilled > 0 && (
-                        <Badge className="bg-[#a31c41] text-white text-xs">
-                          <Mic className="w-3 h-3 mr-1" />{event.speakersUnfilled} Speaker{event.speakersUnfilled > 1 ? 's' : ''}
-                        </Badge>
+                    <div className="space-y-1 mt-2">
+                      {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Mic className="w-3 h-3 text-[#a31c41]" />
+                          <span className="font-medium text-[#a31c41]">Speakers</span>
+                          <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
+                            {event.speakersAssigned}/{event.speakersNeeded}
+                          </span>
+                          {event.speakersUnfilled > 0 && (
+                            <Badge className="bg-[#a31c41] text-white text-[10px] px-1 py-0 h-4">{event.speakersUnfilled} needed</Badge>
+                          )}
+                        </div>
                       )}
-                      {event.volunteersUnfilled > 0 && (
-                        <Badge className="bg-[#007e8c] text-white text-xs">
-                          <UserCheck className="w-3 h-3 mr-1" />{event.volunteersUnfilled} Volunteer{event.volunteersUnfilled > 1 ? 's' : ''}
-                        </Badge>
+                      {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <UserCheck className="w-3 h-3 text-[#007e8c]" />
+                          <span className="font-medium text-[#007e8c]">Volunteers</span>
+                          <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
+                            {event.volunteersAssigned}/{event.volunteersNeeded}
+                          </span>
+                          {event.volunteersUnfilled > 0 && (
+                            <Badge className="bg-[#007e8c] text-white text-[10px] px-1 py-0 h-4">{event.volunteersUnfilled} needed</Badge>
+                          )}
+                        </div>
                       )}
-                      {event.driversUnfilled > 0 && (
-                        <Badge className="bg-[#236383] text-white text-xs">
-                          <Car className="w-3 h-3 mr-1" />{event.driversUnfilled} Driver{event.driversUnfilled > 1 ? 's' : ''}
-                        </Badge>
+                      {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Car className="w-3 h-3 text-[#236383]" />
+                          <span className="font-medium text-[#236383]">Drivers</span>
+                          <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
+                            {event.driversAssigned}/{event.driversNeeded}
+                          </span>
+                          {event.driversUnfilled > 0 && (
+                            <Badge className="bg-[#236383] text-white text-[10px] px-1 py-0 h-4">{event.driversUnfilled} needed</Badge>
+                          )}
+                        </div>
+                      )}
+                      {event.vanDriverNeeded && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Car className="w-3 h-3 text-[#fbad3f]" />
+                          <span className="font-medium text-[#fbad3f]">Van Driver Needed</span>
+                        </div>
                       )}
                     </div>
                   </div>
