@@ -3,7 +3,7 @@ import { db } from '../db';
 import { eventRequests } from '@shared/schema';
 import { isNotNull, isNull, and, ne, eq, or } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
-import { geocodeAddress } from '../utils/geocoding';
+import { geocodeAddress, getLastGeocodingFailure } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
 
 const router = Router();
@@ -176,10 +176,13 @@ router.post('/geocode/:id', async (req, res) => {
     }
 
     if (!coordinates) {
-      logger.warn(`Geocoding failed for event ${eventId}: "${cleanedAddress}" (original: "${originalAddress}")`);
+      const failure = getLastGeocodingFailure();
+      logger.warn(`Geocoding failed for event ${eventId}: "${cleanedAddress}" (original: "${originalAddress}") — reason: ${failure.reason}: ${failure.detail}`);
       return res.status(400).json({
         error: 'Failed to geocode address',
-        details: `Could not find coordinates for address: "${originalAddress}". The address may be incomplete or not recognized by the geocoding service. Tried cleaning to: "${cleanedAddress}"`
+        details: `Could not find coordinates for address: "${originalAddress}". Tried cleaning to: "${cleanedAddress}"`,
+        geocodingError: failure.reason,
+        geocodingDetail: failure.detail,
       });
     }
 
@@ -240,10 +243,13 @@ router.post('/geocode-address', async (req, res) => {
     }
 
     if (!coordinates) {
-      logger.warn(`Quick geocode failed for: "${cleanedAddress}" (original: "${trimmedAddress}")`);
+      const failure = getLastGeocodingFailure();
+      logger.warn(`Quick geocode failed for: "${cleanedAddress}" (original: "${trimmedAddress}") — reason: ${failure.reason}: ${failure.detail}`);
       return res.status(400).json({
         error: 'Failed to geocode address',
-        details: `Could not find coordinates for: "${trimmedAddress}"`
+        details: `Could not find coordinates for: "${trimmedAddress}"`,
+        geocodingError: failure.reason,
+        geocodingDetail: failure.detail,
       });
     }
 

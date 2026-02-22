@@ -7,6 +7,34 @@ export type GeocodingResult = {
   source: 'google' | 'openstreetmap';
 } | null;
 
+export type GeocodingFailureReason =
+  | 'no_address'
+  | 'google_no_key'
+  | 'google_http_error'
+  | 'google_request_denied'
+  | 'google_over_query_limit'
+  | 'google_invalid_request'
+  | 'google_zero_results'
+  | 'google_unknown_error'
+  | 'google_exception'
+  | 'osm_http_error'
+  | 'osm_zero_results'
+  | 'osm_exception'
+  | 'all_failed';
+
+// Stores the last failure reason for diagnostic purposes
+let lastFailureReason: GeocodingFailureReason | null = null;
+let lastFailureDetail: string = '';
+
+export function getLastGeocodingFailure(): { reason: GeocodingFailureReason | null; detail: string } {
+  return { reason: lastFailureReason, detail: lastFailureDetail };
+}
+
+function setFailure(reason: GeocodingFailureReason, detail: string) {
+  lastFailureReason = reason;
+  lastFailureDetail = detail;
+}
+
 /**
  * Geocode using Google Geocoding API (primary - better at parsing typos and messy addresses)
  */
@@ -16,7 +44,8 @@ async function geocodeWithGoogle(
   const apiKey = process.env.GOOGLE_GEOCODING_API_KEY;
 
   if (!apiKey) {
-    logger.warn('Google Geocoding API key not configured');
+    logger.warn('Google Geocoding API key not configured — set GOOGLE_GEOCODING_API_KEY env var');
+    setFailure('google_no_key', 'GOOGLE_GEOCODING_API_KEY not set');
     return null;
   }
 
@@ -26,9 +55,9 @@ async function geocodeWithGoogle(
     );
 
     if (!response.ok) {
-      logger.error(
-        `Google Geocoding API error: ${response.status} ${response.statusText}`
-      );
+      const detail = `HTTP ${response.status} ${response.statusText}`;
+      logger.error(`Google Geocoding API HTTP error for "${address}": ${detail}`);
+      setFailure('google_http_error', detail);
       return null;
     }
 
@@ -36,8 +65,8 @@ async function geocodeWithGoogle(
 
     if (data.status === 'OK' && data.results && data.results.length > 0) {
       const location = data.results[0].geometry.location;
-      logger.log(
-        `✅ Google Geocoding SUCCESS: ${address} -> (${location.lat}, ${location.lng})`
+      logger.info(
+        `Google Geocoding SUCCESS: "${address}" -> (${location.lat}, ${location.lng})`
       );
       return {
         latitude: location.lat.toString(),
@@ -45,12 +74,23 @@ async function geocodeWithGoogle(
       };
     }
 
-    logger.warn(
-      `Google Geocoding returned status: ${data.status} for address: "${address}"`
-    );
+    // Map Google status to our failure reasons
+    const statusMap: Record<string, GeocodingFailureReason> = {
+      'REQUEST_DENIED': 'google_request_denied',
+      'OVER_QUERY_LIMIT': 'google_over_query_limit',
+      'INVALID_REQUEST': 'google_invalid_request',
+      'ZERO_RESULTS': 'google_zero_results',
+    };
+    const failureReason = statusMap[data.status] || 'google_unknown_error';
+    const detail = `Google returned "${data.status}"${data.error_message ? `: ${data.error_message}` : ''}`;
+
+    logger.warn(`Google Geocoding FAILED for "${address}": ${detail}`);
+    setFailure(failureReason, detail);
     return null;
   } catch (error) {
-    logger.error('Error with Google Geocoding:', error);
+    const detail = error instanceof Error ? error.message : String(error);
+    logger.error(`Google Geocoding exception for "${address}": ${detail}`);
+    setFailure('google_exception', detail);
     return null;
   }
 }
@@ -64,7 +104,12 @@ async function geocodeWithGoogle(
  * @returns Object with latitude, longitude, and source service, or null if failed
  */
 export async function geocodeAddress(address: string): Promise<GeocodingResult> {
+  // Reset failure tracking for this call
+  lastFailureReason = null;
+  lastFailureDetail = '';
+
   if (!address || address.trim() === '') {
+    setFailure('no_address', 'Empty or missing address');
     return null;
   }
 
@@ -73,7 +118,7 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
 
   try {
     // Try Google first (more accurate, handles address variations better)
-    logger.log(`🗺️ Trying Google Geocoding for: ${normalizedAddress}`);
+    logger.info(`Geocoding attempt: "${normalizedAddress}" (original: "${address}")`);
     const googleResult = await geocodeWithGoogle(normalizedAddress);
 
     if (googleResult) {
@@ -81,8 +126,7 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
     }
 
     // Fallback to OpenStreetMap if Google fails or is not configured
-    // Track that we're about to hit OpenStreetMap for rate limiting purposes
-    logger.log(`🔄 Falling back to OpenStreetMap for: ${normalizedAddress}`);
+    logger.info(`Falling back to OpenStreetMap for: "${normalizedAddress}"`);
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalizedAddress)}&limit=1`,
@@ -94,9 +138,9 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
     );
 
     if (!response.ok) {
-      logger.error(
-        `OpenStreetMap API error: ${response.status} ${response.statusText}`
-      );
+      const detail = `HTTP ${response.status} ${response.statusText}`;
+      logger.error(`OpenStreetMap API error for "${normalizedAddress}": ${detail}`);
+      setFailure('osm_http_error', detail);
       return null;
     }
 
@@ -104,8 +148,8 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
 
     if (data && data.length > 0) {
       const result = data[0];
-      logger.log(
-        `✅ OpenStreetMap SUCCESS: ${address} -> (${result.lat}, ${result.lon})`
+      logger.info(
+        `OpenStreetMap SUCCESS: "${address}" -> (${result.lat}, ${result.lon})`
       );
       return {
         latitude: result.lat,
@@ -115,10 +159,13 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
     }
 
     logger.warn(`OpenStreetMap returned 0 results for: "${normalizedAddress}"`);
-    logger.error(`❌ ALL GEOCODING FAILED for address: "${normalizedAddress}" (original: "${address}")`);
+    setFailure('all_failed', `Both Google and OpenStreetMap failed for "${normalizedAddress}"`);
+    logger.error(`ALL GEOCODING FAILED for address: "${normalizedAddress}" (original: "${address}")`);
     return null;
   } catch (error) {
-    logger.error('Error geocoding address:', error);
+    const detail = error instanceof Error ? error.message : String(error);
+    logger.error(`Geocoding exception for "${normalizedAddress}": ${detail}`);
+    setFailure('osm_exception', detail);
     return null;
   }
 }
