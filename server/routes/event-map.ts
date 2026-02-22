@@ -162,13 +162,18 @@ router.post('/geocode/:id', async (req, res) => {
     // Clean address for geocoding (remove suite/building numbers)
     const originalAddress = event[0].eventAddress;
     const cleanedAddress = cleanAddressForGeocoding(originalAddress);
-    
+
     logger.log(`Geocoding event ${eventId}:`);
     logger.log(`  Original: ${originalAddress}`);
     logger.log(`  Cleaned:  ${cleanedAddress}`);
 
-    // Geocode the cleaned address
-    const coordinates = await geocodeAddress(cleanedAddress);
+    // Try cleaned address first, then fall back to original if cleaning removed too much
+    let coordinates = await geocodeAddress(cleanedAddress);
+
+    if (!coordinates && cleanedAddress !== originalAddress) {
+      logger.log(`  Cleaned address failed, trying original: ${originalAddress}`);
+      coordinates = await geocodeAddress(originalAddress);
+    }
 
     if (!coordinates) {
       logger.warn(`Geocoding failed for event ${eventId}: "${cleanedAddress}" (original: "${originalAddress}")`);
@@ -219,20 +224,26 @@ router.post('/geocode-address', async (req, res) => {
     await rateLimiter.checkAndWait('geocode', 200);
 
     // Clean address for geocoding (remove suite/building numbers)
-    const cleanedAddress = cleanAddressForGeocoding(address.trim());
+    const trimmedAddress = address.trim();
+    const cleanedAddress = cleanAddressForGeocoding(trimmedAddress);
 
     logger.log(`Quick geocode lookup:`);
-    logger.log(`  Original: ${address}`);
+    logger.log(`  Original: ${trimmedAddress}`);
     logger.log(`  Cleaned:  ${cleanedAddress}`);
 
-    // Geocode the cleaned address
-    const coordinates = await geocodeAddress(cleanedAddress);
+    // Try cleaned address first, then fall back to original
+    let coordinates = await geocodeAddress(cleanedAddress);
+
+    if (!coordinates && cleanedAddress !== trimmedAddress) {
+      logger.log(`  Cleaned address failed, trying original: ${trimmedAddress}`);
+      coordinates = await geocodeAddress(trimmedAddress);
+    }
 
     if (!coordinates) {
-      logger.warn(`Quick geocode failed for: "${cleanedAddress}" (original: "${address}")`);
+      logger.warn(`Quick geocode failed for: "${cleanedAddress}" (original: "${trimmedAddress}")`);
       return res.status(400).json({
         error: 'Failed to geocode address',
-        details: `Could not find coordinates for: "${address}"`
+        details: `Could not find coordinates for: "${trimmedAddress}"`
       });
     }
 
@@ -312,8 +323,15 @@ async function startBatchGeocoding(req: Request, res: Response) {
             // Rate limit: Nominatim policy is 1 request/sec
             await rateLimiter.checkAndWait('geocode', 1100);
 
-            const cleanedAddress = cleanAddressForGeocoding(event.eventAddress!);
-            const coordinates = await geocodeAddress(cleanedAddress);
+            const originalAddress = event.eventAddress!;
+            const cleanedAddress = cleanAddressForGeocoding(originalAddress);
+            let coordinates = await geocodeAddress(cleanedAddress);
+
+            // Fallback to original if cleaning removed too much
+            if (!coordinates && cleanedAddress !== originalAddress) {
+              await rateLimiter.checkAndWait('geocode', 1100);
+              coordinates = await geocodeAddress(originalAddress);
+            }
 
             if (coordinates) {
               await db
