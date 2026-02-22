@@ -1,7 +1,7 @@
 import { Router, type Response } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { promises as fs, existsSync } from 'fs';
+import { existsSync, createReadStream } from 'fs';
 import type { IStorage } from '../storage';
 import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
@@ -235,7 +235,7 @@ documentsRouter.get(
       res.setHeader('Cache-Control', 'private, max-age=3600');
 
       // Stream the file to the client
-      const fileStream = require('fs').createReadStream(document.filePath);
+      const fileStream = createReadStream(document.filePath);
       fileStream.pipe(res);
     } catch (error: any) {
       logger.error('Error previewing document:', error);
@@ -312,7 +312,7 @@ documentsRouter.get(
       res.setHeader('Content-Length', document.fileSize);
 
       // Stream the file to the client
-      const fileStream = fs.createReadStream(document.filePath);
+      const fileStream = createReadStream(document.filePath);
       fileStream.pipe(res);
     } catch (error: any) {
       logger.error('Error downloading document:', error);
