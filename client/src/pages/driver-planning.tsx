@@ -2882,7 +2882,7 @@ export default function DriverPlanningDashboard() {
                           </div>
                         )}
                         {canEditEvents && (
-                          <div className="pt-1 mt-1 border-t border-gray-100">
+                          <div className="pt-1 mt-1 border-t border-gray-100 flex items-center gap-2">
                             <Button
                               type="button"
                               variant="ghost"
@@ -2898,6 +2898,23 @@ export default function DriverPlanningDashboard() {
                               <Edit2 className="w-3 h-3 mr-1" />
                               Edit Event
                             </Button>
+                            {event.eventAddress && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto min-h-0 text-xs text-gray-500 hover:text-[#007E8C] hover:bg-[#007E8C]/10 px-1 py-0.5"
+                                onClick={(e) => handleGeocodeEvent(e, event.id)}
+                                disabled={geocodingEventId === event.id}
+                              >
+                                {geocodingEventId === event.id ? (
+                                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                )}
+                                {event.latitude && event.longitude ? 'Re-geocode' : 'Geocode'}
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
