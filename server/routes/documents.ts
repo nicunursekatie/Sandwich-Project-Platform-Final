@@ -1,7 +1,5 @@
 import { Router, type Response } from 'express';
-import multer from 'multer';
 import path from 'path';
-import { existsSync, createReadStream } from 'fs';
 import type { IStorage } from '../storage';
 import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
@@ -10,69 +8,35 @@ import { storage } from '../storage-wrapper';
 import type { AuthenticatedRequest } from '../types/express';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { ObjectStorageService, ObjectNotFoundError } from '../replit_integrations/object_storage';
 
-// Custom multer configuration for documents
-const documentsUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = 'server/uploads/documents';
-      // Ensure the directory exists
-      if (!existsSync(uploadDir)) {
-        require('fs').mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      // Generate unique filename while preserving extension
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      const baseName = path.basename(file.originalname, ext);
-      const uniqueFilename = `${baseName}-${uniqueSuffix}${ext}`;
-      cb(null, uniqueFilename);
-    },
-  }),
-  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB limit
-  fileFilter: (req, file, cb) => {
-    // Allow common document types
-    const allowedTypes = [
-      'application/pdf',
-      'text/plain',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'image/jpeg',
-      'image/jpg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-      'text/csv',
-    ];
+const objectStorageService = new ObjectStorageService();
 
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(
-        new Error(
-          'File type not supported. Supported types: PDF, Word, Excel, PowerPoint, images, text, and CSV files.'
-        )
-      );
-    }
-  },
-});
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'text/plain',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'text/csv',
+];
 
-// Create documents router
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
 const documentsRouter = Router();
 
-// Apply standard middleware (authentication, logging, sanitization)
 documentsRouter.use(createStandardMiddleware());
 
-// Error handling for this module
 const errorHandler = createErrorHandler('documents');
 
-// Helper function to get user from request
 const getUser = (req: AuthenticatedRequest) => {
   return req.user || req.session?.user;
 };
@@ -110,73 +74,91 @@ documentsRouter.get(
   }
 );
 
-// POST /api/documents - Upload new document
-documentsRouter.post(
-  '/',
-  documentsUpload.single('file'),
-  async (req: AuthenticatedRequest, res: Response) => {
-    try {
-      const user = getUser(req);
-
-      if (!user || !user.email) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-
-      const { title, description, category } = req.body;
-
-      if (!title) {
-        return res.status(400).json({ error: 'Title is required' });
-      }
-
-      logger.info(
-        `Document upload by ${user.email}: "${title}" (${req.file.originalname})`
-      );
-
-      const documentData = {
-        title,
-        description: description || null,
-        fileName: req.file.filename,
-        originalName: req.file.originalname,
-        filePath: req.file.path,
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
-        category: category || 'general',
-        isActive: true,
-        uploadedBy: user.id,
-        uploadedByName:
-          user.firstName && user.lastName
-            ? `${user.firstName} ${user.lastName}`
-            : user.email,
-      };
-
-      const document = await storage.createDocument(documentData);
-
-      logger.info(
-        `Document created successfully: ID ${document.id} - "${document.title}"`
-      );
-
-      res.status(201).json({ document });
-    } catch (error: any) {
-      logger.error('Error creating document:', error);
-
-      // Clean up uploaded file if document creation failed
-      if (req.file && existsSync(req.file.path)) {
-        try {
-          require('fs').unlinkSync(req.file.path);
-          logger.info(`Cleaned up uploaded file: ${req.file.path}`);
-        } catch (cleanupError) {
-          logger.error('Error cleaning up uploaded file:', cleanupError);
-        }
-      }
-
-      res.status(500).json({ error: 'Failed to create document' });
+// POST /api/documents/request-upload-url - Get presigned URL for upload
+documentsRouter.post('/request-upload-url', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user || !user.email) {
+      return res.status(401).json({ error: 'Authentication required' });
     }
+
+    const { name, size, contentType } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'File name is required' });
+    }
+
+    if (contentType && !ALLOWED_MIME_TYPES.includes(contentType)) {
+      return res.status(400).json({ error: 'File type not supported' });
+    }
+
+    if (size && size > MAX_FILE_SIZE) {
+      return res.status(400).json({ error: 'File exceeds maximum size of 100MB' });
+    }
+
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+
+    logger.info(`Document upload URL requested by ${user.email} for "${name}"`);
+
+    res.json({
+      uploadURL,
+      objectPath,
+      metadata: { name, size, contentType },
+    });
+  } catch (error: any) {
+    logger.error('Error generating document upload URL:', error);
+    res.status(500).json({ error: 'Failed to generate upload URL' });
   }
-);
+});
+
+// POST /api/documents - Create document record (after file is uploaded to cloud)
+documentsRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user || !user.email) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { title, description, category, fileName, originalName, fileSize, mimeType, objectPath } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    if (!objectPath) {
+      return res.status(400).json({ error: 'objectPath is required (upload file first)' });
+    }
+
+    logger.info(`Document record creation by ${user.email}: "${title}" (${originalName})`);
+
+    const documentData = {
+      title,
+      description: description || null,
+      fileName: fileName || originalName,
+      originalName: originalName || fileName,
+      filePath: objectPath,
+      fileSize: fileSize || 0,
+      mimeType: mimeType || 'application/octet-stream',
+      category: category || 'general',
+      isActive: true,
+      uploadedBy: user.id,
+      uploadedByName:
+        user.firstName && user.lastName
+          ? `${user.firstName} ${user.lastName}`
+          : user.email,
+    };
+
+    const document = await storage.createDocument(documentData);
+
+    logger.info(`Document created successfully: ID ${document.id} - "${document.title}"`);
+
+    res.status(201).json({ document });
+  } catch (error: any) {
+    logger.error('Error creating document:', error);
+    res.status(500).json({ error: 'Failed to create document' });
+  }
+});
 
 // GET /api/documents/:id/preview - Preview document (inline display)
 documentsRouter.get(
@@ -195,7 +177,6 @@ documentsRouter.get(
         return res.status(400).json({ error: 'Invalid document ID' });
       }
 
-      // Get all documents and find the requested one
       const documents = await storage.getAllDocuments();
       const document = documents.find((doc) => doc.id === documentId);
 
@@ -203,7 +184,6 @@ documentsRouter.get(
         return res.status(404).json({ error: 'Document not found' });
       }
 
-      // Check if document is active
       if (!document.isActive) {
         return res.status(403).json({ error: 'Document is not active' });
       }
@@ -212,29 +192,45 @@ documentsRouter.get(
         return res.status(403).json({ error: 'You do not have permission to view confidential documents' });
       }
 
-      // Check if file exists on disk
-      if (!existsSync(document.filePath)) {
-        logger.error(`File not found on disk: ${document.filePath}`);
-        return res.status(404).json({ error: 'File not found on server' });
+      if (document.filePath.startsWith('/objects/')) {
+        try {
+          const objectFile = await objectStorageService.getObjectEntityFile(document.filePath);
+
+          res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
+          res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.setHeader('Cache-Control', 'private, max-age=3600');
+
+          const stream = objectFile.createReadStream();
+          stream.on('error', (err) => {
+            logger.error('Stream error during preview:', err);
+            if (!res.headersSent) {
+              res.status(500).json({ error: 'Error streaming file' });
+            }
+          });
+          stream.pipe(res);
+          return;
+        } catch (error) {
+          if (error instanceof ObjectNotFoundError) {
+            logger.error(`Object not found in cloud storage: ${document.filePath}`);
+            return res.status(404).json({ error: 'File not found in storage' });
+          }
+          throw error;
+        }
       }
 
-      // Set appropriate headers for inline viewing
-      res.setHeader(
-        'Content-Disposition',
-        `inline; filename="${document.originalName}"`
-      );
-      res.setHeader(
-        'Content-Type',
-        document.mimeType || 'application/octet-stream'
-      );
-      res.setHeader('Content-Length', document.fileSize);
+      const { existsSync, createReadStream } = require('fs');
+      if (!existsSync(document.filePath)) {
+        logger.error(`File not found (neither cloud nor disk): ${document.filePath}`);
+        return res.status(404).json({ error: 'File not found on server. This document may need to be re-uploaded.' });
+      }
 
-      // Allow embedding in iframes/object tags (needed for PDF preview)
+      res.setHeader('Content-Disposition', `inline; filename="${document.originalName}"`);
+      res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+      res.setHeader('Content-Length', document.fileSize);
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      // Allow caching for better performance
       res.setHeader('Cache-Control', 'private, max-age=3600');
 
-      // Stream the file to the client
       const fileStream = createReadStream(document.filePath);
       fileStream.pipe(res);
     } catch (error: any) {
@@ -265,7 +261,6 @@ documentsRouter.get(
         `Document download attempt by ${user.email}: document ID ${documentId}`
       );
 
-      // Get all documents and find the requested one
       const documents = await storage.getAllDocuments();
       const document = documents.find((doc) => doc.id === documentId);
 
@@ -276,7 +271,6 @@ documentsRouter.get(
         return res.status(404).json({ error: 'Document not found' });
       }
 
-      // Check if document is active
       if (!document.isActive) {
         logger.warn(
           `Inactive document access attempt: ID ${documentId} by ${user.email}`
@@ -289,29 +283,46 @@ documentsRouter.get(
         return res.status(403).json({ error: 'You do not have permission to download confidential documents' });
       }
 
-      // Check if file exists on disk
-      if (!existsSync(document.filePath)) {
-        logger.error(`File not found on disk: ${document.filePath}`);
-        return res.status(404).json({ error: 'File not found on server' });
-      }
-
-      // Log the download access
       logger.info(
         `Document download success: ${user.email} downloaded document ID ${documentId} - "${document.originalName}"`
       );
 
-      // Set appropriate headers for file download
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${document.originalName}"`
-      );
-      res.setHeader(
-        'Content-Type',
-        document.mimeType || 'application/octet-stream'
-      );
+      if (document.filePath.startsWith('/objects/')) {
+        try {
+          const objectFile = await objectStorageService.getObjectEntityFile(document.filePath);
+
+          res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+          res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+
+          const stream = objectFile.createReadStream();
+          stream.on('error', (err) => {
+            logger.error('Stream error during download:', err);
+            if (!res.headersSent) {
+              res.status(500).json({ error: 'Error streaming file' });
+            }
+          });
+          stream.pipe(res);
+          return;
+        } catch (error) {
+          if (error instanceof ObjectNotFoundError) {
+            logger.error(`Object not found in cloud storage: ${document.filePath}`);
+            return res.status(404).json({ error: 'File not found in storage' });
+          }
+          throw error;
+        }
+      }
+
+      const { existsSync, createReadStream } = require('fs');
+      if (!existsSync(document.filePath)) {
+        logger.error(`File not found (neither cloud nor disk): ${document.filePath}`);
+        return res.status(404).json({ error: 'File not found on server. This document may need to be re-uploaded.' });
+      }
+
+      res.setHeader('Content-Disposition', `attachment; filename="${document.originalName}"`);
+      res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
       res.setHeader('Content-Length', document.fileSize);
 
-      // Stream the file to the client
       const fileStream = createReadStream(document.filePath);
       fileStream.pipe(res);
     } catch (error: any) {
@@ -342,7 +353,6 @@ documentsRouter.delete(
         `Document delete attempt by ${user.email}: document ID ${documentId}`
       );
 
-      // Get the document first to verify access and get file path
       const documents = await storage.getAllDocuments();
       const document = documents.find((doc) => doc.id === documentId);
 
@@ -353,7 +363,6 @@ documentsRouter.delete(
         return res.status(404).json({ error: 'Document not found' });
       }
 
-      // Check if user has permission to delete (uploader or admin)
       if (document.uploadedBy !== user.id && user.role !== 'admin') {
         logger.warn(
           `Unauthorized delete attempt: ${user.email} tried to delete document ID ${documentId}`
@@ -365,8 +374,6 @@ documentsRouter.delete(
           });
       }
 
-      // Soft delete the document in the storage layer
-      // This marks the document as inactive (isActive = false) but preserves the file for recovery
       const deleted = await storage.deleteDocument(documentId);
 
       if (!deleted) {
@@ -402,7 +409,6 @@ documentsRouter.get(
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // For now, return empty array - permissions system not yet implemented
       res.json([]);
     } catch (error: any) {
       logger.error('Error fetching permissions:', error);
@@ -422,7 +428,6 @@ documentsRouter.post(
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // For now, return success - permissions system not yet implemented
       res.json({ success: true, message: 'Permissions feature coming soon' });
     } catch (error: any) {
       logger.error('Error granting permission:', error);
@@ -442,7 +447,6 @@ documentsRouter.delete(
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // For now, return success - permissions system not yet implemented
       res.json({ success: true, message: 'Permissions feature coming soon' });
     } catch (error: any) {
       logger.error('Error revoking permission:', error);
@@ -462,7 +466,6 @@ documentsRouter.get(
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // For now, return empty array - access logs not yet implemented
       res.json([]);
     } catch (error: any) {
       logger.error('Error fetching access logs:', error);
@@ -471,7 +474,6 @@ documentsRouter.get(
   }
 );
 
-// Apply error handling middleware
 documentsRouter.use(errorHandler);
 
 export default documentsRouter;

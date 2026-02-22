@@ -55,6 +55,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **Email Template Customization System**: Allows admins to customize key text sections of follow-up HTML emails via a dedicated UI, with content stored in `email_template_sections` and supporting placeholders.
 - **External API Key Authentication**: Supports API key authentication for external app integrations. API keys are managed via `/api/api-keys` (super_admin only). External apps access event requests via `/api/external/event-requests` with Bearer token authentication. API keys are stored as SHA-256 hashes and follow `tsp_` prefix format. Permissions control access: `EVENT_REQUESTS_VIEW` for GET, `EVENT_REQUESTS_CREATE` for POST, `EVENT_REQUESTS_UPDATE` for PATCH. Schema table: `api_keys`.
 - **Intake Workflow App Integration**: External intake app pulls assigned event requests (GET with `tspContact` param using platform user ID), allows coordinators to complete intake forms, then pushes collected data back (PATCH) to update events to 'scheduled' status. User lookup endpoint (`GET /api/external/event-requests/user-lookup?email=...`) enables intake app to resolve email addresses to platform user IDs. The `tspContact` filter checks `tsp_contact_assigned`, `tsp_contact`, and `custom_tsp_contact` fields. Events are assigned via `tsp_contact_assigned` field using unique user IDs (format: `user_{timestamp}_{random}`).
+- **Document Storage (Cloud)**: Documents are stored in Replit Object Storage (Google Cloud Storage) for persistence across deployments. Upload uses a two-step presigned URL flow: (1) POST `/api/documents/request-upload-url` returns presigned PUT URL + objectPath, (2) client uploads file directly to cloud, (3) POST `/api/documents` creates DB record with objectPath. Download/preview stream from cloud storage. Legacy files with disk paths (`server/uploads/documents/...`) fall back to local disk. The `filePath` column stores cloud paths like `/objects/uploads/uuid`. Integration module: `server/replit_integrations/object_storage/`.
 
 ### External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
@@ -65,7 +66,8 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **Real-time Communication**: `socket.io`, `socket.io-client`
 - **PDF Generation**: `pdfkit`
 - **Authentication**: `connect-pg-simple`
-- **File Uploads**: `multer`
-- **Google Integration**: Google Sheets API, `@google-cloud/storage`, Google Analytics
+- **File Uploads**: `multer`, `@uppy/core`, `@uppy/aws-s3`, `@uppy/dashboard`, `@uppy/react`
+- **Cloud Storage**: `@google-cloud/storage` (Replit Object Storage integration)
+- **Google Integration**: Google Sheets API, Google Analytics
 - **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
 - **SMS**: `twilio`

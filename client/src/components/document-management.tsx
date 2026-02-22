@@ -135,21 +135,66 @@ function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('general');
   const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  const uploadMutation = useMutation({
-    mutationFn: async (data: FormData) => {
-      const response = await fetch('/api/documents', {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file || !title) return;
+
+    setIsUploading(true);
+    try {
+      const urlResponse = await fetch('/api/documents/request-upload-url', {
         method: 'POST',
-        body: data,
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({
+          name: file.name,
+          size: file.size,
+          contentType: file.type,
+        }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to upload document');
+
+      if (!urlResponse.ok) {
+        const err = await urlResponse.json();
+        throw new Error(err.error || 'Failed to get upload URL');
       }
-      return response.json();
-    },
-    onSuccess: () => {
+
+      const { uploadURL, objectPath } = await urlResponse.json();
+
+      const putResponse = await fetch(uploadURL, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+      });
+
+      if (!putResponse.ok) {
+        throw new Error('Failed to upload file to cloud storage');
+      }
+
+      const docResponse = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title,
+          description,
+          category,
+          fileName: file.name,
+          originalName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          objectPath,
+        }),
+      });
+
+      if (!docResponse.ok) {
+        const err = await docResponse.json();
+        throw new Error(err.error || 'Failed to create document record');
+      }
+
       toast({ title: 'Document uploaded successfully' });
       setOpen(false);
       setTitle('');
@@ -157,32 +202,15 @@ function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
       setCategory('general');
       setFile(null);
       onSuccess();
-    },
-    onError: (error) => {
+    } catch (error) {
       toast({
         title: 'Upload failed',
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file || !title) return;
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('category', category);
-    formData.append('fileName', file.name);
-    formData.append('originalName', file.name);
-    formData.append('filePath', `/uploads/${file.name}`);
-    formData.append('fileSize', file.size.toString());
-    formData.append('mimeType', file.type);
-
-    uploadMutation.mutate(formData);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -258,8 +286,8 @@ function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={uploadMutation.isPending}>
-              {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? 'Uploading...' : 'Upload'}
             </Button>
           </div>
         </form>

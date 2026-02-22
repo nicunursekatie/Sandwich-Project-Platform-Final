@@ -10,6 +10,7 @@ import { requirePermission, blockInactiveUsers } from './middleware/auth';
 import { createCorsMiddleware, logCorsConfig } from './config/cors';
 import { logger } from './utils/production-safe-logger';
 import { getDatabaseUrl } from './db-url';
+import { registerObjectStorageRoutes } from './replit_integrations/object_storage';
 
 /**
  * Route Registration
@@ -130,6 +131,8 @@ export async function registerRoutes(app: Express): Promise<Store> {
     res.setHeader('Expires', '0');
     next();
   });
+
+  registerObjectStorageRoutes(app);
 
   // CRITICAL: Signup routes MUST be registered BEFORE mainRoutes
   // These are public endpoints that don't require authentication
