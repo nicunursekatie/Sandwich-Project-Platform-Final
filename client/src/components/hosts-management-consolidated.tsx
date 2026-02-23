@@ -774,7 +774,6 @@ export default function HostsManagementConsolidated() {
       return await apiRequest('POST', '/api/hosts/geocode-all');
     },
     onSuccess: (result: any) => {
-      // Refresh map and hosts data after geocoding starts
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
 
@@ -794,6 +793,27 @@ export default function HostsManagementConsolidated() {
       toast({
         title: 'Error',
         description: `Failed to start geocoding: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const forceGeocodeAllMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('POST', '/api/hosts/geocode-all?force=true');
+    },
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
+      toast({
+        title: 'Re-geocoding Started',
+        description: `Re-geocoding ${result.hostsProcessed} hosts and ${result.contactsProcessed} contacts in background. Refresh the page in a minute to see corrected map pins.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: `Failed to start re-geocoding: ${error.message}`,
         variant: 'destructive',
       });
     },
@@ -1435,7 +1455,15 @@ export default function HostsManagementConsolidated() {
           onClick={() => geocodeAllMutation.mutate()}
         >
           <MapPin className={`w-4 h-4 mr-2 ${geocodeAllMutation.isPending ? 'animate-spin' : ''}`} />
-          {geocodeAllMutation.isPending ? 'Geocoding...' : 'Geocode All Addresses'}
+          {geocodeAllMutation.isPending ? 'Geocoding...' : 'Geocode Missing'}
+        </Button>
+        <Button
+          variant="outline"
+          disabled={!canEdit || forceGeocodeAllMutation.isPending}
+          onClick={() => forceGeocodeAllMutation.mutate()}
+        >
+          <MapPin className={`w-4 h-4 mr-2 ${forceGeocodeAllMutation.isPending ? 'animate-spin' : ''}`} />
+          {forceGeocodeAllMutation.isPending ? 'Re-geocoding...' : 'Fix All Map Pins'}
         </Button>
       </div>
       </div>

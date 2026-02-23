@@ -113,22 +113,24 @@ export function createHostsRouter(deps: RouterDependencies) {
 
 // Bulk geocode all hosts and contacts that have addresses but no coordinates
   // This backfills existing records that were created before auto-geocoding was added
+  // Pass ?force=true to re-geocode ALL records, even those that already have coordinates
   router.post(
   '/hosts/geocode-all',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   asyncHandler(async (req, res) => {
+    const force = req.query.force === 'true';
     const allHosts = await storage.getAllHosts();
     const allHostsWithContacts = await storage.getAllHostsWithContacts();
 
-    // Find hosts with address but no coordinates
+    // Find hosts with address but no coordinates (or all with addresses if force)
     const hostsToGeocode = allHosts.filter(
-      (h) => h.address && h.address.trim() !== '' && (!h.latitude || !h.longitude)
+      (h) => h.address && h.address.trim() !== '' && (force || !h.latitude || !h.longitude)
     );
 
-    // Find contacts with address but no coordinates
+    // Find contacts with address but no coordinates (or all with addresses if force)
     const contactsToGeocode = allHostsWithContacts.flatMap((host) =>
       host.contacts.filter(
-        (c) => c.address && c.address.trim() !== '' && (!c.latitude || !c.longitude)
+        (c) => c.address && c.address.trim() !== '' && (force || !c.latitude || !c.longitude)
       )
     );
 
