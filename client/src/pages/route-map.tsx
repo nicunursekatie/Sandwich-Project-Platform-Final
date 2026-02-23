@@ -103,51 +103,36 @@ function MapController({
   center,
   zoom,
   selectedId,
+  flyKey,
   markerRefs
 }: {
   center: [number, number] | null;
   zoom: number;
   selectedId: string | null;
+  flyKey: number;
   markerRefs: React.MutableRefObject<Map<string, L.Marker>>;
 }) {
   const map = useMap();
-  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+    if (!center || !map) return;
 
-  useEffect(() => {
-    if (!isMountedRef.current) return;
+    try {
+      map.flyTo(center, zoom, { duration: 0.5 });
 
-    if (center && map) {
-      const mapInstance = map as any;
-      if (!mapInstance._leaflet_events || !mapInstance._container) {
-        return;
+      // After the map finishes moving, open the popup for the selected marker
+      if (selectedId) {
+        setTimeout(() => {
+          const marker = markerRefs.current.get(selectedId);
+          if (marker) {
+            marker.openPopup();
+          }
+        }, 600);
       }
-
-      try {
-        map.setView(center, zoom, { animate: true, duration: 0.5 });
-
-        // After the map finishes moving, open the popup for the selected marker
-        if (selectedId) {
-          setTimeout(() => {
-            const marker = markerRefs.current.get(selectedId);
-            if (marker) {
-              marker.openPopup();
-            }
-          }, 600); // Wait for animation to complete
-        }
-      } catch (error) {
-        if (isMountedRef.current) {
-          console.warn('Map interaction error:', error);
-        }
-      }
+    } catch (error) {
+      console.warn('Map interaction error:', error);
     }
-  }, [center, zoom, map, selectedId, markerRefs]);
+  }, [flyKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }
@@ -162,24 +147,6 @@ function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
   return null;
 }
 
-// Auto-fit map to show all markers with minimal padding
-function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression | null }) {
-  const map = useMap();
-  const hasFit = useRef(false);
-
-  useEffect(() => {
-    if (bounds && !hasFit.current) {
-      hasFit.current = true;
-      try {
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
-      } catch (e) {
-        // Fallback if bounds are invalid
-      }
-    }
-  }, [bounds, map]);
-
-  return null;
-}
 
 interface HostContactMapData {
   id: number;
@@ -212,6 +179,7 @@ export default function LocationsMapView() {
   const [showHosts, setShowHosts] = useState(true);
   const [showRecipients, setShowRecipients] = useState(true);
   const [searchedLocation, setSearchedLocation] = useState<SearchedLocation | null>(null);
+  const [flyKey, setFlyKey] = useState(0);
 
   // Refs for marker instances to enable programmatic popup opening
   const markerRefs = useRef<Map<string, L.Marker>>(new Map());
@@ -264,6 +232,7 @@ export default function LocationsMapView() {
       });
       setMapCenter([data.latitude, data.longitude]);
       setMapZoom(14);
+      setFlyKey(k => k + 1);
       toast({
         title: 'Address found',
         description: `Located: ${addressSearchTerm}`,
@@ -353,48 +322,20 @@ export default function LocationsMapView() {
     return result.map(r => ({ ...r, distance: undefined as number | undefined }));
   }, [recipientsWithCoords, searchTerm, searchedLocation]);
 
-  // Calculate initial map center and bounds to fit all pins
-  const initialMapCenter: [number, number] = useMemo(() => {
-    const allLocations = [
-      ...hosts.map(h => ({ lat: parseFloat(h.latitude), lng: parseFloat(h.longitude) })),
-      ...recipientsWithCoords.map(r => ({ lat: parseFloat(r.latitude as string), lng: parseFloat(r.longitude as string) }))
-    ];
+  // Atlanta metro center — all our hosts are in the greater Atlanta area
+  const initialMapCenter: [number, number] = [33.88, -84.35];
 
-    if (allLocations.length === 0) return [33.7490, -84.3880]; // Atlanta default
-
-    const avgLat = allLocations.reduce((sum, loc) => sum + loc.lat, 0) / allLocations.length;
-    const avgLng = allLocations.reduce((sum, loc) => sum + loc.lng, 0) / allLocations.length;
-
-    return [avgLat, avgLng];
-  }, [hosts, recipientsWithCoords]);
-
-  // Calculate bounds to fit all markers snugly
-  const initialBounds = useMemo(() => {
-    const allLocations = [
-      ...hosts.map(h => [parseFloat(h.latitude), parseFloat(h.longitude)] as [number, number]),
-      ...recipientsWithCoords.map(r => [parseFloat(r.latitude as string), parseFloat(r.longitude as string)] as [number, number])
-    ].filter(([lat, lng]) => !isNaN(lat) && !isNaN(lng));
-
-    if (allLocations.length === 0) return null;
-    if (allLocations.length === 1) {
-      // Single point — create a small box around it
-      const [lat, lng] = allLocations[0];
-      return L.latLngBounds([lat - 0.05, lng - 0.05], [lat + 0.05, lng + 0.05]);
-    }
-
-    return L.latLngBounds(allLocations);
-  }, [hosts, recipientsWithCoords]);
-
-  // Handle host click
+  // Handle host click — fly to pin and open popup
   const handleHostClick = (contact: HostContactMapData) => {
     const lat = parseFloat(contact.latitude);
     const lng = parseFloat(contact.longitude);
     setSelectedId(`host-${contact.id}`);
     setMapCenter([lat, lng]);
     setMapZoom(15);
+    setFlyKey(k => k + 1);
   };
 
-  // Handle recipient click
+  // Handle recipient click — fly to pin and open popup
   const handleRecipientClick = (recipient: Recipient) => {
     if (!recipient.latitude || !recipient.longitude) return;
     const lat = parseFloat(recipient.latitude as string);
@@ -402,6 +343,7 @@ export default function LocationsMapView() {
     setSelectedId(`recipient-${recipient.id}`);
     setMapCenter([lat, lng]);
     setMapZoom(15);
+    setFlyKey(k => k + 1);
   };
 
   // Handle address search
@@ -703,12 +645,11 @@ export default function LocationsMapView() {
         <div className="flex-1 relative">
           <MapContainer
             center={initialMapCenter}
-            zoom={10}
+            zoom={11}
             className="h-full w-full"
           >
-            <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} markerRefs={markerRefs} />
+            <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} flyKey={flyKey} markerRefs={markerRefs} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
-            <FitBounds bounds={initialBounds} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
