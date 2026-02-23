@@ -137,57 +137,38 @@ function MapController({
   return null;
 }
 
-// Auto-fit map bounds to show all markers on initial load
-function FitBoundsOnLoad({
-  hosts,
-  recipients,
-  showHosts,
-  showRecipients,
-}: {
-  hosts: HostContactMapData[];
-  recipients: { latitude: string | number | null; longitude: string | number | null }[];
-  showHosts: boolean;
-  showRecipients: boolean;
-}) {
+// Auto-fit map bounds to show all host markers on initial load
+function FitBoundsOnLoad({ hosts }: { hosts: HostContactMapData[] }) {
   const map = useMap();
   const hasFitted = useRef(false);
 
   useEffect(() => {
-    if (hasFitted.current) return;
+    if (hasFitted.current || hosts.length === 0) return;
 
     const points: [number, number][] = [];
-
     hosts.forEach(h => {
       const lat = parseFloat(String(h.latitude));
       const lng = parseFloat(String(h.longitude));
       if (!isNaN(lat) && !isNaN(lng)) points.push([lat, lng]);
     });
 
-    if (points.length === 0 && showRecipients) {
-      recipients.forEach(r => {
-        const lat = parseFloat(String(r.latitude));
-        const lng = parseFloat(String(r.longitude));
-        if (!isNaN(lat) && !isNaN(lng)) points.push([lat, lng]);
-      });
-    }
+    if (points.length === 0) return;
 
-    if (points.length > 1) {
-      const avgLat = points.reduce((s, p) => s + p[0], 0) / points.length;
-      const avgLng = points.reduce((s, p) => s + p[1], 0) / points.length;
-      const filtered = points.filter(p => {
-        const distLat = Math.abs(p[0] - avgLat);
-        const distLng = Math.abs(p[1] - avgLng);
-        return distLat < 2 && distLng < 2;
-      });
-      const finalPoints = filtered.length > 0 ? filtered : points;
+    const avgLat = points.reduce((s, p) => s + p[0], 0) / points.length;
+    const avgLng = points.reduce((s, p) => s + p[1], 0) / points.length;
+    const nearby = points.filter(p =>
+      Math.abs(p[0] - avgLat) < 1.5 && Math.abs(p[1] - avgLng) < 1.5
+    );
+    const finalPoints = nearby.length > 0 ? nearby : points;
+
+    if (finalPoints.length > 1) {
       const bounds = L.latLngBounds(finalPoints);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-      hasFitted.current = true;
-    } else if (points.length === 1) {
-      map.setView(points[0], 11);
-      hasFitted.current = true;
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 12 });
+    } else {
+      map.setView(finalPoints[0], 11);
     }
-  }, [hosts, recipients, showHosts, showRecipients, map]);
+    hasFitted.current = true;
+  }, [hosts, map]);
 
   return null;
 }
@@ -452,7 +433,7 @@ export default function LocationsMapView() {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full max-h-[calc(100vh-64px)] flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto">
@@ -704,7 +685,7 @@ export default function LocationsMapView() {
             className="absolute inset-0"
           >
             <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} flyKey={flyKey} markerRefs={markerRefs} />
-            <FitBoundsOnLoad hosts={filteredHosts} recipients={filteredRecipients} showHosts={showHosts} showRecipients={showRecipients} />
+            <FitBoundsOnLoad hosts={filteredHosts} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
             <TileLayer
               attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
