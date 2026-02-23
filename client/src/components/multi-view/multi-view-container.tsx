@@ -47,7 +47,7 @@ function SinglePanelContent({
           onSectionChange={(section) => onSectionChange(section, panel.id)}
         />
       )}
-      <div className={cn('flex-1 overflow-auto', !isMultiView && 'h-full')}>
+      <div className={cn('flex-1 overflow-hidden min-h-0', !isMultiView && 'h-full')}>
         <ErrorBoundary>
           <Suspense fallback={<PanelLoader />}>
             {renderContent(panel.section)}

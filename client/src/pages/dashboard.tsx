@@ -1101,7 +1101,7 @@ export default function Dashboard({
                   const isDriverPlanning = section === 'driver-planning';
 
                   if (isFullHeightSection) {
-                    return <div className="h-full">{renderContent(section)}</div>;
+                    return <div className="h-full overflow-hidden">{renderContent(section)}</div>;
                   }
 
                   if (isDriverPlanning) {
