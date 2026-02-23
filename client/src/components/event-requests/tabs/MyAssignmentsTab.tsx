@@ -103,10 +103,11 @@ export const MyAssignmentsTab: React.FC = () => {
 
   // Helper functions for ScheduledCardEnhanced
   const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet', currentValue: boolean) => {
-    updateEventRequestMutation.mutate({
-      id,
-      data: { [field]: !currentValue },
-    });
+    const data: Record<string, any> = { [field]: !currentValue };
+    if (field === 'addedToOfficialSheet') {
+      data.addedToOfficialSheetAt = !currentValue ? new Date().toISOString() : null;
+    }
+    updateEventRequestMutation.mutate({ id, data });
   };
 
   const addInlineSandwichType = () => {

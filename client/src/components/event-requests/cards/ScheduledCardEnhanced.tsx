@@ -1197,7 +1197,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
               }`}
             >
-              {request.addedToOfficialSheet ? 'On Calendar' : 'Not on Calendar'}
+              {request.addedToOfficialSheet
+                ? `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
+                : 'Not on Calendar'}
             </Badge>
 
             {request.isMlkDayEvent && <MlkDayBadge />}

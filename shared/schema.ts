@@ -2194,6 +2194,7 @@ export const eventRequests = pgTable(
     addedToOfficialSheet: boolean('added_to_official_sheet')
       .notNull()
       .default(false), // Whether scheduled event has been manually added to the official events Google Sheet (not synced)
+    addedToOfficialSheetAt: timestamp('added_to_official_sheet_at'), // When the event was added to the official Google Sheet
     message: text('message'), // Other relevant info about the group
 
     // Previous hosting experience

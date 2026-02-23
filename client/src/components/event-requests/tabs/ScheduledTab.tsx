@@ -410,10 +410,12 @@ export const ScheduledTab: React.FC = () => {
   };
 
   const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet', currentValue: boolean) => {
-    updateEventRequestMutation.mutate({
-      id,
-      data: { [field]: !currentValue },
-    });
+    const data: Record<string, any> = { [field]: !currentValue };
+    // Track when the event was added to the official sheet
+    if (field === 'addedToOfficialSheet') {
+      data.addedToOfficialSheetAt = !currentValue ? new Date().toISOString() : null;
+    }
+    updateEventRequestMutation.mutate({ id, data });
   };
 
   const handleCall = (request: any) => {
