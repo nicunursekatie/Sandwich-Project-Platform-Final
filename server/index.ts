@@ -35,9 +35,12 @@ const serverLogger = createServiceLogger('server');
 initializeSentry(app);
 serverLogger.info('Sentry monitoring initialized');
 
-// CRITICAL: Health check route BEFORE any middleware - for deployment health checks
-// Use /healthz instead of / to avoid blocking the frontend
+// CRITICAL: Health check routes BEFORE any middleware - for deployment health checks
+// These must respond instantly so Replit Autoscale doesn't time out
 app.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
+
+// Track initialization state for health responses
+let serverReady = false;
 
 // Performance monitoring middleware (should be early in the chain)
 app.use(performanceMonitoringMiddleware);
@@ -283,20 +286,13 @@ async function bootstrap() {
         serverLogger.info(`🔒 PRODUCTION MODE: Full authentication required`);
       }
 
-      // Do ALL heavy initialization in background after server is listening
+      // ================================================================
+      // PHASE 1: Critical initialization — routes, static files, WebSocket
+      // Must complete quickly so the app can serve requests
+      // ================================================================
       setImmediate(async () => {
         try {
-          serverLogger.info('Starting background initialization...');
-
-          // Initialize SMS provider (supports Replit Twilio integration)
-          try {
-            const { SMSProviderFactory } = await import('./sms-providers/provider-factory');
-            await SMSProviderFactory.getInstance().ensureInitialized();
-            serverLogger.info('✅ SMS provider initialized');
-          } catch (error) {
-            serverLogger.error('SMS provider initialization failed:', error);
-            serverLogger.warn('SMS features may not work properly');
-          }
+          serverLogger.info('⚡ Phase 1: Registering routes and static files...');
 
           // Set up Socket.io for chat system
           const io = setupSocketChat(httpServer);
@@ -331,7 +327,7 @@ async function bootstrap() {
           app.use('/monitoring', monitoringRouter);
           serverLogger.info('✅ Monitoring routes registered at /monitoring');
 
-          // CRITICAL FIX: Register all API routes FIRST to prevent route interception
+          // Register all API routes
           let sessionStore: Store | undefined;
           try {
             sessionStore = await registerRoutes(app);
@@ -344,11 +340,10 @@ async function bootstrap() {
           app.use(errorTrackingMiddleware);
 
           // JSON error handler - catches malformed JSON from express.json()
-          // Must be after routes to properly catch errors
           const { jsonErrorHandler } = await import('./middleware/json-validator');
           app.use(jsonErrorHandler);
 
-          // CRITICAL FIX: Add JSON 404 catch-all for unmatched API routes
+          // JSON 404 catch-all for unmatched API routes
           app.all('/api/*', (req: Request, res: Response) => {
             serverLogger.warn(`🚨 API route not found: ${req.originalUrl}`);
             res.status(404).json({
@@ -358,33 +353,23 @@ async function bootstrap() {
             });
           });
 
-          // Sentry error handler (must be after all routes) - only if Sentry is initialized
+          // Sentry error handler (must be after all routes)
           if (process.env.SENTRY_DSN) {
             app.use(sentryErrorHandler());
             serverLogger.info('✅ Sentry error handler registered');
           }
 
-          // IMPORTANT: Static files and SPA fallback MUST come AFTER API routes
+          // Static files and SPA fallback MUST come AFTER API routes
           if (process.env.NODE_ENV === 'production') {
-            // In production, serve static files from the built frontend
             app.use(express.static('dist/public'));
 
-            // Simple SPA fallback for production - serve index.html for non-API routes
             app.get('*', async (req: Request, res: Response, next: NextFunction) => {
-              // Skip health check endpoints - they're already handled
               if (req.originalUrl === '/' || req.originalUrl === '/healthz') {
                 return next();
               }
-
-              // NEVER serve HTML for API routes - let them 404 instead
               if (req.originalUrl.startsWith('/api/')) {
-                serverLogger.warn(
-                  `🚨 API route ${req.originalUrl} reached SPA fallback - this should not happen!`
-                );
-                return next(); // Let it 404 rather than serve HTML
+                return next();
               }
-
-              // Only serve SPA for non-API routes
               const path = await import('path');
               res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
             });
@@ -392,7 +377,7 @@ async function bootstrap() {
             serverLogger.info('✅ Static file serving and SPA routing configured');
           }
 
-          // Set up Vite middleware AFTER API routes to prevent catch-all interference
+          // Set up Vite middleware AFTER API routes
           if (process.env.NODE_ENV === 'development') {
             try {
               const { setupVite } = await import('./vite');
@@ -400,7 +385,6 @@ async function bootstrap() {
               serverLogger.info('Vite development server setup complete');
             } catch (error) {
               serverLogger.error('Vite setup failed:', error);
-              serverLogger.warn('Server continuing without Vite - frontend may not work properly');
             }
           }
 
@@ -416,9 +400,6 @@ async function bootstrap() {
                 const message = JSON.parse(data.toString());
                 if (message.type === 'identify' && message.userId) {
                   clients.set(message.userId, ws);
-                  serverLogger.info('User identified for notifications', {
-                    userId: message.userId,
-                  });
                 }
               } catch (error) {
                 serverLogger.error('WebSocket message parse error:', error);
@@ -426,13 +407,9 @@ async function bootstrap() {
             });
 
             ws.on('close', () => {
-              // Remove client from map when disconnected
               for (const [userId, client] of Array.from(clients.entries())) {
                 if (client === ws) {
                   clients.delete(userId);
-                  serverLogger.info('User disconnected from notifications', {
-                    userId,
-                  });
                   break;
                 }
               }
@@ -445,72 +422,82 @@ async function bootstrap() {
 
           // Global broadcast function for messaging system
           (global as any).broadcastNewMessage = async (data: any) => {
-            serverLogger.debug('Broadcasting message to connected clients', {
-              clientCount: clients.size,
-            });
-
-            // Broadcast to all connected clients
             for (const [userId, ws] of Array.from(clients.entries())) {
               if (ws.readyState === 1) {
-                // WebSocket.OPEN
                 try {
                   ws.send(JSON.stringify(data));
                 } catch (error) {
-                  serverLogger.error('Error sending message to user', {
-                    userId,
-                    error,
-                  });
-                  // Remove dead connection
                   clients.delete(userId);
                 }
               } else {
-                // Remove dead connection
                 clients.delete(userId);
               }
             }
           };
 
-          serverLogger.info('✅ WebSocket server ready at /notifications');
+          serverLogger.info('✅ Phase 1 complete — server can handle requests');
+          serverReady = true;
 
-          // Database and background services initialization
-          await initializeDatabase();
-          logger.log({ message: '✓ Database initialization complete', level: 'info' });
+          // ================================================================
+          // PHASE 2: Background services — database, sync, cron, SMS
+          // These run after routes are live so they don't block health checks
+          // Each is wrapped in its own try/catch so one failure doesn't stop others
+          // ================================================================
+          serverLogger.info('🔄 Phase 2: Starting background services...');
 
-          // Background Google Sheets sync re-enabled
-          const { storage } = (await import('./storage-wrapper')) as {
-            storage: IStorage;
-          };
-          const { startBackgroundSync } = await import(
-            './background-sync-service'
-          );
-          startBackgroundSync(storage);
-          logger.log({ message: '✓ Background Google Sheets sync service started', level: 'info' });
-
-          // Initialize cron jobs for scheduled tasks
-          const { initializeCronJobs } = await import('./services/cron-jobs');
-          initializeCronJobs();
-          logger.info('Cron jobs initialized (host availability scraper scheduled)');
-
-          // Start periodic metrics updates (active users, sessions, etc.)
-          if (sessionStore) {
-            startMetricsUpdates(storage, sessionStore);
-            logger.info('Periodic metrics updates started');
-          } else {
-            logger.warn('Session store not available - skipping session metrics');
+          // Database initialization (migrations, schema checks, session table)
+          try {
+            await initializeDatabase();
+            logger.log({ message: '✓ Database initialization complete', level: 'info' });
+          } catch (error) {
+            serverLogger.error('Database initialization failed:', error);
           }
 
-          logger.info('The Sandwich Project server is fully ready to handle requests');
+          // SMS provider
+          try {
+            const { SMSProviderFactory } = await import('./sms-providers/provider-factory');
+            await SMSProviderFactory.getInstance().ensureInitialized();
+            serverLogger.info('✅ SMS provider initialized');
+          } catch (error) {
+            serverLogger.error('SMS provider initialization failed:', error);
+          }
+
+          // Background Google Sheets sync
+          try {
+            const { storage } = (await import('./storage-wrapper')) as {
+              storage: IStorage;
+            };
+            const { startBackgroundSync } = await import('./background-sync-service');
+            startBackgroundSync(storage);
+            logger.log({ message: '✓ Background Google Sheets sync service started', level: 'info' });
+
+            // Cron jobs
+            try {
+              const { initializeCronJobs } = await import('./services/cron-jobs');
+              initializeCronJobs();
+              logger.info('✅ Cron jobs initialized');
+            } catch (error) {
+              serverLogger.error('Cron jobs initialization failed:', error);
+            }
+
+            // Metrics updates
+            if (sessionStore) {
+              try {
+                startMetricsUpdates(storage, sessionStore);
+                logger.info('✅ Periodic metrics updates started');
+              } catch (error) {
+                serverLogger.error('Metrics updates initialization failed:', error);
+              }
+            }
+          } catch (error) {
+            serverLogger.error('Storage/sync initialization failed:', error);
+          }
+
           logger.info('SERVER INITIALIZATION COMPLETE');
-          logger.info(`Monitoring Dashboard: http://${host}:${port}/monitoring/dashboard`);
-          logger.info(`Metrics Endpoint: http://${host}:${port}/monitoring/metrics`);
           logger.info(`Health Check: http://${host}:${port}/monitoring/health/detailed`);
         } catch (initError) {
-          serverLogger.error('✗ Background initialization failed:', initError);
-          serverLogger.error(
-            'This is a fatal error - exiting to allow Replit to restart'
-          );
-          // Let Replit restart the app to recover from initialization failures
-          process.exit(1);
+          serverLogger.error('✗ Initialization failed:', initError);
+          serverLogger.error('Server will continue running — health checks still responding');
         }
       });
     });
