@@ -157,15 +157,13 @@ function FitBoundsOnLoad({
 
     const points: [number, number][] = [];
 
-    if (showHosts) {
-      hosts.forEach(h => {
-        const lat = parseFloat(String(h.latitude));
-        const lng = parseFloat(String(h.longitude));
-        if (!isNaN(lat) && !isNaN(lng)) points.push([lat, lng]);
-      });
-    }
+    hosts.forEach(h => {
+      const lat = parseFloat(String(h.latitude));
+      const lng = parseFloat(String(h.longitude));
+      if (!isNaN(lat) && !isNaN(lng)) points.push([lat, lng]);
+    });
 
-    if (showRecipients) {
+    if (points.length === 0 && showRecipients) {
       recipients.forEach(r => {
         const lat = parseFloat(String(r.latitude));
         const lng = parseFloat(String(r.longitude));
@@ -173,9 +171,20 @@ function FitBoundsOnLoad({
       });
     }
 
-    if (points.length > 0) {
-      const bounds = L.latLngBounds(points);
+    if (points.length > 1) {
+      const avgLat = points.reduce((s, p) => s + p[0], 0) / points.length;
+      const avgLng = points.reduce((s, p) => s + p[1], 0) / points.length;
+      const filtered = points.filter(p => {
+        const distLat = Math.abs(p[0] - avgLat);
+        const distLng = Math.abs(p[1] - avgLng);
+        return distLat < 2 && distLng < 2;
+      });
+      const finalPoints = filtered.length > 0 ? filtered : points;
+      const bounds = L.latLngBounds(finalPoints);
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      hasFitted.current = true;
+    } else if (points.length === 1) {
+      map.setView(points[0], 11);
       hasFitted.current = true;
     }
   }, [hosts, recipients, showHosts, showRecipients, map]);
