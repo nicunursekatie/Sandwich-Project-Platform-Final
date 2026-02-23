@@ -491,7 +491,7 @@ export default function LocationsMapView() {
           `}
         >
           {isPanelOpen && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
+            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearchTerm(''); }} className="flex flex-col h-full overflow-hidden">
               {/* Searched Location Info - show at top when search is active */}
               {searchedLocation && (
                 <div className="p-3 bg-green-50 border-b border-green-200 flex-shrink-0">
@@ -522,7 +522,7 @@ export default function LocationsMapView() {
               </TabsList>
 
               {/* Hosts Tab */}
-              <TabsContent value="hosts" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+              <TabsContent value="hosts" forceMount className={`flex-1 flex flex-col overflow-hidden m-0 min-h-0 ${activeTab !== 'hosts' ? 'hidden' : ''}`}>
                 <div className="p-3 border-b flex-shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -572,7 +572,7 @@ export default function LocationsMapView() {
               </TabsContent>
 
               {/* Recipients Tab */}
-              <TabsContent value="recipients" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+              <TabsContent value="recipients" forceMount className={`flex-1 flex flex-col overflow-hidden m-0 min-h-0 ${activeTab !== 'recipients' ? 'hidden' : ''}`}>
                 <div className="p-3 border-b flex-shrink-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
