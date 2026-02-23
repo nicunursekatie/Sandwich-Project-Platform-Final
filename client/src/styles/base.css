@@ -2,6 +2,17 @@
 
 @tailwind base;
 
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container .leaflet-marker-icon,
+.leaflet-container .leaflet-marker-shadow {
+  max-width: none !important;
+  max-height: none !important;
+}
+
 /* Fix for horizontal scroll issues */
 html, body {
   @apply overflow-x-hidden;
