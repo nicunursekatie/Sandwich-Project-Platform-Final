@@ -137,6 +137,52 @@ function MapController({
   return null;
 }
 
+// Auto-fit map bounds to show all markers on initial load
+function FitBoundsOnLoad({
+  hosts,
+  recipients,
+  showHosts,
+  showRecipients,
+}: {
+  hosts: HostContactMapData[];
+  recipients: { latitude: string | number | null; longitude: string | number | null }[];
+  showHosts: boolean;
+  showRecipients: boolean;
+}) {
+  const map = useMap();
+  const hasFitted = useRef(false);
+
+  useEffect(() => {
+    if (hasFitted.current) return;
+
+    const points: [number, number][] = [];
+
+    if (showHosts) {
+      hosts.forEach(h => {
+        const lat = parseFloat(String(h.latitude));
+        const lng = parseFloat(String(h.longitude));
+        if (!isNaN(lat) && !isNaN(lng)) points.push([lat, lng]);
+      });
+    }
+
+    if (showRecipients) {
+      recipients.forEach(r => {
+        const lat = parseFloat(String(r.latitude));
+        const lng = parseFloat(String(r.longitude));
+        if (!isNaN(lat) && !isNaN(lng)) points.push([lat, lng]);
+      });
+    }
+
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      hasFitted.current = true;
+    }
+  }, [hosts, recipients, showHosts, showRecipients, map]);
+
+  return null;
+}
+
 // Map click handler
 function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
   useMapEvents({
@@ -649,6 +695,7 @@ export default function LocationsMapView() {
             className="absolute inset-0"
           >
             <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} flyKey={flyKey} markerRefs={markerRefs} />
+            <FitBoundsOnLoad hosts={filteredHosts} recipients={filteredRecipients} showHosts={showHosts} showRecipients={showRecipients} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
