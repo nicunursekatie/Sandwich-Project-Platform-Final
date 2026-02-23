@@ -698,8 +698,8 @@ export default function LocationsMapView() {
             <FitBoundsOnLoad hosts={filteredHosts} recipients={filteredRecipients} showHosts={showHosts} showRecipients={showRecipients} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             />
 
             {/* Host Markers */}
