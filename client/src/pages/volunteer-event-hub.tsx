@@ -110,6 +110,7 @@ interface AvailableEvent {
   eventStartTime: string | null;
   eventEndTime: string | null;
   estimatedSandwichCount: number | null;
+  status: string | null;
   speakersNeeded: number;
   speakersAssigned: number;
   speakersUnfilled: number;
@@ -148,9 +149,10 @@ interface MySignup {
 }
 
 // Custom marker icons using brand colors
-const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean) => {
+const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false) => {
   let color = '#22c55e'; // Green for fully staffed
-  if (needsSpeaker) color = '#a31c41'; // Burgundy for speaker needed
+  if (isCompleted) color = '#9ca3af'; // Gray for completed
+  else if (needsSpeaker) color = '#a31c41'; // Burgundy for speaker needed
   else if (needsDriver) color = '#236383'; // Dark teal for driver needed
   else if (needsVolunteer) color = '#007e8c'; // Primary teal for volunteer needed
 
@@ -260,7 +262,10 @@ function EventCard({
     : 'Date TBD';
 
   return (
-    <Card className="hover:shadow-md transition-shadow border-l-4 border-l-[#007e8c]">
+    <Card className={cn(
+      "hover:shadow-md transition-shadow border-l-4",
+      event.status === 'completed' ? 'border-l-gray-400 opacity-80' : 'border-l-[#007e8c]'
+    )}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -269,11 +274,16 @@ function EventCard({
               <CardDescription className="text-xs truncate">{event.department}</CardDescription>
             )}
           </div>
-          {event.organizationCategory && (
-            <Badge variant="secondary" className="text-xs shrink-0 bg-[#236383]/10 text-[#236383]">
-              {event.organizationCategory}
-            </Badge>
-          )}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {event.status === 'completed' && (
+              <Badge className="bg-gray-200 text-gray-600 text-xs">Completed</Badge>
+            )}
+            {event.organizationCategory && (
+              <Badge variant="secondary" className="text-xs bg-[#236383]/10 text-[#236383]">
+                {event.organizationCategory}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -383,7 +393,9 @@ function EventCard({
 
         {/* Action button */}
         <div className="pt-2 border-t">
-          {existingSignup ? (
+          {event.status === 'completed' ? (
+            <p className="text-sm text-gray-500 text-center italic py-1">This event has been completed</p>
+          ) : existingSignup ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Check className="w-4 h-4 text-[#007e8c]" />
@@ -1085,13 +1097,15 @@ export default function VolunteerEventHub() {
                                 <button
                                   className={cn(
                                     'w-full text-left text-xs p-1 rounded truncate',
-                                    event.speakersUnfilled > 0
-                                      ? 'bg-[#a31c41]/10 text-[#a31c41] hover:bg-[#a31c41]/20'
-                                      : event.driversUnfilled > 0
-                                        ? 'bg-[#236383]/10 text-[#236383] hover:bg-[#236383]/20'
-                                        : event.volunteersUnfilled > 0
-                                          ? 'bg-[#007e8c]/10 text-[#007e8c] hover:bg-[#007e8c]/20'
-                                          : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    event.status === 'completed'
+                                      ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                      : event.speakersUnfilled > 0
+                                        ? 'bg-[#a31c41]/10 text-[#a31c41] hover:bg-[#a31c41]/20'
+                                        : event.driversUnfilled > 0
+                                          ? 'bg-[#236383]/10 text-[#236383] hover:bg-[#236383]/20'
+                                          : event.volunteersUnfilled > 0
+                                            ? 'bg-[#007e8c]/10 text-[#007e8c] hover:bg-[#007e8c]/20'
+                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
                                   )}
                                   onClick={() => handleSignupClick(event.id)}
                                 >
@@ -1100,6 +1114,7 @@ export default function VolunteerEventHub() {
                               </TooltipTrigger>
                               <TooltipContent side="right" className="max-w-xs">
                                 <p className="font-medium">{event.organizationName}</p>
+                                {event.status === 'completed' && <p className="text-xs text-green-600 font-medium">Completed</p>}
                                 {event.organizationCategory && <p className="text-xs text-muted-foreground">{event.organizationCategory}</p>}
                                 {event.eventStartTime && <p className="text-xs mt-1">{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</p>}
                                 {event.eventAddress && <p className="text-xs text-muted-foreground">{event.city || event.eventAddress}</p>}
@@ -1164,6 +1179,10 @@ export default function VolunteerEventHub() {
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded bg-green-500" />
                     <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-gray-400" />
+                    <span>Completed</span>
                   </div>
                 </div>
               </CardContent>
@@ -1253,12 +1272,18 @@ export default function VolunteerEventHub() {
                           icon={createEventIcon(
                             event.speakersUnfilled > 0,
                             event.volunteersUnfilled > 0,
-                            event.driversUnfilled > 0
+                            event.driversUnfilled > 0,
+                            event.status === 'completed'
                           )}
                         >
                           <Popup>
                             <div className="min-w-[200px] space-y-2">
-                              <h3 className="font-semibold">{event.organizationName}</h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold">{event.organizationName}</h3>
+                                {event.status === 'completed' && (
+                                  <Badge className="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0">Completed</Badge>
+                                )}
+                              </div>
                               {event.scheduledEventDate && (
                                 <p className="text-sm text-muted-foreground">
                                   {format(parseISO(event.scheduledEventDate), 'MMM d, yyyy')}
@@ -1315,6 +1340,7 @@ export default function VolunteerEventHub() {
                                 )}
                               </div>
 
+                              {event.status !== 'completed' ? (
                               <Button
                                 size="sm"
                                 className="w-full mt-2 bg-[#007e8c] hover:bg-[#236383]"
@@ -1323,6 +1349,9 @@ export default function VolunteerEventHub() {
                                 <HandHeart className="w-3 h-3 mr-1" />
                                 Volunteer
                               </Button>
+                              ) : (
+                              <p className="text-xs text-gray-500 mt-2 text-center italic">This event has been completed</p>
+                              )}
                             </div>
                           </Popup>
                         </Marker>
@@ -1347,6 +1376,10 @@ export default function VolunteerEventHub() {
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-green-500" />
                     <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-gray-400" />
+                    <span>Completed</span>
                   </div>
                   {userLocation && (
                     <div className="flex items-center gap-1.5">

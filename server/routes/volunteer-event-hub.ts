@@ -173,11 +173,11 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
 
 /**
  * Get all events available for volunteer signup
- * Returns only scheduled events (not new requests or in-process ones)
+ * Returns scheduled and completed events (not new requests or in-process ones)
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Only show scheduled events to volunteers - not new requests or in_process
+    // Show scheduled + completed events to volunteers
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -187,11 +187,14 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
       .select()
       .from(eventRequests)
       .where(
-        eq(eventRequests.status, 'scheduled')
+        or(
+          eq(eventRequests.status, 'scheduled'),
+          eq(eventRequests.status, 'completed')
+        )
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled status`);
+    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/completed status`);
 
     // Filter to events with dates today or in the future
     // Include events with no date set (they're still active)
@@ -227,6 +230,7 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
         eventStartTime: event.eventStartTime,
         eventEndTime: event.eventEndTime,
         estimatedSandwichCount: event.estimatedSandwichCount,
+        status: event.status,
         // Unfilled needs from centralized utils
         ...counts,
         // Additional info for volunteers
