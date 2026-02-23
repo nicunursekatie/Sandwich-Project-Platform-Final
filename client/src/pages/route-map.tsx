@@ -397,7 +397,7 @@ export default function LocationsMapView() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto">
@@ -482,7 +482,7 @@ export default function LocationsMapView() {
       </div>
 
       {/* Main Content: Side Panel + Map */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Side Panel */}
         <div
           className={`
@@ -642,11 +642,11 @@ export default function LocationsMapView() {
         </Button>
 
         {/* Map */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-h-0 min-w-0">
           <MapContainer
             center={initialMapCenter}
             zoom={11}
-            className="h-full w-full"
+            className="absolute inset-0"
           >
             <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} flyKey={flyKey} markerRefs={markerRefs} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
