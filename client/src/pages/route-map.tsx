@@ -162,6 +162,25 @@ function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
   return null;
 }
 
+// Auto-fit map to show all markers with minimal padding
+function FitBounds({ bounds }: { bounds: L.LatLngBoundsExpression | null }) {
+  const map = useMap();
+  const hasFit = useRef(false);
+
+  useEffect(() => {
+    if (bounds && !hasFit.current) {
+      hasFit.current = true;
+      try {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 13 });
+      } catch (e) {
+        // Fallback if bounds are invalid
+      }
+    }
+  }, [bounds, map]);
+
+  return null;
+}
+
 interface HostContactMapData {
   id: number;
   contactName: string;
@@ -334,7 +353,7 @@ export default function LocationsMapView() {
     return result.map(r => ({ ...r, distance: undefined as number | undefined }));
   }, [recipientsWithCoords, searchTerm, searchedLocation]);
 
-  // Calculate initial map center
+  // Calculate initial map center and bounds to fit all pins
   const initialMapCenter: [number, number] = useMemo(() => {
     const allLocations = [
       ...hosts.map(h => ({ lat: parseFloat(h.latitude), lng: parseFloat(h.longitude) })),
@@ -347,6 +366,23 @@ export default function LocationsMapView() {
     const avgLng = allLocations.reduce((sum, loc) => sum + loc.lng, 0) / allLocations.length;
 
     return [avgLat, avgLng];
+  }, [hosts, recipientsWithCoords]);
+
+  // Calculate bounds to fit all markers snugly
+  const initialBounds = useMemo(() => {
+    const allLocations = [
+      ...hosts.map(h => [parseFloat(h.latitude), parseFloat(h.longitude)] as [number, number]),
+      ...recipientsWithCoords.map(r => [parseFloat(r.latitude as string), parseFloat(r.longitude as string)] as [number, number])
+    ].filter(([lat, lng]) => !isNaN(lat) && !isNaN(lng));
+
+    if (allLocations.length === 0) return null;
+    if (allLocations.length === 1) {
+      // Single point — create a small box around it
+      const [lat, lng] = allLocations[0];
+      return L.latLngBounds([lat - 0.05, lng - 0.05], [lat + 0.05, lng + 0.05]);
+    }
+
+    return L.latLngBounds(allLocations);
   }, [hosts, recipientsWithCoords]);
 
   // Handle host click
@@ -672,6 +708,7 @@ export default function LocationsMapView() {
           >
             <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} markerRefs={markerRefs} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
+            <FitBounds bounds={initialBounds} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
