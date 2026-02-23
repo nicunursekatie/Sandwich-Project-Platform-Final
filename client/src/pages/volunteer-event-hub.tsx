@@ -47,6 +47,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -80,6 +81,8 @@ import {
   CalendarDays,
   UserCheck,
   Info,
+  Search,
+  Navigation,
 } from 'lucide-react';
 
 // Fix Leaflet default marker icon
@@ -146,7 +149,7 @@ interface MySignup {
 
 // Custom marker icons using brand colors
 const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean) => {
-  let color = '#007e8c'; // Primary teal for general events
+  let color = '#22c55e'; // Green for fully staffed
   if (needsSpeaker) color = '#a31c41'; // Burgundy for speaker needed
   else if (needsDriver) color = '#236383'; // Dark teal for driver needed
   else if (needsVolunteer) color = '#007e8c'; // Primary teal for volunteer needed
@@ -177,6 +180,33 @@ function MapCenterSetter({ center }: { center: [number, number] }) {
   }, [center, map]);
   return null;
 }
+
+// Haversine formula for distance between two coordinates in miles
+const calculateDistanceMiles = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const toRad = (deg: number) => deg * Math.PI / 180;
+  const R = 3959; // Earth's radius in miles
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+// Create a distinct icon for the user's location
+const createUserLocationIcon = () => {
+  const html = `
+    <div style="position: relative; width: 24px; height: 24px;">
+      <div style="width: 24px; height: 24px; background: #3b82f6; border: 3px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>
+      <div style="position: absolute; top: -2px; left: -2px; width: 28px; height: 28px; border: 2px solid #3b82f6; border-radius: 50%; opacity: 0.3; animation: pulse 2s infinite;"></div>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'user-location-marker',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+};
 
 // Brand colors: #236383 (dark teal), #47b3cb (light teal), #007e8c (primary teal), #a31c41 (burgundy), #fbad3f (gold)
 
@@ -595,6 +625,11 @@ export default function VolunteerEventHub() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [showOnlyNeeds, setShowOnlyNeeds] = useState(false); // Default to showing all events
 
+  // User location for distance calculation on map
+  const [userAddress, setUserAddress] = useState('');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geocodingLoading, setGeocodingLoading] = useState(false);
+
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
     queryKey: ['/api/volunteer-hub/available-events', showOnlyNeeds],
@@ -731,6 +766,36 @@ export default function VolunteerEventHub() {
   };
 
   // Handle signup click
+  // Geocode user address for distance calculation
+  const handleGeocodeAddress = async () => {
+    if (!userAddress.trim()) return;
+    setGeocodingLoading(true);
+    try {
+      const res = await fetch('/api/event-map/geocode-address', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ address: userAddress.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast({
+          title: 'Address not found',
+          description: data.details || 'Could not find that address. Try a more specific address.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const data = await res.json();
+      setUserLocation({ lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) });
+      toast({ title: 'Location set', description: 'Showing distances from your address.' });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to look up address.', variant: 'destructive' });
+    } finally {
+      setGeocodingLoading(false);
+    }
+  };
+
   const handleSignupClick = (eventId: number) => {
     const event = events.find(e => e.id === eventId);
     if (event) {
@@ -1020,9 +1085,13 @@ export default function VolunteerEventHub() {
                                 <button
                                   className={cn(
                                     'w-full text-left text-xs p-1 rounded truncate',
-                                    'bg-[#007e8c]/10 text-[#007e8c] hover:bg-[#007e8c]/20',
-                                    event.speakersUnfilled > 0 && 'bg-[#a31c41]/10 text-[#a31c41] hover:bg-[#a31c41]/20',
-                                    event.driversUnfilled > 0 && !event.speakersUnfilled && 'bg-[#236383]/10 text-[#236383] hover:bg-[#236383]/20'
+                                    event.speakersUnfilled > 0
+                                      ? 'bg-[#a31c41]/10 text-[#a31c41] hover:bg-[#a31c41]/20'
+                                      : event.driversUnfilled > 0
+                                        ? 'bg-[#236383]/10 text-[#236383] hover:bg-[#236383]/20'
+                                        : event.volunteersUnfilled > 0
+                                          ? 'bg-[#007e8c]/10 text-[#007e8c] hover:bg-[#007e8c]/20'
+                                          : 'bg-green-100 text-green-700 hover:bg-green-200'
                                   )}
                                   onClick={() => handleSignupClick(event.id)}
                                 >
@@ -1092,6 +1161,10 @@ export default function VolunteerEventHub() {
                     <div className="w-3 h-3 rounded bg-[#236383]" />
                     <span>Driver Needed</span>
                   </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-green-500" />
+                    <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1101,9 +1174,54 @@ export default function VolunteerEventHub() {
           <TabsContent value="map" className="mt-0">
             <Card>
               <CardContent className="p-0">
+                {/* Address search for distance */}
+                <div className="p-4 border-b">
+                  <div className="flex items-center gap-2">
+                    <Navigation className="w-4 h-4 text-[#236383] shrink-0" />
+                    <span className="text-sm font-medium text-gray-700 shrink-0">Your location:</span>
+                    <div className="flex-1 flex gap-2">
+                      <Input
+                        placeholder="Enter your address to see distances..."
+                        value={userAddress}
+                        onChange={(e) => setUserAddress(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleGeocodeAddress()}
+                        className="text-sm"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleGeocodeAddress}
+                        disabled={geocodingLoading || !userAddress.trim()}
+                        className="bg-[#007e8c] hover:bg-[#236383] shrink-0"
+                      >
+                        {geocodingLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Search className="w-4 h-4" />
+                        )}
+                      </Button>
+                      {userLocation && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setUserLocation(null); setUserAddress(''); }}
+                          className="shrink-0 text-xs"
+                        >
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {userLocation && (
+                    <p className="text-xs text-green-600 mt-1 ml-6">
+                      <Check className="w-3 h-3 inline mr-1" />
+                      Location set — distances shown in event popups
+                    </p>
+                  )}
+                </div>
+
                 <div className="h-[600px] rounded-lg overflow-hidden">
                   <MapContainer
-                    center={mapCenter}
+                    center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter}
                     zoom={10}
                     style={{ height: '100%', width: '100%' }}
                   >
@@ -1111,7 +1229,20 @@ export default function VolunteerEventHub() {
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <MapCenterSetter center={mapCenter} />
+                    <MapCenterSetter center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter} />
+
+                    {/* User location marker */}
+                    {userLocation && (
+                      <Marker
+                        position={[userLocation.lat, userLocation.lng]}
+                        icon={createUserLocationIcon()}
+                      >
+                        <Popup>
+                          <div className="text-sm font-medium">Your Location</div>
+                          <div className="text-xs text-muted-foreground">{userAddress}</div>
+                        </Popup>
+                      </Marker>
+                    )}
 
                     {filteredEvents
                       .filter(e => e.latitude && e.longitude)
@@ -1135,6 +1266,15 @@ export default function VolunteerEventHub() {
                                 </p>
                               )}
                               <p className="text-sm">{event.eventAddress}</p>
+                              {userLocation && event.latitude && event.longitude && (
+                                <p className="text-sm font-medium text-blue-600">
+                                  <Navigation className="w-3 h-3 inline mr-1" />
+                                  {calculateDistanceMiles(
+                                    userLocation.lat, userLocation.lng,
+                                    parseFloat(event.latitude), parseFloat(event.longitude)
+                                  ).toFixed(1)} miles from you
+                                </p>
+                              )}
 
                               <div className="space-y-1">
                                 {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
@@ -1204,6 +1344,16 @@ export default function VolunteerEventHub() {
                     <div className="w-4 h-4 rounded-full bg-[#236383]" />
                     <span>Driver Needed</span>
                   </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-green-500" />
+                    <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
+                  </div>
+                  {userLocation && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow" />
+                      <span>Your Location</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
