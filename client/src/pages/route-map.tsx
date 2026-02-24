@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft,
-  Users, Package, Loader2, X, Navigation
+  Users, Package, Loader2, X, Navigation, ExternalLink
 } from 'lucide-react';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
@@ -734,6 +734,18 @@ export default function LocationsMapView() {
                         </div>
                       )}
                     </div>
+                    {searchedLocation && (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(searchedLocation.address)}&destination=${encodeURIComponent(contact.address || `${contact.latitude},${contact.longitude}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium mt-2 pt-2 border-t border-gray-200"
+                      >
+                        <Navigation className="w-3 h-3" />
+                        Get Directions
+                        <ExternalLink className="w-3 h-3 ml-auto" />
+                      </a>
+                    )}
                   </div>
                 </Popup>
               </Marker>
@@ -774,6 +786,18 @@ export default function LocationsMapView() {
                         <Phone className="w-3 h-3" />
                         <a href={`tel:${recipient.phone}`} className="hover:text-purple-600">{recipient.phone}</a>
                       </div>
+                    )}
+                    {searchedLocation && (
+                      <a
+                        href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(searchedLocation.address)}&destination=${encodeURIComponent(recipient.address || `${recipient.latitude},${recipient.longitude}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 font-medium mt-2 pt-2 border-t border-gray-200"
+                      >
+                        <Navigation className="w-3 h-3" />
+                        Get Directions
+                        <ExternalLink className="w-3 h-3 ml-auto" />
+                      </a>
                     )}
                   </div>
                 </Popup>
