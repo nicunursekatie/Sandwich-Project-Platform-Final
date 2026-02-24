@@ -2767,9 +2767,21 @@ export default function DriverPlanningDashboard() {
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
-                          {event.organizationName || 'Unknown Organization'}
-                        </h3>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
+                            {event.organizationName || 'Unknown Organization'}
+                          </h3>
+                          {(() => {
+                            const status = (event.status || '').toLowerCase();
+                            if (status === 'new') return (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-700 bg-amber-50 flex-shrink-0">New</Badge>
+                            );
+                            if (status === 'in_process' || status === 'followed_up') return (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50 flex-shrink-0">In Process</Badge>
+                            );
+                            return null;
+                          })()}
+                        </div>
                         <ChevronRight className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
                       </div>
 
@@ -4162,14 +4174,14 @@ export default function DriverPlanningDashboard() {
 
         <ResizableHandle withHandle />
 
-        {/* Right Panel - Driver Suggestions */}
+        {/* Right Panel - Event People (Hosts, Recipients, Speakers, Drivers) */}
         <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
         <div className="h-full border-l bg-gray-50 flex flex-col" onClick={() => setFocusedItem(null)}>
           <div className="p-3 border-b bg-white">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#007E8C]" />
-                {effectiveSelectedEvent ? (customLocation ? 'Nearby Drivers' : 'Suggested Drivers') : 'Select an Event'}
+                {effectiveSelectedEvent ? 'Event People' : 'Select an Event'}
               </h2>
               {selectedEvent && canEditEvents && (
                 <Button
@@ -5067,9 +5079,21 @@ export default function DriverPlanningDashboard() {
                     }}
                   >
                     <div className="space-y-1">
-                      <h3 className="font-medium text-xs text-gray-900 line-clamp-1">
-                        {event.organizationName || 'Unknown'}
-                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-medium text-xs text-gray-900 line-clamp-1">
+                          {event.organizationName || 'Unknown'}
+                        </h3>
+                        {(() => {
+                          const status = (event.status || '').toLowerCase();
+                          if (status === 'new') return (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-400 text-amber-700 bg-amber-50 flex-shrink-0">New</Badge>
+                          );
+                          if (status === 'in_process' || status === 'followed_up') return (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 border-blue-400 text-blue-700 bg-blue-50 flex-shrink-0">In Process</Badge>
+                          );
+                          return null;
+                        })()}
+                      </div>
                       <div className="flex items-center gap-1 text-xs text-gray-600">
                         <Calendar className="w-3 h-3" />
                         {eventDate ? format(parseLocalDate(eventDate), 'MMM d') : 'No date'}
@@ -6324,9 +6348,21 @@ export default function DriverPlanningDashboard() {
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
-                                {event.organizationName || 'Unknown Organization'}
-                              </h3>
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <h3 className="font-medium text-sm text-gray-900 line-clamp-1">
+                                  {event.organizationName || 'Unknown Organization'}
+                                </h3>
+                                {(() => {
+                                  const status = (event.status || '').toLowerCase();
+                                  if (status === 'new') return (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-700 bg-amber-50 flex-shrink-0">New</Badge>
+                                  );
+                                  if (status === 'in_process' || status === 'followed_up') return (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50 flex-shrink-0">In Process</Badge>
+                                  );
+                                  return null;
+                                })()}
+                              </div>
                               <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-700">
