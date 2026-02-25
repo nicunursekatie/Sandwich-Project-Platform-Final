@@ -1148,10 +1148,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         ? (formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0)
         : formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     if (sandwichCount > 500) return true;
-
-    // Check if "van" is mentioned in notes as a standalone word
-    // Use word boundary matching to avoid false positives from words like
-    // "advantage", "Savannah", "relevant", etc.
     const notes = `${formData.schedulingNotes || ''} ${formData.planningNotes || ''}`.toLowerCase();
     if (/\bvan\b/.test(notes) && !notes.includes('van-approved') && !notes.includes('van approved')) {
       return true;
@@ -1647,20 +1643,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     });
 
     // Check for van conflicts if event needs van and hasn't been checked yet
+    // NOTE: This is a non-blocking warning — the save always proceeds regardless
     if (eventLikelyNeedsVan() && !vanConflictChecked) {
-      console.log('⚠️ [PROD DEBUG] Van conflict check triggered');
-      logger.log('⚠️ Van conflict check triggered');
-      const canProceed = await checkVanConflicts();
-      if (!canProceed) {
-        console.log('❌ [PROD DEBUG] Van conflict check failed - blocking submission');
-        logger.log('❌ Van conflict check failed - blocking submission');
-        return; // Wait for user to acknowledge
-      }
-      console.log('✅ [PROD DEBUG] Van conflict check passed');
-      logger.log('✅ Van conflict check passed');
-    } else {
-      console.log('✅ [PROD DEBUG] Van conflict check skipped');
-      logger.log('✅ Van conflict check skipped');
+      console.log('⚠️ [PROD DEBUG] Van conflict check triggered (non-blocking)');
+      logger.log('⚠️ Van conflict check triggered (non-blocking)');
+      // Run the check in the background — show warning dialog if conflicts found,
+      // but do NOT block the save regardless of the result
+      checkVanConflicts().then(noConflicts => {
+        setVanConflictChecked(true);
+        if (!noConflicts) {
+          console.log('⚠️ [PROD DEBUG] Van conflicts found - showing informational warning');
+          logger.log('⚠️ Van conflicts found - showing informational warning (save still proceeding)');
+        }
+      });
     }
 
     // Check if status is changing to standby - prompt for follow-up date
@@ -2997,15 +2992,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           setIsSubmitting(false);
         }
       }}>
+
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-              Van Already Booked
+              Van Availability Notice
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                The van appears to already be booked for another event on this date:
+                Your changes have been saved. As a heads-up, the van may already be assigned to another event on this date:
               </p>
               {vanConflictDetails && (
                 <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -3017,8 +3013,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                   ))}
                 </ul>
               )}
-              <p className="font-medium text-amber-700">
-                Please confirm you have verified the van is available for the time you need it.
+              <p className="text-muted-foreground text-sm">
+                Please verify van availability when coordinating logistics.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -3030,16 +3026,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             }}>
               Go Back & Check
             </AlertDialogCancel>
+
             <AlertDialogAction
-              onClick={async () => {
+              onClick={() => {
                 setShowVanConflictDialog(false);
                 setVanConflictChecked(true);
-                // Directly call performSubmit now that conflict is acknowledged
-                await performSubmit(false);
               }}
               className="bg-amber-600 hover:bg-amber-700"
             >
-              I've Verified Van Availability
+              OK, Got It
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
