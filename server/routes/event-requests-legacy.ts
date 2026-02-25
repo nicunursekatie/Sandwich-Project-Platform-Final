@@ -2606,11 +2606,9 @@ router.patch(
           });
           updates.scheduledCallDate = validated.scheduledCallDate;
         } catch (error) {
-          logger.error('❌ Invalid scheduledCallDate:', error);
-          return res.status(400).json({
-            message: 'Invalid scheduledCallDate format',
-            error: error instanceof z.ZodError ? error.errors : error instanceof Error ? error.message : String(error),
-          });
+          // Invalid date format — skip this field rather than blocking the entire save
+          logger.warn('⚠️ Invalid scheduledCallDate format, ignoring field:', updates.scheduledCallDate);
+          delete updates.scheduledCallDate;
         }
       }
 
@@ -2914,15 +2912,15 @@ router.patch(
           ];
 
           if (!userEmail || !allowedEmails.includes(userEmail.toLowerCase())) {
-            return res.status(403).json({
-              message: 'Only Christine and Katie can remove the corporate priority flag from an event.',
-              error: 'Insufficient permissions',
-            });
+            // Silently ignore the change rather than blocking the entire save
+            // The corporate priority flag stays as-is; other edits proceed normally
+            logger.warn(`[PATCH /:id] User ${userEmail} attempted to remove corporate priority without permission - ignoring field, not blocking save`);
+            delete processedUpdates.isCorporatePriority;
+          } else {
+            processedUpdates.corporatePriorityMarkedAt = null;
+            processedUpdates.corporatePriorityMarkedBy = null;
+            logger.info(`[PATCH /:id] Corporate priority DISABLED by ${req.user?.email || 'unknown'} for event ${id}`);
           }
-
-          processedUpdates.corporatePriorityMarkedAt = null;
-          processedUpdates.corporatePriorityMarkedBy = null;
-          logger.info(`[PATCH /:id] Corporate priority DISABLED by ${req.user?.email || 'unknown'} for event ${id}`);
         }
       }
 
