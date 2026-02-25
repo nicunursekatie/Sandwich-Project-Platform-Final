@@ -3589,11 +3589,67 @@ export class MemStorage implements IStorage {
     }
   }
 
+  private eventFieldLocks = new Map<number, EventFieldLock>();
+  private currentEventFieldLockId = 1;
+
+  async getEventFieldLocks(eventRequestId: number): Promise<EventFieldLock[]> {
+    return Array.from(this.eventFieldLocks.values()).filter(
+      (lock) => lock.eventRequestId === eventRequestId
+    );
+  }
+
+  async getBulkEventFieldLocks(eventRequestIds: number[]): Promise<Map<number, EventFieldLock[]>> {
+    const result = new Map<number, EventFieldLock[]>();
+    for (const id of eventRequestIds) {
+      result.set(id, []);
+    }
+    for (const lock of this.eventFieldLocks.values()) {
+      if (eventRequestIds.includes(lock.eventRequestId)) {
+        result.get(lock.eventRequestId)!.push(lock);
+      }
+    }
+    return result;
+  }
+
+  async createEventFieldLock(data: InsertEventFieldLock): Promise<EventFieldLock> {
+    const id = this.currentEventFieldLockId++;
+    const lock: EventFieldLock = {
+      id,
+      eventRequestId: data.eventRequestId,
+      fieldName: data.fieldName,
+      lockedBy: data.lockedBy,
+      lockedByName: data.lockedByName,
+      lockedAt: new Date(),
+      expiresAt: data.expiresAt,
+    };
+    this.eventFieldLocks.set(id, lock);
+    return lock;
+  }
+
+  async releaseEventFieldLock(eventRequestId: number, fieldName: string, userId: string): Promise<boolean> {
+    for (const [id, lock] of this.eventFieldLocks.entries()) {
+      if (lock.eventRequestId === eventRequestId && lock.fieldName === fieldName && lock.lockedBy === userId) {
+        this.eventFieldLocks.delete(id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async deleteEventFieldLock(eventRequestId: number, fieldName: string): Promise<boolean> {
+    for (const [id, lock] of this.eventFieldLocks.entries()) {
+      if (lock.eventRequestId === eventRequestId && lock.fieldName === fieldName) {
+        this.eventFieldLocks.delete(id);
+        return true;
+      }
+    }
+    return false;
+  }
+
   async cleanupExpiredLocks(): Promise<number> {
     const now = new Date();
     let deletedCount = 0;
 
-    // Clean up expired event field locks
     const expiredLocks: number[] = [];
     for (const [id, lock] of this.eventFieldLocks) {
       if (lock.expiresAt && lock.expiresAt < now) {
