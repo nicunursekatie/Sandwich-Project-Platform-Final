@@ -1167,7 +1167,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const data = await response.json();
       
       if (data.vanConflicts && data.vanConflicts.length > 0) {
-        // There are van conflicts - show warning dialog
+        // There are van conflicts - show as a toast so it's visible even after form closes
         const conflictingEvents = data.vanConflicts.flatMap((c: any) => [
           { id: c.event1?.id, name: c.event1?.organizationName, time: c.event1?.eventStartTime },
           { id: c.event2?.id, name: c.event2?.organizationName, time: c.event2?.eventStartTime },
@@ -1177,12 +1177,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         const uniqueEvents = Array.from(new Map(conflictingEvents.map((e: any) => [e.id, e])).values());
         
         if (uniqueEvents.length > 0) {
-          setVanConflictDetails({
-            conflictingEvents: uniqueEvents as Array<{ id: number; name: string; time?: string }>,
-            acknowledged: false,
+          const conflictNames = uniqueEvents
+            .map((e: any) => e.name + (e.time ? ` at ${e.time}` : ''))
+            .join(', ');
+          toast({
+            title: 'Van Availability Notice',
+            description: `The van may already be assigned to: ${conflictNames}. Please verify van availability when coordinating logistics.`,
+            duration: 12000,
           });
-          setShowVanConflictDialog(true);
-          return false; // Block submission until acknowledged
+          return false;
         }
       }
       
