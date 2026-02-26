@@ -419,6 +419,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
   const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
+  // Ref to distinguish "save action clicked" from "dialog dismissed" in onOpenChange.
+  // State can't be used here because React batches the updates, so isSubmitting wouldn't
+  // be true yet when onOpenChange reads it in the same event cycle.
+  const standbySaveClickedRef = useRef(false);
   const [showCorporatePriorityConfirmDialog, setShowCorporatePriorityConfirmDialog] = useState(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3084,9 +3088,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={(open) => {
         if (!open) {
           setShowStandbyFollowUpDialog(false);
-          // If dismissed without saving, reset status back
-          setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
-          setIsSubmitting(false);
+          // Only reset status if the dialog was dismissed (Escape/overlay click),
+          // NOT when closed by the save action. We use a ref (not state) because
+          // Radix fires onOpenChange synchronously and React batches state updates,
+          // so isSubmitting wouldn't be readable yet in the same event cycle.
+          if (!standbySaveClickedRef.current) {
+            setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+            setIsSubmitting(false);
+          }
+          standbySaveClickedRef.current = false;
         }
       }}>
         <AlertDialogContent className="max-w-md">
@@ -3150,16 +3160,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowStandbyFollowUpDialog(false);
-              // Reset status back if they cancel
-              setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
-              setIsSubmitting(false);
-            }}>
+            <AlertDialogCancel>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
+                // Signal to onOpenChange that this is a save, not a dismissal
+                standbySaveClickedRef.current = true;
                 // Update state for consistency (auto-save, re-render)
                 setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
                 setShowStandbyFollowUpDialog(false);
