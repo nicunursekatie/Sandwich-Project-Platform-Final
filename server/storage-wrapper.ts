@@ -111,13 +111,20 @@ class StorageWrapper implements IStorage {
           error?.message?.includes('socket hang up') ||
           error?.message?.includes('fetch failed') ||
           error?.code === 'ETIMEDOUT' ||
-          error?.code === 'ECONNRESET';
+          error?.code === 'ECONNRESET' ||
+          // PostgreSQL transient error codes
+          error?.code === '40001' || // serialization_failure
+          error?.code === '40P01' || // deadlock_detected
+          error?.code === '08006' || // connection_failure
+          error?.code === '08001' || // sqlclient_unable_to_establish_sqlconnection
+          error?.code === '57P01';   // admin_shutdown (Neon cold start)
 
         if (!isTransient || attempt === maxRetries) {
           break; // Don't retry non-transient errors or if we've exhausted retries
         }
 
-        const delay = Math.min(500 * Math.pow(2, attempt), 2000);
+        // Start with 200ms for fast recovery on brief connection hiccups
+        const delay = Math.min(200 * Math.pow(2, attempt), 2000);
         logger.warn(`Primary storage operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error?.message);
         await new Promise(resolve => setTimeout(resolve, delay));
       }

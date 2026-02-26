@@ -1033,7 +1033,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
       if (isConflict) {
         errorTitle = 'Edit Conflict';
-        errorDescription = 'This event was modified by another user while you were editing. Please close the form and reopen it to see the latest data. Your changes are saved locally.';
+        // Force an immediate local save so the user's changes are preserved
+        saveToLocalStorage();
+        errorDescription = 'This event was modified by another user while you were editing. Please close the form and reopen it to see the latest data. Your changes have been saved locally and will be recovered when you reopen.';
         // Refresh the data so the list shows the latest version
         invalidateEventRequestQueries(queryClient);
       } else if (isNotFound) {
@@ -1191,7 +1193,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  const performSubmit = async (skipSpeakerWarning = false) => {
+  const performSubmit = async (skipSpeakerWarning = false, fieldOverrides?: Record<string, any>) => {
     // CRITICAL: Set submitting flag to prevent auto-save from running
     setIsSubmitting(true);
     // Also clear any pending auto-save immediately
@@ -1370,10 +1372,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
       // Corporate priority
       isCorporatePriority: formData.isCorporatePriority || false,
-      // Standby follow-up date
-      standbyExpectedDate: formData.status === 'standby' && formData.standbyExpectedDate
-        ? new Date(formData.standbyExpectedDate).toISOString()
-        : null,
+      // Standby follow-up date -- use override if provided (from dialog handler
+      // where state may not have flushed yet), otherwise read from formData
+      standbyExpectedDate: (() => {
+        const date = fieldOverrides?.standbyExpectedDate || formData.standbyExpectedDate;
+        return formData.status === 'standby' && date
+          ? new Date(date).toISOString()
+          : null;
+      })(),
     };
 
     // Handle sandwich data based on mode
@@ -3154,20 +3160,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                // Set the standby expected date directly in the form data object
-                // that performSubmit will read, then submit immediately.
-                // We update formData state for consistency, but performSubmit reads
-                // from the closure's current formData, so we pass the date through
-                // by updating state and calling performSubmit in the same handler.
+                // Update state for consistency (auto-save, re-render)
                 setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
                 setShowStandbyFollowUpDialog(false);
-                // performSubmit builds eventData from formData state. Since React 18
-                // batches updates, we need to wait for the state to flush before
-                // performSubmit reads the updated standbyExpectedDate.
-                // Use requestAnimationFrame which runs after React commits the update.
-                requestAnimationFrame(async () => {
-                  await performSubmit(false);
-                });
+                // Pass the date directly to performSubmit via fieldOverrides so it
+                // doesn't depend on the async state update having flushed yet.
+                await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
               }}
               className="bg-amber-600 hover:bg-amber-700"
               disabled={!standbyFollowUpDate}

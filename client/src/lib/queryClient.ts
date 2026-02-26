@@ -224,7 +224,7 @@ export const queryClient = new QueryClient({
           return false;
         }
 
-        // Retry network and database errors up to 2 times
+        // Retry network and database errors (initial attempt + up to 2 retries = 3 total)
         const retryableErrors = ['NETWORK_ERROR', 'DATABASE_ERROR', 'Failed to fetch', 'Request timeout'];
         if (retryableErrors.some((code) => errorStr.includes(code)) && failureCount < 2) {
           return true;
@@ -246,14 +246,15 @@ export const queryClient = new QueryClient({
           return false;
         }
 
-        // Retry database, network, and timeout errors up to 2 times
+        // Retry database, network, and timeout errors (initial attempt + up to 2 retries = 3 total)
         const retryableErrors = ['DATABASE_ERROR', 'NETWORK_ERROR', 'Failed to fetch', 'Request timeout'];
         return (
           retryableErrors.some((code) => errorStr.includes(code)) &&
           failureCount < 2
         );
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      // Cap at 5s for mutations since they're user-initiated and responsiveness matters
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     },
   },
 });

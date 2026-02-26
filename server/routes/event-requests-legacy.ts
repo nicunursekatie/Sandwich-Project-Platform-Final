@@ -2413,6 +2413,9 @@ router.patch(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
+      // Strip optimistic locking field if accidentally included by client
+      delete updates._expectedVersion;
+
       // Get original data for audit logging
       const originalEvent = await storage.getEventRequestById(id);
       if (!originalEvent) {
