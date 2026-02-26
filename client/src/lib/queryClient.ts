@@ -13,13 +13,12 @@ export class ApiError extends Error {
   code: string;
 
   constructor(status: number, statusText: string, body: string, data?: any) {
-    // Determine error code for retry logic
+    // Determine error code for retry logic based on HTTP status only.
     let code = `${status}: ${body || statusText}`;
     if (status === 401) code = 'AUTH_EXPIRED';
     else if (status === 403) code = 'PERMISSION_DENIED';
     else if (status === 404) code = 'DATA_LOADING_ERROR';
     else if (status >= 500) code = 'DATABASE_ERROR';
-    else if (typeof navigator !== 'undefined' && !navigator.onLine) code = 'NETWORK_ERROR';
 
     // Use the server's error message if available, otherwise fall back to code
     const serverMessage = data?.message || data?.error || body || statusText;
@@ -224,7 +223,7 @@ export const queryClient = new QueryClient({
           return false;
         }
 
-        // Retry network and database errors up to 2 times
+        // Retry network and database errors up to 3 total attempts (initial + 2 retries)
         const retryableErrors = ['NETWORK_ERROR', 'DATABASE_ERROR', 'Failed to fetch', 'Request timeout'];
         if (retryableErrors.some((code) => errorStr.includes(code)) && failureCount < 2) {
           return true;
@@ -246,14 +245,15 @@ export const queryClient = new QueryClient({
           return false;
         }
 
-        // Retry database, network, and timeout errors up to 2 times
+        // Retry database, network, and timeout errors up to 3 total attempts (initial + 2 retries)
         const retryableErrors = ['DATABASE_ERROR', 'NETWORK_ERROR', 'Failed to fetch', 'Request timeout'];
         return (
           retryableErrors.some((code) => errorStr.includes(code)) &&
           failureCount < 2
         );
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+      // Lower cap than queries (30s) for better UX on user-initiated actions
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     },
   },
 });

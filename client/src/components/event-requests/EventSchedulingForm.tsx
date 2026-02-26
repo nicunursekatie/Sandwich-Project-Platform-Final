@@ -1033,7 +1033,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
       if (isConflict) {
         errorTitle = 'Edit Conflict';
-        errorDescription = 'This event was modified by another user while you were editing. Please close the form and reopen it to see the latest data. Your changes are saved locally.';
+        errorDescription = 'This event was modified by another user while you were editing. Please close the form and reopen it to see the latest data. Your recent changes may be saved locally via auto-save.';
         // Refresh the data so the list shows the latest version
         invalidateEventRequestQueries(queryClient);
       } else if (isNotFound) {
@@ -1146,6 +1146,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Check if "van" is mentioned in notes as a standalone word
     // Use word boundary matching to avoid false positives from words like
     // "advantage", "Savannah", "relevant", etc.
+    // notes is lowercased above, so all comparisons are case-insensitive.
     const notes = `${formData.schedulingNotes || ''} ${formData.planningNotes || ''}`.toLowerCase();
     if (/\bvan\b/.test(notes) && !notes.includes('van-approved') && !notes.includes('van approved')) {
       return true;
@@ -1191,7 +1192,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  const performSubmit = async (skipSpeakerWarning = false) => {
+  const performSubmit = async (skipSpeakerWarning = false, standbyDateOverride?: string) => {
     // CRITICAL: Set submitting flag to prevent auto-save from running
     setIsSubmitting(true);
     // Also clear any pending auto-save immediately
@@ -1370,9 +1371,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
       // Corporate priority
       isCorporatePriority: formData.isCorporatePriority || false,
-      // Standby follow-up date
-      standbyExpectedDate: formData.status === 'standby' && formData.standbyExpectedDate
-        ? new Date(formData.standbyExpectedDate).toISOString()
+      // Standby follow-up date - prefer override (passed directly from dialog) over state
+      standbyExpectedDate: formData.status === 'standby' && (standbyDateOverride || formData.standbyExpectedDate)
+        ? new Date(standbyDateOverride || formData.standbyExpectedDate).toISOString()
         : null,
     };
 
@@ -3154,20 +3155,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                // Set the standby expected date directly in the form data object
-                // that performSubmit will read, then submit immediately.
-                // We update formData state for consistency, but performSubmit reads
-                // from the closure's current formData, so we pass the date through
-                // by updating state and calling performSubmit in the same handler.
+                // Pass standbyFollowUpDate directly to performSubmit to avoid relying
+                // on state being flushed before performSubmit reads formData.
+                // Also update state for consistency (so the form reflects the chosen date
+                // if it stays open for any reason).
                 setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
                 setShowStandbyFollowUpDialog(false);
-                // performSubmit builds eventData from formData state. Since React 18
-                // batches updates, we need to wait for the state to flush before
-                // performSubmit reads the updated standbyExpectedDate.
-                // Use requestAnimationFrame which runs after React commits the update.
-                requestAnimationFrame(async () => {
-                  await performSubmit(false);
-                });
+                await performSubmit(false, standbyFollowUpDate);
               }}
               className="bg-amber-600 hover:bg-amber-700"
               disabled={!standbyFollowUpDate}

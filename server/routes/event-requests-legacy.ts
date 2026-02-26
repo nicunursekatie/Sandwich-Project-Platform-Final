@@ -32,6 +32,17 @@ import { rateLimiter } from '../utils/rate-limiter';
 
 const router = Router();
 
+// Strip _expectedVersion from all PATCH request bodies so it never leaks into
+// the database. The value is preserved in res.locals so the main PATCH /:id
+// endpoint can still use it for optimistic-locking checks.
+router.use((req, res, next) => {
+  if (req.method === 'PATCH' && req.body && typeof req.body === 'object') {
+    res.locals._expectedVersion = req.body._expectedVersion;
+    delete req.body._expectedVersion;
+  }
+  next();
+});
+
 // Helper functions for pickup time data migration
 const convertTimeToDateTime = (timeStr: string, baseDate?: Date | string): string | null => {
   if (!timeStr) return null;
@@ -2611,9 +2622,8 @@ router.patch(
         }
       }
 
-      // Extract and remove optimistic locking field from updates before processing
-      const expectedVersion = updates._expectedVersion;
-      delete updates._expectedVersion;
+      // Extract optimistic locking field from res.locals (stripped from req.body by router middleware)
+      const expectedVersion = res.locals._expectedVersion;
 
       // Get original data for audit logging
       logger.info(`[PATCH /:id] About to fetch event ${id} from storage`);

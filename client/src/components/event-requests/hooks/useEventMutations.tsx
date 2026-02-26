@@ -142,8 +142,8 @@ export const useEventMutations = () => {
       if (isConflict) {
         errorTitle = 'Edit Conflict';
         errorDescription = 'This event was modified by another user. The page will refresh with the latest data.';
-        // Refresh the data so the user sees the latest version
-        invalidateEventRequestQueries(queryClient);
+        // Await the refresh so the cache is up-to-date before the toast is shown
+        await invalidateEventRequestQueries(queryClient);
       } else if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not save changes. Please check your internet connection and try again.';
