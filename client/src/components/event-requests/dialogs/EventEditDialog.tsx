@@ -397,16 +397,17 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     }
   }, [event]);
 
-  // Update mutation
+  // Update mutation with retry for transient failures
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (!event) throw new Error('No event selected');
       logger.log('Updating event:', event.id, data);
       return apiRequest('PATCH', `/api/event-requests/${event.id}`, data);
     },
-    onSuccess: () => {
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+    onSuccess: async () => {
+      // Invalidate all event request queries and wait for them to complete
+      // before closing the dialog, so the list reflects the saved changes
+      await invalidateEventRequestQueries(queryClient);
       toast({
         title: 'Event updated',
         description: 'Your changes have been saved.',
@@ -417,20 +418,27 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     onError: (error: any) => {
       logger.error('Failed to update event:', error);
 
-      // Extract detailed error message from server response
-      const serverMessage = error?.response?.data?.message ||
-                           error?.data?.message ||
+      // Extract detailed error message - ApiError has .data with server response
+      const serverMessage = error?.data?.message ||
                            error?.message ||
                            'There was an error saving your changes.';
 
       // Check for missing fields info from server
-      const missingFields = error?.response?.data?.missingFields || error?.data?.missingFields;
+      const missingFields = error?.data?.missingFields;
 
       let errorDescription = serverMessage;
 
       // If server provided missing fields, include them in the message
       if (missingFields && Array.isArray(missingFields) && missingFields.length > 0) {
         errorDescription = `${serverMessage} Missing: ${missingFields.join(', ')}`;
+      }
+
+      // Check for network/timeout errors
+      const isNetworkError = error?.code?.includes('NETWORK_ERROR') ||
+                             error?.message?.includes('Failed to fetch') ||
+                             error?.message?.includes('Request timeout');
+      if (isNetworkError) {
+        errorDescription = 'Could not save changes due to a network issue. Please check your connection and try again.';
       }
 
       toast({

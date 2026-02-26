@@ -70,31 +70,69 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  /**
+   * Execute a storage operation with automatic retry on transient failures.
+   * Retries up to 2 times with exponential backoff before falling back.
+   *
+   * IMPORTANT: For write operations (update/create/delete), we retry the
+   * primary storage but do NOT silently fall back to MemStorage, because
+   * MemStorage writes are lost on restart. Instead we throw the error so
+   * the API route can return a proper error to the client.
+   */
   private async executeWithFallback<T>(
     operation: () => Promise<T>,
-    fallbackOperation: () => Promise<T>
+    fallbackOperation: () => Promise<T>,
+    options?: { isWriteOperation?: boolean }
   ): Promise<T> {
-    try {
-      const result = await operation();
-      // For delete operations that return false, use fallback
-      if (typeof result === 'boolean' && result === false) {
-        logger.log(
-          'Primary storage operation returned false, using fallback storage'
-        );
-        return fallbackOperation();
+    const maxRetries = 2;
+    let lastError: any = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await operation();
+        // For delete operations that return false, try fallback (for reads only)
+        if (typeof result === 'boolean' && result === false && !options?.isWriteOperation) {
+          logger.log('Primary storage operation returned false, using fallback storage');
+          return fallbackOperation();
+        }
+        // For operations that return undefined, try fallback (for reads only)
+        if (result === undefined && !options?.isWriteOperation) {
+          logger.log('Primary storage operation returned undefined, using fallback storage');
+          return fallbackOperation();
+        }
+        return result;
+      } catch (error: any) {
+        lastError = error;
+        // Don't retry non-transient errors (validation, not-found, etc.)
+        const isTransient = error?.message?.includes('connection') ||
+          error?.message?.includes('timeout') ||
+          error?.message?.includes('ECONNREFUSED') ||
+          error?.message?.includes('ECONNRESET') ||
+          error?.message?.includes('socket hang up') ||
+          error?.message?.includes('fetch failed') ||
+          error?.code === 'ETIMEDOUT' ||
+          error?.code === 'ECONNRESET';
+
+        if (!isTransient || attempt === maxRetries) {
+          break; // Don't retry non-transient errors or if we've exhausted retries
+        }
+
+        const delay = Math.min(500 * Math.pow(2, attempt), 2000);
+        logger.warn(`Primary storage operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error?.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-      // For update operations that return undefined, use fallback
-      if (result === undefined) {
-        logger.log(
-          'Primary storage operation returned undefined, using fallback storage'
-        );
-        return fallbackOperation();
-      }
-      return result;
-    } catch (error) {
-      logger.error('Primary storage operation failed, using fallback. DATA MAY NOT BE PERSISTED:', error);
-      return fallbackOperation();
     }
+
+    // For write operations, do NOT fall back to MemStorage - the data would be lost.
+    // Throw the error so the API route can return a proper 500 to the client.
+    if (options?.isWriteOperation) {
+      logger.error('Primary storage WRITE operation failed after retries. NOT falling back to MemStorage:', lastError?.message);
+      throw lastError;
+    }
+
+    // For read operations, fall back to MemStorage (better to show stale/empty than crash)
+    logger.error('Primary storage READ operation failed after retries, using fallback:', lastError?.message);
+    return fallbackOperation();
   }
 
   // User methods (required for authentication)
@@ -1582,21 +1620,24 @@ class StorageWrapper implements IStorage {
   async createEventRequest(insertEventRequest: InsertEventRequest) {
     return this.executeWithFallback(
       () => this.primaryStorage.createEventRequest(insertEventRequest),
-      () => this.fallbackStorage.createEventRequest(insertEventRequest)
+      () => this.fallbackStorage.createEventRequest(insertEventRequest),
+      { isWriteOperation: true }
     );
   }
 
   async updateEventRequest(id: number, updates: Partial<EventRequest>) {
     return this.executeWithFallback(
       () => this.primaryStorage.updateEventRequest(id, updates),
-      () => this.fallbackStorage.updateEventRequest(id, updates)
+      () => this.fallbackStorage.updateEventRequest(id, updates),
+      { isWriteOperation: true }
     );
   }
 
   async deleteEventRequest(id: number) {
     return this.executeWithFallback(
       () => this.primaryStorage.deleteEventRequest(id),
-      () => this.fallbackStorage.deleteEventRequest(id)
+      () => this.fallbackStorage.deleteEventRequest(id),
+      { isWriteOperation: true }
     );
   }
 
