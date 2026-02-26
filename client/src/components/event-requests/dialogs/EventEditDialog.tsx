@@ -433,6 +433,17 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
         errorDescription = `${serverMessage} Missing: ${missingFields.join(', ')}`;
       }
 
+      // Check for optimistic locking conflict (409)
+      const isConflict = error?.status === 409 || error?.data?.error === 'CONFLICT';
+      if (isConflict) {
+        toast({
+          title: 'Edit Conflict',
+          description: 'This event was modified by another user. Please close and reopen this dialog to see the latest data.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Check for network/timeout errors
       const isNetworkError = error?.code?.includes('NETWORK_ERROR') ||
                              error?.message?.includes('Failed to fetch') ||
@@ -582,6 +593,10 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     }
 
     console.log('[EventEditDialog] Final updates object:', JSON.stringify(updates, null, 2));
+    // Include optimistic locking version so the server can detect concurrent edits
+    if (event.updatedAt) {
+      updates._expectedVersion = event.updatedAt;
+    }
     updateMutation.mutate(updates);
   };
 
