@@ -1134,21 +1134,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const eventLikelyNeedsVan = (): boolean => {
     // Check if van driver is explicitly needed
     if ((formData.vanDriverNeeded || formData.isDhlVan) && !formData.selfTransport) return true;
-    
+
     // Check if sandwich count > 500 (implies van needed)
-    const sandwichCount = sandwichMode === 'total' 
-      ? formData.totalSandwichCount 
-      : sandwichMode === 'range' 
+    const sandwichCount = sandwichMode === 'total'
+      ? formData.totalSandwichCount
+      : sandwichMode === 'range'
         ? (formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0)
         : formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     if (sandwichCount > 500) return true;
-    
-    // Check if "van" is mentioned in notes
+
+    // Check if "van" is mentioned in notes as a standalone word
+    // Use word boundary matching to avoid false positives from words like
+    // "advantage", "Savannah", "relevant", etc.
     const notes = `${formData.schedulingNotes || ''} ${formData.planningNotes || ''}`.toLowerCase();
-    if (notes.includes('van') && !notes.includes('van-approved') && !notes.includes('van approved')) {
+    if (/\bvan\b/.test(notes) && !notes.includes('van-approved') && !notes.includes('van approved')) {
       return true;
     }
-    
+
     return false;
   };
 
@@ -2976,7 +2978,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       </AlertDialog>
 
       {/* Van Conflict Warning Dialog */}
-      <AlertDialog open={showVanConflictDialog} onOpenChange={setShowVanConflictDialog}>
+      <AlertDialog open={showVanConflictDialog} onOpenChange={(open) => {
+        // If dialog is being dismissed (Escape key, overlay click), reset isSubmitting
+        // so the save button isn't permanently disabled
+        if (!open) {
+          setShowVanConflictDialog(false);
+          setVanConflictChecked(false);
+          setIsSubmitting(false);
+        }
+      }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
@@ -3006,6 +3016,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             <AlertDialogCancel onClick={() => {
               setShowVanConflictDialog(false);
               setVanConflictChecked(false);
+              setIsSubmitting(false);
             }}>
               Go Back & Check
             </AlertDialogCancel>
@@ -3025,11 +3036,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       </AlertDialog>
 
       {/* Speaker Warning Dialog */}
-      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={setShowSpeakerWarningDialog}>
+      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowSpeakerWarningDialog(false);
+          setIsSubmitting(false);
+        }
+      }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
-              ⚠️ Speaker Recommendation
+              Speaker Recommendation
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
@@ -3040,7 +3056,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setShowSpeakerWarningDialog(false);
-              setIsSubmitting(false); // Reset so save button isn't permanently stuck
+              setIsSubmitting(false);
             }}>
               Cancel
             </AlertDialogCancel>
@@ -3059,7 +3075,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       </AlertDialog>
 
       {/* Standby Follow-Up Date Dialog */}
-      <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={setShowStandbyFollowUpDialog}>
+      <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowStandbyFollowUpDialog(false);
+          // If dismissed without saving, reset status back
+          setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+          setIsSubmitting(false);
+        }
+      }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -3073,7 +3096,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <p>
                 Did the contact request to be contacted on a specific date, or should we send a reminder in one week?
               </p>
-              
+
               <div className="space-y-3 mt-4">
                 <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                   <input
@@ -3094,7 +3117,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <p className="text-sm text-gray-500">Default follow-up timing</p>
                   </div>
                 </label>
-                
+
                 <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                   <input
                     type="radio"
@@ -3125,18 +3148,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               setShowStandbyFollowUpDialog(false);
               // Reset status back if they cancel
               setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+              setIsSubmitting(false);
             }}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                // Set the standby expected date in form data and submit
+                // Set the standby expected date directly in the form data object
+                // that performSubmit will read, then submit immediately.
+                // We update formData state for consistency, but performSubmit reads
+                // from the closure's current formData, so we pass the date through
+                // by updating state and calling performSubmit in the same handler.
                 setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
                 setShowStandbyFollowUpDialog(false);
-                // Wait a tick for state to update, then submit
-                setTimeout(async () => {
+                // performSubmit builds eventData from formData state. Since React 18
+                // batches updates, we need to wait for the state to flush before
+                // performSubmit reads the updated standbyExpectedDate.
+                // Use requestAnimationFrame which runs after React commits the update.
+                requestAnimationFrame(async () => {
                   await performSubmit(false);
-                }, 50);
+                });
               }}
               className="bg-amber-600 hover:bg-amber-700"
               disabled={!standbyFollowUpDate}
