@@ -867,11 +867,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 conflicts: conflicts.length,
               });
 
-              // CRITICAL: Mark form as initialized after recovery so auto-save continues working
-              // This runs in next tick to ensure state updates are batched properly
-              setTimeout(() => {
-                setFormInitialized(true);
-              }, 10);
+              // Mark form as initialized after recovery - originalFormDataRef is set below
+              // via the mergedOriginalFormDataRef path, so it's safe to set this here.
             } else {
               // Clear old auto-save data
               clearAutoSave();
@@ -921,29 +918,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // use the merged data as the baseline for change detection.
       // Otherwise, use fresh server data.
       //
-      // RACE CONDITION PROTECTION:
-      // We use setTimeout(0) to ensure React's state updates for formData have completed.
-      // IMPORTANT: originalFormDataRef.current MUST be set BEFORE setFormInitialized(true)
-      // because form submission checks formInitialized and expects originalFormDataRef to be ready.
-      setTimeout(() => {
-        if (mergedOriginalFormDataRef) {
-          // Use the merged data as baseline - this ensures hasChanged() compares
-          // against what the user is actually seeing in the form
-          originalFormDataRef.current = mergedOriginalFormDataRef as typeof formData;
-          logger.log('📋 Using merged data as originalFormDataRef baseline');
-        } else {
-          // No merge happened - use fresh server data
-          originalFormDataRef.current = buildFormDataFromEventRequest(
-            eventRequest,
-            formatDateForInput,
-            getPickupDateTimeForInput,
-            parsePostgresArray
-          ) as typeof formData;
-        }
-        // Mark form as initialized AFTER original data is stored
-        // This prevents race condition where form submits before useEffect populates data
-        setFormInitialized(true);
-      }, 0);
+      // NOTE: originalFormDataRef is a ref (not state), so it updates synchronously.
+      // We set it BEFORE setFormInitialized(true) to ensure the form submission
+      // handler always sees a valid originalFormDataRef when formInitialized is true.
+      // React 18 auto-batches state updates, so the formData + formInitialized
+      // updates are applied together in the same render.
+      if (mergedOriginalFormDataRef) {
+        // Use the merged data as baseline - this ensures hasChanged() compares
+        // against what the user is actually seeing in the form
+        originalFormDataRef.current = mergedOriginalFormDataRef as typeof formData;
+        logger.log('📋 Using merged data as originalFormDataRef baseline');
+      } else {
+        // No merge happened - use fresh server data
+        originalFormDataRef.current = buildFormDataFromEventRequest(
+          eventRequest,
+          formatDateForInput,
+          getPickupDateTimeForInput,
+          parsePostgresArray
+        ) as typeof formData;
+      }
+      // Mark form as initialized AFTER original data is stored
+      // This prevents race condition where form submits before useEffect populates data
+      setFormInitialized(true);
     } else {
       // Dialog closed - reset initialization state
       setFormInitialized(false);
@@ -951,11 +947,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [isVisible, isOpen, eventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
 
   const updateEventRequestMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}`, data),
-    retry: false,
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      // Include optimistic locking version to detect concurrent edits
+      const payload = { ...data };
+      if (eventRequest?.updatedAt) {
+        payload._expectedVersion = eventRequest.updatedAt;
+      }
+      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
+    },
+    // Allow React Query to retry transient failures (uses global mutation retry config)
     networkMode: 'always',
-    onSuccess: (updatedEvent: any) => {
+    onSuccess: async (updatedEvent: any) => {
       // Reset submitting flag
       setIsSubmitting(false);
 
@@ -992,14 +994,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
       toast({
         title: isEditMode ? '✓ Changes Saved Successfully' : '✓ Event Scheduled Successfully',
-        description: isEditMode 
-          ? `Your changes to "${orgName}" have been saved to the database.` 
+        description: isEditMode
+          ? `Your changes to "${orgName}" have been saved to the database.`
           : `"${orgName}" has been scheduled and saved.`,
         duration: 8000,
       });
-      // Invalidate all event request queries to refresh UI
+      // Await invalidation so the list reflects the saved changes before dialog closes
       logger.log('🔄 Invalidating event request queries...');
-      invalidateEventRequestQueries(queryClient);
+      await invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
     },
@@ -1008,33 +1010,44 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
 
       logger.error('Update event request error:', error);
-      
-      // Check if it's a 404 (event not found) error
-      const isNotFound = error?.message?.includes('DATA_LOADING_ERROR') || 
-                        error?.message?.includes('EVENT_NOT_FOUND') ||
-                        error?.message?.includes('not found');
-      
-      // Check for network errors
+
+      // Extract detailed error message from ApiError
+      const serverMessage = error?.data?.message || error?.message;
+
+      // Check for specific error types
+      const isNotFound = error?.status === 404 ||
+                        serverMessage?.includes('not found');
+
+      const isConflict = error?.status === 409 ||
+                        error?.code?.includes('CONFLICT');
+
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError') ||
-                            error?.message?.includes('network');
-      
+                            error?.message?.includes('Request timeout') ||
+                            error?.code?.includes('NETWORK_ERROR');
+
       const isEditMode = mode === 'edit';
       const orgName = eventRequest?.organizationName || formData.organizationName || 'this event';
-      
+
       let errorTitle = 'Save Failed';
       let errorDescription = isEditMode ? 'Failed to update event.' : 'Failed to schedule event.';
-      
-      if (isNotFound) {
+
+      if (isConflict) {
+        errorTitle = 'Edit Conflict';
+        errorDescription = 'This event was modified by another user while you were editing. Please close the form and reopen it to see the latest data. Your changes are saved locally.';
+        // Refresh the data so the list shows the latest version
+        invalidateEventRequestQueries(queryClient);
+      } else if (isNotFound) {
         errorTitle = 'Event Not Found';
         errorDescription = 'The event request was not found. It may have been deleted. Please refresh the page and try again.';
       } else if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = `Could not save changes to "${orgName}". Please check your internet connection and try again. Your changes are saved locally and can be recovered.`;
+      } else if (serverMessage) {
+        errorDescription = serverMessage;
       } else {
         errorDescription = `Failed to save changes to "${orgName}". Please try again. If the problem persists, your changes are saved locally.`;
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,
@@ -1049,7 +1062,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       logger.log('🚀 CREATE MUTATION: Sending data:', data);
       return apiRequest('POST', '/api/event-requests', data);
     },
-    onSuccess: (response) => {
+    networkMode: 'always',
+    onSuccess: async (response) => {
       logger.log('✅ CREATE MUTATION SUCCESS: Response:', response);
       // Clear auto-saved data on successful submission
       clearAutoSave();
@@ -1061,23 +1075,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: `"${orgName}" has been created and saved to the database.`,
         duration: 8000,
       });
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+      // Await invalidation so the list shows the new event before dialog closes
+      await invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
     },
     onError: (error: any) => {
       logger.error('❌ CREATE MUTATION ERROR:', error);
-      
-      // Check for network errors
+
+      const serverMessage = error?.data?.message || error?.message;
+
+      // Check for network/timeout errors
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError') ||
-                            error?.message?.includes('network');
-      
+                            error?.message?.includes('Request timeout') ||
+                            error?.code?.includes('NETWORK_ERROR');
+
       const orgName = formData.organizationName || 'this event';
-      
+
       let errorTitle = 'Creation Failed';
-      let errorDescription = `Failed to create "${orgName}". Please try again.`;
+      let errorDescription = serverMessage || `Failed to create "${orgName}". Please try again.`;
       
       if (isNetworkError) {
         errorTitle = 'Connection Error';
@@ -1511,8 +1527,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       logger.log('  - Filtered data (changed fields only):', filteredEventData);
-      logger.log('  - Original keys count:', Object.keys(filteredEventData).length);
-      
+      logger.log('  - Changed fields count:', Object.keys(filteredEventData).length);
+
+      // In edit mode, if no fields changed, notify the user instead of sending an empty update
+      if (mode === 'edit' && Object.keys(filteredEventData).length === 0) {
+        logger.log('ℹ️ No fields changed in edit mode - nothing to save');
+        setIsSubmitting(false);
+        toast({
+          description: 'No changes detected. Make a change and try saving again.',
+        });
+        return;
+      }
+
       // CRITICAL: In schedule mode, always ensure status is 'scheduled' and scheduledEventDate is set
       // This prevents cases where the form filters out the status change incorrectly
       if (mode === 'schedule') {
