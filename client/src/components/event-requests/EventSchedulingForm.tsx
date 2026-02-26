@@ -419,6 +419,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
   const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
+  // Ref to distinguish "save action clicked" from "dialog dismissed" in onOpenChange.
+  // State can't be used here because React batches the updates, so isSubmitting wouldn't
+  // be true yet when onOpenChange reads it in the same event cycle.
+  const standbySaveClickedRef = useRef(false);
   const [showCorporatePriorityConfirmDialog, setShowCorporatePriorityConfirmDialog] = useState(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -867,11 +871,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 conflicts: conflicts.length,
               });
 
-              // CRITICAL: Mark form as initialized after recovery so auto-save continues working
-              // This runs in next tick to ensure state updates are batched properly
-              setTimeout(() => {
-                setFormInitialized(true);
-              }, 10);
+              // Mark form as initialized after recovery - originalFormDataRef is set below
+              // via the mergedOriginalFormDataRef path, so it's safe to set this here.
             } else {
               // Clear old auto-save data
               clearAutoSave();
@@ -921,29 +922,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // use the merged data as the baseline for change detection.
       // Otherwise, use fresh server data.
       //
-      // RACE CONDITION PROTECTION:
-      // We use setTimeout(0) to ensure React's state updates for formData have completed.
-      // IMPORTANT: originalFormDataRef.current MUST be set BEFORE setFormInitialized(true)
-      // because form submission checks formInitialized and expects originalFormDataRef to be ready.
-      setTimeout(() => {
-        if (mergedOriginalFormDataRef) {
-          // Use the merged data as baseline - this ensures hasChanged() compares
-          // against what the user is actually seeing in the form
-          originalFormDataRef.current = mergedOriginalFormDataRef as typeof formData;
-          logger.log('📋 Using merged data as originalFormDataRef baseline');
-        } else {
-          // No merge happened - use fresh server data
-          originalFormDataRef.current = buildFormDataFromEventRequest(
-            eventRequest,
-            formatDateForInput,
-            getPickupDateTimeForInput,
-            parsePostgresArray
-          ) as typeof formData;
-        }
-        // Mark form as initialized AFTER original data is stored
-        // This prevents race condition where form submits before useEffect populates data
-        setFormInitialized(true);
-      }, 0);
+      // NOTE: originalFormDataRef is a ref (not state), so it updates synchronously.
+      // We set it BEFORE setFormInitialized(true) to ensure the form submission
+      // handler always sees a valid originalFormDataRef when formInitialized is true.
+      // React 18 auto-batches state updates, so the formData + formInitialized
+      // updates are applied together in the same render.
+      if (mergedOriginalFormDataRef) {
+        // Use the merged data as baseline - this ensures hasChanged() compares
+        // against what the user is actually seeing in the form
+        originalFormDataRef.current = mergedOriginalFormDataRef as typeof formData;
+        logger.log('📋 Using merged data as originalFormDataRef baseline');
+      } else {
+        // No merge happened - use fresh server data
+        originalFormDataRef.current = buildFormDataFromEventRequest(
+          eventRequest,
+          formatDateForInput,
+          getPickupDateTimeForInput,
+          parsePostgresArray
+        ) as typeof formData;
+      }
+      // Mark form as initialized AFTER original data is stored
+      // This prevents race condition where form submits before useEffect populates data
+      setFormInitialized(true);
     } else {
       // Dialog closed - reset initialization state
       setFormInitialized(false);
@@ -951,11 +951,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [isVisible, isOpen, eventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
 
   const updateEventRequestMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}`, data),
-    retry: false,
+    mutationFn: ({ id, data }: { id: number; data: any }) => {
+      // Include optimistic locking version to detect concurrent edits
+      const payload = { ...data };
+      if (eventRequest?.updatedAt) {
+        payload._expectedVersion = eventRequest.updatedAt;
+      }
+      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
+    },
+    // Allow React Query to retry transient failures (uses global mutation retry config)
     networkMode: 'always',
-    onSuccess: (updatedEvent: any) => {
+    onSuccess: async (updatedEvent: any) => {
       // Reset submitting flag
       setIsSubmitting(false);
 
@@ -992,14 +998,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
       toast({
         title: isEditMode ? '✓ Changes Saved Successfully' : '✓ Event Scheduled Successfully',
-        description: isEditMode 
-          ? `Your changes to "${orgName}" have been saved to the database.` 
+        description: isEditMode
+          ? `Your changes to "${orgName}" have been saved to the database.`
           : `"${orgName}" has been scheduled and saved.`,
         duration: 8000,
       });
-      // Invalidate all event request queries to refresh UI
+      // Await invalidation so the list reflects the saved changes before dialog closes
       logger.log('🔄 Invalidating event request queries...');
-      invalidateEventRequestQueries(queryClient);
+      await invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
     },
@@ -1008,33 +1014,46 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
 
       logger.error('Update event request error:', error);
-      
-      // Check if it's a 404 (event not found) error
-      const isNotFound = error?.message?.includes('DATA_LOADING_ERROR') || 
-                        error?.message?.includes('EVENT_NOT_FOUND') ||
-                        error?.message?.includes('not found');
-      
-      // Check for network errors
+
+      // Extract detailed error message from ApiError
+      const serverMessage = error?.data?.message || error?.message;
+
+      // Check for specific error types
+      const isNotFound = error?.status === 404 ||
+                        serverMessage?.includes('not found');
+
+      const isConflict = error?.status === 409 ||
+                        error?.code?.includes('CONFLICT');
+
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError') ||
-                            error?.message?.includes('network');
-      
+                            error?.message?.includes('Request timeout') ||
+                            error?.code?.includes('NETWORK_ERROR');
+
       const isEditMode = mode === 'edit';
       const orgName = eventRequest?.organizationName || formData.organizationName || 'this event';
-      
+
       let errorTitle = 'Save Failed';
       let errorDescription = isEditMode ? 'Failed to update event.' : 'Failed to schedule event.';
-      
-      if (isNotFound) {
+
+      if (isConflict) {
+        errorTitle = 'Edit Conflict';
+        // Force an immediate local save so the user's changes are preserved
+        saveToLocalStorage();
+        errorDescription = 'This event was modified by another user while you were editing. Please close the form and reopen it to see the latest data. Your changes have been saved locally and will be recovered when you reopen.';
+        // Refresh the data so the list shows the latest version
+        invalidateEventRequestQueries(queryClient);
+      } else if (isNotFound) {
         errorTitle = 'Event Not Found';
         errorDescription = 'The event request was not found. It may have been deleted. Please refresh the page and try again.';
       } else if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = `Could not save changes to "${orgName}". Please check your internet connection and try again. Your changes are saved locally and can be recovered.`;
+      } else if (serverMessage) {
+        errorDescription = serverMessage;
       } else {
         errorDescription = `Failed to save changes to "${orgName}". Please try again. If the problem persists, your changes are saved locally.`;
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,
@@ -1049,7 +1068,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       logger.log('🚀 CREATE MUTATION: Sending data:', data);
       return apiRequest('POST', '/api/event-requests', data);
     },
-    onSuccess: (response) => {
+    networkMode: 'always',
+    onSuccess: async (response) => {
       logger.log('✅ CREATE MUTATION SUCCESS: Response:', response);
       // Clear auto-saved data on successful submission
       clearAutoSave();
@@ -1061,23 +1081,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         description: `"${orgName}" has been created and saved to the database.`,
         duration: 8000,
       });
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+      // Await invalidation so the list shows the new event before dialog closes
+      await invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
     },
     onError: (error: any) => {
       logger.error('❌ CREATE MUTATION ERROR:', error);
-      
-      // Check for network errors
+
+      const serverMessage = error?.data?.message || error?.message;
+
+      // Check for network/timeout errors
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError') ||
-                            error?.message?.includes('network');
-      
+                            error?.message?.includes('Request timeout') ||
+                            error?.code?.includes('NETWORK_ERROR');
+
       const orgName = formData.organizationName || 'this event';
-      
+
       let errorTitle = 'Creation Failed';
-      let errorDescription = `Failed to create "${orgName}". Please try again.`;
+      let errorDescription = serverMessage || `Failed to create "${orgName}". Please try again.`;
       
       if (isNetworkError) {
         errorTitle = 'Connection Error';
@@ -1118,21 +1140,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const eventLikelyNeedsVan = (): boolean => {
     // Check if van driver is explicitly needed
     if ((formData.vanDriverNeeded || formData.isDhlVan) && !formData.selfTransport) return true;
-    
+
     // Check if sandwich count > 500 (implies van needed)
-    const sandwichCount = sandwichMode === 'total' 
-      ? formData.totalSandwichCount 
-      : sandwichMode === 'range' 
+    const sandwichCount = sandwichMode === 'total'
+      ? formData.totalSandwichCount
+      : sandwichMode === 'range'
         ? (formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0)
         : formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
     if (sandwichCount > 500) return true;
-    
-    // Check if "van" is mentioned in notes
+
+    // Check if "van" is mentioned in notes as a standalone word
+    // Use word boundary matching to avoid false positives from words like
+    // "advantage", "Savannah", "relevant", etc.
     const notes = `${formData.schedulingNotes || ''} ${formData.planningNotes || ''}`.toLowerCase();
-    if (notes.includes('van') && !notes.includes('van-approved') && !notes.includes('van approved')) {
+    if (/\bvan\b/.test(notes) && !notes.includes('van-approved') && !notes.includes('van approved')) {
       return true;
     }
-    
+
     return false;
   };
 
@@ -1173,7 +1197,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
   };
 
-  const performSubmit = async (skipSpeakerWarning = false) => {
+  const performSubmit = async (skipSpeakerWarning = false, fieldOverrides?: Record<string, any>) => {
     // CRITICAL: Set submitting flag to prevent auto-save from running
     setIsSubmitting(true);
     // Also clear any pending auto-save immediately
@@ -1352,10 +1376,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       toolkitSentDate: serializeDateToISO(formData.toolkitSentDate),
       // Corporate priority
       isCorporatePriority: formData.isCorporatePriority || false,
-      // Standby follow-up date
-      standbyExpectedDate: formData.status === 'standby' && formData.standbyExpectedDate
-        ? new Date(formData.standbyExpectedDate).toISOString()
-        : null,
+      // Standby follow-up date -- use override if provided (from dialog handler
+      // where state may not have flushed yet), otherwise read from formData
+      standbyExpectedDate: (() => {
+        const date = fieldOverrides?.standbyExpectedDate || formData.standbyExpectedDate;
+        return formData.status === 'standby' && date
+          ? new Date(date).toISOString()
+          : null;
+      })(),
     };
 
     // Handle sandwich data based on mode
@@ -1511,8 +1539,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       logger.log('  - Filtered data (changed fields only):', filteredEventData);
-      logger.log('  - Original keys count:', Object.keys(filteredEventData).length);
-      
+      logger.log('  - Changed fields count:', Object.keys(filteredEventData).length);
+
+      // In edit mode, if no fields changed, notify the user instead of sending an empty update
+      if (mode === 'edit' && Object.keys(filteredEventData).length === 0) {
+        logger.log('ℹ️ No fields changed in edit mode - nothing to save');
+        setIsSubmitting(false);
+        toast({
+          description: 'No changes detected. Make a change and try saving again.',
+        });
+        return;
+      }
+
       // CRITICAL: In schedule mode, always ensure status is 'scheduled' and scheduledEventDate is set
       // This prevents cases where the form filters out the status change incorrectly
       if (mode === 'schedule') {
@@ -2950,7 +2988,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       </AlertDialog>
 
       {/* Van Conflict Warning Dialog */}
-      <AlertDialog open={showVanConflictDialog} onOpenChange={setShowVanConflictDialog}>
+      <AlertDialog open={showVanConflictDialog} onOpenChange={(open) => {
+        // If dialog is being dismissed (Escape key, overlay click), reset isSubmitting
+        // so the save button isn't permanently disabled
+        if (!open) {
+          setShowVanConflictDialog(false);
+          setVanConflictChecked(false);
+          setIsSubmitting(false);
+        }
+      }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
@@ -2980,6 +3026,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             <AlertDialogCancel onClick={() => {
               setShowVanConflictDialog(false);
               setVanConflictChecked(false);
+              setIsSubmitting(false);
             }}>
               Go Back & Check
             </AlertDialogCancel>
@@ -2999,11 +3046,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       </AlertDialog>
 
       {/* Speaker Warning Dialog */}
-      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={setShowSpeakerWarningDialog}>
+      <AlertDialog open={showSpeakerWarningDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowSpeakerWarningDialog(false);
+          setIsSubmitting(false);
+        }
+      }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
-              ⚠️ Speaker Recommendation
+              Speaker Recommendation
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
@@ -3014,7 +3066,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => {
               setShowSpeakerWarningDialog(false);
-              setIsSubmitting(false); // Reset so save button isn't permanently stuck
+              setIsSubmitting(false);
             }}>
               Cancel
             </AlertDialogCancel>
@@ -3033,7 +3085,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       </AlertDialog>
 
       {/* Standby Follow-Up Date Dialog */}
-      <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={setShowStandbyFollowUpDialog}>
+      <AlertDialog open={showStandbyFollowUpDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowStandbyFollowUpDialog(false);
+          // Only reset status if the dialog was dismissed (Escape/overlay click),
+          // NOT when closed by the save action. We use a ref (not state) because
+          // Radix fires onOpenChange synchronously and React batches state updates,
+          // so isSubmitting wouldn't be readable yet in the same event cycle.
+          if (!standbySaveClickedRef.current) {
+            setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+            setIsSubmitting(false);
+          }
+          standbySaveClickedRef.current = false;
+        }
+      }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -3047,7 +3112,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               <p>
                 Did the contact request to be contacted on a specific date, or should we send a reminder in one week?
               </p>
-              
+
               <div className="space-y-3 mt-4">
                 <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                   <input
@@ -3068,7 +3133,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                     <p className="text-sm text-gray-500">Default follow-up timing</p>
                   </div>
                 </label>
-                
+
                 <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                   <input
                     type="radio"
@@ -3095,22 +3160,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setShowStandbyFollowUpDialog(false);
-              // Reset status back if they cancel
-              setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
-            }}>
+            <AlertDialogCancel>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                // Set the standby expected date in form data and submit
+                // Signal to onOpenChange that this is a save, not a dismissal
+                standbySaveClickedRef.current = true;
+                // Update state for consistency (auto-save, re-render)
                 setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
                 setShowStandbyFollowUpDialog(false);
-                // Wait a tick for state to update, then submit
-                setTimeout(async () => {
-                  await performSubmit(false);
-                }, 50);
+                // Pass the date directly to performSubmit via fieldOverrides so it
+                // doesn't depend on the async state update having flushed yet.
+                await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
               }}
               className="bg-amber-600 hover:bg-amber-700"
               disabled={!standbyFollowUpDate}

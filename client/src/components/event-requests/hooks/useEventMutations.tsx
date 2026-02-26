@@ -28,7 +28,7 @@ export const useEventMutations = () => {
   const deleteEventRequestMutation = useMutation({
     mutationFn: (id: number) =>
       apiRequest('DELETE', `/api/event-requests/${id}`),
-    onSuccess: (_, deletedId) => {
+    onSuccess: async (_, deletedId) => {
       const { dismiss } = toast({
         title: 'Event request deleted',
         description: 'Click Undo to restore',
@@ -38,7 +38,7 @@ export const useEventMutations = () => {
             onClick={async () => {
               try {
                 await apiRequest('POST', `/api/event-requests/${deletedId}/restore`);
-                invalidateEventRequestQueries(queryClient);
+                await invalidateEventRequestQueries(queryClient);
                 dismiss();
                 toast({
                   title: 'Event request restored',
@@ -58,14 +58,15 @@ export const useEventMutations = () => {
           </button>
         ),
       });
-      invalidateEventRequestQueries(queryClient);
+      await invalidateEventRequestQueries(queryClient);
       setShowEventDetails(false);
       setSelectedEventRequest(null);
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.data?.message || error?.message || 'Failed to delete event request.';
       toast({
         title: 'Error',
-        description: 'Failed to delete event request.',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -76,9 +77,17 @@ export const useEventMutations = () => {
       logger.log('=== UPDATE MUTATION ===');
       logger.log('Event ID:', id);
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
-      return apiRequest('PATCH', `/api/event-requests/${id}`, data);
+
+      // Include optimistic locking version if we have the selected event's updatedAt
+      // This prevents silent overwrites when two users edit the same event
+      const payload = { ...data };
+      if (selectedEventRequest?.updatedAt) {
+        payload._expectedVersion = selectedEventRequest.updatedAt;
+      }
+
+      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       logger.log('=== UPDATE SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
       logger.log('Variables:', variables);
@@ -90,8 +99,8 @@ export const useEventMutations = () => {
         duration: 8000,
       });
 
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+      // Await query invalidation so the UI has fresh data before we close the dialog
+      await invalidateEventRequestQueries(queryClient);
 
       setShowEventDetails(false);
       setSelectedEventRequest(null);
@@ -105,21 +114,23 @@ export const useEventMutations = () => {
     onError: (error: any) => {
       logger.error('Update event request error:', error);
 
-      // Check for network errors
+      // Check for network/timeout errors
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError') ||
-                            error?.message?.includes('network');
+                            error?.message?.includes('Request timeout') ||
+                            error?.code?.includes('NETWORK_ERROR');
+
+      // Check for optimistic locking conflict (409)
+      const isConflict = error?.status === 409 || error?.code?.includes('CONFLICT');
 
       let errorTitle = 'Save Failed';
 
-      // Extract detailed error message from server response
-      const serverMessage = error?.response?.data?.message ||
-                           error?.data?.message ||
+      // Extract detailed error message from server response (ApiError.data)
+      const serverMessage = error?.data?.message ||
                            error?.message ||
                            error?.details;
 
       // Check for missing fields info from server
-      const missingFields = error?.response?.data?.missingFields || error?.data?.missingFields;
+      const missingFields = error?.data?.missingFields;
 
       let errorDescription = serverMessage || 'Failed to update event request. Please check your data and try again.';
 
@@ -128,7 +139,12 @@ export const useEventMutations = () => {
         errorDescription = `${serverMessage || 'Missing required fields:'} ${missingFields.join(', ')}`;
       }
 
-      if (isNetworkError) {
+      if (isConflict) {
+        errorTitle = 'Edit Conflict';
+        errorDescription = 'This event was modified by another user. The page will refresh with the latest data.';
+        // Refresh the data so the user sees the latest version
+        invalidateEventRequestQueries(queryClient);
+      } else if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not save changes. Please check your internet connection and try again.';
       }
@@ -154,7 +170,7 @@ export const useEventMutations = () => {
     onSuccess: async (data) => {
       logger.log('=== CREATE EVENT SUCCESS HANDLER ===');
       logger.log('Created event:', data);
-      
+
       const orgName = data?.organizationName || 'New event';
       toast({
         title: '✓ Event Created Successfully',
@@ -162,8 +178,8 @@ export const useEventMutations = () => {
         duration: 8000,
       });
 
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+      // Await query invalidation so the list reflects the new event
+      await invalidateEventRequestQueries(queryClient);
 
       setShowEventDetails(false);
       setSelectedEventRequest(null);
@@ -171,20 +187,20 @@ export const useEventMutations = () => {
     },
     onError: (error: any) => {
       logger.error('Create event request error:', error);
-      
-      // Check for network errors
+
+      // Check for network/timeout errors
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
-                            error?.message?.includes('NetworkError') ||
-                            error?.message?.includes('network');
-      
+                            error?.message?.includes('Request timeout') ||
+                            error?.code?.includes('NETWORK_ERROR');
+
       let errorTitle = 'Creation Failed';
-      let errorDescription = error?.message || error?.details || 'Failed to create event request. Please check your data and try again.';
-      
+      let errorDescription = error?.data?.message || error?.message || 'Failed to create event request. Please check your data and try again.';
+
       if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not create event. Please check your internet connection and try again.';
       }
-      
+
       toast({
         title: errorTitle,
         description: errorDescription,
@@ -234,10 +250,10 @@ export const useEventMutations = () => {
       setShowToolkitSentDialog(false);
       setToolkitEventRequest(null);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to mark toolkit as sent.',
+        description: error?.data?.message || error?.message || 'Failed to mark toolkit as sent.',
         variant: 'destructive',
       });
     },
@@ -254,7 +270,7 @@ export const useEventMutations = () => {
       apiRequest('PATCH', `/api/event-requests/${id}/schedule-call`, {
         scheduledCallDate,
       }),
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Call scheduled',
         description: 'Call has been scheduled successfully.',
@@ -264,19 +280,22 @@ export const useEventMutations = () => {
       invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data after call scheduled:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data after call scheduled:', error);
+        }
       }
 
       setShowScheduleCallDialog(false);
       setScheduleCallDate('');
       setScheduleCallTime('');
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to schedule call.',
+        description: error?.data?.message || error?.message || 'Failed to schedule call.',
         variant: 'destructive',
       });
     },
@@ -316,19 +335,19 @@ export const useEventMutations = () => {
 
       return { previousV1, previousV2 };
     },
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Field updated',
         description: 'Event field has been updated successfully.',
       });
 
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
-
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data after field update:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data after field update:', error);
+        }
       }
 
       setEditingScheduledId(null);
@@ -349,6 +368,8 @@ export const useEventMutations = () => {
         variant: 'destructive',
       });
     },
+    // Refetch once in onSettled (covers both success and error paths).
+    // Removed duplicate invalidation that was in onSuccess.
     onSettled: () => {
       invalidateEventRequestQueries(queryClient);
     },
@@ -361,28 +382,30 @@ export const useEventMutations = () => {
         followUpOneDayDate: new Date().toISOString(),
         followUpNotes: notes,
       }),
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: '1-day follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
 
-      // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data after 1-day follow-up:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data after 1-day follow-up:', error);
+        }
       }
 
       setShowOneDayFollowUpDialog(false);
       setFollowUpNotes('');
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to complete follow-up.',
+        description: error?.data?.message || error?.message || 'Failed to complete follow-up.',
         variant: 'destructive',
       });
     },
@@ -395,28 +418,30 @@ export const useEventMutations = () => {
         followUpOneMonthDate: new Date().toISOString(),
         followUpNotes: notes,
       }),
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       toast({
         title: '1-month follow-up completed',
         description: 'Follow-up has been marked as completed.',
       });
 
-      // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data after 1-month follow-up:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data after 1-month follow-up:', error);
+        }
       }
 
       setShowOneMonthFollowUpDialog(false);
       setFollowUpNotes('');
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to complete follow-up.',
+        description: error?.data?.message || error?.message || 'Failed to complete follow-up.',
         variant: 'destructive',
       });
     },
@@ -477,10 +502,10 @@ export const useEventMutations = () => {
       // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to reschedule event.',
+        description: error?.data?.message || error?.message || 'Failed to reschedule event.',
         variant: 'destructive',
       });
     },
@@ -505,7 +530,7 @@ export const useEventMutations = () => {
       logger.log('Recipient Allocations:', recipientAllocations);
       return apiRequest('PATCH', `/api/event-requests/${id}/recipients`, { assignedRecipientIds, recipientAllocations });
     },
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       logger.log('=== RECIPIENT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
 
@@ -514,23 +539,24 @@ export const useEventMutations = () => {
         description: 'Recipients have been successfully assigned to this event.',
       });
 
-      // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
 
-      // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data:', error);
+        }
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logger.error('=== RECIPIENT ASSIGNMENT ERROR ===');
       logger.error(error);
 
       toast({
         title: 'Failed to assign recipients',
-        description: 'There was an error assigning recipients to this event.',
+        description: error?.data?.message || error?.message || 'There was an error assigning recipients to this event.',
         variant: 'destructive',
       });
     },
@@ -545,7 +571,7 @@ export const useEventMutations = () => {
       logger.log('Custom TSP Contact:', customTspContact);
       return apiRequest('PATCH', `/api/event-requests/${id}/tsp-contact`, { tspContact, customTspContact });
     },
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       logger.log('=== TSP CONTACT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
 
@@ -558,23 +584,24 @@ export const useEventMutations = () => {
         description,
       });
 
-      // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
 
-      // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data:', error);
+        }
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logger.error('=== TSP CONTACT ASSIGNMENT ERROR ===');
       logger.error(error);
 
       toast({
         title: 'Failed to assign TSP contact',
-        description: 'There was an error assigning the TSP contact to this event.',
+        description: error?.data?.message || error?.message || 'There was an error assigning the TSP contact to this event.',
         variant: 'destructive',
       });
     },
@@ -595,7 +622,7 @@ export const useEventMutations = () => {
         coreTeamMemberNotes
       });
     },
-    onSuccess: (updatedEvent, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       logger.log('=== CORPORATE PRIORITY TOGGLE SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
 
@@ -607,23 +634,24 @@ export const useEventMutations = () => {
           : 'This event is no longer marked as corporate priority.',
       });
 
-      // Invalidate all event request queries to refresh UI
       invalidateEventRequestQueries(queryClient);
 
-      // Update the selected event if it matches
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        apiRequest('GET', `/api/event-requests/${variables.id}`)
-          .then(freshEventData => setSelectedEventRequest(freshEventData))
-          .catch(error => logger.error('Failed to fetch updated event data:', error));
+        try {
+          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
+          setSelectedEventRequest(freshEventData);
+        } catch (error) {
+          logger.error('Failed to fetch updated event data:', error);
+        }
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logger.error('=== CORPORATE PRIORITY TOGGLE ERROR ===');
       logger.error(error);
 
       toast({
         title: 'Failed to update corporate priority',
-        description: 'There was an error updating the corporate priority status.',
+        description: error?.data?.message || error?.message || 'There was an error updating the corporate priority status.',
         variant: 'destructive',
       });
     },

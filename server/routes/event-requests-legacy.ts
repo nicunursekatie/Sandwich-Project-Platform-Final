@@ -2413,6 +2413,9 @@ router.patch(
       const id = parseInt(req.params.id);
       const updates = req.body;
 
+      // Strip optimistic locking field if accidentally included by client
+      delete updates._expectedVersion;
+
       // Get original data for audit logging
       const originalEvent = await storage.getEventRequestById(id);
       if (!originalEvent) {
@@ -2611,10 +2614,30 @@ router.patch(
         }
       }
 
+      // Extract and remove optimistic locking field from updates before processing
+      const expectedVersion = updates._expectedVersion;
+      delete updates._expectedVersion;
+
       // Get original data for audit logging
       logger.info(`[PATCH /:id] About to fetch event ${id} from storage`);
       const originalEvent = await storage.getEventRequestById(id);
       logger.info(`[PATCH /:id] Storage returned:`, originalEvent ? `Event found (${originalEvent.organizationName})` : 'null/undefined');
+
+      // Optimistic locking: if the client sent _expectedVersion, verify the event
+      // hasn't been modified by someone else since they loaded it.
+      // This prevents silent overwrites when two users edit the same event.
+      if (expectedVersion && originalEvent?.updatedAt) {
+        const clientVersion = new Date(expectedVersion).getTime();
+        const serverVersion = new Date(originalEvent.updatedAt).getTime();
+        if (clientVersion !== serverVersion) {
+          logger.warn(`[PATCH /:id] Optimistic lock conflict for event ${id}: client version ${new Date(expectedVersion).toISOString()} vs server version ${new Date(originalEvent.updatedAt).toISOString()}`);
+          return res.status(409).json({
+            message: 'This event was modified by another user while you were editing. Please refresh and try again.',
+            error: 'CONFLICT',
+            serverVersion: originalEvent.updatedAt,
+          });
+        }
+      }
 
       if (!originalEvent) {
         logger.error(`[PATCH /:id] Event request ${id} not found in database`);

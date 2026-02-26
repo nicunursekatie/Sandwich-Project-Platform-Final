@@ -1,32 +1,57 @@
 import { QueryClient, QueryFunction } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 
+/**
+ * Custom error class that preserves server response details.
+ * This allows mutation onError handlers to access the original
+ * error message, status code, and any structured data from the server.
+ */
+export class ApiError extends Error {
+  status: number;
+  statusText: string;
+  data: any;
+  code: string;
+
+  constructor(status: number, statusText: string, body: string, data?: any) {
+    // Determine error code for retry logic
+    let code = `${status}: ${body || statusText}`;
+    if (status === 401) code = 'AUTH_EXPIRED';
+    else if (status === 403) code = 'PERMISSION_DENIED';
+    else if (status === 404) code = 'DATA_LOADING_ERROR';
+    else if (status >= 500) code = 'DATABASE_ERROR';
+    else if (typeof navigator !== 'undefined' && !navigator.onLine) code = 'NETWORK_ERROR';
+
+    // Use the server's error message if available, otherwise fall back to code
+    const serverMessage = data?.message || data?.error || body || statusText;
+    super(serverMessage);
+
+    this.name = 'ApiError';
+    this.status = status;
+    this.statusText = statusText;
+    this.code = code;
+    this.data = data || {};
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let text = '';
+    let jsonData: any = null;
+
     try {
-      text = (await res.text()) || res.statusText;
+      // Try to parse as JSON first to get structured error info
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        jsonData = await res.json();
+        text = jsonData?.message || jsonData?.error || JSON.stringify(jsonData);
+      } else {
+        text = (await res.text()) || res.statusText;
+      }
     } catch (e) {
-      // If we can't read the response text, use status text
       text = res.statusText || 'Unknown error';
     }
 
-    // Create more specific error messages based on status codes
-    let errorMessage = `${res.status}: ${text}`;
-
-    if (res.status === 401) {
-      errorMessage = 'AUTH_EXPIRED';
-    } else if (res.status === 403) {
-      errorMessage = 'PERMISSION_DENIED';
-    } else if (res.status === 404) {
-      errorMessage = 'DATA_LOADING_ERROR';
-    } else if (res.status >= 500) {
-      errorMessage = 'DATABASE_ERROR';
-    } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      errorMessage = 'NETWORK_ERROR';
-    }
-
-    throw new Error(errorMessage);
+    throw new ApiError(res.status, res.statusText, text, jsonData);
   }
 }
 
@@ -158,17 +183,21 @@ export const getQueryFn: <T>(options: {
  * - /api/event-requests/list (optimized list endpoint)
  * - /api/event-requests/status-counts (tab badge counts)
  */
-export function invalidateEventRequestQueries(qc: QueryClient) {
-  // Use refetchQueries to force immediate refresh, not just mark as stale
-  qc.refetchQueries({
-    predicate: (query) => {
-      const key = query.queryKey;
-      if (!Array.isArray(key) || typeof key[0] !== 'string') return false;
-      return key[0].startsWith('/api/event-requests');
-    },
-  });
-  // Also refetch event map since it depends on event data
-  qc.refetchQueries({ queryKey: ['/api/event-map'] });
+export async function invalidateEventRequestQueries(qc: QueryClient) {
+  // Use refetchQueries to force immediate refresh, not just mark as stale.
+  // Await both promises so callers can wait for data to be fresh before
+  // closing dialogs or clearing selected state.
+  await Promise.all([
+    qc.refetchQueries({
+      predicate: (query) => {
+        const key = query.queryKey;
+        if (!Array.isArray(key) || typeof key[0] !== 'string') return false;
+        return key[0].startsWith('/api/event-requests');
+      },
+    }),
+    // Also refetch event map since it depends on event data
+    qc.refetchQueries({ queryKey: ['/api/event-map'] }),
+  ]);
 }
 
 export const queryClient = new QueryClient({
@@ -186,14 +215,18 @@ export const queryClient = new QueryClient({
           'PERMISSION_DENIED',
           'VALIDATION_ERROR',
         ];
+        // Check both ApiError.code and error.message for error codes
+        const errorCode = (error as any)?.code || '';
         const errorMessage = error?.message || '';
+        const errorStr = `${errorCode} ${errorMessage}`;
 
-        if (noRetryErrors.some((code) => errorMessage.includes(code))) {
+        if (noRetryErrors.some((code) => errorStr.includes(code))) {
           return false;
         }
 
-        // Only retry network errors up to 2 times
-        if (errorMessage.includes('NETWORK_ERROR') && failureCount < 2) {
+        // Retry network and database errors (initial attempt + up to 2 retries = 3 total)
+        const retryableErrors = ['NETWORK_ERROR', 'DATABASE_ERROR', 'Failed to fetch', 'Request timeout'];
+        if (retryableErrors.some((code) => errorStr.includes(code)) && failureCount < 2) {
           return true;
         }
 
@@ -203,15 +236,25 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: (failureCount, error) => {
-        // Retry database errors once, but not auth/permission errors
+        // Don't retry auth/permission/validation errors
+        const noRetryErrors = ['AUTH_EXPIRED', 'PERMISSION_DENIED', 'VALIDATION_ERROR'];
+        const errorCode = (error as any)?.code || '';
         const errorMessage = error?.message || '';
-        const retryableErrors = ['DATABASE_ERROR', 'NETWORK_ERROR'];
+        const errorStr = `${errorCode} ${errorMessage}`;
 
+        if (noRetryErrors.some((code) => errorStr.includes(code))) {
+          return false;
+        }
+
+        // Retry database, network, and timeout errors (initial attempt + up to 2 retries = 3 total)
+        const retryableErrors = ['DATABASE_ERROR', 'NETWORK_ERROR', 'Failed to fetch', 'Request timeout'];
         return (
-          retryableErrors.some((code) => errorMessage.includes(code)) &&
-          failureCount < 1
+          retryableErrors.some((code) => errorStr.includes(code)) &&
+          failureCount < 2
         );
       },
+      // Cap at 5s for mutations since they're user-initiated and responsiveness matters
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     },
   },
 });
