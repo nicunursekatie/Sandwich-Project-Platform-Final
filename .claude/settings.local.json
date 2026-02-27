@@ -63,7 +63,8 @@
       "Bash(/usr/local/bin/npm run check)",
       "Bash(/usr/local/bin/npm run build)",
       "Bash(git mv:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "WebFetch(domain:nicunursekatie.github.io)"
     ],
     "deny": [],
     "ask": []

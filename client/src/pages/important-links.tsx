@@ -17,6 +17,7 @@ import {
   Calculator,
   Link as LinkIcon,
   Heart,
+  LayoutDashboard,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
@@ -52,6 +53,8 @@ export default function ImportantLinks() {
     'https://receipt-gen--katielong2316.replit.app/';
   const donorManagementUrl =
     'https://bread-and-butter-donors.lovable.app/';
+  const internalHubUrl =
+    'https://nicunursekatie.github.io/tsp-internal/index.html';
   // Flyers configuration - add more flyers here as they become available
   const flyers = [
     {
@@ -194,7 +197,7 @@ export default function ImportantLinks() {
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
         {/* Mobile: Horizontal scrollable tabs, Desktop: Grid */}
-        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-7 w-full mb-2 sm:mb-0">
+        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-8 w-full mb-2 sm:mb-0">
           <TabsTrigger value="toolkit" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
             <span className="hidden sm:inline">📦</span> Toolkit
           </TabsTrigger>
@@ -211,6 +214,10 @@ export default function ImportantLinks() {
           <TabsTrigger value="donor-management" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
             <Heart className="h-3 w-3 sm:h-4 sm:w-4" />
             Donors
+          </TabsTrigger>
+          <TabsTrigger value="internal-hub" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <LayoutDashboard className="h-3 w-3 sm:h-4 sm:w-4" />
+            Internal
           </TabsTrigger>
           <TabsTrigger value="events" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
             <span className="hidden sm:inline">📅</span> Events
@@ -656,6 +663,91 @@ export default function ImportantLinks() {
           </Card>
         </TabsContent>
 
+        {/* Internal Hub Tab */}
+        <TabsContent value="internal-hub" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <LayoutDashboard className="h-4 w-4 sm:h-5 sm:w-5 text-[#007E8C]" />
+                TSP Internal Hub
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Central resource portal with team tools, volunteer resources, and project tracking
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() => window.open(internalHubUrl, '_blank')}
+                    className="bg-[#007E8C] hover:bg-[#006670] text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Open Internal Hub
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(internalHubUrl);
+                        alert('Link copied to clipboard!');
+                      } catch (error) {
+                        logger.error('Failed to copy:', error);
+                      }
+                    }}
+                    className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 px-4 sm:px-6 py-3 font-medium h-11"
+                  >
+                    📋 Copy Link
+                  </Button>
+                </div>
+
+                {/* Feature highlights */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg border">
+                  <div className="text-center">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">🛠️ Team Tools</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Ideas, projects & committees</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">📚 Volunteer</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Onboarding & handbooks</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">🍞 Food Safety</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Guidelines & training</p>
+                  </div>
+                </div>
+
+                {/* Embedded Hub - Hidden on mobile */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
+                  <iframe
+                    src={internalHubUrl}
+                    className="w-full h-full border-0"
+                    style={{
+                      minHeight: '600px',
+                      height: '100%',
+                    }}
+                    title="TSP Internal Hub"
+                    loading="eager"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the internal hub in a new tab on mobile.</p>
+                  <Button
+                    onClick={() => window.open(internalHubUrl, '_blank')}
+                    className="bg-[#007E8C] text-white h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Hub
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Events Google Sheet Tab */}
         <TabsContent value="events" className="flex-1 flex flex-col">
           <Card className="flex-1 flex flex-col">
@@ -961,7 +1053,7 @@ export default function ImportantLinks() {
         contextData={{
           currentView: 'important-links',
           summaryStats: {
-            totalTools: 5,
+            totalTools: 6,
             totalFlyers: flyers.length,
           },
         }}
@@ -972,6 +1064,7 @@ export default function ImportantLinks() {
             { name: 'Event Toolkit', url: eventToolkitUrl, type: 'tool' },
             { name: 'Donation Receipt Generator', url: donationReceiptUrl, type: 'tool', description: 'Generate tax-deductible donation receipts for in-kind donations' },
             { name: 'Donor Management Platform', url: donorManagementUrl, type: 'tool', description: 'Track and manage donor relationships, donations, and engagement' },
+            { name: 'TSP Internal Hub', url: internalHubUrl, type: 'tool', description: 'Central resource portal with team tools, volunteer resources, and project tracking' },
             ...flyers.map(f => ({ name: f.name, url: f.url, type: 'flyer', description: f.description })),
           ],
         })}
