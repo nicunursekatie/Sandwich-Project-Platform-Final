@@ -1179,7 +1179,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
             <Badge
-              onClick={() => canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed)}
+              onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed); }}
               className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
                 request.isConfirmed
                   ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
@@ -1190,7 +1190,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </Badge>
 
             <Badge
-              onClick={() => canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet)}
+              onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet); }}
               className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
                 request.addedToOfficialSheet
                   ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'

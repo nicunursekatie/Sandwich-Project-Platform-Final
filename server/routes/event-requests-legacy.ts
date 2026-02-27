@@ -1501,6 +1501,7 @@ router.get(
 
         // ========== TRACKING FLAGS ==========
         addedToOfficialSheet: event.addedToOfficialSheet,
+        addedToOfficialSheetAt: event.addedToOfficialSheetAt,
         isUnresponsive: event.isUnresponsive,
         contactAttempts: event.contactAttempts,
         lastContactAttempt: event.lastContactAttempt, // NewRequestCard
@@ -1754,6 +1755,7 @@ router.get(
         pickupTime: event.pickupTime,
         pickupDateTime: event.pickupDateTime,
         addedToOfficialSheet: event.addedToOfficialSheet,
+        addedToOfficialSheetAt: event.addedToOfficialSheetAt,
         isUnresponsive: event.isUnresponsive,
         contactAttempts: event.contactAttempts,
         createdAt: event.createdAt,
@@ -2925,10 +2927,26 @@ router.patch(
         }
       }
 
-      const updatedEventRequest = await storage.updateEventRequest(id, {
-        ...processedUpdates,
-        updatedAt: new Date(),
-      });
+      let updatedEventRequest;
+      try {
+        updatedEventRequest = await storage.updateEventRequest(id, {
+          ...processedUpdates,
+          updatedAt: new Date(),
+        });
+      } catch (updateError: any) {
+        // If the update fails and includes addedToOfficialSheetAt, retry without it
+        // (the column may not exist yet if migration 0043 hasn't run)
+        if (processedUpdates.addedToOfficialSheetAt !== undefined) {
+          logger.warn(`[PATCH /:id] Update failed with addedToOfficialSheetAt, retrying without it: ${updateError?.message}`);
+          const { addedToOfficialSheetAt, ...updatesWithoutTimestamp } = processedUpdates;
+          updatedEventRequest = await storage.updateEventRequest(id, {
+            ...updatesWithoutTimestamp,
+            updatedAt: new Date(),
+          });
+        } else {
+          throw updateError;
+        }
+      }
 
       logger.info(`[PATCH /:id] Database update result:`, updatedEventRequest ? 'Success' : 'Not found');
       if (updatedEventRequest) {
