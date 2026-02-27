@@ -2693,6 +2693,7 @@ router.patch(
         'scheduledEventDate',
         'socialMediaPostRequestedDate',
         'socialMediaPostCompletedDate',
+        'addedToOfficialSheetAt',
       ];
       
       timestampFields.forEach((field) => {

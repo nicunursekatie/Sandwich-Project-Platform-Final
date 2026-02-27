@@ -169,17 +169,17 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 className="mr-1"
               />
             )}
-            <h3 className="font-semibold text-lg text-[#1A2332] break-words min-w-0">
+            <h3 className="font-bold text-xl sm:text-2xl text-[#236383] break-words min-w-0">
               {request.organizationName}
               {request.department && (
-                <span className="text-gray-600 ml-1">
+                <span className="text-[#236383]/70 font-medium ml-1">
                   &bull; {request.department}
                 </span>
               )}
             </h3>
             {/* Partner Organizations */}
             {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
-              <div className="text-sm text-gray-600 mt-1">
+              <div className="text-base sm:text-lg text-gray-600 mt-1">
                 <span className="font-medium">Partner:</span>{' '}
                 {request.partnerOrganizations.map((partner, index) => (
                   <span key={index}>

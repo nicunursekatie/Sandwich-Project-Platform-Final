@@ -269,7 +269,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </div>
           ) : (
             <div className="flex items-center gap-2 group">
-              <h3 className="text-xl sm:text-2xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
+              <h3 className="text-2xl sm:text-3xl font-bold text-[#236383] flex items-center gap-2 break-words min-w-0">
                 {request.organizationName}
               </h3>
               {canEditOrgDetails && startEditing && (
@@ -431,8 +431,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           {/* Partner Organizations */}
           {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap mt-1">
-              <span className="text-gray-600 text-sm">&bull;</span>
-              <span className="text-sm text-gray-600">
+              <span className="text-gray-600 text-base">&bull;</span>
+              <span className="text-base sm:text-lg text-gray-600">
                 <span className="font-medium">Partner:</span>{' '}
                 {request.partnerOrganizations.map((partner, index) => (
                   <span key={index}>

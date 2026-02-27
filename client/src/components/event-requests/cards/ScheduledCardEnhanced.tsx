@@ -920,7 +920,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <h2
-                  className={`text-lg sm:text-xl md:text-2xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                  className={`text-xl sm:text-2xl md:text-3xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
                   onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
                 >
                   {request.organizationName}
@@ -1056,11 +1056,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {/* Partner Organizations - inline on same row */}
               {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (
                 <div className="flex items-center flex-wrap gap-1 mt-1">
-                  <span className="text-[#236383]/60 text-xs sm:text-sm">Partner:</span>
+                  <span className="text-[#236383]/60 text-sm sm:text-base">Partner:</span>
                   {request.partnerOrganizations.map((partner, index) => (
                     <span
                       key={index}
-                      className={`text-sm sm:text-base text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C]' : ''}`}
+                      className={`text-base sm:text-lg text-[#236383]/80 font-medium ${canEdit ? 'cursor-pointer hover:text-[#007E8C]' : ''}`}
                       onClick={() =>
                         canEdit &&
                         startEditing(
