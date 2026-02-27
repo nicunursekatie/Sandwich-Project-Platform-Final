@@ -1974,13 +1974,14 @@ export default function DriverPlanningDashboard() {
 
   // Get nearby recipients (delivery locations) near the selected/custom location
   // Dynamically expands search radius if not enough recipients found nearby
-  const nearbyRecipients = useMemo(() => {
+  // All recipients with distance, sorted by distance (used for map markers — no limit)
+  const allRecipientsWithDistance = useMemo(() => {
     if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
 
     const eventLat = parseFloat(effectiveSelectedEvent.latitude);
     const eventLng = parseFloat(effectiveSelectedEvent.longitude);
 
-    const recipientsWithDistance = recipientMapData
+    return recipientMapData
       .filter(recipient => recipient.latitude && recipient.longitude)
       .map(recipient => ({
         ...recipient,
@@ -1992,19 +1993,24 @@ export default function DriverPlanningDashboard() {
         ),
       }))
       .sort((a, b) => a.distance - b.distance);
+  }, [effectiveSelectedEvent, recipientMapData]);
+
+  // Nearby recipients for the sidebar list (limited set, expandable)
+  const nearbyRecipients = useMemo(() => {
+    if (allRecipientsWithDistance.length === 0) return [];
 
     // Try progressively larger radii until we have at least 3 recipients (or run out of options)
     const radii = [15, 25, 40, 60];
     for (const radius of radii) {
-      const recipientsInRadius = recipientsWithDistance.filter(r => r.distance < radius);
+      const recipientsInRadius = allRecipientsWithDistance.filter(r => r.distance < radius);
       if (recipientsInRadius.length >= 3) {
-        return recipientsInRadius.slice(0, 10);
+        return recipientsInRadius;
       }
     }
 
-    // If still not enough, just return whatever we have (sorted by distance)
-    return recipientsWithDistance.slice(0, 10);
-  }, [effectiveSelectedEvent, recipientMapData]);
+    // If still not enough, just return all (sorted by distance)
+    return allRecipientsWithDistance;
+  }, [allRecipientsWithDistance]);
 
   // Designated recipient(s) explicitly assigned on the event (if any)
   const designatedRecipients = useMemo(() => {
@@ -2039,6 +2045,14 @@ export default function DriverPlanningDashboard() {
     const designatedIds = new Set(designatedRecipients.map((r) => r.id));
     return nearbyRecipients.filter((r) => !designatedIds.has(r.id));
   }, [effectiveSelectedEvent, designatedRecipients, nearbyRecipients]);
+
+  // All non-designated recipients for the map (no limit — shows every recipient with coordinates)
+  const allNonDesignatedRecipients = useMemo(() => {
+    if (!effectiveSelectedEvent) return [];
+    if (designatedRecipients.length === 0) return allRecipientsWithDistance;
+    const designatedIds = new Set(designatedRecipients.map((r) => r.id));
+    return allRecipientsWithDistance.filter((r) => !designatedIds.has(r.id));
+  }, [effectiveSelectedEvent, designatedRecipients, allRecipientsWithDistance]);
 
   // All speakers near the selected event (volunteers with isSpeaker=true that have coordinates)
   const nearbySpeakers = useMemo(() => {
@@ -3202,8 +3216,8 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {/* Nearby recipient markers when event or custom location selected */}
-            {effectiveSelectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
+            {/* All recipient markers on map when event or custom location selected */}
+            {effectiveSelectedEvent && allNonDesignatedRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -5286,7 +5300,7 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
+            {selectedEvent && allNonDesignatedRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -5497,7 +5511,7 @@ export default function DriverPlanningDashboard() {
                 <div>
                   <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
                     <Heart className="w-3 h-3 text-purple-600" />
-                    Nearby Recipients ({nearbyRecipients.length})
+                    Nearby Recipients ({nearbyRecipients.length}{allRecipientsWithDistance.length > nearbyRecipients.length ? ` of ${allRecipientsWithDistance.length}` : ''})
                   </h4>
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {nearbyRecipients.slice(0, 5).map((recipient) => (
@@ -5679,7 +5693,7 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {selectedEvent && nonDesignatedNearbyRecipients.map((recipient) => (
+            {selectedEvent && allNonDesignatedRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -6205,7 +6219,7 @@ export default function DriverPlanningDashboard() {
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                         <Heart className="w-4 h-4 text-purple-600" />
-                        Nearby Recipients ({nearbyRecipients.length})
+                        Nearby Recipients ({nearbyRecipients.length}{allRecipientsWithDistance.length > nearbyRecipients.length ? ` of ${allRecipientsWithDistance.length}` : ''})
                       </h3>
                       {nearbyRecipients.length > 0 ? (
                         <div className="space-y-2">
@@ -6646,7 +6660,7 @@ export default function DriverPlanningDashboard() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                     <Heart className="w-4 h-4 text-purple-600" />
-                    Nearby Recipients ({nearbyRecipients.length})
+                    Nearby Recipients ({nearbyRecipients.length}{allRecipientsWithDistance.length > nearbyRecipients.length ? ` of ${allRecipientsWithDistance.length}` : ''})
                   </h3>
                   {nearbyRecipients.length > 0 ? (
                     <div className="space-y-2">

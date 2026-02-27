@@ -22,6 +22,7 @@ import {
   Phone,
   KeyRound,
   BarChart3,
+  MapPin,
 } from 'lucide-react';
 import type { User, UserFormData } from '@/types/user';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
@@ -47,6 +48,7 @@ const defaultFormData: UserFormData = {
   lastName: '',
   phoneNumber: '',
   preferredEmail: '',
+  address: '',
   role: 'volunteer',
   isActive: true,
   password: '',
@@ -76,6 +78,7 @@ export function ComprehensiveUserDialog({
         lastName: user.lastName || '',
         phoneNumber: user.phoneNumber || '',
         preferredEmail: user.preferredEmail || '',
+        address: user.address || '',
         role: user.role || 'volunteer',
         isActive: user.isActive ?? true,
         password: '',
@@ -316,6 +319,24 @@ export function ComprehensiveUserDialog({
                       placeholder="preferred@example.com"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="address" className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Home Address
+                  </Label>
+                  <Input
+                    id="address"
+                    value={formData.address || ''}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
+                    placeholder="123 Main St, City, State ZIP"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Used to show location on the driver planning map
+                  </p>
                 </div>
 
                 <div>

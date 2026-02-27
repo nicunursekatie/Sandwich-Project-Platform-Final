@@ -117,6 +117,7 @@ export function useUserManagement() {
       lastName: string;
       phoneNumber?: string;
       preferredEmail?: string;
+      address?: string;
       role: string;
       isActive: boolean;
     }) => {
@@ -126,12 +127,14 @@ export function useUserManagement() {
         lastName: data.lastName,
         phoneNumber: data.phoneNumber,
         preferredEmail: data.preferredEmail,
+        address: data.address,
         role: data.role,
         isActive: data.isActive,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/map'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: 'User Updated',

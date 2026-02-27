@@ -3,6 +3,7 @@ import { getDefaultPermissionsForRole } from '@shared/auth-utils';
 import { AuditLogger } from '../../audit-logger';
 import { logger } from '../../utils/production-safe-logger';
 import { authService } from '../auth.service';
+import { geocodeAddress } from '../../utils/geocoding';
 
 export interface IUserService {
   // User CRUD operations
@@ -54,6 +55,7 @@ export interface UserProfileData {
   lastName?: string;
   phoneNumber?: string;
   preferredEmail?: string;
+  address?: string;
   role?: string;
   isActive?: boolean;
 }
@@ -212,6 +214,33 @@ export class UserService implements IUserService {
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.isActive !== undefined)
         updateData.isActive = profileData.isActive;
+
+      // Handle address changes with auto-geocoding
+      if (profileData.address !== undefined) {
+        updateData.address = profileData.address;
+        if (profileData.address && profileData.address.trim() !== '') {
+          // Only geocode if address actually changed
+          const addressChanged = !oldUser || oldUser.address !== profileData.address;
+          if (addressChanged) {
+            try {
+              const coords = await geocodeAddress(profileData.address);
+              if (coords) {
+                updateData.latitude = coords.latitude;
+                updateData.longitude = coords.longitude;
+                updateData.geocodedAt = new Date();
+                logger.info(`Geocoded address for user ${id}: ${coords.latitude}, ${coords.longitude}`);
+              }
+            } catch (geoErr) {
+              logger.error(`Failed to geocode address for user ${id}:`, geoErr);
+            }
+          }
+        } else {
+          // Address cleared — clear coordinates too
+          updateData.latitude = null;
+          updateData.longitude = null;
+          updateData.geocodedAt = null;
+        }
+      }
 
       const updatedUser = await storage.updateUser(id, updateData);
 

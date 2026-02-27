@@ -6,6 +6,7 @@ export interface User {
   lastName: string;
   phoneNumber?: string | null;
   preferredEmail?: string | null;
+  address?: string | null;
   role: string;
   permissions: string[];
   permissionsModifiedAt?: string | null;
@@ -31,6 +32,7 @@ export interface UserFormData {
   lastName: string;
   phoneNumber?: string;
   preferredEmail?: string;
+  address?: string;
   role: string;
   isActive: boolean;
   password?: string;
