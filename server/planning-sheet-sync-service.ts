@@ -866,13 +866,54 @@ export class PlanningSheetSyncService {
   }
 
   /**
+   * Convert a PlanningSheetRow object back to a 26-element raw string array
+   * Used for per-column merge comparisons
+   */
+  planningSheetRowToRawArray(row: PlanningSheetRow): string[] {
+    const raw = new Array(26).fill('');
+    raw[0] = row.date;
+    raw[1] = row.dayOfWeek;
+    raw[2] = row.groupName;
+    raw[3] = row.eventStartTime;
+    raw[4] = row.eventEndTime;
+    raw[5] = row.pickUpTime;
+    raw[6] = row.pickUpNextDay;
+    raw[7] = row.allDetails;
+    raw[8] = row.vanBooked;
+    raw[9] = row.staffing;
+    raw[10] = row.estimateSandwiches;
+    raw[11] = row.deliOrPbj;
+    raw[12] = row.finalSandwiches;
+    raw[13] = row.socialPost;
+    raw[14] = row.sentToolkit;
+    raw[15] = row.contactName;
+    raw[16] = row.email;
+    raw[17] = row.phone;
+    raw[18] = row.tspContact;
+    raw[19] = row.address;
+    raw[20] = row.recipientHost;
+    raw[21] = row.afterEventNotes;
+    raw[22] = row.cancelled;
+    raw[23] = row.notes;
+    raw[24] = row.addlNotes;
+    raw[25] = row.waitingOn;
+    return raw;
+  }
+
+  /**
    * Push an event directly to the Planning Sheet (no proposal workflow)
    * This is a direct write - user sees preview first, then pushes immediately
    * New rows are inserted in chronological order based on event date.
+   *
+   * When mergeDecisions is provided, applies per-column merge strategy:
+   * - 'use_app': use the app's value (default)
+   * - 'keep_sheet': keep the existing sheet value
+   * - 'append': combine as "sheet value | app value"
    */
   async pushEventDirectly(
     eventId: number,
-    userId: string
+    userId: string,
+    mergeDecisions?: Record<string, 'use_app' | 'keep_sheet' | 'append'>
   ): Promise<{ success: boolean; message: string; rowIndex?: number; isUpdate?: boolean }> {
     try {
       await this.ensureInitialized();
@@ -887,13 +928,43 @@ export class PlanningSheetSyncService {
       const existingRow = await this.findMatchingRow(eventId);
 
       if (existingRow) {
+        // Build the final row data, applying merge decisions if provided
+        let finalRow: string[];
+
+        if (mergeDecisions && Object.keys(mergeDecisions).length > 0) {
+          const existingRaw = this.planningSheetRowToRawArray(existingRow);
+          finalRow = [...rowData];
+
+          for (let i = 0; i < 26; i++) {
+            const decision = mergeDecisions[String(i)];
+            if (decision === 'keep_sheet') {
+              finalRow[i] = existingRaw[i];
+            } else if (decision === 'append') {
+              const existingVal = (existingRaw[i] || '').trim();
+              const appVal = (rowData[i] || '').trim();
+              if (existingVal && appVal && existingVal !== appVal) {
+                finalRow[i] = `${existingVal} | ${appVal}`;
+              } else if (existingVal) {
+                finalRow[i] = existingVal;
+              }
+              // If only app value exists, finalRow[i] already has it
+            }
+            // 'use_app' or no decision = keep finalRow[i] as rowData[i] (default)
+          }
+
+          logger.log(`[PlanningSheet] Applied merge decisions for ${Object.keys(mergeDecisions).length} columns`);
+        } else {
+          // No merge decisions = full overwrite (backward compatible)
+          finalRow = rowData;
+        }
+
         // Update existing row
         const range = this.getSheetRange(`A${existingRow.rowIndex}:Z${existingRow.rowIndex}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
           range,
           valueInputOption: 'USER_ENTERED',
-          resource: { values: [rowData] },
+          resource: { values: [finalRow] },
         });
 
         logger.log(`[PlanningSheet] User ${userId} updated row ${existingRow.rowIndex} for event ${eventId}`);

@@ -182,6 +182,12 @@ export function createPlanningSheetProposalsRouter(
         // Continue without comparison data - non-fatal
       }
 
+      // Build existingRawData array for per-column comparison in the UI
+      let existingRawData: string[] | null = null;
+      if (existingSheetRow) {
+        existingRawData = service.planningSheetRowToRawArray(existingSheetRow);
+      }
+
       res.json({
         rawData: rowData,
         labeledData,
@@ -202,6 +208,7 @@ export function createPlanningSheetProposalsRouter(
           tspContact: existingSheetRow.tspContact,
           address: existingSheetRow.address,
         } : null,
+        existingRawData,
         potentialMatches,
       });
     } catch (error) {
@@ -236,8 +243,11 @@ export function createPlanningSheetProposalsRouter(
         return res.status(500).json({ error: 'Planning Sheet service not configured' });
       }
 
+      // Extract optional merge decisions for per-column conflict resolution
+      const { mergeDecisions } = req.body || {};
+
       // Push directly to sheet
-      const result = await service.pushEventDirectly(parsedEventId, userId);
+      const result = await service.pushEventDirectly(parsedEventId, userId, mergeDecisions);
 
       if (result.success) {
         res.json({
