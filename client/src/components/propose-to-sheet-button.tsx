@@ -590,7 +590,7 @@ export function PushToSheetButton({
             <Button
               onClick={() => pushMutation.mutate()}
               disabled={pushMutation.isPending || previewLoading || !previewData?.rawData || allMatch}
-              className="bg-blue-600 hover:bg-blue-700"
+              className=""
             >
               {pushMutation.isPending ? (
                 <>

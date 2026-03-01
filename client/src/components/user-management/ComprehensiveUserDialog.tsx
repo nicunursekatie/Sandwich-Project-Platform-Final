@@ -215,7 +215,7 @@ export function ComprehensiveUserDialog({
                   !formData.firstName ||
                   !formData.lastName
                 }
-                className="bg-brand-primary hover:bg-brand-primary-dark"
+                className=""
               >
                 {isPending ? 'Adding...' : 'Add User'}
               </Button>
@@ -420,7 +420,7 @@ export function ComprehensiveUserDialog({
                       !formData.firstName ||
                       !formData.lastName
                     }
-                    className="bg-brand-primary hover:bg-brand-primary-dark"
+                    className=""
                   >
                     {isPending ? 'Saving...' : 'Save Changes'}
                   </Button>

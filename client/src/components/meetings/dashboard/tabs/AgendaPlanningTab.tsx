@@ -1438,7 +1438,7 @@ export function AgendaPlanningTab({
                   These will be added to the next compiled agenda
                 </p>
               </div>
-              <Button className="bg-teal-600 hover:bg-teal-700">
+              <Button>
                 <CheckCircle2 className="w-4 h-4 mr-2" />
                 Confirm Selection
               </Button>

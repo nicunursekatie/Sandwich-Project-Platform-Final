@@ -296,7 +296,7 @@ export function MultiUserTaskCompletion({
               onOpenChange={setShowCompletionDialog}
             >
               <DialogTrigger asChild>
-                <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                <Button size="sm">
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Mark My Portion Complete
                 </Button>

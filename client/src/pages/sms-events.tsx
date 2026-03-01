@@ -292,7 +292,7 @@ export default function SMSEventsPage() {
                         You need a Sandwich Project volunteer account to receive event notifications.
                       </p>
                       <Link href="/login">
-                        <Button className="w-full bg-teal-600 hover:bg-teal-700" data-testid="button-login-events">
+                        <Button className="w-full" data-testid="button-login-events">
                           Sign In to Continue
                         </Button>
                       </Link>
@@ -302,7 +302,7 @@ export default function SMSEventsPage() {
 
                 <Button
                   type="submit"
-                  className="w-full bg-teal-600 hover:bg-teal-700 text-white py-6 text-lg"
+                  className="w-full py-6 text-lg"
                   disabled={optInMutation.isPending || !consent || !phoneNumber.trim()}
                   data-testid="button-submit-events"
                 >
