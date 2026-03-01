@@ -14,7 +14,7 @@ import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 import { logger } from '@/lib/logger';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { SmartSearch } from '@/components/SmartSearch';
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
@@ -385,6 +385,9 @@ export default function SimpleNav({
               {!isCollapsed && (
                 <>
                   <span className="flex-1 text-left font-medium">{item.label}</span>
+                  {item.externalUrl && (
+                    <ExternalLink className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`} />
+                  )}
                   {/* One-time discovery tooltip for Toolkit & Apps */}
                   {item.id === 'quick-tools' && shouldShowStep('toolkit-apps-intro') && (
                     <OnboardingTooltip
