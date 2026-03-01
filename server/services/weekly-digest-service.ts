@@ -232,8 +232,8 @@ async function getUpcomingContactNeededEvents(tspContactId: string): Promise<Dig
       status: 'scheduled',
       eventDate: eventDate ? new Date(eventDate).toISOString() : null,
       nextAction: daysUntil !== null
-        ? `Event in ${daysUntil} day${daysUntil === 1 ? '' : 's'} — confirm contact has been made`
-        : 'Confirm contact has been made before event',
+        ? `Coming up in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+        : 'Coming up soon',
       urgency: 'high' as const,
       daysSinceLastContact: null,
       contactName: event.contactName || null,
@@ -487,35 +487,35 @@ export function buildDigestEmailHtml(data: WeeklyDigestData): string {
               ${
                 data.upcomingContactNeeded.length > 0
                   ? `
-              <!-- Upcoming Events This Week - Contact Check-in Needed -->
+              <!-- Upcoming Events This Week - Friendly Reminder -->
               <tr>
                 <td style="padding: 0 30px 24px 30px;">
-                  <div style="background: #FFF7ED; border: 2px solid #F97316; border-radius: 8px; padding: 16px;">
-                    <h3 style="margin: 0 0 4px 0; color: #9A3412; font-size: 15px; font-weight: 700;">
-                      📞 EVENTS THIS WEEK — CONFIRM CONTACT MADE (${data.upcomingContactNeeded.length})
+                  <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 16px;">
+                    <h3 style="margin: 0 0 4px 0; color: #1E40AF; font-size: 14px; font-weight: 600;">
+                      🗓️ Coming Up This Week (${data.upcomingContactNeeded.length})
                     </h3>
-                    <p style="margin: 0 0 12px 0; color: #C2410C; font-size: 12px;">
-                      These events were scheduled well in advance and are now less than a week away. Please confirm you have been in contact with each organization.
+                    <p style="margin: 0 0 12px 0; color: #3B82F6; font-size: 13px;">
+                      These events are just around the corner — worth a quick touch base if you haven't connected with them recently!
                     </p>
                     <table role="presentation" style="width: 100%; border-collapse: collapse;">
                       <thead>
-                        <tr style="border-bottom: 2px solid #FED7AA;">
-                          <th style="text-align: left; padding: 8px; font-size: 11px; color: #9A3412; text-transform: uppercase;">Organization</th>
-                          <th style="text-align: center; padding: 8px; font-size: 11px; color: #9A3412; text-transform: uppercase;">Event Date</th>
-                          <th style="text-align: left; padding: 8px; font-size: 11px; color: #9A3412; text-transform: uppercase;">Contact Info</th>
+                        <tr style="border-bottom: 1px solid #BFDBFE;">
+                          <th style="text-align: left; padding: 8px; font-size: 11px; color: #1E40AF; text-transform: uppercase;">Organization</th>
+                          <th style="text-align: center; padding: 8px; font-size: 11px; color: #1E40AF; text-transform: uppercase;">Event Date</th>
+                          <th style="text-align: left; padding: 8px; font-size: 11px; color: #1E40AF; text-transform: uppercase;">Contact Info</th>
                         </tr>
                       </thead>
                       <tbody>
                         ${data.upcomingContactNeeded.map((e) => {
                           const eventUrl = `${baseUrl}/event-requests-v2?eventId=${e.eventId}`;
                           return `
-                            <tr style="border-bottom: 1px solid #FED7AA;">
+                            <tr style="border-bottom: 1px solid #DBEAFE;">
                               <td style="padding: 10px 8px; vertical-align: top;">
-                                <a href="${eventUrl}" style="color: #9A3412; font-weight: 600; text-decoration: none;">${e.organizationName}</a>
-                                <div style="font-size: 12px; color: #C2410C; margin-top: 2px;">${e.nextAction}</div>
+                                <a href="${eventUrl}" style="color: #1D4ED8; font-weight: 600; text-decoration: none;">${e.organizationName}</a>
+                                <div style="font-size: 12px; color: #6B7280; margin-top: 2px;">${e.nextAction}</div>
                               </td>
                               <td style="padding: 10px 8px; text-align: center; vertical-align: top;">
-                                <strong style="color: #9A3412; font-size: 14px;">${formatDate(e.eventDate)}</strong>
+                                <strong style="color: #1E40AF; font-size: 14px;">${formatDate(e.eventDate)}</strong>
                               </td>
                               <td style="padding: 10px 8px; vertical-align: top; font-size: 12px; color: #374151;">
                                 ${e.contactName ? `<div>${e.contactName}</div>` : ''}
@@ -697,13 +697,11 @@ export function buildDigestEmailText(data: WeeklyDigestData): string {
   text += `Total Completed All Time: ${data.stats.totalCompletedAllTime}\n\n`;
 
   if (data.upcomingContactNeeded.length > 0) {
-    text += `📞 EVENTS THIS WEEK — CONFIRM CONTACT MADE\n`;
+    text += `🗓️ COMING UP THIS WEEK\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-    text += `These events were scheduled well in advance and are now less than a week away.\n`;
-    text += `Please confirm you have been in contact with each organization before the event.\n\n`;
+    text += `Just a heads up — these events are just around the corner!\n\n`;
     for (const event of data.upcomingContactNeeded) {
-      text += `• ${event.organizationName}\n`;
-      text += `  Event Date: ${formatDate(event.eventDate)}\n`;
+      text += `• ${event.organizationName} — ${formatDate(event.eventDate)}\n`;
       if (event.contactName) text += `  Contact: ${event.contactName}\n`;
       if (event.contactPhone) text += `  Phone: ${event.contactPhone}\n`;
       if (event.contactEmail) text += `  Email: ${event.contactEmail}\n`;
