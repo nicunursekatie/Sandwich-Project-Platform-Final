@@ -186,6 +186,64 @@ async function getTotalCompletedCount(tspContactId: string): Promise<number> {
 }
 
 /**
+ * Get scheduled events happening within the next 7 days that were placed on
+ * the calendar more than 14 days before their event date.
+ *
+ * These are events planned well in advance that now need a pre-event contact
+ * check-in. The 7-day window means Monday's digest catches events from Monday
+ * through the following Sunday — so any event day of the week is covered.
+ */
+async function getUpcomingContactNeededEvents(tspContactId: string): Promise<DigestEventSummary[]> {
+  const now = new Date();
+  const sevenDaysFromNow = new Date(now);
+  sevenDaysFromNow.setDate(now.getDate() + 7);
+
+  const events = await db
+    .select()
+    .from(eventRequests)
+    .where(
+      and(
+        or(
+          eq(eventRequests.tspContact, tspContactId),
+          eq(eventRequests.tspContactAssigned, tspContactId),
+          eq(eventRequests.additionalContact1, tspContactId),
+          eq(eventRequests.additionalContact2, tspContactId)
+        ),
+        eq(eventRequests.status, 'scheduled'),
+        // Event is happening within the next 7 days
+        gte(eventRequests.scheduledEventDate, now),
+        lte(eventRequests.scheduledEventDate, sevenDaysFromNow),
+        // Event was put on the calendar at least 14 days before the event date
+        // i.e. scheduledEventDate - statusChangedAt > 14 days
+        sql`${eventRequests.scheduledEventDate} - ${eventRequests.statusChangedAt} > interval '14 days'`
+      )
+    )
+    .orderBy(eventRequests.scheduledEventDate);
+
+  return events.map((event) => {
+    const eventDate = event.scheduledEventDate;
+    const daysUntil = eventDate
+      ? Math.ceil((new Date(eventDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    return {
+      eventId: event.id,
+      organizationName: event.organizationName || 'Unknown Organization',
+      status: 'scheduled',
+      eventDate: eventDate ? new Date(eventDate).toISOString() : null,
+      nextAction: daysUntil !== null
+        ? `Event in ${daysUntil} day${daysUntil === 1 ? '' : 's'} — confirm contact has been made`
+        : 'Confirm contact has been made before event',
+      urgency: 'high' as const,
+      daysSinceLastContact: null,
+      contactName: event.contactName || null,
+      contactPhone: event.contactPhone || null,
+      contactEmail: event.email || event.contactEmail || null,
+    };
+  });
+}
+
+/**
  * Build complete digest data for a TSP contact
  */
 export async function buildDigestDataForContact(tspContactId: string): Promise<WeeklyDigestData | null> {
@@ -198,15 +256,16 @@ export async function buildDigestDataForContact(tspContactId: string): Promise<W
       return null;
     }
 
-    const [activeEvents, recentlyCompleted, completedHistory, totalCompleted] = await Promise.all([
+    const [activeEvents, recentlyCompleted, completedHistory, totalCompleted, upcomingContactNeeded] = await Promise.all([
       getActiveEventsForContact(tspContactId),
       getRecentlyCompletedEvents(tspContactId),
       getCompletedHistory(tspContactId),
       getTotalCompletedCount(tspContactId),
+      getUpcomingContactNeededEvents(tspContactId),
     ]);
 
     // Skip digest if user has no events at all
-    if (activeEvents.length === 0 && totalCompleted === 0) {
+    if (activeEvents.length === 0 && totalCompleted === 0 && upcomingContactNeeded.length === 0) {
       logger.log(`Skipping digest for ${user.email}: no events assigned`);
       return null;
     }
@@ -218,6 +277,7 @@ export async function buildDigestDataForContact(tspContactId: string): Promise<W
       tspContactName: user.displayName || user.firstName || user.email.split('@')[0],
       tspContactEmail: user.preferredEmail || user.email,
       activeEvents,
+      upcomingContactNeeded,
       recentlyCompleted,
       completedHistory,
       stats: {
@@ -425,6 +485,57 @@ export function buildDigestEmailHtml(data: WeeklyDigestData): string {
               </tr>
 
               ${
+                data.upcomingContactNeeded.length > 0
+                  ? `
+              <!-- Upcoming Events This Week - Contact Check-in Needed -->
+              <tr>
+                <td style="padding: 0 30px 24px 30px;">
+                  <div style="background: #FFF7ED; border: 2px solid #F97316; border-radius: 8px; padding: 16px;">
+                    <h3 style="margin: 0 0 4px 0; color: #9A3412; font-size: 15px; font-weight: 700;">
+                      📞 EVENTS THIS WEEK — CONFIRM CONTACT MADE (${data.upcomingContactNeeded.length})
+                    </h3>
+                    <p style="margin: 0 0 12px 0; color: #C2410C; font-size: 12px;">
+                      These events were scheduled well in advance and are now less than a week away. Please confirm you have been in contact with each organization.
+                    </p>
+                    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                      <thead>
+                        <tr style="border-bottom: 2px solid #FED7AA;">
+                          <th style="text-align: left; padding: 8px; font-size: 11px; color: #9A3412; text-transform: uppercase;">Organization</th>
+                          <th style="text-align: center; padding: 8px; font-size: 11px; color: #9A3412; text-transform: uppercase;">Event Date</th>
+                          <th style="text-align: left; padding: 8px; font-size: 11px; color: #9A3412; text-transform: uppercase;">Contact Info</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${data.upcomingContactNeeded.map((e) => {
+                          const eventUrl = `${baseUrl}/event-requests-v2?eventId=${e.eventId}`;
+                          return `
+                            <tr style="border-bottom: 1px solid #FED7AA;">
+                              <td style="padding: 10px 8px; vertical-align: top;">
+                                <a href="${eventUrl}" style="color: #9A3412; font-weight: 600; text-decoration: none;">${e.organizationName}</a>
+                                <div style="font-size: 12px; color: #C2410C; margin-top: 2px;">${e.nextAction}</div>
+                              </td>
+                              <td style="padding: 10px 8px; text-align: center; vertical-align: top;">
+                                <strong style="color: #9A3412; font-size: 14px;">${formatDate(e.eventDate)}</strong>
+                              </td>
+                              <td style="padding: 10px 8px; vertical-align: top; font-size: 12px; color: #374151;">
+                                ${e.contactName ? `<div>${e.contactName}</div>` : ''}
+                                ${e.contactPhone ? `<div>${e.contactPhone}</div>` : ''}
+                                ${e.contactEmail ? `<div>${e.contactEmail}</div>` : ''}
+                                ${!e.contactName && !e.contactPhone && !e.contactEmail ? '<span style="color:#9CA3AF;">No contact info on file</span>' : ''}
+                              </td>
+                            </tr>
+                          `;
+                        }).join('')}
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+              `
+                  : ''
+              }
+
+              ${
                 highPriorityEvents.length > 0
                   ? `
               <!-- Urgent Attention Section -->
@@ -584,6 +695,21 @@ export function buildDigestEmailText(data: WeeklyDigestData): string {
   text += `Needs Urgent Attention: ${data.stats.needsUrgentAttention}\n`;
   text += `Completed This Week: ${data.stats.completedThisWeek}\n`;
   text += `Total Completed All Time: ${data.stats.totalCompletedAllTime}\n\n`;
+
+  if (data.upcomingContactNeeded.length > 0) {
+    text += `📞 EVENTS THIS WEEK — CONFIRM CONTACT MADE\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `These events were scheduled well in advance and are now less than a week away.\n`;
+    text += `Please confirm you have been in contact with each organization before the event.\n\n`;
+    for (const event of data.upcomingContactNeeded) {
+      text += `• ${event.organizationName}\n`;
+      text += `  Event Date: ${formatDate(event.eventDate)}\n`;
+      if (event.contactName) text += `  Contact: ${event.contactName}\n`;
+      if (event.contactPhone) text += `  Phone: ${event.contactPhone}\n`;
+      if (event.contactEmail) text += `  Email: ${event.contactEmail}\n`;
+      text += `  View: ${baseUrl}/event-requests-v2?eventId=${event.eventId}\n\n`;
+    }
+  }
 
   if (data.activeEvents.length > 0) {
     const highPriority = data.activeEvents.filter((e) => e.urgency === 'high');

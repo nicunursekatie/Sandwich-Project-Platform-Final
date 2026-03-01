@@ -454,6 +454,13 @@ export interface WeeklyDigestData {
   /** Active events requiring attention */
   activeEvents: DigestEventSummary[];
 
+  /**
+   * Scheduled events happening within the next 7 days that were
+   * put on the calendar more than 14 days before the event date.
+   * These need a pre-event contact check-in.
+   */
+  upcomingContactNeeded: DigestEventSummary[];
+
   /** Events completed in the last week */
   recentlyCompleted: DigestEventSummary[];
 
