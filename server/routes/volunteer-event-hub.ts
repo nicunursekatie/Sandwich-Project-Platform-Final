@@ -178,8 +178,11 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     // Show scheduled + completed events to volunteers
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use Eastern Time to determine "today" since server may be in UTC
+    // (at 7pm+ EST, UTC has already rolled to the next day)
+    const now = new Date();
+    const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
     logger.log(`[VolunteerHub] Fetching scheduled events`);
 
