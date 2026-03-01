@@ -14,6 +14,7 @@ import { eq, and, or, inArray, desc, gte, lte, sql } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
+import { ADMIN_EMAIL } from '../config/organization';
 import {
   WeeklyDigestData,
   DigestEventSummary,
@@ -663,7 +664,9 @@ export async function sendWeeklyDigestEmail(data: WeeklyDigestData): Promise<boo
 // ============================================================================
 
 /**
- * Get all TSP contacts who should receive weekly digests
+ * Get all TSP contacts who should receive weekly digests.
+ * Always includes the admin user (Katie) so she gets her own personalized digest
+ * regardless of whether she is explicitly assigned to active events.
  */
 async function getAllActiveTspContacts(): Promise<string[]> {
   // Find all unique TSP contact IDs from active events
@@ -686,6 +689,17 @@ async function getAllActiveTspContacts(): Promise<string[]> {
     if (row.tspContactAssigned) contactIds.add(row.tspContactAssigned);
     if (row.additionalContact1) contactIds.add(row.additionalContact1);
     if (row.additionalContact2) contactIds.add(row.additionalContact2);
+  }
+
+  // Always include the admin user so they receive a weekly digest
+  const adminUser = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, ADMIN_EMAIL))
+    .limit(1);
+
+  if (adminUser.length > 0) {
+    contactIds.add(adminUser[0].id);
   }
 
   return Array.from(contactIds);
