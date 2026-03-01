@@ -57,7 +57,9 @@ function getAllowedOrigins(): string[] {
   if (process.env.NODE_ENV === 'production') {
     origins.push(
       'https://sandwich-project-platform-final.replit.app',
-      'https://sandwich-project-platform-final-katielong2316.replit.app'
+      'https://sandwich-project-platform-final-katielong2316.replit.app',
+      'https://tspapp.org',
+      'https://www.tspapp.org'
     );
   }
 
@@ -99,6 +101,11 @@ export function isOriginAllowed(origin: string | undefined): boolean {
 
   // In production, also allow any .replit.app domain for this project
   if (origin.endsWith('.replit.app') && origin.includes('sandwich-project-platform-final')) {
+    return true;
+  }
+
+  // Allow custom domain
+  if (origin === 'https://tspapp.org' || origin === 'https://www.tspapp.org') {
     return true;
   }
 
