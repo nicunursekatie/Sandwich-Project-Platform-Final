@@ -59,7 +59,9 @@ function getAllowedOrigins(): string[] {
       'https://sandwich-project-platform-final.replit.app',
       'https://sandwich-project-platform-final-katielong2316.replit.app',
       'https://tspapp.org',
-      'https://www.tspapp.org'
+      'https://www.tspapp.org',
+      'http://tspapp.org',
+      'http://www.tspapp.org'
     );
   }
 
