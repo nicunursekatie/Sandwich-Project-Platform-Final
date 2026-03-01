@@ -16,6 +16,7 @@ export interface NavItem {
   topNav?: boolean; // Flag to indicate this item should appear in top nav instead of sidebar
   navigateAndExpand?: boolean; // Flag to indicate this parent item should navigate AND expand (not just expand)
   external?: boolean; // Flag to indicate this opens as an external page (not inside dashboard)
+  externalUrl?: string; // Opens this URL in a new tab instead of navigating in-app
 }
 
 export interface NavigationGroup {

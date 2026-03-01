@@ -84,6 +84,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'SignUpGenius',
     icon: Link,
     href: 'signup-genius',
+    externalUrl: 'https://www.signupgenius.com/go/5080A4BA5AA22A7F94-50444894-thesandwich#/',
     permission: PERMISSIONS.NAV_SIGNUP_GENIUS,
     group: 'quick-links',
   },

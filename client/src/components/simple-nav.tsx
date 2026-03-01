@@ -332,6 +332,13 @@ export default function SimpleNav({
                   return;
                 }
 
+                // Handle externalUrl - open in new tab
+                if (item.externalUrl) {
+                  logger.log('Opening external URL in new tab:', item.externalUrl);
+                  window.open(item.externalUrl, '_blank', 'noopener,noreferrer');
+                  return;
+                }
+
                 // Handle external items - navigate directly to the URL (for pages outside dashboard)
                 if (item.external) {
                   logger.log('External navigation:', item.href);
