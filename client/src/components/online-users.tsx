@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Users, X, MessageCircle } from 'lucide-react';
@@ -66,7 +66,7 @@ export function OnlineUsers() {
   const { openChat } = useInstantMessaging();
   const { user: currentUser } = useAuth();
 
-  const { data: onlineUsers = [], isLoading } = useQuery<OnlineUser[]>({
+  const { data: onlineUsers = [], isLoading, refetch } = useQuery<OnlineUser[]>({
     queryKey: ['/api/users/online'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/users/online');
@@ -76,6 +76,16 @@ export function OnlineUsers() {
     refetchInterval: isOpen ? 30 * 1000 : 2 * 60 * 1000, // 30s when open, 2min when closed
     refetchOnWindowFocus: true,
   });
+
+  // Force a fresh fetch every time the popover opens so we never show stale data.
+  // Without this, there's a race between the WebSocket user-online event (which
+  // triggers a background refetch) and the user opening the dropdown — they'd see
+  // the old cached list if they open it before the refetch completes.
+  useEffect(() => {
+    if (isOpen) {
+      refetch();
+    }
+  }, [isOpen, refetch]);
 
   // Filter out current user for display, but show count including self
   const otherUsers = onlineUsers.filter(
