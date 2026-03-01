@@ -244,7 +244,7 @@ export default function ImportantLinks() {
                   <Button
                     size="lg"
                     onClick={() => window.open(eventToolkitUrl, '_blank')}
-                    className="bg-brand-orange hover:bg-orange-600 text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
                     <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Open Event Toolkit
@@ -294,7 +294,7 @@ export default function ImportantLinks() {
                   <p className="text-sm text-gray-600 mb-3">For the best experience, open the toolkit in a new tab on mobile.</p>
                   <Button
                     onClick={() => window.open(eventToolkitUrl, '_blank')}
-                    className="bg-brand-orange hover:bg-orange-600 text-white h-11"
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white h-11"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Open Toolkit
