@@ -378,6 +378,20 @@ export default function SimpleNav({
               {!isCollapsed && (
                 <>
                   <span className="flex-1 text-left font-medium">{item.label}</span>
+                  {/* One-time discovery tooltip for Toolkit & Apps */}
+                  {item.id === 'quick-tools' && shouldShowStep('toolkit-apps-intro') && (
+                    <OnboardingTooltip
+                      step="toolkit-apps-intro"
+                      position="right"
+                      showWhen={true}
+                      delay={2000}
+                      completeOnChildClick={true}
+                    >
+                      <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#FBAD3F] text-white text-[9px] font-bold animate-bounce">
+                        !
+                      </span>
+                    </OnboardingTooltip>
+                  )}
                   {badgeCount > 0 && (
                     <>
                       {/* Show intro tooltip on first badge user sees */}

@@ -152,9 +152,12 @@ collectionsRouter.get('/stats', async (req, res) => {
         let ytdTotal = 0;
         let currentMonthTotal = 0;
 
+        // Use Eastern Time to determine current month/year
+        // (server may be in UTC where it could already be the next month)
         const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth(); // 0-indexed
+        const easternDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+        const currentYear = easternDate.getFullYear();
+        const currentMonth = easternDate.getMonth(); // 0-indexed
 
         function getCollectionTotal(collection: any): number {
           let total = collection.individualSandwiches || 0;

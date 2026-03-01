@@ -40,6 +40,8 @@ import {
   Zap,
   Target,
   HandHeart,
+  Wrench,
+  BookOpen,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -84,6 +86,24 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'signup-genius',
     permission: PERMISSIONS.NAV_SIGNUP_GENIUS,
     group: 'quick-links',
+  },
+  {
+    id: 'quick-tools',
+    label: 'Toolkit & Apps',
+    icon: Wrench,
+    href: 'important-links',
+    // No permission - Toolkit & Apps is available to everyone
+    group: 'quick-links',
+    highlighted: true,
+  },
+  {
+    id: 'resources',
+    label: 'Reference Materials',
+    icon: BookOpen,
+    href: 'resources',
+    permission: PERMISSIONS.NAV_RESOURCES,
+    group: 'quick-links',
+    highlighted: true,
   },
   {
     id: 'inventory-calculator',
@@ -547,24 +567,7 @@ export const NAV_ITEMS: NavItem[] = [
     parentId: 'tools',
     isSubItem: true,
   },
-  {
-    id: 'quick-tools',
-    label: 'Quick Tools',
-    icon: Link,
-    href: 'important-links',
-    // No permission - Quick Tools is available to everyone
-    group: 'admin',
-    highlighted: true,
-  },
-  {
-    id: 'resources',
-    label: 'Reference Materials',
-    icon: FileText,
-    href: 'resources',
-    permission: PERMISSIONS.NAV_RESOURCES,
-    group: 'admin',
-    highlighted: true,
-  },
+  // Quick Tools and Reference Materials moved to quick-links group (after SignUpGenius)
   {
     id: 'documents',
     label: 'Documents',

@@ -11,7 +11,8 @@ export type OnboardingStep =
   | 'action-center-intro'       // Action center walkthrough
   | 'smart-search-intro'        // Smart search feature
   | 'holding-zone-intro'        // Holding zone explanation
-  | 'project-threads-intro';    // Project threads
+  | 'project-threads-intro'     // Project threads
+  | 'toolkit-apps-intro';       // Toolkit & Apps menu item (formerly Quick Tools)
 
 const STORAGE_KEY = 'sandwich-onboarding-completed';
 
@@ -155,5 +156,10 @@ export const onboardingContent: Record<OnboardingStep, { title: string; message:
     title: 'Project Threads',
     message: 'Email-style threads organized by project. Keep discussions focused and easy to find!',
     action: 'Explore'
+  },
+  'toolkit-apps-intro': {
+    title: 'Toolkit & Apps',
+    message: 'Your one-stop hub for the Event Toolkit, Flyers, Inventory Calculator, Donation Receipts, Donor Management, and more!',
+    action: 'Check it out'
   }
 };

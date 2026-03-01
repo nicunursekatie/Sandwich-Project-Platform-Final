@@ -180,18 +180,17 @@ export default function ImportantLinks() {
     <div className="h-full flex flex-col bg-gray-50 p-3 sm:p-6">
       <div className="hidden sm:block">
         <PageBreadcrumbs segments={[
-          { label: 'Documentation' },
-          { label: 'Quick Tools' }
+          { label: 'Quick Links' },
+          { label: 'Toolkit & Apps' }
         ]} />
       </div>
 
       <div className="mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-3xl font-bold text-brand-primary mb-1 sm:mb-2">
-          Important Links
+          Toolkit & Apps
         </h1>
         <p className="text-xs sm:text-base text-gray-600">
-          Quick access to essential tools and spreadsheets for planning and
-          coordination.
+          Event Toolkit, flyers, calculators, donation receipts, donor management, and more.
         </p>
       </div>
 
