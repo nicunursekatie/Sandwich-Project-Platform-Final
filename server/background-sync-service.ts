@@ -366,7 +366,12 @@ Action Required:
             )
           )
         )
-        .returning();
+        .returning({
+          id: eventRequests.id,
+          organizationName: eventRequests.organizationName,
+          scheduledEventDate: eventRequests.scheduledEventDate,
+          desiredEventDate: eventRequests.desiredEventDate,
+        });
       
       if (transitionedEvents.length > 0) {
         logger.log(`🗓️ Auto-transitioned ${transitionedEvents.length} past events from scheduled to completed`);

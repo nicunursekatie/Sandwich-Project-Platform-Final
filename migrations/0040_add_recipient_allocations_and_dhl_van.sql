@@ -5,6 +5,6 @@
 
 ALTER TABLE event_requests
 ADD COLUMN IF NOT EXISTS recipient_allocations JSONB;
-
+--> statement-breakpoint
 ALTER TABLE event_requests
 ADD COLUMN IF NOT EXISTS is_dhl_van BOOLEAN NOT NULL DEFAULT false;
