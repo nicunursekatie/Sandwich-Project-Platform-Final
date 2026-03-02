@@ -170,11 +170,12 @@ export default function SimpleNav({
     const getGroupLabel = (group: string) => {
       const labels = {
         'quick-links': 'QUICK LINKS',
-        workspace: 'MY WORKSPACE',
-        logistics: 'LOGISTICS',
+        events: 'EVENTS & VOLUNTEERS',
         network: 'NETWORK',
-        operations: 'OPERATIONS',
-        admin: 'ADMIN & RESOURCES',
+        resources: 'RESOURCES & TOOLS',
+        communication: 'COMMUNICATION',
+        data: 'DATA & REPORTS',
+        settings: 'SETTINGS',
       };
       return labels[group as keyof typeof labels] || group.toUpperCase();
     };
