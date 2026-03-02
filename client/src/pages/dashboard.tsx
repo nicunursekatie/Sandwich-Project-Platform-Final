@@ -55,7 +55,6 @@ import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
-import OnboardingChallengeButton from '@/components/onboarding-challenge-button';
 import { OnlineUsers } from '@/components/online-users';
 import { useOnlinePresenceNotifications } from '@/hooks/useOnlinePresenceNotifications';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
@@ -870,16 +869,29 @@ export default function Dashboard({
 
                 {/* Online users - hide on mobile */}
                 <div className="hidden sm:block">
-                  <OnlineUsers />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <OnlineUsers />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" sideOffset={8}>Who's Online</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
 
-              {/* Group 2: Notifications & Progress */}
+              {/* Group 2: Notifications */}
               <div className="flex items-center gap-0.5">
                 {typeof window !== 'undefined' && (
-                  <EnhancedNotifications user={user} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <EnhancedNotifications user={user} />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" sideOffset={8}>Notifications</TooltipContent>
+                  </Tooltip>
                 )}
-                <OnboardingChallengeButton onNavigate={(section) => setActiveSection(section)} />
               </div>
 
               {/* Group 3: Help & Navigation */}
@@ -919,23 +931,6 @@ export default function Dashboard({
                   );
                 })}
               </div>
-
-              {/* Share Donation Link - PayPal Fundraiser */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <a
-                    href="https://www.paypal.com/us/fundraiser/charity/4490415"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 sm:p-2 rounded-md transition-colors bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-700 hover:from-amber-100 hover:to-orange-100 hover:border-amber-300 shadow-sm flex items-center gap-1"
-                    aria-label="Share donation link"
-                  >
-                    <Gift className="w-4 h-4" />
-                    <span className="hidden lg:inline text-xs font-medium">Share</span>
-                  </a>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={8}>Share PayPal donation link</TooltipContent>
-              </Tooltip>
 
               {/* Group 4: Account Menu */}
               <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-gray-200">
