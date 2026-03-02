@@ -244,7 +244,7 @@ export default function ImportantLinks() {
                   <Button
                     size="lg"
                     onClick={() => window.open(eventToolkitUrl, '_blank')}
-                    className="bg-brand-orange hover:bg-brand-orange-dark text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
                     <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Open Event Toolkit

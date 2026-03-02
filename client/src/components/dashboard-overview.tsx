@@ -735,7 +735,7 @@ export default function DashboardOverview({
                     '_blank'
                   )
                 }
-                className="premium-btn-accent flex-1"
+                className="premium-btn-primary flex-1"
               >
                 <ExternalLink className="w-5 h-5" />
                 Open Event Toolkit

@@ -285,7 +285,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
           <Button
             variant="outline"
             onClick={() => onNavigate('drivers')}
-            className="border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white"
+            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
           >
             <Car className="w-4 h-4 mr-2" />
             Assign Drivers
@@ -293,6 +293,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
           <Button
             variant="outline"
             onClick={() => onNavigate('volunteer-hub')}
+            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
           >
             <Users className="w-4 h-4 mr-2" />
             Volunteer Hub
@@ -300,6 +301,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
           <Button
             variant="outline"
             onClick={() => onNavigate('collections')}
+            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
           >
             Log Collection Data
           </Button>
