@@ -5,6 +5,8 @@ import {
   ListTodo,
   MessageCircle,
   MessageSquare,
+  Hash,
+  Inbox,
   ClipboardList,
   FolderOpen,
   BarChart3,
@@ -821,50 +823,50 @@ export default function Dashboard({
             <TooltipProvider delayDuration={300}>
             <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
               
-              {/* Group 1: Communication - hide comments on very small screens */}
+              {/* Group 1: Communication */}
               <div className="flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => {
-                        logger.log('Messages button clicked');
-                        trackButtonClick('messages', 'dashboard_header');
-                        setActiveSection('messages');
+                        logger.log('Team Chat button clicked');
+                        trackButtonClick('chat', 'dashboard_header');
+                        setActiveSection('chat');
                         setIsMobileMenuOpen(false);
                       }}
                       className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                        activeSection === 'messages'
+                        activeSection === 'chat'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
-                      aria-label="Inbox"
+                      aria-label="Team Chat"
                     >
-                      <MessageCircle className="w-4 h-4" />
+                      <Hash className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Inbox</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={8}>Team Chat</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => {
-                        logger.log('Comments button clicked');
-                        trackButtonClick('comments', 'dashboard_header');
-                        setActiveSection('messaging-inbox');
+                        logger.log('Project Threads button clicked');
+                        trackButtonClick('project-threads', 'dashboard_header');
+                        setActiveSection('gmail-inbox');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`hidden xs:block p-1.5 sm:p-2 rounded-md transition-colors ${
-                        activeSection === 'messaging-inbox'
+                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
+                        activeSection === 'gmail-inbox'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
-                      aria-label="Comments"
+                      aria-label="Project Threads"
                     >
-                      <MessageSquare className="w-4 h-4" />
+                      <Inbox className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Comments</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={8}>Project Threads</TooltipContent>
                 </Tooltip>
 
                 {/* Online users - hide on mobile */}
