@@ -151,6 +151,7 @@ collectionsRouter.get('/stats', async (req, res) => {
         let groupTotal = 0;
         let ytdTotal = 0;
         let currentMonthTotal = 0;
+        let lastMonthTotal = 0;
 
         // Use Eastern Time to determine current month/year
         // (server may be in UTC where it could already be the next month)
@@ -158,6 +159,10 @@ collectionsRouter.get('/stats', async (req, res) => {
         const easternDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const currentYear = easternDate.getFullYear();
         const currentMonth = easternDate.getMonth(); // 0-indexed
+
+        // Calculate last month (handles January -> December of prior year)
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1; // 0-indexed
+        const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
         function getCollectionTotal(collection: any): number {
           let total = collection.individualSandwiches || 0;
@@ -215,6 +220,10 @@ collectionsRouter.get('/stats', async (req, res) => {
                 currentMonthTotal += collTotal;
               }
             }
+            // Last month total (handles year boundary: Jan -> Dec of prior year)
+            if (year === lastMonthYear && month === lastMonth) {
+              lastMonthTotal += getCollectionTotal(collection);
+            }
           }
         });
 
@@ -234,6 +243,9 @@ collectionsRouter.get('/stats', async (req, res) => {
           currentMonthSandwiches: currentMonthTotal,
           currentMonthName: monthNames[currentMonth],
           currentMonthYear: currentYear,
+          lastMonthSandwiches: lastMonthTotal,
+          lastMonthName: monthNames[lastMonth],
+          lastMonthYear: lastMonthYear,
         };
       },
       60000 // Cache for 1 minute since this data doesn't change frequently

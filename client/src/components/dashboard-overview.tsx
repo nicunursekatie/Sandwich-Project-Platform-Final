@@ -493,8 +493,21 @@ export default function DashboardOverview({
               </div>
             </div>
             <div className="premium-divider my-4 sm:my-6"></div>
-            {/* Year-to-date and current month stats */}
+            {/* Last month, year-to-date, and current month stats */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-4">
+              {statsData?.lastMonthSandwiches != null && (
+                <div className="text-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-brand-primary">
+                    {(statsData.lastMonthSandwiches).toLocaleString()}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                    {statsData.lastMonthName} {statsData.lastMonthYear}
+                  </p>
+                </div>
+              )}
+              {statsData?.lastMonthSandwiches != null && statsData?.ytdSandwiches != null && (
+                <div className="hidden sm:block w-px h-10 bg-gray-200"></div>
+              )}
               {statsData?.ytdSandwiches != null && (
                 <div className="text-center">
                   <p className="text-2xl sm:text-3xl font-bold text-brand-primary">
@@ -514,7 +527,7 @@ export default function DashboardOverview({
                     {(statsData.currentMonthSandwiches).toLocaleString()}
                   </p>
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                    in {statsData.currentMonthName} {statsData.currentMonthYear}
+                    {statsData.currentMonthName} {statsData.currentMonthYear}
                   </p>
                 </div>
               )}
