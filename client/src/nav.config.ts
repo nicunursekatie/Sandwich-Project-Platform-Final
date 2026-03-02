@@ -95,7 +95,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'important-links',
     // No permission - Toolkit & Apps is available to everyone
     group: 'quick-links',
-    highlighted: true,
   },
   {
     id: 'resources',
@@ -104,7 +103,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'resources',
     permission: PERMISSIONS.NAV_RESOURCES,
     group: 'quick-links',
-    highlighted: true,
   },
   {
     id: 'inventory-calculator',
@@ -149,6 +147,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'gmail-inbox',
     permission: PERMISSIONS.NAV_INBOX,
     group: 'workspace',
+    highlighted: true,
   },
   {
     id: 'chat',
@@ -157,6 +156,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'chat',
     permission: PERMISSIONS.NAV_TEAM_CHAT,
     group: 'workspace',
+    highlighted: true,
   },
   {
     id: 'kudos',
@@ -173,7 +173,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'team-board',
     permission: PERMISSIONS.VIEW_HOLDING_ZONE,
     group: 'workspace',
-    highlighted: true,
   },
   {
     id: 'calendars',
@@ -255,7 +254,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'logistics',
     parentId: 'event-requests',
     isSubItem: true,
-    highlighted: true,
   },
   {
     id: 'admin-overview',
@@ -274,7 +272,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'driver-planning',
     permission: PERMISSIONS.NAV_DRIVER_PLANNING,
     group: 'logistics',
-    highlighted: true,
   },
   {
     id: 'volunteer-hub',
@@ -283,7 +280,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'volunteer-hub',
     permission: PERMISSIONS.NAV_VOLUNTEER_HUB,
     group: 'logistics',
-    highlighted: true,
   },
   {
     id: 'host-resources',
@@ -292,7 +288,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'host-resources',
     permission: PERMISSIONS.NAV_HOST_RESOURCES,
     group: 'logistics',
-    highlighted: true,
   },
   {
     id: 'maps',
@@ -327,7 +322,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'meetings',
     permission: PERMISSIONS.NAV_MEETINGS,
     group: 'logistics',
-    highlighted: true,
   },
 
   // ========================================
@@ -410,7 +404,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'network',
     parentId: 'partners',
     isSubItem: true,
-    highlighted: true,
   },
   {
     id: 'event-contacts-directory',
@@ -485,7 +478,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'expenses',
     permission: PERMISSIONS.NAV_EXPENSES,
     group: 'operations',
-    highlighted: true,
   },
 
   // ========================================
@@ -498,7 +490,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'analytics',
     permission: PERMISSIONS.NAV_ANALYTICS,
     group: 'admin',
-    highlighted: true,
   },
   {
     id: 'analytics',

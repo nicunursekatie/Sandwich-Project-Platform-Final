@@ -244,18 +244,18 @@ export default function SimpleNav({
               <div key={`separator-${groupItem.group}-${index}`} className="mt-4 mb-3">
                 <button
                   onClick={() => toggleSection(groupItem.group)}
-                  className="w-full from-brand-primary-lighter to-brand-primary-light rounded-lg px-3 py-2 mb-2 shadow-sm bg-[#47b3cbbf] hover:bg-[#47b3cbd0] transition-colors cursor-pointer flex items-center justify-between group"
+                  className="w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm bg-brand-primary hover:bg-brand-primary-dark transition-colors cursor-pointer flex items-center justify-between group"
                 >
-                  <div className="font-bold text-brand-primary tracking-wide text-[14px] bg-[#47b3cb78] flex-1 text-left">
+                  <div className="font-bold text-white tracking-wide text-[15px] flex-1 text-left">
                     {getGroupLabel(groupItem.group)}
                   </div>
                   {isCollapsedSection ? (
-                    <ChevronRight className="w-4 h-4 text-brand-primary group-hover:scale-110 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-brand-primary group-hover:scale-110 transition-transform" />
+                    <ChevronDown className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
                   )}
                 </button>
-                <div className="border-t-2 border-brand-primary-border mx-2" />
+                <div className="border-t border-brand-primary/30 mx-2" />
               </div>
             ) : null;
           }
