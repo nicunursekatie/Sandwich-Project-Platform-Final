@@ -345,7 +345,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
             variant="ghost"
             size="sm"
             className={cn(
-              'relative h-9 w-9 p-0',
+              'relative h-9 w-9 p-0 text-white/80 hover:text-white hover:bg-white/15',
               showNotificationsTooltip && 'animate-pulse'
             )}
             data-testid="button-notifications-enhanced"

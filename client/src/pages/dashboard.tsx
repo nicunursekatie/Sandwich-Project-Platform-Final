@@ -751,12 +751,12 @@ export default function Dashboard({
         <AnnouncementBanner />
         
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-white to-teal-50/30 border-b-2 border-teal-200 shadow-sm px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full">
+        <div className="bg-brand-primary border-b border-brand-primary-dark shadow-md px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full">
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             {/* Mobile menu button - positioned first for easy access */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors touch-manipulation relative z-60"
+              className="md:hidden p-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition-colors touch-manipulation relative z-60"
               aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? (
@@ -772,10 +772,10 @@ export default function Dashboard({
               width="24"
               height="24"
             />
-            <h1 className="text-base sm:text-lg font-semibold text-teal-800 hidden lg:block truncate">
+            <h1 className="text-base sm:text-lg font-semibold text-white hidden lg:block truncate">
               The Sandwich Project
             </h1>
-            <h1 className="text-sm font-semibold text-teal-800 lg:hidden truncate">
+            <h1 className="text-sm font-semibold text-white lg:hidden truncate">
               TSP
             </h1>
           </div>
@@ -787,28 +787,28 @@ export default function Dashboard({
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Compact user indicator for tablets - hidden on very small screens */}
             {user && (
-              <div className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg border border-teal-200 shadow-sm max-w-[100px] sm:max-w-[150px] md:max-w-none">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-teal-100 to-teal-200 rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                  <span className="text-xs font-medium text-teal-800">
+              <div className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-white/15 rounded-lg border border-white/20 max-w-[100px] sm:max-w-[150px] md:max-w-none">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-xs font-medium text-white">
                     {(user as any)?.firstName?.charAt(0) ||
                       (user as any)?.email?.charAt(0) ||
                       'U'}
                   </span>
                 </div>
                 <div className="hidden lg:flex flex-col min-w-0">
-                  <span className="text-xs font-medium text-teal-800 truncate">
+                  <span className="text-xs font-medium text-white truncate">
                     {(user as any)?.firstName
                       ? `${(user as any).firstName} ${
                           (user as any)?.lastName || ''
                         }`.trim()
                       : (user as any)?.email}
                   </span>
-                  <span className="text-xs text-teal-600 truncate">
+                  <span className="text-xs text-white/70 truncate">
                     {(user as any)?.email}
                   </span>
                 </div>
                 <div className="lg:hidden min-w-0 flex-1">
-                  <span className="text-xs font-medium text-teal-800 truncate block">
+                  <span className="text-xs font-medium text-white truncate block">
                     {(user as any)?.firstName
                       ? `${(user as any).firstName}`
                       : (user as any)?.email?.split('@')[0] || 'User'}
@@ -822,7 +822,7 @@ export default function Dashboard({
             <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
               
               {/* Group 1: Communication - hide comments on very small screens */}
-              <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+              <div className="flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -834,8 +834,8 @@ export default function Dashboard({
                       }}
                       className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                         activeSection === 'messages'
-                          ? 'bg-brand-primary text-white shadow-sm'
-                          : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                          ? 'bg-white text-brand-primary shadow-sm'
+                          : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
                       aria-label="Inbox"
                     >
@@ -856,8 +856,8 @@ export default function Dashboard({
                       }}
                       className={`hidden xs:block p-1.5 sm:p-2 rounded-md transition-colors ${
                         activeSection === 'messaging-inbox'
-                          ? 'bg-brand-primary text-white shadow-sm'
-                          : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                          ? 'bg-white text-brand-primary shadow-sm'
+                          : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
                       aria-label="Comments"
                     >
@@ -895,7 +895,7 @@ export default function Dashboard({
               </div>
 
               {/* Group 3: Help & Navigation */}
-              <div className="hidden sm:flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+              <div className="hidden sm:flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
                 {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
                   const Icon = item.icon;
                   return (
@@ -918,8 +918,8 @@ export default function Dashboard({
                           }}
                           className={`p-2 rounded-md transition-colors ${
                             activeSection === item.href
-                              ? 'bg-brand-primary text-white shadow-sm'
-                              : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                              ? 'bg-white text-brand-primary shadow-sm'
+                              : 'text-white/80 hover:bg-white/15 hover:text-white'
                           }`}
                           aria-label={item.label}
                         >
@@ -933,7 +933,7 @@ export default function Dashboard({
               </div>
 
               {/* Group 4: Account Menu */}
-              <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-gray-200">
+              <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-white/20">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
@@ -947,8 +947,8 @@ export default function Dashboard({
                       }}
                       className={`p-1.5 sm:p-2 rounded-md transition-colors ${
                         activeSection === 'profile'
-                          ? 'bg-brand-primary text-white shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'bg-white text-brand-primary shadow-sm'
+                          : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
                       aria-label="Account Settings"
                     >
@@ -973,7 +973,7 @@ export default function Dashboard({
                       window.location.href = '/login';
                     }
                   }}
-                  className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1.5 text-gray-600 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
+                  className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1.5 text-white/80 hover:text-red-200 rounded-md hover:bg-white/10 transition-colors text-sm font-medium"
                   aria-label="Logout"
                 >
                   <LogOut className="w-4 h-4" />

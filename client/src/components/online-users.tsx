@@ -97,7 +97,7 @@ export function OnlineUsers() {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
-          className="p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] text-teal-600 hover:bg-teal-50 hover:text-teal-800 flex items-center gap-1"
+          className="p-2 rounded-lg transition-colors relative z-50 pointer-events-auto touch-manipulation min-w-[44px] text-white/80 hover:bg-white/15 hover:text-white flex items-center gap-1"
           title={`${count} user${count !== 1 ? 's' : ''} online`}
           aria-label={`${count} users online`}
         >
@@ -105,7 +105,7 @@ export function OnlineUsers() {
           {count > 0 && (
             <Badge
               variant="secondary"
-              className="h-5 min-w-[20px] text-xs bg-green-100 text-green-700 border-green-200"
+              className="h-5 min-w-[20px] text-xs bg-green-400 text-white border-green-500"
             >
               {count}
             </Badge>
