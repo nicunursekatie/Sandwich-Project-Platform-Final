@@ -99,6 +99,8 @@ export const MyAssignmentsTab: React.FC = () => {
     // Status reason dialogs
     setShowDeclineDialog,
     setReasonDialogEventRequest,
+    setShowNonEventDialog,
+    setNonEventDialogEventRequest,
   } = useEventRequestContext();
 
   // Helper functions for ScheduledCardEnhanced
@@ -215,6 +217,13 @@ export const MyAssignmentsTab: React.FC = () => {
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
                   setShowDeclineDialog(true);
+                }
+              }}
+            onNonEvent={async () => {
+                const result = await handleStatusChange(request.id, 'non_event');
+                if (result === 'needs_reason') {
+                  setNonEventDialogEventRequest(request);
+                  setShowNonEventDialog(true);
                 }
               }}
             onLogContact={() => {
@@ -497,6 +506,13 @@ export const MyAssignmentsTab: React.FC = () => {
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
                   setShowDeclineDialog(true);
+                }
+              }}
+            onNonEvent={async () => {
+                const result = await handleStatusChange(request.id, 'non_event');
+                if (result === 'needs_reason') {
+                  setNonEventDialogEventRequest(request);
+                  setShowNonEventDialog(true);
                 }
               }}
             onLogContact={() => {

@@ -87,6 +87,10 @@ interface EventRequestContextType {
   setShowDeclineDialog: (show: boolean) => void;
   showCancelDialog: boolean;
   setShowCancelDialog: (show: boolean) => void;
+  showNonEventDialog: boolean;
+  setShowNonEventDialog: (show: boolean) => void;
+  showRescheduleDialog: boolean;
+  setShowRescheduleDialog: (show: boolean) => void;
 
   // Event being acted upon
   schedulingEventRequest: EventRequest | null;
@@ -115,6 +119,10 @@ interface EventRequestContextType {
   setIntakeCallEventRequest: (event: EventRequest | null) => void;
   reasonDialogEventRequest: EventRequest | null;
   setReasonDialogEventRequest: (event: EventRequest | null) => void;
+  nonEventDialogEventRequest: EventRequest | null;
+  setNonEventDialogEventRequest: (event: EventRequest | null) => void;
+  rescheduleDialogEventRequest: EventRequest | null;
+  setRescheduleDialogEventRequest: (event: EventRequest | null) => void;
   showNextActionDialog: boolean;
   setShowNextActionDialog: (show: boolean) => void;
   nextActionEventRequest: EventRequest | null;
@@ -199,10 +207,12 @@ interface EventRequestContextType {
     new: number;
     in_process: number;
     scheduled: number;
+    rescheduled: number;
     completed: number;
     declined: number;
     postponed: number;
     cancelled: number;
+    non_event: number;
     standby: number;
     stalled: number;
     my_assignments: number;
@@ -305,10 +315,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     new: number;
     in_process: number;
     scheduled: number;
+    rescheduled: number;
     completed: number;
     declined: number;
     postponed: number;
     cancelled: number;
+    non_event: number;
     standby: number;
     stalled: number;
     my_assignments: number;
@@ -401,6 +413,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showNonEventDialog, setShowNonEventDialog] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
 
   // Event being acted upon
   const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
@@ -416,6 +430,8 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [postponementEventRequest, setPostponementEventRequest] = useState<EventRequest | null>(null);
   const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
   const [reasonDialogEventRequest, setReasonDialogEventRequest] = useState<EventRequest | null>(null);
+  const [nonEventDialogEventRequest, setNonEventDialogEventRequest] = useState<EventRequest | null>(null);
+  const [rescheduleDialogEventRequest, setRescheduleDialogEventRequest] = useState<EventRequest | null>(null);
   const [showNextActionDialog, setShowNextActionDialog] = useState(false);
   const [nextActionEventRequest, setNextActionEventRequest] = useState<EventRequest | null>(null);
   const [nextActionMode, setNextActionMode] = useState<'add' | 'edit' | 'complete'>('add');
@@ -562,10 +578,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     new: serverStatusCounts?.new ?? 0,
     in_process: serverStatusCounts?.in_process ?? 0,
     scheduled: serverStatusCounts?.scheduled ?? 0,
+    rescheduled: serverStatusCounts?.rescheduled ?? 0,
     completed: serverStatusCounts?.completed ?? 0,
     declined: serverStatusCounts?.declined ?? 0,
     postponed: serverStatusCounts?.postponed ?? 0,
     cancelled: serverStatusCounts?.cancelled ?? 0,
+    non_event: serverStatusCounts?.non_event ?? 0,
     standby: serverStatusCounts?.standby ?? 0,
     stalled: serverStatusCounts?.stalled ?? 0,
     // my_assignments count is calculated server-side to include TSP contacts, drivers, speakers
@@ -746,6 +764,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowDeclineDialog,
     showCancelDialog,
     setShowCancelDialog,
+    showNonEventDialog,
+    setShowNonEventDialog,
+    showRescheduleDialog,
+    setShowRescheduleDialog,
 
     // Event references
     schedulingEventRequest,
@@ -774,6 +796,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setIntakeCallEventRequest,
     reasonDialogEventRequest,
     setReasonDialogEventRequest,
+    nonEventDialogEventRequest,
+    setNonEventDialogEventRequest,
+    rescheduleDialogEventRequest,
+    setRescheduleDialogEventRequest,
     showNextActionDialog,
     setShowNextActionDialog,
     nextActionEventRequest,
@@ -860,13 +886,13 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     showCollectionLog, showAssignmentDialog, showTspContactAssignmentDialog,
     showSandwichPlanningModal, showStaffingPlanningModal, showLogContactDialog,
     showEditContactDialog, showAiDateSuggestionDialog, showAiIntakeAssistantDialog,
-    showPostponementDialog, showIntakeCallDialog, showNextActionDialog,
+    showPostponementDialog, showIntakeCallDialog, showNextActionDialog, showNonEventDialog, showRescheduleDialog,
     // Event references (13)
     schedulingEventRequest, toolkitEventRequest, collectionLogEventRequest,
     contactEventRequest, tspContactEventRequest, logContactEventRequest,
     editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,
     aiIntakeAssistantEventRequest, postponementEventRequest, intakeCallEventRequest,
-    nextActionEventRequest, nextActionMode,
+    nextActionEventRequest, nextActionMode, nonEventDialogEventRequest, rescheduleDialogEventRequest,
     // Assignment state (6)
     assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment, editingAssignmentPersonId, isVanDriverAssignment,
     // Schedule call & follow-up (3)

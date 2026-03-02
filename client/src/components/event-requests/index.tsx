@@ -14,6 +14,8 @@ import { DeclinedTab } from './tabs/DeclinedTab';
 import { PostponedTab } from './tabs/PostponedTab';
 import { StandbyTab } from './tabs/StandbyTab';
 import { StalledTab } from './tabs/StalledTab';
+import { NonEventTab } from './tabs/NonEventTab';
+import { RescheduledTab } from './tabs/RescheduledTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AllEventsTab } from './tabs/AllEventsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
@@ -73,6 +75,8 @@ import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { PostponementDialog } from './dialogs/PostponementDialog';
 import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
+import { NonEventDialog } from './dialogs/NonEventDialog';
+import { RescheduleDialog } from './dialogs/RescheduleDialog';
 import IntakeCallDialog from './IntakeCallDialog';
 import NextActionDialog from './NextActionDialog';
 import { DashboardSummaryCards } from './DashboardSummaryCards';
@@ -176,6 +180,10 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowDeclineDialog,
     showCancelDialog,
     setShowCancelDialog,
+    showNonEventDialog,
+    setShowNonEventDialog,
+    showRescheduleDialog,
+    setShowRescheduleDialog,
     showNextActionDialog,
     setShowNextActionDialog,
     nextActionEventRequest,
@@ -224,6 +232,10 @@ const EventRequestsManagementContent: React.FC = () => {
     setIntakeCallEventRequest,
     reasonDialogEventRequest,
     setReasonDialogEventRequest,
+    nonEventDialogEventRequest,
+    setNonEventDialogEventRequest,
+    rescheduleDialogEventRequest,
+    setRescheduleDialogEventRequest,
 
     // Other states
     scheduleCallDate,
@@ -461,6 +473,8 @@ const EventRequestsManagementContent: React.FC = () => {
       postponed: <PostponedTab />,
       standby: <StandbyTab />,
       stalled: <StalledTab />,
+      non_event: <NonEventTab />,
+      rescheduled: <RescheduledTab />,
       my_assignments: <MyAssignmentsTab />,
     };
 
@@ -1150,6 +1164,40 @@ const EventRequestsManagementContent: React.FC = () => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
               setShowCancelDialog(false);
               setReasonDialogEventRequest(null);
+            }}
+          />
+        )}
+
+        {/* Non-Event Dialog */}
+        {nonEventDialogEventRequest && showNonEventDialog && (
+          <NonEventDialog
+            isOpen={showNonEventDialog}
+            onClose={() => {
+              setShowNonEventDialog(false);
+              setNonEventDialogEventRequest(null);
+            }}
+            request={nonEventDialogEventRequest}
+            onConfirm={async (eventId, data) => {
+              await updateEventRequestMutation.mutateAsync({ id: eventId, data });
+              setShowNonEventDialog(false);
+              setNonEventDialogEventRequest(null);
+            }}
+          />
+        )}
+
+        {/* Reschedule Dialog */}
+        {rescheduleDialogEventRequest && showRescheduleDialog && (
+          <RescheduleDialog
+            isOpen={showRescheduleDialog}
+            onClose={() => {
+              setShowRescheduleDialog(false);
+              setRescheduleDialogEventRequest(null);
+            }}
+            request={rescheduleDialogEventRequest}
+            onConfirm={async (eventId, data) => {
+              await updateEventRequestMutation.mutateAsync({ id: eventId, data });
+              setShowRescheduleDialog(false);
+              setRescheduleDialogEventRequest(null);
             }}
           />
         )}

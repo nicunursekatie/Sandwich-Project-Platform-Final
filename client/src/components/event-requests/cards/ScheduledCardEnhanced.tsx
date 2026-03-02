@@ -1176,6 +1176,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
+          {/* Rescheduled Badge */}
+          {request.status === 'rescheduled' && request.originalScheduledDate && (
+            <div className="mb-1">
+              <Badge className="bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium">
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Rescheduled from {new Date(request.originalScheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </Badge>
+            </div>
+          )}
+
           {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
             <Badge

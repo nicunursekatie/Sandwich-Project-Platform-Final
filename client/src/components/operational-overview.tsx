@@ -45,9 +45,9 @@ interface OperationalStats {
   activeEventsCount: number;
   statusCounts: {
     new: number;
-    followed_up: number;
     in_process: number;
     scheduled: number;
+    rescheduled: number;
   };
 }
 

@@ -131,7 +131,10 @@ export const ScheduledTab: React.FC = () => {
     setInlineRangeType,
   } = useEventRequestContext();
 
-  const scheduledRequests = filterRequestsByStatus('scheduled');
+  // Include both 'scheduled' and 'rescheduled' events on the Scheduled tab
+  const scheduledOnly = filterRequestsByStatus('scheduled');
+  const rescheduledOnly = filterRequestsByStatus('rescheduled');
+  const scheduledRequests = [...scheduledOnly, ...rescheduledOnly];
 
   // Memoize event IDs for batched collaboration data fetching
   const scheduledEventIds = useMemo(
@@ -444,8 +447,13 @@ export const ScheduledTab: React.FC = () => {
     setShowRescheduleDialog(true);
   };
 
-  const performReschedule = async (eventId: number, newDate: Date) => {
-    await rescheduleEventMutation.mutateAsync({ id: eventId, newDate });
+  const performReschedule = async (eventId: number, data: {
+    status: string;
+    scheduledEventDate: string;
+    originalScheduledDate?: string | Date | null;
+    postponementNotes?: string;
+  }) => {
+    await updateEventRequestMutation.mutateAsync({ id: eventId, data });
     setShowRescheduleDialog(false);
     setRescheduleRequest(null);
   };
@@ -674,7 +682,7 @@ export const ScheduledTab: React.FC = () => {
         setRescheduleRequest(null);
       }}
       request={rescheduleRequest}
-      onReschedule={performReschedule}
+      onConfirm={performReschedule}
     />
     {ConfirmationDialogComponent}
   </>

@@ -1616,7 +1616,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // If changing to cancelled, declined, or postponed, show a warning
     // TODO: Wire these status changes to open the appropriate reason dialog
     // For now, we just warn the user and allow the change through the form
-    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'postponed') {
+    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'postponed' || newStatus === 'non_event' || newStatus === 'rescheduled') {
       const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
       toast({
         title: `Status Change Requires Documentation`,

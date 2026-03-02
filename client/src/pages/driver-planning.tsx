@@ -1690,8 +1690,8 @@ export default function DriverPlanningDashboard() {
       .filter(event => {
         // Status filter - scheduled always included, new/in_process when toggled
         const status = (event.status || '').toLowerCase();
-        const isScheduled = status === 'scheduled';
-        const isNewOrInProcess = status === 'new' || status === 'in_process' || status === 'followed_up';
+        const isScheduled = status === 'scheduled' || status === 'rescheduled';
+        const isNewOrInProcess = status === 'new' || status === 'in_process';
         if (!isScheduled && !(showPendingEvents && isNewOrInProcess)) return false;
 
         // Must have a date
@@ -2790,7 +2790,7 @@ export default function DriverPlanningDashboard() {
                             if (status === 'new') return (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-700 bg-amber-50 flex-shrink-0">New</Badge>
                             );
-                            if (status === 'in_process' || status === 'followed_up') return (
+                            if (status === 'in_process') return (
                               <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50 flex-shrink-0">In Process</Badge>
                             );
                             return null;
@@ -5102,7 +5102,7 @@ export default function DriverPlanningDashboard() {
                           if (status === 'new') return (
                             <Badge variant="outline" className="text-[9px] px-1 py-0 border-amber-400 text-amber-700 bg-amber-50 flex-shrink-0">New</Badge>
                           );
-                          if (status === 'in_process' || status === 'followed_up') return (
+                          if (status === 'in_process') return (
                             <Badge variant="outline" className="text-[9px] px-1 py-0 border-blue-400 text-blue-700 bg-blue-50 flex-shrink-0">In Process</Badge>
                           );
                           return null;
@@ -6371,7 +6371,7 @@ export default function DriverPlanningDashboard() {
                                   if (status === 'new') return (
                                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-700 bg-amber-50 flex-shrink-0">New</Badge>
                                   );
-                                  if (status === 'in_process' || status === 'followed_up') return (
+                                  if (status === 'in_process') return (
                                     <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-400 text-blue-700 bg-blue-50 flex-shrink-0">In Process</Badge>
                                   );
                                   return null;

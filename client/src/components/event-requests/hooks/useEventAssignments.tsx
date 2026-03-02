@@ -648,8 +648,8 @@ export const useEventAssignments = () => {
       return 'blocked';
     }
 
-    // For declined, cancelled, and postponed: signal to caller to open reason dialog
-    if (status === 'declined' || status === 'cancelled' || status === 'postponed') {
+    // For declined, cancelled, postponed, non_event, and rescheduled: signal to caller to open reason/date dialog
+    if (status === 'declined' || status === 'cancelled' || status === 'postponed' || status === 'non_event' || status === 'rescheduled') {
       return 'needs_reason';
     }
 

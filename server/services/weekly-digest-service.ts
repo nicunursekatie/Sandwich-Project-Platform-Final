@@ -37,7 +37,7 @@ if (process.env.SENDGRID_API_KEY) {
  * Get all active events for a TSP contact
  */
 async function getActiveEventsForContact(tspContactId: string): Promise<DigestEventSummary[]> {
-  const activeStatuses = ['new', 'followed_up', 'in_process', 'scheduled', 'standby'];
+  const activeStatuses = ['new', 'in_process', 'scheduled', 'rescheduled', 'standby'];
 
   const events = await db
     .select()
@@ -318,8 +318,8 @@ function getStatusColor(status: string): string {
   switch (status) {
     case 'new':
       return '#3B82F6'; // blue
-    case 'followed_up':
-      return '#8B5CF6'; // purple
+    case 'rescheduled':
+      return '#236383'; // teal (same as scheduled)
     case 'in_process':
       return '#F59E0B'; // amber
     case 'scheduled':
@@ -794,7 +794,7 @@ export async function sendWeeklyDigestEmail(data: WeeklyDigestData): Promise<boo
  */
 async function getAllActiveTspContacts(): Promise<string[]> {
   // Find all unique TSP contact IDs from active events
-  const activeStatuses = ['new', 'followed_up', 'in_process', 'scheduled', 'standby'];
+  const activeStatuses = ['new', 'in_process', 'scheduled', 'rescheduled', 'standby'];
 
   const result = await db
     .selectDistinct({

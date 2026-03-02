@@ -2203,7 +2203,7 @@ export const eventRequests = pgTable(
       .default('i_dont_know'), // 'yes', 'no', 'i_dont_know'
 
     // System tracking
-    status: varchar('status').notNull().default('new'), // 'new', 'followed_up', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'cancelled', 'standby', 'stalled'
+    status: varchar('status').notNull().default('new'), // 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'postponed', 'cancelled', 'non_event', 'standby', 'stalled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
     nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)
@@ -2247,6 +2247,12 @@ export const eventRequests = pgTable(
     stalledMarkedAt: timestamp('stalled_marked_at'), // When the event was marked as stalled
     stalledMarkedBy: varchar('stalled_marked_by'), // User ID who marked it as stalled
     stalledOriginalEventDate: timestamp('stalled_original_event_date'), // Keep the original requested date on file for reference
+
+    // Non-event tracking (for 'non_event' status)
+    nonEventReason: text('non_event_reason'),
+    nonEventNotes: text('non_event_notes'),
+    nonEventAt: timestamp('non_event_at'),
+    nonEventBy: varchar('non_event_by'),
 
     // Admin escalation tracking (for stale events with no contact in 2+ weeks)
     adminEscalationSentAt: timestamp('admin_escalation_sent_at'), // When the last escalation email was sent to admins

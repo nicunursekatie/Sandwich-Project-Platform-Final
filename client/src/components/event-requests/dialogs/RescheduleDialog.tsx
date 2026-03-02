@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -7,124 +10,206 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { Label } from '@/components/ui/label';
-import { CalendarIcon, AlertCircle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { CalendarIcon, RefreshCw } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+
+const rescheduleFormSchema = z.object({
+  newScheduledDate: z.date({ required_error: 'A new date is required' }),
+  rescheduleNotes: z.string().optional(),
+});
+
+type RescheduleFormData = z.infer<typeof rescheduleFormSchema>;
 
 interface RescheduleDialogProps {
   isOpen: boolean;
   onClose: () => void;
   request: EventRequest | null;
-  onReschedule: (eventId: number, newDate: Date) => void;
+  onConfirm: (eventId: number, data: {
+    status: string;
+    scheduledEventDate: string;
+    originalScheduledDate?: string | Date | null;
+    postponementNotes?: string;
+  }) => Promise<void>;
 }
 
 export const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
   isOpen,
   onClose,
   request,
-  onReschedule,
+  onConfirm,
 }) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const form = useForm<RescheduleFormData>({
+    resolver: zodResolver(rescheduleFormSchema),
+    defaultValues: {
+      rescheduleNotes: '',
+    },
+  });
 
-  useEffect(() => {
-    if (request) {
-      // Use scheduled date if available, otherwise fall back to desired date
-      const currentDate = request.scheduledEventDate || request.desiredEventDate;
-      setSelectedDate(currentDate ? new Date(currentDate) : undefined);
+  React.useEffect(() => {
+    if (isOpen) {
+      form.reset({ newScheduledDate: undefined as any, rescheduleNotes: '' });
     }
-  }, [request]);
+  }, [isOpen, request, form]);
 
-  const handleSubmit = async () => {
-    if (!request || !selectedDate) return;
+  const onSubmit = async (data: RescheduleFormData) => {
+    if (!request) return;
 
-    setIsSubmitting(true);
     try {
-      await onReschedule(request.id, selectedDate);
+      const formattedDate = format(data.newScheduledDate, 'yyyy-MM-dd');
+      await onConfirm(request.id, {
+        status: 'rescheduled',
+        scheduledEventDate: formattedDate,
+        originalScheduledDate: request.scheduledEventDate || request.originalScheduledDate || null,
+        postponementNotes: data.rescheduleNotes || undefined,
+      });
+      form.reset();
       onClose();
     } catch (error) {
       logger.error('Failed to reschedule event:', error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   if (!request) return null;
 
-  const originalDate = request.desiredEventDate ? new Date(request.desiredEventDate) : null;
-  const currentScheduledDate = request.scheduledEventDate ? new Date(request.scheduledEventDate) : null;
+  const currentDate = request.scheduledEventDate
+    ? new Date(request.scheduledEventDate).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : request.originalScheduledDate
+    ? new Date(request.originalScheduledDate).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[525px]">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        form.reset();
+        onClose();
+      }
+    }}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Reschedule Event</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 text-[#236383]" />
+            Reschedule Event
+          </DialogTitle>
           <DialogDescription>
-            Select a new date for the event at {request.organizationName}
+            Event: <strong>{request.organizationName}</strong>
+            {request.department && ` - ${request.department}`}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Show current dates for reference */}
-          <div className="space-y-2 p-3 bg-gray-50 rounded-lg text-sm">
-            {originalDate && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Originally Requested:</span>
-                <span className="font-medium">{format(originalDate, 'PPP')}</span>
-              </div>
-            )}
-            {currentScheduledDate && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-600">Currently Scheduled:</span>
-                <span className="font-medium">{format(currentScheduledDate, 'PPP')}</span>
-              </div>
-            )}
+        {currentDate && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+            Previously scheduled for: <strong>{currentDate}</strong>
           </div>
+        )}
 
-          {/* Date picker */}
-          <div className="space-y-2">
-            <Label>New Event Date</Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-              className="rounded-md border"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="newScheduledDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className="text-base font-semibold">
+                    New Event Date <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
+                          )}
+                        >
+                          {field.value
+                            ? format(field.value, 'MMMM d, yyyy')
+                            : 'Select the new event date'}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 z-[10000]" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          {/* Warning if changing from original requested date */}
-          {selectedDate && originalDate &&
-           selectedDate.toDateString() !== originalDate.toDateString() && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-900">Different from requested date</p>
-                <p className="text-amber-700">
-                  The organizer originally requested {format(originalDate, 'PPP')}.
-                  Make sure to communicate this change.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+            <FormField
+              control={form.control}
+              name="rescheduleNotes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-semibold">
+                    Notes (Optional)
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Any notes about the reschedule..."
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!selectedDate || isSubmitting}
-          >
-            <CalendarIcon className="w-4 h-4 mr-2" />
-            {isSubmitting ? 'Rescheduling...' : 'Reschedule Event'}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  onClose();
+                }}
+                disabled={form.formState.isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="bg-[#236383] hover:bg-[#1e5a75] text-white"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {form.formState.isSubmitting ? 'Processing...' : 'Reschedule Event'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -6,6 +6,8 @@ import {
   XCircle,
   Hourglass,
   AlertCircle,
+  Ban,
+  RefreshCw,
 } from 'lucide-react';
 
 // Re-export shared status workflow definitions for client use
@@ -33,6 +35,8 @@ export const statusColors: Record<string, string> = {
     'bg-gradient-to-br from-[#FBAD3F] to-[#ffc966] text-white border-2 border-[#FBAD3F] shadow-md',
   scheduled:
     'bg-gradient-to-br from-[#236383] to-[#2d7da5] text-white border-2 border-[#236383] shadow-md',
+  rescheduled:
+    'bg-gradient-to-br from-[#236383] to-[#2d7da5] text-white border-2 border-[#236383] shadow-md',
   completed:
     'bg-gradient-to-br from-[#47B3CB] to-[#6bc4d4] text-white border-2 border-[#47B3CB] shadow-md',
   declined:
@@ -41,6 +45,8 @@ export const statusColors: Record<string, string> = {
     'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
   cancelled:
     'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
+  non_event:
+    'bg-gradient-to-br from-[#78716C] to-[#A8A29E] text-white border-2 border-[#78716C] shadow-md',
   standby:
     'bg-gradient-to-br from-[#9333EA] to-[#A855F7] text-white border-2 border-[#9333EA] shadow-md',
   stalled:
@@ -52,10 +58,12 @@ export const statusBorderColors: Record<string, string> = {
   new: '#007E8C', // Vibrant teal
   in_process: '#FBAD3F', // Vibrant orange
   scheduled: '#236383', // Vibrant dark blue
+  rescheduled: '#236383', // Same as scheduled
   completed: '#47B3CB', // Vibrant light blue
   declined: '#A31C41', // Vibrant red
   postponed: '#A31C41', // Vibrant red
   cancelled: '#A31C41', // Vibrant red
+  non_event: '#78716C', // Warm gray (stone)
   standby: '#9333EA', // Purple
   stalled: '#6B7280', // Gray
 };
@@ -65,10 +73,12 @@ export const statusBgColors: Record<string, string> = {
   new: 'bg-[#E2F5F6]', // Solid light teal
   in_process: 'bg-[#FFF4E5]', // Solid light gold
   scheduled: 'bg-[#E4EFF6]', // Solid light navy
+  rescheduled: 'bg-[#E4EFF6]', // Same as scheduled
   completed: 'bg-[#E8F7FB]', // Solid light sky blue
   declined: 'bg-[#FAE7ED]', // Solid light crimson
   postponed: 'bg-[#FAE7ED]', // Solid light crimson
   cancelled: 'bg-[#FAE7ED]', // Solid light crimson
+  non_event: 'bg-[#F5F5F4]', // Light stone
   standby: 'bg-[#F3E8FF]', // Light purple
   stalled: 'bg-[#F3F4F6]', // Light gray
 };
@@ -96,10 +106,12 @@ export const statusIcons: Record<string, any> = {
   new: Clock,
   in_process: Phone,
   scheduled: Calendar,
+  rescheduled: RefreshCw,
   completed: CheckCircle,
   declined: XCircle,
   postponed: Clock,
   cancelled: XCircle,
+  non_event: Ban,
   standby: Hourglass,
   stalled: AlertCircle,
 };
@@ -114,10 +126,12 @@ export const statusOptions = [
   { value: 'new', label: 'New Request' },
   { value: 'in_process', label: 'In Process' },
   { value: 'scheduled', label: 'Scheduled' },
+  { value: 'rescheduled', label: 'Rescheduled' },
   { value: 'completed', label: 'Completed' },
   { value: 'declined', label: 'Declined' },
   { value: 'postponed', label: 'Postponed' },
   { value: 'cancelled', label: 'Cancelled' },
+  { value: 'non_event', label: 'Non-Event' },
   { value: 'standby', label: 'Standby' },
   { value: 'stalled', label: 'Stalled' },
 ];
@@ -125,14 +139,16 @@ export const statusOptions = [
 // Status tooltips for accessibility - explains what each status means to non-technical users
 export const statusTooltips: Record<string, string> = {
   new: 'New request awaiting initial review and contact',
-  in_process: 'Actively being coordinated - intake call scheduled or in progress',
-  scheduled: 'Event date confirmed and logistics being finalized',
-  completed: 'Event successfully completed',
-  declined: 'Request was declined or the organizer decided not to proceed (never reached Scheduled)',
-  postponed: 'A previously scheduled event has been delayed - no new date confirmed yet',
-  cancelled: 'A previously scheduled event has been cancelled and will not take place',
-  standby: 'Waiting for organizer to work out details on their end - check back periodically',
-  stalled: 'No response after multiple outreach attempts - kept for periodic follow-up',
+  in_process: 'Has received the toolkit and at least one contact attempt has been made',
+  scheduled: 'Event is on our calendar with the majority of details nailed down',
+  rescheduled: 'Previously postponed or scheduled event now confirmed for a new date',
+  completed: 'Event date has passed and the event was not cancelled or postponed',
+  declined: 'Organization was in process but decided not to proceed',
+  postponed: 'Previously scheduled event delayed — no new date confirmed yet',
+  cancelled: 'Previously scheduled event cancelled without intention to reschedule',
+  non_event: 'Not a real event request — e.g., sandwich drop-off, general inquiry',
+  standby: 'Contact is waiting on something specific before planning can continue',
+  stalled: 'All contact attempts have failed — event sidelined for now',
 };
 
 // Additional indicator tooltips for special badges

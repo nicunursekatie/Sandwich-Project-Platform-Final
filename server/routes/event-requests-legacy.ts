@@ -781,13 +781,14 @@ const logActivity = async (
 // Valid status values for event requests
 const VALID_EVENT_REQUEST_STATUSES = [
   'new',
-  'followed_up',
   'in_process',
   'scheduled',
+  'rescheduled',
   'completed',
   'declined',
   'postponed',
   'cancelled',
+  'non_event',
   'standby',
   'stalled'
 ] as const;
@@ -1563,16 +1564,18 @@ router.get(
         new: 0,
         in_process: 0,
         scheduled: 0,
+        rescheduled: 0,
         completed: 0,
         declined: 0,
         postponed: 0,
         cancelled: 0,
+        non_event: 0,
         standby: 0,
         stalled: 0,
         my_assignments: 0,
       };
 
-      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled', 'stalled']);
+      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled', 'non_event', 'stalled']);
 
       // Helper to check if user is assigned to an event
       const isUserAssigned = (event: any): boolean => {
@@ -1638,7 +1641,7 @@ router.get(
 
         // Count my_assignments for non-terminal events.
         // Keep behavior aligned with the previous frontend implementation:
-        // include everything except completed/declined/postponed/cancelled (so followed_up is included).
+        // include everything except completed/declined/postponed/cancelled/non_event.
         if (event.status && !terminalStatuses.has(event.status) && isUserAssigned(event)) {
           counts.my_assignments++;
         }
@@ -2777,6 +2780,21 @@ router.patch(
           }
           processedUpdates.wasPostponed = true;
           processedUpdates.postponementCount = (originalEvent.postponementCount || 0) + 1;
+        }
+
+        // Track metadata for non_event status
+        if (processedUpdates.status === 'non_event') {
+          processedUpdates.nonEventAt = new Date();
+          processedUpdates.nonEventBy = req.user?.id || null;
+        }
+
+        // Track metadata for rescheduled status
+        if (processedUpdates.status === 'rescheduled') {
+          // Preserve the original scheduled date if not already set
+          if (originalEvent.scheduledEventDate && !processedUpdates.originalScheduledDate) {
+            processedUpdates.originalScheduledDate = originalEvent.scheduledEventDate;
+          }
+          processedUpdates.wasPostponed = true;
         }
 
         // When rescheduling from postponed back to scheduled, mark the postponement history
@@ -4985,19 +5003,19 @@ router.post('/:id/postpone', isAuthenticated, requirePermission('EVENT_REQUESTS_
       return res.status(404).json({ message: 'Event request not found' });
     }
 
-    // Validate: only scheduled events can be postponed
-    if (originalEvent.status !== 'scheduled' && originalEvent.status !== 'postponed') {
+    // Validate: only scheduled, rescheduled, or postponed events can be postponed
+    if (originalEvent.status !== 'scheduled' && originalEvent.status !== 'rescheduled' && originalEvent.status !== 'postponed') {
       return res.status(400).json({
-        message: 'Only Scheduled or Postponed events can be postponed. If this event has not been scheduled yet, keep it in its current status.',
+        message: 'Only Scheduled, Rescheduled, or Postponed events can be postponed. If this event has not been scheduled yet, keep it in its current status.',
         error: 'INVALID_STATUS_TRANSITION',
       });
     }
 
     // Branch: immediate reschedule (has new date) vs. postponed (no date yet)
     if (hasNewDate && newScheduledDate) {
-      // IMMEDIATE RESCHEDULE: Event stays scheduled with new date, but records postponement history
+      // IMMEDIATE RESCHEDULE: Event moves to rescheduled with new date, records postponement history
       const updateData: any = {
-        status: 'scheduled', // stays scheduled
+        status: 'rescheduled', // moves to rescheduled status
         postponementReason: postponementReason,
         postponementNotes: postponementNotes || null,
         scheduledEventDate: parseDateOnly(newScheduledDate),
@@ -5164,7 +5182,7 @@ router.get(
       endOfLastWeek.setMilliseconds(-1);
 
       // Active events (not completed, declined, cancelled, postponed)
-      const activeStatuses = ['new', 'followed_up', 'in_process', 'scheduled'];
+      const activeStatuses = ['new', 'in_process', 'scheduled', 'rescheduled'];
       const activeEvents = allEventRequests.filter(event =>
         activeStatuses.includes(event.status || '')
       );
@@ -5289,9 +5307,9 @@ router.get(
       // Events by status for active events
       const statusCounts = {
         new: activeEvents.filter(e => e.status === 'new').length,
-        followed_up: activeEvents.filter(e => e.status === 'followed_up').length,
         in_process: activeEvents.filter(e => e.status === 'in_process').length,
         scheduled: activeEvents.filter(e => e.status === 'scheduled').length,
+        rescheduled: activeEvents.filter(e => e.status === 'rescheduled').length,
       };
 
       res.json({

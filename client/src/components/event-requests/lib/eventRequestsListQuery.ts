@@ -80,7 +80,7 @@ export function buildEventRequestsListFilterParams(
 
   // "all" tab includes active statuses plus cancelled so they're not invisible
   if (activeTab === 'all') {
-    return { status: 'new,followed_up,in_process,scheduled,cancelled' };
+    return { status: 'new,in_process,scheduled,rescheduled,cancelled' };
   }
 
   // For "my_assignments", admin_overview, planning, etc:

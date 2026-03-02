@@ -350,7 +350,7 @@ export function needsCorporate24hEscalation(
 
 /**
  * Check if an event is approaching and needs urgent attention
- * Criteria: Event date within X days + status still 'in_process' or 'followed_up'
+ * Criteria: Event date within X days + status still 'in_process' or 'new'
  */
 export function isEventApproachingIncomplete(
   status: string,
@@ -358,7 +358,7 @@ export function isEventApproachingIncomplete(
   daysThreshold: number = 5
 ): boolean {
   // Only applies to events not yet scheduled
-  if (!['new', 'followed_up', 'in_process'].includes(status)) {
+  if (!['new', 'in_process'].includes(status)) {
     return false;
   }
 
@@ -494,12 +494,6 @@ export function getNextActionForEvent(
         ? 'CALL TODAY - Corporate priority, make initial contact'
         : 'Make initial contact with organization';
 
-    case 'followed_up':
-      if (toolkitStatus === 'not_sent') {
-        return 'Send toolkit to organization';
-      }
-      return 'Follow up on toolkit - confirm event details';
-
     case 'in_process':
       const daysSinceContact = lastContactAttempt
         ? Math.floor((Date.now() - new Date(lastContactAttempt).getTime()) / (1000 * 60 * 60 * 24))
@@ -561,7 +555,7 @@ export function getEventUrgency(
   }
 
   // Event approaching but not scheduled
-  if (eventDate && ['new', 'followed_up', 'in_process'].includes(status)) {
+  if (eventDate && ['new', 'in_process'].includes(status)) {
     const daysUntil = (new Date(eventDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     if (daysUntil <= 5 && daysUntil > 0) {
       return 'high';

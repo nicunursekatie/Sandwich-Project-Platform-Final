@@ -25,6 +25,8 @@ import {
   LayoutList,
   Hourglass,
   AlertCircle,
+  Ban,
+  RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -197,7 +199,14 @@ export default function RequestFilters({
       label: 'Scheduled',
       shortLabel: 'Scheduled',
       icon: Calendar,
-      count: statusCounts.scheduled,
+      count: statusCounts.scheduled + statusCounts.rescheduled,
+    },
+    {
+      value: 'rescheduled',
+      label: 'Rescheduled',
+      shortLabel: 'Resched',
+      icon: RefreshCw,
+      count: statusCounts.rescheduled,
     },
     {
       value: 'completed',
@@ -233,6 +242,13 @@ export default function RequestFilters({
       shortLabel: 'Stalled',
       icon: AlertCircle,
       count: statusCounts.stalled,
+    },
+    {
+      value: 'non_event',
+      label: 'Non-Event',
+      shortLabel: 'N/E',
+      icon: Ban,
+      count: statusCounts.non_event,
     }
   );
 

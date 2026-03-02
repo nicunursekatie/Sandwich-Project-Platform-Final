@@ -141,7 +141,8 @@ export default function EventContactDetailPage() {
 
   const statusColors: Record<string, string> = {
     new: 'bg-slate-100 text-slate-700',
-    followed_up: 'bg-blue-100 text-blue-700',
+    rescheduled: 'bg-indigo-100 text-indigo-700',
+    non_event: 'bg-stone-100 text-stone-700',
     in_process: 'bg-yellow-100 text-yellow-700',
     scheduled: 'bg-indigo-100 text-indigo-700',
     completed: 'bg-green-100 text-green-700',

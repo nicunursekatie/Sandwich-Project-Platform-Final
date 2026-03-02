@@ -39,6 +39,7 @@ import {
   RefreshCw,
   Lock,
   Unlock,
+  Ban,
 } from 'lucide-react';
 import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -76,6 +77,7 @@ interface NewRequestCardProps {
   onEditTspContact: () => void;
   onApprove: () => void;
   onDecline: () => void;
+  onNonEvent?: () => void;
   onLogContact: () => void;
   onAiSuggest?: () => void;
   onAiIntakeAssist?: () => void;
@@ -748,6 +750,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onEditTspContact,
   onApprove,
   onDecline,
+  onNonEvent,
   onLogContact,
   onAiSuggest,
   onAiIntakeAssist,
@@ -1260,6 +1263,26 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <p>Log a contact attempt or conversation</p>
               </TooltipContent>
             </Tooltip>
+
+            {onNonEvent && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onNonEvent}
+                    className="text-stone-500 hover:text-stone-700 hover:bg-stone-100 h-8"
+                    data-testid="button-non-event"
+                  >
+                    <Ban className="w-4 h-4 mr-1" />
+                    Non-Event
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark as non-event (not a real event request)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             <div className="flex-1" />
 

@@ -53,6 +53,8 @@ export const NewRequestsTab: React.FC = () => {
     setNextActionMode,
     setShowDeclineDialog,
     setReasonDialogEventRequest,
+    setShowNonEventDialog,
+    setNonEventDialogEventRequest,
   } = useEventRequestContext();
 
   const newRequests = filterRequestsByStatus('new');
@@ -308,6 +310,13 @@ export const NewRequestsTab: React.FC = () => {
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
                   setShowDeclineDialog(true);
+                }
+              }}
+              onNonEvent={async () => {
+                const result = await handleStatusChange(request.id, 'non_event');
+                if (result === 'needs_reason') {
+                  setNonEventDialogEventRequest(request);
+                  setShowNonEventDialog(true);
                 }
               }}
               onLogContact={() => {

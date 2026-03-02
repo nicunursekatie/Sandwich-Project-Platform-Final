@@ -16,13 +16,14 @@ import type { EventStatus } from '@shared/event-status-workflow';
 
 const statusOrder: EventStatus[] = [
   'new',
-  'followed_up',
   'in_process',
   'scheduled',
+  'rescheduled',
   'completed',
   'declined',
   'postponed',
   'cancelled',
+  'non_event',
   'standby',
   'stalled',
 ];
