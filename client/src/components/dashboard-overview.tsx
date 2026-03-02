@@ -408,17 +408,17 @@ export default function DashboardOverview({
       </div>
       <div className="space-y-8 pb-8 w-full">
         {/* Header */}
-        <div className="premium-card mx-4 mt-8 p-6 sm:p-8 text-center max-w-full">
+        <div className="premium-card mx-4 mt-8 p-4 sm:p-6 text-center max-w-full">
           <div className="relative max-w-full">
             <img
               src={CMYK_PRINT_TSP_01__2_}
               alt="The Sandwich Project"
-              className="w-[200px] sm:w-[250px] md:w-[400px] max-w-full mb-4 sm:mb-6 mx-auto"
-              width="400"
-              height="125"
+              className="w-[140px] sm:w-[170px] md:w-[240px] max-w-full mb-2 sm:mb-3 mx-auto"
+              width="240"
+              height="75"
             />
           </div>
-          <p className="premium-text-body-lg text-brand-primary font-medium">
+          <p className="text-sm sm:text-base text-brand-primary font-medium">
             Nourish The Hungry. Feed The Soul.
           </p>
         </div>
