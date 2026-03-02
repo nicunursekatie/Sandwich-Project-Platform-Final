@@ -1634,7 +1634,7 @@ export default function EventImpactReports() {
                     }
                   }}
                   disabled={categorizationProgress?.running}
-                  className="bg-brand-teal hover:bg-brand-teal-dark"
+                  className="bg-brand-primary hover:bg-brand-primary-dark"
                 >
                   {categorizationProgress?.running ? (
                     <>

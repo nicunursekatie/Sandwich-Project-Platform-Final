@@ -1055,7 +1055,7 @@ export default function DashboardOverview({
                     <Button
                       size="sm"
                       onClick={() => window.open(doc.path, '_blank')}
-                      className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-teal text-white"
+                      className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
                     >
                       <Download className="h-3 w-3 mr-1" />
                       Download

@@ -277,7 +277,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => onNavigate('event-requests')}
-            className="bg-brand-primary hover:bg-brand-teal"
+            className="bg-brand-primary hover:bg-brand-primary-dark"
           >
             <Calendar className="w-4 h-4 mr-2" />
             View All Events

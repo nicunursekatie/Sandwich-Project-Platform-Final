@@ -445,7 +445,7 @@ export default function ImportantLinks() {
                   <Button
                     size="lg"
                     onClick={() => window.open(inventoryCalculatorUrl, '_blank')}
-                    className="bg-brand-primary hover:bg-brand-teal text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
                     <Calculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Open Calculator
@@ -453,7 +453,7 @@ export default function ImportantLinks() {
                   <Button
                     size="lg"
                     onClick={() => window.open(eventEstimatorUrl, '_blank')}
-                    className="bg-brand-teal hover:bg-brand-primary text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
                   >
                     <Calculator className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                     Event Estimator
@@ -935,7 +935,7 @@ export default function ImportantLinks() {
                   <Button
                     size="sm"
                     onClick={() => window.open(userSheetUrl, '_blank')}
-                    className="bg-brand-primary hover:bg-brand-teal text-white h-9 text-xs sm:text-sm"
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white h-9 text-xs sm:text-sm"
                   >
                     <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                     Open Link

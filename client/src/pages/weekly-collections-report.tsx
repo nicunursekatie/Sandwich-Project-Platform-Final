@@ -573,7 +573,7 @@ export default function WeeklyCollectionsReport() {
                 </Button>
                 <Button
                   onClick={handleDownloadCSV}
-                  className="gap-2 border-brand-teal text-brand-teal hover:bg-brand-teal/10"
+                  className="gap-2"
                   variant="outline"
                   title="Download raw data as CSV for Excel"
                 >

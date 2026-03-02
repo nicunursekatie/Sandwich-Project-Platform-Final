@@ -99,7 +99,7 @@ export default function OnboardingAdmin() {
         <Button
           onClick={handleSendAnnouncement}
           disabled={sendAnnouncementMutation.isPending}
-          className="bg-brand-primary hover:bg-brand-teal"
+          className="bg-brand-primary hover:bg-brand-primary-dark"
         >
           <Mail className="w-4 h-4 mr-2" />
           {sendAnnouncementMutation.isPending ? 'Sending...' : 'Send Announcement Email'}

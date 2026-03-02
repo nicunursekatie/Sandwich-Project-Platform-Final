@@ -119,17 +119,17 @@
     @apply ring-[#236383]/30;
   }
 
-  /* Secondary - Teal emphasis */
+  /* Secondary - Same primary color, lighter treatment */
   .premium-btn-secondary {
     @apply premium-btn;
-    background: #007E8C;
+    background: #236383;
     color: white;
-    box-shadow: 0 2px 6px rgba(0, 126, 140, 0.20);
+    box-shadow: 0 2px 6px rgba(35, 99, 131, 0.20);
   }
 
   .premium-btn-secondary:hover {
-    background: #006B75;
-    box-shadow: 0 4px 10px rgba(0, 126, 140, 0.28);
+    background: #1e5a75;
+    box-shadow: 0 4px 10px rgba(35, 99, 131, 0.28);
     transform: translateY(-1px);
   }
 
@@ -138,7 +138,7 @@
   }
 
   .premium-btn-secondary:focus {
-    @apply ring-[#007E8C]/30;
+    @apply ring-[#236383]/30;
   }
 
   /* Accent - Attention grabbing */
