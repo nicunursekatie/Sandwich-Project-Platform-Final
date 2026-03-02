@@ -278,7 +278,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
-                <h3 className="font-bold text-xl sm:text-2xl md:text-3xl text-[#236383] break-words">
+                <h3 className="font-bold text-lg sm:text-xl text-[#236383] break-words">
                   {request.organizationName}
                 </h3>
                 {canEditOrgDetails && startEditing && (

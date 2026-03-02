@@ -920,7 +920,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <h2
-                  className={`text-xl sm:text-2xl md:text-3xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
+                  className={`text-lg sm:text-xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
                   onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
                 >
                   {request.organizationName}

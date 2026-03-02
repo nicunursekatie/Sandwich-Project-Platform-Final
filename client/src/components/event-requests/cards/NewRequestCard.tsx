@@ -296,10 +296,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 className="mr-1"
               />
             )}
-            <h3 className="text-2xl sm:text-3xl font-bold text-[#236383] break-words min-w-0">
+            <h3 className="text-lg sm:text-xl font-bold text-[#236383] break-words min-w-0">
               {request.organizationName}
               {request.department && (
-                <span className="text-xl sm:text-2xl font-normal text-gray-600 ml-2">
+                <span className="text-base sm:text-lg font-normal text-gray-600 ml-2">
                   &bull; {request.department}
                 </span>
               )}
