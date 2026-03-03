@@ -79,9 +79,12 @@ export const useEventMutations = () => {
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
 
       // Include optimistic locking version if we have the selected event's updatedAt
-      // This prevents silent overwrites when two users edit the same event
-      const payload = { ...data };
-      if (selectedEventRequest?.updatedAt) {
+      // This prevents silent overwrites when two users edit the same event.
+      // _skipVersionCheck bypasses this for additive-only updates (e.g. contact logs)
+      // where two users saving simultaneously cannot produce a conflict.
+      const { _skipVersionCheck, ...rest } = data;
+      const payload = { ...rest };
+      if (!_skipVersionCheck && selectedEventRequest?.updatedAt) {
         payload._expectedVersion = selectedEventRequest.updatedAt;
       }
 

@@ -1044,7 +1044,7 @@ const EventRequestsManagementContent: React.FC = () => {
             if (!logContactEventRequest) return;
             await updateEventRequestMutation.mutateAsync({
               id: logContactEventRequest.id,
-              data,
+              data: { ...data, _skipVersionCheck: true },
             });
           }}
         />
@@ -1063,7 +1063,7 @@ const EventRequestsManagementContent: React.FC = () => {
             if (!editContactEventRequest) return;
             await updateEventRequestMutation.mutateAsync({
               id: editContactEventRequest.id,
-              data,
+              data: { ...data, _skipVersionCheck: true },
             });
           }}
         />

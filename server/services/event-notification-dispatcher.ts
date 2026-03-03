@@ -8,7 +8,7 @@
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
 import { eventRequests, users } from '@shared/schema';
-import { eq, and, or, inArray, lt, gte, isNull, sql } from 'drizzle-orm';
+import { eq, and, or, inArray, lt, lte, gte, isNull, sql } from 'drizzle-orm';
 import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
