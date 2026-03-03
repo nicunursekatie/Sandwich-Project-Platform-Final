@@ -176,7 +176,7 @@ export function EventRequestAuditLog({
       const data = await response.json();
       return data.logs || []; // Extract the logs array from the response
     },
-    refetchInterval: eventId ? undefined : 30000, // Auto-refresh every 30 seconds for general view
+    refetchInterval: eventId ? undefined : 3 * 60 * 1000, // 3 minutes for general view (reduced from 30 seconds for cost optimization)
   });
 
   // Get unique users for filter

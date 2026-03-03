@@ -125,7 +125,7 @@ export function DetailedActivityAnalytics() {
       if (!response.ok) throw new Error('Failed to fetch activity data');
       return response.json();
     },
-    refetchInterval: 30000, // Refresh every 30 seconds for real-time feel
+    refetchInterval: 3 * 60 * 1000, // 3 minutes (reduced from 30 seconds for cost optimization)
   });
 
   const handleFilterChange = (filterType: string, value: string) => {

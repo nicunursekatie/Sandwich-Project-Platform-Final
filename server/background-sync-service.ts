@@ -21,8 +21,8 @@ export class BackgroundSyncService {
   private readonly ALERT_COOLDOWN_MINUTES = 60; // Don't spam emails - max one per hour
   private readonly FAILURE_THRESHOLD = 3; // Alert after 3 consecutive failures
   private readonly SKIP_THRESHOLD = 3; // Alert after 3 consecutive skips
-  private readonly STALE_SYNC_THRESHOLD_MINUTES = 20; // Alert if no successful sync in 20 minutes
-  private readonly STARTUP_GRACE_PERIOD_MINUTES = 15; // Grace period before alerting on no initial sync
+  private readonly STALE_SYNC_THRESHOLD_MINUTES = 60; // Alert if no successful sync in 60 minutes (updated for 30-min sync interval)
+  private readonly STARTUP_GRACE_PERIOD_MINUTES = 35; // Grace period before alerting on no initial sync (updated for 30-min sync interval)
 
   constructor(private storage: IStorage) {}
 
@@ -60,7 +60,7 @@ export class BackgroundSyncService {
         // CRITICAL: Don't stop the service - it will retry on the next interval
       });
 
-    // Set up recurring sync every 5 minutes
+    // Set up recurring sync every 30 minutes (optimized for low-activity orgs)
     // CRITICAL: Use a wrapper that ensures sync continues even if errors occur
     this.syncInterval = setInterval(
       () => {
@@ -69,21 +69,21 @@ export class BackgroundSyncService {
             syncLogger.error('Scheduled background sync failed', { error });
             logger.error('❌ Scheduled background sync failed:', error);
             // CRITICAL: Log but don't stop - sync will retry on next interval
-            logger.log('⚠️ Background sync will retry on next interval (every 5 minutes)');
+            logger.log('⚠️ Background sync will retry on next interval (every 30 minutes)');
           })
           .finally(() => {
             // Ensure we always log that we're still running
-            syncLogger.debug('Background sync cycle completed, will retry in 5 minutes');
+            syncLogger.debug('Background sync cycle completed, will retry in 30 minutes');
             // Check for stale sync even if sync attempt failed
             this.checkStaleSync().catch(err => {
               logger.error('Error checking stale sync:', err);
             });
           });
       },
-      5 * 60 * 1000
-    ); // 5 minutes
+      30 * 60 * 1000
+    ); // 30 minutes (reduced from 5 minutes for cost optimization)
 
-    logger.log('✅ Background sync service started - syncing every 5 minutes with blacklist protection');
+    logger.log('✅ Background sync service started - syncing every 30 minutes with blacklist protection');
     logger.log('🔄 Sync will continue running even if individual syncs fail - errors are logged but service continues');
   }
 

@@ -129,7 +129,7 @@ export function IndividualUserActivity({
       if (!response.ok) throw new Error('Failed to fetch user activity data');
       return response.json();
     },
-    refetchInterval: 30000,
+    refetchInterval: 3 * 60 * 1000, // 3 minutes (reduced from 30 seconds for cost optimization)
   });
 
   const formatDate = (dateString: string) => {

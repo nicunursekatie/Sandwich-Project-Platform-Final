@@ -56,7 +56,7 @@ export default function SimpleNav({
         }
       },
       enabled: !!(user as any)?.id,
-      refetchInterval: 30000,
+      refetchInterval: 2 * 60 * 1000, // 2 minutes (reduced from 30 seconds for cost optimization)
       retry: false,
     });
 

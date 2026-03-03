@@ -250,10 +250,49 @@ export default function Dashboard({
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
 
+  // Helper function to get readable section/page names for activity tracking
+  const getActivityContext = (section: string) => {
+    const sectionMap: Record<string, { section: string; page: string }> = {
+      'dashboard': { section: 'Dashboard', page: 'Main Dashboard' },
+      'collections': { section: 'Collections', page: 'Collections Log' },
+      'event-requests': { section: 'Event Planning', page: 'Event Requests' },
+      'event-ops-dashboard': { section: 'Event Planning', page: 'Ops Dashboard' },
+      'admin-overview': { section: 'Event Planning', page: 'Admin Overview' },
+      'event-calendar': { section: 'Event Planning', page: 'Event Calendar' },
+      'event-conflict-detection': { section: 'Event Planning', page: 'Conflict Detection' },
+      'driver-planning': { section: 'Event Planning', page: 'Driver Planning' },
+      'contacts-directory': { section: 'Contacts', page: 'Contacts Directory' },
+      'organizations-directory': { section: 'Organizations', page: 'Organizations Directory' },
+      'hosts-directory': { section: 'Hosts', page: 'Hosts Directory' },
+      'host-stats': { section: 'Hosts', page: 'Host Statistics' },
+      'all-locations': { section: 'Locations', page: 'All Locations' },
+      'impact': { section: 'Analytics', page: 'Impact Dashboard' },
+      'analytics': { section: 'Analytics', page: 'Analytics' },
+      'reports': { section: 'Reports', page: 'Reports' },
+      'expense-management': { section: 'Finance', page: 'Expense Management' },
+      'chat': { section: 'Communication', page: 'Team Chat' },
+      'gmail-inbox': { section: 'Communication', page: 'Gmail Inbox' },
+      'announcements': { section: 'Communication', page: 'Announcements' },
+      'project-list': { section: 'Projects', page: 'Project List' },
+      'holding-zone': { section: 'Collections', page: 'Holding Zone' },
+      'weekly-summary': { section: 'Collections', page: 'Weekly Summary' },
+      'user-management': { section: 'Administration', page: 'User Management' },
+      'role-management': { section: 'Administration', page: 'Role Management' },
+      'settings': { section: 'Administration', page: 'Settings' },
+      'kudos': { section: 'Recognition', page: 'Kudos' },
+      'profile': { section: 'Profile', page: 'My Profile' },
+      'help': { section: 'Help', page: 'Help Center' },
+    };
+
+    return sectionMap[section] || { section: 'Dashboard', page: section };
+  };
+
+  const activityContext = getActivityContext(activeSection);
+
   // Track page session for activity logging
   usePageSession({
-    section: 'Dashboard',
-    page: 'Main Dashboard',
+    section: activityContext.section,
+    page: activityContext.page,
     context: { currentSection: activeSection },
   });
 

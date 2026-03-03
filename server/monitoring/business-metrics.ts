@@ -292,9 +292,9 @@ export function startMetricsUpdates(storage: IStorage, sessionStore?: Store): vo
   updateUsers();
   updateSessions();
 
-  // Then run every minute
-  setInterval(updateUsers, 60 * 1000);
-  setInterval(updateSessions, 60 * 1000);
+  // Then run every 5 minutes (reduced from 1 minute for cost optimization)
+  setInterval(updateUsers, 5 * 60 * 1000);
+  setInterval(updateSessions, 5 * 60 * 1000);
 
-  logger.info('Started periodic metrics updates');
+  logger.info('Started periodic metrics updates (every 5 minutes)');
 }
