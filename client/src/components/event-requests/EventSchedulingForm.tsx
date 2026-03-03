@@ -1652,13 +1652,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       logger.log('⚠️ Van conflict check triggered (non-blocking)');
       // Run the check in the background — show warning dialog if conflicts found,
       // but do NOT block the save regardless of the result
-      checkVanConflicts().then(noConflicts => {
-        setVanConflictChecked(true);
-        if (!noConflicts) {
-          console.log('⚠️ [PROD DEBUG] Van conflicts found - showing informational warning');
-          logger.log('⚠️ Van conflicts found - showing informational warning (save still proceeding)');
-        }
-      });
+      checkVanConflicts()
+        .then(noConflicts => {
+          setVanConflictChecked(true);
+          if (!noConflicts) {
+            console.log('⚠️ [PROD DEBUG] Van conflicts found - showing informational warning');
+            logger.log('⚠️ Van conflicts found - showing informational warning (save still proceeding)');
+          }
+        })
+        .catch((error) => {
+          logger.error('Van conflict check failed', { error });
+          setVanConflictChecked(true); // Mark as checked even if it failed to avoid re-triggering
+          // Don't block save or show error to user since this is non-critical
+        });
     }
 
     // Check if status is changing to standby - prompt for follow-up date
@@ -1817,8 +1823,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       });
 
       if (releasePromises.length > 0) {
-        // Fire-and-forget; React does not await cleanup promises
-        void Promise.all(releasePromises);
+        // Fire-and-forget with error handling; React does not await cleanup promises
+        Promise.all(releasePromises).catch((error) => {
+          logger.error('Failed to release field locks during cleanup', { error });
+          // Don't show user error since component is unmounting
+        });
       }
     };
   }, [isCollaborationEnabled, collaboration, currentUser]);
