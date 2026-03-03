@@ -88,13 +88,27 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
         return (userFound.firstName[0] + userFound.lastName[0]).toUpperCase();
       }
       if (userFound.firstName) {
-        return userFound.firstName[0].toUpperCase();
+        return userFound.firstName.substring(0, 2).toUpperCase();
       }
       if (userFound.email) {
-        return userFound.email[0].toUpperCase();
+        return userFound.email.substring(0, 2).toUpperCase();
       }
     }
     return 'M';
+  };
+
+  const AVATAR_COLORS = [
+    'bg-blue-500', 'bg-rose-500', 'bg-green-600', 'bg-amber-500',
+    'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-600',
+    'bg-orange-500', 'bg-cyan-600',
+  ];
+
+  const getAvatarColor = (userId: string): string => {
+    const hash = userId.split('').reduce((a, b) => {
+      a = (a << 5) - a + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
   };
 
   // Fetch user's message groups from conversations table
@@ -849,7 +863,7 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                     <div key={message.id} className="group relative">
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className={`${getAvatarColor(message.userId)} text-white text-xs`}>
                             {getUserInitials(message.userId)}
                           </AvatarFallback>
                         </Avatar>
@@ -975,8 +989,10 @@ export function GroupMessaging({ currentUser }: GroupMessagesProps) {
                   <div key={member.userId} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {member.firstName?.[0]?.toUpperCase() || "?"}
+                        <AvatarFallback className={`${getAvatarColor(member.userId)} text-white text-xs`}>
+                          {(member.firstName && member.lastName)
+                            ? `${member.firstName[0]}${member.lastName[0]}`.toUpperCase()
+                            : member.firstName?.[0]?.toUpperCase() || "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div>

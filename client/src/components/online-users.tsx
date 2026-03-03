@@ -24,11 +24,15 @@ interface OnlineUser {
 }
 
 function getInitials(user: OnlineUser): string {
-  if (user.displayName) {
-    return user.displayName.substring(0, 2).toUpperCase();
-  }
   if (user.firstName && user.lastName) {
     return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  }
+  if (user.displayName) {
+    const parts = user.displayName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return user.displayName.substring(0, 2).toUpperCase();
   }
   if (user.firstName) {
     return user.firstName.substring(0, 2).toUpperCase();
@@ -37,6 +41,20 @@ function getInitials(user: OnlineUser): string {
     return user.email.substring(0, 2).toUpperCase();
   }
   return 'U';
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-rose-500', 'bg-green-600', 'bg-amber-500',
+  'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-600',
+  'bg-orange-500', 'bg-cyan-600',
+];
+
+function getAvatarColor(userId: string): string {
+  const hash = userId.split('').reduce((a, b) => {
+    a = (a << 5) - a + b.charCodeAt(0);
+    return a & a;
+  }, 0);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 function getDisplayName(user: OnlineUser): string {
@@ -154,7 +172,7 @@ export function OnlineUsers() {
                     <div className="relative">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user.profileImageUrl || undefined} />
-                        <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">
+                        <AvatarFallback className={`${getAvatarColor(user.id)} text-white text-xs`}>
                           {getInitials(user)}
                         </AvatarFallback>
                       </Avatar>
