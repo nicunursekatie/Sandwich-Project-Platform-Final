@@ -1,5 +1,5 @@
 ### Overview
-This full-stack application for The Sandwich Project nonprofit aims to streamline sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project enhances data visibility, supports organizational growth, and is a vital tool for food security initiatives, ultimately reducing food waste and hunger. The organizational annual goal is to collect 500,000 sandwiches.
+This full-stack application for The Sandwich Project nonprofit streamlines sandwich collections, donations, and distributions. It provides comprehensive data management, analytics, and operational tools for volunteers, hosts, and recipients. The project enhances data visibility, supports organizational growth, and is a vital tool for food security initiatives, aiming to reduce food waste and hunger with an annual goal of 500,000 sandwiches.
 
 ### User Preferences
 Preferred communication style: Simple, everyday language.
@@ -21,44 +21,39 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - Purple markers for recipients on maps (distinct from blue events, green hosts).
 - "Nearby Recipients" section in right panel showing recipients within 15 miles of selected event.
 
-**Technical Implementations & Feature Specifications:**
-- **Authentication & Permissions**: Role-based access control, granular permissions, session management, password security, and active user enforcement. Environment variables control authentication modes. Inactive users are blocked from protected routes. Password hashing and verification use `authService.hashPassword()` and `authService.verifyPassword()`.
-- **Database Configuration**: Centralized database URL selection. Uses `DEV_DATABASE_URL` for development and `DATABASE_URL` for production. Neon serverless requires `--> statement-breakpoint` markers for multi-statement SQL migrations and avoids `.returning()` on update operations (always use `.returning({ id: table.id, ... })` with specific columns, never bare `.returning()`). `db.execute(sql\``) returns results as an array or with a `rows` property. `CREATE UNIQUE INDEX IF NOT EXISTS` is preferred over `DO $$ IF NOT EXISTS ... CREATE UNIQUE INDEX ... END $$` because `information_schema.table_constraints` does not list indexes. `logger.log()` is SILENT in production — use `logger.info()` for important operational messages. The production server runs `dist/index.js` (compiled bundle); TypeScript source changes require `npm run build` then restart of the Start Server workflow to take effect.
-- **Migration Rules (critical)**: Every SQL statement in a migration must be separated by `--> statement-breakpoint`, including between a `CREATE TABLE` and any subsequent `ALTER TABLE` in the same file. Failure to do so causes "cannot insert multiple commands into a prepared statement" on Neon and blocks ALL subsequent migrations from running. When casting a `text` column to `boolean`, PostgreSQL requires the column DEFAULT to be dropped first (`ALTER COLUMN x DROP DEFAULT`), then the type cast applied, then the DEFAULT restored as boolean (`SET DEFAULT true/false`). If a migration fails, it does NOT get recorded in `_migrations` and the outer catch exits the migration loop — all later migrations are skipped until the failing one is fixed.
-- **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` table is the operational source of truth.
-- **Sandwich Totals Calculation**: Calculations must correctly sum either `jsonb group_collections` or legacy `group1_count`/`group2_count` fields, but never both, to prevent double-counting.
-- **Messaging & Notifications**: Email (SendGrid) with all outgoing emails BCC'd to `katie@thesandwichproject.org`, Socket.IO chat, SMS via Twilio, and dashboard notifications.
-- **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool. Event impact reports only count actual `sandwichCollections` records.
-- **Event Requests Management System**: Tracks requests, handles duplicate detection, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, performs comprehensive intake validation, and features interactive Leaflet maps with AI Intake and Scheduling Assistants, including van conflict detection. Includes auto-save to localStorage with recovery options. Enhanced save confirmation feedback. Dialog components must use optional chaining when accessing `eventRequest` properties.
-  - **Corporate Priority System**: Only Katie and Christine can remove the corporate priority flag. "Call now" notifications only trigger for events with status 'new' or 'in_progress'.
-  - **Standby Follow-Up System**: When changing an event to "standby," users are prompted to specify a follow-up date or default to a one-week email reminder. `tsp-contact-followup-service.ts` sends reminders.
-  - **Optimistic Lock Bypass for Contact Logs**: Contact log and edit-contact saves use `_skipVersionCheck: true` in the mutation payload (extracted before the PATCH call) to bypass the `_expectedVersion` check. This prevents 409 conflicts when a cron job touches an event between the user loading the page and saving their contact log entry. The bypass is safe because contact logs are additive—simultaneous entries from different users never overwrite each other.
-  - **`lte` import in event-notification-dispatcher**: `processApproachingIncompleteEvents` uses `lte` from drizzle-orm (lines 916 & 920) which was missing from the import in `server/services/event-notification-dispatcher.ts`. This caused a daily crash at 14:00 ("lte is not defined"). Fixed by adding `lte` to the drizzle-orm import.
-- **Real-Time Collaboration System**: Multi-user collaboration using a single Socket.IO instance for synchronization, presence tracking, field-level locking, threaded comments, and edit revision history. Consolidated into a unified comment system using `event_collaboration_comments`.
-- **Real-Time Online Presence Notifications**: WebSocket-based instant online presence notifications via Socket.IO. Server broadcasts `user-online` and `user-offline` events. Client hook (`useOnlinePresenceNotifications.ts`) listens for events and shows toast notifications. Fallback polling reduced to 5 minutes.
+**Technical Implementations:**
+- **Authentication & Permissions**: Role-based access control, session management, password security, and active user enforcement with environment variables controlling modes.
+- **Database Configuration**: Centralized database URL selection, specific migration rules for Neon serverless, and careful handling of Drizzle ORM returning clauses.
+- **Data Management**: Comprehensive management of collections, hosts, recipients, users, and audit logs with Zod validation, timezone-safe date handling, and soft deletes. `sandwich_collections` is the operational source of truth.
+- **Sandwich Totals Calculation**: Correctly sums either `jsonb group_collections` or legacy `group1_count`/`group2_count` fields to prevent double-counting.
+- **Messaging & Notifications**: Email (SendGrid), Socket.IO chat, SMS (Twilio), and dashboard notifications. All outgoing emails BCC'd to `katie@thesandwichproject.org`.
+- **Operational Tools**: Project, meeting, and work log management, user feedback, analytics dashboards, and a permissions-based Collection Walkthrough Tool. Event impact reports count actual `sandwichCollections`.
+- **Event Requests Management System**: Tracks requests, handles duplicates, manages statuses, integrates with Google Sheets, calculates van driver staffing, supports multi-recipient assignment, intake validation, and interactive Leaflet maps with AI Assistants. Includes auto-save and specific handling for corporate priority and standby follow-ups, along with optimistic lock bypass for contact logs.
+- **Real-Time Collaboration System**: Multi-user collaboration using Socket.IO for synchronization, presence tracking, field-level locking, threaded comments, and edit revision history.
+- **Real-Time Online Presence Notifications**: WebSocket-based instant online presence notifications via Socket.IO with client-side toast notifications.
 - **User Activity Logging System**: Comprehensive tracking of authenticated user actions.
 - **Sandwich Type Tracking System**: Comprehensive tracking for individual and group collections with real-time validation and analytics.
-- **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment. Recipients are geocoded and displayed.
-- **Automated Reminders**: 24-hour volunteer reminder system via cron job with configurable email/SMS delivery channels, supporting role-specific instructions.
-- **TSP Contact Follow-up Notifications**: Automated reminder system for TSP contacts, running twice daily, for events approaching 'in_progress' status and toolkit follow-ups (weekend-aware). Uses SMS or email based on user preferences.
-- **Tiered Notification System**: Three-tier architecture (`notification-tiers.ts`, `event-notification-dispatcher.ts`) to prevent alert fatigue: URGENT (SMS), IMPORTANT (Rich Email), DIGEST (Weekly Summary). Standby follow-up reminders are IMPORTANT tier (email-only).
-- **Corporate 24h Escalation Rate Limiting**: Corporate escalation SMS is rate-limited to once per 24 hours per event. Cron job runs 3x daily but won't send duplicates within 24 hours. Only events with `status = 'new' or 'in_process'` trigger escalations.
-- **Notification Status Filtering**: ALL notification queries MUST exclude inactive event statuses (`['completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby', 'scheduled']`) and only include active statuses (`['new', 'in_process']`).
-- **Smart Follow-up SMS Batching**: SMS notifications are batched per user to prevent multiple individual texts. Users receive one summary SMS. Email notifications remain individual.
-- **Stale Event Escalation Email Batching**: Escalation emails for stale events are batched into one weekly summary email to Katie & Christine. Rate limiting via `adminEscalationSentAt` field.
-- **SMS Alert Configuration System**: Users can opt-in to SMS notifications, with event reminders supporting SMS. Supports multiple campaign types via `campaignTypes` array: `'hosts'` (weekly collection reminders) and `'events'` (event coordination notifications). Users can opt into both. Weekly collection reminders only send to 'hosts' campaign opt-ins.
-- **Kudos Mark-as-Read System**: Kudos messages are tracked in `kudosTracking` table, referencing `messages.id`. Marking kudos as read uses the messaging service. String conversion is required for comparing user IDs with `recipientId` fields.
+- **Interactive Route Map & Driver Optimization**: Leaflet map for visualizing host contact locations, route optimization, and driver assignment.
+- **Automated Reminders**: 24-hour volunteer reminder system via cron job with configurable email/SMS delivery.
+- **TSP Contact Follow-up Notifications**: Automated daily reminders for TSP contacts for approaching 'in_progress' events and toolkit follow-ups.
+- **Tiered Notification System**: Three-tier architecture (URGENT, IMPORTANT, DIGEST) to prevent alert fatigue.
+- **Corporate 24h Escalation Rate Limiting**: Corporate escalation SMS is rate-limited to once per 24 hours per event, for 'new' or 'in_process' statuses.
+- **Notification Status Filtering**: All notification queries exclude inactive event statuses and only include active ones.
+- **Smart Follow-up SMS Batching**: SMS notifications are batched per user; emails remain individual.
+- **Stale Event Escalation Email Batching**: Escalation emails for stale events are batched into one weekly summary email for specific administrators.
+- **SMS Alert Configuration System**: Users can opt-in to SMS notifications, with support for 'hosts' (weekly collection reminders) and 'events' (event coordination) campaign types.
+- **Kudos Mark-as-Read System**: Tracks Kudos messages and allows marking them as read via the messaging service.
 - **TSP Holding Zone**: Inbox-style system for long-term ideas/tasks with categories, urgent flagging, commenting, likes, assignments, and a three-tier permission system.
 - **Guided Tours & Onboarding System**: Interactive, permission-based step-by-step tours for new users.
 - **Error Handling & Logging**: Robust error handling with `lazyWithRetry` and improved production-safe logging.
 - **Timezone Management**: Ensures accurate storage and display of user-entered times, adhering to `America/New_York`.
 - **Google Sheets Sync**: Background service with comprehensive monitoring, alerts, triple deduplication, and message backfill.
-- **React Query Cache Management**: Uses `queryClient.refetchQueries` in mutation success handlers for immediate UI updates.
+- **React Query Cache Management**: Uses `queryClient.refetchQueries` for immediate UI updates on mutation success.
 - **Organization Merge System**: Admin tool to merge duplicate organizations, including similarity scoring, merge preview, and batch updates.
-- **Email Template Customization System**: Allows admins to customize key text sections of follow-up HTML emails via a dedicated UI, with content stored in `email_template_sections` and supporting placeholders.
-- **External API Key Authentication**: Supports API key authentication for external app integrations. API keys are managed via `/api/api-keys` (super_admin only). External apps access event requests via `/api/external/event-requests` with Bearer token authentication. API keys are stored as SHA-256 hashes and follow `tsp_` prefix format. Permissions control access: `EVENT_REQUESTS_VIEW` for GET, `EVENT_REQUESTS_CREATE` for POST, `EVENT_REQUESTS_UPDATE` for PATCH. Schema table: `api_keys`.
-- **Intake Workflow App Integration**: External intake app pulls assigned event requests (GET with `tspContact` param using platform user ID), allows coordinators to complete intake forms, then pushes collected data back (PATCH) to update events to 'scheduled' status. User lookup endpoint (`GET /api/external/event-requests/user-lookup?email=...`) enables intake app to resolve email addresses to platform user IDs. The `tspContact` filter checks `tsp_contact_assigned`, `tsp_contact`, and `custom_tsp_contact` fields. Events are assigned via `tsp_contact_assigned` field using unique user IDs (format: `user_{timestamp}_{random}`).
-- **Document Storage (Cloud)**: Documents are stored in Replit Object Storage (Google Cloud Storage) for persistence across deployments. Upload uses a two-step presigned URL flow: (1) POST `/api/documents/request-upload-url` returns presigned PUT URL + objectPath, (2) client uploads file directly to cloud, (3) POST `/api/documents` creates DB record with objectPath. Download/preview stream from cloud storage. Legacy files with disk paths (`server/uploads/documents/...`) fall back to local disk. The `filePath` column stores cloud paths like `/objects/uploads/uuid`. Integration module: `server/replit_integrations/object_storage/`.
+- **Email Template Customization System**: Admins can customize key sections of HTML emails via a UI, supporting placeholders.
+- **External API Key Authentication**: Supports API key authentication for external app integrations with role-based permissions and SHA-256 hashed keys.
+- **Intake Workflow App Integration**: External app pulls assigned event requests, allows coordinators to complete intake forms, and pushes data back to update events to 'scheduled' status.
+- **Document Storage (Cloud)**: Documents stored in Replit Object Storage (Google Cloud Storage) using a two-step presigned URL flow for uploads and cloud streaming for downloads, with fallback for legacy local files.
 
 ### External Dependencies
 - **Database**: `@neondatabase/serverless`, `drizzle-orm`
@@ -70,7 +65,7 @@ The application features a React 18 frontend with TypeScript, Vite, TanStack Que
 - **PDF Generation**: `pdfkit`
 - **Authentication**: `connect-pg-simple`
 - **File Uploads**: `multer`, `@uppy/core`, `@uppy/aws-s3`, `@uppy/dashboard`, `@uppy/react`
-- **Cloud Storage**: `@google-cloud/storage` (Replit Object Storage integration)
+- **Cloud Storage**: `@google-cloud/storage`
 - **Google Integration**: Google Sheets API, Google Analytics
 - **Mapping**: `leaflet`, `react-leaflet`, `react-leaflet-cluster`
 - **SMS**: `twilio`
