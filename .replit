@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-22_11"
-packages = ["chromium", "glib", "glibcLocales", "gtk3", "jq", "killall", "nss", "tree", "nano", "sqlite-interactive", "zip"]
+packages = ["cairo", "chromium", "ffmpeg-full", "freetype", "ghostscript", "glib", "glibcLocales", "gobject-introspection", "gtk3", "jq", "killall", "nano", "nss", "pkg-config", "qhull", "sqlite-interactive", "tcl", "tk", "tree", "zip"]
 
 [deployment]
 deploymentTarget = "gce"
