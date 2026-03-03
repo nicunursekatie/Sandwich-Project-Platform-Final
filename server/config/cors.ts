@@ -106,6 +106,11 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     return true;
   }
 
+  // Allow Replit preview deploy URLs (*.spock.prod.repl.run) in all environments
+  if (origin.endsWith('.spock.prod.repl.run') || origin.endsWith('.spock.replit.dev')) {
+    return true;
+  }
+
   // Allow custom domain
   if (origin === 'https://tspapp.org' || origin === 'https://www.tspapp.org') {
     return true;
