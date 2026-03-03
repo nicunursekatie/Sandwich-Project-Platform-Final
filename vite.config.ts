@@ -97,16 +97,19 @@ export default defineConfig({
     assetsInlineLimit: 4096, // Inline assets smaller than 4kb
   },
   server: {
-    allowedHosts: true,
+    allowedHosts: [
+      '.replit.dev',
+      '.spock.replit.dev',
+      'bb1d30f8-d852-4bae-abcd-b7c4521e3d85-00-x9tsn55inx51.spock.replit.dev',
+      'all',
+    ],
     fs: {
       strict: true,
       deny: ['**/.*'],
     },
     // Hot Module Replacement (HMR) settings for faster development
     hmr: {
-      overlay: true,
-      clientPort: 443,
-      protocol: 'wss',
+      overlay: true, // Show errors as overlay
     },
     // Watch options for better file watching
     watch: {
