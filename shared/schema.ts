@@ -30,6 +30,14 @@ export const sessions = pgTable(
   (table) => [index('IDX_session_expire').on(table.expire)]
 );
 
+// Migrations tracking table (used by server/run-migrations.ts and server/migrate.ts).
+// (IMPORTANT) Do not remove from schema or db:push will drop it and break migration runs.
+export const migrations = pgTable('_migrations', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
+  executedAt: timestamp('executed_at').defaultNow(),
+});
+
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const users = pgTable('users', {
@@ -58,6 +66,16 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   passwordBackup20241023: text('password_backup_20241023'),
+  // Columns present in DB (do not remove or db:push will drop them and break the app)
+  approvalStatus: varchar('approval_status'),
+  approvedBy: varchar('approved_by'),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  platformUserId: varchar('platform_user_id'),
+  smsAlertsEnabled: boolean('sms_alerts_enabled'),
+  emailNotificationsEnabled: boolean('email_notifications_enabled'),
+  notifyOnNewIntake: boolean('notify_on_new_intake'),
+  notifyOnTaskDue: boolean('notify_on_task_due'),
+  notifyOnStatusChange: boolean('notify_on_status_change'),
 });
 
 // API Keys table for external app integrations
