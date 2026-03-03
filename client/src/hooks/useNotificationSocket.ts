@@ -91,6 +91,14 @@ export function useNotificationSocket() {
       queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
     });
 
+    // Listen for notification_update (emitted by Stream Chat webhook when a new chat message creates/updates an in-app notification)
+    newSocket.on('notification_update', (data: { type?: string; channelId?: string; channelName?: string }) => {
+      logger.log('[NotificationSocket] Notification update (e.g. new chat message):', data);
+
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications/counts'] });
+    });
+
     setSocket(newSocket);
 
     // Cleanup on unmount
