@@ -233,6 +233,17 @@ export const queryClient = new QueryClient({
         return false;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      onError: (error: any) => {
+        // Global query error handler - clear auth on 401 and redirect to login
+        if (error?.status === 401 || error?.code === 'AUTH_EXPIRED') {
+          logger.warn('🔒 [QueryClient] 401 error in query, clearing auth state');
+          queryClient.setQueryData(['/api/auth/user'], null);
+          // Only redirect if not already on login page
+          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+        }
+      },
     },
     mutations: {
       retry: (failureCount, error) => {
@@ -255,6 +266,17 @@ export const queryClient = new QueryClient({
       },
       // Cap at 5s for mutations since they're user-initiated and responsiveness matters
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+      onError: (error: any) => {
+        // Global mutation error handler - clear auth on 401
+        if (error?.status === 401 || error?.code === 'AUTH_EXPIRED') {
+          logger.warn('🔒 [QueryClient] 401 error detected, clearing auth state');
+          queryClient.setQueryData(['/api/auth/user'], null);
+          // Redirect to login if not already there
+          if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
+        }
+      },
     },
   },
 });

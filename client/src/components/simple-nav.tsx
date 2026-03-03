@@ -31,7 +31,7 @@ export default function SimpleNav({
   isCollapsed?: boolean;
 }) {
   try {
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
     const [location, setLocation] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
     const { totalUnread: streamChatUnread } = useStreamChatUnread();
@@ -42,38 +42,38 @@ export default function SimpleNav({
     // State for expanded parent items (like TSP Network)
     const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections']));
 
-    // Get Gmail inbox unread count
+    // Get Gmail inbox unread count - only when properly authenticated
     const { data: gmailUnreadCount = 0 } = useQuery({
-      queryKey: ['/api/emails/unread-count', (user as any)?.id || 'no-user'],
+      queryKey: ['/api/emails/unread-count'],
       queryFn: async () => {
-        if (!(user as any)?.id) return 0;
         try {
           const response = await apiRequest('GET', '/api/emails/unread-count');
           return typeof response?.count === 'number' ? response.count : 0;
         } catch (error) {
+          // 401 errors handled by global error handler in queryClient
           logger.warn('Gmail unread count fetch failed:', error);
           return 0;
         }
       },
-      enabled: !!(user as any)?.id,
+      enabled: isAuthenticated && !!(user as any)?.id,
       refetchInterval: 2 * 60 * 1000, // 2 minutes (reduced from 30 seconds for cost optimization)
       retry: false,
     });
 
-    // Get event reminders pending count
+    // Get event reminders pending count - only when properly authenticated
     const { data: remindersCount = 0 } = useQuery({
-      queryKey: ['/api/event-reminders/count', (user as any)?.id || 'no-user'],
+      queryKey: ['/api/event-reminders/count'],
       queryFn: async () => {
-        if (!(user as any)?.id) return 0;
         try {
           const response = await apiRequest('GET', '/api/event-reminders/count');
           return typeof response?.count === 'number' ? response.count : 0;
         } catch (error) {
+          // 401 errors handled by global error handler in queryClient
           logger.warn('Event reminders count fetch failed:', error);
           return 0;
         }
       },
-      enabled: !!(user as any)?.id,
+      enabled: isAuthenticated && !!(user as any)?.id,
       refetchInterval: 60000,
       retry: false,
     });
