@@ -180,6 +180,54 @@ export default function SimpleNav({
       return labels[group as keyof typeof labels] || group.toUpperCase();
     };
 
+    const getGroupColors = (group: string) => {
+      const colorMap: Record<string, { bg: string; hover: string; border: string; gradient: string }> = {
+        'quick-links': {
+          bg: 'bg-brand-primary',
+          hover: 'hover:bg-brand-primary-dark',
+          border: 'border-l-brand-orange',
+          gradient: 'from-brand-primary to-brand-primary-dark'
+        },
+        'events': {
+          bg: 'bg-[#007E8C]',
+          hover: 'hover:bg-[#006270]',
+          border: 'border-l-[#FBAD3F]',
+          gradient: 'from-[#007E8C] to-[#006270]'
+        },
+        'network': {
+          bg: 'bg-[#47B3CB]',
+          hover: 'hover:bg-[#3A9AB5]',
+          border: 'border-l-[#007E8C]',
+          gradient: 'from-[#47B3CB] to-[#3A9AB5]'
+        },
+        'communication': {
+          bg: 'bg-brand-primary',
+          hover: 'hover:bg-brand-primary-dark',
+          border: 'border-l-brand-orange',
+          gradient: 'from-brand-primary to-brand-primary-dark'
+        },
+        'resources': {
+          bg: 'bg-[#007E8C]',
+          hover: 'hover:bg-[#006270]',
+          border: 'border-l-[#47B3CB]',
+          gradient: 'from-[#007E8C] to-[#006270]'
+        },
+        'data': {
+          bg: 'bg-[#47B3CB]',
+          hover: 'hover:bg-[#3A9AB5]',
+          border: 'border-l-brand-orange',
+          gradient: 'from-[#47B3CB] to-[#3A9AB5]'
+        },
+        'settings': {
+          bg: 'bg-slate-600',
+          hover: 'hover:bg-slate-700',
+          border: 'border-l-slate-400',
+          gradient: 'from-slate-600 to-slate-700'
+        }
+      };
+      return colorMap[group] || colorMap['quick-links'];
+    };
+
     const getBadgeCount = (itemId: string) => {
       switch (itemId) {
         case 'gmail-inbox':
@@ -241,11 +289,12 @@ export default function SimpleNav({
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
             const isCollapsedSection = collapsedSections.has(groupItem.group);
+            const groupColors = getGroupColors(groupItem.group);
             return !isCollapsed ? (
               <div key={`separator-${groupItem.group}-${index}`} className="mt-4 mb-3">
                 <button
                   onClick={() => toggleSection(groupItem.group)}
-                  className="w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm bg-brand-primary hover:bg-brand-primary-dark transition-colors cursor-pointer flex items-center justify-between group"
+                  className={`w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm ${groupColors.bg} ${groupColors.hover} transition-colors cursor-pointer flex items-center justify-between group`}
                 >
                   <div className="font-bold text-white tracking-wide text-[15px] flex-1 text-left">
                     {getGroupLabel(groupItem.group)}
@@ -256,7 +305,7 @@ export default function SimpleNav({
                     <ChevronDown className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
                   )}
                 </button>
-                <div className="border-t border-brand-primary/30 mx-2" />
+                <div className={`border-t ${groupColors.bg} opacity-30 mx-2`} />
               </div>
             ) : null;
           }
@@ -270,6 +319,7 @@ export default function SimpleNav({
           }
 
           const active = isActive(item.href);
+          const itemColors = getGroupColors(item.group || 'quick-links');
 
           // Hide items in collapsed sections (unless item is dashboard)
           const isInCollapsedSection = item.group && collapsedSections.has(item.group) && item.group !== 'dashboard';
@@ -303,7 +353,7 @@ export default function SimpleNav({
               }
               ${
                 active
-                  ? 'bg-gradient-to-r from-brand-primary to-brand-primary-dark hover:shadow-lg text-white shadow-md border-l-4 border-l-brand-orange rounded-lg transition-all duration-200'
+                  ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
                   : item.highlighted
                     ? 'hover:bg-gradient-to-br hover:from-[#FBAD3F]/10 hover:to-[#FBAD3F]/20 text-[#FBAD3F] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
                     : item.isSubItem
