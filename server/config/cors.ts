@@ -111,6 +111,11 @@ export function isOriginAllowed(origin: string | undefined): boolean {
     return true;
   }
 
+  // Allow Railway deployment domains (*.railway.app, *.up.railway.app)
+  if (origin.endsWith('.railway.app') || origin.endsWith('.up.railway.app')) {
+    return true;
+  }
+
   // Allow custom domain
   if (origin === 'https://tspapp.org' || origin === 'https://www.tspapp.org') {
     return true;
