@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+
+// Get directory name in a way that works in all environments
+const __dirname = import.meta.dirname || path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [
@@ -18,12 +22,12 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, 'client', 'src'),
-      '@shared': path.resolve(import.meta.dirname, 'shared'),
-      '@assets': path.resolve(import.meta.dirname, 'attached_assets'),
+      '@': path.resolve(__dirname, 'client', 'src'),
+      '@shared': path.resolve(__dirname, 'shared'),
+      '@assets': path.resolve(__dirname, 'attached_assets'),
     },
   },
-  root: path.resolve(import.meta.dirname, 'client'),
+  root: path.resolve(__dirname, 'client'),
   optimizeDeps: {
     // Force React to be pre-bundled and deduplicated
     include: ['react', 'react-dom', 'react/jsx-runtime'],
@@ -31,7 +35,7 @@ export default defineConfig({
     exclude: [],
   },
   build: {
-    outDir: path.resolve(import.meta.dirname, 'dist/public'),
+    outDir: path.resolve(__dirname, 'dist/public'),
     emptyOutDir: true,
     // Enable minification for production
     minify: 'esbuild', // esbuild is faster than terser and sufficient for most cases
@@ -109,9 +113,7 @@ export default defineConfig({
     },
     // Hot Module Replacement (HMR) settings for faster development
     hmr: {
-      overlay: true,
-      clientPort: 443,
-      protocol: 'wss',
+      overlay: true, // Show errors as overlay
     },
     // Watch options for better file watching
     watch: {
