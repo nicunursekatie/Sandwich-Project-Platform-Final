@@ -4296,7 +4296,7 @@ export const impactReports = pgTable('impact_reports', {
   index('idx_impact_reports_type').on(table.reportType),
   index('idx_impact_reports_status').on(table.status),
   index('idx_impact_reports_start_date').on(table.startDate),
-  unique('unique_report_period_type').on(table.reportPeriod, table.reportType),
+  uniqueIndex('unique_report_period_type').on(table.reportPeriod, table.reportType),
 ]);
 
 export const insertImpactReportSchema = createInsertSchema(impactReports, {
