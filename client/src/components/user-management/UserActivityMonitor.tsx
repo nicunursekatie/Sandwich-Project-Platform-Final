@@ -118,6 +118,34 @@ function getActionColor(action: string): string {
   }
 }
 
+/** Build a helpful context line from section/feature/details so "in dashboard" becomes meaningful */
+function getActivityContextLabel(log: ActivityLog): string {
+  const section = (log.section || '').trim();
+  const feature = (log.feature || '').trim();
+  const details = typeof log.details === 'string' ? (log.details || '').trim() : '';
+
+  // Prefer details when they describe the action (e.g. "Opened Event Detail", "Closed Collection Log")
+  if (details && details.length > 0 && details.length <= 80) {
+    return details;
+  }
+  if (details && details.length > 80) {
+    return details.slice(0, 77) + '...';
+  }
+
+  // Section + feature when they add info (avoid "Dashboard • Main Dashboard")
+  if (section && feature && feature !== section) {
+    const s = section.toLowerCase();
+    const f = feature.toLowerCase();
+    if (s === 'dashboard' && (f === 'main dashboard' || f === 'dashboard')) {
+      return feature;
+    }
+    return `${section} • ${feature}`;
+  }
+  if (feature) return feature;
+  if (section) return section;
+  return 'Activity';
+}
+
 export function UserActivityMonitor() {
   const [timeRange, setTimeRange] = useState<string>('7');
   const [selectedUser, setSelectedUser] = useState<string>('all');
@@ -439,23 +467,21 @@ export function UserActivityMonitor() {
                           <Badge className={`text-xs ${getActionColor(log.action)}`}>
                             {log.action.replace(/_/g, ' ')}
                           </Badge>
-                          {log.section && (
-                            <span className="text-xs text-gray-500">
-                              in {log.section}
-                            </span>
-                          )}
+                          <span className="text-xs text-gray-600">
+                            {getActivityContextLabel(log)}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-gray-400">
                             {log.createdAt ? formatDistanceToNow(parseISO(log.createdAt), { addSuffix: true }) : ''}
                           </span>
-                          {log.duration && (
+                          {log.duration != null && log.duration > 0 && (
                             <span className="text-xs text-gray-400">
                               • {formatDuration(log.duration)}
                             </span>
                           )}
-                          {log.page && (
-                            <span className="text-xs text-gray-400 truncate max-w-[150px]">
+                          {log.page && log.page !== '/' && log.page !== '/dashboard' && (
+                            <span className="text-xs text-gray-400 truncate max-w-[150px]" title={log.page}>
                               • {log.page}
                             </span>
                           )}
