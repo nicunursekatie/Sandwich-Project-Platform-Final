@@ -606,10 +606,33 @@ export default function Dashboard({
       case 'directory':
         return <Directory />;
       case 'event-requests':
-        return <EventRequestsManagement
-          initialTab={urlParams.tab}
-          initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
-        />;
+        return (
+          <ErrorBoundary
+            fallback={
+              <div className="flex items-center justify-center h-full min-h-[400px]">
+                <div className="max-w-md p-6 text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Event Requests Unavailable
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    There was an issue loading Event Requests. Other features are still available.
+                  </p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-teal-500 text-white rounded hover:bg-teal-600"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
+              </div>
+            }
+          >
+            <EventRequestsManagement
+              initialTab={urlParams.tab}
+              initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
+            />
+          </ErrorBoundary>
+        );
       case 'event-ops-dashboard':
         return <EventOperationalDashboard />;
       case 'event-reminders':

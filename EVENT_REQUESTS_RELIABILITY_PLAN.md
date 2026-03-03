@@ -1,6 +1,6 @@
 # Event Requests Component - Reliability Improvement Plan
 
-## ✅ COMPLETED (Just Now)
+## ✅ COMPLETED
 
 ### 1. Fixed Unhandled Promise in Field Lock Cleanup
 **File:** `EventSchedulingForm.tsx:1821`
@@ -14,11 +14,18 @@
 - Marks check as complete even if it fails
 - Prevents infinite retry loops
 
+### 3. Added Granular Error Boundary for Event Requests
+**File:** `dashboard.tsx:608-631`
+- Wrapped EventRequestsManagement with its own ErrorBoundary
+- Custom fallback UI shows "Event Requests Unavailable" instead of crashing whole app
+- Users can continue using Collections, Chat, etc. when Event Requests has issues
+- **Impact:** Prevents total app lockout when Event Requests breaks
+
 ---
 
 ## 🔴 HIGH PRIORITY (Do Next)
 
-### 3. Simplify Dialog State Management
+### 4. Simplify Dialog State Management
 **Current Problem:** 40+ dialog states in EventRequestContext causing state sync errors
 
 **Solution:**
