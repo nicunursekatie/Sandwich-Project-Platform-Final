@@ -109,7 +109,9 @@ export default defineConfig({
     },
     // Hot Module Replacement (HMR) settings for faster development
     hmr: {
-      overlay: true, // Show errors as overlay
+      overlay: true,
+      clientPort: 443,
+      protocol: 'wss',
     },
     // Watch options for better file watching
     watch: {

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "_migrations" (
   name VARCHAR(255) NOT NULL UNIQUE,
   executed_at TIMESTAMP DEFAULT NOW()
 );
-
+--> statement-breakpoint
 -- ============================================================================
 -- 2. Restore users columns if missing (do not fail if already present)
 -- ============================================================================
