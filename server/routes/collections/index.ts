@@ -1171,7 +1171,7 @@ collectionsRouter.put(
     async (req) => {
       const id = parseInt(req.params.id);
       const collection = await storage.getSandwichCollectionById(id);
-      return collection?.userId || null;
+      return collection?.createdBy || null;
     }
   ),
   async (req, res) => {
@@ -1293,7 +1293,7 @@ collectionsRouter.patch(
     async (req) => {
       const id = parseInt(req.params.id);
       const collection = await storage.getSandwichCollectionById(id);
-      return collection?.userId || null;
+      return collection?.createdBy || null;
     }
   ),
   async (req, res) => {
