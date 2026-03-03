@@ -44,7 +44,7 @@ function getDisplayName(user: OnlineUser): string {
 
 export function useOnlinePresenceNotifications() {
   const { toast } = useToast();
-  const { user: currentUser, isAuthenticated } = useAuth();
+  const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const previousOnlineIdsRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef(true);
@@ -52,10 +52,9 @@ export function useOnlinePresenceNotifications() {
   const [wsConnected, setWsConnected] = useState(false);
   const [wsOnlineUsers, setWsOnlineUsers] = useState<Map<string, WebSocketOnlineUser>>(new Map());
 
-  // Send heartbeat to mark user as active - only when authenticated
+  // Send heartbeat to mark user as active
   const sendHeartbeat = useCallback(async () => {
-    // Don't send heartbeat if not properly authenticated
-    if (!isAuthenticated || !currentUser?.id) return;
+    if (!currentUser) return;
     try {
       await fetch('/api/users/heartbeat', {
         method: 'POST',
@@ -63,14 +62,13 @@ export function useOnlinePresenceNotifications() {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      // 401 errors will be handled by global error handler
-      // Other errors are silently ignored to avoid console spam
+      // Silently ignore heartbeat errors
     }
-  }, [currentUser, isAuthenticated]);
+  }, [currentUser]);
 
   // Send heartbeat every 2 minutes to keep user marked as active
   useEffect(() => {
-    if (!isAuthenticated || !currentUser?.id) return;
+    if (!currentUser) return;
 
     // Send initial heartbeat
     sendHeartbeat();
@@ -79,11 +77,11 @@ export function useOnlinePresenceNotifications() {
     const heartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000); // 2 minutes
 
     return () => clearInterval(heartbeatInterval);
-  }, [isAuthenticated, currentUser, sendHeartbeat]);
+  }, [currentUser, sendHeartbeat]);
 
   // WebSocket connection for real-time presence updates
   useEffect(() => {
-    if (!isAuthenticated || !currentUser?.id) return;
+    if (!currentUser) return;
 
     const socketUrl = window.location.origin;
     logger.log('[OnlinePresence] Connecting WebSocket to:', socketUrl);
@@ -204,8 +202,7 @@ export function useOnlinePresenceNotifications() {
       return Array.isArray(response) ? response : [];
     },
     refetchInterval: 5 * 60 * 1000, // 5 minutes fallback polling (was 30 seconds)
-    enabled: isAuthenticated && !!currentUser?.id,
-    retry: false,
+    enabled: !!currentUser,
   });
 
   // Handle fallback polling notifications (only if WebSocket is not connected)
