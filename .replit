@@ -55,21 +55,12 @@ waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Start Server"
-author = 43025137
 mode = "sequential"
+author = 43025137
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run start"
-
-[[workflows.workflow]]
-name = "Development Server"
-author = 43025137
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-a7721532-5ea7-447a-83e7-dc6cdbc3d787"
