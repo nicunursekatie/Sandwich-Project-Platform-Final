@@ -67,9 +67,9 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow(),
   passwordBackup20241023: text('password_backup_20241023'),
   // Columns present in DB (do not remove or db:push will drop them and break the app)
-  approvalStatus: varchar('approval_status'),
+  approvalStatus: text('approval_status'),
   approvedBy: varchar('approved_by'),
-  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  approvedAt: timestamp('approved_at'),
   platformUserId: varchar('platform_user_id'),
   smsAlertsEnabled: boolean('sms_alerts_enabled'),
   emailNotificationsEnabled: boolean('email_notifications_enabled'),
@@ -2389,7 +2389,7 @@ export const eventRequests = pgTable(
     attendanceAdults: integer('attendance_adults'), // Number of adults who attended
     attendanceTeens: integer('attendance_teens'), // Number of teens who attended
     attendanceKids: integer('attendance_kids'), // Number of kids who attended
-    kidsAgeRange: varchar('kids_age_range'), // Age range of kids participating (e.g., "5-12", "8-15")
+    kidsAgeRange: text('kids_age_range'), // Age range of kids participating (e.g., "5-12", "8-15")
     attendanceRecordedDate: timestamp('attendance_recorded_date'), // When attendance was recorded
     attendanceRecordedBy: varchar('attendance_recorded_by'), // User ID who recorded attendance
     attendanceNotes: text('attendance_notes'), // Notes about attendance
