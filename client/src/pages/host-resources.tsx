@@ -444,7 +444,7 @@ export default function HostResources() {
             title="Recipient Database"
             description="Browse the database of recipient organizations that receive sandwiches."
             icon={Users}
-            href="dashboard?section=recipients"
+            href="recipients"
           />
         </div>
       </section>
