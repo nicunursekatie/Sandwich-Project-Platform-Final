@@ -91,9 +91,11 @@ export const DashboardSummaryCards: React.FC<DashboardSummaryCardsProps> = ({
       };
     }
 
-    // Filter to scheduled/in_process events for needs calculations
+    // Filter to scheduled/in_process/rescheduled events for needs calculations
+    // Note: eventRequests should already be filtered to these statuses from parent,
+    // but we keep this filter for safety and clarity
     const activeEvents = eventRequests.filter(
-      e => e.status === 'scheduled' || e.status === 'in_process'
+      e => e.status === 'scheduled' || e.status === 'in_process' || e.status === 'rescheduled'
     );
 
     // Events that need drivers (have driversNeeded > assigned drivers)

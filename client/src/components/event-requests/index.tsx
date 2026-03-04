@@ -62,7 +62,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 
 // Import dialogs
@@ -245,6 +245,21 @@ const EventRequestsManagementContent: React.FC = () => {
     followUpNotes,
     setFollowUpNotes,
   } = useEventRequestContext();
+
+  // Fetch ALL active events (scheduled + in_process + rescheduled) for dashboard cards
+  // This query is independent of the active tab, ensuring driver counts are always accurate
+  const { data: allActiveEvents = [] } = useQuery({
+    queryKey: ['/api/event-requests/list', 'active-events-for-dashboard'],
+    queryFn: async () => {
+      const response = await fetch('/api/event-requests/list?status=scheduled,in_process,rescheduled', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch active events');
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
 
   const {
     markToolkitSentMutation,
@@ -696,7 +711,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Dashboard Summary Cards */}
         <DashboardSummaryCards
-          eventRequests={eventRequests}
+          eventRequests={allActiveEvents}
           statusCounts={statusCounts}
           isLoading={isLoading || statusCountsLoading}
         />
