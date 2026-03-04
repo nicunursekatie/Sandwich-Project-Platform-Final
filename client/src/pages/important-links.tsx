@@ -55,30 +55,6 @@ export default function ImportantLinks() {
     'https://bread-and-butter-donors.lovable.app/';
   const internalHubUrl =
     'https://nicunursekatie.github.io/tsp-internal/index.html';
-  // Flyers configuration - add more flyers here as they become available
-  const flyers = [
-    {
-      id: 'ncl',
-      name: 'NCL Flyer - Social Media & QR Codes',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html',
-      description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
-    },
-    {
-      id: 'digital',
-      name: 'Digital Flyer',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/digital-flyer.html',
-      description: 'Digital promotional flyer for The Sandwich Project',
-    },
-    {
-      id: 'qr-margins',
-      name: 'QR Code Flyer with Margins',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/QR%20Code%20flyer%20with%20margins.pdf',
-      description: 'Printable QR code flyer with margins for easy printing',
-    },
-  ];
-
-  const [selectedFlyerId, setSelectedFlyerId] = useState(flyers[0].id);
-  const selectedFlyer = flyers.find(f => f.id === selectedFlyerId) || flyers[0];
 
   // Events Google Sheet (published version)
   const eventsEmbedUrl =
@@ -190,18 +166,15 @@ export default function ImportantLinks() {
           Toolkit & Apps
         </h1>
         <p className="text-xs sm:text-base text-gray-600">
-          Event Toolkit, flyers, calculators, donation receipts, donor management, and more.
+          Event Toolkit, calculators, donation receipts, donor management, and more.
         </p>
       </div>
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
         {/* Mobile: Horizontal scrollable tabs, Desktop: Grid */}
-        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-8 w-full mb-2 sm:mb-0">
+        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-7 w-full mb-2 sm:mb-0">
           <TabsTrigger value="toolkit" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
             <span className="hidden sm:inline">📦</span> Toolkit
-          </TabsTrigger>
-          <TabsTrigger value="flyers" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
-            <span className="hidden sm:inline">📄</span> Flyers
           </TabsTrigger>
           <TabsTrigger value="calculator" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
             <Calculator className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -298,127 +271,6 @@ export default function ImportantLinks() {
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     Open Toolkit
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Flyers & QR Codes Tab */}
-        <TabsContent value="flyers" className="flex-1 flex flex-col">
-          <Card className="flex-1 flex flex-col">
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                📄 Flyers & Promotional Materials
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                {selectedFlyer.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
-                {/* Flyer Selector - Only show if multiple flyers available */}
-                {flyers.length > 1 && (
-                  <div className="bg-gradient-to-r from-[#236383]/10 to-[#47B3CB]/10 border border-[#47B3CB]/30 rounded-lg p-3 sm:p-4">
-                    <label className="block text-xs sm:text-sm font-semibold text-[#236383] mb-2">
-                      Select Flyer:
-                    </label>
-                    <select
-                      value={selectedFlyerId}
-                      onChange={(e) => setSelectedFlyerId(e.target.value)}
-                      className="w-full px-3 sm:px-4 py-2 border border-[#47B3CB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#236383] bg-white text-sm h-11"
-                    >
-                      {flyers.map((flyer) => (
-                        <option key={flyer.id} value={flyer.id}>
-                          {flyer.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button
-                    size="lg"
-                    onClick={() => window.open(selectedFlyer.url, '_blank')}
-                    className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 hover:from-[#FBAD3F]/90 hover:to-yellow-500/90 text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
-                  >
-                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                    Open Flyer Page
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(selectedFlyer.url);
-                        alert('Link copied to clipboard!');
-                      } catch (error) {
-                        logger.error('Failed to copy:', error);
-                      }
-                    }}
-                    className="border-[#FBAD3F] text-[#FBAD3F] hover:bg-yellow-50 px-4 sm:px-6 py-3 font-medium h-11"
-                  >
-                    📋 Copy Link
-                  </Button>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
-                  <h3 className="font-semibold text-yellow-900 mb-2 text-sm sm:text-base">Shareable Link:</h3>
-                  <code className="text-xs sm:text-sm bg-white px-2 sm:px-3 py-2 rounded border border-yellow-200 block break-all">
-                    {selectedFlyer.url}
-                  </code>
-                  <p className="text-xs sm:text-sm text-yellow-700 mt-2">
-                    Share this flyer to promote The Sandwich Project
-                  </p>
-                </div>
-
-                {/* Flyer-specific content info - only show for NCL flyer */}
-                {selectedFlyer.id === 'ncl' && (
-                  <div className="grid grid-cols-2 gap-2 sm:gap-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-yellow-50 rounded-lg border">
-                    <div className="text-center">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">✅ Social Media QR</p>
-                      <p className="text-[10px] sm:text-xs text-gray-600">Facebook, Instagram, LinkedIn</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">📧 Newsletter</p>
-                      <p className="text-[10px] sm:text-xs text-gray-600">QR code for newsletter</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">🎁 Amazon Wishlist</p>
-                      <p className="text-[10px] sm:text-xs text-gray-600">QR code for donations</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">🌐 Website</p>
-                      <p className="text-[10px] sm:text-xs text-gray-600">thesandwichproject.org</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Embedded Flyers - Hidden on mobile */}
-                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
-                  <iframe
-                    key={selectedFlyer.id}
-                    src={selectedFlyer.url}
-                    className="w-full h-full border-0"
-                    style={{
-                      minHeight: '600px',
-                      height: '100%',
-                    }}
-                    title={selectedFlyer.name}
-                    loading="eager"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the flyer in a new tab on mobile.</p>
-                  <Button
-                    onClick={() => window.open(selectedFlyer.url, '_blank')}
-                    className="bg-gradient-to-r from-[#FBAD3F] to-yellow-500 text-white h-11"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Flyer
                   </Button>
                 </div>
               </div>
@@ -1053,7 +905,6 @@ export default function ImportantLinks() {
           currentView: 'important-links',
           summaryStats: {
             totalTools: 6,
-            totalFlyers: flyers.length,
           },
         }}
         getFullContext={() => ({
@@ -1064,15 +915,14 @@ export default function ImportantLinks() {
             { name: 'Donation Receipt Generator', url: donationReceiptUrl, type: 'tool', description: 'Generate tax-deductible donation receipts for in-kind donations' },
             { name: 'Donor Management Platform', url: donorManagementUrl, type: 'tool', description: 'Track and manage donor relationships, donations, and engagement' },
             { name: 'TSP Internal Hub', url: internalHubUrl, type: 'tool', description: 'Central resource portal with team tools, volunteer resources, and project tracking' },
-            ...flyers.map(f => ({ name: f.name, url: f.url, type: 'flyer', description: f.description })),
           ],
         })}
         suggestedQuestions={[
           "What tools are available?",
           "How do I use the inventory calculator?",
           "How do I generate a donation receipt?",
-          "What flyers can I print?",
           "What's in the event toolkit?",
+          "How do I manage donors?",
         ]}
       />
     </div>

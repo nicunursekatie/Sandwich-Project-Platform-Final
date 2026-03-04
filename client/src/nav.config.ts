@@ -298,6 +298,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'resources',
   },
   {
+    id: 'flyers',
+    label: 'Flyers',
+    icon: FileText,
+    href: 'flyers',
+    // No permission - Flyers are available to everyone
+    group: 'resources',
+  },
+  {
     id: 'events',
     label: 'Events Google Sheet',
     icon: Sheet,
