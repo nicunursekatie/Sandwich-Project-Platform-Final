@@ -268,6 +268,7 @@ export default function LocationsMapView() {
       });
       setMapCenter([data.latitude, data.longitude]);
       setMapZoom(14);
+      setSelectedId(null); // Clear any previously selected recipient/host
       setFlyKey(k => k + 1);
       toast({
         title: 'Address found',

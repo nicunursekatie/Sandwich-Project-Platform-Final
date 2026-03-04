@@ -29,18 +29,16 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <CardTitle className="text-lg">{recipient.name}</CardTitle>
-              {focusAreas.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {focusAreas.map((area: string) => (
-                    <Badge key={area} variant="outline" className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs">
-                      {area}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
+            <CardTitle className="text-lg mb-2">{recipient.name}</CardTitle>
+            {focusAreas.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {focusAreas.map((area: string) => (
+                  <Badge key={area} variant="outline" className="bg-brand-primary-lighter text-brand-primary border-brand-primary-border text-xs">
+                    {area}
+                  </Badge>
+                ))}
+              </div>
+            )}
             <Badge variant={recipient.status === 'active' ? 'default' : 'secondary'}>
               {recipient.status}
             </Badge>
