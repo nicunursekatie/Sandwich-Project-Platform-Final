@@ -7,9 +7,10 @@ import { formatDistanceToNow } from 'date-fns';
 interface UserActivityTabProps {
   userId: string;
   userName: string;
+  lastLoginAt?: string | null;
 }
 
-export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
+export function UserActivityTab({ userId, userName, lastLoginAt }: UserActivityTabProps) {
   const { data: activityStats, isLoading } = useQuery({
     queryKey: ['/api/enhanced-user-activity/user-stats', userId],
     queryFn: async () => {
@@ -50,6 +51,39 @@ export function UserActivityTab({ userId, userName }: UserActivityTabProps) {
           Activity history for {userName} (last 30 days)
         </p>
       </div>
+
+      {/* Last Login - Matches table display */}
+      {lastLoginAt && (
+        <Card className="mb-4 bg-blue-50 border-blue-200">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Clock className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-700 font-medium">Last Login</p>
+                <p className="text-sm font-semibold text-blue-900">
+                  {(() => {
+                    const date = new Date(lastLoginAt);
+                    const now = new Date();
+                    const diffMs = now.getTime() - date.getTime();
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+                    if (diffDays === 0) return `Today, ${time}`;
+                    if (diffDays === 1) return `Yesterday, ${time}`;
+                    if (diffDays < 7) return `${diffDays} days ago, ${time}`;
+                    return date.toLocaleString([], { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                  })()}
+                </p>
+                <p className="text-xs text-blue-600 mt-0.5">
+                  Login events and basic navigation are filtered from the activity list below
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

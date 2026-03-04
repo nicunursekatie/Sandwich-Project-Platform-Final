@@ -162,8 +162,12 @@ export function useOnlinePresenceNotifications() {
       // Update previous IDs
       previousOnlineIdsRef.current.add(data.id);
 
-      // Invalidate the online users query so the dropdown refreshes immediately
-      queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
+      // Invalidate the online users query with a small delay to ensure DB commit completes
+      // This fixes the race condition where the dropdown queries before the database
+      // updateUserLastActive() transaction commits on the server
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
+      }, 250); // 250ms delay allows DB write to complete
     });
 
     // Handle user going offline
@@ -180,8 +184,10 @@ export function useOnlinePresenceNotifications() {
       // Remove from previous IDs
       previousOnlineIdsRef.current.delete(data.id);
 
-      // Invalidate the online users query so the dropdown refreshes immediately
-      queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
+      // Invalidate the online users query with a small delay for consistency
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
+      }, 250);
     });
 
     setSocket(newSocket);
