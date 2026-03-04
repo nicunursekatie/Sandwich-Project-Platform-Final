@@ -73,6 +73,44 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // ========================================
+  // COMMUNICATION
+  // ========================================
+  {
+    id: 'chat',
+    label: 'Team Chat',
+    icon: Hash,
+    href: 'chat',
+    permission: PERMISSIONS.NAV_TEAM_CHAT,
+    group: 'communication',
+    highlighted: true,
+  },
+  {
+    id: 'inbox-consolidated',
+    label: 'Project Threads',
+    icon: Inbox,
+    href: 'gmail-inbox',
+    permission: PERMISSIONS.NAV_INBOX,
+    group: 'communication',
+    highlighted: true,
+  },
+  {
+    id: 'kudos',
+    label: 'Kudos',
+    icon: Trophy,
+    href: 'kudos',
+    permission: PERMISSIONS.KUDOS_VIEW,
+    group: 'communication',
+  },
+  {
+    id: 'team-board',
+    label: 'Holding Zone',
+    icon: StickyNote,
+    href: 'team-board',
+    permission: PERMISSIONS.VIEW_HOLDING_ZONE,
+    group: 'communication',
+  },
+
+  // ========================================
   // EVENTS & VOLUNTEERS
   // ========================================
   {
@@ -300,51 +338,13 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_QUICK_SMS_LINKS,
     group: 'resources',
   },
-
-  // ========================================
-  // COMMUNICATION
-  // ========================================
-  {
-    id: 'chat',
-    label: 'Team Chat',
-    icon: Hash,
-    href: 'chat',
-    permission: PERMISSIONS.NAV_TEAM_CHAT,
-    group: 'communication',
-    highlighted: true,
-  },
-  {
-    id: 'inbox-consolidated',
-    label: 'Project Threads',
-    icon: Inbox,
-    href: 'gmail-inbox',
-    permission: PERMISSIONS.NAV_INBOX,
-    group: 'communication',
-    highlighted: true,
-  },
-  {
-    id: 'kudos',
-    label: 'Kudos',
-    icon: Trophy,
-    href: 'kudos',
-    permission: PERMISSIONS.KUDOS_VIEW,
-    group: 'communication',
-  },
-  {
-    id: 'team-board',
-    label: 'Holding Zone',
-    icon: StickyNote,
-    href: 'team-board',
-    permission: PERMISSIONS.VIEW_HOLDING_ZONE,
-    group: 'communication',
-  },
   {
     id: 'calendars',
     label: 'Calendars',
     icon: Calendar,
     href: 'calendars',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
-    group: 'communication',
+    group: 'resources',
     highlighted: true,
   },
   {
@@ -353,7 +353,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'yearly-calendar',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
-    group: 'communication',
+    group: 'resources',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -363,7 +363,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'my-availability',
     permission: PERMISSIONS.NAV_MY_AVAILABILITY,
-    group: 'communication',
+    group: 'resources',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -373,7 +373,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     href: 'team-availability',
     permission: PERMISSIONS.NAV_TEAM_AVAILABILITY,
-    group: 'communication',
+    group: 'resources',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -383,7 +383,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'google-calendar-availability',
     permission: PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
-    group: 'communication',
+    group: 'resources',
     parentId: 'calendars',
     isSubItem: true,
   },
