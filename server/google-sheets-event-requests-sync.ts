@@ -111,45 +111,101 @@ export class EventRequestsGoogleSheetsService {
   /**
    * Convert Excel serial number or date string to JavaScript Date
    * Handles both submission dates and event dates properly
+   *
+   * IMPORTANT: Squarespace form timestamps are in Eastern Time (EST/EDT, UTC-5/UTC-4)
+   * We need to convert them properly to UTC to avoid timezone display issues.
    */
-  private parseExcelDate(dateValue: string | undefined, fieldName: string = 'date'): Date | null {
+  private parseExcelDate(dateValue: string | undefined, fieldName: string = 'date', isSubmissionTimestamp: boolean = false): Date | null {
     if (!dateValue || !dateValue.trim()) return null;
 
     try {
       const cleaned = dateValue.trim();
 
+      let parsedDate: Date;
+
       // Check if it's an Excel serial number (numeric string)
       if (/^\d+(\.\d+)?$/.test(cleaned)) {
         const serialNumber = parseFloat(cleaned);
-        
+
         // Convert Excel serial number to JavaScript Date
         // Excel epoch starts from January 1, 1900 (with a leap year bug adjustment)
         const excelEpoch = new Date(1899, 11, 30); // December 30, 1899 (Excel's day 0)
         const millisecondsPerDay = 24 * 60 * 60 * 1000;
-        
-        const date = new Date(excelEpoch.getTime() + serialNumber * millisecondsPerDay);
-        
-        if (isNaN(date.getTime())) {
+
+        // Create date from Excel serial number
+        // Excel serial numbers represent days since epoch, with fractional part for time
+        parsedDate = new Date(excelEpoch.getTime() + serialNumber * millisecondsPerDay);
+
+        if (isNaN(parsedDate.getTime())) {
           logger.error(
             `❌ CRITICAL: Invalid Excel serial number for ${fieldName}: "${dateValue}"`
           );
           return null;
         }
-        
-        return date;
       } else {
         // Try parsing as regular date string
-        const date = new Date(cleaned);
-        
-        if (isNaN(date.getTime())) {
+        parsedDate = new Date(cleaned);
+
+        if (isNaN(parsedDate.getTime())) {
           logger.error(
             `❌ CRITICAL: Invalid ${fieldName} format: "${dateValue}"`
           );
           return null;
         }
-        
-        return date;
       }
+
+      // For submission timestamps from Squarespace (which are in Eastern Time),
+      // we need to adjust for the timezone offset to get the correct UTC time
+      if (isSubmissionTimestamp) {
+        // Extract the wall-clock time components (what the user saw: "2:00 PM")
+        const year = parsedDate.getUTCFullYear();
+        const month = parsedDate.getUTCMonth();
+        const day = parsedDate.getUTCDate();
+        const hours = parsedDate.getUTCHours();
+        const minutes = parsedDate.getUTCMinutes();
+        const seconds = parsedDate.getUTCSeconds();
+
+        // Determine if this date falls in DST or Standard Time for Eastern timezone
+        // DST in US: Second Sunday in March to First Sunday in November
+        // Standard Time: November to March
+        // EST = UTC-5, EDT = UTC-4
+        const isDST = (date: Date): boolean => {
+          const year = date.getUTCFullYear();
+          const month = date.getUTCMonth();
+
+          // DST doesn't apply in Nov, Dec, Jan, Feb
+          if (month >= 10 || month <= 1) return false;
+
+          // DST always applies in Apr-Oct
+          if (month >= 3 && month <= 9) return true;
+
+          // For March and November, need to check which week
+          const day = date.getUTCDate();
+          const dayOfWeek = date.getUTCDay();
+
+          if (month === 2) { // March - DST starts 2nd Sunday
+            const secondSunday = 8 + (7 - new Date(year, 2, 8).getDay());
+            return day >= secondSunday;
+          } else { // November - DST ends 1st Sunday
+            const firstSunday = 1 + (7 - new Date(year, 10, 1).getDay()) % 7;
+            return day < firstSunday;
+          }
+        };
+
+        // Create a temporary date to check DST
+        const tempCheckDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+        const offset = isDST(tempCheckDate) ? 4 : 5; // EDT = UTC-4, EST = UTC-5
+
+        // The timestamp in the sheet represents "X PM Eastern Time"
+        // To convert to UTC, we ADD the offset (e.g., 2pm EST + 5 hours = 7pm UTC)
+        const utcDate = new Date(Date.UTC(year, month, day, hours + offset, minutes, seconds));
+
+        logger.debug(`📅 Converted submission timestamp: Sheet value="${dateValue}" → Local="${hours}:${String(minutes).padStart(2, '0')}" → UTC with ${offset}hr offset → ${utcDate.toISOString()}`);
+
+        return utcDate;
+      }
+
+      return parsedDate;
     } catch (error) {
       logger.error(
         `❌ CRITICAL: Error parsing ${fieldName} "${dateValue}":`,
@@ -229,7 +285,8 @@ export class EventRequestsGoogleSheetsService {
     const lastName = nameParts.slice(1).join(' ') || '';
 
     // Parse the submission date from Google Sheets using proper Excel serial number handling
-    const submissionDate = this.parseExcelDate(row.submittedOn, 'submission date') || new Date();
+    // Pass isSubmissionTimestamp=true to preserve Eastern Time interpretation
+    const submissionDate = this.parseExcelDate(row.submittedOn, 'submission date', true) || new Date();
 
     return {
       externalId: row.externalId,
