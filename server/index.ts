@@ -8,6 +8,7 @@ import type { Store } from 'express-session';
 import { createServer } from 'http';
 import { WebSocketServer } from 'ws';
 import compression from 'compression';
+import helmet from 'helmet';
 import { registerRoutes } from './routes';
 import { setupVite, serveStatic, log } from './vite';
 import { initializeDatabase } from './db-init';
@@ -41,6 +42,33 @@ app.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
 
 // Track initialization state for health responses
 let serverReady = false;
+
+// Security headers via Helmet.js
+const isDevEnvironment = process.env.NODE_ENV === 'development';
+app.use(
+  helmet({
+    contentSecurityPolicy: isDevEnvironment
+      ? false // Disable CSP in dev — Vite HMR injects inline scripts
+      : {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://fonts.googleapis.com'],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
+            connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io'],
+            frameSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            upgradeInsecureRequests: [],
+          },
+        },
+    crossOriginEmbedderPolicy: false, // Required for external image/font loading
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resource loading
+  })
+);
+serverLogger.info('Helmet security headers enabled', { csp: !isDevEnvironment });
 
 // Performance monitoring middleware (should be early in the chain)
 app.use(performanceMonitoringMiddleware);

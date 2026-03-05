@@ -86,6 +86,7 @@ interface HoldingZoneItem {
   categories: Array<{ id: number; name: string; color: string }>; // Multiple categories
   isUrgent: boolean;
   isPrivate: boolean;
+  sharedWithUserId?: string | null;
   details: string | null;
   dueDate: Date | string | null;
   likeCount?: number;
@@ -548,6 +549,7 @@ export default function HoldingZone() {
   const [newItemCategoryIds, setNewItemCategoryIds] = useState<number[]>([]);
   const [newItemIsUrgent, setNewItemIsUrgent] = useState(false);
   const [newItemIsPrivate, setNewItemIsPrivate] = useState(false);
+  const [newItemSharedWithUserId, setNewItemSharedWithUserId] = useState<string | null>(null);
   const [newItemDetails, setNewItemDetails] = useState('');
   const [newCanvasSections, setNewCanvasSections] = useState<CanvasSection[]>([
     { id: 'context', title: 'Context', cards: [{ id: 'context-1', type: 'text', content: '' }] },
@@ -572,6 +574,7 @@ export default function HoldingZone() {
   const [editItemCategoryIds, setEditItemCategoryIds] = useState<number[]>([]);
   const [editItemIsUrgent, setEditItemIsUrgent] = useState(false);
   const [editItemIsPrivate, setEditItemIsPrivate] = useState(false);
+  const [editItemSharedWithUserId, setEditItemSharedWithUserId] = useState<string | null>(null);
   const [editItemDetails, setEditItemDetails] = useState('');
   const [editCanvasSections, setEditCanvasSections] = useState<CanvasSection[]>([]);
   const [editItemDueDate, setEditItemDueDate] = useState('');
@@ -801,6 +804,7 @@ export default function HoldingZone() {
       categoryIds: number[] | null;
       isUrgent: boolean;
       isPrivate: boolean;
+      sharedWithUserId?: string | null;
       details: string | null;
       dueDate: string | null;
       assignedTo: string[] | null;
@@ -819,6 +823,7 @@ export default function HoldingZone() {
       setNewItemCategoryIds([]);
       setNewItemIsUrgent(false);
       setNewItemIsPrivate(false);
+      setNewItemSharedWithUserId(null);
       setNewItemDetails('');
       setNewItemDueDate('');
       setNewItemAssignedTo([]);
@@ -867,20 +872,21 @@ export default function HoldingZone() {
 
   // Edit item mutation
   const editItemMutation = useMutation({
-    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, details, dueDate, canvasSections, canvasStatus, isCanvas }: {
+    mutationFn: async ({ id, content, type, categoryIds, isUrgent, isPrivate, sharedWithUserId, details, dueDate, canvasSections, canvasStatus, isCanvas }: {
       id: number;
       content: string;
       type: 'task' | 'note' | 'idea' | 'canvas';
       categoryIds: number[];
       isUrgent: boolean;
       isPrivate: boolean;
+      sharedWithUserId?: string | null;
       details?: string | null;
       dueDate?: string | null;
       canvasSections?: CanvasSection[] | null;
       canvasStatus?: 'draft' | 'in_review' | 'published' | 'archived';
       isCanvas?: boolean;
     }) => {
-      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, details, dueDate, canvasSections, canvasStatus, isCanvas });
+      return await apiRequest('PATCH', `/api/team-board/${id}`, { content, type, categoryIds, isUrgent, isPrivate, sharedWithUserId, details, dueDate, canvasSections, canvasStatus, isCanvas });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -891,6 +897,7 @@ export default function HoldingZone() {
       setEditItemCategoryIds([]);
       setEditItemIsUrgent(false);
       setEditItemIsPrivate(false);
+      setEditItemSharedWithUserId(null);
       setEditItemDetails('');
       setEditItemDueDate('');
       setEditCanvasSections([]);
@@ -1208,6 +1215,7 @@ export default function HoldingZone() {
       categoryIds: newItemCategoryIds.length > 0 ? newItemCategoryIds : null,
       isUrgent: newItemIsUrgent,
       isPrivate: newItemIsPrivate,
+      sharedWithUserId: newItemIsPrivate ? newItemSharedWithUserId : null,
       details: newItemDetails.trim() || null,
       dueDate: newItemDueDate ? new Date(newItemDueDate).toISOString() : null,
       assignedTo: newItemAssignedTo.length > 0 ? newItemAssignedTo : null,
@@ -1534,6 +1542,13 @@ export default function HoldingZone() {
                       <Badge variant="outline" className="capitalize">
                         {item.type}
                       </Badge>
+                      {item.isPrivate && (
+                        <Badge variant="outline" className="gap-1 border-amber-300 text-amber-800 bg-amber-50">
+                          {item.sharedWithUserId
+                            ? `Private (you + ${teamMembers.find(m => m.id === item.sharedWithUserId)?.name ?? 'other'})`
+                            : 'Private (only you)'}
+                        </Badge>
+                      )}
                       {item.status === 'todo' && (
                         <Badge variant="default" className="gap-1 bg-blue-600">
                           <CheckCircle2 className="h-3 w-3" />
@@ -1584,6 +1599,7 @@ export default function HoldingZone() {
                               setEditItemCategoryIds(item.categories?.map(c => c.id) || []);
                               setEditItemIsUrgent(item.isUrgent);
                               setEditItemIsPrivate(item.isPrivate);
+                              setEditItemSharedWithUserId(item.sharedWithUserId ?? null);
                               setEditItemDetails(item.details || '');
                               setEditCanvasSections((item.canvasSections as CanvasSection[] | null) || []);
                               setEditItemDueDate(item.dueDate ? (typeof item.dueDate === 'string' ? item.dueDate : new Date(item.dueDate).toISOString().split('T')[0]) : '');
@@ -2126,13 +2142,38 @@ export default function HoldingZone() {
               <Checkbox
                 id="item-private"
                 checked={newItemIsPrivate}
-                onCheckedChange={(checked) => setNewItemIsPrivate(checked as boolean)}
+                onCheckedChange={(checked) => {
+                  setNewItemIsPrivate(checked as boolean);
+                  if (!checked) setNewItemSharedWithUserId(null);
+                }}
                 data-testid="checkbox-new-item-private"
               />
               <Label htmlFor="item-private" className="cursor-pointer">
                 Private (only visible to you and admins)
               </Label>
             </div>
+            {newItemIsPrivate && (
+              <div className="space-y-1.5 pl-6">
+                <Label className="text-sm text-muted-foreground">Also visible to (optional)</Label>
+                <Select
+                  value={newItemSharedWithUserId ?? '__none__'}
+                  onValueChange={(v) => setNewItemSharedWithUserId(v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger className="w-full max-w-xs">
+                    <SelectValue placeholder="Only me" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Only me</SelectItem>
+                    {teamMembers.filter(m => m.id !== user?.id).map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Choose one person (e.g. Christine) to also see this item. Only you and they will see it.</p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="item-content">Content</Label>
@@ -2383,12 +2424,37 @@ export default function HoldingZone() {
               <Switch
                 id="edit-item-private"
                 checked={editItemIsPrivate}
-                onCheckedChange={setEditItemIsPrivate}
+                onCheckedChange={(checked) => {
+                  setEditItemIsPrivate(checked);
+                  if (!checked) setEditItemSharedWithUserId(null);
+                }}
               />
               <Label htmlFor="edit-item-private" className="font-normal cursor-pointer">
                 Private (only visible to you and admins)
               </Label>
             </div>
+            {editItemIsPrivate && (
+              <div className="space-y-1.5 pl-6">
+                <Label className="text-sm text-muted-foreground">Also visible to (optional)</Label>
+                <Select
+                  value={editItemSharedWithUserId ?? '__none__'}
+                  onValueChange={(v) => setEditItemSharedWithUserId(v === '__none__' ? null : v)}
+                >
+                  <SelectTrigger className="w-full max-w-xs">
+                    <SelectValue placeholder="Only me" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Only me</SelectItem>
+                    {teamMembers.filter(m => m.id !== user?.id).map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Only you and the selected person can see this item.</p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="edit-item-content">Content</Label>
@@ -2592,6 +2658,7 @@ export default function HoldingZone() {
                 setEditItemCategoryIds([]);
                 setEditItemIsUrgent(false);
                 setEditItemIsPrivate(false);
+                setEditItemSharedWithUserId(null);
                 setEditItemDetails('');
                 setEditItemDueDate('');
                 setEditCanvasSections([]);
@@ -2612,6 +2679,7 @@ export default function HoldingZone() {
                     categoryIds: editItemCategoryIds,
                     isUrgent: editItemIsUrgent,
                     isPrivate: editItemIsPrivate,
+                    sharedWithUserId: editItemIsPrivate ? editItemSharedWithUserId : null,
                     details: editItemDetails.trim() || null,
                     dueDate: editItemDueDate ? new Date(editItemDueDate).toISOString() : null,
                     isCanvas: editItemType === 'canvas',
@@ -3198,6 +3266,7 @@ export default function HoldingZone() {
                               categoryIds: overdueItem.categories?.map(c => c.id) || [],
                               isUrgent: overdueItem.isUrgent,
                               isPrivate: overdueItem.isPrivate,
+                              sharedWithUserId: overdueItem.sharedWithUserId ?? null,
                               details: overdueItem.details,
                               dueDate: new Date(postponeDate).toISOString(),
                             },
@@ -3256,6 +3325,7 @@ export default function HoldingZone() {
                             categoryIds: overdueItem.categories?.map(c => c.id) || null,
                             isUrgent: overdueItem.isUrgent,
                             isPrivate: overdueItem.isPrivate,
+                            sharedWithUserId: overdueItem.sharedWithUserId ?? null,
                             details: overdueItem.details,
                             dueDate: null, // New task starts without a due date
                             assignedTo: overdueItem.assignedTo,

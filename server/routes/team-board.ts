@@ -1,6 +1,6 @@
 import { Router, type Response } from 'express';
 import { z } from 'zod';
-import { eq, desc, inArray, count, and } from 'drizzle-orm';
+import { eq, desc, inArray, count, and, or } from 'drizzle-orm';
 import { db } from '../db';
 import {
   teamBoardItems,
@@ -38,6 +38,7 @@ const createItemSchema = insertTeamBoardItemSchema
     categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
     isUrgent: z.boolean().optional(), // Urgent flag for priority items
     isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
+    sharedWithUserId: z.string().optional().nullable(), // When private: also visible to this user (e.g. Christine)
     details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
     dueDate: z.string().datetime().optional().nullable(), // Optional due date
     assignedTo: z.array(z.string()).nullable().optional(), // Allow assignment on creation
@@ -73,6 +74,7 @@ const updateItemSchema = z.object({
   categoryIds: z.array(z.number().int().positive()).optional().nullable(), // Multiple categories
   isUrgent: z.boolean().optional(), // Urgent flag for priority items
   isPrivate: z.boolean().optional(), // Private items only visible to creator and admins
+  sharedWithUserId: z.string().optional().nullable(), // When private: also visible to this user
   content: z.string().min(1, 'Content is required').max(2000, 'Content too long').optional(),
   type: z.enum(['task', 'note', 'idea', 'canvas']).optional(),
   details: z.string().max(5000, 'Details too long').optional().nullable(), // Free text details section
@@ -188,7 +190,7 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
       )
       .orderBy(desc(teamBoardItems.createdAt));
 
-    // If non-admin, also fetch their private items
+    // If non-admin, also fetch their private items OR items shared with them
     const privateItems = !isAdmin
       ? await db
           .select({
@@ -203,7 +205,10 @@ teamBoardRouter.get('/', requirePermission(PERMISSIONS.VIEW_HOLDING_ZONE), async
           .where(
             and(
               eq(teamBoardItems.isPrivate, true),
-              eq(teamBoardItems.createdBy, req.user.id)
+              or(
+                eq(teamBoardItems.createdBy, req.user.id),
+                eq(teamBoardItems.sharedWithUserId, req.user.id)
+              )
             )
           )
           .orderBy(desc(teamBoardItems.createdAt))
@@ -421,6 +426,7 @@ teamBoardRouter.post('/', requirePermission(PERMISSIONS.SUBMIT_HOLDING_ZONE), as
       categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null, // Keep first category for legacy
       isUrgent: itemData.isUrgent ?? false,
       isPrivate: itemData.isPrivate ?? false,
+      sharedWithUserId: itemData.sharedWithUserId ?? null,
       details: itemData.details ?? null,
       dueDate: itemData.dueDate ? new Date(itemData.dueDate) : null,
       isCanvas,
@@ -581,6 +587,7 @@ teamBoardRouter.patch('/:id',
       ...(updateData.completedAt ? { completedAt: new Date(updateData.completedAt) } : {}),
       ...(updateData.dueDate !== undefined ? { dueDate: updateData.dueDate ? new Date(updateData.dueDate) : null } : {}),
       ...(categoryIdsToAssign !== null ? { categoryId: categoryIdsToAssign.length > 0 ? categoryIdsToAssign[0] : null } : {}),
+      ...(updateData.isPrivate === false ? { sharedWithUserId: null } : {}),
     };
     // Remove categoryIds from db update since it's not a column
     delete (dbUpdateData as any).categoryIds;

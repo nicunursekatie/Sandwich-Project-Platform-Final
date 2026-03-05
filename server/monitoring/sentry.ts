@@ -83,6 +83,50 @@ export function initializeSentry(app?: Application): void {
           });
         }
 
+        // Scrub sensitive fields from request body data
+        if (event.request?.data) {
+          const sensitiveBodyFields = ['password', 'currentPassword', 'newPassword', 'confirmPassword', 'token', 'secret', 'api_key', 'apiKey', 'sessionId', 'creditCard', 'ssn'];
+          try {
+            const bodyData = typeof event.request.data === 'string'
+              ? JSON.parse(event.request.data)
+              : event.request.data;
+            if (typeof bodyData === 'object' && bodyData !== null) {
+              for (const key of Object.keys(bodyData)) {
+                if (sensitiveBodyFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
+                  bodyData[key] = '[REDACTED]';
+                }
+              }
+              event.request.data = bodyData;
+            }
+          } catch {
+            // If body isn't JSON, check for sensitive patterns in string form
+            if (typeof event.request.data === 'string') {
+              sensitiveBodyFields.forEach(field => {
+                const regex = new RegExp(`"${field}"\\s*:\\s*"[^"]*"`, 'gi');
+                event.request.data = (event.request.data as string).replace(regex, `"${field}":"[REDACTED]"`);
+              });
+            }
+          }
+        }
+
+        // Scrub sensitive data from breadcrumbs
+        if (event.breadcrumbs) {
+          event.breadcrumbs = event.breadcrumbs.map(breadcrumb => {
+            if (breadcrumb.data?.url) {
+              const sensitiveUrlParams = ['password', 'token', 'api_key', 'secret'];
+              sensitiveUrlParams.forEach(param => {
+                if (breadcrumb.data?.url?.includes(param)) {
+                  breadcrumb.data.url = breadcrumb.data.url.replace(
+                    new RegExp(`${param}=[^&]*`, 'gi'),
+                    `${param}=[REDACTED]`
+                  );
+                }
+              });
+            }
+            return breadcrumb;
+          });
+        }
+
         return event;
       },
 

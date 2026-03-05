@@ -1941,6 +1941,7 @@ export const teamBoardItems = pgTable('team_board_items', {
   categoryId: integer('category_id').references(() => holdingZoneCategories.id), // Category for organization
   isUrgent: boolean('is_urgent').notNull().default(false), // Urgent flag for priority items
   isPrivate: boolean('is_private').notNull().default(false), // Private items only visible to creator and admins
+  sharedWithUserId: varchar('shared_with_user_id'), // When set with isPrivate: only creator, this user, and admins can see
   details: text('details'), // Free text details section for additional information
   dueDate: timestamp('due_date'), // Optional due date for the item
   // NEW REFACTOR FIELDS - Project linking and promotion tracking
