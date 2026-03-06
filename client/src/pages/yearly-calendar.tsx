@@ -82,7 +82,9 @@ const MONTH_NAMES = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
+  event: 'bg-teal-100 text-teal-800 border-teal-300',
   preparation: 'bg-blue-100 text-blue-800 border-blue-300',
+  planning: 'bg-sky-100 text-sky-800 border-sky-300',
   'event-rush': 'bg-red-100 text-red-800 border-red-300',
   staffing: 'bg-orange-100 text-orange-800 border-orange-300',
   board: 'bg-purple-100 text-purple-800 border-purple-300',
@@ -451,20 +453,22 @@ export default function YearlyCalendar() {
       setIsCreateDialogOpen(false);
       setFormTitle('');
       setFormDescription('');
-      setFormCategory('preparation');
+      setFormCategory('event');
       setFormPriority('medium');
       setFormStartDate('');
       setFormEndDate('');
-      setFormIsRecurring(true);
+      setFormIsRecurring(false);
+      setFormRecurrenceType('none');
+      setFormRecurrenceEndDate('');
       toast({
-        title: 'Calendar item created',
-        description: 'Your calendar item has been added',
+        title: 'Event added to calendar',
+        description: 'Your event has been saved',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
-        title: 'Error',
-        description: 'Failed to create calendar item',
+        title: 'Could not save event',
+        description: error?.message || 'Please try again',
         variant: 'destructive',
       });
     },
@@ -702,8 +706,8 @@ export default function YearlyCalendar() {
       category: formCategory,
       priority: formPriority,
       startDate: formStartDate || null,
-      endDate: formEndDate || formStartDate || null, // If no end date, use start date
-      isRecurring: formIsRecurring,
+      endDate: formEndDate || formStartDate || null,
+      isRecurring: formRecurrenceType !== 'none',
       recurrenceType: formRecurrenceType,
       recurrencePattern,
       recurrenceEndDate: formRecurrenceEndDate || null,
@@ -879,11 +883,11 @@ export default function YearlyCalendar() {
                 setFormMonth(new Date().getMonth() + 1);
                 setFormTitle('');
                 setFormDescription('');
-                setFormCategory('preparation');
+                setFormCategory('event');
                 setFormPriority('medium');
                 setFormStartDate('');
                 setFormEndDate('');
-                setFormIsRecurring(true);
+                setFormIsRecurring(false);
                 setFormRecurrenceType('none');
                 setFormDayOfWeek(1);
                 setFormDayOfMonth(1);
@@ -894,7 +898,7 @@ export default function YearlyCalendar() {
               className="bg-[#236383] hover:bg-[#007E8C]"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Item
+              Add Calendar Event
             </Button>
           )}
           {canAdd && (
@@ -1299,14 +1303,51 @@ export default function YearlyCalendar() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Add Calendar Item</DialogTitle>
+            <DialogTitle>Add Calendar Event</DialogTitle>
             <DialogDescription>
-              Add a planning item for {MONTH_NAMES[formMonth - 1]} {selectedYear}
+              Add an event or activity to {MONTH_NAMES[formMonth - 1]} {selectedYear}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="create-month">Month</Label>
+              <Label htmlFor="create-title">Event Name *</Label>
+              <Input
+                id="create-title"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="e.g., Board Meeting, Hunger Walk, NCL Starts..."
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-start-date">Date</Label>
+                <Input
+                  id="create-start-date"
+                  type="date"
+                  value={formStartDate}
+                  onChange={(e) => {
+                    setFormStartDate(e.target.value);
+                    if (e.target.value) {
+                      const d = new Date(e.target.value + 'T12:00:00');
+                      setFormMonth(d.getMonth() + 1);
+                    }
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-end-date">End Date <span className="text-gray-400 font-normal">(optional)</span></Label>
+                <Input
+                  id="create-end-date"
+                  type="date"
+                  value={formEndDate}
+                  onChange={(e) => setFormEndDate(e.target.value)}
+                  min={formStartDate}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-month">Month <span className="text-gray-400 font-normal">(if no date above)</span></Label>
               <Select value={String(formMonth)} onValueChange={(v) => setFormMonth(parseInt(v))}>
                 <SelectTrigger id="create-month">
                   <SelectValue />
@@ -1320,40 +1361,21 @@ export default function YearlyCalendar() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-title">Title *</Label>
-              <Input
-                id="create-title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
-                placeholder="e.g., Team meeting to review DHL & alloy materials"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="create-description">Description</Label>
-              <Textarea
-                id="create-description"
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Optional details..."
-                rows={3}
-              />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-category">Category</Label>
+                <Label htmlFor="create-category">Type</Label>
                 <Select value={formCategory} onValueChange={setFormCategory}>
                   <SelectTrigger id="create-category">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="preparation">Preparation</SelectItem>
-                    <SelectItem value="event-rush">Event Rush Preparation</SelectItem>
                     <SelectItem value="event">Event</SelectItem>
-                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="board">Board / Governance</SelectItem>
                     <SelectItem value="staffing">Staffing</SelectItem>
-                    <SelectItem value="board">Board/Governance</SelectItem>
-                    <SelectItem value="seasonal">Seasonal Planning</SelectItem>
+                    <SelectItem value="preparation">Preparation</SelectItem>
+                    <SelectItem value="event-rush">Event Rush Period</SelectItem>
+                    <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="seasonal">Seasonal</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1372,41 +1394,27 @@ export default function YearlyCalendar() {
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="create-start-date">Start Date (optional)</Label>
-                <Input
-                  id="create-start-date"
-                  type="date"
-                  value={formStartDate}
-                  onChange={(e) => setFormStartDate(e.target.value)}
-                />
-                <p className="text-xs text-gray-500">For calendar grid display</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="create-end-date">End Date (optional)</Label>
-                <Input
-                  id="create-end-date"
-                  type="date"
-                  value={formEndDate}
-                  onChange={(e) => setFormEndDate(e.target.value)}
-                  min={formStartDate}
-                />
-                <p className="text-xs text-gray-500">Leave blank for single day</p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-description">Notes <span className="text-gray-400 font-normal">(optional)</span></Label>
+              <Textarea
+                id="create-description"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
+                placeholder="Any additional details..."
+                rows={2}
+              />
             </div>
-            {/* Recurrence Options */}
             <div className="space-y-3 border rounded-lg p-3 bg-gray-50">
-              <Label className="text-sm font-medium">Recurrence</Label>
+              <Label className="text-sm font-medium">Repeating Event</Label>
               <Select value={formRecurrenceType} onValueChange={setFormRecurrenceType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select recurrence type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No recurrence (one-time)</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="yearly">Yearly</SelectItem>
+                  <SelectItem value="none">Does not repeat</SelectItem>
+                  <SelectItem value="weekly">Repeats weekly</SelectItem>
+                  <SelectItem value="monthly">Repeats monthly</SelectItem>
+                  <SelectItem value="yearly">Repeats yearly</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -1450,14 +1458,13 @@ export default function YearlyCalendar() {
 
               {formRecurrenceType !== 'none' && (
                 <div className="space-y-2">
-                  <Label className="text-sm">End date (optional)</Label>
+                  <Label className="text-sm">Stop repeating on <span className="text-gray-400 font-normal">(optional)</span></Label>
                   <Input
                     type="date"
                     value={formRecurrenceEndDate}
                     onChange={(e) => setFormRecurrenceEndDate(e.target.value)}
                     min={formStartDate || undefined}
                   />
-                  <p className="text-xs text-gray-500">Leave blank to recur indefinitely</p>
                 </div>
               )}
             </div>
@@ -1472,9 +1479,9 @@ export default function YearlyCalendar() {
               className="bg-[#236383] hover:bg-[#007E8C]"
             >
               {createItemMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Creating...</>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
               ) : (
-                <>Create</>
+                <>Save to Calendar</>
               )}
             </Button>
           </DialogFooter>
