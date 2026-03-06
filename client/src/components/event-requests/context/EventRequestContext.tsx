@@ -641,6 +641,14 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Track if we've already handled the initial event to prevent reopening
   const [hasHandledInitialEvent, setHasHandledInitialEvent] = useState(false);
+  const [lastHandledEventId, setLastHandledEventId] = useState<number | undefined>(undefined);
+
+  // Reset handled flag when initialEventId changes to a new value
+  useEffect(() => {
+    if (initialEventId && initialEventId !== lastHandledEventId) {
+      setHasHandledInitialEvent(false);
+    }
+  }, [initialEventId, lastHandledEventId]);
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
@@ -655,6 +663,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
         setShowEventDetails(true);
         setIsEditing(false);
         setHasHandledInitialEvent(true); // Mark as handled to prevent reopening
+        setLastHandledEventId(initialEventId); // Track which event was handled
 
         if (!initialTab) {
           if (targetEvent.status === 'completed') {

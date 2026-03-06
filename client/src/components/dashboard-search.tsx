@@ -85,8 +85,9 @@ export function DashboardSearch({ onNavigate }: { onNavigate?: (section: string)
     setQuery('');
     setResults([]);
 
-    // Navigate via full URL so all query params (eventId, id, etc.) are preserved
-    window.location.href = result.link;
+    // Use pushState for client-side navigation so dashboard detects the URL change
+    // without a full page reload
+    window.history.pushState({}, '', result.link);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

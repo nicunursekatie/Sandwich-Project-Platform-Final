@@ -43,7 +43,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePageSession } from '@/hooks/usePageSession';
@@ -302,9 +302,33 @@ export default function Dashboard({
   // Command palette for quick navigation (Cmd+K)
   const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
 
-  // Parse URL query parameters
+  // Parse URL query parameters - track search string changes independently
+  // since wouter's location only reflects pathname, not query params
+  const [searchString, setSearchString] = useState(window.location.search);
+
+  useEffect(() => {
+    const onUrlChange = () => setSearchString(window.location.search);
+    window.addEventListener('popstate', onUrlChange);
+    // Also observe pushState/replaceState calls
+    const origPush = window.history.pushState.bind(window.history);
+    const origReplace = window.history.replaceState.bind(window.history);
+    window.history.pushState = (...args: Parameters<typeof origPush>) => {
+      origPush(...args);
+      onUrlChange();
+    };
+    window.history.replaceState = (...args: Parameters<typeof origReplace>) => {
+      origReplace(...args);
+      onUrlChange();
+    };
+    return () => {
+      window.removeEventListener('popstate', onUrlChange);
+      window.history.pushState = origPush;
+      window.history.replaceState = origReplace;
+    };
+  }, []);
+
   const urlParams = useMemo(() => {
-    const searchParams = new URLSearchParams(window.location.search);
+    const searchParams = new URLSearchParams(searchString);
     return {
       section: searchParams.get('section'),
       tab: searchParams.get('tab'),
@@ -312,7 +336,7 @@ export default function Dashboard({
       view: searchParams.get('view'),
       id: searchParams.get('id'),
     };
-  }, [location]);
+  }, [searchString]);
 
   // Listen to URL changes to update activeSection
   React.useEffect(() => {
