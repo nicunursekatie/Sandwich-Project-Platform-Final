@@ -217,6 +217,8 @@ export default function YearlyCalendar() {
   const [showTrackedItems, setShowTrackedItems] = useState(true);
   const [showReligiousHolidays, setShowReligiousHolidays] = useState(true);
   const [isAddTrackedItemDialogOpen, setIsAddTrackedItemDialogOpen] = useState(false);
+  const [isEditTrackedItemDialogOpen, setIsEditTrackedItemDialogOpen] = useState(false);
+  const [editingTrackedItem, setEditingTrackedItem] = useState<TrackedCalendarItem | null>(null);
   const [trackedTitle, setTrackedTitle] = useState('');
   const [trackedStartDate, setTrackedStartDate] = useState('');
   const [trackedEndDate, setTrackedEndDate] = useState('');
@@ -622,6 +624,73 @@ export default function YearlyCalendar() {
       });
     },
   });
+
+  // Update a tracked calendar item
+  const updateTrackedItemMutation = useMutation({
+    mutationFn: async (data: { id: number; title: string; startDate: string; endDate: string; category: string; metadata?: any }) => {
+      return await apiRequest('PATCH', `/api/tracked-calendar/${data.id}`, {
+        title: data.title,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        category: data.category,
+        metadata: data.metadata,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
+      setIsEditTrackedItemDialogOpen(false);
+      setEditingTrackedItem(null);
+      toast({ title: 'Item updated', description: 'The calendar item has been updated.' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to update item', variant: 'destructive' });
+    },
+  });
+
+  // Delete a tracked calendar item
+  const deleteTrackedItemMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest('DELETE', `/api/tracked-calendar/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
+      toast({ title: 'Item deleted', description: 'The calendar item has been deleted.' });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error?.message || 'Failed to delete item', variant: 'destructive' });
+    },
+  });
+
+  const handleEditTrackedItem = (item: TrackedCalendarItem) => {
+    setEditingTrackedItem(item);
+    setTrackedTitle(item.title);
+    setTrackedStartDate(item.startDate);
+    setTrackedEndDate(item.endDate);
+    setTrackedCategory(item.category);
+    setTrackedDistrict(item.metadata?.districts?.[0] || '');
+    setIsEditTrackedItemDialogOpen(true);
+  };
+
+  const handleUpdateTrackedItem = () => {
+    if (!editingTrackedItem || !trackedTitle.trim() || !trackedStartDate || !trackedEndDate) return;
+    updateTrackedItemMutation.mutate({
+      id: editingTrackedItem.id,
+      title: trackedTitle.trim(),
+      startDate: trackedStartDate,
+      endDate: trackedEndDate,
+      category: trackedCategory,
+      metadata: {
+        ...editingTrackedItem.metadata,
+        districts: trackedDistrict.trim() ? [trackedDistrict.trim()] : [],
+      },
+    });
+  };
+
+  const handleDeleteTrackedItem = (item: TrackedCalendarItem) => {
+    if (window.confirm(`Delete "${item.title}"?`)) {
+      deleteTrackedItemMutation.mutate(item.id);
+    }
+  };
 
   const handleAddTrackedItem = () => {
     if (!trackedTitle.trim() || !trackedStartDate || !trackedEndDate) {
@@ -1097,12 +1166,12 @@ export default function YearlyCalendar() {
                                       {group.map(item => {
                                         const itemDistricts = item.metadata?.districts || [];
                                         return (
-                                          <div 
-                                            key={`tracked-${item.id}`} 
-                                            className="flex items-start gap-2 p-1.5 rounded bg-gray-50 dark:bg-gray-800/50"
+                                          <div
+                                            key={`tracked-${item.id}`}
+                                            className="flex items-start gap-2 p-1.5 rounded bg-gray-50 dark:bg-gray-800/50 group/gitem"
                                           >
-                                            <Badge 
-                                              variant="outline" 
+                                            <Badge
+                                              variant="outline"
                                               className="text-xs font-semibold px-2 py-0.5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 flex-shrink-0"
                                             >
                                               {formatDateRange(item.startDate, item.endDate)}
@@ -1111,9 +1180,9 @@ export default function YearlyCalendar() {
                                               {itemDistricts.length > 0 && (
                                                 <div className="flex flex-wrap gap-1 mb-1">
                                                   {itemDistricts.map(district => (
-                                                    <Badge 
-                                                      key={district} 
-                                                      variant="outline" 
+                                                    <Badge
+                                                      key={district}
+                                                      variant="outline"
                                                       className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
                                                     >
                                                       {district}
@@ -1127,6 +1196,26 @@ export default function YearlyCalendar() {
                                                 </p>
                                               )}
                                             </div>
+                                            {canEdit && (
+                                              <div className="opacity-0 group-hover/gitem:opacity-100 transition-opacity flex gap-0.5 flex-shrink-0">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 w-6 p-0"
+                                                  onClick={() => handleEditTrackedItem(item)}
+                                                >
+                                                  <Edit2 className="h-3 w-3" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                                  onClick={() => handleDeleteTrackedItem(item)}
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            )}
                                           </div>
                                         );
                                       })}
@@ -1143,7 +1232,7 @@ export default function YearlyCalendar() {
                               return (
                                 <div
                                   key={`tracked-${item.id}`}
-                                  className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
+                                  className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other} group/tracked`}
                                 >
                                   <div className="flex items-start gap-2 mb-2">
                                     <Badge
@@ -1153,7 +1242,29 @@ export default function YearlyCalendar() {
                                       {formatDateRange(item.startDate, item.endDate)}
                                     </Badge>
                                     <div className="flex-1 min-w-0">
-                                      <h4 className="text-sm font-semibold mb-1">{item.title}</h4>
+                                      <div className="flex items-center gap-1">
+                                        <h4 className="text-sm font-semibold mb-1 flex-1">{item.title}</h4>
+                                        {canEdit && (
+                                          <div className="opacity-0 group-hover/tracked:opacity-100 transition-opacity flex gap-0.5 flex-shrink-0">
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0"
+                                              onClick={() => handleEditTrackedItem(item)}
+                                            >
+                                              <Edit2 className="h-3 w-3" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                              onClick={() => handleDeleteTrackedItem(item)}
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        )}
+                                      </div>
                                       {districts.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
                                           {districts.map(district => (
@@ -1860,6 +1971,92 @@ export default function YearlyCalendar() {
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</>
               ) : (
                 <><Plus className="h-4 w-4 mr-2" /> Add Item</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Tracked Calendar Item Dialog */}
+      <Dialog open={isEditTrackedItemDialogOpen} onOpenChange={(open) => {
+        setIsEditTrackedItemDialogOpen(open);
+        if (!open) setEditingTrackedItem(null);
+      }}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Edit Calendar Item</DialogTitle>
+            <DialogDescription>
+              Update the details for this calendar item.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-tracked-title">Title</Label>
+              <Input
+                id="edit-tracked-title"
+                value={trackedTitle}
+                onChange={(e) => setTrackedTitle(e.target.value)}
+                placeholder="e.g. Westminster Spring Break"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tracked-category">Category</Label>
+              <Select value={trackedCategory} onValueChange={setTrackedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="school_breaks">School Breaks</SelectItem>
+                  <SelectItem value="school_markers">School Dates</SelectItem>
+                  <SelectItem value="religious_holidays">Religious Holidays</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tracked-district">
+                {trackedCategory === 'religious_holidays' ? 'Tradition (optional)' : 'School / District (optional)'}
+              </Label>
+              <Input
+                id="edit-tracked-district"
+                value={trackedDistrict}
+                onChange={(e) => setTrackedDistrict(e.target.value)}
+                placeholder={trackedCategory === 'religious_holidays' ? 'e.g. Jewish, Christian' : 'e.g. Westminster'}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-tracked-start">Start Date</Label>
+                <Input
+                  id="edit-tracked-start"
+                  type="date"
+                  value={trackedStartDate}
+                  onChange={(e) => setTrackedStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tracked-end">End Date</Label>
+                <Input
+                  id="edit-tracked-end"
+                  type="date"
+                  value={trackedEndDate}
+                  onChange={(e) => setTrackedEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditTrackedItemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateTrackedItem}
+              disabled={updateTrackedItemMutation.isPending || !trackedTitle.trim() || !trackedStartDate || !trackedEndDate}
+              className="bg-[#236383] hover:bg-[#007E8C]"
+            >
+              {updateTrackedItemMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+              ) : (
+                'Save Changes'
               )}
             </Button>
           </DialogFooter>
