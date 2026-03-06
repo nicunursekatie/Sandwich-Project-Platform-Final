@@ -209,12 +209,9 @@ router.get('/search', async (req, res) => {
         name: recipients.name,
         email: recipients.email,
         phone: recipients.phone,
-        contactPerson1Name: recipients.contactPerson1Name,
-        contactPerson1Email: recipients.contactPerson1Email,
-        contactPerson1Phone: recipients.contactPerson1Phone,
-        contactPerson2Name: recipients.contactPerson2Name,
-        contactPerson2Email: recipients.contactPerson2Email,
-        contactPerson2Phone: recipients.contactPerson2Phone,
+        contactPersonName: recipients.contactPersonName,
+        contactPersonEmail: recipients.contactPersonEmail,
+        contactPersonPhone: recipients.contactPersonPhone,
       })
       .from(recipients)
       .where(
@@ -222,10 +219,8 @@ router.get('/search', async (req, res) => {
           ilike(recipients.name, searchTerm),
           ilike(recipients.email, searchTerm),
           ilike(recipients.phone, searchTerm),
-          ilike(recipients.contactPerson1Name, searchTerm),
-          ilike(recipients.contactPerson1Email, searchTerm),
-          ilike(recipients.contactPerson2Name, searchTerm),
-          ilike(recipients.contactPerson2Email, searchTerm)
+          ilike(recipients.contactPersonName, searchTerm),
+          ilike(recipients.contactPersonEmail, searchTerm)
         )
       )
       .limit(10);
@@ -244,26 +239,13 @@ router.get('/search', async (req, res) => {
 
       // Also check if we matched a contact person
       const searchLower = query.toLowerCase();
-      if (recipient.contactPerson1Name?.toLowerCase().includes(searchLower) ||
-          recipient.contactPerson1Email?.toLowerCase().includes(searchLower)) {
+      if (recipient.contactPersonName?.toLowerCase().includes(searchLower) ||
+          recipient.contactPersonEmail?.toLowerCase().includes(searchLower)) {
         results.push({
-          id: `${recipient.id}-contact1`,
-          name: recipient.contactPerson1Name || 'Contact 1',
-          email: recipient.contactPerson1Email,
-          phone: recipient.contactPerson1Phone,
-          sourceType: 'recipient',
-          sourceLabel: 'Recipient Contact',
-          organization: recipient.name,
-          link: `/dashboard?section=recipients`,
-        });
-      }
-      if (recipient.contactPerson2Name?.toLowerCase().includes(searchLower) ||
-          recipient.contactPerson2Email?.toLowerCase().includes(searchLower)) {
-        results.push({
-          id: `${recipient.id}-contact2`,
-          name: recipient.contactPerson2Name || 'Contact 2',
-          email: recipient.contactPerson2Email,
-          phone: recipient.contactPerson2Phone,
+          id: `${recipient.id}-contact`,
+          name: recipient.contactPersonName || 'Contact',
+          email: recipient.contactPersonEmail,
+          phone: recipient.contactPersonPhone,
           sourceType: 'recipient',
           sourceLabel: 'Recipient Contact',
           organization: recipient.name,
