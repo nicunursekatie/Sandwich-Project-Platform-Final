@@ -354,7 +354,7 @@ router.get('/search', async (req, res) => {
           sourceType: 'contact',
           sourceLabel: 'Event Request Org',
           organization: contactName || undefined,
-          link: `/dashboard?section=event-requests`,
+          link: `/dashboard?section=event-requests&eventId=${er.id}`,
         });
       }
       if (contactName && (!orgMatched || contactName.toLowerCase().includes(searchLower))) {
@@ -366,7 +366,7 @@ router.get('/search', async (req, res) => {
           sourceType: 'contact',
           sourceLabel: 'Event Request Contact',
           organization: er.organizationName,
-          link: `/dashboard?section=event-requests`,
+          link: `/dashboard?section=event-requests&eventId=${er.id}`,
         });
       }
     }

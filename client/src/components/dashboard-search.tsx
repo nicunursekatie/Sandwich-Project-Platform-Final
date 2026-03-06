@@ -85,14 +85,8 @@ export function DashboardSearch({ onNavigate }: { onNavigate?: (section: string)
     setQuery('');
     setResults([]);
 
-    // Parse the link to navigate
-    const url = new URL(result.link, window.location.origin);
-    const section = url.searchParams.get('section');
-    if (section && onNavigate) {
-      onNavigate(section);
-    } else {
-      window.location.href = result.link;
-    }
+    // Navigate via full URL so all query params (eventId, id, etc.) are preserved
+    window.location.href = result.link;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
