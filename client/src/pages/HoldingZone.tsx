@@ -544,6 +544,7 @@ export default function HoldingZone() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('active');
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
+  const [showAssignedToMe, setShowAssignedToMe] = useState(false);
   const [newItemContent, setNewItemContent] = useState('');
   const [newItemType, setNewItemType] = useState<'task' | 'note' | 'idea' | 'canvas'>('task');
   const [newItemCategoryIds, setNewItemCategoryIds] = useState<number[]>([]);
@@ -747,6 +748,12 @@ export default function HoldingZone() {
       filtered = filtered.filter(item => item.isUrgent);
     }
 
+    if (showAssignedToMe && user?.id) {
+      filtered = filtered.filter(item =>
+        item.assignedTo && item.assignedTo.includes(user.id)
+      );
+    }
+
     // Split into tasks, todo list, and notes/ideas
     const tasks = filtered.filter(item => item.type === 'task' && item.status !== 'todo');
     const todo = filtered.filter(item => item.status === 'todo'); // To-Do List items (any type)
@@ -760,7 +767,7 @@ export default function HoldingZone() {
       filteredNotes: sortItemsWithChildren(notes),
       filteredCanvases: sortItemsWithChildren(canvases),
     };
-  }, [items, selectedCategory, selectedStatus, showUrgentOnly]);
+  }, [items, selectedCategory, selectedStatus, showUrgentOnly, showAssignedToMe, user?.id]);
 
   // Get current items based on active tab
   const currentItems = activeTab === 'tasks'
@@ -770,6 +777,14 @@ export default function HoldingZone() {
       : activeTab === 'canvas'
         ? filteredCanvases
         : filteredNotes;
+
+  // Filter promoted subtasks for "Assigned to Me"
+  const filteredPromotedSubtasks = useMemo(() => {
+    if (!showAssignedToMe || !user?.id) return promotedSubtasks;
+    return promotedSubtasks.filter(st =>
+      st.assigneeIds && st.assigneeIds.includes(user.id)
+    );
+  }, [promotedSubtasks, showAssignedToMe, user?.id]);
 
   // Create category mutation
   const createCategoryMutation = useMutation({
@@ -1418,6 +1433,19 @@ export default function HoldingZone() {
                   Show Urgent Only
                 </Label>
               </div>
+
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="assigned-to-me"
+                  checked={showAssignedToMe}
+                  onCheckedChange={(checked) => setShowAssignedToMe(checked as boolean)}
+                  data-testid="checkbox-assigned-to-me"
+                />
+                <Label htmlFor="assigned-to-me" className="text-sm font-medium cursor-pointer flex items-center gap-1">
+                  <User className="h-3.5 w-3.5" />
+                  Assigned to Me
+                </Label>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1438,9 +1466,9 @@ export default function HoldingZone() {
           <TabsTrigger value="todo" className="flex items-center gap-2" data-testid="tab-todo">
             <CheckCircle2 className="h-4 w-4" />
             To-Do List
-            {(filteredTodo.length + promotedSubtasks.length) > 0 && (
+            {(filteredTodo.length + filteredPromotedSubtasks.length) > 0 && (
               <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
-                {filteredTodo.length + promotedSubtasks.length}
+                {filteredTodo.length + filteredPromotedSubtasks.length}
               </Badge>
             )}
           </TabsTrigger>
@@ -1470,7 +1498,7 @@ export default function HoldingZone() {
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-[#236383]" />
         </div>
-      ) : currentItems.length === 0 && !(activeTab === 'todo' && promotedSubtasks.length > 0) ? (
+      ) : currentItems.length === 0 && !(activeTab === 'todo' && filteredPromotedSubtasks.length > 0) ? (
         <Card>
           <CardContent className="p-12 text-center">
             {activeTab === 'tasks' ? (
@@ -1892,14 +1920,14 @@ export default function HoldingZone() {
           })}
 
           {/* Promoted Subtasks Section - only show in todo tab */}
-          {activeTab === 'todo' && promotedSubtasks.length > 0 && (
+          {activeTab === 'todo' && filteredPromotedSubtasks.length > 0 && (
             <div className="mt-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <FolderKanban className="h-5 w-5 text-teal-600" />
                 Project Subtasks
               </h3>
               <div className="space-y-3">
-                {promotedSubtasks.map((subtask) => (
+                {filteredPromotedSubtasks.map((subtask) => (
                   <Card
                     key={`subtask-${subtask.id}`}
                     className="transition-all hover:shadow-md border-l-4 border-l-teal-500"
