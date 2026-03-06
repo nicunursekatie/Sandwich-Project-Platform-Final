@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
@@ -58,7 +58,7 @@ import { usePageSession } from '@/hooks/usePageSession';
 import type { Recipient } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
-export default function RecipientsManagement() {
+export default function RecipientsManagement({ highlightRecipientId }: { highlightRecipientId?: number } = {}) {
   const { toast } = useToast();
   const { canEdit } = useResourcePermissions('RECIPIENTS');
 
@@ -87,6 +87,24 @@ export default function RecipientsManagement() {
     imported: number;
     skipped: number;
   } | null>(null);
+
+  // Highlight state for search-driven navigation
+  const [highlightedId, setHighlightedId] = useState<number | undefined>(highlightRecipientId);
+  const highlightCardRef = useRef<HTMLDivElement>(null);
+
+  // When highlightRecipientId changes (from URL param), reset filters so the card is visible
+  useEffect(() => {
+    if (highlightRecipientId) {
+      setHighlightedId(highlightRecipientId);
+      setSearchTerm('');
+      setStatusFilter('all');
+      setContractFilter('all');
+      setRegionFilter('all');
+      setTspContactFilter('all');
+      setSandwichTypeFilter('all');
+      setFocusAreaFilter('all');
+    }
+  }, [highlightRecipientId]);
 
   // Form state hooks for add and edit modes
   const addForm = useRecipientForm({ initialData: null, mode: 'add' });
@@ -169,6 +187,30 @@ export default function RecipientsManagement() {
 
     return filtered;
   }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter]);
+
+  // Scroll to highlighted card once data is loaded and rendered
+  useEffect(() => {
+    if (highlightedId && highlightCardRef.current) {
+      const timer = setTimeout(() => {
+        highlightCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedId, filteredRecipients]);
+
+  // Auto-clear highlight after animation
+  useEffect(() => {
+    if (highlightedId) {
+      const timer = setTimeout(() => {
+        setHighlightedId(undefined);
+        // Clean up URL param
+        const url = new URL(window.location.href);
+        url.searchParams.delete('highlight');
+        window.history.replaceState({}, '', url.toString());
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedId]);
 
   const inactiveRecipients = useMemo(() => {
     return recipients.filter((r) => r.status === 'inactive');
@@ -576,6 +618,8 @@ export default function RecipientsManagement() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleStatus={handleToggleStatus}
+              highlighted={highlightedId === recipient.id}
+              highlightRef={highlightedId === recipient.id ? highlightCardRef : undefined}
             />
           ))}
 
