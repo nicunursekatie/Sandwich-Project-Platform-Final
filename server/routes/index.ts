@@ -54,6 +54,7 @@ import { createDriversRouter } from './drivers';
 import { createVolunteersRouter } from './volunteers';
 import { createHostsRouter } from './hosts';
 import { createEventRemindersRouter } from './event-reminders';
+import eventCheckInRemindersRouter from './event-check-in-reminders';
 import { createEmailRouter } from './email-routes';
 import { createAdminMigrationsRouter } from './admin-migrations';
 import { createAdminEventsRouter } from './admin-events';
@@ -944,6 +945,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     eventRemindersRouter
   );
   router.use('/api/event-reminders', createErrorHandler('event-reminders'));
+
+  // Event check-in reminders (per-event recurring notification toggle)
+  router.use(
+    '/api/event-check-in-reminders',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventCheckInRemindersRouter
+  );
+  router.use('/api/event-check-in-reminders', createErrorHandler('event-check-in-reminders'));
 
   // Alert requests - user-submitted requests for new notification types
   const alertRequestsRouter = createAlertRequestsRouter(deps);

@@ -27,6 +27,7 @@ import {
 import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
 import { processPredictionAlerts } from './prediction-alert-service';
+import { processCheckInReminders } from './check-in-reminder-service';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -1212,34 +1213,15 @@ export function initializeCronJobs() {
   // - Escalations (3 days after first reminder with no activity)
   // Cron format: minute hour day-of-month month day-of-week
   // '0 8,16 * * *' = At 8:00 AM and 4:00 PM every day
+  // DISABLED: Replaced by user-controlled per-event check-in reminders
   const tspFollowupJob = cron.schedule('0 8,16 * * *', async () => {
-    cronLogger.info('Running smart TSP contact follow-up check...');
-    try {
-      const result = await processSmartTspFollowups();
-      cronLogger.info('Smart TSP contact follow-up job completed', {
-        notificationsSent: result.notificationsSent,
-        escalationsSent: result.escalationsSent,
-        eventsProcessed: result.eventsProcessed,
-        errors: result.errors,
-        timestamp: result.timestamp,
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running TSP contact follow-up cron job',
-        undefined,
-        { jobType: 'tsp-contact-followup' }
-      );
-    }
+    cronLogger.info('TSP follow-up job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
     scheduled: true,
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('TSP contact follow-up job scheduled successfully', {
-    schedule: 'Daily at 8:00 AM and 4:00 PM',
-    timezone: 'America/New_York',
-  });
+  cronLogger.info('TSP contact follow-up job DISABLED (replaced by check-in reminders)');
 
   // Corporate priority event follow-up - runs daily at 9:00 AM and 2:00 PM
   // Sends strict follow-up reminders to TSP contacts for corporate priority events
@@ -1247,32 +1229,14 @@ export function initializeCronJobs() {
   // Cron format: minute hour day-of-month month day-of-week
   // '0 9,14 * * *' = At 9:00 AM and 2:00 PM every day
   const corporateFollowupJob = cron.schedule('0 9,14 * * *', async () => {
-    cronLogger.info('Running corporate priority follow-up check...');
-    try {
-      const result = await processCorporateFollowups();
-      cronLogger.info('Corporate follow-up job completed', {
-        remindersGenerated: result.remindersGenerated,
-        eventsProcessed: result.eventsProcessed,
-        errors: result.errors,
-        timestamp: result.timestamp,
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running corporate follow-up cron job',
-        undefined,
-        { jobType: 'corporate-followup' }
-      );
-    }
+    // DISABLED: Replaced by user-controlled per-event check-in reminders
+    cronLogger.info('Corporate follow-up job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
     scheduled: true,
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('Corporate follow-up job scheduled successfully', {
-    schedule: 'Daily at 9:00 AM and 2:00 PM',
-    timezone: 'America/New_York',
-  });
+  cronLogger.info('Corporate follow-up job DISABLED (replaced by check-in reminders)');
 
   // Driver availability status transition - runs daily at 12:10 AM
   // Transitions drivers to unavailable when unavailableStartDate arrives
@@ -1348,87 +1312,29 @@ export function initializeCronJobs() {
   // Sends urgent SMS to TSP contacts for corporate events without successful contact after 24 hours
   // Cron format: minute hour day-of-month month day-of-week
   // '0 9,13,17 * * *' = At 9:00 AM, 1:00 PM, and 5:00 PM every day
+  // DISABLED: Replaced by user-controlled per-event check-in reminders
   const corporate24hEscalationJob = cron.schedule('0 9,13,17 * * *', async () => {
-    cronLogger.info('Running corporate 24-hour escalation check...');
-    try {
-      const result = await processCorporate24hEscalations();
-      cronLogger.info('Corporate 24h escalation job completed', {
-        sent: result.sent,
-        skipped: result.skipped,
-        timestamp: new Date(),
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running corporate 24h escalation cron job',
-        undefined,
-        { jobType: 'corporate-24h-escalation' }
-      );
-    }
+    cronLogger.info('Corporate 24h escalation job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
     scheduled: true,
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('Corporate 24h escalation job scheduled successfully', {
-    schedule: 'Daily at 9 AM, 1 PM, and 5 PM',
-    timezone: 'America/New_York',
-  });
+  cronLogger.info('Corporate 24h escalation job DISABLED (replaced by check-in reminders)');
 
-  // Event approaching incomplete alert - runs daily at 9 AM
-  // Sends urgent SMS/email when event is within 5 days but not yet scheduled
-  // Cron format: minute hour day-of-month month day-of-week
-  // '0 9 * * *' = At 9:00 AM every day
+  // DISABLED: Replaced by user-controlled per-event check-in reminders
   const eventApproachingJob = cron.schedule('0 9 * * *', async () => {
-    cronLogger.info('Running event approaching incomplete check...');
-    try {
-      const result = await processApproachingIncompleteEvents();
-      cronLogger.info('Event approaching job completed', {
-        sent: result.sent,
-        skipped: result.skipped,
-        timestamp: new Date(),
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running event approaching cron job',
-        undefined,
-        { jobType: 'event-approaching-incomplete' }
-      );
-    }
+    cronLogger.info('Event approaching job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
     scheduled: true,
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('Event approaching incomplete job scheduled successfully', {
-    schedule: 'Daily at 9:00 AM',
-    timezone: 'America/New_York',
-  });
+  cronLogger.info('Event approaching incomplete job DISABLED (replaced by check-in reminders)');
 
-  // Weekly contact reminder + 2-week escalation - runs weekdays at 10 AM
-  // Sends email reminders for in-process events with no contact in 7 days
-  // Escalates to admin for events with no contact in 14+ days
-  // Cron format: minute hour day-of-month month day-of-week
-  // '0 10 * * 1-5' = At 10:00 AM Monday through Friday
+  // DISABLED: Replaced by user-controlled per-event check-in reminders
   const weeklyContactReminderJob = cron.schedule('0 10 * * 1-5', async () => {
-    cronLogger.info('Running weekly contact reminder check...');
-    try {
-      const result = await processWeeklyContactReminders();
-      cronLogger.info('Weekly contact reminder job completed', {
-        sent: result.sent,
-        escalated: result.escalated,
-        skipped: result.skipped,
-        timestamp: new Date(),
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running weekly contact reminder cron job',
-        undefined,
-        { jobType: 'weekly-contact-reminder' }
-      );
-    }
+    cronLogger.info('Weekly contact reminder job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
     scheduled: true,
     timezone: 'America/New_York'
@@ -1542,6 +1448,36 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // User-controlled check-in reminders - runs every hour at :15
+  // Processes per-event reminder toggles set by TSP contacts
+  const checkInReminderJob = cron.schedule('15 * * * *', async () => {
+    cronLogger.info('Running check-in reminder processing...');
+    try {
+      const result = await processCheckInReminders();
+      cronLogger.info('Check-in reminder processing completed', {
+        processed: result.processed,
+        sent: result.sent,
+        errors: result.errors,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running check-in reminder cron job',
+        undefined,
+        { jobType: 'check-in-reminders' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Check-in reminder job scheduled successfully', {
+    schedule: 'Every hour at :15',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1559,6 +1495,7 @@ export function initializeCronJobs() {
     adminDigestJob,
     adminSmsPulseJob,
     predictionAlertJob,
+    checkInReminderJob,
   };
 }
 
@@ -1582,5 +1519,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.adminDigestJob.stop();
   jobs.adminSmsPulseJob.stop();
   jobs.predictionAlertJob.stop();
+  jobs.checkInReminderJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

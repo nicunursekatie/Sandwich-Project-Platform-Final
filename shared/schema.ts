@@ -2670,6 +2670,40 @@ export const eventReminders = pgTable(
   })
 );
 
+// Per-event check-in reminder settings (user-controlled recurring notifications)
+export const eventCheckInReminders = pgTable(
+  'event_check_in_reminders',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull(),
+    userId: varchar('user_id').notNull(), // TSP contact who set and receives the reminder
+    enabled: boolean('enabled').notNull().default(true),
+    frequency: varchar('frequency').notNull().default('weekly'), // 'daily', 'every_3_days', 'weekly', 'biweekly'
+    channel: varchar('channel').notNull().default('email'), // 'email', 'sms', 'both'
+    lastSentAt: timestamp('last_sent_at'), // When the last reminder was sent
+    nextDueAt: timestamp('next_due_at'), // Pre-calculated next send time
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    eventUserIdx: uniqueIndex('idx_checkin_reminders_event_user').on(
+      table.eventRequestId,
+      table.userId
+    ),
+    nextDueIdx: index('idx_checkin_reminders_next_due').on(table.nextDueAt),
+    enabledIdx: index('idx_checkin_reminders_enabled').on(table.enabled),
+  })
+);
+
+export const insertEventCheckInReminderSchema = createInsertSchema(eventCheckInReminders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastSentAt: true,
+});
+export type EventCheckInReminder = typeof eventCheckInReminders.$inferSelect;
+export type InsertEventCheckInReminder = z.infer<typeof insertEventCheckInReminderSchema>;
+
 // Event collaboration comments table for team discussion on event planning
 export const eventCollaborationComments = pgTable(
   'event_collaboration_comments',

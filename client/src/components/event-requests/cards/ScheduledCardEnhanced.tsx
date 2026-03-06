@@ -68,6 +68,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
+import { CheckInReminderToggle } from '@/components/event-requests/CheckInReminderToggle';
 import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
@@ -2513,6 +2514,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <Edit2 className="w-3.5 h-3.5" />
                   </Button>
                 )}
+                <CheckInReminderToggle
+                  eventRequestId={request.id}
+                  tspContactUserId={request.tspContact || request.tspContactAssigned}
+                />
               </div>
             )}
               </div>
