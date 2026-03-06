@@ -486,7 +486,7 @@ export default function HostResources() {
             title="TSP Host Handbook"
             description="Complete guide for host collection sites — everything you need to know about hosting a sandwich collection"
             fileType="PDF"
-            downloadUrl="/attached_assets/TSP-New-Host-Handbook.pdf"
+            downloadUrl="/attached_assets/TSP-Host-Handbook (8).pdf"
           />
           <DocumentCard
             title="Deli Sandwich Labels"
