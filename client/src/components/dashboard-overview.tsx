@@ -42,6 +42,7 @@ import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
+import { DashboardSearch } from '@/components/dashboard-search';
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
 import { LowVolumeAlert } from '@/components/low-volume-alert';
@@ -421,6 +422,11 @@ export default function DashboardOverview({
           <p className="text-sm sm:text-base text-brand-primary font-medium">
             Nourish The Hungry. Feed The Soul.
           </p>
+        </div>
+
+        {/* Universal Search */}
+        <div className="mx-4">
+          <DashboardSearch onNavigate={onSectionChange} />
         </div>
 
         {/* Collection Call-to-Action */}

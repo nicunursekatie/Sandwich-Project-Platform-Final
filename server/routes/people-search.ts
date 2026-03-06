@@ -8,7 +8,9 @@ import {
   hostContacts,
   recipients,
   recipientTspContacts,
-  contacts
+  contacts,
+  eventRequests,
+  organizations,
 } from '@shared/schema';
 import { ilike, or, sql } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
@@ -331,6 +333,85 @@ router.get('/search', async (req, res) => {
         sourceLabel: 'Contact',
         organization: contact.organization,
         link: `/dashboard?section=contacts`,
+      });
+    }
+
+    // Search event requests (organization names and contact names)
+    const eventRequestResults = await db
+      .select({
+        id: eventRequests.id,
+        firstName: eventRequests.firstName,
+        lastName: eventRequests.lastName,
+        email: eventRequests.email,
+        phone: eventRequests.phone,
+        organizationName: eventRequests.organizationName,
+      })
+      .from(eventRequests)
+      .where(
+        or(
+          ilike(eventRequests.organizationName, searchTerm),
+          ilike(eventRequests.firstName, searchTerm),
+          ilike(eventRequests.lastName, searchTerm),
+          ilike(eventRequests.email, searchTerm),
+          sql`CONCAT(${eventRequests.firstName}, ' ', ${eventRequests.lastName}) ILIKE ${searchTerm}`
+        )
+      )
+      .limit(10);
+
+    for (const er of eventRequestResults) {
+      const contactName = `${er.firstName || ''} ${er.lastName || ''}`.trim();
+      const searchLower = query.toLowerCase();
+      const orgMatched = er.organizationName?.toLowerCase().includes(searchLower);
+
+      if (orgMatched) {
+        results.push({
+          id: `er-org-${er.id}`,
+          name: er.organizationName || 'Unknown Organization',
+          email: er.email,
+          phone: er.phone,
+          sourceType: 'contact',
+          sourceLabel: 'Event Request Org',
+          organization: contactName || undefined,
+          link: `/dashboard?section=event-requests`,
+        });
+      }
+      if (contactName && (!orgMatched || contactName.toLowerCase().includes(searchLower))) {
+        results.push({
+          id: `er-contact-${er.id}`,
+          name: contactName,
+          email: er.email,
+          phone: er.phone,
+          sourceType: 'contact',
+          sourceLabel: 'Event Request Contact',
+          organization: er.organizationName,
+          link: `/dashboard?section=event-requests`,
+        });
+      }
+    }
+
+    // Search organizations table
+    const orgResults = await db
+      .select({
+        id: organizations.id,
+        name: organizations.name,
+        category: organizations.category,
+      })
+      .from(organizations)
+      .where(
+        ilike(organizations.name, searchTerm)
+      )
+      .limit(10);
+
+    for (const org of orgResults) {
+      results.push({
+        id: `org-${org.id}`,
+        name: org.name,
+        email: null,
+        phone: null,
+        sourceType: 'contact',
+        sourceLabel: 'Organization',
+        organization: org.category || undefined,
+        link: `/dashboard?section=groups-catalog`,
       });
     }
 
