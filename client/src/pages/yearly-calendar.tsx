@@ -214,6 +214,11 @@ export default function YearlyCalendar() {
   const [importHolidaysJsonText, setImportHolidaysJsonText] = useState('');
   const [showTrackedItems, setShowTrackedItems] = useState(true);
   const [showReligiousHolidays, setShowReligiousHolidays] = useState(true);
+  const [isAddBreakDialogOpen, setIsAddBreakDialogOpen] = useState(false);
+  const [breakTitle, setBreakTitle] = useState('');
+  const [breakStartDate, setBreakStartDate] = useState('');
+  const [breakEndDate, setBreakEndDate] = useState('');
+  const [breakSchoolName, setBreakSchoolName] = useState('');
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -576,6 +581,59 @@ export default function YearlyCalendar() {
     },
   });
 
+  // Create a single school break item directly
+  const createSchoolBreakMutation = useMutation({
+    mutationFn: async (data: { title: string; startDate: string; endDate: string; schoolName: string }) => {
+      return await apiRequest('POST', '/api/tracked-calendar', {
+        category: 'school_breaks',
+        title: data.title,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        metadata: {
+          type: 'school_break',
+          districts: data.schoolName ? [data.schoolName] : [],
+          source: 'manual',
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
+      setIsAddBreakDialogOpen(false);
+      setBreakTitle('');
+      setBreakStartDate('');
+      setBreakEndDate('');
+      setBreakSchoolName('');
+      toast({
+        title: 'School break added',
+        description: 'The school break has been added to the calendar.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error?.message || 'Failed to add school break',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleAddSchoolBreak = () => {
+    if (!breakTitle.trim() || !breakStartDate || !breakEndDate) {
+      toast({
+        title: 'Error',
+        description: 'Title, start date, and end date are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    createSchoolBreakMutation.mutate({
+      title: breakTitle.trim(),
+      startDate: breakStartDate,
+      endDate: breakEndDate,
+      schoolName: breakSchoolName.trim(),
+    });
+  };
+
   const handleImportReligiousHolidays = () => {
     try {
       const data = JSON.parse(importHolidaysJsonText);
@@ -837,6 +895,22 @@ export default function YearlyCalendar() {
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Item
+            </Button>
+          )}
+          {canAdd && (
+            <Button
+              onClick={() => {
+                setBreakTitle('');
+                setBreakStartDate('');
+                setBreakEndDate('');
+                setBreakSchoolName('');
+                setIsAddBreakDialogOpen(true);
+              }}
+              variant="outline"
+              className="border-amber-400 text-amber-700 hover:bg-amber-50"
+            >
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Add School Break
             </Button>
           )}
         </div>
@@ -1693,6 +1767,74 @@ export default function YearlyCalendar() {
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importing...</>
               ) : (
                 <><Upload className="h-4 w-4 mr-2" /> Import</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add School Break Dialog */}
+      <Dialog open={isAddBreakDialogOpen} onOpenChange={setIsAddBreakDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Add School Break</DialogTitle>
+            <DialogDescription>
+              Add a school break that will appear with the other school break items on the calendar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="break-title">Title</Label>
+              <Input
+                id="break-title"
+                value={breakTitle}
+                onChange={(e) => setBreakTitle(e.target.value)}
+                placeholder="e.g. Westminster Spring Break"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="break-school">School / District Name (optional)</Label>
+              <Input
+                id="break-school"
+                value={breakSchoolName}
+                onChange={(e) => setBreakSchoolName(e.target.value)}
+                placeholder="e.g. Westminster"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="break-start">Start Date</Label>
+                <Input
+                  id="break-start"
+                  type="date"
+                  value={breakStartDate}
+                  onChange={(e) => setBreakStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="break-end">End Date</Label>
+                <Input
+                  id="break-end"
+                  type="date"
+                  value={breakEndDate}
+                  onChange={(e) => setBreakEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddBreakDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddSchoolBreak}
+              disabled={createSchoolBreakMutation.isPending || !breakTitle.trim() || !breakStartDate || !breakEndDate}
+              className="bg-amber-500 hover:bg-amber-600"
+            >
+              {createSchoolBreakMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</>
+              ) : (
+                <><Plus className="h-4 w-4 mr-2" /> Add School Break</>
               )}
             </Button>
           </DialogFooter>
