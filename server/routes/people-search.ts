@@ -234,7 +234,7 @@ router.get('/search', async (req, res) => {
         phone: recipient.phone,
         sourceType: 'recipient',
         sourceLabel: 'Recipient',
-        link: `/dashboard?section=recipients`,
+        link: `/dashboard?section=recipients&highlight=${recipient.id}`,
       });
 
       // Also check if we matched a contact person
@@ -249,7 +249,7 @@ router.get('/search', async (req, res) => {
           sourceType: 'recipient',
           sourceLabel: 'Recipient Contact',
           organization: recipient.name,
-          link: `/dashboard?section=recipients`,
+          link: `/dashboard?section=recipients&highlight=${recipient.id}`,
         });
       }
     }
@@ -281,7 +281,7 @@ router.get('/search', async (req, res) => {
         phone: contact.contactPhone,
         sourceType: 'recipientTspContact',
         sourceLabel: 'TSP Contact',
-        link: `/dashboard?section=recipients`,
+        link: `/dashboard?section=recipients&highlight=${contact.recipientId}`,
       });
     }
 

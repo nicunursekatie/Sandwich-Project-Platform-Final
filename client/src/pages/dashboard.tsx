@@ -311,6 +311,7 @@ export default function Dashboard({
       eventId: searchParams.get('eventId'),
       view: searchParams.get('view'),
       id: searchParams.get('id'),
+      highlight: searchParams.get('highlight'),
     };
   }, [location]);
 
@@ -598,7 +599,7 @@ export default function Dashboard({
       case 'host-resources':
         return <HostResources />;
       case 'recipients':
-        return <RecipientsManagement />;
+        return <RecipientsManagement highlightRecipientId={urlParams.highlight ? Number(urlParams.highlight) : undefined} />;
       case 'drivers':
         return <DriversManagement />;
       case 'volunteers':
