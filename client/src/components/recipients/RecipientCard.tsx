@@ -1,3 +1,4 @@
+import type React from 'react';
 import { Edit, Trash2, Phone, Mail, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,15 +18,17 @@ interface RecipientCardProps {
   onEdit: (recipient: Recipient) => void;
   onDelete: (id: number) => void;
   onToggleStatus: (recipient: Recipient) => void;
+  highlighted?: boolean;
+  highlightRef?: React.RefObject<HTMLDivElement>;
 }
 
-export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleStatus }: RecipientCardProps) {
+export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleStatus, highlighted, highlightRef }: RecipientCardProps) {
   const focusAreas = Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0
     ? (recipient as any).focusAreas
     : (recipient as any).focusArea ? [(recipient as any).focusArea] : [];
 
   return (
-    <Card className="border border-slate-200">
+    <Card ref={highlightRef} className={`border transition-all duration-700 ${highlighted ? 'border-brand-primary ring-2 ring-brand-primary/40 shadow-lg shadow-brand-primary/20 bg-brand-primary-lighter/30' : 'border-slate-200'}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
