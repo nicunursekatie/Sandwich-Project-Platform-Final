@@ -460,11 +460,11 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                   <ItemComponent key={task.id} item={task} type="task" />
                 ))}
                 {dashboardData.counts.tasks > 3 && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full mt-2 text-green-600 hover:text-green-800" 
-                    onClick={() => onNavigate('action-tracking')}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-2 text-green-600 hover:text-green-800"
+                    onClick={() => onNavigate('team-board')}
                     data-testid="tasks-view-all"
                   >
                     View all {dashboardData.counts.tasks} tasks <ArrowRight className="w-4 h-4 ml-1" />
@@ -517,16 +517,8 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
       {/* Quick Action Buttons */}
       {!isLoading && dashboardData && (
         <div className="flex flex-wrap justify-center gap-4 pt-4 border-t border-gray-200">
-          <Button 
-            variant="outline" 
-            className="text-[16px]"
-            onClick={() => onNavigate('action-tracking')}
-            data-testid="view-all-actions"
-          >
-            View Full Action Board
-          </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="text-[16px]"
             onClick={() => onNavigate('projects')}
             data-testid="manage-projects"

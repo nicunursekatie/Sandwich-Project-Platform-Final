@@ -129,7 +129,6 @@ const GroupCatalog = lazyWithRetry(() => import('@/components/organizations-cata
 const GroupsInsightsDashboard = lazyWithRetry(() => import('@/components/groups-insights-dashboard'));
 const EventContactsDirectory = lazyWithRetry(() => import('@/components/event-contacts-directory'));
 const EventContactDetail = lazyWithRetry(() => import('@/pages/event-contact-detail'));
-const ActionTracking = lazyWithRetry(() => import('@/components/action-tracking-enhanced'));
 const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
 const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
 const Resources = lazyWithRetry(() => import('@/pages/resources').then(m => ({ default: m.Resources })));
@@ -457,7 +456,6 @@ export default function Dashboard({
         () => import('@/components/sandwich-collection-log'),
         () => import('@/components/event-requests'),
         () => import('@/components/stream-chat-rooms'),
-        () => import('@/components/action-tracking-enhanced'),
         () => import('@/pages/my-availability'),
       ];
 
@@ -676,11 +674,6 @@ export default function Dashboard({
         return <EventContactsDirectory />;
       case 'event-contact-detail':
         return <EventContactDetail />;
-      case 'action-tracking':
-        return <ActionTracking />;
-      case 'my-actions':
-        return <ActionTracking />;
-
       case 'wishlist':
         return <WishlistPage />;
       case 'team-board':

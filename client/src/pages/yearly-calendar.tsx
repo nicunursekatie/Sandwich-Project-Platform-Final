@@ -216,11 +216,12 @@ export default function YearlyCalendar() {
   const [importHolidaysJsonText, setImportHolidaysJsonText] = useState('');
   const [showTrackedItems, setShowTrackedItems] = useState(true);
   const [showReligiousHolidays, setShowReligiousHolidays] = useState(true);
-  const [isAddBreakDialogOpen, setIsAddBreakDialogOpen] = useState(false);
-  const [breakTitle, setBreakTitle] = useState('');
-  const [breakStartDate, setBreakStartDate] = useState('');
-  const [breakEndDate, setBreakEndDate] = useState('');
-  const [breakSchoolName, setBreakSchoolName] = useState('');
+  const [isAddTrackedItemDialogOpen, setIsAddTrackedItemDialogOpen] = useState(false);
+  const [trackedTitle, setTrackedTitle] = useState('');
+  const [trackedStartDate, setTrackedStartDate] = useState('');
+  const [trackedEndDate, setTrackedEndDate] = useState('');
+  const [trackedCategory, setTrackedCategory] = useState('school_breaks');
+  const [trackedDistrict, setTrackedDistrict] = useState('');
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -585,44 +586,45 @@ export default function YearlyCalendar() {
     },
   });
 
-  // Create a single school break item directly
-  const createSchoolBreakMutation = useMutation({
-    mutationFn: async (data: { title: string; startDate: string; endDate: string; schoolName: string }) => {
+  // Create a tracked calendar item (school breaks, holidays, etc.)
+  const createTrackedItemMutation = useMutation({
+    mutationFn: async (data: { title: string; startDate: string; endDate: string; category: string; district: string }) => {
       return await apiRequest('POST', '/api/tracked-calendar', {
-        category: 'school_breaks',
+        category: data.category,
         title: data.title,
         startDate: data.startDate,
         endDate: data.endDate,
         metadata: {
-          type: 'school_break',
-          districts: data.schoolName ? [data.schoolName] : [],
+          type: data.category,
+          districts: data.district ? [data.district] : [],
           source: 'manual',
         },
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
-      setIsAddBreakDialogOpen(false);
-      setBreakTitle('');
-      setBreakStartDate('');
-      setBreakEndDate('');
-      setBreakSchoolName('');
+      setIsAddTrackedItemDialogOpen(false);
+      setTrackedTitle('');
+      setTrackedStartDate('');
+      setTrackedEndDate('');
+      setTrackedCategory('school_breaks');
+      setTrackedDistrict('');
       toast({
-        title: 'School break added',
-        description: 'The school break has been added to the calendar.',
+        title: 'Item added',
+        description: 'The item has been added to the calendar.',
       });
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error?.message || 'Failed to add school break',
+        description: error?.message || 'Failed to add item',
         variant: 'destructive',
       });
     },
   });
 
-  const handleAddSchoolBreak = () => {
-    if (!breakTitle.trim() || !breakStartDate || !breakEndDate) {
+  const handleAddTrackedItem = () => {
+    if (!trackedTitle.trim() || !trackedStartDate || !trackedEndDate) {
       toast({
         title: 'Error',
         description: 'Title, start date, and end date are required.',
@@ -630,11 +632,12 @@ export default function YearlyCalendar() {
       });
       return;
     }
-    createSchoolBreakMutation.mutate({
-      title: breakTitle.trim(),
-      startDate: breakStartDate,
-      endDate: breakEndDate,
-      schoolName: breakSchoolName.trim(),
+    createTrackedItemMutation.mutate({
+      title: trackedTitle.trim(),
+      startDate: trackedStartDate,
+      endDate: trackedEndDate,
+      category: trackedCategory,
+      district: trackedDistrict.trim(),
     });
   };
 
@@ -904,17 +907,17 @@ export default function YearlyCalendar() {
           {canAdd && (
             <Button
               onClick={() => {
-                setBreakTitle('');
-                setBreakStartDate('');
-                setBreakEndDate('');
-                setBreakSchoolName('');
-                setIsAddBreakDialogOpen(true);
+                setTrackedTitle('');
+                setTrackedStartDate('');
+                setTrackedEndDate('');
+                setTrackedCategory('school_breaks');
+                setTrackedDistrict('');
+                setIsAddTrackedItemDialogOpen(true);
               }}
-              variant="outline"
-              className="border-amber-400 text-amber-700 hover:bg-amber-50"
+              className="bg-[#236383] hover:bg-[#007E8C]"
             >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Add School Break
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
             </Button>
           )}
         </div>
@@ -1780,68 +1783,83 @@ export default function YearlyCalendar() {
         </DialogContent>
       </Dialog>
 
-      {/* Add School Break Dialog */}
-      <Dialog open={isAddBreakDialogOpen} onOpenChange={setIsAddBreakDialogOpen}>
+      {/* Add Calendar Item Dialog */}
+      <Dialog open={isAddTrackedItemDialogOpen} onOpenChange={setIsAddTrackedItemDialogOpen}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle>Add School Break</DialogTitle>
+            <DialogTitle>Add Calendar Item</DialogTitle>
             <DialogDescription>
-              Add a school break that will appear with the other school break items on the calendar.
+              Add an item to the calendar with a date range and category.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="break-title">Title</Label>
+              <Label htmlFor="tracked-title">Title</Label>
               <Input
-                id="break-title"
-                value={breakTitle}
-                onChange={(e) => setBreakTitle(e.target.value)}
+                id="tracked-title"
+                value={trackedTitle}
+                onChange={(e) => setTrackedTitle(e.target.value)}
                 placeholder="e.g. Westminster Spring Break"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="break-school">School / District Name (optional)</Label>
+              <Label htmlFor="tracked-category">Category</Label>
+              <Select value={trackedCategory} onValueChange={setTrackedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="school_breaks">School Breaks</SelectItem>
+                  <SelectItem value="school_markers">School Dates</SelectItem>
+                  <SelectItem value="religious_holidays">Religious Holidays</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tracked-district">
+                {trackedCategory === 'religious_holidays' ? 'Tradition (optional)' : 'School / District (optional)'}
+              </Label>
               <Input
-                id="break-school"
-                value={breakSchoolName}
-                onChange={(e) => setBreakSchoolName(e.target.value)}
-                placeholder="e.g. Westminster"
+                id="tracked-district"
+                value={trackedDistrict}
+                onChange={(e) => setTrackedDistrict(e.target.value)}
+                placeholder={trackedCategory === 'religious_holidays' ? 'e.g. Jewish, Christian' : 'e.g. Westminster'}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="break-start">Start Date</Label>
+                <Label htmlFor="tracked-start">Start Date</Label>
                 <Input
-                  id="break-start"
+                  id="tracked-start"
                   type="date"
-                  value={breakStartDate}
-                  onChange={(e) => setBreakStartDate(e.target.value)}
+                  value={trackedStartDate}
+                  onChange={(e) => setTrackedStartDate(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="break-end">End Date</Label>
+                <Label htmlFor="tracked-end">End Date</Label>
                 <Input
-                  id="break-end"
+                  id="tracked-end"
                   type="date"
-                  value={breakEndDate}
-                  onChange={(e) => setBreakEndDate(e.target.value)}
+                  value={trackedEndDate}
+                  onChange={(e) => setTrackedEndDate(e.target.value)}
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddBreakDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsAddTrackedItemDialogOpen(false)}>
               Cancel
             </Button>
             <Button
-              onClick={handleAddSchoolBreak}
-              disabled={createSchoolBreakMutation.isPending || !breakTitle.trim() || !breakStartDate || !breakEndDate}
-              className="bg-amber-500 hover:bg-amber-600"
+              onClick={handleAddTrackedItem}
+              disabled={createTrackedItemMutation.isPending || !trackedTitle.trim() || !trackedStartDate || !trackedEndDate}
+              className="bg-[#236383] hover:bg-[#007E8C]"
             >
-              {createSchoolBreakMutation.isPending ? (
+              {createTrackedItemMutation.isPending ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Adding...</>
               ) : (
-                <><Plus className="h-4 w-4 mr-2" /> Add School Break</>
+                <><Plus className="h-4 w-4 mr-2" /> Add Item</>
               )}
             </Button>
           </DialogFooter>
