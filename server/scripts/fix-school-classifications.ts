@@ -39,29 +39,33 @@ const schoolFixes: SchoolFix[] = [
   { id: 385, name: 'Valor Christian Academy', category: 'school', schoolClassification: 'private', isReligious: true },
   { id: 563, name: 'Johnson Ferry Christian Academy', category: 'school', schoolClassification: 'private', isReligious: true },
   { id: 596, name: 'Eagles Landing Christian Academy: Young Men of Distinction', category: 'school', schoolClassification: 'private', isReligious: true },
-  { id: 337, name: 'FCS Innovation Academy', category: 'school', schoolClassification: 'private', isReligious: true }, // Fellowship Christian School network
+  { id: 337, name: 'FCS Innovation Academy', category: 'school', schoolClassification: 'public', isReligious: false }, // Fulton County Schools magnet STEM school
   { id: 329, name: 'William & Reed Academy', category: 'school', schoolClassification: 'private', isReligious: false },
 
   // === PRIVATE SCHOOLS currently misclassified as "public" (universities) ===
   { id: 121, name: 'Oglethorpe University', category: 'school', schoolClassification: 'private', isReligious: false },
 
-  // === CHARTER SCHOOLS currently misclassified as "public" ===
-  { id: 441, name: 'Fulton Science Academy', category: 'school', schoolClassification: 'charter', isReligious: false },
-  { id: 411, name: 'International Charter Academy of Georgia', category: 'school', schoolClassification: 'charter', isReligious: false },
-  { id: 181, name: 'Cumberland Academy of GA', category: 'school', schoolClassification: 'charter', isReligious: false },
-  { id: 527, name: 'Capstone Academy', category: 'school', schoolClassification: 'charter', isReligious: false },
-  { id: 354, name: 'Global Leadership Academy-Gwinnett Beta Club', category: 'school', schoolClassification: 'charter', isReligious: false },
+  // === PRIVATE SCHOOLS currently misclassified as "public" (were charters, now private) ===
+  { id: 441, name: 'Fulton Science Academy', category: 'school', schoolClassification: 'private', isReligious: false }, // Transitioned from charter to private in 2012
+  { id: 181, name: 'Cumberland Academy of GA', category: 'school', schoolClassification: 'private', isReligious: false }, // Private school for students with learning differences
+  { id: 527, name: 'Capstone Academy', category: 'school', schoolClassification: 'private', isReligious: false }, // Hybrid private school for performers/athletes
   { id: 404, name: 'Collective Learning Academy', category: 'school', schoolClassification: 'private', isReligious: false },
+
+  // === CHARTER SCHOOLS ===
+  { id: 411, name: 'International Charter Academy of Georgia', category: 'school', schoolClassification: 'charter', isReligious: false },
+  { id: 354, name: 'Global Leadership Academy-Gwinnett Beta Club', category: 'school', schoolClassification: 'charter', isReligious: false },
+
+  // === PUBLIC CHARTER - was listed as private but is actually public charter ===
+  { id: 418, name: 'The Museum School', category: 'school', schoolClassification: 'charter', isReligious: false }, // Free public charter school in DeKalb County
 
   // === SCHOOLS that have NO category set at all (missing from school list) ===
   { id: 47, name: 'Christ the King School', category: 'school', schoolClassification: 'private', isReligious: true }, // Catholic
   { id: 53, name: 'Marist', category: 'school', schoolClassification: 'private', isReligious: true }, // Catholic
   { id: 606, name: 'Marist', category: 'school', schoolClassification: 'private', isReligious: true }, // Catholic (duplicate)
-  { id: 481, name: 'Westminster', category: 'school', schoolClassification: 'private', isReligious: false },
+  { id: 481, name: 'Westminster', category: 'school', schoolClassification: 'private', isReligious: true }, // Christian (non-denominational)
   { id: 226, name: 'The Swift School', category: 'school', schoolClassification: 'private', isReligious: false },
   { id: 318, name: 'Weber School', category: 'school', schoolClassification: 'private', isReligious: true }, // Jewish
   { id: 365, name: 'Galloway School', category: 'school', schoolClassification: 'private', isReligious: false },
-  { id: 418, name: 'The Museum School', category: 'school', schoolClassification: 'private', isReligious: false },
   { id: 457, name: 'The Lovett School', category: 'school', schoolClassification: 'private', isReligious: false },
   { id: 545, name: 'The Wood Acres School', category: 'school', schoolClassification: 'private', isReligious: false },
   { id: 330, name: 'Paideia', category: 'school', schoolClassification: 'private', isReligious: false },

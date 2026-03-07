@@ -60,8 +60,7 @@ const knownPrivateSchools: { pattern: RegExp; isReligious: boolean }[] = [
   { pattern: /\b(the )?davis academy\b/i, isReligious: true }, // Jewish day school
   { pattern: /\b(the )?swift school\b/i, isReligious: false },
   { pattern: /\b(the )?wood acres school\b/i, isReligious: false },
-  { pattern: /\b(the )?museum school\b/i, isReligious: false },
-  { pattern: /\bwestminster\b/i, isReligious: false },
+  { pattern: /\bwestminster\b/i, isReligious: true }, // Christian (non-denominational)
   { pattern: /\bmarist\b/i, isReligious: true }, // Catholic
   { pattern: /\batlanta international school\b/i, isReligious: false },
   { pattern: /\bcristo rey\b/i, isReligious: true }, // Jesuit Catholic
@@ -73,7 +72,10 @@ const knownPrivateSchools: { pattern: RegExp; isReligious: boolean }[] = [
   { pattern: /\bjohnson ferry christian academy\b/i, isReligious: true },
   { pattern: /\beagles landing christian academy\b/i, isReligious: true },
   { pattern: /\bcornerstone christian academy\b/i, isReligious: true },
-  { pattern: /\bfcs innovation academy\b/i, isReligious: true }, // Fellowship Christian School network
+  { pattern: /\bcapstone academy\b/i, isReligious: false }, // Hybrid private school
+  { pattern: /\bcumberland academy of ga\b/i, isReligious: false }, // Private school for learning differences
+  { pattern: /\bwilliam & reed academy\b/i, isReligious: false },
+  { pattern: /\bcollective learning\b/i, isReligious: false },
   { pattern: /\bkings ridge christian school\b/i, isReligious: true },
   { pattern: /\bmount pisgah christian school\b/i, isReligious: true },
   { pattern: /\bmt\.?\s+pisgah christian\b/i, isReligious: true },
@@ -86,13 +88,12 @@ const knownPrivateSchools: { pattern: RegExp; isReligious: boolean }[] = [
   { pattern: /\bmt\.?\s+vernon presbyterian\b/i, isReligious: true },
 ];
 
-// Known charter schools
+// Known charter schools (public charters)
 const knownCharterSchools: RegExp[] = [
   /\bcherokee charter\b/i,
   /\binternational charter academy\b/i,
-  /\bfulton science academy\b/i,
-  /\bcumberland academy of ga\b/i,
   /\bglobal leadership academy\b/i,
+  /\b(the )?museum school\b/i, // Free public charter in DeKalb County
 ];
 
 const categoryPatterns: CategoryPattern[] = [
