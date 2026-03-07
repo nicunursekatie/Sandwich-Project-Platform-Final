@@ -1196,7 +1196,7 @@ export default function YearlyCalendar() {
                                                 </p>
                                               )}
                                             </div>
-                                            {canEdit && (
+                                            {canEditAll && (
                                               <div className="opacity-0 group-hover/gitem:opacity-100 transition-opacity flex gap-0.5 flex-shrink-0">
                                                 <Button
                                                   variant="ghost"
@@ -1244,7 +1244,7 @@ export default function YearlyCalendar() {
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-1">
                                         <h4 className="text-sm font-semibold mb-1 flex-1">{item.title}</h4>
-                                        {canEdit && (
+                                        {canEditAll && (
                                           <div className="opacity-0 group-hover/tracked:opacity-100 transition-opacity flex gap-0.5 flex-shrink-0">
                                             <Button
                                               variant="ghost"
