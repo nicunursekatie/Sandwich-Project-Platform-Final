@@ -842,17 +842,19 @@ export interface ImpactMetrics {
 }
 
 /**
- * Calculate impact metrics combining hybrid stats and collection data.
- * Uses authoritative data when available, falls back to collection log.
+ * Calculate impact metrics from the collection log (sole source of truth).
+ * hybridStats param is kept in the signature for future reactivation but is currently ignored.
+ * To reactivate hybrid: see inline comments in this function.
  */
 export function calculateImpactMetrics(
   collections: SandwichCollection[],
-  hybridStats: HybridStats | null,
+  hybridStats: HybridStats | null, // kept for future reactivation - currently unused
   stats: CollectionsStats | null,
   activeHostCount: number = 34
 ): ImpactMetrics {
-  // Use hybrid stats total (authoritative data through 8/6/2025 + collection log after)
-  const totalSandwiches = hybridStats?.total || stats?.completeTotalSandwiches || 0;
+  // HYBRID STATS DISABLED - using collection log as sole source of truth
+  // To reactivate hybrid: replace stats?.completeTotalSandwiches with hybridStats?.total || stats?.completeTotalSandwiches
+  const totalSandwiches = stats?.completeTotalSandwiches || 0;
   const totalCollections = collections?.length || 0;
 
   const now = new Date();
@@ -861,36 +863,28 @@ export function calculateImpactMetrics(
   let currentMonthTotal = 0;
   let currentMonthCollections = 0;
 
-  // Use authoritative yearly totals from hybrid stats if available
+  // Calculate yearly totals directly from collection log
   const yearTotals: Record<number, number> = {
     2023: 0,
     2024: 0,
     2025: 0,
   };
 
-  if (hybridStats?.byYear) {
-    Object.entries(hybridStats.byYear).forEach(([year, data]) => {
-      const y = parseInt(year);
-      if (yearTotals[y] !== undefined) {
-        yearTotals[y] = data?.sandwiches ?? 0;
+  // Always calculate from collections (collection log is source of truth)
+  // To reactivate hybrid yearly totals, wrap this in: if (!hybridStats?.byYear) { ... } else { use hybridStats }
+  if (Array.isArray(collections)) {
+    collections.forEach((collection) => {
+      if (collection.collectionDate) {
+        const date = parseCollectionDate(collection.collectionDate);
+        if (Number.isNaN(date.getTime())) return;
+        const year = date.getFullYear();
+        const collectionTotal = calculateTotalSandwiches(collection);
+
+        if (yearTotals[year] !== undefined) {
+          yearTotals[year] += collectionTotal;
+        }
       }
     });
-  } else {
-    // Fallback to calculating from collections if hybrid stats not available
-    if (Array.isArray(collections)) {
-      collections.forEach((collection) => {
-        if (collection.collectionDate) {
-          const date = parseCollectionDate(collection.collectionDate);
-          if (Number.isNaN(date.getTime())) return;
-          const year = date.getFullYear();
-          const collectionTotal = calculateTotalSandwiches(collection);
-
-          if (yearTotals[year] !== undefined) {
-            yearTotals[year] += collectionTotal;
-          }
-        }
-      });
-    }
   }
 
   // Calculate current month totals (always from collections for real-time data)

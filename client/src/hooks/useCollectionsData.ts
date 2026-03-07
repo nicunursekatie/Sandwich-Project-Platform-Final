@@ -65,16 +65,19 @@ export function useCollectionsData(): UseCollectionsDataResult {
     refetchInterval: 5 * 60 * 1000, // Auto-refresh every 5 minutes
   });
 
-  // Fetch hybrid stats (authoritative data + collection log)
-  const {
-    data: hybridStats,
-    isLoading: isHybridStatsLoading,
-  } = useQuery<HybridStats>({
-    queryKey: ['/api/sandwich-collections/hybrid-stats'],
-    staleTime: 2 * 60 * 1000,
-    refetchOnMount: true,
-    refetchInterval: 5 * 60 * 1000,
-  });
+  // HYBRID STATS DISABLED - using collection log as sole source of truth
+  // To reactivate, uncomment this block and re-enable hybridStats references below
+  // const {
+  //   data: hybridStats,
+  //   isLoading: isHybridStatsLoading,
+  // } = useQuery<HybridStats>({
+  //   queryKey: ['/api/sandwich-collections/hybrid-stats'],
+  //   staleTime: 2 * 60 * 1000,
+  //   refetchOnMount: true,
+  //   refetchInterval: 5 * 60 * 1000,
+  // });
+  const hybridStats = null;
+  const isHybridStatsLoading = false;
 
   // Fetch collection stats
   const {
