@@ -190,9 +190,9 @@ function getItemColor(item: TrackedCalendarItem): { bg: string; text: string; bo
     return DISTRICT_COLORS['All'];
   }
 
-  // Single district - use district-specific color
+  // Single district - use district-specific color, fall back to category color
   if (districts.length === 1) {
-    return DISTRICT_COLORS[districts[0]] || DISTRICT_COLORS['default'];
+    return DISTRICT_COLORS[districts[0]] || CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default;
   }
 
   // Fallback to category color
