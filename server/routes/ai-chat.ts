@@ -219,6 +219,7 @@ function getContextTitle(contextType: string): string {
     'links': 'Important Links',
     'dashboard': 'Dashboard',
     'volunteer-calendar': 'Volunteer Calendar',
+    'yearly-calendar': 'Yearly Calendar',
     'impact-reports': 'Impact Reports',
     'users': 'User Management',
     'general': 'Platform',
@@ -2021,6 +2022,11 @@ Help users find and navigate to what they need.`,
     'volunteer-calendar': `You're helping with the Volunteer Availability Calendar - showing team availability from Google Calendar, including vacations, PTO, and unavailability.
 Help users figure out who's available when and coordinate scheduling.`,
 
+    'yearly-calendar': `You're helping with the TSP Yearly Calendar - a planning tool for recurring activities, events, and important dates throughout the year.
+Items include events, preparation tasks, planning items, event rushes, staffing needs, board meetings, and seasonal activities, each with categories and priorities.
+The calendar also tracks external items like school breaks, school dates, and religious holidays.
+Help users plan ahead, find upcoming items, understand what's coming up in specific months, and coordinate yearly planning.`,
+
     'dashboard': `You're helping with the dashboard - an overview of all platform activities and key metrics.
 Help users understand the overall status and find what they're looking for.`,
 
@@ -2108,6 +2114,9 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
         break;
       case 'volunteer-calendar':
         dataSummary = await buildVolunteerCalendarContext();
+        break;
+      case 'yearly-calendar':
+        dataSummary = 'Yearly calendar data was not provided by the component. Ask the user to refresh and try again.';
         break;
       case 'dashboard':
         dataSummary = await buildDashboardContext(contextData);
