@@ -91,7 +91,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   seasonal: 'bg-green-100 text-green-800 border-green-300',
   other: 'bg-gray-100 text-gray-800 border-gray-300',
   // Tracked calendar categories
-  school_breaks: 'bg-amber-100 text-amber-800 border-amber-300',
+  school_breaks: 'bg-sky-100 text-[#236383] border-[#47B3CB]',
   school_markers: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   religious_holidays: 'bg-violet-100 text-violet-800 border-violet-300',
 };
