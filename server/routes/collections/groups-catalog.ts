@@ -168,23 +168,26 @@ function deriveStatus(request: EventRequest): string {
 }
 
 function isCompletedStatus(status: string): boolean {
-  return status === 'completed' || status === 'contact_completed' || status === 'past';
+  return status === 'completed' || status === 'contact_completed';
 }
 
 /**
  * Calculate a human-readable frequency string from a set of event dates.
  */
-function calculateEventFrequency(eventDates: Set<string>): string | null {
-  if (eventDates.size === 0) return null;
+function calculateEventFrequency(eventDatesInput: string[], totalEventCount?: number): string | null {
+  if (eventDatesInput.length === 0) return null;
 
-  const dates = Array.from(eventDates)
+  const dates = eventDatesInput
     .map(d => new Date(d))
     .filter(d => !isNaN(d.getTime()))
     .sort((a, b) => a.getTime() - b.getTime());
 
   if (dates.length === 0) return null;
 
-  if (dates.length === 1) {
+  // Use total event count when provided (handles multiple events on the same date)
+  const eventCount = totalEventCount ?? dates.length;
+
+  if (eventCount === 1) {
     const daysSince = Math.floor((Date.now() - dates[0].getTime()) / (1000 * 60 * 60 * 24));
     if (daysSince < 30) return `${daysSince} days ago`;
     if (daysSince < 365) {
@@ -201,13 +204,13 @@ function calculateEventFrequency(eventDates: Set<string>): string | null {
   const yearsDiff = daysDiff / 365.25;
 
   if (yearsDiff < 1) {
-    return `${dates.length} events in ${Math.round(daysDiff / 30)} months`;
+    return `${eventCount} events in ${Math.round(daysDiff / 30)} months`;
   }
-  const perYear = dates.length / yearsDiff;
+  const perYear = eventCount / yearsDiff;
   if (perYear >= 1) {
     return `${Math.round(perYear * 10) / 10} events/year`;
   }
-  return `${dates.length} events in ${Math.round(yearsDiff)} years`;
+  return `${eventCount} events in ${Math.round(yearsDiff)} years`;
 }
 
 /**
@@ -600,7 +603,7 @@ function buildCatalog(
       foundExisting = true;
       card.actualSandwichTotal += orgData.totalSandwiches;
       card.actualEventCount += orgData.eventCount;
-      card.eventFrequency = calculateEventFrequency(orgData.eventDates);
+      card.eventFrequency = calculateEventFrequency(Array.from(orgData.eventDates));
       card.hasHostedEvent = true;
       card.pastEvents = [...card.pastEvents, ...sortedPastEvents].sort((a, b) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -635,7 +638,7 @@ function buildCatalog(
         hasHostedEvent: true,
         actualSandwichTotal: orgData.totalSandwiches,
         actualEventCount: orgData.eventCount,
-        eventFrequency: calculateEventFrequency(orgData.eventDates),
+        eventFrequency: calculateEventFrequency(Array.from(orgData.eventDates)),
         eventDate: latestDateStr,
         latestCollectionDate: latestDateStr,
         pastEvents: sortedPastEvents,
@@ -866,9 +869,9 @@ function buildOrganizationDetails(
   }
 
   // Event frequency
-  const eventDates = new Set(
-    allEvents.map(e => normalizeDate(e.date || e.createdAt)).filter((d): d is string => d !== null)
-  );
+  const eventDatesList = allEvents
+    .map(e => normalizeDate(e.date || e.createdAt))
+    .filter((d): d is string => d !== null);
 
   return {
     organizationName: decodedOrgName,
@@ -877,7 +880,7 @@ function buildOrganizationDetails(
       completedEvents,
       totalActualSandwiches,
       totalEstimatedSandwiches,
-      eventFrequency: calculateEventFrequency(eventDates),
+      eventFrequency: calculateEventFrequency(eventDatesList, allEvents.length),
     },
     contacts: Array.from(contactMap.values()),
     events: allEvents,
