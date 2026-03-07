@@ -35,6 +35,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MonthlyCalendarGrid } from '@/components/monthly-calendar-grid';
 import { PermissionDenied } from '@/components/permission-denied';
+import { FloatingAIChat } from '@/components/floating-ai-chat';
 
 interface YearlyCalendarItem {
   id: number;
@@ -2072,6 +2073,80 @@ export default function YearlyCalendar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Assistant */}
+      <FloatingAIChat
+        contextType="yearly-calendar"
+        title="Calendar Assistant"
+        subtitle="Ask about yearly calendar items and planning"
+        contextData={{
+          currentView: expandedMonth ? `Month: ${MONTH_NAMES[expandedMonth - 1]}` : 'Full Year',
+          filters: {
+            selectedYear,
+            expandedMonth,
+            searchQuery: searchQuery || undefined,
+            showTrackedItems,
+            showReligiousHolidays,
+          },
+          summaryStats: {
+            totalItems: filteredYearlyItems.length,
+            totalTrackedItems: filteredTrackedItems.length,
+            completedItems: filteredYearlyItems.filter(i => i.isCompleted).length,
+            recurringItems: filteredYearlyItems.filter(i => i.isRecurring).length,
+            itemsByCategory: Object.entries(
+              filteredYearlyItems.reduce((acc: Record<string, number>, item) => {
+                acc[item.category] = (acc[item.category] || 0) + 1;
+                return acc;
+              }, {})
+            ).map(([category, count]) => `${category}: ${count}`).join(', '),
+            itemsByPriority: Object.entries(
+              filteredYearlyItems.reduce((acc: Record<string, number>, item) => {
+                acc[item.priority] = (acc[item.priority] || 0) + 1;
+                return acc;
+              }, {})
+            ).map(([priority, count]) => `${priority}: ${count}`).join(', '),
+            itemsByMonth: MONTH_NAMES.map((name, i) => {
+              const count = filteredYearlyItems.filter(item => item.month === i + 1).length;
+              return count > 0 ? `${name}: ${count}` : null;
+            }).filter(Boolean).join(', '),
+          },
+        }}
+        getFullContext={() => ({
+          rawData: filteredYearlyItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            month: item.month,
+            monthName: MONTH_NAMES[item.month - 1],
+            year: item.year,
+            category: item.category,
+            priority: item.priority,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            isRecurring: item.isRecurring,
+            isCompleted: item.isCompleted,
+            completedAt: item.completedAt,
+            createdByName: item.createdByName,
+            assignedToNames: item.assignedToNames,
+          })),
+          trackedItems: filteredTrackedItems.map(item => ({
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            categoryLabel: TRACKED_CATEGORY_LABELS[item.category] || item.category,
+            startDate: item.startDate,
+            endDate: item.endDate,
+            notes: item.notes,
+            districts: item.metadata?.districts,
+          })),
+        })}
+        suggestedQuestions={[
+          "What items are coming up this month?",
+          "Which high-priority items still need to be completed?",
+          "Summarize what's planned for each month this year",
+          "Are there any school breaks coming up soon?",
+        ]}
+      />
     </div>
   );
 }
