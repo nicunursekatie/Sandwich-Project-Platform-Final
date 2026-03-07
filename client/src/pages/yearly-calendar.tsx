@@ -377,7 +377,7 @@ export default function YearlyCalendar() {
       }
       grouped[item.month].push(item);
     });
-    // Sort items within each month: incomplete first, then by priority (high -> medium -> low), then by creation date
+    // Sort items within each month: incomplete first, then by start date (earliest first), then by priority, then by creation date
     Object.keys(grouped).forEach(month => {
       const monthNum = parseInt(month);
       grouped[monthNum].sort((a, b) => {
@@ -385,6 +385,10 @@ export default function YearlyCalendar() {
         if (a.isCompleted !== b.isCompleted) {
           return a.isCompleted ? 1 : -1;
         }
+        // Then by start date (earliest first)
+        const aDate = a.startDate ? new Date(a.startDate).getTime() : Infinity;
+        const bDate = b.startDate ? new Date(b.startDate).getTime() : Infinity;
+        if (aDate !== bDate) return aDate - bDate;
         // Then by priority
         const priorityOrder = { high: 3, medium: 2, low: 1 };
         const priorityDiff = (priorityOrder[b.priority as keyof typeof priorityOrder] || 2) -
