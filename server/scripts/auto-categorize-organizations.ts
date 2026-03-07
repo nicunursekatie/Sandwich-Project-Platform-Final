@@ -48,6 +48,53 @@ const religiousPatterns: RegExp[] = [
   /\bgospel\b/i,
 ];
 
+// Known private schools in the Atlanta area that can't be detected by name patterns alone
+// These are well-known independent/private schools whose names don't contain religious
+// or other obvious private-school keywords
+const knownPrivateSchools: { pattern: RegExp; isReligious: boolean }[] = [
+  { pattern: /\bpace academy\b/i, isReligious: false },
+  { pattern: /\b(the )?lovett school\b/i, isReligious: false },
+  { pattern: /\bpaideia\b/i, isReligious: false },
+  { pattern: /\bgalloway school\b/i, isReligious: false },
+  { pattern: /\bweber school\b/i, isReligious: true }, // Jewish day school
+  { pattern: /\b(the )?davis academy\b/i, isReligious: true }, // Jewish day school
+  { pattern: /\b(the )?swift school\b/i, isReligious: false },
+  { pattern: /\b(the )?wood acres school\b/i, isReligious: false },
+  { pattern: /\b(the )?museum school\b/i, isReligious: false },
+  { pattern: /\bwestminster\b/i, isReligious: false },
+  { pattern: /\bmarist\b/i, isReligious: true }, // Catholic
+  { pattern: /\batlanta international school\b/i, isReligious: false },
+  { pattern: /\bcristo rey\b/i, isReligious: true }, // Jesuit Catholic
+  { pattern: /\bihm\s*(catholic)?\b/i, isReligious: true }, // Immaculate Heart of Mary
+  { pattern: /\bchrist the king school\b/i, isReligious: true },
+  { pattern: /\bspringmont\b/i, isReligious: false }, // Montessori-based
+  { pattern: /\bacton academy\b/i, isReligious: false },
+  { pattern: /\bvalor christian academy\b/i, isReligious: true },
+  { pattern: /\bjohnson ferry christian academy\b/i, isReligious: true },
+  { pattern: /\beagles landing christian academy\b/i, isReligious: true },
+  { pattern: /\bcornerstone christian academy\b/i, isReligious: true },
+  { pattern: /\bfcs innovation academy\b/i, isReligious: true }, // Fellowship Christian School network
+  { pattern: /\bkings ridge christian school\b/i, isReligious: true },
+  { pattern: /\bmount pisgah christian school\b/i, isReligious: true },
+  { pattern: /\bmt\.?\s+pisgah christian\b/i, isReligious: true },
+  { pattern: /\bfellowship christian school\b/i, isReligious: true },
+  { pattern: /\bgreater atlanta christian\b/i, isReligious: true },
+  { pattern: /\bholy innocents\b/i, isReligious: true },
+  { pattern: /\bmt\.?\s+bethel christian academy\b/i, isReligious: true },
+  { pattern: /\bst\.?\s*pius\b/i, isReligious: true },
+  { pattern: /\bst\.?\s*joseph catholic\b/i, isReligious: true },
+  { pattern: /\bmt\.?\s+vernon presbyterian\b/i, isReligious: true },
+];
+
+// Known charter schools
+const knownCharterSchools: RegExp[] = [
+  /\bcherokee charter\b/i,
+  /\binternational charter academy\b/i,
+  /\bfulton science academy\b/i,
+  /\bcumberland academy of ga\b/i,
+  /\bglobal leadership academy\b/i,
+];
+
 const categoryPatterns: CategoryPattern[] = [
   // Schools - Private indicators (CHECK FIRST before generic patterns)
   {
@@ -58,7 +105,7 @@ const categoryPatterns: CategoryPattern[] = [
       /\bprep school\b/i,
       /\bpreparatory\b/i,
       /\bmontessori\b/i,
-      /\bchristian\s+(elementary|middle|high|school)\b/i,
+      /\bchristian\s+(elementary|middle|high|school|academy)\b/i,
       /\bcatholic\s+(elementary|middle|high|school)\b/i,
       /\bepiscopal\s+(elementary|middle|high|school)\b/i,
       /\blutheran\s+(elementary|middle|high|school)\b/i,
@@ -244,6 +291,28 @@ export async function categorizeOrganization(
 
   // First, check if organization has religious affiliation
   const isReligious = checkReligiousAffiliation(name);
+
+  // Check known private schools first (highest priority - these are manually verified)
+  for (const school of knownPrivateSchools) {
+    if (school.pattern.test(nameLower)) {
+      return {
+        category: 'school',
+        schoolClassification: 'private',
+        isReligious: school.isReligious || isReligious,
+      };
+    }
+  }
+
+  // Check known charter schools
+  for (const pattern of knownCharterSchools) {
+    if (pattern.test(nameLower)) {
+      return {
+        category: 'school',
+        schoolClassification: 'charter',
+        isReligious,
+      };
+    }
+  }
 
   // Prioritize schools over church_faith category
   // This ensures "St. Mary's School" is categorized as a school, not a church
