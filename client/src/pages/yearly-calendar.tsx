@@ -677,11 +677,14 @@ export default function YearlyCalendar() {
 
   const handleUpdateTrackedItem = () => {
     if (!editingTrackedItem || !trackedTitle.trim() || !trackedStartDate || !trackedEndDate) return;
+    // Auto-swap if dates are backwards
+    const start = trackedStartDate <= trackedEndDate ? trackedStartDate : trackedEndDate;
+    const end = trackedStartDate <= trackedEndDate ? trackedEndDate : trackedStartDate;
     updateTrackedItemMutation.mutate({
       id: editingTrackedItem.id,
       title: trackedTitle.trim(),
-      startDate: trackedStartDate,
-      endDate: trackedEndDate,
+      startDate: start,
+      endDate: end,
       category: trackedCategory,
       metadata: {
         ...editingTrackedItem.metadata,
@@ -705,10 +708,13 @@ export default function YearlyCalendar() {
       });
       return;
     }
+    // Auto-swap if dates are backwards
+    const start = trackedStartDate <= trackedEndDate ? trackedStartDate : trackedEndDate;
+    const end = trackedStartDate <= trackedEndDate ? trackedEndDate : trackedStartDate;
     createTrackedItemMutation.mutate({
       title: trackedTitle.trim(),
-      startDate: trackedStartDate,
-      endDate: trackedEndDate,
+      startDate: start,
+      endDate: end,
       category: trackedCategory,
       district: trackedDistrict.trim(),
     });
