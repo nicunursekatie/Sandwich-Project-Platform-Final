@@ -2590,6 +2590,8 @@ router.patch(
       
       // DEBUG: Log department field specifically
       logger.info(`[PATCH /:id] DEPARTMENT DEBUG: department in updates = "${updates.department}", type = ${typeof updates.department}`);
+      // DEBUG: Log van driver fields
+      logger.info(`[PATCH /:id] VAN DRIVER DEBUG: vanDriverNeeded=${updates.vanDriverNeeded}, assignedVanDriverId=${updates.assignedVanDriverId}`);
 
       // DEBUG: Log speaker fields specifically
       logger.info(`[PATCH /:id] SPEAKER DEBUG - Raw request body keys: ${Object.keys(updates).join(', ')}`);
@@ -2971,6 +2973,7 @@ router.patch(
         logger.info(`[PATCH /:id] Updated desiredEventDate: ${updatedEventRequest.desiredEventDate}`);
         // DEBUG: Log speakerDetails specifically after save
         logger.info(`[PATCH /:id] SPEAKER DEBUG: After save, speakerDetails = ${JSON.stringify(updatedEventRequest.speakerDetails)}`);
+        logger.info(`[PATCH /:id] VAN DRIVER DEBUG: After save, vanDriverNeeded=${updatedEventRequest.vanDriverNeeded}, assignedVanDriverId=${updatedEventRequest.assignedVanDriverId}`);
       }
 
       if (!updatedEventRequest) {
