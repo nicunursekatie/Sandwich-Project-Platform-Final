@@ -60,15 +60,9 @@ export function createHoldingZoneCollaborationRouter(deps: RouterDependencies) {
 
       res.json({ comments: comments || [] });
     } catch (error) {
-      // Return empty array if collaboration tables don't exist yet
-      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
-        return res.json({ comments: [] });
-      }
-      logger.error('[Holding Zone Collaboration] Error fetching comments:', error);
-      res.status(500).json({
-        error: 'Failed to fetch comments',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      // Non-critical endpoint — always return empty rather than 500
+      logger.error('[Holding Zone Collaboration] Error fetching comments (returning empty):', error);
+      return res.json({ comments: [] });
     }
   });
 
@@ -217,15 +211,9 @@ export function createHoldingZoneCollaborationRouter(deps: RouterDependencies) {
 
       res.json({ locks: locks || [] });
     } catch (error) {
-      // Return empty array if collaboration tables don't exist yet
-      if (error instanceof Error && (error.message.includes('does not exist') || error.message.includes('relation'))) {
-        return res.json({ locks: [] });
-      }
-      logger.error('[Holding Zone Collaboration] Error fetching locks:', error);
-      res.status(500).json({
-        error: 'Failed to fetch field locks',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
+      // Non-critical endpoint — always return empty rather than 500
+      logger.error('[Holding Zone Collaboration] Error fetching locks (returning empty):', error);
+      return res.json({ locks: [] });
     }
   });
 
