@@ -2278,7 +2278,7 @@ export default function HoldingZone() {
 
             <div className="space-y-2">
               <Label>Assign to Team Members (Optional)</Label>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -2291,7 +2291,7 @@ export default function HoldingZone() {
                       : `${newItemAssignedToNames.length} member${newItemAssignedToNames.length > 1 ? 's' : ''} selected`}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0" align="start">
+                <PopoverContent className="w-[400px] p-0 z-[100]" align="start">
                   <Command>
                     <CommandInput placeholder="Search team members..." />
                     <CommandList>
@@ -2793,7 +2793,7 @@ export default function HoldingZone() {
 
             <div className="space-y-2">
               <Label htmlFor="promote-assignees">Assign to Team Members (Optional)</Label>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -2806,7 +2806,7 @@ export default function HoldingZone() {
                       : 'Select team members...'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0" align="start">
+                <PopoverContent className="w-[400px] p-0 z-[100]" align="start">
                   <Command>
                     <CommandInput placeholder="Search team members..." />
                     <CommandList>

@@ -180,7 +180,7 @@ function formatRawDataForAI(contextType: string, contextData: Record<string, any
   // Format raw data based on context type
   if (rawData) {
     if (Array.isArray(rawData)) {
-      context += `### Data (${rawData.length} items)\n`;
+      context += `### Calendar Items (${rawData.length} items)\n`;
 
       // Limit to prevent token overflow - take sample for large datasets
       const sampleSize = 100;
@@ -200,6 +200,17 @@ function formatRawDataForAI(contextType: string, contextData: Record<string, any
       context += `### Data\n`;
       context += JSON.stringify(rawData, null, 2);
     }
+  }
+
+  // Format tracked items (school breaks, school dates, religious holidays)
+  const { trackedItems } = contextData;
+  if (trackedItems && Array.isArray(trackedItems) && trackedItems.length > 0) {
+    context += `\n### Tracked Calendar Items - School Breaks, School Dates & Religious Holidays (${trackedItems.length} items)\n`;
+    context += `These are date-range items overlaid on the calendar. Use them to answer questions about school breaks, holidays, and which weeks may have lower activity.\n\n`;
+    trackedItems.forEach((item: any, index: number) => {
+      const districts = item.districts?.length > 0 ? ` | Districts/Schools: ${item.districts.join(', ')}` : '';
+      context += `${index + 1}. **${item.title}** (${item.categoryLabel || item.category}) — ${item.startDate} to ${item.endDate}${districts}${item.notes ? ` | Notes: ${item.notes}` : ''}\n`;
+    });
   }
 
   return context;
