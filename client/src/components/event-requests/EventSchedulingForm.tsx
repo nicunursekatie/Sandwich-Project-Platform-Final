@@ -968,6 +968,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               eventRequest={eventRequest}
               formatDateForInput={formatDateForInput}
               onVanConflictReset={() => setVanConflictChecked(false)}
+              onScheduledDateChange={(newDate) => {
+                setPendingDateChange(newDate);
+                setShowDateConfirmation(true);
+              }}
             />
 
             {/* Delivery */}

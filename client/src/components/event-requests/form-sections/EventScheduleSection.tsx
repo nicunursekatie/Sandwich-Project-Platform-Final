@@ -19,6 +19,8 @@ interface EventScheduleSectionProps {
   eventRequest: any | null;
   formatDateForInput: (date: any) => string;
   onVanConflictReset: () => void;
+  /** Called when user finishes editing the date on a scheduled event, to trigger confirmation dialog */
+  onScheduledDateChange?: (newDate: string) => void;
 }
 
 export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
@@ -28,6 +30,7 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
   eventRequest,
   formatDateForInput,
   onVanConflictReset,
+  onScheduledDateChange,
 }) => {
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-white">
@@ -65,6 +68,17 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
               setFormData((prev: any) => ({ ...prev, eventDate: e.target.value }));
               onVanConflictReset();
             }}
+            onBlur={(e) => {
+              const newDate = e.target.value;
+              // Trigger confirmation dialog when changing date on a scheduled event
+              if (onScheduledDateChange &&
+                  eventRequest?.status === 'scheduled' &&
+                  formatDateForInput(eventRequest.desiredEventDate) !== newDate &&
+                  formatDateForInput(eventRequest.desiredEventDate) !== '' &&
+                  newDate !== formatDateForInput(eventRequest.desiredEventDate)) {
+                onScheduledDateChange(newDate);
+              }
+            }}
             data-testid="input-event-date"
           />
           <div className="flex items-center gap-2 mt-2">
@@ -73,8 +87,8 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
               <Button
                 type="button"
                 size="sm"
-                variant={(formData as any).dateFlexible === null ? "default" : "outline"}
-                className={`h-7 px-2 text-xs ${(formData as any).dateFlexible === null ? 'bg-gray-500 hover:bg-gray-600' : ''}`}
+                variant={formData.dateFlexible === null ? "default" : "outline"}
+                className={`h-7 px-2 text-xs ${formData.dateFlexible === null ? 'bg-gray-500 hover:bg-gray-600' : ''}`}
                 onClick={() => setFormData((prev: any) => ({ ...prev, dateFlexible: null }))}
               >
                 Unknown
@@ -82,8 +96,8 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
               <Button
                 type="button"
                 size="sm"
-                variant={(formData as any).dateFlexible === true ? "default" : "outline"}
-                className={`h-7 px-2 text-xs ${(formData as any).dateFlexible === true ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                variant={formData.dateFlexible === true ? "default" : "outline"}
+                className={`h-7 px-2 text-xs ${formData.dateFlexible === true ? 'bg-green-600 hover:bg-green-700' : ''}`}
                 onClick={() => setFormData((prev: any) => ({ ...prev, dateFlexible: true }))}
               >
                 Flexible
@@ -91,8 +105,8 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
               <Button
                 type="button"
                 size="sm"
-                variant={(formData as any).dateFlexible === false ? "default" : "outline"}
-                className={`h-7 px-2 text-xs ${(formData as any).dateFlexible === false ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                variant={formData.dateFlexible === false ? "default" : "outline"}
+                className={`h-7 px-2 text-xs ${formData.dateFlexible === false ? 'bg-red-600 hover:bg-red-700' : ''}`}
                 onClick={() => setFormData((prev: any) => ({ ...prev, dateFlexible: false }))}
               >
                 Fixed
@@ -148,7 +162,7 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
                       }}
                       className="h-9 w-9 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
-                      x
+                      ×
                     </Button>
                   </div>
                 ))}

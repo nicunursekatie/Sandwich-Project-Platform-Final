@@ -122,13 +122,13 @@ export const AttendeeSection: React.FC<AttendeeSectionProps> = ({
       )}
 
       {/* Kids Age Range */}
-      {(formData.childrenCount > 0 || (formData as any).kidsAgeRange) && (
+      {(formData.childrenCount > 0 || formData.kidsAgeRange) && (
         <div className="mt-3">
           <Label htmlFor="kidsAgeRange">Kids Age Range</Label>
           <Input
             id="kidsAgeRange"
             type="text"
-            value={(formData as any).kidsAgeRange || ''}
+            value={formData.kidsAgeRange || ''}
             onChange={(e) => setFormData((prev: any) => ({ ...prev, kidsAgeRange: e.target.value }))}
             placeholder="e.g., 5-12, Elementary school, Middle school"
             className="w-64"

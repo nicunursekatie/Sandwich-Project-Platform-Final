@@ -27,7 +27,7 @@ export function serializeDateToISO(dateString: string): string | null {
  * Used by both create and update mutations.
  */
 export function buildEventDataForServer(
-  formData: EventFormData & { manualEntrySource?: string; isCorporatePriority?: boolean; standbyExpectedDate?: string; kidsAgeRange?: string; driverInstructions?: string; volunteerInstructions?: string; speakerInstructions?: string; dateFlexible?: boolean | null },
+  formData: EventFormData,
   options: {
     mode: 'schedule' | 'edit' | 'create';
     hasEventRequest: boolean;

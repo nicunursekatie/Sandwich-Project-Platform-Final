@@ -84,9 +84,9 @@ export const StatusToolkitSection: React.FC<StatusToolkitSectionProps> = ({
         <input
           type="checkbox"
           id="isCorporatePriority"
-          checked={(formData as any).isCorporatePriority}
+          checked={formData.isCorporatePriority}
           onChange={(e) => {
-            if (e.target.checked && !(formData as any).isCorporatePriority) {
+            if (e.target.checked && !formData.isCorporatePriority) {
               setShowCorporatePriorityConfirmDialog(true);
             } else {
               setFormData((prev: any) => ({ ...prev, isCorporatePriority: e.target.checked }));

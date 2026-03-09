@@ -91,6 +91,18 @@ export interface EventFormData {
   // Delivery details for overnight holding
   deliveryTimeWindow: string;
   deliveryParkingAccess: string;
+  // Corporate priority
+  isCorporatePriority: boolean;
+  // Date flexibility
+  dateFlexible: boolean | null;
+  // Kids age range
+  kidsAgeRange: string;
+  // Volunteer/Driver/Speaker instructions
+  driverInstructions: string;
+  volunteerInstructions: string;
+  speakerInstructions: string;
+  // Standby follow-up
+  standbyExpectedDate: string;
 }
 
 /**

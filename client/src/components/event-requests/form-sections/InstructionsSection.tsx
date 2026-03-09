@@ -38,7 +38,7 @@ export const InstructionsSection: React.FC<InstructionsSectionProps> = ({
         </div>
         <Textarea
           id="driverInstructions"
-          value={(formData as any).driverInstructions || ''}
+          value={formData.driverInstructions || ''}
           onChange={(e) => setFormData((prev: any) => ({ ...prev, driverInstructions: e.target.value }))}
           placeholder="Special instructions for drivers (e.g., parking location, entrance to use, who to ask for, delivery notes)"
           className="min-h-[80px] border-purple-200 focus:border-purple-400"
@@ -53,7 +53,7 @@ export const InstructionsSection: React.FC<InstructionsSectionProps> = ({
         </div>
         <Textarea
           id="volunteerInstructions"
-          value={(formData as any).volunteerInstructions || ''}
+          value={formData.volunteerInstructions || ''}
           onChange={(e) => setFormData((prev: any) => ({ ...prev, volunteerInstructions: e.target.value }))}
           placeholder="Special instructions for general volunteers (e.g., what to bring, where to meet, tasks to help with)"
           className="min-h-[80px] border-purple-200 focus:border-purple-400"
@@ -68,7 +68,7 @@ export const InstructionsSection: React.FC<InstructionsSectionProps> = ({
         </div>
         <Textarea
           id="speakerInstructions"
-          value={(formData as any).speakerInstructions || ''}
+          value={formData.speakerInstructions || ''}
           onChange={(e) => setFormData((prev: any) => ({ ...prev, speakerInstructions: e.target.value }))}
           placeholder="Special instructions for speakers (e.g., audience details, presentation format, time allotted, topics to cover)"
           className="min-h-[80px] border-purple-200 focus:border-purple-400"
