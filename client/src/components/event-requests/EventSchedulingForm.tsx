@@ -1371,7 +1371,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
 
     // Construct data explicitly without client-only fields
-    const eventData: any = {
+    let eventData: any;
+    try {
+    eventData = {
       // Only change status to 'scheduled' when in schedule mode (for updates)
       ...(eventRequest && mode === 'schedule' ? { status: 'scheduled' } : {}),
       // For new events (create mode), use the status from form data
@@ -1517,6 +1519,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Include assigned recipient IDs
     eventData.assignedRecipientIds = formData.assignedRecipientIds || [];
 
+    } catch (constructionError) {
+      console.error('❌ [PROD DEBUG] ERROR constructing eventData:', constructionError);
+      console.error('❌ [PROD DEBUG] formData at time of error:', {
+        backupDates: formData.backupDates,
+        sandwichTypes: formData.sandwichTypes,
+        actualSandwichTypes: formData.actualSandwichTypes,
+        sandwichMode,
+        actualSandwichMode,
+      });
+      setIsSubmitting(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to prepare form data. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('✅ [PROD DEBUG] eventData constructed successfully');
     logger.log('📋 FORM SUBMIT DEBUG:');
     logger.log('  - eventRequest exists?', !!eventRequest);
     logger.log('  - eventRequest.id:', eventRequest?.id);
