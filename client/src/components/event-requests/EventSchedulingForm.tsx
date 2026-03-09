@@ -771,6 +771,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Speaker warning check
     const totalRelevantSandwiches = calculateRelevantSandwichCount(formData as EventFormData, sandwichMode);
     if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
+      setIsSubmitting(false);
       setShowSpeakerWarningDialog(true);
       return;
     }

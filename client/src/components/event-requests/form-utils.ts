@@ -13,10 +13,14 @@ import type { EventFormData } from './form-sections/types';
 /**
  * Serialize a date string for the backend.
  * Sends bare YYYY-MM-DD so parseDateOnly uses its safe local-noon path.
+ * Returns null for empty/falsy strings.
  */
 export function serializeDateToISO(dateString: string): string | null {
-  if (!dateString) return null;
+  if (!dateString || !dateString.trim()) return null;
+  // Extract YYYY-MM-DD portion
   const dateOnly = dateString.split('T')[0];
+  // Validate it looks like a date before sending
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return null;
   return dateOnly;
 }
 
@@ -45,11 +49,14 @@ export function buildEventDataForServer(
     ...(!hasEventRequest ? { status: formData.status || 'new' } : {}),
     ...(hasEventRequest && mode === 'edit' ? { status: formData.status || eventRequestStatus || 'new' } : {}),
 
-    // Date fields
+    // Date fields - always include desiredEventDate so it can be set or cleared intentionally
     desiredEventDate: serializeDateToISO(formData.eventDate),
     dateFlexible: formData.dateFlexible,
     backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
-    ...(formData.status === 'scheduled' ? { scheduledEventDate: serializeDateToISO(formData.eventDate) } : {}),
+    // In schedule mode OR when status is 'scheduled', always sync scheduledEventDate with the event date
+    ...(formData.status === 'scheduled' || mode === 'schedule'
+      ? { scheduledEventDate: serializeDateToISO(formData.eventDate) }
+      : {}),
 
     // Time fields
     eventStartTime: formData.eventStartTime || null,
@@ -212,11 +219,11 @@ function normalizeDateForCompare(value: any): string | null {
   return match ? match[1] : value;
 }
 
-/** Date field names that need special comparison logic */
+/** Date field names that need special comparison logic (both server and client names) */
 const DATE_COMPARE_FIELDS = [
   'desiredEventDate', 'eventDate', 'scheduledEventDate', 'toolkitSentDate',
   'socialMediaPostRequestedDate', 'socialMediaPostCompletedDate', 'actualSandwichCountRecordedDate',
-  'followUpOneDayDate', 'followUpOneMonthDate',
+  'followUpOneDayDate', 'followUpOneMonthDate', 'standbyExpectedDate',
 ];
 
 /**
@@ -233,18 +240,15 @@ export function detectChangedFields(
 ): Record<string, any> {
   const filteredEventData: Record<string, any> = {};
 
-  // Status change always needs to be sent
-  if (eventData.status !== undefined) {
-    filteredEventData.status = eventData.status;
-  }
-
-  // For schedule mode, always send scheduledEventDate
-  if (mode === 'schedule' && eventData.scheduledEventDate !== undefined) {
-    filteredEventData.scheduledEventDate = eventData.scheduledEventDate;
-  }
+  // Extended mapping: scheduledEventDate maps back to eventDate in the form
+  // since the form uses eventDate for both desired and scheduled dates
+  const getOriginalFieldKey = (serverKey: string): string => {
+    if (serverKey === 'scheduledEventDate') return 'eventDate';
+    return (FIELD_MAPPINGS.serverToClient as Record<string, string>)[serverKey] || serverKey;
+  };
 
   const hasChanged = (key: string, newValue: any): boolean => {
-    const formDataKey = (FIELD_MAPPINGS.serverToClient as Record<string, string>)[key] || key;
+    const formDataKey = getOriginalFieldKey(key);
     const originalValue = originalFormData[formDataKey];
 
     // Array comparison
@@ -254,21 +258,20 @@ export function detectChangedFields(
       return JSON.stringify(normalizedNew) !== JSON.stringify(normalizedOrig);
     }
 
-    // Date field comparison
-    if (DATE_COMPARE_FIELDS.includes(key)) {
+    // Date field comparison - use normalization so "2024-03-15" matches "2024-03-15T00:00:00.000Z"
+    if (DATE_COMPARE_FIELDS.includes(key) || DATE_COMPARE_FIELDS.includes(formDataKey)) {
       return normalizeDateForCompare(newValue) !== normalizeDateForCompare(originalValue);
     }
 
-    // Null/empty equivalence
-    const normalizedNew = newValue === '' || newValue === null ? null : newValue;
-    const normalizedOrig = originalValue === '' || originalValue === null ? null : originalValue;
+    // Null/empty/undefined equivalence
+    const normalizedNew = newValue === '' || newValue === null || newValue === undefined ? null : newValue;
+    const normalizedOrig = originalValue === '' || originalValue === null || originalValue === undefined ? null : originalValue;
 
     return normalizedNew !== normalizedOrig;
   };
 
-  // Include only fields that changed
+  // Include only fields that actually changed
   Object.keys(eventData).forEach(key => {
-    if (key === 'status' || key === 'scheduledEventDate') return; // Already handled
     if (hasChanged(key, eventData[key])) {
       filteredEventData[key] = eventData[key];
     }
@@ -277,8 +280,15 @@ export function detectChangedFields(
   // Schedule mode safety: always ensure status and date are present
   if (mode === 'schedule') {
     filteredEventData.status = 'scheduled';
-    if (eventData.scheduledEventDate || eventData.desiredEventDate) {
-      filteredEventData.scheduledEventDate = eventData.scheduledEventDate || eventData.desiredEventDate;
+    // Always include scheduledEventDate in schedule mode - use the date from eventData
+    const schedDate = eventData.scheduledEventDate || eventData.desiredEventDate;
+    if (schedDate) {
+      filteredEventData.scheduledEventDate = schedDate;
+    }
+    // Also always include desiredEventDate if it has a value, so the date is never lost
+    // when scheduling an event
+    if (eventData.desiredEventDate) {
+      filteredEventData.desiredEventDate = eventData.desiredEventDate;
     }
   }
 
