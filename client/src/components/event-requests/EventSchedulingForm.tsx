@@ -143,19 +143,19 @@ function buildFormDataFromEventRequest(
       JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
 
   return {
-    eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate) : '',
+    eventDate: eventRequest ? formatDateForInput(eventRequest.desiredEventDate || eventRequest.scheduledEventDate) : '',
     dateFlexible: eventRequest?.dateFlexible ?? null,
     backupDates: (eventRequest as any)?.backupDates?.map((d: string) => formatDateForInput(d)) || [],
     eventStartTime: eventRequest?.eventStartTime || '',
     eventEndTime: eventRequest?.eventEndTime || '',
     pickupTime: eventRequest?.pickupTime || '',
-    pickupDateTime: getPickupDateTimeForInputFn((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate)),
+    pickupDateTime: getPickupDateTimeForInputFn((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate || eventRequest?.scheduledEventDate)),
     pickupDate: (() => {
-      const pickupDT = getPickupDateTimeForInputFn((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+      const pickupDT = getPickupDateTimeForInputFn((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate || eventRequest?.scheduledEventDate));
       return pickupDT ? pickupDT.split('T')[0] : '';
     })(),
     pickupTimeSeparate: (() => {
-      const pickupDT = getPickupDateTimeForInputFn((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate));
+      const pickupDT = getPickupDateTimeForInputFn((eventRequest as any)?.pickupDateTime, eventRequest?.pickupTime, formatDateForInput(eventRequest?.desiredEventDate || eventRequest?.scheduledEventDate));
       return pickupDT ? pickupDT.split('T')[1]?.substring(0, 5) : '';
     })(),
     eventAddress: eventRequest?.eventAddress || '',
