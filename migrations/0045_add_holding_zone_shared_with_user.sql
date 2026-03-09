@@ -2,5 +2,4 @@
 -- Level 1: Private = only creator (and admins) see
 -- Level 2: Private + shared with = only creator, shared user, and admins see
 
-ALTER TABLE team_board_items ADD pxt push
-COLUMN IF NOT EXISTS shared_with_user_id VARCHAR;
+ALTER TABLE team_board_items ADD COLUMN IF NOT EXISTS shared_with_user_id VARCHAR;
