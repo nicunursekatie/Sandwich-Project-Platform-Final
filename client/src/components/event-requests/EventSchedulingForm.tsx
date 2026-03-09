@@ -603,14 +603,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         setShowCompletedDetails(effectiveEventRequest?.status === 'completed');
       }
 
-      // Set originalFormDataRef (synchronous, before formInitialized)
-      if (mergedOriginalFormDataRef) {
-        originalFormDataRef.current = mergedOriginalFormDataRef;
-      } else {
-        originalFormDataRef.current = buildFormDataFromEventRequest(
-          effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
-        );
-      }
+      // Set originalFormDataRef to server data (the true DB baseline).
+      // This must ALWAYS reflect what the server has — never the user's recovered/merged changes.
+      // Using merged data here caused detectChangedFields to see no diff on recovered data,
+      // silently dropping saves (e.g. vanDriverNeeded checkbox would never persist).
+      originalFormDataRef.current = buildFormDataFromEventRequest(
+        effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
+      );
       setFormInitialized(true);
     } else {
       // Dialog closed
