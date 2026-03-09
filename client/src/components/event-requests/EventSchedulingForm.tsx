@@ -515,14 +515,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // ── Form Initialization ────────────────────────────────────────────
 
-  const formInitSessionRef = useRef<number | string | null>(null);
+  const formInitSessionRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (dialogOpen) {
+      // Include whether we have full data in the session key so the form
+      // re-initializes when fullEventRequest loads (not just the partial prop)
       const currentEventId = effectiveEventRequest?.id || 'new';
+      const sessionKey = `${currentEventId}-${fullEventRequest ? 'full' : 'partial'}`;
 
-      if (formInitSessionRef.current === currentEventId && formInitialized) return;
-      formInitSessionRef.current = currentEventId;
+      if (formInitSessionRef.current === sessionKey && formInitialized) return;
+      formInitSessionRef.current = sessionKey;
       setFormInitialized(false);
       setHasRecoveredData(false);
 
@@ -563,7 +566,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               if (savedData.attendeeMode) setAttendeeMode(savedData.attendeeMode);
               setHasRecoveredData(true);
               recoveredFromStorage = true;
-              mergedOriginalFormDataRef = mergedData;
+              // IMPORTANT: originalFormDataRef must be SERVER data, not merged data.
+              // Otherwise recovered user changes won't be detected as "changed" on submit.
+              mergedOriginalFormDataRef = currentServerData;
               setShowCompletedDetails(mergedData.status === 'completed');
 
               // Notify user about merge results
@@ -618,7 +623,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         }
       }
     }
-  }, [isVisible, isOpen, effectiveEventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
+  }, [isVisible, isOpen, effectiveEventRequest, fullEventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
 
   // Auto-expand contact info in create mode
   useEffect(() => {
@@ -1152,7 +1157,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             <Button type="submit" form="event-scheduling-form" className="text-white"
               style={{ backgroundColor: '#236383' }}
-              disabled={updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              disabled={isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
               data-testid="button-submit">
               {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
                 ? (mode === 'edit' ? 'Saving...' : 'Scheduling...')
