@@ -101,20 +101,16 @@ function intelligentMergeFormData(
   const serverUpdates: string[] = [];
   const userChangesPreserved: string[] = [];
 
-  // If we don't have original server data, fall back to using cached data
-  // (for backwards compatibility with old cache format)
+  // If we don't have original server data, we can't safely determine what the user
+  // changed vs what was just the old server state. Prefer fresh server data to avoid
+  // showing stale cached values that no longer match the database.
   if (!originalServerData) {
-    logger.log('⚠️ No original server data in cache - using cached form data directly');
-    // Guard: status must never be empty — fall back to server's current status
-    if (!cachedFormData.status) {
-      cachedFormData.status = currentServerData.status || 'new';
-      logger.log('🛡️ Fixed empty status in cached form data, using:', cachedFormData.status);
-    }
+    logger.log('⚠️ No original server data in cache - using CURRENT SERVER DATA (discarding stale cache)');
     return {
-      mergedData: cachedFormData,
+      mergedData: currentServerData,
       conflicts: [],
       serverUpdates: [],
-      userChangesPreserved: Object.keys(cachedFormData),
+      userChangesPreserved: [],
     };
   }
 
@@ -300,6 +296,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 }) => {
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
+
+  // Fetch full event data when form opens in edit mode.
+  // The eventRequest prop comes from the lightweight /list endpoint and may be
+  // missing fields like dateFlexible, driverInstructions, volunteerCount, etc.
+  // This query fetches the COMPLETE event data from /api/event-requests/:id.
+  const { data: fullEventRequest } = useQuery<EventRequest>({
+    queryKey: ['/api/event-requests', eventRequest?.id, 'full'],
+    queryFn: async () => {
+      const response = await fetch(`/api/event-requests/${eventRequest!.id}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch full event data');
+      return response.json();
+    },
+    enabled: dialogOpen && !!eventRequest?.id,
+    staleTime: 30 * 1000, // 30 seconds - form always needs fresh data
+    gcTime: 60 * 1000,
+  });
+
+  // Use full event data when available, fall back to lightweight prop
+  const effectiveEventRequest = fullEventRequest || eventRequest;
+
   const [formData, setFormData] = useState({
     eventDate: '',
     backupDates: [] as string[],
@@ -498,8 +516,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     skipRecoveryRef.current = true;
     
     // Close and reopen triggers re-initialization without recovery
-    // Since we can't easily trigger useEffect again, we'll manually reload from eventRequest
-    if (!eventRequest) return;
+    // Since we can't easily trigger useEffect again, we'll manually reload from server data
+    const sourceEvent = effectiveEventRequest || eventRequest;
+    if (!sourceEvent) return;
     
     // Parse sandwich types from server
     const existingSandwichTypes = eventRequest?.sandwichTypes ? 
@@ -768,8 +787,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   };
 
   // Initialize form with existing data when dialog opens
+  // Uses effectiveEventRequest which is the full server data when available,
+  // falling back to the lightweight list prop.
   useEffect(() => {
     if (dialogOpen) {
+      // DEBUG: Log what we're initializing from
+      console.log('📋 [FORM INIT] Dialog opened', {
+        eventRequestId: effectiveEventRequest?.id,
+        usingFullData: !!fullEventRequest,
+        eventRequestExists: !!effectiveEventRequest,
+        driversNeeded: effectiveEventRequest?.driversNeeded,
+        vanDriverNeeded: effectiveEventRequest?.vanDriverNeeded,
+        assignedVanDriverId: effectiveEventRequest?.assignedVanDriverId,
+        status: effectiveEventRequest?.status,
+        mode,
+      });
+
       // CRITICAL: Reset formInitialized immediately when starting to load new data
       // This prevents race condition when switching between events while dialog stays mounted
       setFormInitialized(false);
@@ -802,7 +835,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             // If the status has changed on the server (e.g., event was scheduled successfully),
             // discard the stale auto-save data to prevent showing outdated status
             const savedStatus = savedData.formData?.status;
-            const serverStatus = eventRequest?.status;
+            const serverStatus = effectiveEventRequest?.status;
             const statusMismatch = savedStatus && serverStatus && savedStatus !== serverStatus;
 
             if (statusMismatch) {
@@ -815,9 +848,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               clearAutoSave();
             } else if (hoursSinceSave < 24) {
               // INTELLIGENT MERGE: Combine cached user changes with server updates
-              // Build current server data
+              // Build current server data (using full data when available)
               const currentServerData = buildFormDataFromEventRequest(
-                eventRequest,
+                effectiveEventRequest,
                 formatDateForInput,
                 getPickupDateTimeForInput,
                 parsePostgresArray
@@ -831,6 +864,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               );
 
               // Apply merged data
+              console.log('📋 [FORM INIT] Loading from auto-save recovery (intelligent merge)', {
+                hasOriginalServerData: !!savedData.originalServerData,
+                mergedDriversNeeded: mergedData.driversNeeded,
+                mergedVanDriverNeeded: mergedData.vanDriverNeeded,
+                cachedDriversNeeded: savedData.formData?.driversNeeded,
+                serverDriversNeeded: currentServerData.driversNeeded,
+                conflicts: conflicts.length,
+                serverUpdates: serverUpdates.length,
+                userChangesPreserved: userChangesPreserved.length,
+              });
               setFormData(mergedData as any);
               if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
               if (savedData.actualSandwichMode) setActualSandwichMode(savedData.actualSandwichMode);
@@ -884,25 +927,32 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
       
       // Parse sandwich types from server for originalFormDataRef
-      const existingSandwichTypes = eventRequest?.sandwichTypes ? 
-        (typeof eventRequest?.sandwichTypes === 'string' ? 
-          JSON.parse(eventRequest.sandwichTypes) : eventRequest?.sandwichTypes) : [];
+      const existingSandwichTypes = effectiveEventRequest?.sandwichTypes ?
+        (typeof effectiveEventRequest?.sandwichTypes === 'string' ?
+          JSON.parse(effectiveEventRequest.sandwichTypes) : effectiveEventRequest?.sandwichTypes) : [];
       const hasTypesData = Array.isArray(existingSandwichTypes) && existingSandwichTypes.length > 0;
-      const hasRangeData = (eventRequest as any)?.estimatedSandwichCountMin && (eventRequest as any)?.estimatedSandwichCountMax;
-      const totalCount = eventRequest?.estimatedSandwichCount || 0;
-      const existingActualSandwichTypes = eventRequest?.actualSandwichTypes ? 
-        (typeof eventRequest?.actualSandwichTypes === 'string' ? 
-          JSON.parse(eventRequest.actualSandwichTypes) : eventRequest?.actualSandwichTypes) : [];
+      const hasRangeData = (effectiveEventRequest as any)?.estimatedSandwichCountMin && (effectiveEventRequest as any)?.estimatedSandwichCountMax;
+      const totalCount = effectiveEventRequest?.estimatedSandwichCount || 0;
+      const existingActualSandwichTypes = effectiveEventRequest?.actualSandwichTypes ?
+        (typeof effectiveEventRequest?.actualSandwichTypes === 'string' ?
+          JSON.parse(effectiveEventRequest.actualSandwichTypes) : effectiveEventRequest?.actualSandwichTypes) : [];
       const hasActualTypesData = Array.isArray(existingActualSandwichTypes) && existingActualSandwichTypes.length > 0;
-      
-      // If no recovered data, populate from eventRequest using the helper function
+
+      // If no recovered data, populate from effectiveEventRequest using the helper function
       if (!recoveredFromStorage) {
         const serverFormData = buildFormDataFromEventRequest(
-          eventRequest,
+          effectiveEventRequest,
           formatDateForInput,
           getPickupDateTimeForInput,
           parsePostgresArray
         );
+        console.log('📋 [FORM INIT] Loading from server data (no auto-save recovery)', {
+          driversNeeded: serverFormData.driversNeeded,
+          vanDriverNeeded: serverFormData.vanDriverNeeded,
+          assignedVanDriverId: serverFormData.assignedVanDriverId,
+          status: serverFormData.status,
+          usingFullData: !!fullEventRequest,
+        });
         setFormData(serverFormData as any);
 
         // Set mode based on existing data
@@ -910,11 +960,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         setActualSandwichMode(hasActualTypesData ? 'types' : 'total');
 
         // Set attendee mode based on whether adult/children breakdown exists
-        const hasAttendeeBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
+        const hasAttendeeBreakdown = ((effectiveEventRequest as any)?.adultCount || 0) > 0 || ((effectiveEventRequest as any)?.childrenCount || 0) > 0;
         setAttendeeMode(hasAttendeeBreakdown ? 'breakdown' : 'total');
 
         // Auto-expand Completed Event Details section if event is completed
-        setShowCompletedDetails(eventRequest?.status === 'completed');
+        setShowCompletedDetails(effectiveEventRequest?.status === 'completed');
       }
       
       // Store original form data to detect changes later (preserve existing data)
@@ -935,7 +985,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       } else {
         // No merge happened - use fresh server data
         originalFormDataRef.current = buildFormDataFromEventRequest(
-          eventRequest,
+          effectiveEventRequest,
           formatDateForInput,
           getPickupDateTimeForInput,
           parsePostgresArray
@@ -947,8 +997,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     } else {
       // Dialog closed - reset initialization state
       setFormInitialized(false);
+
+      // Clear auto-save if the user made no meaningful changes.
+      // This prevents stale cache from building up and overriding fresh server data
+      // the next time the form is opened.
+      if (originalFormDataRef.current) {
+        const currentFormDataStr = JSON.stringify(formData);
+        const originalFormDataStr = JSON.stringify(originalFormDataRef.current);
+        if (currentFormDataStr === originalFormDataStr) {
+          clearAutoSave();
+          logger.log('🗑️ Cleared auto-save on close (no user changes detected)');
+        }
+      }
     }
-  }, [isVisible, isOpen, eventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
+  }, [isVisible, isOpen, effectiveEventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
