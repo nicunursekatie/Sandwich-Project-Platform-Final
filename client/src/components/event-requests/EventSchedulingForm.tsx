@@ -786,11 +786,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     return dateOnly;
   };
 
+  // Track whether we've already initialized the form for the current dialog session.
+  // This prevents re-initialization when fullEventRequest arrives (which would wipe
+  // out any user changes made while waiting for the full data query).
+  const formInitSessionRef = useRef<number | string | null>(null);
+
   // Initialize form with existing data when dialog opens
   // Uses effectiveEventRequest which is the full server data when available,
   // falling back to the lightweight list prop.
   useEffect(() => {
     if (dialogOpen) {
+      const currentEventId = effectiveEventRequest?.id || 'new';
+
+      // Skip re-initialization if we already initialized for this event in this dialog session.
+      // This prevents the full data query from wiping out user changes.
+      if (formInitSessionRef.current === currentEventId && formInitialized) {
+        console.log('📋 [FORM INIT] Skipping re-init (already initialized for event', currentEventId, ')');
+        return;
+      }
+
       // DEBUG: Log what we're initializing from
       console.log('📋 [FORM INIT] Dialog opened', {
         eventRequestId: effectiveEventRequest?.id,
@@ -802,6 +816,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         status: effectiveEventRequest?.status,
         mode,
       });
+
+      // Mark this event as initialized for this dialog session
+      formInitSessionRef.current = currentEventId;
 
       // CRITICAL: Reset formInitialized immediately when starting to load new data
       // This prevents race condition when switching between events while dialog stays mounted
@@ -997,6 +1014,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     } else {
       // Dialog closed - reset initialization state
       setFormInitialized(false);
+      formInitSessionRef.current = null; // Allow fresh init next time dialog opens
 
       // Clear auto-save if the user made no meaningful changes.
       // This prevents stale cache from building up and overriding fresh server data
@@ -1598,12 +1616,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         }
       });
       
+      console.log('🔄 [PROD DEBUG] Filtered changed fields:', {
+        eventId: eventRequest.id,
+        changedFieldCount: Object.keys(filteredEventData).length,
+        changedFields: Object.keys(filteredEventData),
+        filteredData: filteredEventData,
+      });
       logger.log('🔄 Calling UPDATE mutation for event ID:', eventRequest.id);
       logger.log('  - Filtered data (changed fields only):', filteredEventData);
       logger.log('  - Changed fields count:', Object.keys(filteredEventData).length);
 
       // In edit mode, if no fields changed, notify the user instead of sending an empty update
       if (mode === 'edit' && Object.keys(filteredEventData).length === 0) {
+        console.log('⚠️ [PROD DEBUG] No fields changed - nothing to save');
         logger.log('ℹ️ No fields changed in edit mode - nothing to save');
         setIsSubmitting(false);
         toast({
