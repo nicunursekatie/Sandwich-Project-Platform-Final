@@ -784,14 +784,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
 
     // Build server payload using extracted utility
-    const eventData = buildEventDataForServer(formData as any, {
-      mode,
-      hasEventRequest: !!eventRequest,
-      eventRequestStatus: eventRequest?.status,
-      sandwichMode,
-      actualSandwichMode,
-      fieldOverrides,
-    });
+    let eventData: Record<string, any>;
+    try {
+      eventData = buildEventDataForServer(formData as any, {
+        mode,
+        hasEventRequest: !!eventRequest,
+        eventRequestStatus: eventRequest?.status,
+        sandwichMode,
+        actualSandwichMode,
+        fieldOverrides,
+      });
+    } catch (constructionError) {
+      console.error('❌ [PROD DEBUG] ERROR constructing eventData:', constructionError);
+      setIsSubmitting(false);
+      toast({ title: 'Error', description: 'Failed to prepare form data. Please try again.', variant: 'destructive' });
+      return;
+    }
 
     if (eventRequest) {
       if (!eventRequest.id) {
