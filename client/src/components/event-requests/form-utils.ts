@@ -147,7 +147,7 @@ export function buildEventDataForServer(
     standbyExpectedDate: (() => {
       const date = fieldOverrides?.standbyExpectedDate || formData.standbyExpectedDate;
       return formData.status === 'standby' && date
-        ? new Date(date).toISOString()
+        ? serializeDateToISO(typeof date === 'string' ? date : new Date(date).toISOString().split('T')[0])
         : null;
     })(),
   };
