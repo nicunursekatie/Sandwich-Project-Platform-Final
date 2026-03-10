@@ -46,6 +46,7 @@ import {
   Loader2,
   Sparkles,
   Plus,
+  Minus,
   Check,
   HelpCircle,
 } from 'lucide-react';
@@ -2650,16 +2651,44 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <Car className="w-5 h-5" />
                                 {driverNeeded > 0 ? `Drivers (${parsePostgresArray(request.assignedDriverIds).length}/${driverNeeded})` : 'Drivers'}
                               </span>
-                              {canEdit && driverNeeded > 0 && (
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => openAssignmentDialog('driver')} 
-                                  className="h-7"
-                                  aria-label="Add driver"
-                                >
-                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {canEdit && (
+                                  <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
+                                    <button
+                                      onClick={() => {
+                                        const newVal = Math.max(0, driverNeeded - 1);
+                                        updateFieldsMutation.mutate({ driversNeeded: newVal });
+                                      }}
+                                      className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+                                      aria-label="Decrease drivers needed"
+                                      title="Decrease drivers needed"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </button>
+                                    <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{driverNeeded}</span>
+                                    <button
+                                      onClick={() => {
+                                        updateFieldsMutation.mutate({ driversNeeded: driverNeeded + 1 });
+                                      }}
+                                      className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+                                      aria-label="Increase drivers needed"
+                                      title="Increase drivers needed"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+                                {canEdit && driverNeeded > 0 && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => openAssignmentDialog('driver')}
+                                    className="h-7"
+                                    aria-label="Add driver"
+                                  >
+                                    <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                  </Button>
+                                )}
+                              </div>
                             </>
                           )}
                         </div>
@@ -2795,11 +2824,39 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             <Megaphone className="w-5 h-5" />
                             Speakers ({speakerAssigned}/{speakerNeeded})
                           </span>
-                          {canEdit && (
-                            <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7" aria-label="Add speaker">
-                              <UserPlus className="w-3 h-3" aria-hidden="true" />
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {canEdit && (
+                              <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
+                                <button
+                                  onClick={() => {
+                                    const newVal = Math.max(0, speakerNeeded - 1);
+                                    updateFieldsMutation.mutate({ speakersNeeded: newVal });
+                                  }}
+                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+                                  aria-label="Decrease speakers needed"
+                                  title="Decrease speakers needed"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{speakerNeeded}</span>
+                                <button
+                                  onClick={() => {
+                                    updateFieldsMutation.mutate({ speakersNeeded: speakerNeeded + 1 });
+                                  }}
+                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+                                  aria-label="Increase speakers needed"
+                                  title="Increase speakers needed"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                            {canEdit && (
+                              <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7" aria-label="Add speaker">
+                                <UserPlus className="w-3 h-3" aria-hidden="true" />
+                              </Button>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
@@ -3015,18 +3072,46 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </Tooltip>
                             Volunteers ({volunteerAssigned}/{volunteerNeeded})
                           </span>
-                          {canEdit && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7" aria-label="Add volunteer">
-                                  <UserPlus className="w-3 h-3" aria-hidden="true" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Assign volunteers</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {canEdit && (
+                              <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
+                                <button
+                                  onClick={() => {
+                                    const newVal = Math.max(0, volunteerNeeded - 1);
+                                    updateFieldsMutation.mutate({ volunteersNeeded: newVal });
+                                  }}
+                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+                                  aria-label="Decrease volunteers needed"
+                                  title="Decrease volunteers needed"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{volunteerNeeded}</span>
+                                <button
+                                  onClick={() => {
+                                    updateFieldsMutation.mutate({ volunteersNeeded: volunteerNeeded + 1 });
+                                  }}
+                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+                                  aria-label="Increase volunteers needed"
+                                  title="Increase volunteers needed"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                            {canEdit && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button size="sm" onClick={() => openAssignmentDialog('volunteer')} className="h-7" aria-label="Add volunteer">
+                                    <UserPlus className="w-3 h-3" aria-hidden="true" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Assign volunteers</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
