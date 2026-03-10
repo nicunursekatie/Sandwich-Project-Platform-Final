@@ -63,6 +63,7 @@ import {
   Cell,
 } from 'recharts';
 import { calculateTotalSandwiches, calculateGroupSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
@@ -162,6 +163,7 @@ export default function GrantMetrics() {
   const completedEvents = eventRequests.filter((e: any) => e.status === 'completed');
 
   // Calculate REAL recipient metrics
+  // Region: derived from geocoded coordinates when available; falls back to manual region field otherwise
   const calculateRecipientMetrics = () => {
     const byFocusArea: Record<string, number> = {};
     const byRegion: Record<string, number> = {};
@@ -170,9 +172,12 @@ export default function GrantMetrics() {
       if (r.focusArea) {
         byFocusArea[r.focusArea] = (byFocusArea[r.focusArea] || 0) + 1;
       }
-      if (r.region) {
-        byRegion[r.region] = (byRegion[r.region] || 0) + 1;
-      }
+      // Use geocoded location to determine region when lat/long available; otherwise fall back to manual region
+      const region =
+        r.latitude && r.longitude
+          ? getRegionFromCoordinates(r.latitude, r.longitude)
+          : (r.region || 'Not geocoded');
+      byRegion[region] = (byRegion[region] || 0) + 1;
     });
 
     const totalWeeklyCapacity = activeRecipients.reduce(
@@ -1889,7 +1894,7 @@ export default function GrantMetrics() {
               <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
                 <h3 className="font-bold text-gray-900 mb-3 flex items-center">
                   <MapPin className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                  Recipients by Region (Database)
+                  Recipients by Region (Geocoded)
                 </h3>
                 <div className="space-y-2">
                   {Object.entries(recipientMetrics.byRegion)
@@ -1903,7 +1908,7 @@ export default function GrantMetrics() {
                       </div>
                     ))}
                   {Object.keys(recipientMetrics.byRegion).length === 0 && (
-                    <p className="text-sm text-gray-500 italic">Regional data being collected...</p>
+                    <p className="text-sm text-gray-500 italic">Run geocoding on recipients with addresses to see regional distribution.</p>
                   )}
                 </div>
               </div>
