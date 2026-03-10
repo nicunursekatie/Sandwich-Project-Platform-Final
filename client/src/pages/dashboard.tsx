@@ -73,6 +73,7 @@ import { WhatsNewModal } from '@/components/whats-new-modal';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { ReviewerBanner } from '@/components/reviewer-banner';
 import { CommandPalette, useCommandPalette } from '@/components/command-palette';
+import { QuickCalculator } from '@/components/QuickCalculator';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -974,6 +975,11 @@ export default function Dashboard({
                     <TooltipContent side="bottom" sideOffset={8}>Notifications</TooltipContent>
                   </Tooltip>
                 )}
+              </div>
+
+              {/* Quick Calculator */}
+              <div className="flex items-center">
+                <QuickCalculator />
               </div>
 
               {/* Group 3: Help & Navigation */}

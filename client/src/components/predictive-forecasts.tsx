@@ -360,14 +360,16 @@ export default function PredictiveForecasts() {
     } else {
       const monthStart = new Date(targetYear, targetMonth, 1);
       const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+      // Match calendar logic: use scheduledEventDate || desiredEventDate, include new/in_process/scheduled/completed
       const futureEventsThisMonth = (eventRequests || []).filter((e: any) => {
-        if (!e.desiredEventDate || !['in_process', 'scheduled', 'completed'].includes(e.status)) return false;
-        const d = new Date(e.desiredEventDate);
+        const eventDate = e.scheduledEventDate || e.desiredEventDate;
+        if (!eventDate || !['new', 'in_process', 'scheduled', 'completed'].includes(e.status)) return false;
+        const d = new Date(eventDate);
         d.setHours(0, 0, 0, 0);
         return d >= todayStart && d >= monthStart && d <= monthEnd;
       });
       const scheduledMonthTotal = futureEventsThisMonth.reduce(
-        (s: number, e: any) => s + (e.estimatedSandwichCount || 0),
+        (s: number, e: any) => s + (e.actualSandwichCount || e.estimatedSandwichCount || 0),
         0
       );
       let remainingWednesdays = 0;
@@ -393,27 +395,37 @@ export default function PredictiveForecasts() {
     const daysRemainingInMonth = daysInTargetMonth - dayOfTargetMonth;
     const dailyNeeded = daysRemainingInMonth > 0 ? Math.round(monthlyGap / daysRemainingInMonth) : 0;
 
-    // Get recent weekly trend (last 4 weeks)
-    const recentWeeks = Array.from(weekMap.entries())
+    // Get recent weekly trend: last 4 COMPLETED weeks (relative to today) + current week projected
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
+    const completedWeeks = Array.from(weekMap.entries())
+      .filter(([weekKey]) => {
+        const weekFri = new Date(weekKey);
+        const weekThu = new Date(weekFri);
+        weekThu.setDate(weekFri.getDate() + 6);
+        return weekThu < today; // Only weeks that have fully ended
+      })
       .sort((a, b) => b[0].localeCompare(a[0]))
       .slice(0, 4)
       .reverse();
 
-    const trendData = recentWeeks.map(([week, total], idx) => ({
-      week: `Week ${idx + 1}`,
-      actual: total,
-      average: avgWeekly,
-    }));
+    const trendData = completedWeeks.map(([weekKey, total]) => {
+      const weekFri = new Date(weekKey);
+      const weekThu = new Date(weekFri);
+      weekThu.setDate(weekFri.getDate() + 6);
+      const label = `${weekFri.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}–${weekThu.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      return { week: label, actual: total, average: avgWeekly };
+    });
 
-    // Add current week projection
+    // Add current week projection (always last so it rolls forward over time)
     trendData.push({
-      week: 'This Week',
+      week: `This week (${formatDate(targetWeekStart)}–${formatDate(targetWeekEnd)})`,
       actual: weeklyProjected,
       average: avgWeekly,
     });
 
-    // Calculate trend direction
-    const recentThreeWeeks = recentWeeks.slice(-3).map(([, total]) => total);
+    // Calculate trend direction from last 3 completed weeks (exclude "This Week")
+    const recentThreeWeeks = completedWeeks.slice(-3).map(([, total]) => total);
     const isUptrend = recentThreeWeeks.length >= 2 &&
       recentThreeWeeks[recentThreeWeeks.length - 1] > recentThreeWeeks[0];
 

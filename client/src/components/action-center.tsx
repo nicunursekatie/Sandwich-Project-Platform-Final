@@ -560,6 +560,37 @@ export default function ActionCenter() {
       0
     );
 
+    // Project current month: recorded + scheduled events + ~5k per remaining Wednesday (match Forecasts tab)
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
+    const todayStart = new Date(today);
+    todayStart.setHours(0, 0, 0, 0);
+    // Match calendar logic: use scheduledEventDate || desiredEventDate, include new/in_process/scheduled/completed
+    const futureEventsThisMonth = (eventRequests || []).filter((e: any) => {
+      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      if (!eventDate || !['new', 'in_process', 'scheduled', 'completed'].includes(e.status)) return false;
+      const d = new Date(eventDate);
+      d.setHours(0, 0, 0, 0);
+      return d >= todayStart && d >= monthStart && d <= monthEnd;
+    });
+    const scheduledMonthTotal = futureEventsThisMonth.reduce(
+      (s: number, e: any) => s + (e.actualSandwichCount || e.estimatedSandwichCount || 0),
+      0
+    );
+    let remainingWednesdays = 0;
+    const checkDate = new Date(monthStart);
+    while (checkDate <= monthEnd) {
+      if (checkDate.getDay() === 3) {
+        const wedStart = new Date(checkDate);
+        wedStart.setHours(0, 0, 0, 0);
+        if (wedStart >= todayStart) remainingWednesdays++;
+      }
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+    const projectedMonthTotal = Math.round(
+      currentMonthTotal + scheduledMonthTotal + (5000 * remainingWednesdays)
+    );
+
     // Calculate this year's average monthly total (excluding current month if incomplete)
     const currentYearMonths = new Map<number, number>();
     collections.forEach((c) => {
@@ -578,10 +609,10 @@ export default function ActionCenter() {
 
     if (completedMonths.length > 0) {
       const yearToDateMonthlyAvg = completedMonths.reduce((sum, total) => sum + total, 0) / completedMonths.length;
-      const gapVsYearAvg = yearToDateMonthlyAvg - currentMonthTotal;
+      const gapVsYearAvg = yearToDateMonthlyAvg - projectedMonthTotal;
       const percentBelowAvg = (gapVsYearAvg / yearToDateMonthlyAvg) * 100;
 
-      // Only flag if significantly below this year's average (indicates unusual decline)
+      // Only flag if PROJECTED total would be significantly below this year's average
       if (gapVsYearAvg > 2000 && percentBelowAvg > 20) {
         const monthName = today.toLocaleDateString('en-US', { month: 'long' });
         actions.push({
@@ -589,10 +620,10 @@ export default function ActionCenter() {
           priority: 'medium',
           category: 'planning',
           title: `${monthName} Below ${currentYear} Average`,
-          description: `${Math.round(percentBelowAvg)}% below year-to-date monthly average (${gapVsYearAvg.toLocaleString()} fewer sandwiches)`,
+          description: `Projected total (~${projectedMonthTotal.toLocaleString()}) ${Math.round(percentBelowAvg)}% below year-to-date monthly average`,
           impact: `Current month tracking below typical ${currentYear} performance`,
           action: `Increase recruitment and event scheduling for remainder of ${monthName}`,
-          data: { currentMonthTotal, yearToDateMonthlyAvg, gap: gapVsYearAvg, percentBelowAvg },
+          data: { currentMonthTotal, projectedMonthTotal, yearToDateMonthlyAvg, gap: gapVsYearAvg, percentBelowAvg },
         });
       }
     }
@@ -825,59 +856,59 @@ export default function ActionCenter() {
 
       {/* Summary Stats - only show when there are action items */}
       {actionItems.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 min-w-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 min-w-0">
           <Card className="min-w-0 overflow-hidden">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">High Priority</p>
-                  <p className="text-2xl font-bold text-red-600">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 min-w-0">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-red-600/90">High Priority</p>
+                  <p className="text-xl sm:text-2xl font-bold text-red-600 mt-0.5">
                     {actionItems.filter((a) => a.priority === 'high').length}
                   </p>
                 </div>
-                <AlertTriangle className="h-8 w-8 text-red-600" />
+                <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Recruitment</p>
-                  <p className="text-2xl font-bold text-brand-primary">
+          <Card className="min-w-0 overflow-hidden">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 min-w-0">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-brand-primary/90">Recruitment</p>
+                  <p className="text-xl sm:text-2xl font-bold text-brand-primary mt-0.5">
                     {actionItems.filter((a) => a.category === 'volunteer-recruitment').length}
                   </p>
                 </div>
-                <Users className="h-8 w-8 text-brand-primary" />
+                <Users className="h-6 w-6 sm:h-8 sm:w-8 text-brand-primary flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Scheduling</p>
-                  <p className="text-2xl font-bold text-brand-teal">
+          <Card className="min-w-0 overflow-hidden">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 min-w-0">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-brand-teal/90">Scheduling</p>
+                  <p className="text-xl sm:text-2xl font-bold text-brand-teal mt-0.5">
                     {actionItems.filter((a) => a.category === 'scheduling').length}
                   </p>
                 </div>
-                <Calendar className="h-8 w-8 text-brand-teal" />
+                <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-brand-teal flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Recognition</p>
-                  <p className="text-2xl font-bold text-green-600">
+          <Card className="min-w-0 overflow-hidden">
+            <CardContent className="pt-4 sm:pt-6 pb-4 sm:pb-6 px-3 sm:px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 min-w-0">
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold uppercase tracking-wide text-green-600/90">Recognition</p>
+                  <p className="text-xl sm:text-2xl font-bold text-green-600 mt-0.5">
                     {actionItems.filter((a) => a.category === 'recognition').length}
                   </p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-green-600" />
+                <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 flex-shrink-0" />
               </div>
             </CardContent>
           </Card>
@@ -955,9 +986,9 @@ export default function ActionCenter() {
                   </div>
                 )}
 
-                <div className="mt-4">
+                <div className="mt-4 min-w-0">
                   <Button
-                    className="w-full"
+                    className="w-full whitespace-normal break-words text-left justify-start h-auto min-h-[48px] py-3"
                     size="lg"
                     onClick={() => {
                       // Handle different action item types
@@ -998,8 +1029,8 @@ export default function ActionCenter() {
                       }
                     }}
                   >
-                    {item.action}
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <span className="flex-1 min-w-0">{item.action}</span>
+                    <ArrowRight className="h-4 w-4 flex-shrink-0" />
                   </Button>
                 </div>
               </CardContent>
