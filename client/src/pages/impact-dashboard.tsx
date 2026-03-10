@@ -585,16 +585,14 @@ export default function ImpactDashboard() {
                         });
 
                         return Object.entries(weeklyData)
-                          .map(([week, data]) => ({
-                            week: new Date(week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                          .map(([weekKey, data]) => ({
+                            week: new Date(weekKey + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }),
                             sandwiches: data.sandwiches,
                             collections: data.collections,
+                            _sortKey: weekKey,
                           }))
-                          .sort((a, b) => {
-                            const dateA = new Date(a.week);
-                            const dateB = new Date(b.week);
-                            return dateA.getTime() - dateB.getTime();
-                          });
+                          .sort((a, b) => (a as any)._sortKey.localeCompare((b as any)._sortKey))
+                          .map(({ _sortKey, ...rest }) => rest);
                       })()}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />

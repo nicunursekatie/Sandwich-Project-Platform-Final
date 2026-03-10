@@ -58,6 +58,7 @@ interface MonthlyStats {
   avgPerCollection: number;
   hostParticipation: Record<string, number>;
   weeklyDistribution: number[];
+  groupEventsByWeek: number[]; // Group event count per week (Week 1–4+)
   individualCount: number;
   groupCount: number;
   groupEventCount: number;
@@ -236,6 +237,7 @@ export default function MonthlyComparisonAnalytics() {
           avgPerCollection: 0,
           hostParticipation: {},
           weeklyDistribution: [0, 0, 0, 0], // Week 1, 2, 3, 4+
+          groupEventsByWeek: [0, 0, 0, 0],
           individualCount: 0,
           groupCount: 0,
           groupEventCount: 0,
@@ -255,9 +257,12 @@ export default function MonthlyComparisonAnalytics() {
       stats.groupCount += groupSandwiches;
       stats.totalCollections += 1;
 
-      // Track group event count - increment when collection has group participants
+      // Track group event count and weekly breakdown when collection has group participants
+      const dayOfMonth = date.getDate();
+      const weekIndex = Math.min(Math.floor((dayOfMonth - 1) / 7), 3);
       if (groupSandwiches > 0) {
         stats.groupEventCount += 1;
+        stats.groupEventsByWeek[weekIndex] += 1;
       }
 
       // Track host participation
@@ -266,8 +271,6 @@ export default function MonthlyComparisonAnalytics() {
         (stats.hostParticipation[hostName] || 0) + totalSandwiches;
 
       // Weekly distribution within month
-      const dayOfMonth = date.getDate();
-      const weekIndex = Math.min(Math.floor((dayOfMonth - 1) / 7), 3);
       stats.weeklyDistribution[weekIndex] += totalSandwiches;
     });
 
@@ -663,11 +666,19 @@ export default function MonthlyComparisonAnalytics() {
           </div>
 
           <div className="bg-white p-4 rounded-lg border border-orange-200 border-l-4 min-w-0 overflow-hidden">
-            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Avg per Collection</div>
+            <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2 truncate">Group Events{selectedMonthAnalysis.isCurrentMonth ? ' (so far)' : ''}</div>
             <div className="text-2xl md:text-3xl font-bold text-brand-primary break-words overflow-hidden leading-tight" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
-              {selectedMonthAnalysis.selectedMonthData.avgPerCollection}
+              {selectedMonthAnalysis.selectedMonthData.groupEventCount}
             </div>
-            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">Efficiency metric</p>
+            <div className="mt-2 space-y-1 text-xs text-gray-600">
+              {selectedMonthAnalysis.selectedMonthData.groupEventsByWeek.map((count, i) => (
+                <div key={i} className="flex justify-between">
+                  <span>Week {i + 1}{i === 3 ? '+' : ''}:</span>
+                  <span className="font-medium">{count}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm truncate">Collections with group participants</p>
           </div>
 
           {selectedMonthAnalysis.rolling3MonthAvg && (
