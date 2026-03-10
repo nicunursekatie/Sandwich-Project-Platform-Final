@@ -31,7 +31,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
-import { CheckInReminderToggle } from '@/components/event-requests/CheckInReminderToggle';
+import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesManager';
 import {
   Tooltip,
   TooltipContent,
@@ -120,9 +120,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                   </span>
                 </div>
-                <CheckInReminderToggle
+                <ReminderRulesManager
                   eventRequestId={request.id}
                   tspContactUserId={request.tspContact || request.tspContactAssigned}
+                  eventStatus={request.status}
                 />
               </div>
             )}

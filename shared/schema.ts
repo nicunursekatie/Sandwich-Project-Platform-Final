@@ -2670,15 +2670,24 @@ export const eventReminders = pgTable(
   })
 );
 
-// Per-event check-in reminder settings (user-controlled recurring notifications)
+// Per-event reminder rules (user-controlled, multiple rule types per event)
+// Rule types:
+//   'no_contact'       - No contact attempt logged in X days (in-process events)
+//   'stale_event'      - No updates on event for X days (in-process events)
+//   'date_approaching_inprocess' - Desired date nearing while still in-process
+//   'date_approaching_scheduled' - Scheduled event date approaching (X days before)
+//   'staffing_unmet'   - Unmet staffing needs X days before scheduled event
+//   'general_checkin'  - General periodic check-in (legacy, backward-compatible)
 export const eventCheckInReminders = pgTable(
   'event_check_in_reminders',
   {
     id: serial('id').primaryKey(),
     eventRequestId: integer('event_request_id').notNull(),
     userId: varchar('user_id').notNull(), // TSP contact who set and receives the reminder
+    ruleType: varchar('rule_type').notNull().default('general_checkin'), // Type of reminder rule
     enabled: boolean('enabled').notNull().default(true),
-    frequency: varchar('frequency').notNull().default('weekly'), // 'daily', 'every_3_days', 'weekly', 'biweekly'
+    thresholdDays: integer('threshold_days').default(7), // Days threshold for condition (e.g., "no contact in X days", "X days before event")
+    frequency: varchar('frequency').notNull().default('weekly'), // 'daily', 'every_3_days', 'weekly', 'biweekly' (how often to re-check/re-notify)
     channel: varchar('channel').notNull().default('email'), // 'email', 'sms', 'both'
     lastSentAt: timestamp('last_sent_at'), // When the last reminder was sent
     nextDueAt: timestamp('next_due_at'), // Pre-calculated next send time
@@ -2686,12 +2695,14 @@ export const eventCheckInReminders = pgTable(
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => ({
-    eventUserIdx: uniqueIndex('idx_checkin_reminders_event_user').on(
+    eventUserRuleIdx: uniqueIndex('idx_checkin_reminders_event_user_rule').on(
       table.eventRequestId,
-      table.userId
+      table.userId,
+      table.ruleType
     ),
     nextDueIdx: index('idx_checkin_reminders_next_due').on(table.nextDueAt),
     enabledIdx: index('idx_checkin_reminders_enabled').on(table.enabled),
+    ruleTypeIdx: index('idx_checkin_reminders_rule_type').on(table.ruleType),
   })
 );
 
@@ -2703,6 +2714,18 @@ export const insertEventCheckInReminderSchema = createInsertSchema(eventCheckInR
 });
 export type EventCheckInReminder = typeof eventCheckInReminders.$inferSelect;
 export type InsertEventCheckInReminder = z.infer<typeof insertEventCheckInReminderSchema>;
+
+// Valid reminder rule types
+export const REMINDER_RULE_TYPES = {
+  NO_CONTACT: 'no_contact',
+  STALE_EVENT: 'stale_event',
+  DATE_APPROACHING_INPROCESS: 'date_approaching_inprocess',
+  DATE_APPROACHING_SCHEDULED: 'date_approaching_scheduled',
+  STAFFING_UNMET: 'staffing_unmet',
+  GENERAL_CHECKIN: 'general_checkin',
+} as const;
+
+export type ReminderRuleType = typeof REMINDER_RULE_TYPES[keyof typeof REMINDER_RULE_TYPES];
 
 // Event collaboration comments table for team discussion on event planning
 export const eventCollaborationComments = pgTable(

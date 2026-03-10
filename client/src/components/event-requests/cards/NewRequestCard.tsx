@@ -53,7 +53,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
-import { CheckInReminderToggle } from '@/components/event-requests/CheckInReminderToggle';
+import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesManager';
 import { MessageComposer } from '@/components/message-composer';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
@@ -1105,10 +1105,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     ).toLocaleDateString()}
                   </p>
                 )}
-                {/* Check-in Reminder Toggle */}
-                <CheckInReminderToggle
+                {/* Reminder Rules Manager */}
+                <ReminderRulesManager
                   eventRequestId={request.id}
                   tspContactUserId={request.tspContact || request.tspContactAssigned}
+                  eventStatus={request.status}
                 />
               </div>
             )}

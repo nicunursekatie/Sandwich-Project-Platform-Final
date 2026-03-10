@@ -1079,33 +1079,17 @@ export function initializeCronJobs() {
   // Volunteer reminder job - runs twice daily at 9 AM and 3 PM
   // Cron format: minute hour day-of-month month day-of-week
   // '0 9,15 * * *' = At 9:00 AM and 3:00 PM every day
+  // DISABLED: Automatic volunteer reminders replaced by user-controlled per-event
+  // check-in reminder toggles (CheckInReminderToggle component).
+  // TSP contacts can now enable/disable reminders individually per event.
   const volunteerReminderJob = cron.schedule('0 9,15 * * *', async () => {
-    cronLogger.info('Running 24-hour volunteer reminder check...');
-    try {
-      const result = await sendVolunteerReminders();
-      cronLogger.info('Volunteer reminder check completed', {
-        remindersSent: result.remindersSent,
-        volunteersProcessed: result.volunteersProcessed,
-        errors: result.errors,
-        timestamp: result.timestamp,
-      });
-    } catch (error) {
-      logError(
-        error as Error,
-        'Error running volunteer reminder cron job',
-        undefined,
-        { jobType: 'volunteer-reminder' }
-      );
-    }
+    cronLogger.info('Volunteer reminder job DISABLED - using per-event check-in toggles instead');
   }, {
-    scheduled: true,
+    scheduled: false,
     timezone: 'America/New_York'
   });
 
-  cronLogger.info('Volunteer reminder job scheduled successfully', {
-    schedule: 'Twice daily at 9 AM and 3 PM',
-    timezone: 'America/New_York',
-  });
+  cronLogger.info('Volunteer reminder job DISABLED (replaced by per-event check-in toggles)');
 
   // Monthly impact report generation - runs on the 1st of each month at 9:00 AM
   // Cron format: minute hour day-of-month month day-of-week

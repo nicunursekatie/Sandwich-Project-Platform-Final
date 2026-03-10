@@ -58,7 +58,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
-import { CheckInReminderToggle } from '@/components/event-requests/CheckInReminderToggle';
+import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesManager';
 import { getMissingIntakeInfo } from '@/lib/event-request-validation';
 import { getPrimaryContextualAction, getContextualTooltip } from '@/lib/contextual-actions';
 import { MessageComposer } from '@/components/message-composer';
@@ -1501,10 +1501,11 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     </Tooltip>
                   )}
                 </div>
-                {/* Check-in Reminder Toggle */}
-                <CheckInReminderToggle
+                {/* Reminder Rules Manager */}
+                <ReminderRulesManager
                   eventRequestId={request.id}
                   tspContactUserId={request.tspContact || request.tspContactAssigned}
+                  eventStatus={request.status}
                 />
               </div>
             )}
