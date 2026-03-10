@@ -270,9 +270,15 @@ export function detectChangedFields(
     return normalizedNew !== normalizedOrig;
   };
 
-  // Include only fields that actually changed
+  // Boolean resource flags that must ALWAYS be included in the payload.
+  // These are critical checkboxes (van driver needed, DHL van, self-transport)
+  // where silent omission causes the server to leave the old value in place.
+  // Sending the current form value every time is safe and cheap.
+  const ALWAYS_INCLUDE_FIELDS = new Set(['vanDriverNeeded', 'isDhlVan', 'selfTransport']);
+
+  // Include fields that actually changed, plus the always-include booleans
   Object.keys(eventData).forEach(key => {
-    if (hasChanged(key, eventData[key])) {
+    if (ALWAYS_INCLUDE_FIELDS.has(key) || hasChanged(key, eventData[key])) {
       filteredEventData[key] = eventData[key];
     }
   });
