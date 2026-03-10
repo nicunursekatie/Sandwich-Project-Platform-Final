@@ -138,6 +138,7 @@ interface ScheduledCardEnhancedProps {
   resolveRecipientName?: (id: string) => string;
   openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer', isVanDriver?: boolean) => void;
   handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  quickUpdateField?: (field: string, value: any) => void;
   canEdit?: boolean;
   // Next Action handlers
   onAddNextAction?: () => void;
@@ -210,6 +211,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   resolveRecipientName,
   openAssignmentDialog,
   handleRemoveAssignment,
+  quickUpdateField,
   canEdit = true,
   onAddNextAction,
   onEditNextAction,
@@ -2657,7 +2659,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                     <button
                                       onClick={() => {
                                         const newVal = Math.max(0, driverNeeded - 1);
-                                        updateFieldsMutation.mutate({ driversNeeded: newVal });
+                                        if (quickUpdateField) {
+                                          quickUpdateField('driversNeeded', newVal);
+                                        } else {
+                                          updateFieldsMutation.mutate({ driversNeeded: newVal });
+                                        }
                                       }}
                                       className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
                                       aria-label="Decrease drivers needed"
@@ -2668,7 +2674,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                     <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{driverNeeded}</span>
                                     <button
                                       onClick={() => {
-                                        updateFieldsMutation.mutate({ driversNeeded: driverNeeded + 1 });
+                                        if (quickUpdateField) {
+                                          quickUpdateField('driversNeeded', driverNeeded + 1);
+                                        } else {
+                                          updateFieldsMutation.mutate({ driversNeeded: driverNeeded + 1 });
+                                        }
                                       }}
                                       className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
                                       aria-label="Increase drivers needed"
@@ -2830,7 +2840,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <button
                                   onClick={() => {
                                     const newVal = Math.max(0, speakerNeeded - 1);
-                                    updateFieldsMutation.mutate({ speakersNeeded: newVal });
+                                    if (quickUpdateField) {
+                                      quickUpdateField('speakersNeeded', newVal);
+                                    } else {
+                                      updateFieldsMutation.mutate({ speakersNeeded: newVal });
+                                    }
                                   }}
                                   className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
                                   aria-label="Decrease speakers needed"
@@ -2841,7 +2855,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{speakerNeeded}</span>
                                 <button
                                   onClick={() => {
-                                    updateFieldsMutation.mutate({ speakersNeeded: speakerNeeded + 1 });
+                                    if (quickUpdateField) {
+                                      quickUpdateField('speakersNeeded', speakerNeeded + 1);
+                                    } else {
+                                      updateFieldsMutation.mutate({ speakersNeeded: speakerNeeded + 1 });
+                                    }
                                   }}
                                   className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
                                   aria-label="Increase speakers needed"
@@ -3078,7 +3096,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <button
                                   onClick={() => {
                                     const newVal = Math.max(0, volunteerNeeded - 1);
-                                    updateFieldsMutation.mutate({ volunteersNeeded: newVal });
+                                    if (quickUpdateField) {
+                                      quickUpdateField('volunteersNeeded', newVal);
+                                    } else {
+                                      updateFieldsMutation.mutate({ volunteersNeeded: newVal });
+                                    }
                                   }}
                                   className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
                                   aria-label="Decrease volunteers needed"
@@ -3089,7 +3111,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{volunteerNeeded}</span>
                                 <button
                                   onClick={() => {
-                                    updateFieldsMutation.mutate({ volunteersNeeded: volunteerNeeded + 1 });
+                                    if (quickUpdateField) {
+                                      quickUpdateField('volunteersNeeded', volunteerNeeded + 1);
+                                    } else {
+                                      updateFieldsMutation.mutate({ volunteersNeeded: volunteerNeeded + 1 });
+                                    }
                                   }}
                                   className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
                                   aria-label="Increase volunteers needed"

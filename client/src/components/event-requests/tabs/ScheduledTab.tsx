@@ -628,6 +628,13 @@ export const ScheduledTab: React.FC = () => {
                 resolveRecipientName={resolveRecipientName}
                 openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
                 handleRemoveAssignment={(type, personId) => handleRemoveAssignment(personId, type, request.id)}
+                quickUpdateField={(field, value) => {
+                  updateScheduledFieldMutation.mutate({
+                    id: request.id,
+                    field,
+                    value,
+                  });
+                }}
                 canEdit={true}
                 onAddNextAction={() => {
                   setNextActionEventRequest(request);

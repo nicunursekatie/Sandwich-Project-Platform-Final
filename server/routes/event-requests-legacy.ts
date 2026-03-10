@@ -2878,29 +2878,51 @@ router.patch(
       // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
       if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
         const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
-        
+
         if (totalAssignedDrivers > currentDriversNeeded) {
           processedUpdates.driversNeeded = totalAssignedDrivers;
         }
       }
 
+      // If speakersNeeded is being manually updated, ensure it's not less than assigned speakers
+      if (processedUpdates.speakersNeeded !== undefined && processedUpdates.speakerDetails === undefined) {
+        const assignedSpeakerCount = (typeof originalEvent.speakerDetails === 'object' && originalEvent.speakerDetails !== null)
+          ? Object.keys(originalEvent.speakerDetails).length
+          : 0;
+        if (processedUpdates.speakersNeeded < assignedSpeakerCount) {
+          processedUpdates.speakersNeeded = assignedSpeakerCount;
+        }
+      }
+
+      // Auto-adjust speakersNeeded when speaker assignments change
       if (processedUpdates.speakerDetails !== undefined) {
         const assignedSpeakerCount = (typeof processedUpdates.speakerDetails === 'object' && processedUpdates.speakerDetails !== null)
-          ? Object.keys(processedUpdates.speakerDetails).length 
+          ? Object.keys(processedUpdates.speakerDetails).length
           : 0;
         const currentSpeakersNeeded = originalEvent.speakersNeeded || 0;
-        
+
         if (assignedSpeakerCount > currentSpeakersNeeded) {
           processedUpdates.speakersNeeded = assignedSpeakerCount;
         }
       }
 
+      // If volunteersNeeded is being manually updated, ensure it's not less than assigned volunteers
+      if (processedUpdates.volunteersNeeded !== undefined && processedUpdates.assignedVolunteerIds === undefined) {
+        const assignedVolunteerCount = Array.isArray(originalEvent.assignedVolunteerIds)
+          ? originalEvent.assignedVolunteerIds.length
+          : 0;
+        if (processedUpdates.volunteersNeeded < assignedVolunteerCount) {
+          processedUpdates.volunteersNeeded = assignedVolunteerCount;
+        }
+      }
+
+      // Auto-adjust volunteersNeeded when volunteer assignments change
       if (processedUpdates.assignedVolunteerIds !== undefined) {
-        const assignedVolunteerCount = Array.isArray(processedUpdates.assignedVolunteerIds) 
-          ? processedUpdates.assignedVolunteerIds.length 
+        const assignedVolunteerCount = Array.isArray(processedUpdates.assignedVolunteerIds)
+          ? processedUpdates.assignedVolunteerIds.length
           : 0;
         const currentVolunteersNeeded = originalEvent.volunteersNeeded || 0;
-        
+
         if (assignedVolunteerCount > currentVolunteersNeeded) {
           processedUpdates.volunteersNeeded = assignedVolunteerCount;
         }
