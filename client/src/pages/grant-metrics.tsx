@@ -47,6 +47,7 @@ import {
   PieChartIcon,
   TrendingDown,
   Activity,
+  Briefcase,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -151,8 +152,8 @@ export default function GrantMetrics() {
     staleTime: 60000,
   });
 
-  // Hardcoded host count (actual database has 34 active hosts)
-  const totalHosts = 34;
+  // Hardcoded host count (35 active host homes)
+  const totalHosts = 35;
 
   // Process recipients data
   const recipients = recipientsData || [];
@@ -169,14 +170,23 @@ export default function GrantMetrics() {
     const byRegion: Record<string, number> = {};
 
     activeRecipients.forEach((r: any) => {
-      if (r.focusArea) {
-        byFocusArea[r.focusArea] = (byFocusArea[r.focusArea] || 0) + 1;
-      }
-      // Use geocoded location to determine region when lat/long available; otherwise fall back to manual region
+      const areas =
+        Array.isArray(r.focusAreas) && r.focusAreas.length > 0
+          ? r.focusAreas
+          : r.focusArea
+            ? [r.focusArea]
+            : [];
+      areas.forEach((area: string) => {
+        const trimmed = area?.trim?.();
+        if (trimmed) {
+          byFocusArea[trimmed] = (byFocusArea[trimmed] || 0) + 1;
+        }
+      });
+      // Use geocoded location only — derive region from coordinates; never use manual region (informal values like "Dunwoody (Karen)" deprecated)
       const region =
         r.latitude && r.longitude
           ? getRegionFromCoordinates(r.latitude, r.longitude)
-          : (r.region || 'Not geocoded');
+          : 'Not geocoded';
       byRegion[region] = (byRegion[region] || 0) + 1;
     });
 
@@ -778,7 +788,7 @@ export default function GrantMetrics() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">10,000+</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Weekly baseline (up from 1,000 in 2020)</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Peak week baseline (up from 1,000 in 2020)</div>
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">35</div>
@@ -1885,7 +1895,7 @@ export default function GrantMetrics() {
                       </div>
                     ))}
                   {Object.keys(recipientMetrics.byFocusArea).length === 0 && (
-                    <p className="text-sm text-gray-500 italic">Focus areas being categorized...</p>
+                    <p className="text-sm text-gray-500 italic">No focus areas set. Add focus areas in Recipients Management.</p>
                   )}
                 </div>
               </div>
@@ -1915,14 +1925,14 @@ export default function GrantMetrics() {
             </div>
 
             <div className="bg-gradient-to-r from-[#E0F2F1] to-white p-5 rounded-lg border border-[#007E8C]/30">
-              <h3 className="font-bold text-gray-900 mb-3">Weekly Distribution Capacity</h3>
+              <h3 className="font-bold text-gray-900 mb-3">Estimated Weekly Need</h3>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-3xl font-black text-[#007E8C]">
                     {recipientMetrics.totalWeeklyCapacity.toLocaleString()}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Estimated weekly sandwich capacity across all {recipientMetrics.total} recipient partners
+                    Estimated weekly sandwich need across all {recipientMetrics.total} recipient partners
                   </p>
                 </div>
                 <BarChart3 className="w-16 h-16 text-[#007E8C]/30" />
@@ -2001,16 +2011,15 @@ export default function GrantMetrics() {
                   </h3>
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-4xl font-black text-[#FBAD3F]">
-                        {eventMetrics.socialMediaPostsCompleted}
-                      </div>
+                      <div className="text-4xl font-black text-[#FBAD3F]">~95%</div>
                       <p className="text-sm text-gray-600 mt-1">
-                        Organizations shared posts
+                        of group events include social media posts
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        {eventMetrics.totalEvents > 0
-                          ? Math.round((eventMetrics.socialMediaPostsCompleted / eventMetrics.totalEvents) * 100)
-                          : 0}% engagement rate
+                        Partners frequently tag @TheSandwichProject in their posts
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1 italic">
+                        (Event-level tracking coming soon)
                       </p>
                     </div>
                     <Mail className="w-16 h-16 text-[#FBAD3F]/20" />
@@ -2101,13 +2110,31 @@ export default function GrantMetrics() {
                   <div>
                     <h3 className="font-bold text-gray-900 mb-2">Technology & Systems</h3>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Current:</strong> Custom-built platform for collection tracking, volunteer coordination, and impact reporting
+                      <strong>Current:</strong> Full-featured custom platform including collection tracking, event request intake and scheduling, recipient and host management, driver planning with route optimization, volunteer coordination, grant metrics and impact analytics, real-time messaging, email/SMS notifications, Google Sheets sync, and meeting management. Built to scale with our operations.
                     </p>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Future Need:</strong> Mobile app for real-time volunteer coordination and automated route optimization
+                      <strong>Cost context:</strong> A traditional development firm would typically charge $75K–150K+ to build a platform of this scope. This app was built at no cost by a volunteer developer, with minimal spend on AI-assisted development tools.
                     </p>
                     <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30">
-                      Est. Cost: $15K-25K (development)
+                      Equivalent value: $75K–150K+ (built free by volunteer)
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-[#FEF4E0] to-white p-5 rounded-lg border-l-4 border-[#FBAD3F]">
+                <div className="flex items-start gap-4">
+                  <Briefcase className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Paid Administrative Staff</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Need:</strong> Full-time paid staff to handle the volume of administrative work. We have enough admin tasks — recipient coordination, data entry, scheduling support, reporting, and operational follow-up — to fill a full-time role.
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Impact:</strong> This is the last major capacity gap. With an Executive Director in place and technology built, operational admin support would free volunteer leaders to focus on growth, partnerships, and community engagement.
+                    </p>
+                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
+                      Funding needed: full-time salary + benefits
                     </Badge>
                   </div>
                 </div>

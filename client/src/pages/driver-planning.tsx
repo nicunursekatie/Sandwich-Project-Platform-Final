@@ -27,6 +27,7 @@ import {
   getSpeakerIds, getSpeakerCount,
   getVolunteerIds, getVolunteerCount
 } from '@/lib/assignment-utils';
+import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -4560,9 +4561,9 @@ export default function DriverPlanningDashboard() {
                                 Needs ~{recipient.estimatedSandwiches} sandwiches
                               </div>
                             )}
-                            {recipient.region && (
+                            {getRecipientDisplayRegion(recipient) && (
                               <div className="mt-0.5 text-gray-500 pl-5 text-[10px]">
-                                {recipient.region}
+                                {getRecipientDisplayRegion(recipient)}
                               </div>
                             )}
                           </button>

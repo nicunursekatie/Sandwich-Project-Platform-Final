@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 
 // Fix Leaflet default marker icon issue in bundled apps
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -248,7 +249,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
         address: r.address || '',
         latitude: lat,
         longitude: lng,
-        metadata: { region: r.region, sandwiches: r.estimatedSandwiches, contact: r.contactPersonName, phone: r.phone },
+        metadata: { region: getRecipientDisplayRegion(r), sandwiches: r.estimatedSandwiches, contact: r.contactPersonName, phone: r.phone },
       });
     });
 

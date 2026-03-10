@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/collapsible';
 import TSPContactManager from './tsp-contact-manager';
 import { RecipientForm, RecipientCard } from './recipients';
+import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
 import { useRecipientForm } from '@/hooks/useRecipientForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -134,7 +135,7 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
           recipient.email?.toLowerCase().includes(term) ||
           recipient.phone?.toLowerCase().includes(term) ||
           recipient.address?.toLowerCase().includes(term) ||
-          recipient.region?.toLowerCase().includes(term) ||
+          getRegionFromCoordinates(recipient.latitude, recipient.longitude).toLowerCase().includes(term) ||
           recipient.contactPersonName?.toLowerCase().includes(term) ||
           recipient.contactPersonEmail?.toLowerCase().includes(term) ||
           (recipient as any).secondContactPersonName?.toLowerCase().includes(term) ||
@@ -161,7 +162,12 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
     }
 
     if (regionFilter !== 'all') {
-      filtered = filtered.filter((recipient) => recipient.region === regionFilter);
+      filtered = filtered.filter((recipient) => {
+        const derivedRegion = recipient.latitude && recipient.longitude
+          ? getRegionFromCoordinates(recipient.latitude, recipient.longitude)
+          : 'Not geocoded';
+        return derivedRegion === regionFilter;
+      });
     }
 
     if (tspContactFilter !== 'all') {
@@ -216,9 +222,13 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
     return recipients.filter((r) => r.status === 'inactive');
   }, [recipients]);
 
-  // Get unique values for filter dropdowns
+  // Get unique values for filter dropdowns (derived from geocoded coords only; no manual region)
   const uniqueRegions = useMemo(() => {
-    const regions = recipients.map((r) => r.region).filter(Boolean);
+    const regions = recipients.map((r) =>
+      r.latitude && r.longitude
+        ? getRegionFromCoordinates(r.latitude, r.longitude)
+        : 'Not geocoded'
+    );
     return [...new Set(regions)].sort();
   }, [recipients]);
 

@@ -10,6 +10,7 @@ import {
   TooltipProvider,
 } from '@/components/ui/tooltip';
 import TSPContactManager from '../tsp-contact-manager';
+import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 import type { Recipient } from '@shared/schema';
 
 interface RecipientCardProps {
@@ -121,12 +122,15 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
             <span>{recipient.address}</span>
           </div>
         )}
-        {recipient.region && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <MapPin className="w-4 h-4" />
-            <span className="font-medium">Region:</span> <span>{recipient.region}</span>
-          </div>
-        )}
+        {(() => {
+          const displayRegion = getRecipientDisplayRegion(recipient);
+          return displayRegion ? (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <MapPin className="w-4 h-4" />
+              <span className="font-medium">Region:</span> <span>{displayRegion}</span>
+            </div>
+          ) : null;
+        })()}
         {recipient.preferences && (
           <div className="text-sm text-slate-600">
             <strong>Preferences:</strong> {recipient.preferences}

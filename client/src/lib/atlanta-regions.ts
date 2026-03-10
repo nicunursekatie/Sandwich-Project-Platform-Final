@@ -92,3 +92,16 @@ export function getRegionFromCoordinates(
 
   return 'Outside Metro Atlanta';
 }
+
+/**
+ * Get display region for a recipient. Uses geocoded coordinates only.
+ * Returns null when recipient is not geocoded — do not use the manual region field,
+ * as it may contain informal values like "Dunwoody (Karen)" or "Winder/Loganville".
+ */
+export function getRecipientDisplayRegion(recipient: {
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+}): string | null {
+  const region = getRegionFromCoordinates(recipient.latitude, recipient.longitude);
+  return region === 'Not geocoded' ? null : region;
+}

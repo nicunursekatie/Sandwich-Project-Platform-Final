@@ -46,6 +46,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 import { getDriverIds, getSpeakerIds, getVolunteerIds } from '@/lib/assignment-utils';
+import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 
@@ -859,8 +860,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                         <div key={recipientId} className="flex items-center justify-between bg-white p-2 rounded border">
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{recipient?.name || `Recipient #${recipientId}`}</span>
-                            {recipient?.region && (
-                              <span className="text-xs text-gray-500">{recipient.region}</span>
+                            {getRecipientDisplayRegion(recipient) && (
+                              <span className="text-xs text-gray-500">{getRecipientDisplayRegion(recipient)}</span>
                             )}
                             {recipient?.address && (
                               <span className="text-xs text-gray-400">{recipient.address}</span>
@@ -902,7 +903,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                         <SelectItem key={r.id} value={String(r.id)}>
                           <div className="flex flex-col">
                             <span>{r.name}</span>
-                            {r.region && <span className="text-xs text-gray-500">{r.region}</span>}
+                            {getRecipientDisplayRegion(r) && <span className="text-xs text-gray-500">{getRecipientDisplayRegion(r)}</span>}
                           </div>
                         </SelectItem>
                       ))}

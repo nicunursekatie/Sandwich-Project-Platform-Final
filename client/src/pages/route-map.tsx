@@ -23,6 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import { useToast } from '@/hooks/use-toast';
 import { PermissionDenied } from '@/components/permission-denied';
+import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 import type { Recipient } from '@shared/schema';
 
 // Fix Leaflet default marker icon issue in bundled apps
@@ -334,11 +335,14 @@ export default function LocationsMapView() {
     // Filter by search term
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
-      result = result.filter(r =>
-        r.name.toLowerCase().includes(search) ||
-        r.address?.toLowerCase().includes(search) ||
-        r.region?.toLowerCase().includes(search)
-      );
+      result = result.filter(r => {
+        const derivedRegion = getRecipientDisplayRegion(r);
+        return (
+          r.name.toLowerCase().includes(search) ||
+          r.address?.toLowerCase().includes(search) ||
+          (derivedRegion?.toLowerCase().includes(search) ?? false)
+        );
+      });
     }
 
     // Add distances and sort if there's a searched location
@@ -635,8 +639,8 @@ export default function LocationsMapView() {
                           <div className="flex items-start justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="font-semibold text-gray-900 text-sm">{recipient.name}</div>
-                              {recipient.region && (
-                                <Badge variant="outline" className="text-xs mt-1">{recipient.region}</Badge>
+                              {getRecipientDisplayRegion(recipient) && (
+                                <Badge variant="outline" className="text-xs mt-1">{getRecipientDisplayRegion(recipient)}</Badge>
                               )}
                             </div>
                             {recipient.distance !== undefined && (
@@ -770,8 +774,8 @@ export default function LocationsMapView() {
                 <Popup>
                   <div className="p-2 min-w-[180px]">
                     <div className="font-semibold text-purple-600 mb-1">{recipient.name}</div>
-                    {recipient.region && (
-                      <Badge variant="outline" className="mb-2 text-xs">{recipient.region}</Badge>
+                    {getRecipientDisplayRegion(recipient) && (
+                      <Badge variant="outline" className="mb-2 text-xs">{getRecipientDisplayRegion(recipient)}</Badge>
                     )}
                     {recipient.address && (
                       <div className="text-xs text-gray-600 mb-2">{recipient.address}</div>
