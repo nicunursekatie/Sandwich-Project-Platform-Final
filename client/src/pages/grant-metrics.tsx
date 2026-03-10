@@ -2142,55 +2142,6 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Impact Statement - Print Summary */}
-        <Card className="bg-gradient-to-br from-[#236383] to-[#007E8C] text-white shadow-xl border-0">
-          <CardContent className="p-8">
-            {/* Lead with Impact + Consistency */}
-            <div className="text-center mb-6">
-              <div className="text-5xl font-black text-[#fbad3f] mb-2">
-                {metrics.totalSandwiches.toLocaleString()}
-              </div>
-              <h2 className="text-2xl font-bold">
-                sandwiches delivered over 291 consecutive weeks
-              </h2>
-              <p className="text-white/80 mt-1">Every single week since April 2020. No exceptions.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-              <div className="text-center">
-                <div className="text-4xl font-black mb-2">10,000+</div>
-                <p className="text-white/90 font-medium">Weekly baseline (up from 1,000)</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-black mb-2">35</div>
-                <p className="text-white/90 font-medium">Collection sites</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-black mb-2">4,000+</div>
-                <p className="text-white/90 font-medium">Volunteers</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-black mb-2">70+</div>
-                <p className="text-white/90 font-medium">Partner orgs served weekly</p>
-              </div>
-            </div>
-            <div className="mt-8 p-6 bg-white/10 rounded-lg backdrop-blur-sm space-y-4">
-              <p className="text-lg leading-relaxed">
-                Our journey began in mid-2020, when the COVID-19 pandemic profoundly impacted countless lives.
-                Even as the urgency of COVID has eased, housing costs, inflation, and systemic inequities
-                force many families into impossible choices between food and other basic needs.
-              </p>
-              <p className="text-lg leading-relaxed">
-                Through a network of dedicated volunteers, we create and deliver fresh, homemade sandwiches
-                to individuals in need. We believe in the transformative power of community, compassion, and kindness —
-                and in the fundamental right of every person to access nourishing food.
-              </p>
-              <p className="text-lg leading-relaxed font-semibold">
-                Fighting food insecurity. Fostering a spirit of service. Building a stronger community.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* AI Assistant */}
@@ -2206,9 +2157,9 @@ export default function GrantMetrics() {
             selectedQuarter,
           },
           summaryStats: {
-            totalCollections: collections.length,
-            totalSandwiches: stats?.totalSandwiches || 0,
-            activeHosts: stats?.totalHosts || 0,
+            totalCollections: metrics.totalCollections,
+            totalSandwiches: metrics.totalSandwiches,
+            activeHosts: totalHosts,
             uniqueGroups: stats?.uniqueGroups || 0,
           },
         }}
