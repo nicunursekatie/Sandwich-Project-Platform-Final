@@ -628,6 +628,94 @@ export function processCollectionDataForChart(
     .sort((a, b) => a.period.localeCompare(b.period));
 }
 
+export interface RecentTrendComparisons {
+  last3MonthsTotal: number;
+  previous3MonthsTotal: number;
+  samePeriodLastYearTotal: number;
+  samePeriod2YearsAgoTotal: number;
+  pctVsPrevious3Months: number | null;
+  pctVsSamePeriodLastYear: number | null;
+  pctVsSamePeriod2YearsAgo: number | null;
+}
+
+/**
+ * Compute period comparisons for Recent Trends view.
+ * Last 3 months vs previous 3 months, and vs same 3 months in prior years.
+ */
+export function calculateRecentTrendComparisons(
+  collections: SandwichCollection[]
+): RecentTrendComparisons {
+  if (!Array.isArray(collections) || collections.length === 0) {
+    return {
+      last3MonthsTotal: 0,
+      previous3MonthsTotal: 0,
+      samePeriodLastYearTotal: 0,
+      samePeriod2YearsAgoTotal: 0,
+      pctVsPrevious3Months: null,
+      pctVsSamePeriodLastYear: null,
+      pctVsSamePeriod2YearsAgo: null,
+    };
+  }
+
+  const now = new Date();
+  const last3Start = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+  const prev3Start = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+  const prev3End = new Date(now.getFullYear(), now.getMonth() - 3, 0, 23, 59, 59, 999);
+  const samePeriodLastYearStart = new Date(now.getFullYear() - 1, now.getMonth() - 3, 1);
+  const samePeriodLastYearEnd = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const samePeriod2YearsStart = new Date(now.getFullYear() - 2, now.getMonth() - 3, 1);
+  const samePeriod2YearsEnd = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  const last3Months = collections.filter((c) => {
+    if (!c.collectionDate) return false;
+    const date = parseCollectionDate(c.collectionDate);
+    return !Number.isNaN(date.getTime()) && date >= last3Start && date <= now;
+  });
+  const previous3Months = collections.filter((c) => {
+    if (!c.collectionDate) return false;
+    const date = parseCollectionDate(c.collectionDate);
+    return !Number.isNaN(date.getTime()) && date >= prev3Start && date <= prev3End;
+  });
+  const samePeriodLastYear = collections.filter((c) => {
+    if (!c.collectionDate) return false;
+    const date = parseCollectionDate(c.collectionDate);
+    return !Number.isNaN(date.getTime()) && date >= samePeriodLastYearStart && date <= samePeriodLastYearEnd;
+  });
+  const samePeriod2YearsAgo = collections.filter((c) => {
+    if (!c.collectionDate) return false;
+    const date = parseCollectionDate(c.collectionDate);
+    return !Number.isNaN(date.getTime()) && date >= samePeriod2YearsStart && date <= samePeriod2YearsEnd;
+  });
+
+  const last3MonthsTotal = last3Months.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
+  const previous3MonthsTotal = previous3Months.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
+  const samePeriodLastYearTotal = samePeriodLastYear.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
+  const samePeriod2YearsAgoTotal = samePeriod2YearsAgo.reduce((sum, c) => sum + calculateTotalSandwiches(c), 0);
+
+  const pctVsPrevious3Months =
+    previous3MonthsTotal > 0
+      ? ((last3MonthsTotal - previous3MonthsTotal) / previous3MonthsTotal) * 100
+      : null;
+  const pctVsSamePeriodLastYear =
+    samePeriodLastYearTotal > 0
+      ? ((last3MonthsTotal - samePeriodLastYearTotal) / samePeriodLastYearTotal) * 100
+      : null;
+  const pctVsSamePeriod2YearsAgo =
+    samePeriod2YearsAgoTotal > 0
+      ? ((last3MonthsTotal - samePeriod2YearsAgoTotal) / samePeriod2YearsAgoTotal) * 100
+      : null;
+
+  return {
+    last3MonthsTotal,
+    previous3MonthsTotal,
+    samePeriodLastYearTotal,
+    samePeriod2YearsAgoTotal,
+    pctVsPrevious3Months,
+    pctVsSamePeriodLastYear,
+    pctVsSamePeriod2YearsAgo,
+  };
+}
+
 // ============================================================================
 // HOST PERFORMANCE FUNCTIONS
 // ============================================================================

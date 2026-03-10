@@ -48,6 +48,7 @@ import {
   calculateHostPerformance,
   calculateTrendAnalysis,
   calculateImpactMetrics,
+  calculateRecentTrendComparisons,
   parseCollectionDate,
   calculateTotalSandwiches,
   type DateRangeFilter,
@@ -68,7 +69,7 @@ export default function ImpactDashboard() {
   const [chartView, setChartView] = useState<'daily' | 'weekly' | 'monthly'>(
     'monthly'
   );
-  const [dateRange, setDateRange] = useState<DateRangeFilter>('1year');
+  const [dateRange, setDateRange] = useState<DateRangeFilter>('3months');
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
 
   // Use shared collections data hook
@@ -87,6 +88,11 @@ export default function ImpactDashboard() {
 
   const trendAnalysis = useMemo(
     () => calculateTrendAnalysis(collections),
+    [collections]
+  );
+
+  const recentTrendComparisons = useMemo(
+    () => calculateRecentTrendComparisons(collections),
     [collections]
   );
 
@@ -311,37 +317,39 @@ export default function ImpactDashboard() {
                       </CardDescription>
                     </div>
 
-                    {/* Date Range Controls */}
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant={dateRange === '3months' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setDateRange('3months')}
-                      >
-                        3 Months
-                      </Button>
-                      <Button
-                        variant={dateRange === '6months' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setDateRange('6months')}
-                      >
-                        6 Months
-                      </Button>
-                      <Button
-                        variant={dateRange === '1year' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setDateRange('1year')}
-                      >
-                        1 Year
-                      </Button>
-                      <Button
-                        variant={dateRange === 'all' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setDateRange('all')}
-                      >
-                        All Time
-                      </Button>
-                    </div>
+                    {/* Date Range Controls - hidden for Recent Trends (locked to 3 months) */}
+                    {trendsView !== 'recent' && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant={dateRange === '3months' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('3months')}
+                        >
+                          3 Months
+                        </Button>
+                        <Button
+                          variant={dateRange === '6months' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('6months')}
+                        >
+                          6 Months
+                        </Button>
+                        <Button
+                          variant={dateRange === '1year' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('1year')}
+                        >
+                          1 Year
+                        </Button>
+                        <Button
+                          variant={dateRange === 'all' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setDateRange('all')}
+                        >
+                          All Time
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -425,11 +433,80 @@ export default function ImpactDashboard() {
                     Period Summary
                   </CardTitle>
                   <CardDescription>
-                    Key metrics for the selected time range
+                    {trendsView === 'recent'
+                      ? 'Last 3 months vs. prior periods'
+                      : 'Key metrics for the selected time range'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {chartData && chartData.length > 0 ? (
+                  {trendsView === 'recent' ? (
+                    <>
+                      <div className="bg-brand-primary-lighter p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-brand-primary">
+                          {recentTrendComparisons.last3MonthsTotal.toLocaleString()}
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">Last 3 Months Total</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-teal-50 p-4 rounded-lg border border-teal-100">
+                          <div className="text-lg font-semibold text-teal-800">
+                            vs. Previous 3 Months
+                          </div>
+                          <div className="text-2xl font-bold text-teal-700 mt-1">
+                            {recentTrendComparisons.previous3MonthsTotal.toLocaleString()}
+                          </div>
+                          {recentTrendComparisons.pctVsPrevious3Months !== null && (
+                            <p className={`text-sm mt-1 font-medium ${
+                              recentTrendComparisons.pctVsPrevious3Months >= 0 ? 'text-green-700' : 'text-amber-700'
+                            }`}>
+                              {recentTrendComparisons.pctVsPrevious3Months >= 0 ? '+' : ''}
+                              {recentTrendComparisons.pctVsPrevious3Months.toFixed(1)}%
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="bg-amber-50 p-4 rounded-lg border border-amber-100">
+                          <div className="text-lg font-semibold text-amber-800">
+                            vs. Same 3 Months Last Year
+                          </div>
+                          <div className="text-2xl font-bold text-amber-700 mt-1">
+                            {recentTrendComparisons.samePeriodLastYearTotal.toLocaleString()}
+                          </div>
+                          {recentTrendComparisons.pctVsSamePeriodLastYear !== null && (
+                            <p className={`text-sm mt-1 font-medium ${
+                              recentTrendComparisons.pctVsSamePeriodLastYear >= 0 ? 'text-green-700' : 'text-amber-700'
+                            }`}>
+                              {recentTrendComparisons.pctVsSamePeriodLastYear >= 0 ? '+' : ''}
+                              {recentTrendComparisons.pctVsSamePeriodLastYear.toFixed(1)}%
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {recentTrendComparisons.samePeriod2YearsAgoTotal > 0 && (
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <div className="text-sm font-semibold text-gray-700">
+                            Same 3 Months (2 Years Ago): {recentTrendComparisons.samePeriod2YearsAgoTotal.toLocaleString()}
+                          </div>
+                          {recentTrendComparisons.pctVsSamePeriod2YearsAgo !== null && (
+                            <p className={`text-sm mt-1 font-medium ${
+                              recentTrendComparisons.pctVsSamePeriod2YearsAgo >= 0 ? 'text-green-700' : 'text-amber-700'
+                            }`}>
+                              {recentTrendComparisons.pctVsSamePeriod2YearsAgo >= 0 ? '+' : ''}
+                              {recentTrendComparisons.pctVsSamePeriod2YearsAgo.toFixed(1)}% vs. then
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="pt-4 border-t">
+                        <p className="text-sm text-gray-600">
+                          Rolling 3-month comparison • Last 3 months vs. the 3 months before it, and vs. same calendar period in prior years
+                        </p>
+                      </div>
+                    </>
+                  ) : chartData && chartData.length > 0 ? (
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-brand-primary-lighter p-4 rounded-lg">
@@ -445,16 +522,6 @@ export default function ImpactDashboard() {
                           </div>
                           <p className="text-sm text-gray-600 mt-1">Total Collections</p>
                         </div>
-                      </div>
-
-                      <div className="bg-brand-primary-light p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-brand-primary">
-                          {Math.round(
-                            chartData.reduce((sum, item) => sum + item.sandwiches, 0) /
-                            chartData.reduce((sum, item) => sum + item.collections, 0)
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">Average Sandwiches per Collection</p>
                       </div>
 
                       <div className="pt-4 border-t">
