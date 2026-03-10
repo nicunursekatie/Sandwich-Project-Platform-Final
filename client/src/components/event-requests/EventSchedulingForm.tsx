@@ -525,6 +525,61 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const sessionKey = `${currentEventId}-${fullEventRequest ? 'full' : 'partial'}`;
 
       if (formInitSessionRef.current === sessionKey && formInitialized) return;
+
+      // UPGRADE PATH: When transitioning from partial → full data, preserve user edits
+      // instead of wiping the form. Only update the baseline (originalFormDataRef) so
+      // change detection works against the complete server data.
+      const prevSessionKey = formInitSessionRef.current || '';
+      const prevEventId = prevSessionKey.replace(/-(?:partial|full)$/, '');
+      const currentEventIdStr = String(currentEventId);
+      const isPartialToFull = prevEventId === currentEventIdStr && prevSessionKey.endsWith('-partial') && sessionKey.endsWith('-full') && formInitialized;
+      if (isPartialToFull) {
+        const fullServerData = buildFormDataFromEventRequest(
+          effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
+        );
+        const oldBaseline = originalFormDataRef.current || {};
+
+        // Find fields the user has changed since the partial init
+        const userEdits: Record<string, any> = {};
+        Object.keys(formData).forEach(key => {
+          const currentVal = (formData as any)[key];
+          const baselineVal = oldBaseline[key];
+          // Normalize for comparison
+          const norm = (v: any) => (v === '' || v === null || v === undefined) ? null : v;
+          if (Array.isArray(currentVal) && Array.isArray(baselineVal)) {
+            if (JSON.stringify(currentVal) !== JSON.stringify(baselineVal)) {
+              userEdits[key] = currentVal;
+            }
+          } else if (norm(currentVal) !== norm(baselineVal)) {
+            userEdits[key] = currentVal;
+          }
+        });
+
+        // Update baseline to full server data
+        originalFormDataRef.current = fullServerData;
+        formInitSessionRef.current = sessionKey;
+
+        // Re-apply user edits on top of full server data
+        if (Object.keys(userEdits).length > 0) {
+          setFormData({ ...fullServerData, ...userEdits } as any);
+          logger.log('🔄 Upgraded form to full data, preserved user edits:', Object.keys(userEdits));
+        } else {
+          setFormData(fullServerData as any);
+        }
+
+        // Update modes from full data
+        setSandwichMode(determineSandwichMode(
+          effectiveEventRequest?.sandwichTypes,
+          (effectiveEventRequest as any)?.estimatedSandwichCountMin,
+          (effectiveEventRequest as any)?.estimatedSandwichCountMax
+        ));
+        setActualSandwichMode(determineActualSandwichMode(effectiveEventRequest?.actualSandwichTypes));
+        const hasBreakdown = ((effectiveEventRequest as any)?.adultCount || 0) > 0 || ((effectiveEventRequest as any)?.childrenCount || 0) > 0;
+        setAttendeeMode(hasBreakdown ? 'breakdown' : 'total');
+        setShowCompletedDetails(effectiveEventRequest?.status === 'completed');
+        return;
+      }
+
       formInitSessionRef.current = sessionKey;
       setFormInitialized(false);
       setHasRecoveredData(false);
@@ -634,7 +689,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
       const payload = { ...data };
-      if (eventRequest?.updatedAt) payload._expectedVersion = eventRequest.updatedAt;
+      // Use effectiveEventRequest (full data) for version check, not the stale prop
+      const latestUpdatedAt = effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
+      if (latestUpdatedAt) payload._expectedVersion = latestUpdatedAt;
       return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },
     networkMode: 'always',
@@ -768,6 +825,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // Block submission if form not initialized
     if (eventRequest && !formInitialized) {
       setIsSubmitting(false);
+      logger.log('⛔ Save blocked: form not initialized');
       toast({ title: 'Please wait', description: 'Form is still loading. Please try again in a moment.', variant: 'destructive' });
       return;
     }
@@ -776,12 +834,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     const totalRelevantSandwiches = calculateRelevantSandwichCount(formData as EventFormData, sandwichMode);
     if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
       setIsSubmitting(false);
+      logger.log('⚠️ Save paused: speaker warning dialog shown');
       setShowSpeakerWarningDialog(true);
       return;
     }
 
     // Manual entry source required for new events
     if (isCreateMode && !formData.manualEntrySource) {
+      logger.log('⛔ Save blocked: no manual entry source');
       alert('Please select where this request came from before submitting.');
       setIsSubmitting(false);
       setShowContactInfo(true);
@@ -808,12 +868,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     if (eventRequest) {
       if (!eventRequest.id) {
+        logger.log('⛔ Save blocked: no event ID');
         toast({ title: 'Error', description: 'Event request ID is missing. Please refresh.', variant: 'destructive' });
         setIsSubmitting(false);
         return;
       }
 
       if (!originalFormDataRef.current) {
+        logger.log('⛔ Save blocked: originalFormDataRef is null');
         toast({ title: 'Please wait', description: 'Form is still initializing. Please try again.', variant: 'destructive' });
         setIsSubmitting(false);
         return;
@@ -825,11 +887,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // In edit mode, if nothing changed, tell the user
       if (mode === 'edit' && Object.keys(filteredEventData).length === 0) {
         setIsSubmitting(false);
+        logger.log('⛔ Save blocked: no changes detected. Van fields - formData:', formData.vanDriverNeeded, 'original:', originalFormDataRef.current.vanDriverNeeded);
         toast({ description: 'No changes detected. Make a change and try saving again.' });
         return;
       }
 
-      logger.log('🔄 Updating event:', eventRequest.id, 'Changed fields:', Object.keys(filteredEventData));
+      logger.log('🔄 Updating event:', eventRequest.id, 'Changed fields:', Object.keys(filteredEventData), 'Van:', filteredEventData.vanDriverNeeded);
       updateEventRequestMutation.mutate({ id: eventRequest.id, data: filteredEventData });
     } else {
       logger.log('➕ Creating new event');
