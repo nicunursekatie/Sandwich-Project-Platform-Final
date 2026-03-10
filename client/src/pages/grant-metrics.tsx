@@ -65,6 +65,7 @@ import {
 } from 'recharts';
 import { calculateTotalSandwiches, calculateGroupSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
 import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
+import { normalizeFocusArea, sortFocusAreaEntries } from '@/lib/focus-area-groups';
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
@@ -179,7 +180,10 @@ export default function GrantMetrics() {
       areas.forEach((area: string) => {
         const trimmed = area?.trim?.();
         if (trimmed) {
-          byFocusArea[trimmed] = (byFocusArea[trimmed] || 0) + 1;
+          const canonical = normalizeFocusArea(trimmed);
+          if (canonical) {
+            byFocusArea[canonical] = (byFocusArea[canonical] || 0) + 1;
+          }
         }
       });
       // Use geocoded location only — derive region from coordinates; never use manual region (informal values like "Dunwoody (Karen)" deprecated)
@@ -1881,11 +1885,10 @@ export default function GrantMetrics() {
               <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#47B3CB]/30">
                 <h3 className="font-bold text-gray-900 mb-3 flex items-center">
                   <Target className="w-5 h-5 mr-2 text-[#47B3CB]" />
-                  Recipients by Focus Area (Database)
+                  Recipients by Focus Area
                 </h3>
                 <div className="space-y-2">
-                  {Object.entries(recipientMetrics.byFocusArea)
-                    .sort(([, a], [, b]) => (b as number) - (a as number))
+                  {sortFocusAreaEntries(Object.entries(recipientMetrics.byFocusArea))
                     .map(([area, count]) => (
                       <div key={area} className="flex items-center justify-between text-sm">
                         <span className="text-gray-700 capitalize">{area}</span>

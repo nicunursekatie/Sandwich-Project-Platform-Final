@@ -51,6 +51,7 @@ import {
 import TSPContactManager from './tsp-contact-manager';
 import { RecipientForm, RecipientCard } from './recipients';
 import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
+import { normalizeFocusArea } from '@/lib/focus-area-groups';
 import { useRecipientForm } from '@/hooks/useRecipientForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -187,7 +188,7 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
         const areas = Array.isArray((recipient as any).focusAreas)
           ? (recipient as any).focusAreas
           : (recipient as any).focusArea ? [(recipient as any).focusArea] : [];
-        return areas.includes(focusAreaFilter);
+        return areas.some((a: string) => normalizeFocusArea(a) === focusAreaFilter);
       });
     }
 
@@ -255,7 +256,8 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       }
       return [];
     });
-    return [...new Set(allAreas)].sort();
+    const canonical = allAreas.map((a) => normalizeFocusArea(a)).filter(Boolean);
+    return [...new Set(canonical)].sort();
   }, [recipients]);
 
   // Mutations

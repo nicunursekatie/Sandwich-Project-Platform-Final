@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/tooltip';
 import TSPContactManager from '../tsp-contact-manager';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
+import { normalizeFocusArea } from '@/lib/focus-area-groups';
 import type { Recipient } from '@shared/schema';
 
 interface RecipientCardProps {
@@ -24,9 +25,10 @@ interface RecipientCardProps {
 }
 
 export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleStatus, highlighted, highlightRef }: RecipientCardProps) {
-  const focusAreas = Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0
+  const rawAreas = Array.isArray((recipient as any).focusAreas) && (recipient as any).focusAreas.length > 0
     ? (recipient as any).focusAreas
     : (recipient as any).focusArea ? [(recipient as any).focusArea] : [];
+  const focusAreas = [...new Set(rawAreas.map((a) => normalizeFocusArea(a)).filter(Boolean))];
 
   return (
     <Card ref={highlightRef} className={`border transition-all duration-700 ${highlighted ? 'border-brand-primary ring-2 ring-brand-primary/40 shadow-lg shadow-brand-primary/20 bg-brand-primary-lighter/30' : 'border-slate-200'}`}>
