@@ -285,15 +285,16 @@ export default function PredictiveForecasts() {
       }
     }
 
-    // Baseline expectation for individual donations per week (5k sandwiches)
+    // Baseline expectation for typical Wednesday location collections (~5k) - we never expect all sandwiches from events alone.
+    // For current week: add only if Wednesday hasn't passed (Fri-Sat-Sun-Mon-Tue). For future weeks: always include.
     const baselineIndividualExpectation = 5000;
+    const wednesdayHasPassed = isCurrentWeek && (dayOfWeek === 3 || dayOfWeek === 4); // Wed=3, Thu=4
+    const expectedTypicalWednesday = (isTargetWeekComplete || wednesdayHasPassed) ? 0 : baselineIndividualExpectation;
 
-    // Combined projection: Already collected + Scheduled events + Baseline individual expectation
-    // For past weeks (complete), just use actual total
-    // For current/future weeks, add baseline expectation
+    // Combined projection: Already collected + Scheduled events + typical Wednesday baseline (when still expected)
     const weeklyProjected = isTargetWeekComplete
       ? targetWeekTotal
-      : targetWeekTotal + scheduledWeeklyTotal + baselineIndividualExpectation;
+      : targetWeekTotal + scheduledWeeklyTotal + expectedTypicalWednesday;
 
     // Debug logging
     logger.log('=== WEEKLY FORECAST DEBUG ===');
@@ -400,7 +401,7 @@ export default function PredictiveForecasts() {
         scheduledEventCount: scheduledThisWeek.length,
         pastEvents: pastEventsTotal,
         pastEventCount: pastEventsThisWeek.length,
-        expectedIndividual: isTargetWeekComplete ? 0 : baselineIndividualExpectation,
+        expectedIndividual: expectedTypicalWednesday,
         average: Math.round(avgWeekly),
         vsAvg: weeklyVsAvg,
         absDiff: weeklyAbsDiff,

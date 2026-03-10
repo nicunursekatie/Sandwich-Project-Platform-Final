@@ -632,7 +632,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <a
                 href={`tel:${request.phone}`}
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words"
               >
                 {request.phone}
               </a>
@@ -725,7 +725,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                 <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <a
                   href={`tel:${(request as any).backupContactPhone}`}
-                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words"
                 >
                   {(request as any).backupContactPhone}
                 </a>
@@ -845,7 +845,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   );
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-[#E2F5F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl`}
+      className={`min-w-0 overflow-hidden transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-[#E2F5F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl`}
       style={{ borderLeftColor: statusBorderColors.new }}
     >
       <CardContent className="p-3">
@@ -905,7 +905,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           </div>
         ) : (
           onAddNextAction && (
-            <div className="mb-4 flex items-center justify-end">
+            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -1105,12 +1105,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     ).toLocaleDateString()}
                   </p>
                 )}
-                {/* Reminder Rules Manager */}
-                <ReminderRulesManager
-                  eventRequestId={request.id}
-                  tspContactUserId={request.tspContact || request.tspContactAssigned}
-                  eventStatus={request.status}
-                />
               </div>
             )}
           </div>
@@ -1270,6 +1264,12 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <p>Log a contact attempt or conversation</p>
               </TooltipContent>
             </Tooltip>
+
+            <ReminderRulesManager
+              eventRequestId={request.id}
+              tspContactUserId={request.tspContact || request.tspContactAssigned}
+              eventStatus={request.status}
+            />
 
             {onNonEvent && (
               <Tooltip>

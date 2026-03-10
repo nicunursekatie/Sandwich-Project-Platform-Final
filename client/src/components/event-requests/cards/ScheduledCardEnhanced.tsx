@@ -880,7 +880,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   return (
     <Card 
-      className="w-full bg-[#E4EFF6] border-l-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] transition-all border-[#D8DEE2] rounded-xl"
+      className="w-full min-w-0 overflow-hidden bg-[#E4EFF6] border-l-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] transition-all border-[#D8DEE2] rounded-xl"
       style={{ borderLeftColor: '#236383' }}
     >
       <CardContent className="p-3">
@@ -1520,7 +1520,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Action Buttons Section */}
         <TooltipProvider>
           <div className="mb-3">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {/* Message - always visible */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1826,7 +1826,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               onChange={(e) => setEditingValue(e.target.value)}
                               className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button size="sm" onClick={saveEdit} className="h-8 px-3 text-sm" aria-label="Save">
                                 <Save className="w-4 h-4 mr-1" aria-hidden="true" />
                                 Save
@@ -1855,7 +1855,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               onChange={(e) => setEditingValue(e.target.value)}
                               className="h-10 bg-white text-gray-900 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20 px-3"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Button size="sm" onClick={saveEdit} className="h-8 px-3 text-sm" aria-label="Save">
                                 <Save className="w-4 h-4 mr-1" aria-hidden="true" />
                                 Save
@@ -1883,7 +1883,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             onChange={setEditingValue}
                             className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button size="sm" onClick={saveEdit} className="h-8 px-3 text-sm" aria-label="Save">
                               <Save className="w-4 h-4 mr-1" aria-hidden="true" />
                               Save
@@ -2044,7 +2044,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               className="flex-1 bg-white text-gray-900"
                             />
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
                               onClick={() => {
@@ -2151,7 +2151,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             placeholder="Overnight holding location"
                             className="bg-white text-gray-900"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button size="sm" onClick={saveEdit}>
                               <Save className="w-3 h-3 mr-1" />
                               Save
@@ -2193,7 +2193,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             onChange={(e) => setEditingValue(e.target.value)}
                             className="bg-white text-gray-900"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button size="sm" onClick={saveEdit}>
                               <Save className="w-3 h-3 mr-1" />
                               Save
@@ -2242,7 +2242,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               <Package className="w-5 h-5 shrink-0" />
               {isEditingThisCard && editingField === 'sandwichTypes' ? (
                 <div className="flex-1 bg-white/10 rounded p-2 space-y-2">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
                       variant={inlineSandwichMode === 'total' ? 'default' : 'outline'}
@@ -2281,7 +2281,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
                   {inlineSandwichMode === 'range' && (
                     <div className="space-y-2">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Input
                           type="number"
                           value={inlineRangeMin}
@@ -2514,11 +2514,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <Edit2 className="w-3.5 h-3.5" />
                   </Button>
                 )}
-                <ReminderRulesManager
-                  eventRequestId={request.id}
-                  tspContactUserId={request.tspContact || request.tspContactAssigned}
-                  eventStatus={request.status}
-                />
               </div>
             )}
               </div>
@@ -3186,7 +3181,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           />
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button size="sm" onClick={saveEdit}>
                           <Save className="w-3 h-3 mr-1" />
                           Save
@@ -3302,7 +3297,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   placeholder="Add scheduling notes..."
                   autoFocus
                 />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button size="sm" onClick={saveEdit}>
                     <Save className="w-3 h-3 mr-1" />
                     Save
@@ -3391,7 +3386,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         placeholder="Add planning notes..."
                         autoFocus
                       />
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button size="sm" onClick={saveEdit}>
                           <Save className="w-3 h-3 mr-1" />
                           Save
@@ -3488,6 +3483,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
           </Button>
+          <ReminderRulesManager
+            eventRequestId={request.id}
+            tspContactUserId={request.tspContact || request.tspContactAssigned}
+            eventStatus={request.status}
+          />
           {onAiIntakeAssist && (
             <Button
               size="sm"

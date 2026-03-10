@@ -174,8 +174,10 @@ export default function ActionCenter() {
       0
     );
 
-    // Baseline expectation for individual donations per week (5k sandwiches)
+    // Baseline expectation for individual donations per week (5k sandwiches from typical Wednesday location collections)
     const baselineIndividualExpectation = 5000;
+    // Typical weekly average (~8k) - alert only when events + baseline would fall below this
+    const weeklyAverageThreshold = 8000;
 
     // Combined projection: Already collected + Scheduled events + Baseline individual expectation
     // This matches the Forecasts tab calculation for consistency
@@ -352,19 +354,7 @@ export default function ActionCenter() {
       });
     }
 
-    // Calculate average collections by day of week for forecasting
-    const dayOfWeekTotals = new Map<number, { total: number; count: number }>();
-    collections.forEach((c) => {
-      const date = parseCollectionDate(c.collectionDate);
-      const dow = date.getDay();
-      const current = dayOfWeekTotals.get(dow) || { total: 0, count: 0 };
-      dayOfWeekTotals.set(dow, {
-        total: current.total + calculateTotalSandwiches(c),
-        count: current.count + 1,
-      });
-    });
-
-    // Look ahead at next 4 weeks and forecast based on scheduled events + expected individual donations
+    // Look ahead at next 4 weeks and forecast based on scheduled events + typical Wednesday baseline
     for (let weekOffset = 0; weekOffset < 4; weekOffset++) {
       const weekStart = new Date(currentWeekStart);
       weekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7));
@@ -391,39 +381,35 @@ export default function ActionCenter() {
         0
       );
 
-      // Calculate expected individual donations for the week (or remaining days)
-      let expectedIndividualDonations = 0;
-      const currentDate = new Date(startDay);
-      while (currentDate <= weekEnd) {
-        const dow = currentDate.getDay();
-        const dayData = dayOfWeekTotals.get(dow);
-        if (dayData && dayData.count > 0) {
-          expectedIndividualDonations += dayData.total / dayData.count;
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-
-      // Total forecast = scheduled events + expected individual donations + already collected (if current week)
       const alreadyCollected = isCurrentWeek ? currentWeekTotal : 0;
-      const totalForecast = alreadyCollected + scheduledTotal + Math.round(expectedIndividualDonations);
+
+      // Expected typical Wednesday location collections (~5k) - we never expect all sandwiches from events alone.
+      // For current week: add only if Wednesday hasn't passed (Fri-Sat-Sun-Mon-Tue = days 5,6,0,1,2).
+      // For future weeks: always include it.
+      const wednesdayHasPassed = isCurrentWeek && (dayOfWeek === 3 || dayOfWeek === 4); // Wed=3, Thu=4
+      const expectedTypicalWednesday = wednesdayHasPassed ? 0 : baselineIndividualExpectation;
+
+      // Projected = already collected + group events + typical Wednesday baseline.
+      // Alert only when this combined total would fall below average (events alone are not the full picture).
+      const projectedWithBaseline = alreadyCollected + scheduledTotal + expectedTypicalWednesday;
 
       // Get historical average for comparison
       const historicalWeeks = Array.from(weekMap.values());
       const avgForWeek = historicalWeeks.length > 0
         ? historicalWeeks.reduce((a, b) => a + b, 0) / historicalWeeks.length
-        : avgWeekly;
+        : weeklyAverageThreshold;
 
-      // Flag if total forecast is significantly below average
-      const gap = avgForWeek - totalForecast;
+      // Flag only when events + typical Wednesday would be below average
+      const gap = avgForWeek - projectedWithBaseline;
       const percentBelow = avgForWeek > 0 ? (gap / avgForWeek) * 100 : 0;
 
       // Debug logging for action center
       if (weekOffset === 0) {
         logger.log('=== ACTION CENTER DEBUG (Current Week) ===');
-        logger.log('Total forecast:', totalForecast);
+        logger.log('Projected (collected + events + typical Wed):', projectedWithBaseline);
         logger.log('Already collected:', alreadyCollected);
         logger.log('Scheduled events total:', scheduledTotal);
-        logger.log('Expected individual donations:', Math.round(expectedIndividualDonations));
+        logger.log('Typical Wednesday baseline:', expectedTypicalWednesday);
         logger.log('Average weekly:', avgForWeek);
         logger.log('Gap:', gap);
         logger.log('Percent below:', percentBelow.toFixed(1) + '%');
@@ -431,7 +417,6 @@ export default function ActionCenter() {
       }
 
       // Only show "below average" warnings later in the week (Fri-Tue, days 5,6,0,1,2) OR if it's a future week
-      // Early in the week (Wed-Thu, days 3-4), we'll show planned group collections instead
       const isLaterInWeek = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0 || dayOfWeek === 1 || dayOfWeek === 2;
       const shouldShowBelowAverageWarning = weekOffset > 0 || isLaterInWeek;
 
@@ -445,10 +430,10 @@ export default function ActionCenter() {
           priority: weekOffset === 0 ? 'high' : weekOffset === 1 ? 'high' : 'medium',
           category: 'volunteer-recruitment',
           title: `${weekLabel}: Forecasted Below Average`,
-          description: `Forecast ${totalForecast.toLocaleString()} sandwiches vs ${Math.round(avgForWeek).toLocaleString()} average`,
-          impact: `Need ${Math.round(gap).toLocaleString()} more sandwiches to reach typical week`,
+          description: `Events + typical Wednesday (~${projectedWithBaseline.toLocaleString()}) vs ${Math.round(avgForWeek).toLocaleString()} average`,
+          impact: `Need ${Math.round(gap).toLocaleString()} more sandwiches from group events to reach typical week`,
           action: `Recruit volunteers for collections during ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
-          data: { weekStart, weekEnd, totalForecast, scheduledTotal, expectedIndividualDonations: Math.round(expectedIndividualDonations), avgForWeek, gap, scheduledEventCount: scheduledThisWeek.length },
+          data: { weekStart, weekEnd, projectedWithBaseline, scheduledTotal, expectedTypicalWednesday, avgForWeek, gap, scheduledEventCount: scheduledThisWeek.length },
         });
       }
     }

@@ -834,7 +834,7 @@ export interface ImpactMetrics {
   totalSandwiches: number;
   year2023Total: number;
   year2024Total: number;
-  year2025YTD: number;
+  year2026YTD: number;
   totalCollections: number;
   uniqueHosts: number;
   currentMonthTotal: number;
@@ -868,6 +868,7 @@ export function calculateImpactMetrics(
     2023: 0,
     2024: 0,
     2025: 0,
+    2026: 0,
   };
 
   // Always calculate from collections (collection log is source of truth)
@@ -909,7 +910,7 @@ export function calculateImpactMetrics(
     totalSandwiches,
     year2023Total: yearTotals[2023],
     year2024Total: yearTotals[2024],
-    year2025YTD: yearTotals[2025],
+    year2026YTD: yearTotals[2026],
     totalCollections,
     uniqueHosts: activeHostCount,
     currentMonthTotal,

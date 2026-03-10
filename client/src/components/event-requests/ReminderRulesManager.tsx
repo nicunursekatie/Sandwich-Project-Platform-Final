@@ -133,20 +133,21 @@ export function ReminderRulesManager({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className={`h-7 w-7 p-0 relative ${
+          className={`h-8 relative ${
             activeRuleCount > 0
-              ? 'text-[#007E8C] hover:bg-[#007E8C]/10'
-              : 'text-gray-400 hover:bg-gray-100'
+              ? 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'
+              : 'text-gray-500 hover:bg-gray-100'
           }`}
           title={activeRuleCount > 0 ? `${activeRuleCount} active reminder(s)` : 'Set up reminders'}
         >
-          <AlarmClock className="w-4 h-4" />
+          <AlarmClock className="w-4 h-4 mr-1" />
+          Reminders
           {activeRuleCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#007E8C] rounded-full text-white text-[8px] flex items-center justify-center font-bold">
+            <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px] bg-[#007E8C] text-white hover:bg-[#007E8C]">
               {activeRuleCount}
-            </span>
+            </Badge>
           )}
         </Button>
       </DialogTrigger>

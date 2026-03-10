@@ -743,7 +743,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           {request.phone && (
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-base whitespace-nowrap">{request.phone}</span>
+              <span className="text-base break-words">{request.phone}</span>
             </div>
           )}
           {request.eventAddress && (
@@ -818,7 +818,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                 <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <a
                   href={`tel:${(request as any).backupContactPhone}`}
-                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base whitespace-nowrap"
+                  className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words"
                 >
                   {(request as any).backupContactPhone}
                 </a>
@@ -923,7 +923,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
-      className={`transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-[#FFF4E5] shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl ${
+      className={`min-w-0 overflow-hidden transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-[#FFF4E5] shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl ${
         isStale ? 'border-l-[#A31C41]' : ''
       }`}
       style={!isStale ? { borderLeftColor: statusBorderColors.in_process } : {}}
@@ -1020,7 +1020,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           </div>
         ) : (
           onAddNextAction && (
-            <div className="mb-4 flex items-center justify-end">
+            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -1501,12 +1501,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     </Tooltip>
                   )}
                 </div>
-                {/* Reminder Rules Manager */}
-                <ReminderRulesManager
-                  eventRequestId={request.id}
-                  tspContactUserId={request.tspContact || request.tspContactAssigned}
-                  eventStatus={request.status}
-                />
               </div>
             )}
           </div>
@@ -1679,6 +1673,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               <MessageSquare className="w-4 h-4 mr-1" />
               Log Contact
             </Button>
+
+            <ReminderRulesManager
+              eventRequestId={request.id}
+              tspContactUserId={request.tspContact || request.tspContactAssigned}
+              eventStatus={request.status}
+            />
 
             {onResendToolkit && (
               <Tooltip>

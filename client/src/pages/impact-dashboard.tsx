@@ -179,12 +179,12 @@ export default function ImpactDashboard() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2" />
-                2025 Progress
+                2026 Progress
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {impactMetrics.year2025YTD?.toLocaleString()}
+                {impactMetrics.year2026YTD?.toLocaleString()}
               </div>
               <p className="text-white/90 text-sm">Year-to-date total</p>
             </CardContent>
@@ -695,10 +695,10 @@ export default function ImpactDashboard() {
                       <TrendingUp className="w-5 h-5 text-orange-600 mt-1" />
                       <div>
                         <p className="font-medium text-orange-900">
-                          2025 Progress
+                          2026 Progress
                         </p>
                         <p className="text-sm text-orange-700">
-                          {impactMetrics.year2025YTD?.toLocaleString()}{' '}
+                          {impactMetrics.year2026YTD?.toLocaleString()}{' '}
                           sandwiches collected year-to-date
                         </p>
                       </div>

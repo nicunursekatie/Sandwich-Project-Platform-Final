@@ -120,11 +120,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     {request.tspContact ? (resolveUserName ? resolveUserName(request.tspContact) : request.tspContact) : request.customTspContact}
                   </span>
                 </div>
-                <ReminderRulesManager
-                  eventRequestId={request.id}
-                  tspContactUserId={request.tspContact || request.tspContactAssigned}
-                  eventStatus={request.status}
-                />
               </div>
             )}
             {displayDate && (
@@ -174,7 +169,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
 
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-gray-50 shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl`}
+      className={`min-w-0 overflow-hidden transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-gray-50 shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl`}
       style={{ borderLeftColor: '#6B7280' }}
       data-testid={`card-stalled-${request.id}`}
     >
@@ -398,6 +393,12 @@ export const StalledCard: React.FC<StalledCardProps> = ({
                 <p>Log an outreach attempt</p>
               </TooltipContent>
             </Tooltip>
+
+            <ReminderRulesManager
+              eventRequestId={request.id}
+              tspContactUserId={request.tspContact || request.tspContactAssigned}
+              eventStatus={request.status}
+            />
 
             <div className="flex-1" />
 
