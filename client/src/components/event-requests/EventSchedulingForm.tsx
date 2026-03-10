@@ -529,7 +529,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // UPGRADE PATH: When transitioning from partial → full data, preserve user edits
       // instead of wiping the form. Only update the baseline (originalFormDataRef) so
       // change detection works against the complete server data.
-      const isPartialToFull = formInitSessionRef.current?.endsWith('-partial') && sessionKey.endsWith('-full') && formInitialized;
+      const prevSessionKey = formInitSessionRef.current || '';
+      const prevEventId = prevSessionKey.replace(/-(?:partial|full)$/, '');
+      const currentEventIdStr = String(currentEventId);
+      const isPartialToFull = prevEventId === currentEventIdStr && prevSessionKey.endsWith('-partial') && sessionKey.endsWith('-full') && formInitialized;
       if (isPartialToFull) {
         const fullServerData = buildFormDataFromEventRequest(
           effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
@@ -558,7 +561,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
         // Re-apply user edits on top of full server data
         if (Object.keys(userEdits).length > 0) {
-          setFormData(prev => ({ ...fullServerData, ...userEdits }));
+          setFormData({ ...fullServerData, ...userEdits } as any);
           logger.log('🔄 Upgraded form to full data, preserved user edits:', Object.keys(userEdits));
         } else {
           setFormData(fullServerData as any);
@@ -573,6 +576,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         setActualSandwichMode(determineActualSandwichMode(effectiveEventRequest?.actualSandwichTypes));
         const hasBreakdown = ((effectiveEventRequest as any)?.adultCount || 0) > 0 || ((effectiveEventRequest as any)?.childrenCount || 0) > 0;
         setAttendeeMode(hasBreakdown ? 'breakdown' : 'total');
+        setShowCompletedDetails(effectiveEventRequest?.status === 'completed');
         return;
       }
 
