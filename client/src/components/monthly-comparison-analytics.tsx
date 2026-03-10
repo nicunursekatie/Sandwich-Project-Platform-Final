@@ -626,7 +626,7 @@ export default function MonthlyComparisonAnalytics() {
                   <div className="w-3 h-3 bg-[#FBAD3F] rounded-full flex-shrink-0"></div>
                   <span className="text-sm font-medium text-gray-700 truncate">Individual</span>
                 </div>
-                <div className="text-lg md:text-xl font-bold text-brand-primary whitespace-nowrap flex-shrink-0 ml-2">
+                <div className="text-lg md:text-xl font-bold text-brand-primary break-words min-w-0 ml-2">
                   {selectedMonthAnalysis.individualSandwiches.toLocaleString()}
                 </div>
               </div>
@@ -637,7 +637,7 @@ export default function MonthlyComparisonAnalytics() {
                   <div className="w-3 h-3 bg-[#236383] rounded-full flex-shrink-0"></div>
                   <span className="text-sm font-medium text-gray-700 truncate">Group Events</span>
                 </div>
-                <div className="text-lg md:text-xl font-bold text-brand-primary whitespace-nowrap flex-shrink-0 ml-2">
+                <div className="text-lg md:text-xl font-bold text-brand-primary break-words min-w-0 ml-2">
                   {selectedMonthAnalysis.groupSandwiches.toLocaleString()}
                 </div>
               </div>

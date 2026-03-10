@@ -82,9 +82,13 @@ export default function PredictiveForecasts() {
       weeklyMonitoring.filter((status: any) => status.hasSubmitted).length : 0;
     const totalCoreHosts = weeklyMonitoring ? weeklyMonitoring.length : 8; // Default to 8 expected hosts
     const reportingPercentage = totalCoreHosts > 0 ? (coreHostsReported / totalCoreHosts) * 100 : 100;
-    const hasIncompleteReporting = reportingPercentage < 80; // Flag if less than 80% have reported
-
     const today = new Date();
+    const dow = today.getDay();
+    const daysFromFri = (dow + 2) % 7; // Fri=0, Sat=1, ..., Wed=5, Thu=6
+    // Hosts collect on Wednesday; reporting happens Wed/Thu. Don't flag before collection day (Wed).
+    const isPastCollectionDay = daysFromFri >= 5; // Wed=5, Thu=6
+    const hasIncompleteReporting = isPastCollectionDay && reportingPercentage < 80; // Only flag Wed/Thu when <80% reported
+
 
     // Helper function for consistent date formatting
     const formatDate = (date: Date) => {
@@ -94,8 +98,8 @@ export default function PredictiveForecasts() {
     // Calculate the target week based on weekOffset
     // Week runs Friday to Thursday (distribution day)
     const targetWeekStart = new Date(today);
-    const dayOfWeek = today.getDay(); // 0=Sun, 5=Fri
-    const daysFromFriday = (dayOfWeek + 2) % 7; // Days since last Friday
+    const dayOfWeek = dow; // 0=Sun, 5=Fri
+    const daysFromFriday = daysFromFri; // Days since last Friday
     targetWeekStart.setDate(today.getDate() - daysFromFriday + (weekOffset * 7));
     targetWeekStart.setHours(0, 0, 0, 0);
 
@@ -232,11 +236,11 @@ export default function PredictiveForecasts() {
     collections.forEach((c) => {
       const date = parseCollectionDate(c.collectionDate);
 
-      // Week aggregation (Wed-Tue)
+      // Week aggregation (Fri-Thu) - matches Google Sheet and official reporting
       const weekStart = new Date(date);
       const collectionDayOfWeek = date.getDay();
-      const daysFromWed = (collectionDayOfWeek + 4) % 7;
-      weekStart.setDate(date.getDate() - daysFromWed);
+      const daysFromFri = (collectionDayOfWeek + 2) % 7; // Fri=0, Sat=1, ..., Thu=6
+      weekStart.setDate(date.getDate() - daysFromFri);
       const weekKey = weekStart.toISOString().split('T')[0];
       const weekCurrent = weekMap.get(weekKey) || 0;
       weekMap.set(weekKey, weekCurrent + calculateTotalSandwiches(c));
@@ -259,9 +263,9 @@ export default function PredictiveForecasts() {
       : 0;
 
     // Weekly projection - combine historical pace with scheduled events
-    // For Wed-Tue week: Wed=0 days, Thu=1, Fri=2, Sat=3, Sun=4, Mon=5, Tue=6
+    // For Fri-Thu week: Fri=0 days, Sat=1, ..., Thu=6 (matches Google Sheet)
     const todayDayOfWeek = today.getDay();
-    const daysElapsedInWeek = (todayDayOfWeek + 4) % 7 + 1; // +1 to count today as complete
+    const daysElapsedInWeek = (todayDayOfWeek + 2) % 7 + 1; // daysFromFriday + 1 to count today
 
     // Calculate average collections by day of week for remaining days
     const dayOfWeekTotals = new Map<number, { total: number; count: number }>();
@@ -347,14 +351,39 @@ export default function PredictiveForecasts() {
     // Within range if difference is 300 or less sandwiches
     const isWeeklyWithinRange = weeklyAbsDiff <= 300;
 
-    // Monthly projection
-    // For past months (complete), just use actual total
-    // For current/future months, project based on pace
-    const monthlyProjected = monthOffset < 0
-      ? targetMonthTotal // Past month - use actual
-      : targetMonthProgress > 0
-        ? Math.round(targetMonthTotal / targetMonthProgress)
-        : targetMonthTotal;
+    // Monthly projection - match weekly logic: recorded + scheduled events + expected individual (~5k per Wed)
+    // Past months: use actual. Current/future: add scheduled events + ~5k per remaining Wednesday (don't extrapolate incomplete data).
+    const TYPICAL_WEDNESDAY_BASELINE = 5000;
+    let monthlyProjected: number;
+    if (monthOffset < 0) {
+      monthlyProjected = targetMonthTotal;
+    } else {
+      const monthStart = new Date(targetYear, targetMonth, 1);
+      const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
+      const futureEventsThisMonth = (eventRequests || []).filter((e: any) => {
+        if (!e.desiredEventDate || !['in_process', 'scheduled', 'completed'].includes(e.status)) return false;
+        const d = new Date(e.desiredEventDate);
+        d.setHours(0, 0, 0, 0);
+        return d >= todayStart && d >= monthStart && d <= monthEnd;
+      });
+      const scheduledMonthTotal = futureEventsThisMonth.reduce(
+        (s: number, e: any) => s + (e.estimatedSandwichCount || 0),
+        0
+      );
+      let remainingWednesdays = 0;
+      const check = new Date(monthStart);
+      while (check <= monthEnd) {
+        if (check.getDay() === 3) {
+          const wedStart = new Date(check);
+          wedStart.setHours(0, 0, 0, 0);
+          if (wedStart >= todayStart) remainingWednesdays++;
+        }
+        check.setDate(check.getDate() + 1);
+      }
+      monthlyProjected = Math.round(
+        targetMonthTotal + scheduledMonthTotal + (TYPICAL_WEDNESDAY_BASELINE * remainingWednesdays)
+      );
+    }
     const monthlyVsAvg = avgMonthly > 0 ? ((monthlyProjected - avgMonthly) / avgMonthly) * 100 : 0;
     const monthlyAbsDiff = Math.abs(monthlyProjected - avgMonthly);
     const isMonthlyWithinRange = monthlyAbsDiff <= 300;
@@ -460,9 +489,9 @@ export default function PredictiveForecasts() {
   const currentDayName = weekdays[forecasts.weekly.dayOfWeek];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0 overflow-x-hidden">
       {/* Header */}
-      <div>
+      <div className="min-w-0">
         <h2 className="text-3xl font-bold text-brand-primary">Predictive Forecasts</h2>
         <p className="text-gray-600 mt-2">
           Projections based on current pace and historical patterns • Week runs Fri-Thu
@@ -470,9 +499,9 @@ export default function PredictiveForecasts() {
       </div>
 
       {/* Weekly Forecast */}
-      <Card className="border-l-4 border-l-brand-primary">
+      <Card className="min-w-0 overflow-hidden border-l-4 border-l-brand-primary">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
             <div>
               <CardTitle className="text-2xl flex items-center gap-2">
                 Weekly Forecast
@@ -494,11 +523,11 @@ export default function PredictiveForecasts() {
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="flex items-center gap-2">
+              <CardDescription className="flex flex-wrap items-center gap-2 min-w-0">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 flex-shrink-0"
                   onClick={() => setWeekOffset(weekOffset - 1)}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -531,7 +560,7 @@ export default function PredictiveForecasts() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 min-w-0">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">
                 {forecasts.weekly.isComplete
@@ -742,7 +771,7 @@ export default function PredictiveForecasts() {
       </Card>
 
       {/* Monthly Forecast */}
-      <Card className="border-l-4 border-l-brand-teal">
+      <Card className="min-w-0 overflow-hidden border-l-4 border-l-brand-teal">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -762,11 +791,11 @@ export default function PredictiveForecasts() {
                   </Badge>
                 )}
               </CardTitle>
-              <CardDescription className="flex items-center gap-2">
+              <CardDescription className="flex flex-wrap items-center gap-2 min-w-0">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 flex-shrink-0"
                   onClick={() => setMonthOffset(monthOffset - 1)}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -811,7 +840,7 @@ export default function PredictiveForecasts() {
             <Progress value={forecasts.monthly.progress} className="h-3" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 min-w-0">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <p className="text-sm text-gray-600 mb-1">
                 {forecasts.monthly.isComplete
@@ -843,7 +872,7 @@ export default function PredictiveForecasts() {
               }`}>
                 {forecasts.monthly.projected.toLocaleString()}
               </p>
-              <p className="text-xs text-gray-500 mt-2 italic">Based on current pace</p>
+              <p className="text-xs text-gray-500 mt-2 italic">Recorded + scheduled events + ~5k per remaining Wed</p>
 
               {/* Clear status indicator */}
               <div className={`mt-3 px-3 py-2 rounded-md font-semibold text-sm ${

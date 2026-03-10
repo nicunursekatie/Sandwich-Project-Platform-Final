@@ -107,8 +107,8 @@ export default function ImpactDashboard() {
   const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1'];
 
   return (
-    <div className="bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light p-6 rounded-lg">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-w-0 overflow-x-hidden bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light p-4 sm:p-6 rounded-lg">
+      <div className="max-w-7xl mx-auto min-w-0">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -120,11 +120,11 @@ export default function ImpactDashboard() {
         </div>
 
         {/* Key Impact Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8 min-w-0">
+          <Card className="min-w-0 overflow-hidden bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center">
-                <Heart className="w-5 h-5 mr-2" />
+              <CardTitle className="text-lg font-medium flex items-center flex-wrap gap-2">
+                <Heart className="w-5 h-5 flex-shrink-0" />
                 Verified Sandwiches
               </CardTitle>
             </CardHeader>
@@ -138,10 +138,10 @@ export default function ImpactDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
+          <Card className="min-w-0 overflow-hidden bg-gradient-to-r from-[#236383] to-[#007E8C] text-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center">
-                <Users className="w-5 h-5 mr-2" />
+              <CardTitle className="text-lg font-medium flex items-center flex-wrap gap-2">
+                <Users className="w-5 h-5 flex-shrink-0" />
                 Active Hosts
               </CardTitle>
             </CardHeader>
@@ -153,10 +153,10 @@ export default function ImpactDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+          <Card className="min-w-0 overflow-hidden bg-gradient-to-r from-teal-500 to-teal-600 text-white">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center">
-                <Calendar className="w-5 h-5 mr-2" />
+              <CardTitle className="text-lg font-medium flex items-center flex-wrap gap-2">
+                <Calendar className="w-5 h-5 flex-shrink-0" />
                 This Month
               </CardTitle>
             </CardHeader>
@@ -171,14 +171,14 @@ export default function ImpactDashboard() {
           </Card>
 
           <Card 
-            className="text-white"
+            className="min-w-0 overflow-hidden text-white"
             style={{
               background: 'linear-gradient(135deg, #FBAD3F 0%, #f59e0b 50%, #d97706 100%)'
             }}
           >
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2" />
+              <CardTitle className="text-lg font-medium flex items-center flex-wrap gap-2">
+                <TrendingUp className="w-5 h-5 flex-shrink-0" />
                 2026 Progress
               </CardTitle>
             </CardHeader>
@@ -193,7 +193,7 @@ export default function ImpactDashboard() {
 
         {/* Charts and Visualizations */}
         <Tabs defaultValue="actions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
             <TabsTrigger value="actions" className="flex items-center gap-2">
               <Target className="w-4 h-4" />
               Action Center
@@ -229,7 +229,7 @@ export default function ImpactDashboard() {
           {/* Trends Tab */}
           <TabsContent value="trends">
             {/* View Selection */}
-            <Card className="mb-6">
+            <Card className="mb-6 min-w-0 overflow-hidden">
               <CardHeader>
                 <CardTitle>Collection Trends Views</CardTitle>
                 <CardDescription>Choose the right view for your analysis</CardDescription>
@@ -247,7 +247,7 @@ export default function ImpactDashboard() {
                   >
                     <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                       <Clock className="w-5 h-5 flex-shrink-0" />
-                      <span className="font-semibold whitespace-nowrap">Recent Trends</span>
+                      <span className="font-semibold break-words">Recent Trends</span>
                     </div>
                     <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
                       3 months of weekly data - see recent performance patterns
@@ -265,7 +265,7 @@ export default function ImpactDashboard() {
                   >
                     <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                       <Activity className="w-5 h-5 flex-shrink-0" />
-                      <span className="font-semibold whitespace-nowrap">Seasonal Patterns</span>
+                      <span className="font-semibold break-words">Seasonal Patterns</span>
                     </div>
                     <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
                       1 year of monthly data - identify seasonal trends
@@ -283,7 +283,7 @@ export default function ImpactDashboard() {
                   >
                     <div className="flex items-center gap-2 mb-2 flex-shrink-0">
                       <TrendingUp className="w-5 h-5 flex-shrink-0" />
-                      <span className="font-semibold whitespace-nowrap">Historical Growth</span>
+                      <span className="font-semibold break-words">Historical Growth</span>
                     </div>
                     <span className="text-left opacity-80 whitespace-normal break-words w-full text-[16px]">
                       All-time monthly totals - track long-term growth
@@ -293,8 +293,8 @@ export default function ImpactDashboard() {
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 gap-6 min-w-0">
+              <Card className="min-w-0 overflow-hidden">
                 <CardHeader>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
@@ -418,10 +418,10 @@ export default function ImpactDashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="min-w-0 overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="w-5 h-5 mr-2" />
+                  <CardTitle className="flex items-center flex-wrap gap-2">
+                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
                     Period Summary
                   </CardTitle>
                   <CardDescription>
@@ -475,10 +475,10 @@ export default function ImpactDashboard() {
               </Card>
 
               {/* Weekly Breakdown for Planning */}
-              <Card>
+              <Card className="min-w-0 overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Calendar className="w-5 h-5 mr-2" />
+                  <CardTitle className="flex items-center flex-wrap gap-2">
+                    <Calendar className="w-5 h-5 flex-shrink-0" />
                     Weekly Breakdown
                   </CardTitle>
                   <CardDescription>
@@ -573,11 +573,11 @@ export default function ImpactDashboard() {
 
           {/* Impact Analysis Tab */}
           <TabsContent value="impact">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
+              <Card className="min-w-0 overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="w-5 h-5 mr-2" />
+                  <CardTitle className="flex items-center flex-wrap gap-2">
+                    <BarChart3 className="w-5 h-5 flex-shrink-0" />
                     Collection Trends & Context
                   </CardTitle>
                   <CardDescription>
@@ -586,11 +586,9 @@ export default function ImpactDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">
-                        Recent Trend (Last 4 weeks)
-                      </span>
-                      <span className="font-bold text-brand-primary">{trendAnalysis.recentTrend.status}</span>
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-2 min-w-0">
+                      <span className="text-gray-600 break-words">Recent Trend (Last 4 weeks)</span>
+                      <span className="font-bold text-brand-primary break-words">{trendAnalysis.recentTrend.status}</span>
                     </div>
                     <div className="bg-gray-100 rounded-full h-2">
                       <div
@@ -604,9 +602,9 @@ export default function ImpactDashboard() {
                   </div>
 
                   <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-gray-600">Seasonal Context</span>
-                      <span className="font-bold">{trendAnalysis.seasonalContext.status}</span>
+                    <div className="flex flex-wrap justify-between items-center gap-2 mb-2 min-w-0">
+                      <span className="text-gray-600 break-words">Seasonal Context</span>
+                      <span className="font-bold break-words">{trendAnalysis.seasonalContext.status}</span>
                     </div>
                     <div className="bg-gray-100 rounded-full h-2">
                       <div
@@ -643,7 +641,7 @@ export default function ImpactDashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="min-w-0 overflow-hidden">
                 <CardHeader>
                   <CardTitle>Impact Highlights</CardTitle>
                   <CardDescription>
@@ -652,22 +650,20 @@ export default function ImpactDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg">
-                      <Heart className="w-5 h-5 text-green-600 mt-1" />
-                      <div>
-                        <p className="font-medium text-green-900">
-                          Sandwiches Provided
-                        </p>
-                        <p className="text-sm text-green-700">
+                    <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg min-w-0">
+                      <Heart className="w-5 h-5 text-green-600 mt-1 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-green-900 break-words">Sandwiches Provided</p>
+                        <p className="text-sm text-green-700 break-words">
                           {impactMetrics.totalSandwiches?.toLocaleString()}{' '}
                           sandwiches delivered to community members in need
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-start space-x-3 p-3 bg-brand-primary-lighter rounded-lg">
-                      <Users className="w-5 h-5 text-brand-primary mt-1" />
-                      <div>
+                    <div className="flex items-start gap-3 p-3 bg-brand-primary-lighter rounded-lg min-w-0">
+                      <Users className="w-5 h-5 text-brand-primary mt-1 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-brand-primary-darker">
                           Community Engagement
                         </p>
@@ -678,9 +674,9 @@ export default function ImpactDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-start space-x-3 p-3 bg-teal-50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-teal-600 mt-1" />
-                      <div>
+                    <div className="flex items-start gap-3 p-3 bg-teal-50 rounded-lg min-w-0">
+                      <Calendar className="w-5 h-5 text-teal-600 mt-1 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-teal-900">
                           Collection Records
                         </p>
@@ -691,9 +687,9 @@ export default function ImpactDashboard() {
                       </div>
                     </div>
 
-                    <div className="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg">
-                      <TrendingUp className="w-5 h-5 text-orange-600 mt-1" />
-                      <div>
+                    <div className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg min-w-0">
+                      <TrendingUp className="w-5 h-5 text-orange-600 mt-1 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-orange-900">
                           2026 Progress
                         </p>

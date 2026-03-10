@@ -27,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
+const EventMapView = React.lazy(() => import('./EventMapView'));
 import {
   Dialog,
   DialogContent,
@@ -748,10 +749,17 @@ const EventRequestsManagementContent: React.FC = () => {
               <Calendar className="w-4 h-4" />
               {!isMobile && 'Calendar View'}
             </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={viewMode === 'map' ? 'premium-btn-primary premium-btn-sm' : 'premium-btn-ghost premium-btn-sm'}
+            >
+              <MapPin className="w-4 h-4" />
+              {!isMobile && 'Map View'}
+            </button>
           </div>
         </div>
 
-        {/* View Content: Calendar or List */}
+        {/* View Content: Calendar, Map, or List */}
         {viewMode === 'calendar' ? (
           <EventCalendarView
             onEventClick={(event) => {
@@ -759,6 +767,15 @@ const EventRequestsManagementContent: React.FC = () => {
               setShowEventDetailsPreview(true);
             }}
           />
+        ) : viewMode === 'map' ? (
+          <React.Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><Skeleton className="w-full h-full" /></div>}>
+            <EventMapView
+              onEventClick={(event: any) => {
+                setSelectedEventRequest(event);
+                setShowEventDetailsPreview(true);
+              }}
+            />
+          </React.Suspense>
         ) : (
           <>
             {/* Quick Filter Buttons */}

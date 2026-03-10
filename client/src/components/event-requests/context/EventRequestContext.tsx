@@ -16,8 +16,8 @@ interface EventRequestContextType {
   setQuickFilter: (filter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null) => void;
 
   // View state
-  viewMode: 'list' | 'calendar';
-  setViewMode: (mode: 'list' | 'calendar') => void;
+  viewMode: 'list' | 'calendar' | 'map';
+  setViewMode: (mode: 'list' | 'calendar' | 'map') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -257,7 +257,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [quickFilter, setQuickFilter] = useState<'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null>(null);
 
   // View state - use role-based defaults if no initialTab provided
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
     if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {

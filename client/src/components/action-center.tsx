@@ -753,10 +753,10 @@ export default function ActionCenter() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-6 min-w-0 overflow-x-hidden">
         {/* Header */}
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-3xl font-bold text-brand-primary">Action Center</h2>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -777,9 +777,9 @@ export default function ActionCenter() {
 
         {/* Priority Summary or Success Banner - Mutually Exclusive */}
         {actionItems.filter(a => a.priority === 'high').length > 0 ? (
-          <Card className="bg-gradient-to-r from-brand-primary to-brand-teal text-white">
+          <Card className="min-w-0 overflow-hidden bg-gradient-to-r from-brand-primary to-brand-teal text-white">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4 min-w-0">
                 <AlertTriangle className="h-12 w-12 flex-shrink-0" />
                 <div>
                   <h3 className="text-xl font-bold mb-1">
@@ -794,9 +794,9 @@ export default function ActionCenter() {
             </CardContent>
           </Card>
         ) : actionItems.length === 0 ? (
-          <Card className="bg-gradient-to-r from-green-500 to-teal-500 text-white">
+          <Card className="min-w-0 overflow-hidden bg-gradient-to-r from-green-500 to-teal-500 text-white">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4 min-w-0">
                 <CheckCircle className="h-12 w-12 flex-shrink-0" />
                 <div>
                   <h3 className="text-xl font-bold mb-1">Great Work! Everything On Track</h3>
@@ -808,9 +808,9 @@ export default function ActionCenter() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
+          <Card className="min-w-0 overflow-hidden bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
             <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4 min-w-0">
                 <CheckCircle className="h-12 w-12 flex-shrink-0" />
                 <div>
                   <h3 className="text-xl font-bold mb-1">Looking Good! No Urgent Items</h3>
@@ -825,8 +825,8 @@ export default function ActionCenter() {
 
       {/* Summary Stats - only show when there are action items */}
       {actionItems.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 min-w-0">
+          <Card className="min-w-0 overflow-hidden">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -891,7 +891,7 @@ export default function ActionCenter() {
           return (
             <Card
               key={item.id}
-              className={`border-l-4 ${
+              className={`min-w-0 overflow-hidden border-l-4 ${
                 item.priority === 'high'
                   ? 'border-l-red-500'
                   : item.priority === 'medium'
@@ -900,17 +900,17 @@ export default function ActionCenter() {
               }`}
             >
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3 flex-1">
-                    <Icon className="h-6 w-6 text-gray-600 mt-1" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                <div className="flex flex-wrap items-start justify-between gap-2 min-w-0">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <Icon className="h-6 w-6 text-gray-600 mt-1 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
                         <CardTitle className="text-xl">{item.title}</CardTitle>
                         <Badge className={priorityColors[item.priority]}>
                           {item.priority.toUpperCase()}
                         </Badge>
                       </div>
-                      <CardDescription className="text-base">
+                      <CardDescription className="text-base break-words">
                         {item.description}
                       </CardDescription>
                     </div>
@@ -919,13 +919,13 @@ export default function ActionCenter() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="bg-gray-50 p-3 rounded-lg min-w-0 overflow-hidden">
                     <p className="text-sm text-gray-600 mb-1">Potential Impact</p>
-                    <p className="font-semibold text-brand-primary">{item.impact}</p>
+                    <p className="font-semibold text-brand-primary break-words">{item.impact}</p>
                   </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="bg-gray-50 p-3 rounded-lg min-w-0 overflow-hidden">
                     <p className="text-sm text-gray-600 mb-1">Recommended Action</p>
-                    <p className="font-semibold text-brand-primary">{item.action}</p>
+                    <p className="font-semibold text-brand-primary break-words">{item.action}</p>
                   </div>
                 </div>
 
