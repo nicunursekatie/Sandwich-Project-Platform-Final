@@ -22,6 +22,8 @@ import {
   PieChart,
   BarChart3,
   Activity,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -40,6 +42,7 @@ import {
   Pie,
 } from 'recharts';
 import { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import MonthlyComparisonAnalytics from '@/components/monthly-comparison-analytics';
 import ActionCenter from '@/components/action-center';
 import PredictiveForecasts from '@/components/predictive-forecasts';
@@ -73,7 +76,25 @@ export default function ImpactDashboard() {
   const [trendsView, setTrendsView] = useState<'recent' | 'seasonal' | 'historical'>('recent');
 
   // Use shared collections data hook
-  const { collections, hosts, stats, hybridStats } = useCollectionsData();
+  const { collections, hosts, stats, hybridStats, refetchCollections } = useCollectionsData();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshCollections = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchCollections(),
+        queryClient.refetchQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            query.queryKey[0].startsWith('/api/sandwich-collections'),
+        }),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Use shared utility functions with memoization
   const chartData = useMemo(
@@ -116,13 +137,29 @@ export default function ImpactDashboard() {
     <div className="min-w-0 overflow-x-hidden bg-gradient-to-br from-brand-primary-lighter to-brand-primary-light p-4 sm:p-6 rounded-lg">
       <div className="max-w-7xl mx-auto min-w-0">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Impact Dashboard
-          </h1>
-          <p className="text-lg text-gray-600">
-            Visualizing our community impact through sandwich collections
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Impact Dashboard
+            </h1>
+            <p className="text-lg text-gray-600">
+              Visualizing our community impact through sandwich collections
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshCollections}
+            disabled={isRefreshing}
+            className="shrink-0"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+          </Button>
         </div>
 
         {/* Key Impact Metrics */}
