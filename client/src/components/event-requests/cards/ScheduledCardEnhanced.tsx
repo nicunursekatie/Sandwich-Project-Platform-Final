@@ -218,6 +218,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onCompleteNextAction,
 }) => {
   const [showAuditLog, setShowAuditLog] = useState(false);
+  const [showSchedulingNotes, setShowSchedulingNotes] = useState(false);
   const [showNotesAndRequirements, setShowNotesAndRequirements] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
@@ -3378,52 +3379,63 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         </div>
 
-        {/* Scheduling Notes - Always Visible */}
+        {/* Scheduling Notes - Collapsed by Default */}
         {request.schedulingNotes && (
-          <div className="bg-gradient-to-r from-green-50 to-green-50/50 rounded-lg p-4 mb-4 border-l-4 border-green-500 border-t border-r border-b border-green-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
+          <div className="bg-gradient-to-r from-green-50 to-green-50/50 rounded-lg mb-4 border-l-4 border-green-500 border-t border-r border-b border-green-200 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setShowSchedulingNotes(!showSchedulingNotes)}
+              className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-green-50/80 transition-colors rounded-lg"
+            >
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-green-600" />
                 <h3 className="text-sm uppercase font-bold tracking-wide text-green-700">
                   Scheduling Notes
                 </h3>
               </div>
-              {canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => startEditing('schedulingNotes', request.schedulingNotes || '')}
-                  className="h-6 px-2 text-green-700 hover:text-green-800 hover:bg-green-100"
-                  aria-label="Edit scheduling notes"
-                >
-                  <Edit2 className="w-3 h-3" aria-hidden="true" />
-                </Button>
-              )}
-            </div>
-            {isEditingThisCard && editingField === 'schedulingNotes' ? (
-              <div className="space-y-2">
-                <textarea
-                  value={editingValue}
-                  onChange={(e) => setEditingValue(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
-                  placeholder="Add scheduling notes..."
-                  autoFocus
-                />
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={saveEdit}>
-                    <Save className="w-3 h-3 mr-1" />
-                    Save
+              <div className="flex items-center gap-1">
+                {canEdit && showSchedulingNotes && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => { e.stopPropagation(); startEditing('schedulingNotes', request.schedulingNotes || ''); }}
+                    className="h-6 px-2 text-green-700 hover:text-green-800 hover:bg-green-100"
+                    aria-label="Edit scheduling notes"
+                  >
+                    <Edit2 className="w-3 h-3" aria-hidden="true" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit}>
-                    <X className="w-3 h-3 mr-1" />
-                    Cancel
-                  </Button>
-                </div>
+                )}
+                {showSchedulingNotes ? <ChevronUp className="w-4 h-4 text-green-600" /> : <ChevronDown className="w-4 h-4 text-green-600" />}
               </div>
-            ) : (
-              <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-2 border-green-400 whitespace-pre-wrap">
-                {request.schedulingNotes}
-              </p>
+            </button>
+            {showSchedulingNotes && (
+              <div className="px-4 pb-4">
+                {isEditingThisCard && editingField === 'schedulingNotes' ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded text-sm min-h-[100px] text-gray-900 bg-white"
+                      placeholder="Add scheduling notes..."
+                      autoFocus
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" onClick={saveEdit}>
+                        <Save className="w-3 h-3 mr-1" />
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={cancelEdit}>
+                        <X className="w-3 h-3 mr-1" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700 bg-white p-3 rounded border-l-2 border-green-400 whitespace-pre-wrap">
+                    {request.schedulingNotes}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

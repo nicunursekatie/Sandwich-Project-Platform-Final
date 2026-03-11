@@ -1457,6 +1457,10 @@ router.get(
         hasRefrigeration: event.hasRefrigeration, // RefrigerationWarningBadge on all cards
         volunteerCount: event.volunteerCount,
         actualAttendance: event.actualAttendance,
+        estimatedAttendance: event.estimatedAttendance,
+        attendanceAdults: event.attendanceAdults,
+        attendanceTeens: event.attendanceTeens,
+        attendanceKids: event.attendanceKids,
 
         // ========== DRIVER STAFFING ==========
         driversNeeded: event.driversNeeded,
