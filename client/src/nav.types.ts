@@ -17,6 +17,7 @@ export interface NavItem {
   navigateAndExpand?: boolean; // Flag to indicate this parent item should navigate AND expand (not just expand)
   external?: boolean; // Flag to indicate this opens as an external page (not inside dashboard)
   externalUrl?: string; // Opens this URL in a new tab instead of navigating in-app
+  accentColor?: string; // Custom text color for this nav item (e.g. '#007E8C')
 }
 
 export interface NavigationGroup {

@@ -108,6 +108,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'team-board',
     permission: PERMISSIONS.VIEW_HOLDING_ZONE,
     group: 'communication',
+    accentColor: '#007E8C',
   },
 
   // ========================================
@@ -150,6 +151,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'volunteer-hub',
     permission: PERMISSIONS.NAV_VOLUNTEER_HUB,
     group: 'events',
+    accentColor: '#007E8C',
   },
   {
     id: 'host-resources',
@@ -158,6 +160,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'host-resources',
     permission: PERMISSIONS.NAV_HOST_RESOURCES,
     group: 'events',
+    accentColor: '#007E8C',
   },
   {
     id: 'driver-planning',
@@ -288,6 +291,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'resources',
     permission: PERMISSIONS.NAV_RESOURCES,
     group: 'resources',
+    accentColor: '#007E8C',
   },
   {
     id: 'quick-tools',
@@ -296,6 +300,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'important-links',
     // No permission - Toolkit & Apps is available to everyone
     group: 'resources',
+    accentColor: '#007E8C',
   },
   {
     id: 'flyers',
@@ -312,6 +317,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'events',
     permission: PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
     group: 'resources',
+    accentColor: '#007E8C',
   },
   {
     id: 'signup-genius',
