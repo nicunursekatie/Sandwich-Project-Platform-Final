@@ -2854,33 +2854,24 @@ router.patch(
       }
 
       // Validate and auto-adjust "needed" fields to prevent impossible states
-      // Count currently assigned drivers (regular + van)
+      // driversNeeded tracks REGULAR drivers only — van driver is a separate concept
       const assignedRegularDrivers = processedUpdates.assignedDriverIds !== undefined
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
-      
-      const usesDhlVan = processedUpdates.isDhlVan !== undefined
-        ? processedUpdates.isDhlVan === true
-        : (originalEvent as any).isDhlVan === true;
-      const hasAssignedVanDriver = usesDhlVan
-        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
-        || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
-      
-      const totalAssignedDrivers = assignedRegularDrivers + (hasAssignedVanDriver ? 1 : 0);
-      
-      // If driversNeeded is being manually updated, ensure it's not less than assigned drivers
+
+      // If driversNeeded is being manually updated, ensure it's not less than assigned regular drivers
       if (processedUpdates.driversNeeded !== undefined) {
-        if (processedUpdates.driversNeeded < totalAssignedDrivers) {
-          processedUpdates.driversNeeded = totalAssignedDrivers;
+        if (processedUpdates.driversNeeded < assignedRegularDrivers) {
+          processedUpdates.driversNeeded = assignedRegularDrivers;
         }
       }
-      
-      // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
-      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined) {
+
+      // Auto-adjust driversNeeded when regular driver assignments change
+      if (processedUpdates.assignedDriverIds !== undefined) {
         const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
 
-        if (totalAssignedDrivers > currentDriversNeeded) {
-          processedUpdates.driversNeeded = totalAssignedDrivers;
+        if (assignedRegularDrivers > currentDriversNeeded) {
+          processedUpdates.driversNeeded = assignedRegularDrivers;
         }
       }
 
@@ -3390,53 +3381,64 @@ router.put(
       }
 
       // Validate and auto-adjust "needed" fields to prevent impossible states (PUT endpoint)
-      // Count currently assigned drivers (regular + van)
+      // driversNeeded tracks REGULAR drivers only — van driver is a separate concept
       const putAssignedRegularDrivers = processedUpdates.assignedDriverIds !== undefined
         ? (Array.isArray(processedUpdates.assignedDriverIds) ? processedUpdates.assignedDriverIds.length : 0)
         : (Array.isArray(originalEvent.assignedDriverIds) ? originalEvent.assignedDriverIds.length : 0);
-      
-      const putUsesDhlVan = processedUpdates.isDhlVan !== undefined
-        ? processedUpdates.isDhlVan === true
-        : (originalEvent as any).isDhlVan === true;
-      const putHasAssignedVanDriver = putUsesDhlVan
-        || (processedUpdates.assignedVanDriverId !== undefined && processedUpdates.assignedVanDriverId !== null && processedUpdates.assignedVanDriverId !== '')
-        || (processedUpdates.assignedVanDriverId === undefined && originalEvent.assignedVanDriverId !== null && originalEvent.assignedVanDriverId !== '');
-      
-      const putTotalAssignedDrivers = putAssignedRegularDrivers + (putHasAssignedVanDriver ? 1 : 0);
-      
-      // If driversNeeded is being manually updated, ensure it's not less than assigned drivers
+
+      // If driversNeeded is being manually updated, ensure it's not less than assigned regular drivers
       if (processedUpdates.driversNeeded !== undefined) {
-        if (processedUpdates.driversNeeded < putTotalAssignedDrivers) {
-          processedUpdates.driversNeeded = putTotalAssignedDrivers;
+        if (processedUpdates.driversNeeded < putAssignedRegularDrivers) {
+          processedUpdates.driversNeeded = putAssignedRegularDrivers;
         }
       }
-      
-      // Auto-adjust driversNeeded when assignments change (if assignments exceed current need)
-      if (processedUpdates.assignedDriverIds !== undefined || processedUpdates.assignedVanDriverId !== undefined || processedUpdates.isDhlVan !== undefined) {
+
+      // Auto-adjust driversNeeded when regular driver assignments change
+      if (processedUpdates.assignedDriverIds !== undefined) {
         const currentDriversNeeded = processedUpdates.driversNeeded !== undefined ? processedUpdates.driversNeeded : (originalEvent.driversNeeded || 0);
-        
-        if (putTotalAssignedDrivers > currentDriversNeeded) {
-          processedUpdates.driversNeeded = putTotalAssignedDrivers;
+
+        if (putAssignedRegularDrivers > currentDriversNeeded) {
+          processedUpdates.driversNeeded = putAssignedRegularDrivers;
+        }
+      }
+
+      // If speakersNeeded is being manually updated, ensure it's not less than assigned speakers
+      if (processedUpdates.speakersNeeded !== undefined && processedUpdates.speakerDetails === undefined) {
+        const assignedSpeakerCount = (typeof originalEvent.speakerDetails === 'object' && originalEvent.speakerDetails !== null)
+          ? Object.keys(originalEvent.speakerDetails).length
+          : 0;
+        if (processedUpdates.speakersNeeded < assignedSpeakerCount) {
+          processedUpdates.speakersNeeded = assignedSpeakerCount;
         }
       }
 
       if (processedUpdates.speakerDetails !== undefined) {
         const assignedSpeakerCount = (typeof processedUpdates.speakerDetails === 'object' && processedUpdates.speakerDetails !== null)
-          ? Object.keys(processedUpdates.speakerDetails).length 
+          ? Object.keys(processedUpdates.speakerDetails).length
           : 0;
         const currentSpeakersNeeded = originalEvent.speakersNeeded || 0;
-        
+
         if (assignedSpeakerCount > currentSpeakersNeeded) {
           processedUpdates.speakersNeeded = assignedSpeakerCount;
         }
       }
 
+      // If volunteersNeeded is being manually updated, ensure it's not less than assigned volunteers
+      if (processedUpdates.volunteersNeeded !== undefined && processedUpdates.assignedVolunteerIds === undefined) {
+        const assignedVolunteerCount = Array.isArray(originalEvent.assignedVolunteerIds)
+          ? originalEvent.assignedVolunteerIds.length
+          : 0;
+        if (processedUpdates.volunteersNeeded < assignedVolunteerCount) {
+          processedUpdates.volunteersNeeded = assignedVolunteerCount;
+        }
+      }
+
       if (processedUpdates.assignedVolunteerIds !== undefined) {
-        const assignedVolunteerCount = Array.isArray(processedUpdates.assignedVolunteerIds) 
-          ? processedUpdates.assignedVolunteerIds.length 
+        const assignedVolunteerCount = Array.isArray(processedUpdates.assignedVolunteerIds)
+          ? processedUpdates.assignedVolunteerIds.length
           : 0;
         const currentVolunteersNeeded = originalEvent.volunteersNeeded || 0;
-        
+
         if (assignedVolunteerCount > currentVolunteersNeeded) {
           processedUpdates.volunteersNeeded = assignedVolunteerCount;
         }

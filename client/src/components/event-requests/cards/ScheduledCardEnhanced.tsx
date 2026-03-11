@@ -465,14 +465,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   })();
 
   // Calculate staffing
-  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
+  // driversNeeded tracks regular drivers only — van driver is separate
+  const driverAssigned = parsePostgresArray(request.assignedDriverIds).length;
   const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
   const driverNeeded = request.driversNeeded || 0;
   const speakerNeeded = request.speakersNeeded || 0;
   const volunteerNeeded = request.volunteersNeeded || 0;
-  const totalAssigned = driverAssigned + speakerAssigned + volunteerAssigned;
-  const totalNeeded = driverNeeded + speakerNeeded + volunteerNeeded;
+  // Include van driver in staffing totals as a separate slot
+  const vanDriverNeededCount = (request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan) ? 1 : 0;
+  const vanDriverAssignedCount = (request.assignedVanDriverId || request.isDhlVan) ? 1 : 0;
+  const totalAssigned = driverAssigned + vanDriverAssignedCount + speakerAssigned + volunteerAssigned;
+  const totalNeeded = driverNeeded + (request.vanDriverNeeded ? 1 : 0) + speakerNeeded + volunteerNeeded;
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
   // Check if event is within next 7 days (for urgent staffing badge color)
@@ -590,11 +594,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
         staffingParts.push(name ? `D: ${name}` : 'D');
       });
-      // Add unfilled driver slots - include van driver and DHL van in fulfilled count
-      const totalDriversAssigned = assignedDriverIds.length +
-                                   (request.assignedVanDriverId ? 1 : 0) +
-                                   (request.isDhlVan ? 1 : 0);
-      const unfilledDrivers = Math.max(0, driversNeededCount - totalDriversAssigned);
+      // Add unfilled regular driver slots (van driver is tracked separately)
+      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
       for (let i = 0; i < unfilledDrivers; i++) {
         staffingParts.push('D');
       }
