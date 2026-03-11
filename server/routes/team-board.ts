@@ -105,7 +105,7 @@ const updateItemSchema = z.object({
 });
 
 const createCommentSchema = insertTeamBoardCommentSchema
-  .omit({ userId: true, userName: true })
+  .omit({ itemId: true, userId: true, userName: true })
   .extend({
     content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment too long'),
   });
