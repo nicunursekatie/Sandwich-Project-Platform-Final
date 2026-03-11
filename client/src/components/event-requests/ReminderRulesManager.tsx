@@ -29,49 +29,56 @@ interface ReminderRulesManagerProps {
   eventStatus?: string | null;
 }
 
-// Rule type definitions with context-appropriate availability
+// Condition-based rules: user sets a threshold, system checks daily and notifies when condition is met.
+// Frequency-based rules (general_checkin only): user sets how often to be reminded.
 const RULE_TYPE_CONFIG = {
   no_contact: {
     label: 'No Contact Logged',
-    description: 'Remind me if no contact attempt has been logged',
+    description: 'Notify me after this many days with no contact logged',
     defaultThreshold: 5,
     thresholdLabel: 'days without contact',
     applicableStatuses: ['new', 'in_process'],
+    isConditionBased: true,
   },
   stale_event: {
     label: 'Stale / No Updates',
-    description: 'Remind me if the event has had no updates',
+    description: 'Notify me after this many days with no updates',
     defaultThreshold: 7,
     thresholdLabel: 'days without updates',
     applicableStatuses: ['new', 'in_process'],
+    isConditionBased: true,
   },
   date_approaching_inprocess: {
     label: 'Desired Date Approaching',
-    description: 'Remind me when the desired date is nearing while still in process',
+    description: 'Notify me when the desired date is within this many days',
     defaultThreshold: 14,
     thresholdLabel: 'days before desired date',
     applicableStatuses: ['new', 'in_process'],
+    isConditionBased: true,
   },
   date_approaching_scheduled: {
     label: 'Event Date Approaching',
-    description: 'Remind me as the scheduled event date approaches',
+    description: 'Notify me when the event date is within this many days',
     defaultThreshold: 7,
     thresholdLabel: 'days before event',
     applicableStatuses: ['scheduled'],
+    isConditionBased: true,
   },
   staffing_unmet: {
     label: 'Staffing Needs Unmet',
-    description: 'Remind me if staffing needs are still unmet',
+    description: 'Notify me if staffing is unmet within this many days of the event',
     defaultThreshold: 7,
-    thresholdLabel: 'days before event with unmet needs',
+    thresholdLabel: 'days before event',
     applicableStatuses: ['scheduled'],
+    isConditionBased: true,
   },
   general_checkin: {
     label: 'General Check-In',
-    description: 'Periodic reminder to check in on this event',
+    description: 'Send me a periodic reminder to check in on this event',
     defaultThreshold: 7,
-    thresholdLabel: 'N/A (uses frequency)',
+    thresholdLabel: '',
     applicableStatuses: ['new', 'in_process', 'scheduled', 'stalled'],
+    isConditionBased: false,
   },
 } as const;
 
@@ -279,7 +286,8 @@ function RulesEditor({
         ruleType,
         enabled: true,
         thresholdDays: config.defaultThreshold,
-        frequency: 'weekly',
+        // Condition-based rules check daily; general_checkin uses user-selected frequency
+        frequency: config.isConditionBased ? 'daily' : 'weekly',
         channel: defaultChannel,
       },
     ]);
@@ -299,8 +307,16 @@ function RulesEditor({
   };
 
   const handleSave = () => {
-    const enabledRules = rules.filter(r => r.enabled);
-    const disabledRules = rules.filter(r => !r.enabled);
+    // For condition-based rules, force frequency to 'daily' before saving
+    const normalizedRules = rules.map(r => {
+      const config = RULE_TYPE_CONFIG[r.ruleType as RuleType];
+      if (config?.isConditionBased) {
+        return { ...r, frequency: 'daily' };
+      }
+      return r;
+    });
+    const enabledRules = normalizedRules.filter(r => r.enabled);
+    const disabledRules = normalizedRules.filter(r => !r.enabled);
     bulkSaveMutation.mutate([...enabledRules, ...disabledRules]);
   };
 
@@ -375,9 +391,10 @@ function RulesEditor({
 
                 {rule.enabled && (
                   <div className="flex items-center gap-3 flex-wrap">
-                    {/* Threshold days - not shown for general_checkin */}
-                    {rule.ruleType !== 'general_checkin' && (
+                    {config.isConditionBased ? (
+                      /* Condition-based rules: show only the threshold */
                       <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">After</span>
                         <Input
                           type="number"
                           min={1}
@@ -388,25 +405,25 @@ function RulesEditor({
                         />
                         <span className="text-xs text-gray-500 whitespace-nowrap">{config.thresholdLabel}</span>
                       </div>
+                    ) : (
+                      /* Frequency-based rules (general_checkin): show only frequency */
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500">Remind me</span>
+                        <Select
+                          value={rule.frequency}
+                          onValueChange={(val) => updateRule(index, { frequency: val })}
+                        >
+                          <SelectTrigger className="w-32 h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FREQUENCY_OPTIONS.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     )}
-
-                    {/* Frequency */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-500">Check</span>
-                      <Select
-                        value={rule.frequency}
-                        onValueChange={(val) => updateRule(index, { frequency: val })}
-                      >
-                        <SelectTrigger className="w-32 h-7 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {FREQUENCY_OPTIONS.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                   </div>
                 )}
               </div>

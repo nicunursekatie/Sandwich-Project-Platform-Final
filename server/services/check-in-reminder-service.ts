@@ -75,6 +75,15 @@ function calculateNextDue(frequency: string, fromDate: Date = new Date()): Date 
   return next;
 }
 
+// Condition-based rules check daily when the condition hasn't been met yet.
+// After sending a notification, use a cooldown to avoid spamming.
+const CONDITION_CHECK_INTERVAL_DAYS = 1; // check daily
+const CONDITION_COOLDOWN_DAYS = 3; // don't re-send for 3 days after a notification
+
+function isConditionBasedRule(ruleType: string): boolean {
+  return ruleType !== REMINDER_RULE_TYPES.GENERAL_CHECKIN;
+}
+
 /**
  * Evaluate whether a reminder rule's condition is currently met.
  * Returns true if the condition IS met (i.e., the reminder SHOULD fire).
@@ -309,7 +318,10 @@ export async function processCheckInReminders(): Promise<{
 
         if (!conditionMet) {
           // Condition not met — reschedule for next check but don't send
-          const nextDue = calculateNextDue(reminder.frequency);
+          // Condition-based rules recheck daily; frequency-based use their frequency
+          const nextDue = isConditionBasedRule(reminder.ruleType)
+            ? calculateNextDue('daily')
+            : calculateNextDue(reminder.frequency);
           await db
             .update(eventCheckInReminders)
             .set({ nextDueAt: nextDue, updatedAt: new Date() })
@@ -387,7 +399,11 @@ export async function processCheckInReminders(): Promise<{
         }
 
         // Update lastSentAt and calculate next due date
-        const nextDue = calculateNextDue(reminder.frequency);
+        // Condition-based rules use a cooldown after sending to avoid spam;
+        // frequency-based rules (general_checkin) use their configured frequency
+        const nextDue = isConditionBasedRule(reminder.ruleType)
+          ? calculateNextDue('every_3_days') // 3-day cooldown after sending
+          : calculateNextDue(reminder.frequency);
         await db
           .update(eventCheckInReminders)
           .set({
