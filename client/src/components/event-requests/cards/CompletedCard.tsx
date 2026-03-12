@@ -2491,8 +2491,8 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <div className="flex items-center gap-2">
                   <Building className="w-4 h-4 text-[#236383]" />
                   <span className="font-medium text-[#236383]">Recipients:</span>
-                  {/* Show allocations if available */}
-                  {(request as any).recipientAllocations && (request as any).recipientAllocations.length > 0 ? (
+                  {/* Show allocations if available with actual sandwich counts, otherwise show recipient badges */}
+                  {(request as any).recipientAllocations && ((request as any).recipientAllocations as RecipientAllocation[]).some(a => a.sandwichCount > 0) ? (
                     <RecipientAllocationDisplay
                       allocations={(request as any).recipientAllocations as RecipientAllocation[]}
                       className="text-xs"
