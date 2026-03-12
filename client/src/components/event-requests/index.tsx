@@ -24,7 +24,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, Sparkles, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield } from 'lucide-react';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 const EventMapView = React.lazy(() => import('./EventMapView'));
@@ -372,11 +372,6 @@ const EventRequestsManagementContent: React.FC = () => {
   // Track initial page load only once
   const hasLoggedInitialView = useRef(false);
 
-  // Feature discovery state
-  const [showAdminOverviewTip, setShowAdminOverviewTip] = React.useState(false);
-  const [showSpreadsheetTip, setShowSpreadsheetTip] = React.useState(false);
-  const [showFloatingTip, setShowFloatingTip] = React.useState(false);
-
   // Check if user has permission to sync event requests from Google Sheets
   const canSyncEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_SYNC) ||
     user?.role === 'admin' || user?.role === 'super_admin';
@@ -385,44 +380,6 @@ const EventRequestsManagementContent: React.FC = () => {
   const hasAdminOverviewPermission = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
     user?.permissions?.includes('view_admin_overview') ||
     user?.role === 'super_admin';
-
-  // Check if user has seen feature tips
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const adminOverviewKey = `feature-tip-admin-overview-${user.id}`;
-    const spreadsheetKey = `feature-tip-spreadsheet-${user.id}`;
-    const floatingButtonKey = `feature-tip-floating-button-${user.id}`;
-
-    const adminOverviewSeen = localStorage.getItem(adminOverviewKey);
-    const spreadsheetSeen = localStorage.getItem(spreadsheetKey);
-    const floatingButtonSeen = localStorage.getItem(floatingButtonKey);
-
-    // Show admin overview tip if user has permission and hasn't seen it more than 3 times
-    if (hasAdminOverviewPermission) {
-      const viewCount = parseInt(adminOverviewSeen || '0', 10);
-      if (viewCount < 3) {
-        setShowAdminOverviewTip(true);
-        localStorage.setItem(adminOverviewKey, String(viewCount + 1));
-      }
-    }
-
-    // Show floating button tip if user hasn't dismissed it
-    const floatingButtonDismissed = floatingButtonSeen === 'dismissed';
-    if (!floatingButtonDismissed && activeTab !== 'scheduled') {
-      setShowFloatingTip(true);
-    } else if (activeTab === 'scheduled') {
-      // Hide floating tip when on scheduled tab
-      setShowFloatingTip(false);
-    }
-
-    // Show spreadsheet tip if hasn't seen it more than 3 times
-    const spreadsheetViewCount = parseInt(spreadsheetSeen || '0', 10);
-    if (spreadsheetViewCount < 3) {
-      setShowSpreadsheetTip(true);
-      localStorage.setItem(spreadsheetKey, String(spreadsheetViewCount + 1));
-    }
-  }, [user?.id, hasAdminOverviewPermission, activeTab]);
 
   // Track initial page load with default tab (only once)
   useEffect(() => {
@@ -565,15 +522,6 @@ const EventRequestsManagementContent: React.FC = () => {
   };
 
   // Handle dismissing floating button tip
-  const handleDismissFloatingTip = () => {
-    if (!user?.id) return;
-    const floatingButtonKey = `feature-tip-floating-button-${user.id}`;
-    localStorage.setItem(floatingButtonKey, 'dismissed');
-    setShowFloatingTip(false);
-
-    // Track tip dismissal
-    trackButtonClick('dismiss_floating_tip', 'event_requests');
-  };
 
   if (isLoading) {
     return (
@@ -899,10 +847,6 @@ const EventRequestsManagementContent: React.FC = () => {
             totalItems={totalItems}
             totalPages={totalPages}
             children={tabChildren}
-            showAdminOverviewTip={showAdminOverviewTip}
-            showSpreadsheetTip={showSpreadsheetTip}
-            onDismissAdminOverviewTip={() => setShowAdminOverviewTip(false)}
-            onDismissSpreadsheetTip={() => setShowSpreadsheetTip(false)}
           />
           </>
         )}
@@ -1763,29 +1707,6 @@ const EventRequestsManagementContent: React.FC = () => {
               <Sheet className="h-5 w-5" />
             </button>
 
-            {/* Tooltip that appears on first few visits - desktop only */}
-            {showFloatingTip && (
-              <div className="absolute bottom-full right-0 mb-2 w-56 bg-white border border-green-500 rounded-lg shadow-lg p-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <button
-                  onClick={handleDismissFloatingTip}
-                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Dismiss tip"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-xs text-gray-900">
-                      Spreadsheet View
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Click for table layout
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
