@@ -7,6 +7,7 @@ export interface User {
   phoneNumber?: string | null;
   preferredEmail?: string | null;
   address?: string | null;
+  vanApproved?: boolean | null;
   role: string;
   permissions: string[];
   permissionsModifiedAt?: string | null;
@@ -33,6 +34,7 @@ export interface UserFormData {
   phoneNumber?: string;
   preferredEmail?: string;
   address?: string;
+  vanApproved?: boolean;
   role: string;
   isActive: boolean;
   password?: string;

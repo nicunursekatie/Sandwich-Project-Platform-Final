@@ -91,6 +91,7 @@ export function createDriversRouter(deps: RouterDependencies) {
               latitude: String(contact.latitude),
               longitude: String(contact.longitude),
               availability: contact.weeklyActive ? 'available' : 'unknown',
+              vanApproved: contact.vanApproved || false,
               hostLocation: host.name || contact.hostLocationName,
             }))
         );

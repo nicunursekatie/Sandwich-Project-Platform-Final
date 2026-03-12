@@ -242,6 +242,7 @@ export default function HostsManagementConsolidated() {
     hostLocation: '',
     isPrimary: false,
     driverAgreementSigned: false,
+    vanApproved: false,
     notes: '',
   });
 
@@ -914,6 +915,8 @@ export default function HostsManagementConsolidated() {
       hostLocation: editingContact.hostLocation?.trim() || '',
       weeklyActive: editingContact.weeklyActive || false,
       isPrimary: editingContact.isPrimary || false,
+      driverAgreementSigned: editingContact.driverAgreementSigned || false,
+      vanApproved: editingContact.vanApproved || false,
       notes: editingContact.notes?.trim() || '',
     };
 
@@ -1402,6 +1405,21 @@ export default function HostsManagementConsolidated() {
                   }
                 />
                 <Label htmlFor="main-contact-driver-agreement">Driver Agreement Signed</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="main-contact-van-approved"
+                  checked={newContact.vanApproved || false}
+                  onCheckedChange={(checked) =>
+                    setNewContact({ ...newContact, vanApproved: checked })
+                  }
+                />
+                <Label htmlFor="main-contact-van-approved">
+                  Approved Van Driver
+                  <span className="block text-xs text-slate-500">
+                    Can be assigned to drive the van for events
+                  </span>
+                </Label>
               </div>
               <div>
                 <Label htmlFor="main-contact-notes">Notes</Label>
@@ -2012,6 +2030,27 @@ export default function HostsManagementConsolidated() {
                             </span>
                           </Label>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="edit-contact-van-approved"
+                            checked={editingContact.vanApproved || false}
+                            onCheckedChange={(checked) => {
+                              setEditingContact({
+                                ...editingContact,
+                                vanApproved: checked,
+                              });
+                            }}
+                          />
+                          <Label
+                            htmlFor="edit-contact-van-approved"
+                            className="text-sm"
+                          >
+                            Approved Van Driver
+                            <span className="block text-xs text-slate-500">
+                              Can be assigned to drive the van for events
+                            </span>
+                          </Label>
+                        </div>
                       </div>
                     </div>
 
@@ -2298,6 +2337,24 @@ export default function HostsManagementConsolidated() {
                           />
                           <Label htmlFor="contact-driver-agreement">
                             Driver Agreement Signed
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="contact-van-approved"
+                            checked={newContact.vanApproved || false}
+                            onCheckedChange={(checked) =>
+                              setNewContact({
+                                ...newContact,
+                                vanApproved: checked,
+                              })
+                            }
+                          />
+                          <Label htmlFor="contact-van-approved">
+                            Approved Van Driver
+                            <span className="block text-xs text-slate-500">
+                              Can be assigned to drive the van for events
+                            </span>
                           </Label>
                         </div>
                         <div>
@@ -2642,6 +2699,27 @@ export default function HostsManagementConsolidated() {
                                                 Driver Agreement Signed
                                                 <span className="block text-xs text-slate-500">
                                                   Has this host signed the driver agreement form?
+                                                </span>
+                                              </Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                              <Switch
+                                                id="edit-contact-van-approved-hosts"
+                                                checked={editingContact.vanApproved || false}
+                                                onCheckedChange={(checked) => {
+                                                  setEditingContact({
+                                                    ...editingContact,
+                                                    vanApproved: checked,
+                                                  });
+                                                }}
+                                              />
+                                              <Label
+                                                htmlFor="edit-contact-van-approved-hosts"
+                                                className="text-sm"
+                                              >
+                                                Approved Van Driver
+                                                <span className="block text-xs text-slate-500">
+                                                  Can be assigned to drive the van for events
                                                 </span>
                                               </Label>
                                             </div>

@@ -118,6 +118,7 @@ export function useUserManagement() {
       phoneNumber?: string;
       preferredEmail?: string;
       address?: string;
+      vanApproved?: boolean;
       role: string;
       isActive: boolean;
     }) => {
@@ -128,6 +129,7 @@ export function useUserManagement() {
         phoneNumber: data.phoneNumber,
         preferredEmail: data.preferredEmail,
         address: data.address,
+        vanApproved: data.vanApproved,
         role: data.role,
         isActive: data.isActive,
       });

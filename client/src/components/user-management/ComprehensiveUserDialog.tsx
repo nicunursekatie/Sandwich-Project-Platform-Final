@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import {
   User as UserIcon,
   Shield,
@@ -23,6 +24,7 @@ import {
   KeyRound,
   BarChart3,
   MapPin,
+  Truck,
 } from 'lucide-react';
 import type { User, UserFormData } from '@/types/user';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
@@ -49,6 +51,7 @@ const defaultFormData: UserFormData = {
   phoneNumber: '',
   preferredEmail: '',
   address: '',
+  vanApproved: false,
   role: 'volunteer',
   isActive: true,
   password: '',
@@ -79,6 +82,7 @@ export function ComprehensiveUserDialog({
         phoneNumber: user.phoneNumber || '',
         preferredEmail: user.preferredEmail || '',
         address: user.address || '',
+        vanApproved: (user as any).vanApproved ?? false,
         role: user.role || 'volunteer',
         isActive: user.isActive ?? true,
         password: '',
@@ -337,6 +341,23 @@ export function ComprehensiveUserDialog({
                   <p className="text-xs text-gray-500 mt-1">
                     Used to show location on the driver planning map
                   </p>
+                </div>
+
+                <div className="flex items-center space-x-2 py-2">
+                  <Switch
+                    id="vanApproved"
+                    checked={formData.vanApproved || false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, vanApproved: checked })
+                    }
+                  />
+                  <Label htmlFor="vanApproved" className="text-sm flex items-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5" />
+                    Approved Van Driver
+                    <span className="block text-xs text-slate-500 ml-1">
+                      Can be assigned to drive the van for events
+                    </span>
+                  </Label>
                 </div>
 
                 <div>

@@ -126,11 +126,11 @@ usersRouter.patch(
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { email, firstName, lastName, phoneNumber, preferredEmail, address, role, isActive } = req.body;
+      const { email, firstName, lastName, phoneNumber, preferredEmail, address, vanApproved, role, isActive } = req.body;
 
       const updatedUser = await userService.updateUserProfile(
         id,
-        { email, firstName, lastName, phoneNumber, preferredEmail, address, role, isActive },
+        { email, firstName, lastName, phoneNumber, preferredEmail, address, vanApproved, role, isActive },
         req.user?.id
       );
 

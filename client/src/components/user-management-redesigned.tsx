@@ -274,6 +274,7 @@ export default function UserManagementFinal() {
           phoneNumber: formData.phoneNumber,
           preferredEmail: formData.preferredEmail,
           address: formData.address,
+          vanApproved: formData.vanApproved,
           role: formData.role,
           isActive: formData.isActive,
         },

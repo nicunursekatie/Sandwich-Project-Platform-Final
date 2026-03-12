@@ -56,6 +56,7 @@ export interface UserProfileData {
   phoneNumber?: string;
   preferredEmail?: string;
   address?: string;
+  vanApproved?: boolean;
   role?: string;
   isActive?: boolean;
 }
@@ -214,6 +215,8 @@ export class UserService implements IUserService {
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.isActive !== undefined)
         updateData.isActive = profileData.isActive;
+      if (profileData.vanApproved !== undefined)
+        updateData.vanApproved = profileData.vanApproved;
 
       // Handle address changes with auto-geocoding
       if (profileData.address !== undefined) {
