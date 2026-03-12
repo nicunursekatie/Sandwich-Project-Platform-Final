@@ -52,14 +52,14 @@ app.use(
       : {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com'],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://nicunursekatie.github.io'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://fonts.googleapis.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
-            connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io'],
-            frameSrc: ["'self'"],
+            connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io', 'https://chat.stream-io-api.com'],
+            frameSrc: ["'self'", 'https://docs.google.com'],
             objectSrc: ["'none'"],
-            baseUri: ["'self'"],
+            baseUri: ["'self'", 'https://nicunursekatie.github.io'],
             formAction: ["'self'"],
             upgradeInsecureRequests: [],
           },
