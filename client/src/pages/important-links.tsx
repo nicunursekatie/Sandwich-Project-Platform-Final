@@ -42,7 +42,7 @@ export default function ImportantLinks() {
     );
   }, [trackView]);
 
-  // URLs for all the important links
+  // URLs for all the important links (original URLs for "open in new tab" buttons)
   const inventoryCalculatorUrl =
     'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
   const eventEstimatorUrl =
@@ -55,6 +55,14 @@ export default function ImportantLinks() {
     'https://bread-and-butter-donors.lovable.app/';
   const internalHubUrl =
     'https://nicunursekatie.github.io/tsp-internal/index.html';
+
+  // Proxied URLs for iframe embedding (bypasses X-Frame-Options)
+  const proxyUrl = (url: string) => `/api/proxy/page?url=${encodeURIComponent(url)}`;
+  const inventoryCalculatorEmbed = proxyUrl(inventoryCalculatorUrl);
+  const eventToolkitEmbed = proxyUrl(eventToolkitUrl);
+  const donationReceiptEmbed = proxyUrl(donationReceiptUrl);
+  const donorManagementEmbed = proxyUrl(donorManagementUrl);
+  const internalHubEmbed = proxyUrl(internalHubUrl);
 
   // Events Google Sheet (published version)
   const eventsEmbedUrl =
@@ -252,7 +260,7 @@ export default function ImportantLinks() {
                 {/* Embedded Toolkit - Hidden on mobile, show "Open" button instead */}
                 <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
-                    src={eventToolkitUrl}
+                    src={eventToolkitEmbed}
                     className="w-full h-full border-0"
                     style={{
                       minHeight: '600px',
@@ -315,7 +323,7 @@ export default function ImportantLinks() {
                 {/* Embedded Calculator - Hidden on mobile */}
                 <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
-                    src={inventoryCalculatorUrl}
+                    src={inventoryCalculatorEmbed}
                     className="w-full h-full border-0"
                     style={{
                       minHeight: '600px',
@@ -393,7 +401,7 @@ export default function ImportantLinks() {
                 {/* Embedded Donation Receipt Generator - Hidden on mobile */}
                 <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
-                    src={donationReceiptUrl}
+                    src={donationReceiptEmbed}
                     className="w-full h-full border-0"
                     style={{
                       minHeight: '600px',
@@ -488,7 +496,7 @@ export default function ImportantLinks() {
                 {/* Embedded Platform - Hidden on mobile */}
                 <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
-                    src={donorManagementUrl}
+                    src={donorManagementEmbed}
                     className="w-full h-full border-0"
                     style={{
                       minHeight: '600px',
@@ -573,7 +581,7 @@ export default function ImportantLinks() {
                 {/* Embedded Hub - Hidden on mobile */}
                 <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
                   <iframe
-                    src={internalHubUrl}
+                    src={internalHubEmbed}
                     className="w-full h-full border-0"
                     style={{
                       minHeight: '600px',

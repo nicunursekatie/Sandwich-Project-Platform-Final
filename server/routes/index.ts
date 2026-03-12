@@ -507,6 +507,43 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/resources', createErrorHandler('resources'));
 
+  // Proxy for GitHub Pages content (bypasses X-Frame-Options restrictions)
+  const ALLOWED_PROXY_ORIGINS = [
+    'https://nicunursekatie.github.io',
+    'https://receipt-gen--katielong2316.replit.app',
+    'https://bread-and-butter-donors.lovable.app',
+  ];
+  router.get('/api/proxy/page', deps.isAuthenticated, async (req, res) => {
+    try {
+      const url = req.query.url as string;
+      if (!url) {
+        return res.status(400).json({ message: 'Missing url parameter' });
+      }
+      // Only allow proxying from trusted origins
+      const allowed = ALLOWED_PROXY_ORIGINS.some((origin) => url.startsWith(origin));
+      if (!allowed) {
+        return res.status(403).json({ message: 'URL not in allowlist' });
+      }
+      const response = await fetch(url);
+      if (!response.ok) {
+        return res.status(response.status).json({ message: `Upstream returned ${response.status}` });
+      }
+      const html = await response.text();
+      // Rewrite relative asset URLs to absolute so CSS/JS/images load correctly
+      const baseUrl = new URL(url);
+      const base = `${baseUrl.protocol}//${baseUrl.host}${baseUrl.pathname.substring(0, baseUrl.pathname.lastIndexOf('/') + 1)}`;
+      const rewritten = html.replace(
+        /(<head[^>]*>)/i,
+        `$1<base href="${base}" />`
+      );
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.send(rewritten);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || 'Proxy fetch failed' });
+    }
+  });
+
   router.use(
     '/api/auto-form-filler',
     deps.isAuthenticated,
