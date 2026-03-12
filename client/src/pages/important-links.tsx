@@ -398,28 +398,16 @@ export default function ImportantLinks() {
                   </p>
                 </div>
 
-                {/* Embedded Donation Receipt Generator - Hidden on mobile */}
-                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
-                  <iframe
-                    src={donationReceiptEmbed}
-                    className="w-full h-full border-0"
-                    style={{
-                      minHeight: '600px',
-                      height: '100%',
-                    }}
-                    title="Donation Receipt Generator"
-                    loading="eager"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the receipt generator in a new tab on mobile.</p>
+                {/* Open in new tab — Replit SPAs cannot be embedded due to cross-origin restrictions */}
+                <div className="bg-gray-50 rounded-lg p-6 text-center border border-gray-200">
+                  <p className="text-sm text-gray-600 mb-3">This app opens in a new tab for the best experience.</p>
                   <Button
+                    size="lg"
                     onClick={() => window.open(donationReceiptUrl, '_blank')}
-                    className="bg-green-600 text-white h-11"
+                    className="bg-green-600 hover:bg-green-700 text-white h-12 px-8 text-base font-semibold"
                   >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Generator
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    Open Receipt Generator
                   </Button>
                 </div>
               </div>
@@ -493,28 +481,16 @@ export default function ImportantLinks() {
                   </div>
                 </div>
 
-                {/* Embedded Platform - Hidden on mobile */}
-                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
-                  <iframe
-                    src={donorManagementEmbed}
-                    className="w-full h-full border-0"
-                    style={{
-                      minHeight: '600px',
-                      height: '100%',
-                    }}
-                    title="Donor Management Platform"
-                    loading="eager"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div className="sm:hidden bg-gray-100 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-3">For the best experience, open the donor platform in a new tab on mobile.</p>
+                {/* Open in new tab — Lovable SPAs cannot be embedded due to cross-origin restrictions */}
+                <div className="bg-gray-50 rounded-lg p-6 text-center border border-gray-200">
+                  <p className="text-sm text-gray-600 mb-3">This app opens in a new tab for the best experience.</p>
                   <Button
+                    size="lg"
                     onClick={() => window.open(donorManagementUrl, '_blank')}
-                    className="bg-pink-600 text-white h-11"
+                    className="bg-pink-600 hover:bg-pink-700 text-white h-12 px-8 text-base font-semibold"
                   >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Platform
+                    <ExternalLink className="w-5 h-5 mr-2" />
+                    Open Donor Platform
                   </Button>
                 </div>
               </div>

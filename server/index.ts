@@ -52,14 +52,79 @@ app.use(
       : {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://www.googletagmanager.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://fonts.googleapis.com'],
+            scriptSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              "'unsafe-eval'",
+              'https://cdnjs.cloudflare.com',
+              'https://unpkg.com',
+              'https://www.googletagmanager.com',
+            ],
+            styleSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              'https://cdnjs.cloudflare.com',
+              'https://unpkg.com',
+              'https://fonts.googleapis.com',
+            ],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
-            connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io', 'https://*.stream-io-api.com', 'wss://*.stream-io-api.com', 'https://*.stream-io-cdn.com', 'https://*.getstream.io', 'https://www.googletagmanager.com', 'https://www.google-analytics.com'],
-            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io'],
+            fontSrc: [
+              "'self'",
+              'https://fonts.gstatic.com',
+              'https://cdnjs.cloudflare.com',
+            ],
+            connectSrc: [
+              "'self'",
+              'wss:',
+              'ws:',
+              'https://api.openai.com',
+              'https://api.anthropic.com',
+              'https://*.sentry.io',
+              'https://*.stream-io-api.com',
+              'wss://*.stream-io-api.com',
+              'https://*.stream-io-cdn.com',
+              'https://*.getstream.io',
+              'https://www.googletagmanager.com',
+              'https://www.google-analytics.com',
+            ],
+            frameSrc: [
+              "'self'",
+              'https://*.stream-io-api.com',
+              'https://*.getstream.io',
+            ],
+            scriptSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              "'unsafe-eval'",
+              'https://cdnjs.cloudflare.com',
+              'https://unpkg.com',
+              'https://nicunursekatie.github.io',
+            ],
+            styleSrc: [
+              "'self'",
+              "'unsafe-inline'",
+              'https://cdnjs.cloudflare.com',
+              'https://unpkg.com',
+              'https://fonts.googleapis.com',
+            ],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
+            fontSrc: [
+              "'self'",
+              'https://fonts.gstatic.com',
+              'https://cdnjs.cloudflare.com',
+            ],
+            connectSrc: [
+              "'self'",
+              'wss:',
+              'ws:',
+              'https://api.openai.com',
+              'https://api.anthropic.com',
+              'https://*.sentry.io',
+              'https://chat.stream-io-api.com',
+            ],
+            frameSrc: ["'self'", 'https://docs.google.com'],
             objectSrc: ["'none'"],
-            baseUri: ["'self'"],
+            baseUri: ["'self'", 'https://nicunursekatie.github.io'],
             formAction: ["'self'"],
             upgradeInsecureRequests: [],
           },
@@ -68,7 +133,9 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resource loading
   })
 );
-serverLogger.info('Helmet security headers enabled', { csp: !isDevEnvironment });
+serverLogger.info('Helmet security headers enabled', {
+  csp: !isDevEnvironment,
+});
 
 // Performance monitoring middleware (should be early in the chain)
 app.use(performanceMonitoringMiddleware);
@@ -105,14 +172,16 @@ app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 
 // Security middleware - must come after body parsers
 import { prototypePollutionGuard } from './middleware/prototype-pollution-guard';
-app.use(prototypePollutionGuard);  // Detect prototype pollution attempts
+app.use(prototypePollutionGuard); // Detect prototype pollution attempts
 
 // Add CDN caching headers for static assets
 app.use((req: Request, res: Response, next: NextFunction) => {
   const path = req.path;
 
   // Set cache headers based on content type and path
-  if (path.match(/\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|pdf)$/i)) {
+  if (
+    path.match(/\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico|pdf)$/i)
+  ) {
     // Static assets - cache for 1 year (immutable if using content hashing)
     if (path.includes('.') && path.match(/\.[a-f0-9]{8,}\./)) {
       // Content-hashed assets (e.g., main.abc123def.js) - cache immutably
@@ -124,7 +193,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Vary', 'Accept-Encoding');
   } else if (path.startsWith('/api/')) {
     // API routes - no caching
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, private'
+    );
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
   } else if (path === '/' || path.endsWith('.html')) {
@@ -182,7 +254,8 @@ async function bootstrap() {
     serverLogger.info('🚀 Starting The Sandwich Project server...');
 
     // Use PORT from environment (Replit Autoscale sets PORT=80), fallback to 80 for production, 5000 for dev
-    const port = process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 5000);
+    const port =
+      process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 5000);
     const host = '0.0.0.0';
 
     serverLogger.info(
@@ -234,61 +307,77 @@ async function bootstrap() {
 
       res.setHeader('Content-Type', 'application/manifest+json');
       res.json({
-        name: "The Sandwich Project",
-        short_name: "TSP",
-        description: "Comprehensive operations platform for The Sandwich Project nonprofit managing sandwich collections, volunteer coordination, and event planning",
-        start_url: baseUrl + "/",
-        display: "standalone",
-        background_color: "#FFFFFF",
-        theme_color: "#F7931E",
-        orientation: "portrait-primary",
-        scope: "/",
+        name: 'The Sandwich Project',
+        short_name: 'TSP',
+        description:
+          'Comprehensive operations platform for The Sandwich Project nonprofit managing sandwich collections, volunteer coordination, and event planning',
+        start_url: baseUrl + '/',
+        display: 'standalone',
+        background_color: '#FFFFFF',
+        theme_color: '#F7931E',
+        orientation: 'portrait-primary',
+        scope: '/',
         icons: [
           {
-            src: "/attached_assets/LOGOS/TSP_transparent.png",
-            sizes: "192x192",
-            type: "image/png",
-            purpose: "any maskable"
+            src: '/attached_assets/LOGOS/TSP_transparent.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any maskable',
           },
           {
-            src: "/attached_assets/LOGOS/TSP_transparent.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable"
-          }
+            src: '/attached_assets/LOGOS/TSP_transparent.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable',
+          },
         ],
-        categories: ["productivity", "business"],
+        categories: ['productivity', 'business'],
         shortcuts: [
           {
-            name: "Collection Log",
-            short_name: "Collections",
-            description: "View and manage sandwich collections",
-            url: baseUrl + "/?section=collection-log",
-            icons: [{ src: "/attached_assets/LOGOS/sandwich logo.png", sizes: "96x96" }]
+            name: 'Collection Log',
+            short_name: 'Collections',
+            description: 'View and manage sandwich collections',
+            url: baseUrl + '/?section=collection-log',
+            icons: [
+              {
+                src: '/attached_assets/LOGOS/sandwich logo.png',
+                sizes: '96x96',
+              },
+            ],
           },
           {
-            name: "Event Requests",
-            short_name: "Events",
-            description: "Manage event requests and planning",
-            url: baseUrl + "/?section=event-requests",
-            icons: [{ src: "/attached_assets/LOGOS/TSP_transparent.png", sizes: "96x96" }]
+            name: 'Event Requests',
+            short_name: 'Events',
+            description: 'Manage event requests and planning',
+            url: baseUrl + '/?section=event-requests',
+            icons: [
+              {
+                src: '/attached_assets/LOGOS/TSP_transparent.png',
+                sizes: '96x96',
+              },
+            ],
           },
           {
-            name: "Messages",
-            short_name: "Messages",
-            description: "View team messages and notifications",
-            url: baseUrl + "/?section=real-time-messages",
-            icons: [{ src: "/attached_assets/LOGOS/TSP_transparent.png", sizes: "96x96" }]
-          }
+            name: 'Messages',
+            short_name: 'Messages',
+            description: 'View team messages and notifications',
+            url: baseUrl + '/?section=real-time-messages',
+            icons: [
+              {
+                src: '/attached_assets/LOGOS/TSP_transparent.png',
+                sizes: '96x96',
+              },
+            ],
+          },
         ],
         screenshots: [
           {
-            src: "/attached_assets/LOGOS/TSP_transparent.png",
-            sizes: "540x720",
-            type: "image/png",
-            form_factor: "narrow"
-          }
-        ]
+            src: '/attached_assets/LOGOS/TSP_transparent.png',
+            sizes: '540x720',
+            type: 'image/png',
+            form_factor: 'narrow',
+          },
+        ],
       });
     });
 
@@ -299,17 +388,24 @@ async function bootstrap() {
     httpServer.listen(Number(port), host, () => {
       serverLogger.info(`✅ Server listening on http://${host}:${port}`);
       serverLogger.info(`✅ Port ${port} is now open for health checks`);
-      serverLogger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      
+      serverLogger.info(
+        `Environment: ${process.env.NODE_ENV || 'development'}`
+      );
+
       // Log authentication mode for clarity
       const appEnv = process.env.APP_ENV || 'production';
       const nodeEnv = process.env.NODE_ENV;
       const isDeployment = process.env.REPLIT_DEPLOYMENT === '1';
       // Dev mode requires: APP_ENV=development AND NOT production NODE_ENV AND NOT in deployment
-      const authBypass = appEnv === 'development' && nodeEnv !== 'production' && !isDeployment;
-      serverLogger.info(`🔐 Auth Mode: APP_ENV=${appEnv}, NODE_ENV=${nodeEnv}, Deployment=${isDeployment ? 'YES' : 'NO'}`);
+      const authBypass =
+        appEnv === 'development' && nodeEnv !== 'production' && !isDeployment;
+      serverLogger.info(
+        `🔐 Auth Mode: APP_ENV=${appEnv}, NODE_ENV=${nodeEnv}, Deployment=${isDeployment ? 'YES' : 'NO'}`
+      );
       if (authBypass) {
-        serverLogger.info(`🔧 DEV MODE ACTIVE: Authentication bypass enabled (auto-login as dev admin)`);
+        serverLogger.info(
+          `🔧 DEV MODE ACTIVE: Authentication bypass enabled (auto-login as dev admin)`
+        );
       } else {
         serverLogger.info(`🔒 PRODUCTION MODE: Full authentication required`);
       }
@@ -320,7 +416,9 @@ async function bootstrap() {
       // ================================================================
       setImmediate(async () => {
         try {
-          serverLogger.info('⚡ Phase 1: Registering routes and static files...');
+          serverLogger.info(
+            '⚡ Phase 1: Registering routes and static files...'
+          );
 
           // Set up Socket.io for chat system
           const io = setupSocketChat(httpServer);
@@ -368,7 +466,9 @@ async function bootstrap() {
           app.use(errorTrackingMiddleware);
 
           // JSON error handler - catches malformed JSON from express.json()
-          const { jsonErrorHandler } = await import('./middleware/json-validator');
+          const { jsonErrorHandler } = await import(
+            './middleware/json-validator'
+          );
           app.use(jsonErrorHandler);
 
           // JSON 404 catch-all for unmatched API routes
@@ -391,18 +491,25 @@ async function bootstrap() {
           if (process.env.NODE_ENV === 'production') {
             app.use(express.static('dist/public'));
 
-            app.get('*', async (req: Request, res: Response, next: NextFunction) => {
-              if (req.originalUrl === '/' || req.originalUrl === '/healthz') {
-                return next();
+            app.get(
+              '*',
+              async (req: Request, res: Response, next: NextFunction) => {
+                if (req.originalUrl === '/' || req.originalUrl === '/healthz') {
+                  return next();
+                }
+                if (req.originalUrl.startsWith('/api/')) {
+                  return next();
+                }
+                const path = await import('path');
+                res.sendFile(
+                  path.join(process.cwd(), 'dist/public/index.html')
+                );
               }
-              if (req.originalUrl.startsWith('/api/')) {
-                return next();
-              }
-              const path = await import('path');
-              res.sendFile(path.join(process.cwd(), 'dist/public/index.html'));
-            });
+            );
 
-            serverLogger.info('✅ Static file serving and SPA routing configured');
+            serverLogger.info(
+              '✅ Static file serving and SPA routing configured'
+            );
           }
 
           // Set up Vite middleware AFTER API routes
@@ -476,14 +583,19 @@ async function bootstrap() {
           // Database initialization (migrations, schema checks, session table)
           try {
             await initializeDatabase();
-            logger.log({ message: '✓ Database initialization complete', level: 'info' });
+            logger.log({
+              message: '✓ Database initialization complete',
+              level: 'info',
+            });
           } catch (error) {
             serverLogger.error('Database initialization failed:', error);
           }
 
           // SMS provider
           try {
-            const { SMSProviderFactory } = await import('./sms-providers/provider-factory');
+            const { SMSProviderFactory } = await import(
+              './sms-providers/provider-factory'
+            );
             await SMSProviderFactory.getInstance().ensureInitialized();
             serverLogger.info('✅ SMS provider initialized');
           } catch (error) {
@@ -495,13 +607,20 @@ async function bootstrap() {
             const { storage } = (await import('./storage-wrapper')) as {
               storage: IStorage;
             };
-            const { startBackgroundSync } = await import('./background-sync-service');
+            const { startBackgroundSync } = await import(
+              './background-sync-service'
+            );
             startBackgroundSync(storage);
-            logger.log({ message: '✓ Background Google Sheets sync service started', level: 'info' });
+            logger.log({
+              message: '✓ Background Google Sheets sync service started',
+              level: 'info',
+            });
 
             // Cron jobs
             try {
-              const { initializeCronJobs } = await import('./services/cron-jobs');
+              const { initializeCronJobs } = await import(
+                './services/cron-jobs'
+              );
               initializeCronJobs();
               logger.info('✅ Cron jobs initialized');
             } catch (error) {
@@ -514,7 +633,10 @@ async function bootstrap() {
                 startMetricsUpdates(storage, sessionStore);
                 logger.info('✅ Periodic metrics updates started');
               } catch (error) {
-                serverLogger.error('Metrics updates initialization failed:', error);
+                serverLogger.error(
+                  'Metrics updates initialization failed:',
+                  error
+                );
               }
             }
           } catch (error) {
@@ -522,10 +644,14 @@ async function bootstrap() {
           }
 
           logger.info('SERVER INITIALIZATION COMPLETE');
-          logger.info(`Health Check: http://${host}:${port}/monitoring/health/detailed`);
+          logger.info(
+            `Health Check: http://${host}:${port}/monitoring/health/detailed`
+          );
         } catch (initError) {
           serverLogger.error('✗ Initialization failed:', initError);
-          serverLogger.error('Server will continue running — health checks still responding');
+          serverLogger.error(
+            'Server will continue running — health checks still responding'
+          );
         }
       });
     });
@@ -553,34 +679,55 @@ async function bootstrap() {
 
     // PRODUCTION MODE: Aggressive exit prevention
     if (process.env.NODE_ENV === 'production') {
-      logger.log({ message: '✅ Production exit prevention installed', level: 'info' });
+      logger.log({
+        message: '✅ Production exit prevention installed',
+        level: 'info',
+      });
 
       // Strategy 1: Keep stdin open
       process.stdin.resume();
 
       // Strategy 2: Prevent beforeExit
       process.on('beforeExit', (code) => {
-        logger.log({ message: `⚠ Prevented process exit with code ${code} - keeping alive`, level: 'warn' });
+        logger.log({
+          message: `⚠ Prevented process exit with code ${code} - keeping alive`,
+          level: 'warn',
+        });
         setTimeout(() => {}, 1000);
       });
 
       // Strategy 3: Override process.exit
       const originalExit = process.exit;
       process.exit = ((code?: number) => {
-        logger.log({ message: `⚠ Prevented process.exit(${code}) in production mode`, level: 'warn' });
+        logger.log({
+          message: `⚠ Prevented process.exit(${code}) in production mode`,
+          level: 'warn',
+        });
         return undefined as never;
       }) as typeof process.exit;
 
       // Production heartbeat
       setInterval(() => {
-        logger.log({ message: `✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`, level: 'info' });
+        logger.log({
+          message: `✅ Production heartbeat - uptime: ${Math.floor(process.uptime())}s`,
+          level: 'info',
+        });
       }, 60000);
 
-      logger.log({ message: '✅ Production infinite keep-alive loop started', level: 'info' });
+      logger.log({
+        message: '✅ Production infinite keep-alive loop started',
+        level: 'info',
+      });
     }
 
-    logger.log({ message: '✅ Health endpoint ready: /healthz', level: 'info' });
-    logger.log({ message: '✅ Server startup complete - ready for traffic', level: 'info' });
+    logger.log({
+      message: '✅ Health endpoint ready: /healthz',
+      level: 'info',
+    });
+    logger.log({
+      message: '✅ Server startup complete - ready for traffic',
+      level: 'info',
+    });
   } catch (error) {
     console.error('SERVER STARTUP FAILED:');
     console.error(error);
@@ -597,4 +744,3 @@ async function bootstrap() {
 
 // Start server - MUST NOT await, just call it
 bootstrap();
-
