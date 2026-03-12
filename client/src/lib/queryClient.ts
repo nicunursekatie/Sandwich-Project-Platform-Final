@@ -218,10 +218,16 @@ export const queryClient = new QueryClient({
         // Check both ApiError.code and error.message for error codes
         const errorCode = (error as any)?.code || '';
         const errorMessage = error?.message || '';
+        const errorStatus = (error as any)?.status || 0;
         const errorStr = `${errorCode} ${errorMessage}`;
 
         if (noRetryErrors.some((code) => errorStr.includes(code))) {
           return false;
+        }
+
+        // Retry 429 (rate limited) with longer backoff — up to 3 retries
+        if (errorStatus === 429 || errorStr.includes('429') || errorStr.includes('RATE_LIMITED')) {
+          return failureCount < 3;
         }
 
         // Retry network and database errors (initial attempt + up to 2 retries = 3 total)
@@ -232,7 +238,13 @@ export const queryClient = new QueryClient({
 
         return false;
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex, error) => {
+        // Use longer backoff for rate limiting
+        const errorStatus = (error as any)?.status || 0;
+        const isRateLimited = errorStatus === 429 || ((error as any)?.code || '').includes('429');
+        const base = isRateLimited ? 2000 : 1000;
+        return Math.min(base * 2 ** attemptIndex, 30000);
+      },
     },
     mutations: {
       retry: (failureCount, error) => {
@@ -240,10 +252,16 @@ export const queryClient = new QueryClient({
         const noRetryErrors = ['AUTH_EXPIRED', 'PERMISSION_DENIED', 'VALIDATION_ERROR'];
         const errorCode = (error as any)?.code || '';
         const errorMessage = error?.message || '';
+        const errorStatus = (error as any)?.status || 0;
         const errorStr = `${errorCode} ${errorMessage}`;
 
         if (noRetryErrors.some((code) => errorStr.includes(code))) {
           return false;
+        }
+
+        // Retry 429 (rate limited) with backoff
+        if (errorStatus === 429 || errorStr.includes('429') || errorStr.includes('RATE_LIMITED')) {
+          return failureCount < 2;
         }
 
         // Retry database, network, and timeout errors (initial attempt + up to 2 retries = 3 total)
@@ -253,8 +271,12 @@ export const queryClient = new QueryClient({
           failureCount < 2
         );
       },
-      // Cap at 5s for mutations since they're user-initiated and responsiveness matters
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+      retryDelay: (attemptIndex, error) => {
+        const errorStatus = (error as any)?.status || 0;
+        const isRateLimited = errorStatus === 429 || ((error as any)?.code || '').includes('429');
+        const base = isRateLimited ? 2000 : 1000;
+        return Math.min(base * 2 ** attemptIndex, 5000);
+      },
     },
   },
 });
