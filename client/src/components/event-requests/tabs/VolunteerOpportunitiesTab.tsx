@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, MapPin, Users, Phone, Mail, User, Info, Sandwich, LayoutGrid, Map as MapIcon } from 'lucide-react';
+import { Calendar, MapPin, Users, Phone, Mail, User, Info, Sandwich, LayoutGrid, Map as MapIcon, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
@@ -41,7 +41,10 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     const driversAssignedCount = (request.assignedDriverIds?.length || 0) + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
     const needsDriver = driversNeededCount > driversAssignedCount;
 
-    return { needsSpeaker, needsVolunteer, needsDriver };
+    // Van driver: separate from regular driver - only approved van drivers can fill this
+    const needsVanDriver = !!(request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan);
+
+    return { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver };
   };
 
   // Filter events that need volunteers, speakers, or drivers (all scheduled events, regardless of current tab/pagination/search)
@@ -49,15 +52,15 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     const needs = eventRequests
       .filter((request: EventRequest) => request.status === 'scheduled')
       .filter((request: EventRequest) => {
-        const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
+        const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getUnfilledNeeds(request);
 
         // Filter by role selection
         if (roleFilter === 'speaker' && !needsSpeaker) return false;
         if (roleFilter === 'volunteer' && !needsVolunteer) return false;
-        if (roleFilter === 'driver' && !needsDriver) return false;
+        if (roleFilter === 'driver' && !needsDriver && !needsVanDriver) return false;
 
         // Show if any role is needed and unfilled
-        return needsSpeaker || needsVolunteer || needsDriver;
+        return needsSpeaker || needsVolunteer || needsDriver || needsVanDriver;
       })
       // Sort by scheduled date (ascending), fallback to desired date
       .sort((a: EventRequest, b: EventRequest) => {
@@ -237,7 +240,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
         <div className="space-y-4">
           {opportunities.map((request: EventRequest) => {
             // Use helper to get unfilled needs
-            const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
+            const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getUnfilledNeeds(request);
 
             // Check if current user is already signed up
             const speakerDetails = request.speakerDetails || {};
@@ -271,7 +274,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       {/* Roles Needed */}
                       <div className="flex gap-3 flex-wrap mt-4">
                         {needsSpeaker && (
-                          <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-base px-4 py-2 font-semibold">
+                          <Badge style={{ backgroundColor: '#47B3CB' }} className="text-white hover:opacity-90 text-base px-4 py-2 font-semibold">
                             Speaker Needed
                           </Badge>
                         )}
@@ -280,7 +283,13 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                             Volunteer Needed
                           </Badge>
                         )}
-                        {needsDriver && (
+                        {needsVanDriver && (
+                          <Badge style={{ backgroundColor: '#F59E0B' }} className="text-white hover:opacity-90 text-base px-4 py-2 font-bold flex items-center gap-1.5">
+                            <Truck className="w-4 h-4" />
+                            Van Driver Needed
+                          </Badge>
+                        )}
+                        {needsDriver && !needsVanDriver && (
                           <Badge className="bg-purple-600 text-white hover:bg-purple-700 text-base px-4 py-2 font-semibold">
                             Driver Needed
                           </Badge>
@@ -375,7 +384,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                   </div>
 
                   {/* Sign Up Actions - Large, Prominent Buttons - Only show if there are unfilled needs */}
-                  {(needsSpeaker || needsVolunteer || needsDriver) && (
+                  {(needsSpeaker || needsVolunteer || needsDriver || needsVanDriver) && (
                     <div className="flex gap-4 pt-6 border-t-4 flex-wrap" style={{ borderColor: '#007E8C' }}>
                       {needsSpeaker && (
                         <Button
@@ -413,7 +422,28 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                           )}
                         </Button>
                       )}
-                      {needsDriver && (
+                      {needsVanDriver && (
+                        <Button
+                          onClick={() => handleSelfSignup(request.id, 'driver')}
+                          disabled={isDriverSignedUp || !canSelfSignup(request, 'driver')}
+                          className="flex-1 text-xl py-8 font-bold rounded-lg min-w-[200px] border-2"
+                          style={
+                            isDriverSignedUp
+                              ? { backgroundColor: '#e0e0e0', color: '#666' }
+                              : { backgroundColor: '#FEF3C7', color: '#92400E', borderColor: '#F59E0B' }
+                          }
+                        >
+                          {isDriverSignedUp ? (
+                            <>✓ You're signed up as Van Driver</>
+                          ) : (
+                            <span className="flex items-center justify-center gap-2">
+                              <Truck className="w-6 h-6" />
+                              Sign Up as Van Driver
+                            </span>
+                          )}
+                        </Button>
+                      )}
+                      {needsDriver && !needsVanDriver && (
                         <Button
                           onClick={() => handleSelfSignup(request.id, 'driver')}
                           disabled={isDriverSignedUp || !canSelfSignup(request, 'driver')}

@@ -5,11 +5,20 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
-import { MapPin, Calendar, Package, User, Phone, Mail, Mic, UserCheck } from 'lucide-react';
+import { MapPin, Calendar, Package, User, Phone, Mail, Mic, UserCheck, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+
+// Marker color constants
+const COLORS = {
+  speaker: '#47B3CB',    // Speaker needed - light teal/cyan
+  volunteer: '#10B981',  // Volunteer needed - green
+  both: '#007E8C',       // Speaker + Volunteer needed - teal
+  driver: '#8B5CF6',     // Regular driver needed - purple
+  vanDriver: '#F59E0B',  // Van driver needed - amber/orange
+} as const;
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -62,18 +71,29 @@ const createClusterCustomIcon = (cluster: any) => {
   });
 };
 
-// Popup content for volunteer opportunities
-const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventRequest; onEventClick?: (event: EventRequest) => void }) => {
-  // Check if event actually needs speakers and if one is not assigned
+// Helper to compute unfilled needs for an event
+function getEventNeeds(event: EventRequest) {
   const speakersNeeded = (event.speakersNeeded ?? 0) > 0;
   const speakerNotAssigned = !event.speakerId || event.speakerId === null || event.speakerId === '';
   const needsSpeaker = speakersNeeded && speakerNotAssigned;
 
-  // Check if event actually needs volunteers and if one is not assigned
   const volunteersNeeded = (event.volunteersNeeded ?? 0) > 0;
   const volunteerNotAssigned = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
   const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
-  
+
+  const driversNeededCount = event.driversNeeded ?? 0;
+  const driversAssignedCount = (event.assignedDriverIds?.length || 0) + (event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0);
+  const needsDriver = driversNeededCount > driversAssignedCount;
+
+  const needsVanDriver = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
+
+  return { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver };
+}
+
+// Popup content for volunteer opportunities
+const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventRequest; onEventClick?: (event: EventRequest) => void }) => {
+  const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
+
   const getEventDate = (evt: EventRequest) => {
     const date = evt.scheduledEventDate || evt.desiredEventDate;
     return date ? format(parseLocalDate(date), 'MMM dd, yyyy') : 'No date set';
@@ -89,12 +109,20 @@ const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventReques
       )}
 
       {/* Role badges */}
-      <div className="flex gap-2 mb-3">
+      <div className="flex flex-wrap gap-2 mb-3">
         {needsSpeaker && (
-          <Badge className="bg-blue-600 text-white text-xs">Speaker Needed</Badge>
+          <Badge style={{ backgroundColor: COLORS.speaker }} className="text-white text-xs">Speaker Needed</Badge>
         )}
         {needsVolunteer && (
           <Badge className="bg-green-600 text-white text-xs">Volunteer Needed</Badge>
+        )}
+        {needsVanDriver && (
+          <Badge style={{ backgroundColor: COLORS.vanDriver }} className="text-white text-xs font-semibold">
+            Van Driver Needed
+          </Badge>
+        )}
+        {needsDriver && !needsVanDriver && (
+          <Badge style={{ backgroundColor: COLORS.driver }} className="text-white text-xs">Driver Needed</Badge>
         )}
       </div>
 
@@ -164,26 +192,32 @@ function EventMarker({
   event: EventRequest;
   onEventClick?: (event: EventRequest) => void;
 }) {
-  // Check if event actually needs speakers and if one is not assigned
-  const speakersNeeded = (event.speakersNeeded ?? 0) > 0;
-  const speakerNotAssigned = !event.speakerId || event.speakerId === null || event.speakerId === '';
-  const needsSpeaker = speakersNeeded && speakerNotAssigned;
+  const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
 
-  // Check if event actually needs volunteers and if one is not assigned
-  const volunteersNeeded = (event.volunteersNeeded ?? 0) > 0;
-  const volunteerNotAssigned = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
-  const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
+  // Priority-based marker color: van driver (amber) > driver (purple) > both S+V (teal) > speaker (cyan) > volunteer (green)
+  let markerColor: string;
+  let markerLabel: string;
 
-  // Use different marker colors based on what's needed
-  const markerColor = needsSpeaker && needsVolunteer 
-    ? '#007E8C' // Both needed - teal
-    : needsSpeaker 
-    ? '#3B82F6' // Only speaker - blue
-    : '#10B981'; // Only volunteer - green
+  if (needsVanDriver) {
+    markerColor = COLORS.vanDriver;
+    markerLabel = '🚐';
+  } else if (needsDriver) {
+    markerColor = COLORS.driver;
+    markerLabel = 'D';
+  } else if (needsSpeaker && needsVolunteer) {
+    markerColor = COLORS.both;
+    markerLabel = 'S+V';
+  } else if (needsSpeaker) {
+    markerColor = COLORS.speaker;
+    markerLabel = 'S';
+  } else {
+    markerColor = COLORS.volunteer;
+    markerLabel = 'V';
+  }
 
   const customIcon = L.divIcon({
     html: `<div style="background-color: ${markerColor}; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-      <div style="transform: rotate(45deg); color: white; font-size: 16px; line-height: 24px; text-align: center; font-weight: bold;">${needsSpeaker && needsVolunteer ? 'S+V' : needsSpeaker ? 'S' : 'V'}</div>
+      <div style="transform: rotate(45deg); color: white; font-size: ${markerLabel.length > 2 ? '11' : '16'}px; line-height: 24px; text-align: center; font-weight: bold;">${markerLabel}</div>
     </div>`,
     className: 'custom-marker',
     iconSize: [30, 30],
@@ -243,6 +277,24 @@ export function VolunteerOpportunitiesMap({ events, onEventClick }: VolunteerOpp
     return [avgLat, avgLng];
   }, [eventsWithCoordinates]);
 
+  // Compute date range for display
+  const dateRange = useMemo(() => {
+    const dates = events
+      .map(e => e.scheduledEventDate || e.desiredEventDate)
+      .filter(Boolean)
+      .map(d => parseLocalDate(d!))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (dates.length === 0) return null;
+    const earliest = dates[0];
+    const latest = dates[dates.length - 1];
+    return {
+      from: format(earliest, 'MMM d'),
+      to: format(latest, 'MMM d, yyyy'),
+      count: events.length,
+    };
+  }, [events]);
+
   if (eventsWithCoordinates.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-gray-50">
@@ -266,40 +318,77 @@ export function VolunteerOpportunitiesMap({ events, onEventClick }: VolunteerOpp
   }
 
   return (
-    <MapContainer
-      center={mapCenter}
-      zoom={10}
-      style={{ height: '100%', width: '100%' }}
-      className="z-0"
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
-        maxZoom={20}
-      />
-      <MapBounds events={eventsWithCoordinates} />
+    <div className="relative h-full">
+      {/* Date range info bar */}
+      {dateRange && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-4 py-2 text-sm font-medium text-gray-700 border border-gray-200">
+          <Calendar className="w-4 h-4 inline mr-1.5 -mt-0.5" style={{ color: '#007E8C' }} />
+          Showing <span className="font-bold" style={{ color: '#007E8C' }}>{dateRange.count}</span> scheduled events with unfilled roles &middot; {dateRange.from} – {dateRange.to}
+        </div>
+      )}
 
-      <MarkerClusterGroup
-        chunkedLoading
-        iconCreateFunction={createClusterCustomIcon}
-        showCoverageOnHover={true}
-        spiderfyDistanceMultiplier={1.5}
-        maxClusterRadius={60}
+      {/* Legend */}
+      <div className="absolute bottom-4 left-3 z-[1000] bg-white/95 backdrop-blur-sm rounded-lg shadow-md px-3 py-2.5 text-xs border border-gray-200">
+        <div className="font-semibold text-gray-700 mb-1.5">Map Legend</div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.speaker }} />
+            <span>Speaker Needed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.volunteer }} />
+            <span>Volunteer Needed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.both }} />
+            <span>Speaker + Volunteer</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.driver }} />
+            <span>Driver Needed</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full border border-gray-300" style={{ backgroundColor: COLORS.vanDriver }} />
+            <span className="font-semibold">Van Driver Needed</span>
+          </div>
+        </div>
+      </div>
+
+      <MapContainer
+        center={mapCenter}
+        zoom={10}
+        style={{ height: '100%', width: '100%' }}
+        className="z-0"
       >
-        {Array.from(eventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
-          // For multiple events at same location, show the first one (or could show a combined popup)
-          const primaryEvent = eventsAtLocation[0];
-          return (
-            <EventMarker
-              key={`${primaryEvent.id}-${locationKey}`}
-              event={primaryEvent}
-              onEventClick={onEventClick}
-            />
-          );
-        })}
-      </MarkerClusterGroup>
-    </MapContainer>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={20}
+        />
+        <MapBounds events={eventsWithCoordinates} />
+
+        <MarkerClusterGroup
+          chunkedLoading
+          iconCreateFunction={createClusterCustomIcon}
+          showCoverageOnHover={true}
+          spiderfyDistanceMultiplier={1.5}
+          maxClusterRadius={60}
+        >
+          {Array.from(eventsByLocation.entries()).map(([locationKey, eventsAtLocation]) => {
+            // For multiple events at same location, show the first one (or could show a combined popup)
+            const primaryEvent = eventsAtLocation[0];
+            return (
+              <EventMarker
+                key={`${primaryEvent.id}-${locationKey}`}
+                event={primaryEvent}
+                onEventClick={onEventClick}
+              />
+            );
+          })}
+        </MarkerClusterGroup>
+      </MapContainer>
+    </div>
   );
 }
 

@@ -149,11 +149,12 @@ interface MySignup {
 }
 
 // Custom marker icons using brand colors
-const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false) => {
+const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
   let color = '#22c55e'; // Green for fully staffed
   if (isCompleted) color = '#9ca3af'; // Gray for completed
-  else if (needsSpeaker) color = '#a31c41'; // Burgundy for speaker needed
-  else if (needsDriver) color = '#236383'; // Dark teal for driver needed
+  else if (needsVanDriver) color = '#F59E0B'; // Amber for van driver needed (distinct, limited pool)
+  else if (needsSpeaker) color = '#47B3CB'; // Light teal/cyan for speaker needed
+  else if (needsDriver) color = '#8B5CF6'; // Purple for driver needed
   else if (needsVolunteer) color = '#007e8c'; // Primary teal for volunteer needed
 
   const html = `
@@ -1165,7 +1166,7 @@ export default function VolunteerEventHub() {
                 {/* Legend */}
                 <div className="flex flex-wrap gap-4 mt-4 text-sm">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#a31c41]" />
+                    <div className="w-3 h-3 rounded bg-[#47B3CB]" />
                     <span>Speaker Needed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1173,8 +1174,12 @@ export default function VolunteerEventHub() {
                     <span>Volunteer Needed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#236383]" />
+                    <div className="w-3 h-3 rounded bg-[#8B5CF6]" />
                     <span>Driver Needed</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-[#F59E0B]" />
+                    <span className="font-semibold">Van Driver Needed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded bg-green-500" />
@@ -1238,6 +1243,12 @@ export default function VolunteerEventHub() {
                   )}
                 </div>
 
+                {/* Date range info */}
+                <div className="px-4 py-2 border-b bg-gray-50 text-sm text-gray-600">
+                  <Calendar className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5 text-[#007e8c]" />
+                  Showing <span className="font-semibold text-[#007e8c]">{filteredEvents.length}</span> scheduled events from today onward that need volunteers, speakers, or drivers
+                </div>
+
                 <div className="h-[600px] rounded-lg overflow-hidden">
                   <MapContainer
                     center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter}
@@ -1273,7 +1284,8 @@ export default function VolunteerEventHub() {
                             event.speakersUnfilled > 0,
                             event.volunteersUnfilled > 0,
                             event.driversUnfilled > 0,
-                            event.status === 'completed'
+                            event.status === 'completed',
+                            event.vanDriverNeeded
                           )}
                         >
                           <Popup>
@@ -1362,7 +1374,7 @@ export default function VolunteerEventHub() {
                 {/* Map Legend */}
                 <div className="p-4 border-t flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#a31c41]" />
+                    <div className="w-4 h-4 rounded-full bg-[#47B3CB]" />
                     <span>Speaker Needed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -1370,8 +1382,12 @@ export default function VolunteerEventHub() {
                     <span>Volunteer Needed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#236383]" />
+                    <div className="w-4 h-4 rounded-full bg-[#8B5CF6]" />
                     <span>Driver Needed</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded-full bg-[#F59E0B]" />
+                    <span className="font-semibold">Van Driver Needed</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-green-500" />
