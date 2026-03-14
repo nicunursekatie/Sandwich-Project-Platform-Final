@@ -47,6 +47,10 @@ const RULE_TYPE_LABELS: Record<string, { label: string; getDescription: (thresho
     label: 'Staffing Needs Unmet',
     getDescription: (days) => `The event is within ${days} days and still has unmet staffing needs.`,
   },
+  [REMINDER_RULE_TYPES.MISSING_DETAILS]: {
+    label: 'Missing Key Details',
+    getDescription: (days) => `The event is within ${days} days and is still missing key details (sandwich count, type, location, or pickup time).`,
+  },
   [REMINDER_RULE_TYPES.GENERAL_CHECKIN]: {
     label: 'General Check-In',
     getDescription: () => `Time for a scheduled check-in on this event.`,
@@ -164,6 +168,24 @@ function evaluateRuleCondition(
         vanNeeded;
 
       return hasUnmetNeeds;
+    }
+
+    case REMINDER_RULE_TYPES.MISSING_DETAILS: {
+      // Only applies to scheduled events
+      if (event.status !== 'scheduled') return false;
+      const scheduledDate = event.scheduledEventDate ? new Date(event.scheduledEventDate) : null;
+      if (!scheduledDate) return false;
+      const daysUntilDate = (scheduledDate.getTime() - now.getTime()) / msPerDay;
+      if (daysUntilDate > thresholdDays || daysUntilDate < 0) return false;
+
+      // Check if key details are missing
+      const missingSandwichCount = !event.estimatedSandwichCount && event.estimatedSandwichCount !== 0;
+      const sandwichTypes = event.sandwichTypes as any[] | null;
+      const missingSandwichType = !sandwichTypes || sandwichTypes.length === 0;
+      const missingLocation = !event.eventAddress;
+      const missingPickupTime = !event.pickupTime;
+
+      return missingSandwichCount || missingSandwichType || missingLocation || missingPickupTime;
     }
 
     case REMINDER_RULE_TYPES.GENERAL_CHECKIN:

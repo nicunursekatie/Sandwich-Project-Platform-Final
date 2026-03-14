@@ -2724,6 +2724,7 @@ export const REMINDER_RULE_TYPES = {
   DATE_APPROACHING_INPROCESS: 'date_approaching_inprocess',
   DATE_APPROACHING_SCHEDULED: 'date_approaching_scheduled',
   STAFFING_UNMET: 'staffing_unmet',
+  MISSING_DETAILS: 'missing_details',
   GENERAL_CHECKIN: 'general_checkin',
 } as const;
 

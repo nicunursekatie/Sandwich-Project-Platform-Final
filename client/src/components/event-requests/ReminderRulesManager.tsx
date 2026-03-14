@@ -72,6 +72,14 @@ const RULE_TYPE_CONFIG = {
     applicableStatuses: ['scheduled'],
     isConditionBased: true,
   },
+  missing_details: {
+    label: 'Missing Key Details',
+    description: 'Notify me if key details (sandwich count/type, location, pickup time) are missing',
+    defaultThreshold: 7,
+    thresholdLabel: 'days before event',
+    applicableStatuses: ['scheduled'],
+    isConditionBased: true,
+  },
   general_checkin: {
     label: 'General Check-In',
     description: 'Send me a periodic reminder to check in on this event',
@@ -117,9 +125,11 @@ export function ReminderRulesManager({
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Only show if the current user is the assigned TSP contact
+  // Show for the assigned TSP contact, Katie, or Christine
+  const ADMIN_REMINDER_EMAILS = ['katielong2316@gmail.com', 'christine@thesandwichproject.org'];
   const isAssignedContact = user?.id && tspContactUserId && user.id === tspContactUserId;
-  if (!isAssignedContact) return null;
+  const isAdminUser = user?.email && ADMIN_REMINDER_EMAILS.includes(user.email.toLowerCase());
+  if (!isAssignedContact && !isAdminUser) return null;
 
   const { data, isLoading } = useQuery({
     queryKey: ['check-in-reminder', eventRequestId],
