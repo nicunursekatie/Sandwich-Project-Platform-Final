@@ -70,7 +70,11 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
               <Textarea
                 id="message"
                 value={formData.message}
-                onChange={(e) => setFormData((prev: any) => ({ ...prev, message: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setLastNotesEditValue(value);
+                  setFormData((prev: any) => ({ ...prev, message: value }));
+                }}
                 placeholder="Original request message from the organizer"
                 className="min-h-[80px]"
               />
