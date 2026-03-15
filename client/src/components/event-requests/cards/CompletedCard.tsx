@@ -32,7 +32,6 @@ import {
   Instagram,
   Home,
   MessageSquare,
-  Phone,
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';

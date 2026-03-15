@@ -2,7 +2,7 @@ import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { createHash } from 'crypto';
 import type { IStorage } from './storage';
-import { EventRequest, Organization, eventRequests } from '@shared/schema';
+import { EventRequest, eventRequests } from '@shared/schema';
 import { AuditLogger } from './audit-logger';
 import { db } from './db';
 import { eq, sql, and } from 'drizzle-orm';

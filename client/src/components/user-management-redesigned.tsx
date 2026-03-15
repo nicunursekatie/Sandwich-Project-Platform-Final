@@ -197,7 +197,7 @@ export default function UserManagementFinal() {
     updateUserMutation,
   } = useUserManagement();
 
-  const { searchQuery, setSearchQuery, roleFilter, setRoleFilter, filteredUsers: baseFilteredUsers } =
+  const { searchQuery, setSearchQuery, roleFilter, filteredUsers: baseFilteredUsers } =
     useUserFilters(users as User[]);
 
   // Apply additional filters from StandardFilterBar
