@@ -34,49 +34,55 @@ interface ReminderRulesManagerProps {
 const RULE_TYPE_CONFIG = {
   no_contact: {
     label: 'No Contact Logged',
-    description: 'Notify me after this many days with no contact logged',
+    description: 'Alert me when no contact has been logged for a set number of days',
     defaultThreshold: 5,
-    thresholdLabel: 'days without contact',
+    thresholdPrefix: 'After',
+    thresholdLabel: 'days with no contact',
     applicableStatuses: ['new', 'in_process'],
     isConditionBased: true,
   },
   stale_event: {
     label: 'Stale / No Updates',
-    description: 'Notify me after this many days with no updates',
+    description: 'Alert me when an event has had no updates for a set number of days',
     defaultThreshold: 7,
-    thresholdLabel: 'days without updates',
+    thresholdPrefix: 'After',
+    thresholdLabel: 'days with no updates',
     applicableStatuses: ['new', 'in_process'],
     isConditionBased: true,
   },
   date_approaching_inprocess: {
     label: 'Desired Date Approaching',
-    description: 'Notify me when the desired date is within this many days',
+    description: 'Alert me when the desired event date is coming up soon',
     defaultThreshold: 14,
-    thresholdLabel: 'days before desired date',
+    thresholdPrefix: 'Within',
+    thresholdLabel: 'days of desired date',
     applicableStatuses: ['new', 'in_process'],
     isConditionBased: true,
   },
   date_approaching_scheduled: {
     label: 'Event Date Approaching',
-    description: 'Notify me when the event date is within this many days',
+    description: 'Alert me when the scheduled event date is coming up soon',
     defaultThreshold: 7,
-    thresholdLabel: 'days before event',
+    thresholdPrefix: 'Within',
+    thresholdLabel: 'days of event',
     applicableStatuses: ['scheduled'],
     isConditionBased: true,
   },
   staffing_unmet: {
     label: 'Staffing Needs Unmet',
-    description: 'Notify me if staffing is unmet within this many days of the event',
+    description: 'Alert me if roles are still unfilled close to the event date',
     defaultThreshold: 7,
-    thresholdLabel: 'days before event',
+    thresholdPrefix: 'Within',
+    thresholdLabel: 'days of event',
     applicableStatuses: ['scheduled'],
     isConditionBased: true,
   },
   missing_details: {
     label: 'Missing Key Details',
-    description: 'Notify me if key details (sandwich count/type, location, pickup time) are missing',
+    description: 'Alert me if sandwich count/type, location, or pickup time are still missing',
     defaultThreshold: 7,
-    thresholdLabel: 'days before event',
+    thresholdPrefix: 'Within',
+    thresholdLabel: 'days of event',
     applicableStatuses: ['scheduled'],
     isConditionBased: true,
   },
@@ -404,7 +410,7 @@ function RulesEditor({
                     {config.isConditionBased ? (
                       /* Condition-based rules: show only the threshold */
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500">After</span>
+                        <span className="text-xs text-gray-500">{config.thresholdPrefix}</span>
                         <Input
                           type="number"
                           min={1}
