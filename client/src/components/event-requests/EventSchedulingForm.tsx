@@ -347,6 +347,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [callNotesSyncedAt, setCallNotesSyncedAt] = useState<Date | null>(null);
   const [callNotesSyncError, setCallNotesSyncError] = useState<string>('');
   const callNotesLastSyncedValueRef = useRef<string>('');
+  const callNotesExpectedVersionRef = useRef<string | null>(null);
+  const callNotesConflictWarnedRef = useRef(false);
+
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -359,6 +362,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const getCallNotesKey = useCallback(() => {
     return `call_notes_event_${eventRequest?.id || 'new'}`;
   }, [eventRequest?.id]);
+
+  const parseCallNotesDraft = useCallback((rawValue: string | null): { message: string; savedAt: string | null; baseUpdatedAt: string | null } | null => {
+    if (!rawValue) return null;
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (parsed && typeof parsed === 'object' && typeof parsed.message === 'string') {
+        return {
+          message: parsed.message,
+          savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : null,
+          baseUpdatedAt: typeof parsed.baseUpdatedAt === 'string' ? parsed.baseUpdatedAt : null,
+        };
+      }
+    } catch {
+      // Backward compatibility: old format was plain string
+      return { message: rawValue, savedAt: null, baseUpdatedAt: null };
+    }
+    return null;
+  }, []);
+
+
 
   const canRemoveCorporatePriority = useMemo(() => {
     const allowedEmails = [
@@ -698,22 +721,66 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Call Notes Scratchpad ──────────────────────────────────────────
 
   useEffect(() => {
-    if (!dialogOpen) return;
-    try {
-      const restoredNotes = localStorage.getItem(getCallNotesKey());
-      if (restoredNotes && restoredNotes !== (formData.message || '')) {
-        setFormData(prev => ({ ...prev, message: restoredNotes }));
-        setCallNotesLocalSavedAt(new Date());
+callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
+}, [effectiveEventRequest?.updatedAt]);
+
+useEffect(() => {
+  if (!dialogOpen || !formInitialized) return;
+  callNotesConflictWarnedRef.current = false;
+  setCallNotesSyncError('');
+}, [dialogOpen, formInitialized, eventRequest?.id]);
+
+useEffect(() => {
+  if (!dialogOpen || !formInitialized) return;
+
+  const serverMessage = String(originalFormDataRef.current?.message ?? '');
+
+  callNotesLastSyncedValueRef.current = serverMessage;
+  setCallNotesSyncedAt(serverMessage ? new Date() : null);
+
+  try {
+    const restoredRaw = localStorage.getItem(getCallNotesKey());
+    const draft = parseCallNotesDraft(restoredRaw);
+    if (!draft || !draft.message || draft.message === serverMessage) return;
+
+    const hasServerMessage = !!(serverMessage && serverMessage.trim());
+    const matchesServerVersion = !!(
+      draft.baseUpdatedAt &&
+      callNotesExpectedVersionRef.current &&
+      draft.baseUpdatedAt === callNotesExpectedVersionRef.current
+    );
+
+    if (isCreateMode || !hasServerMessage || matchesServerVersion) {
+      setFormData(prev => ({ ...prev, message: draft.message }));
+      setCallNotesLocalSavedAt(new Date());
+      setCallNotesSyncError('');
+    } else if (!callNotesConflictWarnedRef.current) {
+      callNotesConflictWarnedRef.current = true;
+      setCallNotesSyncError('Local draft differs from latest server notes');
+      toast({
+        title: 'Call notes conflict detected',
+        description: 'A local draft exists but server notes are newer. We kept server notes to prevent overwriting.',
+        duration: 8000,
+      });
+    }
+  } catch {
+    // ignore localStorage failures
+  }
+}, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
       }
     } catch {
       // ignore localStorage failures
     }
-  }, [dialogOpen, getCallNotesKey]);
+  }, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
 
   useEffect(() => {
-    if (!dialogOpen) return;
+    if (!dialogOpen || !formInitialized) return;
     try {
-      localStorage.setItem(getCallNotesKey(), formData.message || '');
+      localStorage.setItem(getCallNotesKey(), JSON.stringify({
+        message: formData.message || '',
+        savedAt: new Date().toISOString(),
+        baseUpdatedAt: callNotesExpectedVersionRef.current,
+      }));
       setCallNotesLocalSavedAt(new Date());
     } catch {
       // ignore localStorage failures
@@ -721,23 +788,36 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [dialogOpen, formData.message, getCallNotesKey]);
 
   const syncCallNotesMutation = useMutation({
-    mutationFn: ({ id, message }: { id: number; message: string }) =>
-      apiRequest('PATCH', `/api/event-requests/${id}`, { message }),
+    mutationFn: ({ id, message }: { id: number; message: string }) => {
+      const payload: Record<string, any> = { message };
+      if (callNotesExpectedVersionRef.current) {
+        payload._expectedVersion = callNotesExpectedVersionRef.current;
+      }
+      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
+    },
     networkMode: 'always',
-    onSuccess: (_data, variables) => {
+    onSuccess: (updatedEvent: any, variables) => {
       callNotesLastSyncedValueRef.current = variables.message;
+      const newVersion = updatedEvent?.updatedAt ? String(updatedEvent.updatedAt) : null;
+      if (newVersion) callNotesExpectedVersionRef.current = newVersion;
+      if (updatedEvent && variables?.id) {
+        queryClient.setQueryData(['/api/event-requests', variables.id, 'full'], (prev: any) => ({ ...(prev || {}), ...updatedEvent }));
+      }
       setCallNotesSyncedAt(new Date());
       setCallNotesSyncError('');
     },
-    onError: () => {
-      setCallNotesSyncError('Sync pending');
+    onError: (error: any) => {
+      const conflict = error?.status === 409 || error?.code?.includes('CONFLICT');
+      setCallNotesSyncError(conflict ? 'Sync conflict - refresh to merge latest notes' : 'Sync pending');
     },
   });
 
   useEffect(() => {
-    if (!dialogOpen || !eventRequest?.id) return;
+    if (!dialogOpen || !eventRequest?.id || !formInitialized) return;
 
     const interval = setInterval(() => {
+      if (isSubmitting) return;
+
       const currentMessage = formData.message || '';
       const hasUnsyncedChanges = currentMessage !== callNotesLastSyncedValueRef.current;
       if (!hasUnsyncedChanges || syncCallNotesMutation.isPending) return;
@@ -745,7 +825,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [dialogOpen, eventRequest?.id, formData.message, syncCallNotesMutation]);
+  }, [dialogOpen, eventRequest?.id, formInitialized, formData.message, isSubmitting, syncCallNotesMutation]);
+
 
   // ── Mutations ──────────────────────────────────────────────────────
 
@@ -753,7 +834,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
       const payload = { ...data };
       // Use effectiveEventRequest (full data) for version check, not the stale prop
-      const latestUpdatedAt = effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
+      const latestUpdatedAt = callNotesExpectedVersionRef.current || effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
       if (latestUpdatedAt) payload._expectedVersion = latestUpdatedAt;
       return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },
@@ -1291,7 +1372,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 formData={formData as EventFormData}
                 setFormData={setFormData}
                 isComplete={sectionStatus.notes}
-                eventRequest={eventRequest}
                 isMessageEditable={isMessageEditable}
                 setIsMessageEditable={setIsMessageEditable}
                 isCollaborationEnabled={isCollaborationEnabled}
