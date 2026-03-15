@@ -767,11 +767,6 @@ useEffect(() => {
     // ignore localStorage failures
   }
 }, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
-      }
-    } catch {
-      // ignore localStorage failures
-    }
-  }, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
 
   useEffect(() => {
     if (!dialogOpen || !formInitialized) return;
@@ -785,7 +780,7 @@ useEffect(() => {
     } catch {
       // ignore localStorage failures
     }
-  }, [dialogOpen, formData.message, getCallNotesKey]);
+  }, [dialogOpen, formInitialized, formData.message, getCallNotesKey]);
 
   const syncCallNotesMutation = useMutation({
     mutationFn: ({ id, message }: { id: number; message: string }) => {
