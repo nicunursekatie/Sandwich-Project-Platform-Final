@@ -2754,6 +2754,7 @@ export default function GroupCatalog({
               eventDate: dept.eventDate,
               contactName: dept.contactName,
               department: dept.department,
+              locations: (dept as any).locations || [],
             }))
           ),
           selectedItem: selectedOrganization ? {
@@ -2772,6 +2773,7 @@ export default function GroupCatalog({
           "What groups haven't hosted events yet?",
           "Show me the breakdown by category",
           "Which groups were recently active?",
+          "Do we have any groups near Covington?",
         ]}
       />
 
