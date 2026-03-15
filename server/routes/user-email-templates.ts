@@ -1,11 +1,22 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
-import { userEmailTemplates, emailLogs, eventRequests, users } from '@shared/schema';
+import { userEmailTemplates, emailLogs, eventRequests, users, updateUserEmailTemplateSchema } from '@shared/schema';
 import { eq, desc, isNull } from 'drizzle-orm';
-import { isAuthenticated } from '../auth';
+
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 import { sendEmail } from '../sendgrid';
 import type { AuthenticatedRequest } from '../types/express';
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // Default templates used when user has not customized their own
 const DEFAULT_TEMPLATES = {
@@ -70,7 +81,7 @@ export function createUserEmailTemplatesRouter(): Router {
   const router = Router();
 
   // GET /api/user/email-templates - Returns current user's saved templates (or defaults)
-  router.get('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
       if (!user?.id) {
@@ -100,7 +111,7 @@ export function createUserEmailTemplatesRouter(): Router {
   });
 
   // GET /api/user/email-templates/defaults - Returns default templates (for reset)
-  router.get('/defaults', isAuthenticated, async (_req: AuthenticatedRequest, res: Response) => {
+  router.get('/defaults', async (_req: AuthenticatedRequest, res: Response) => {
     res.json({
       newOrgSubject: DEFAULT_TEMPLATES.new_org.subject,
       newOrgBody: DEFAULT_TEMPLATES.new_org.body,
@@ -110,14 +121,18 @@ export function createUserEmailTemplatesRouter(): Router {
   });
 
   // PUT /api/user/email-templates - Saves/updates both templates
-  router.put('/', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.put('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const { newOrgSubject, newOrgBody, returningContactSubject, returningContactBody } = req.body;
+      const parseResult = updateUserEmailTemplateSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({ error: 'Invalid template data', details: parseResult.error.issues });
+      }
+      const { newOrgSubject, newOrgBody, returningContactSubject, returningContactBody } = parseResult.data;
 
       const [existing] = await db
         .select()
@@ -159,7 +174,7 @@ export function createUserEmailTemplatesRouter(): Router {
   });
 
   // POST /api/user/email-templates/preview - Preview a template with sample merge data
-  router.post('/preview', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/preview', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
       if (!user?.id) {
@@ -203,11 +218,15 @@ export function createEventEmailRouter(): Router {
   const router = Router();
 
   // POST /api/events/:eventId/send-email - Send email for an event with merge variables
-  router.post('/:eventId/send-email', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:eventId/send-email', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_TOOLKIT)) {
+        return res.status(403).json({ error: 'Insufficient permissions to send event emails' });
       }
 
       const eventId = parseInt(req.params.eventId);
@@ -277,8 +296,9 @@ export function createEventEmailRouter(): Router {
       const processedSubject = processMergeVariables(subject, mergeVars);
       const processedBody = processMergeVariables(body, mergeVars);
 
-      // Convert body to HTML
-      const htmlBody = processedBody
+      // Escape HTML entities first to prevent XSS, then convert markdown to HTML
+      const escapedBody = escapeHtml(processedBody);
+      const htmlBody = escapedBody
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\n/g, '<br>');
 
@@ -342,15 +362,12 @@ export function createEventEmailRouter(): Router {
       });
     } catch (error) {
       logger.error('Failed to send event email:', error);
-      res.status(500).json({
-        error: 'Failed to send email',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      res.status(500).json({ error: 'Failed to send email' });
     }
   });
 
   // GET /api/events/email-logs/orphaned - Returns email logs where the event was deleted (eventId set to null)
-  router.get('/email-logs/orphaned', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/email-logs/orphaned', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
       if (!user?.id) {
@@ -389,7 +406,7 @@ export function createEventEmailRouter(): Router {
   });
 
   // GET /api/events/:eventId/email-logs - Returns all sent emails for an event
-  router.get('/:eventId/email-logs', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/:eventId/email-logs', async (req: AuthenticatedRequest, res: Response) => {
     try {
       const user = req.user;
       if (!user?.id) {

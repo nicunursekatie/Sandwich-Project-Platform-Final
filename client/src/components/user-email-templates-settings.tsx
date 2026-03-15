@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,13 +92,15 @@ export default function UserEmailTemplatesSettings() {
   });
 
   // Initialize form state from fetched data
-  if (templates && !initialized) {
-    setNewOrgSubject(templates.newOrgSubject);
-    setNewOrgBody(templates.newOrgBody);
-    setReturningContactSubject(templates.returningContactSubject);
-    setReturningContactBody(templates.returningContactBody);
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (templates && !initialized) {
+      setNewOrgSubject(templates.newOrgSubject);
+      setNewOrgBody(templates.newOrgBody);
+      setReturningContactSubject(templates.returningContactSubject);
+      setReturningContactBody(templates.returningContactBody);
+      setInitialized(true);
+    }
+  }, [templates, initialized]);
 
   // Save mutation
   const saveMutation = useMutation({

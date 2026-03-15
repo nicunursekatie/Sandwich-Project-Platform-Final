@@ -39,13 +39,32 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
   const [expanded, setExpanded] = useState(false);
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
 
+  // Lazy-load: only fetch email logs when the user expands the section (or in full/non-compact view)
+  const shouldFetch = !compact || expanded;
+
   const { data: logs, isLoading } = useQuery<EmailLogEntry[]>({
     queryKey: [`/api/events/${eventId}/email-logs`],
     queryFn: async () => {
       const res = await apiRequest('GET', `/api/events/${eventId}/email-logs`);
       return res.json();
     },
+    enabled: shouldFetch,
   });
+
+  // In compact mode, show a lightweight toggle before data is fetched
+  if (compact && !expanded && !logs) {
+    return (
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+            <Mail className="w-3 h-3" />
+            <ChevronRight className="w-3 h-3" />
+            View email history
+          </button>
+        </CollapsibleTrigger>
+      </Collapsible>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -57,7 +76,15 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
   }
 
   if (!logs || logs.length === 0) {
-    return null; // Don't show anything if no emails have been sent
+    if (compact && expanded) {
+      return (
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Mail className="w-3 h-3" />
+          No emails sent yet
+        </div>
+      );
+    }
+    return null;
   }
 
   const firstLog = logs[0]; // Most recent
