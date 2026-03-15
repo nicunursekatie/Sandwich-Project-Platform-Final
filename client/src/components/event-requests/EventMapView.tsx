@@ -1,17 +1,25 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import {
-  Search, Loader2, X, Navigation, MapPin, Building2, Heart, Car, Users, Route,
+  Search, Loader2, X, Navigation, MapPin, Building2, Heart, Car, Users, Route, Filter,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 
@@ -181,6 +189,24 @@ function formatDistance(meters: number): string {
 function EventMapView({ onEventClick }: EventMapViewProps) {
   const { toast } = useToast();
 
+  // Event status filter
+  const ALL_EVENT_STATUSES = ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'cancelled'];
+  const [eventStatusFilters, setEventStatusFilters] = useState<string[]>(['scheduled', 'rescheduled']);
+
+  const toggleEventStatusFilter = (status: string) => {
+    if (status === 'scheduled') {
+      setEventStatusFilters(prev => {
+        const has = prev.includes('scheduled');
+        if (has) return prev.filter(s => s !== 'scheduled' && s !== 'rescheduled');
+        return [...prev, 'scheduled', 'rescheduled'];
+      });
+    } else {
+      setEventStatusFilters(prev =>
+        prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+      );
+    }
+  };
+
   // State
   const [entityFilters, setEntityFilters] = useState<Record<EntityType, boolean>>({
     event: true, host: true, recipient: true, driver: true, volunteer: true,
@@ -220,8 +246,9 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
   const allEntities = useMemo(() => {
     const entities: MapEntity[] = [];
 
-    // Events
+    // Events (filtered by selected statuses)
     events.forEach((e: any) => {
+      if (!eventStatusFilters.includes(e.status)) return;
       const lat = parseFloat(String(e.latitude));
       const lng = parseFloat(String(e.longitude));
       if (isNaN(lat) || isNaN(lng)) return;
@@ -292,7 +319,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
     });
 
     return entities;
-  }, [events, hosts, recipients, driverCandidates]);
+  }, [events, hosts, recipients, driverCandidates, eventStatusFilters]);
 
   // Entity counts
   const entityCounts = useMemo(() => {
@@ -406,6 +433,71 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
             </Button>
           );
         })}
+
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
+
+        {/* Event status filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              <Filter className="w-3.5 h-3.5 mr-1" />
+              Event Status
+              {eventStatusFilters.length < ALL_EVENT_STATUSES.length && (
+                <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px]">
+                  {eventStatusFilters.filter(s => s !== 'rescheduled').length}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuLabel>Filter Events by Status</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.length === ALL_EVENT_STATUSES.length}
+              onCheckedChange={() => {
+                if (eventStatusFilters.length === ALL_EVENT_STATUSES.length) {
+                  setEventStatusFilters(['scheduled', 'rescheduled']);
+                } else {
+                  setEventStatusFilters([...ALL_EVENT_STATUSES]);
+                }
+              }}
+            >
+              <span className="font-medium text-sm">Select All</span>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('new')}
+              onCheckedChange={() => toggleEventStatusFilter('new')}
+            >
+              <Badge className="bg-blue-100 text-blue-800 border-blue-300 mr-2">New</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('in_process')}
+              onCheckedChange={() => toggleEventStatusFilter('in_process')}
+            >
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 mr-2">In Process</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('scheduled')}
+              onCheckedChange={() => toggleEventStatusFilter('scheduled')}
+            >
+              <Badge className="bg-green-100 text-green-800 border-green-300 mr-2">Scheduled</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('completed')}
+              onCheckedChange={() => toggleEventStatusFilter('completed')}
+            >
+              <Badge className="bg-teal-100 text-teal-800 border-teal-300 mr-2">Completed</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('cancelled')}
+              onCheckedChange={() => toggleEventStatusFilter('cancelled')}
+            >
+              <Badge className="bg-red-100 text-red-800 border-red-300 mr-2">Cancelled</Badge>
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Divider */}
         <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
