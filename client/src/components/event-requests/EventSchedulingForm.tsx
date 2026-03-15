@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -341,6 +342,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Call notes scratchpad (capture-first, structure-later)
+  const [callNotesLocalSavedAt, setCallNotesLocalSavedAt] = useState<Date | null>(null);
+  const [callNotesSyncedAt, setCallNotesSyncedAt] = useState<Date | null>(null);
+  const [callNotesSyncError, setCallNotesSyncError] = useState<string>('');
+  const callNotesLastSyncedValueRef = useRef<string>('');
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -348,6 +355,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Derived Values ─────────────────────────────────────────────────
 
   const isCreateMode = mode === 'create' || !eventRequest;
+
+  const getCallNotesKey = useCallback(() => {
+    return `call_notes_event_${eventRequest?.id || 'new'}`;
+  }, [eventRequest?.id]);
 
   const canRemoveCorporatePriority = useMemo(() => {
     const allowedEmails = [
@@ -684,6 +695,58 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (isCreateMode) setShowContactInfo(true);
   }, [isCreateMode]);
 
+  // ── Call Notes Scratchpad ──────────────────────────────────────────
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    try {
+      const restoredNotes = localStorage.getItem(getCallNotesKey());
+      if (restoredNotes && restoredNotes !== (formData.message || '')) {
+        setFormData(prev => ({ ...prev, message: restoredNotes }));
+        setCallNotesLocalSavedAt(new Date());
+      }
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [dialogOpen, getCallNotesKey]);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+    try {
+      localStorage.setItem(getCallNotesKey(), formData.message || '');
+      setCallNotesLocalSavedAt(new Date());
+    } catch {
+      // ignore localStorage failures
+    }
+  }, [dialogOpen, formData.message, getCallNotesKey]);
+
+  const syncCallNotesMutation = useMutation({
+    mutationFn: ({ id, message }: { id: number; message: string }) =>
+      apiRequest('PATCH', `/api/event-requests/${id}`, { message }),
+    networkMode: 'always',
+    onSuccess: (_data, variables) => {
+      callNotesLastSyncedValueRef.current = variables.message;
+      setCallNotesSyncedAt(new Date());
+      setCallNotesSyncError('');
+    },
+    onError: () => {
+      setCallNotesSyncError('Sync pending');
+    },
+  });
+
+  useEffect(() => {
+    if (!dialogOpen || !eventRequest?.id) return;
+
+    const interval = setInterval(() => {
+      const currentMessage = formData.message || '';
+      const hasUnsyncedChanges = currentMessage !== callNotesLastSyncedValueRef.current;
+      if (!hasUnsyncedChanges || syncCallNotesMutation.isPending) return;
+      syncCallNotesMutation.mutate({ id: eventRequest.id, message: currentMessage });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [dialogOpen, eventRequest?.id, formData.message, syncCallNotesMutation]);
+
   // ── Mutations ──────────────────────────────────────────────────────
 
   const updateEventRequestMutation = useMutation({
@@ -999,6 +1062,29 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </Button>
             </div>
           )}
+
+          {/* Call Notes Scratchpad */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4" data-testid="call-notes-scratchpad">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <Label htmlFor="callNotesScratchpad" className="text-sm font-semibold text-amber-900">Call Notes Scratchpad</Label>
+              <span className="text-xs text-amber-800">
+                Saved locally {callNotesLocalSavedAt ? callNotesLocalSavedAt.toLocaleTimeString() : '—'}
+                {' · '}
+                Synced {callNotesSyncedAt ? callNotesSyncedAt.toLocaleTimeString() : 'pending'}
+                {callNotesSyncError ? ` · ${callNotesSyncError}` : ''}
+              </span>
+            </div>
+            <Textarea
+              id="callNotesScratchpad"
+              value={formData.message || ''}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, message: e.target.value }));
+                setCallNotesSyncError('');
+              }}
+              placeholder="Capture everything from the call here first. You can organize details into structured fields after the call."
+              className="min-h-[120px] bg-white"
+            />
+          </div>
 
           {/* Progress Indicator */}
           <div className="bg-slate-50 rounded-lg p-3 border mb-4">
