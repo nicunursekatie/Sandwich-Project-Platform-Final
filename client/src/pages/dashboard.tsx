@@ -572,7 +572,7 @@ export default function Dashboard({
               </div>
             </div>
             <div className="flex-1 min-h-0">
-              <StreamChatRooms />
+              <StreamChatRooms defaultTab={urlParams.tab} />
             </div>
           </div>
         );
@@ -755,7 +755,7 @@ export default function Dashboard({
       case 'committee':
       case 'committee-chat':
         // Redirect to main Team Chat
-        return <StreamChatRooms />;
+        return <StreamChatRooms defaultTab={urlParams.tab} />;
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':

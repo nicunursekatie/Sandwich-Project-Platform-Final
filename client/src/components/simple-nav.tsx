@@ -34,13 +34,13 @@ export default function SimpleNav({
     const { user } = useAuth();
     const [location, setLocation] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
-    const { totalUnread: streamChatUnread } = useStreamChatUnread();
+    const { totalUnread: streamChatUnread, dmsUnread, groupsUnread, roomsUnread } = useStreamChatUnread();
 
     // State for collapsible sections
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
     // State for expanded parent items (like TSP Network)
-    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections']));
+    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections', 'chat']));
 
     // Get Gmail inbox unread count
     const { data: gmailUnreadCount = 0 } = useQuery({
@@ -236,8 +236,12 @@ export default function SimpleNav({
           // Project Threads uses the email system, so use gmail unread count
           return gmailUnreadCount;
         case 'chat':
-          // Use Stream Chat unread count for team chat
-          return streamChatUnread || 0;
+          // Show only room unread count on the parent item (DMs/groups have their own badges)
+          return roomsUnread || 0;
+        case 'chat-dms':
+          return dmsUnread || 0;
+        case 'chat-groups':
+          return groupsUnread || 0;
         case 'suggestions':
           return unreadCounts.suggestions || 0;
         case 'kudos':
