@@ -722,7 +722,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [effectiveEventRequest?.updatedAt]);
 
   useEffect(() => {
-    if (!dialogOpen) return;
+    if (!dialogOpen || !formInitialized) return;
     callNotesConflictWarnedRef.current = false;
     setCallNotesSyncError('');
   }, [dialogOpen, eventRequest?.id]);
@@ -730,7 +730,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   useEffect(() => {
     if (!dialogOpen || !formInitialized) return;
 
-    const serverMessage = (originalFormDataRef.current?.message || formData.message || '') as string;
+    const serverMessage = String(originalFormDataRef.current?.message ?? '');
 
     callNotesLastSyncedValueRef.current = serverMessage;
     setCallNotesSyncedAt(serverMessage ? new Date() : null);
@@ -766,7 +766,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   }, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
 
   useEffect(() => {
-    if (!dialogOpen) return;
+    if (!dialogOpen || !formInitialized) return;
     try {
       localStorage.setItem(getCallNotesKey(), JSON.stringify({
         message: formData.message || '',
@@ -792,6 +792,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       callNotesLastSyncedValueRef.current = variables.message;
       const newVersion = updatedEvent?.updatedAt ? String(updatedEvent.updatedAt) : null;
       if (newVersion) callNotesExpectedVersionRef.current = newVersion;
+      if (updatedEvent && variables?.id) {
+        queryClient.setQueryData(['/api/event-requests', variables.id, 'full'], (prev: any) => ({ ...(prev || {}), ...updatedEvent }));
+      }
       setCallNotesSyncedAt(new Date());
       setCallNotesSyncError('');
     },
@@ -822,7 +825,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
       const payload = { ...data };
       // Use effectiveEventRequest (full data) for version check, not the stale prop
-      const latestUpdatedAt = effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
+      const latestUpdatedAt = callNotesExpectedVersionRef.current || effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
       if (latestUpdatedAt) payload._expectedVersion = latestUpdatedAt;
       return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },

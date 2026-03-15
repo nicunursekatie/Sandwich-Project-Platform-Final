@@ -39,6 +39,8 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   handleFieldFocus,
   handleFieldBlur,
 }) => {
+  const [messageBeforeEdit, setMessageBeforeEdit] = React.useState(formData.message || '');
+
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-white">
       <div className="flex items-center gap-3 pb-2 border-b">
@@ -56,7 +58,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsMessageEditable(true)}
+                onClick={() => { setMessageBeforeEdit(formData.message || ''); setIsMessageEditable(true); }}
                 className="text-xs text-gray-500 hover:text-gray-700"
               >
                 Edit
@@ -86,9 +88,8 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    // Do not reset message here; scratchpad and notes share the same field.
-                    // Resetting would discard in-progress call notes captured elsewhere in the form.
                     setIsMessageEditable(false);
+                    setFormData((prev: any) => ({ ...prev, message: messageBeforeEdit }));
                   }}
                 >
                   Cancel
