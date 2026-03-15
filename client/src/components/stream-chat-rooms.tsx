@@ -339,7 +339,7 @@ interface RoomWithMembers {
   channel?: ChannelType;
 }
 
-export default function StreamChatRooms() {
+export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | null }) {
   const { user } = useAuth();
   const { track } = useOnboardingTracker();
   const [client, setClient] = useState<StreamChat | null>(null);
@@ -354,8 +354,16 @@ export default function StreamChatRooms() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [groupName, setGroupName] = useState('');
-  const [activeSection, setActiveSection] = useState<'rooms' | 'dms' | 'groups'>('rooms');
+  const initialSection = (defaultTab === 'dms' || defaultTab === 'groups') ? defaultTab : 'rooms';
+  const [activeSection, setActiveSection] = useState<'rooms' | 'dms' | 'groups'>(initialSection);
   const [unreadCounts, setUnreadCounts] = useState<{ rooms: number; dms: number; groups: number }>({ rooms: 0, dms: 0, groups: 0 });
+
+  // Sync activeSection when defaultTab prop changes (e.g., navigating via sidebar)
+  useEffect(() => {
+    if (defaultTab === 'dms' || defaultTab === 'groups' || defaultTab === 'rooms') {
+      setActiveSection(defaultTab);
+    }
+  }, [defaultTab]);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Members dialog (for group chats / channels where preview truncates member list)

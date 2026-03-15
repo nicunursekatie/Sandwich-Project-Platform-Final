@@ -350,6 +350,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const callNotesExpectedVersionRef = useRef<string | null>(null);
   const callNotesConflictWarnedRef = useRef(false);
 
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -379,6 +380,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     }
     return null;
   }, []);
+
 
 
   const canRemoveCorporatePriority = useMemo(() => {
@@ -719,47 +721,52 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Call Notes Scratchpad ──────────────────────────────────────────
 
   useEffect(() => {
-    callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
-  }, [effectiveEventRequest?.updatedAt]);
+callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
+}, [effectiveEventRequest?.updatedAt]);
 
-  useEffect(() => {
-    if (!dialogOpen || !formInitialized) return;
-    callNotesConflictWarnedRef.current = false;
-    setCallNotesSyncError('');
-  }, [dialogOpen, eventRequest?.id]);
+useEffect(() => {
+  if (!dialogOpen || !formInitialized) return;
+  callNotesConflictWarnedRef.current = false;
+  setCallNotesSyncError('');
+}, [dialogOpen, formInitialized, eventRequest?.id]);
 
-  useEffect(() => {
-    if (!dialogOpen || !formInitialized) return;
+useEffect(() => {
+  if (!dialogOpen || !formInitialized) return;
 
-    const serverMessage = String(originalFormDataRef.current?.message ?? '');
+  const serverMessage = String(originalFormDataRef.current?.message ?? '');
 
-    callNotesLastSyncedValueRef.current = serverMessage;
-    setCallNotesSyncedAt(serverMessage ? new Date() : null);
+  callNotesLastSyncedValueRef.current = serverMessage;
+  setCallNotesSyncedAt(serverMessage ? new Date() : null);
 
-    try {
-      const restoredRaw = localStorage.getItem(getCallNotesKey());
-      const draft = parseCallNotesDraft(restoredRaw);
-      if (!draft || !draft.message || draft.message === serverMessage) return;
+  try {
+    const restoredRaw = localStorage.getItem(getCallNotesKey());
+    const draft = parseCallNotesDraft(restoredRaw);
+    if (!draft || !draft.message || draft.message === serverMessage) return;
 
-      const hasServerMessage = !!(serverMessage && serverMessage.trim());
-      const matchesServerVersion = !!(
-        draft.baseUpdatedAt &&
-        callNotesExpectedVersionRef.current &&
-        draft.baseUpdatedAt === callNotesExpectedVersionRef.current
-      );
+    const hasServerMessage = !!(serverMessage && serverMessage.trim());
+    const matchesServerVersion = !!(
+      draft.baseUpdatedAt &&
+      callNotesExpectedVersionRef.current &&
+      draft.baseUpdatedAt === callNotesExpectedVersionRef.current
+    );
 
-      if (isCreateMode || !hasServerMessage || matchesServerVersion) {
-        setFormData(prev => ({ ...prev, message: draft.message }));
-        setCallNotesLocalSavedAt(new Date());
-        setCallNotesSyncError('');
-      } else if (!callNotesConflictWarnedRef.current) {
-        callNotesConflictWarnedRef.current = true;
-        setCallNotesSyncError('Local draft differs from latest server notes');
-        toast({
-          title: 'Call notes conflict detected',
-          description: 'A local draft exists but server notes are newer. We kept server notes to prevent overwriting.',
-          duration: 8000,
-        });
+    if (isCreateMode || !hasServerMessage || matchesServerVersion) {
+      setFormData(prev => ({ ...prev, message: draft.message }));
+      setCallNotesLocalSavedAt(new Date());
+      setCallNotesSyncError('');
+    } else if (!callNotesConflictWarnedRef.current) {
+      callNotesConflictWarnedRef.current = true;
+      setCallNotesSyncError('Local draft differs from latest server notes');
+      toast({
+        title: 'Call notes conflict detected',
+        description: 'A local draft exists but server notes are newer. We kept server notes to prevent overwriting.',
+        duration: 8000,
+      });
+    }
+  } catch {
+    // ignore localStorage failures
+  }
+}, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
       }
     } catch {
       // ignore localStorage failures
@@ -819,6 +826,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
     return () => clearInterval(interval);
   }, [dialogOpen, eventRequest?.id, formInitialized, formData.message, isSubmitting, syncCallNotesMutation]);
+
 
   // ── Mutations ──────────────────────────────────────────────────────
 
