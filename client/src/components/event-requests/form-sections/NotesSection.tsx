@@ -17,7 +17,6 @@ interface NotesSectionProps {
   formData: EventFormData;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   isComplete: boolean;
-  eventRequest: any | null;
   isMessageEditable: boolean;
   setIsMessageEditable: (editable: boolean) => void;
   // Collaboration
@@ -32,7 +31,6 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   formData,
   setFormData,
   isComplete,
-  eventRequest,
   isMessageEditable,
   setIsMessageEditable,
   isCollaborationEnabled,
@@ -41,6 +39,9 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   handleFieldFocus,
   handleFieldBlur,
 }) => {
+  const [messageBeforeEdit, setMessageBeforeEdit] = React.useState(formData.message || '');
+  const [lastNotesEditValue, setLastNotesEditValue] = React.useState(formData.message || '');
+
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-white">
       <div className="flex items-center gap-3 pb-2 border-b">
@@ -58,7 +59,12 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsMessageEditable(true)}
+                onClick={() => {
+                  const current = formData.message || '';
+                  setMessageBeforeEdit(current);
+                  setLastNotesEditValue(current);
+                  setIsMessageEditable(true);
+                }}
                 className="text-xs text-gray-500 hover:text-gray-700"
               >
                 Edit
@@ -70,7 +76,11 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
               <Textarea
                 id="message"
                 value={formData.message}
-                onChange={(e) => setFormData((prev: any) => ({ ...prev, message: e.target.value }))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setLastNotesEditValue(value);
+                  setFormData((prev: any) => ({ ...prev, message: value }));
+                }}
                 placeholder="Original request message from the organizer"
                 className="min-h-[80px]"
               />
@@ -89,7 +99,15 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                   size="sm"
                   onClick={() => {
                     setIsMessageEditable(false);
-                    setFormData((prev: any) => ({ ...prev, message: eventRequest?.message || '' }));
+                    setFormData((prev: any) => {
+                      const current = prev.message || '';
+                      // Revert only if NotesSection has the latest edit value.
+                      // If scratchpad changed message afterward, keep scratchpad input.
+                      if (current === (lastNotesEditValue || '')) {
+                        return { ...prev, message: messageBeforeEdit };
+                      }
+                      return prev;
+                    });
                   }}
                 >
                   Cancel
