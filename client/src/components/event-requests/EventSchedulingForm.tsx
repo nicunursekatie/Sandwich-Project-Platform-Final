@@ -380,6 +380,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     return null;
   }, []);
 
+
   const canRemoveCorporatePriority = useMemo(() => {
     const allowedEmails = [
       'admin@sandwich.project', 'katielong2316@gmail.com',

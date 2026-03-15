@@ -49,6 +49,7 @@ interface CatalogCard {
   isFromCollectionOnly: boolean;
   isCoHostedEvent: boolean;
   coHostNames: string[];
+  locations: string[];
 }
 
 /** Collection-derived sandwich data per org+department */
@@ -337,6 +338,7 @@ function createEmptyCard(overrides: Partial<CatalogCard>): CatalogCard {
     isFromCollectionOnly: false,
     isCoHostedEvent: false,
     coHostNames: [],
+    locations: [],
     ...overrides,
   };
 }
@@ -434,6 +436,11 @@ function buildCatalog(
 
     const card = cards.get(cardKey)!;
     card.totalRequests += 1;
+
+    // Collect event locations
+    if (request.eventAddress && !card.locations.includes(request.eventAddress)) {
+      card.locations.push(request.eventAddress);
+    }
 
     const derivedStatus = deriveStatus(request);
     if (isCompletedStatus(derivedStatus)) {
@@ -742,6 +749,7 @@ function buildCatalog(
           isFromCollectionOnly: card.isFromCollectionOnly,
           isCoHostedEvent: card.isCoHostedEvent,
           coHostNames: card.coHostNames,
+          locations: card.locations,
         }))
         .sort((a, b) =>
           new Date(b.latestActivityDate!).getTime() - new Date(a.latestActivityDate!).getTime()
