@@ -66,6 +66,7 @@ app.use(
         },
     crossOriginEmbedderPolicy: false, // Required for external image/font loading
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin resource loading
+    frameguard: false, // Allow app to be embedded in Replit preview iframes
   })
 );
 serverLogger.info('Helmet security headers enabled', {
