@@ -432,209 +432,6 @@ export class EventRequestsGoogleSheetsService {
    * CRITICAL FIX: Better error handling and comprehensive logging for debugging
    * Prioritizes: googleSheetRowId > submission timestamp + email > fuzzy organization name matching
    */
-  private async findExistingEventRequest(
-    row: EventRequestSheetRow,
-    eventRequestData: Partial<EventRequest>
-  ): Promise<EventRequest | undefined> {
-    const existingRequests = await this.storage.getAllEventRequests();
-    
-    const nameParts = row.contactName.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-
-    // PRIORITY 1: Google Sheets Row ID (most stable identifier)
-    if (row.rowIndex) {
-      const rowIdMatch = existingRequests.find((r) => {
-        return r.googleSheetRowId === row.rowIndex?.toString();
-      });
-      if (rowIdMatch) {
-        return rowIdMatch;
-      }
-    }
-
-    // PRIORITY 2: Submission timestamp + email + desiredEventDate combination (very stable, prevents merging different events)
-    if (row.submittedOn && row.email && eventRequestData.createdAt && eventRequestData.desiredEventDate) {
-      const submissionTimeMatch = existingRequests.find((r) => {
-        if (!r.email || !r.createdAt || !r.desiredEventDate) {
-          return false;
-        }
-        
-        const emailMatch = r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
-        
-        // Compare submission timestamps with minimal tolerance for minor timing differences only
-        const existingDate = new Date(r.createdAt);
-        const sheetDate = new Date(eventRequestData.createdAt!);
-        
-        // Allow only 5 minutes difference for submission timestamp matching to handle minor timing differences
-        const timeDiff = Math.abs(existingDate.getTime() - sheetDate.getTime());
-        const maxTimeDiff = 5 * 60 * 1000; // 5 minutes in milliseconds
-        
-        const timeMatch = timeDiff <= maxTimeDiff;
-        
-        // CRITICAL: Also match desired event dates to prevent merging different events from same person
-        const existingEventDate = new Date(r.desiredEventDate);
-        const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
-        const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
-        
-        if (emailMatch && timeMatch && eventDateMatch) {
-          return true;
-        }
-        
-        return false;
-      });
-      
-      if (submissionTimeMatch) {
-        return submissionTimeMatch;
-      }
-    }
-
-    // PRIORITY 3: Exact email match with event date validation (same person, same org, same event)
-    if (row.email && eventRequestData.desiredEventDate) {
-      const emailOnlyMatch = existingRequests.find((r) => {
-        if (!r.email || !r.desiredEventDate) {
-          return false;
-        }
-        
-        const emailMatch = r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
-        if (!emailMatch) return false;
-        
-        // CRITICAL: Require matching event dates to prevent merging different events
-        const existingEventDate = new Date(r.desiredEventDate);
-        const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
-        const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
-        
-        if (!eventDateMatch) {
-          return false; // Different events - must be kept separate
-        }
-        
-        // Additional validation: check if organization names could be the same entity
-        const orgSimilarity = this.calculateOrganizationSimilarity(
-          r.organizationName || '', 
-          row.organizationName || '',
-          r.department || '',
-          row.department || ''
-        );
-        
-        if (orgSimilarity > 0.6) { // 60% similarity threshold
-          return true;
-        }
-        
-        return false;
-      });
-      
-      if (emailOnlyMatch) {
-        return emailOnlyMatch;
-      }
-    }
-
-    // PRIORITY 4: Fallback fuzzy matching for organization name changes (with event date validation)
-    const fuzzyMatch = existingRequests.find((r) => {
-      // CRITICAL: Require event date match first to prevent merging different events
-      if (!r.desiredEventDate || !eventRequestData.desiredEventDate) {
-        return false; // Cannot safely match without event date information
-      }
-      
-      const existingEventDate = new Date(r.desiredEventDate);
-      const sheetEventDate = new Date(eventRequestData.desiredEventDate!);
-      const eventDateMatch = existingEventDate.getTime() === sheetEventDate.getTime();
-      
-      if (!eventDateMatch) {
-        return false; // Different event dates = different events, must be kept separate
-      }
-      
-      // Basic field matches (only proceed if event dates match)
-      const emailMatch = r.email && row.email && 
-        r.email.toLowerCase().trim() === row.email.toLowerCase().trim();
-      
-      const phoneMatch = r.phone && row.phone && 
-        r.phone.replace(/\D/g, '') === row.phone.replace(/\D/g, '');
-      
-      const fullNameMatch = 
-        r.firstName?.toLowerCase().trim() === firstName.toLowerCase().trim() &&
-        r.lastName?.toLowerCase().trim() === lastName.toLowerCase().trim() &&
-        firstName.trim() && lastName.trim();
-
-      // Enhanced organization matching to handle restructuring
-      const orgSimilarity = this.calculateOrganizationSimilarity(
-        r.organizationName || '', 
-        row.organizationName || '',
-        r.department || '',
-        row.department || ''
-      );
-
-      // Match criteria (any of these strong combinations) - all require same event date
-      if (emailMatch && orgSimilarity > 0.5) {
-        return true;
-      }
-      
-      if (phoneMatch && orgSimilarity > 0.7) {
-        return true;
-      }
-      
-      if (fullNameMatch && orgSimilarity > 0.8) {
-        return true;
-      }
-
-      return false;
-    });
-
-    if (fuzzyMatch) {
-      return fuzzyMatch;
-    }
-    
-    return undefined;
-  }
-
-  /**
-   * Calculate organization similarity to handle name restructuring
-   * Considers: exact matches, word overlap, department combinations, common abbreviations
-   */
-  private calculateOrganizationSimilarity(
-    existingOrg: string, 
-    newOrg: string, 
-    existingDept: string = '', 
-    newDept: string = ''
-  ): number {
-    if (!existingOrg || !newOrg) return 0;
-
-    // Normalize strings for comparison
-    const normalize = (str: string) => str.toLowerCase().trim().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ');
-    
-    const existing = normalize(existingOrg + ' ' + existingDept);
-    const newValue = normalize(newOrg + ' ' + newDept);
-    
-    // Exact match
-    if (existing === newValue) return 1.0;
-    
-    // Check if one contains the other (handles "School" vs "School NHS")
-    if (existing.includes(newValue) || newValue.includes(existing)) {
-      return 0.9;
-    }
-    
-    // Word-based similarity
-    const existingWords = new Set(existing.split(' ').filter(w => w.length > 2));
-    const newWords = new Set(newValue.split(' ').filter(w => w.length > 2));
-    
-    const intersection = new Set([...existingWords].filter(w => newWords.has(w)));
-    const union = new Set([...existingWords, ...newWords]);
-    
-    if (union.size === 0) return 0;
-    
-    const jaccardSimilarity = intersection.size / union.size;
-    
-    // Boost score for common organization patterns
-    const hasCommonSchoolPattern = 
-      (existing.includes('school') && newValue.includes('school')) ||
-      (existing.includes('high') && newValue.includes('high')) ||
-      (existing.includes('middle') && newValue.includes('middle'));
-    
-    if (hasCommonSchoolPattern && jaccardSimilarity > 0.3) {
-      return Math.min(jaccardSimilarity + 0.2, 1.0);
-    }
-    
-    return jaccardSimilarity;
-  }
-
   /**
    * Sync from Google Sheets to database - INSERT ONLY, never update existing records
    * CRITICAL GUARANTEE: Once a record is imported, it will NEVER be touched again by sync
@@ -742,6 +539,42 @@ export class EventRequestsGoogleSheetsService {
         }
 
         try {
+          // PRIORITY 0: Google Sheet Row ID — most stable identifier since rows don't move
+          // This catches re-imports of the same row even when dates/hashes change
+          const rowIdStr = row.rowIndex?.toString();
+          if (rowIdStr) {
+            const existingByRowId = await db
+              .select({
+                id: eventRequests.id,
+                externalId: eventRequests.externalId,
+                organizationName: eventRequests.organizationName,
+                message: eventRequests.message,
+              })
+              .from(eventRequests)
+              .where(eq(eventRequests.googleSheetRowId, rowIdStr))
+              .limit(1);
+
+            if (existingByRowId.length > 0) {
+              const existing = existingByRowId[0];
+              // Backfill message if empty
+              const sheetMessage = (sanitizedData as any).message?.trim();
+              const dbMessage = existing.message?.trim();
+              if ((!dbMessage || dbMessage === '') && sheetMessage && sheetMessage.length > 0) {
+                try {
+                  await db
+                    .update(eventRequests)
+                    .set({ message: sheetMessage, updatedAt: new Date() })
+                    .where(eq(eventRequests.id, existing.id));
+                  logger.info(`📝 Backfilled message for event ${existing.id} (${existing.organizationName}) via row ID match`);
+                } catch (backfillError) {
+                  logger.warn(`Failed to backfill message for event ${existing.id}: ${backfillError}`);
+                }
+              }
+              updatedCount++;
+              continue;
+            }
+          }
+
           // Check if record exists by EITHER hash format (old base64 or new SHA256)
           // This ensures we detect existing records regardless of which hash format was used
           // IMPORTANT: Fetch ALL matches, then prioritize new-style hash matches over old-style

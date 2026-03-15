@@ -185,7 +185,7 @@ export function RecipientAllocationEditor({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-hidden flex flex-col p-4 sm:p-6">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto flex flex-col p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Edit Recipient Allocations</DialogTitle>
           <DialogDescription>
@@ -292,7 +292,7 @@ export function RecipientAllocationEditor({
                 <p className="text-sm">Search above to add recipients.</p>
               </div>
             ) : (
-              <ScrollArea className="h-[280px] border rounded-lg">
+              <ScrollArea className="max-h-[40vh] border rounded-lg">
                 <div className="p-2 space-y-2">
                   {allocations.map((allocation) => (
                     <div

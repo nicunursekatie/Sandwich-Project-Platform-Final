@@ -40,7 +40,6 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   handleFieldBlur,
 }) => {
   const [messageBeforeEdit, setMessageBeforeEdit] = React.useState(formData.message || '');
-  const [lastNotesEditValue, setLastNotesEditValue] = React.useState(formData.message || '');
 
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-white">
@@ -59,12 +58,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  const current = formData.message || '';
-                  setMessageBeforeEdit(current);
-                  setLastNotesEditValue(current);
-                  setIsMessageEditable(true);
-                }}
+                onClick={() => { setMessageBeforeEdit(formData.message || ''); setIsMessageEditable(true); }}
                 className="text-xs text-gray-500 hover:text-gray-700"
               >
                 Edit
@@ -99,15 +93,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                   size="sm"
                   onClick={() => {
                     setIsMessageEditable(false);
-                    setFormData((prev: any) => {
-                      const current = prev.message || '';
-                      // Revert only if NotesSection has the latest edit value.
-                      // If scratchpad changed message afterward, keep scratchpad input.
-                      if (current === (lastNotesEditValue || '')) {
-                        return { ...prev, message: messageBeforeEdit };
-                      }
-                      return prev;
-                    });
+                    setFormData((prev: any) => ({ ...prev, message: messageBeforeEdit }));
                   }}
                 >
                   Cancel

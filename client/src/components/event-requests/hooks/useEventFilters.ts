@@ -428,7 +428,8 @@ export const useEventFilters = () => {
       }
 
       const matchesStatus =
-        statusFilter === 'all' || request.status === statusFilter;
+        statusFilter === 'all' || request.status === statusFilter ||
+        (statusFilter === 'scheduled' && request.status === 'rescheduled');
 
       // Completed events are always considered confirmed
       const isEventConfirmed = request.status === 'completed' || request.isConfirmed;
@@ -527,7 +528,7 @@ export const useEventFilters = () => {
     const source =
       status === 'all' || status === 'my_assignments'
         ? eventRequests
-        : eventRequests.filter((req: EventRequest) => req.status === status);
+        : eventRequests.filter((req: EventRequest) => req.status === status || (status === 'scheduled' && req.status === 'rescheduled'));
 
     return source
       .filter((request: EventRequest) => {
@@ -538,8 +539,8 @@ export const useEventFilters = () => {
           // AND filter by selected statuses in myAssignmentsStatusFilter
           matchesStatus = isUserAssignedToEvent(request) && myAssignmentsStatusFilter.includes(request.status);
         } else if (status !== 'all') {
-          // Regular status filtering (already scoped source, but keep guard)
-          matchesStatus = request.status === status;
+          // Regular status filtering - include rescheduled in scheduled tab
+          matchesStatus = request.status === status || (status === 'scheduled' && request.status === 'rescheduled');
         }
 
         let matchesSearch = debouncedSearchQuery === '';
