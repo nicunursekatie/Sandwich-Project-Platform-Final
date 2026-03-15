@@ -31,7 +31,7 @@
  */
 
 import { Router } from 'express';
-import { emitEventRequestUpdate } from '../socket-chat';
+import { emitEventRequestUpdate } from '../../socket-chat';
 import { logger } from '../../middleware/logger';
 
 // Import the main legacy router - contains core functionality
