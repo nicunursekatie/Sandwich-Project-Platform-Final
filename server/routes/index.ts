@@ -87,6 +87,7 @@ import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
 import photoScannerRouter from './photo-scanner';
 import { createEmailTemplatesRouter } from './email-templates';
+import { createUserEmailTemplatesRouter, createEventEmailRouter } from './user-email-templates';
 import volunteerEventHubRouter from './volunteer-event-hub';
 import { createEventContactsRouter } from './event-contacts';
 import { createPermissionRequestsRouter } from './permission-requests';
@@ -727,6 +728,26 @@ export function createMainRoutes(deps: RouterDependencies) {
     emailTemplatesRouter
   );
   router.use('/api/email-templates', createErrorHandler('email-templates'));
+
+  // User Email Templates - per-user customizable templates for new org / returning contact
+  const userEmailTemplatesRouter = createUserEmailTemplatesRouter();
+  router.use(
+    '/api/user/email-templates',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    userEmailTemplatesRouter
+  );
+  router.use('/api/user/email-templates', createErrorHandler('user-email-templates'));
+
+  // Event email sending and log routes (mounted under /api/events)
+  const eventEmailRouter = createEventEmailRouter();
+  router.use(
+    '/api/events',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventEmailRouter
+  );
+  router.use('/api/events', createErrorHandler('event-emails'));
 
   // Group Engagement routes - AI-powered organization engagement insights
   const groupEngagementRouter = createGroupEngagementRoutes({

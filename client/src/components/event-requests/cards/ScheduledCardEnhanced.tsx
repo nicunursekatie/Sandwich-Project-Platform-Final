@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
+import EventEmailLogDisplay from '@/components/event-email-log-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -3749,6 +3750,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             />
           </div>
         )}
+
+        {/* Email Log - shows if any template emails have been sent */}
+        <EventEmailLogDisplay eventId={request.id} compact />
       </CardContent>
 
       {/* Message Composer Dialog */}

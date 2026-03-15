@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
+import EventEmailLogDisplay from '@/components/event-email-log-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -1370,6 +1371,9 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Email Log - shows if any template emails have been sent */}
+        <EventEmailLogDisplay eventId={request.id} compact />
 
         {/* Confirmation Toggle Dialog */}
         <ConfirmationDialog

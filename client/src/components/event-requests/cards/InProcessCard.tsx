@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import EventEmailLogDisplay from '@/components/event-email-log-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -1872,6 +1873,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             </div>
           )}
         </div>
+
+        {/* Email Log - shows if any template emails have been sent */}
+        <EventEmailLogDisplay eventId={request.id} compact />
       </CardContent>
 
       {/* Message Composer Dialog */}
