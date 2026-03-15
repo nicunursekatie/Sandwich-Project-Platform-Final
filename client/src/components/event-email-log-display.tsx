@@ -87,26 +87,26 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
     return null;
   }
 
-  const firstLog = logs[0]; // Most recent
+  const mostRecentLog = logs[0]; // Most recent (sorted desc)
   const hasMultiple = logs.length > 1;
 
   // Compact badge for card views
   if (compact) {
     return (
       <div className="space-y-1">
-        {/* First/most recent email badge */}
+        {/* Most recent email badge */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Mail className="w-3 h-3 text-green-600" />
           <span>
-            Initial email sent{' '}
-            {new Date(firstLog.sentAt).toLocaleDateString()}{' '}
-            {new Date(firstLog.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {hasMultiple ? 'Last' : 'Email'} sent{' '}
+            {new Date(mostRecentLog.sentAt).toLocaleDateString()}{' '}
+            {new Date(mostRecentLog.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {' by '}
-            {firstLog.senderName}
+            {mostRecentLog.senderName}
           </span>
-          {firstLog.templateType && (
+          {mostRecentLog.templateType && (
             <Badge variant="outline" className="text-[10px] px-1 py-0">
-              {firstLog.templateType === 'new_org' ? 'New' : 'Returning'}
+              {mostRecentLog.templateType === 'new_org' ? 'New' : 'Returning'}
             </Badge>
           )}
         </div>
