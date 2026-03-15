@@ -839,13 +839,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return;
     }
 
-    // Manual entry source required for new events
+    // Manual entry source is strongly recommended, but should not block saves.
+    // Intake often captures details over multiple touchpoints/calls.
     if (isCreateMode && !formData.manualEntrySource) {
-      logger.log('⛔ Save blocked: no manual entry source');
-      alert('Please select where this request came from before submitting.');
-      setIsSubmitting(false);
+      logger.log('⚠️ Save continuing without manual entry source');
+      toast({
+        title: 'Saved without request source',
+        description: 'You can add "How did this request come in?" later from Primary Contact Information.',
+        duration: 5000,
+      });
       setShowContactInfo(true);
-      return;
     }
 
     // Build server payload using extracted utility
@@ -1007,114 +1010,142 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           </div>
 
+          {/* Workflow Guidance */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-900 font-medium">Lifecycle workflow guidance</p>
+            <p className="text-sm text-blue-800 mt-1">
+              Save anytime as details come in. To move to <span className="font-semibold">Scheduled</span>, only an event date is required.
+              All other details can be completed later.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
 
-            {/* Contact Info */}
-            <ContactInfoSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isExpanded={showContactInfo}
-              onToggle={() => setShowContactInfo(!showContactInfo)}
-              isComplete={sectionStatus.contact}
-              isCreateMode={isCreateMode}
-            />
+            {/* Lifecycle & Core Scheduling */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">1) Lifecycle & Core Scheduling</h3>
 
-            {/* Backup Contact */}
-            <BackupContactSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isExpanded={showBackupContactInfo}
-              onToggle={() => setShowBackupContactInfo(!showBackupContactInfo)}
-            />
+              {/* Status & Toolkit */}
+              <StatusToolkitSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                eventRequest={eventRequest}
+                canRemoveCorporatePriority={!!canRemoveCorporatePriority}
+                onStatusChange={handleStatusChange}
+              />
 
-            {/* Status & Toolkit */}
-            <StatusToolkitSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              eventRequest={eventRequest}
-              canRemoveCorporatePriority={!!canRemoveCorporatePriority}
-              onStatusChange={handleStatusChange}
-            />
-
-            {/* Event Schedule */}
-            <EventScheduleSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isComplete={sectionStatus.schedule}
-              eventRequest={eventRequest}
-              formatDateForInput={formatDateForInput}
-              onVanConflictReset={() => setVanConflictChecked(false)}
-              onScheduledDateChange={(newDate) => {
-                setPendingDateChange(newDate);
-                setShowDateConfirmation(true);
-              }}
-            />
-
-            {/* Delivery */}
-            <DeliverySection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-            />
-
-            {/* Sandwich Planning */}
-            <SandwichPlanningSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              sandwichMode={sandwichMode}
-              setSandwichMode={setSandwichMode}
-              isComplete={sectionStatus.sandwiches}
-            />
-
-            {/* Attendees */}
-            <AttendeeSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              attendeeMode={attendeeMode}
-              setAttendeeMode={setAttendeeMode}
-            />
-
-            {/* Refrigeration */}
-            <div>
-              <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-              <Select value={formData.hasRefrigeration} onValueChange={(value) => setFormData(prev => ({ ...prev, hasRefrigeration: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select refrigeration status" />
-                </SelectTrigger>
-                <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                  <SelectItem value="true">Yes</SelectItem>
-                  <SelectItem value="false">No</SelectItem>
-                  <SelectItem value="unknown">Unknown</SelectItem>
-                </SelectContent>
-              </Select>
-              <RefrigerationWarningAlert
-                sandwichTypes={formData.sandwichTypes}
-                hasRefrigeration={
-                  formData.hasRefrigeration === 'true' ? true :
-                  formData.hasRefrigeration === 'false' ? false : null
-                }
-                className="mt-2"
+              {/* Event Schedule */}
+              <EventScheduleSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isComplete={sectionStatus.schedule}
+                eventRequest={eventRequest}
+                formatDateForInput={formatDateForInput}
+                onVanConflictReset={() => setVanConflictChecked(false)}
+                onScheduledDateChange={(newDate) => {
+                  setPendingDateChange(newDate);
+                  setShowDateConfirmation(true);
+                }}
               />
             </div>
 
-            {/* Resource Requirements */}
-            <ResourceRequirementsSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              vanDrivers={vanDrivers}
-              isComplete={sectionStatus.resources}
-            />
+            {/* Contacts */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">2) Contacts</h3>
 
-            {/* TSP Contact */}
-            <TspContactSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              users={users}
-              isCollaborationEnabled={isCollaborationEnabled}
-              isFieldLockedByOther={isFieldLockedByOther}
-              getFieldLock={getFieldLock}
-              handleFieldFocus={handleFieldFocus}
-              handleFieldBlur={handleFieldBlur}
-            />
+              {/* Contact Info */}
+              <ContactInfoSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isExpanded={showContactInfo}
+                onToggle={() => setShowContactInfo(!showContactInfo)}
+                isComplete={sectionStatus.contact}
+                isCreateMode={isCreateMode}
+              />
+
+              {/* Backup Contact */}
+              <BackupContactSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isExpanded={showBackupContactInfo}
+                onToggle={() => setShowBackupContactInfo(!showBackupContactInfo)}
+              />
+            </div>
+
+            {/* Planning & Logistics */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">3) Planning & Logistics</h3>
+
+              {/* Sandwich Planning */}
+              <SandwichPlanningSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                sandwichMode={sandwichMode}
+                setSandwichMode={setSandwichMode}
+                isComplete={sectionStatus.sandwiches}
+              />
+
+              {/* Attendees */}
+              <AttendeeSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                attendeeMode={attendeeMode}
+                setAttendeeMode={setAttendeeMode}
+              />
+
+              {/* Delivery */}
+              <DeliverySection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+              />
+
+              {/* Refrigeration */}
+              <div>
+                <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                <Select value={formData.hasRefrigeration} onValueChange={(value) => setFormData(prev => ({ ...prev, hasRefrigeration: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select refrigeration status" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                    <SelectItem value="unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+                <RefrigerationWarningAlert
+                  sandwichTypes={formData.sandwichTypes}
+                  hasRefrigeration={
+                    formData.hasRefrigeration === 'true' ? true :
+                    formData.hasRefrigeration === 'false' ? false : null
+                  }
+                  className="mt-2"
+                />
+              </div>
+
+              {/* Resource Requirements */}
+              <ResourceRequirementsSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                vanDrivers={vanDrivers}
+                isComplete={sectionStatus.resources}
+              />
+            </div>
+
+            {/* Internal Coordination */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">4) Internal Coordination & Notes</h3>
+
+              {/* TSP Contact */}
+              <TspContactSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                users={users}
+                isCollaborationEnabled={isCollaborationEnabled}
+                isFieldLockedByOther={isFieldLockedByOther}
+                getFieldLock={getFieldLock}
+                handleFieldFocus={handleFieldFocus}
+                handleFieldBlur={handleFieldBlur}
+              />
 
             {/* Contact Attempts History */}
             {eventRequest && (eventRequest.contactAttempts > 0 || eventRequest.unresponsiveNotes) && (
@@ -1167,26 +1198,27 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             )}
 
-            {/* Notes & Requirements */}
-            <NotesSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isComplete={sectionStatus.notes}
-              eventRequest={eventRequest}
-              isMessageEditable={isMessageEditable}
-              setIsMessageEditable={setIsMessageEditable}
-              isCollaborationEnabled={isCollaborationEnabled}
-              isFieldLockedByOther={isFieldLockedByOther}
-              getFieldLock={getFieldLock}
-              handleFieldFocus={handleFieldFocus}
-              handleFieldBlur={handleFieldBlur}
-            />
+              {/* Notes & Requirements */}
+              <NotesSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isComplete={sectionStatus.notes}
+                eventRequest={eventRequest}
+                isMessageEditable={isMessageEditable}
+                setIsMessageEditable={setIsMessageEditable}
+                isCollaborationEnabled={isCollaborationEnabled}
+                isFieldLockedByOther={isFieldLockedByOther}
+                getFieldLock={getFieldLock}
+                handleFieldFocus={handleFieldFocus}
+                handleFieldBlur={handleFieldBlur}
+              />
 
-            {/* Volunteer Instructions */}
-            <InstructionsSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-            />
+              {/* Volunteer Instructions */}
+              <InstructionsSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+              />
+            </div>
 
             {/* Completed Event Details */}
             <CompletedEventSection
