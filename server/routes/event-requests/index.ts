@@ -31,6 +31,8 @@
  */
 
 import { Router } from 'express';
+import { emitEventRequestUpdate } from '../socket-chat';
+import { logger } from '../../middleware/logger';
 
 // Import the main legacy router - contains core functionality
 import legacyRouter from '../event-requests-legacy';
@@ -46,6 +48,28 @@ import auditRouter from './audit';
 import conflictsRouter from './conflicts';
 
 const router = Router();
+
+// Middleware: broadcast real-time updates to all connected clients on successful PATCH/PUT.
+// This covers ALL sub-routers (legacy, volunteers, flags, etc.) so any event request
+// mutation is automatically pushed to other users' browsers via Socket.IO.
+router.use('/:id', (req, res, next) => {
+  if (req.method !== 'PATCH' && req.method !== 'PUT') return next();
+
+  const originalJson = res.json.bind(res);
+  res.json = function (body: any) {
+    // Only emit for successful responses (2xx) that return an event request object
+    if (res.statusCode >= 200 && res.statusCode < 300 && body && body.id) {
+      try {
+        emitEventRequestUpdate('event_request_updated', { id: body.id });
+      } catch (e) {
+        // Don't let socket errors break the response
+        logger.warn('Failed to emit event request update via socket:', e);
+      }
+    }
+    return originalJson(body);
+  } as any;
+  next();
+});
 
 // Mount the legacy router FIRST - this ensures all existing routes work
 // The legacy router contains the critical Google Sheets import endpoint

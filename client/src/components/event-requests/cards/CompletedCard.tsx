@@ -23,6 +23,7 @@ import {
   Megaphone,
   Users,
   UserPlus,
+  UserX,
   Check,
   History,
   ChevronDown,
@@ -785,26 +786,29 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <div className="flex items-center gap-2">
             <Car className="w-4 h-4 text-[#236383]" />
             {request.selfTransport ? (
-              // Organization transported sandwiches themselves
-              <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-medium text-xs px-2 py-0.5">
-                <Car className="w-3 h-3 mr-1" />
-                Org Self-Transport
-              </Badge>
+              // Organization transported sandwiches themselves - clickable to switch to driver
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant="outline"
+                  className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-medium text-xs px-2 py-0.5 cursor-pointer hover:bg-[#FBAD3F]/30 transition-colors"
+                  title="Click to change to driver assignment"
+                  onClick={() => {
+                    if (canEdit && startEditing && saveEdit) {
+                      startEditing('selfTransport', 'false');
+                      setTimeout(() => saveEdit(), 0);
+                    }
+                  }}
+                >
+                  <Car className="w-3 h-3 mr-1" />
+                  Self-Transport
+                  {canEdit && startEditing && (
+                    <Edit2 className="w-2.5 h-2.5 ml-1 opacity-60" />
+                  )}
+                </Badge>
+              </div>
             ) : (
               <>
                 <span className="font-medium text-[#236383]">Drivers:</span>
-                {canEdit && onAssign && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onAssign('driver')}
-                    className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                    title="Add driver"
-                    data-testid="button-add-driver"
-                  >
-                    <UserPlus className="w-3 h-3 text-[#236383]" />
-                  </Button>
-                )}
                 {drivers.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {drivers.map((driver, index) => (
@@ -844,7 +848,15 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-gray-500 italic text-xs">(none)</span>
+                  <Badge
+                    variant="outline"
+                    className={`text-gray-400 border-gray-300 text-xs px-2 py-0.5 ${canEdit && onAssign ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-600 hover:border-gray-400 transition-colors' : ''}`}
+                    title={canEdit && onAssign ? "Click to assign a driver" : "No driver was assigned"}
+                    onClick={() => { if (canEdit && onAssign) onAssign('driver'); }}
+                  >
+                    <UserX className="w-3 h-3 mr-1" />
+                    None
+                  </Badge>
                 )}
               </>
             )}
@@ -856,18 +868,6 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <div className="flex items-center gap-2">
             <Megaphone className="w-4 h-4 text-[#236383]" />
             <span className="font-medium text-[#236383]">Speakers:</span>
-            {canEdit && onAssign && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onAssign('speaker')}
-                className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                title="Add speaker"
-                data-testid="button-add-speaker"
-              >
-                <UserPlus className="w-3 h-3 text-[#236383]" />
-              </Button>
-            )}
             {speakers.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {speakers.map((speaker, index) => (
@@ -907,7 +907,15 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                 ))}
               </div>
             ) : (
-              <span className="text-gray-500 italic text-xs">(none)</span>
+              <Badge
+                variant="outline"
+                className={`text-gray-400 border-gray-300 text-xs px-2 py-0.5 ${canEdit && onAssign ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-600 hover:border-gray-400 transition-colors' : ''}`}
+                title={canEdit && onAssign ? "Click to assign a speaker" : "No speaker was assigned"}
+                onClick={() => { if (canEdit && onAssign) onAssign('speaker'); }}
+              >
+                <UserX className="w-3 h-3 mr-1" />
+                None
+              </Badge>
             )}
           </div>
 
@@ -917,18 +925,6 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-[#236383]" />
             <span className="font-medium text-[#236383]">Volunteers:</span>
-            {canEdit && onAssign && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onAssign('volunteer')}
-                className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                title="Add volunteer"
-                data-testid="button-add-volunteer"
-              >
-                <UserPlus className="w-3 h-3 text-[#236383]" />
-              </Button>
-            )}
             {volunteers.length > 0 ? (
               <div className="flex flex-wrap gap-1">
                 {volunteers.map((volunteer, index) => (
@@ -968,7 +964,15 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                 ))}
               </div>
             ) : (
-              <span className="text-gray-500 italic text-xs">(none)</span>
+              <Badge
+                variant="outline"
+                className={`text-gray-400 border-gray-300 text-xs px-2 py-0.5 ${canEdit && onAssign ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-600 hover:border-gray-400 transition-colors' : ''}`}
+                title={canEdit && onAssign ? "Click to assign a volunteer" : "No volunteer was assigned"}
+                onClick={() => { if (canEdit && onAssign) onAssign('volunteer'); }}
+              >
+                <UserX className="w-3 h-3 mr-1" />
+                None
+              </Badge>
             )}
           </div>
         </div>
@@ -2347,7 +2351,24 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-wide">Planned</p>
                     <p className="font-medium text-gray-600 text-lg">
-                      {request.estimatedSandwichCount || <span className="text-gray-400 italic text-sm">Not set</span>}
+                      {(() => {
+                        const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+                        if (hasRange) {
+                          const rangeType = (request as any).estimatedSandwichRangeType;
+                          const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;
+                          return `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax}${typeLabel ? ` ${typeLabel}` : ''}`;
+                        }
+                        if (request.estimatedSandwichCount) {
+                          return formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined);
+                        }
+                        // Check if sandwich types have quantities even without a total count
+                        const parsedTypes = parseSandwichTypes(request.sandwichTypes);
+                        const totalFromTypes = parsedTypes?.reduce((sum, t) => sum + (typeof t.quantity === 'number' ? t.quantity : 0), 0) ?? 0;
+                        if (totalFromTypes > 0) {
+                          return formatSandwichTypesDisplay(request.sandwichTypes, undefined);
+                        }
+                        return <span className="text-gray-400 italic text-sm">Not set</span>;
+                      })()}
                     </p>
                   </div>
                   {/* Actual delivered count */}
