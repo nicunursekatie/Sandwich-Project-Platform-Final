@@ -844,8 +844,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (isCreateMode && !formData.manualEntrySource) {
       logger.log('⚠️ Save continuing without manual entry source');
       toast({
-        title: 'Saved without request source',
-        description: 'You can add "How did this request come in?" later from Primary Contact Information.',
+        title: 'Request source not selected',
+        description: 'Save will continue. You can add "How did this request come in?" later from Primary Contact Information.',
         duration: 5000,
       });
       setShowContactInfo(true);
