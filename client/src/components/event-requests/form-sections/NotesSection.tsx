@@ -17,7 +17,6 @@ interface NotesSectionProps {
   formData: EventFormData;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
   isComplete: boolean;
-  eventRequest: any | null;
   isMessageEditable: boolean;
   setIsMessageEditable: (editable: boolean) => void;
   // Collaboration
@@ -32,7 +31,6 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   formData,
   setFormData,
   isComplete,
-  eventRequest,
   isMessageEditable,
   setIsMessageEditable,
   isCollaborationEnabled,
@@ -88,8 +86,9 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => {
+                    // Do not reset message here; scratchpad and notes share the same field.
+                    // Resetting would discard in-progress call notes captured elsewhere in the form.
                     setIsMessageEditable(false);
-                    setFormData((prev: any) => ({ ...prev, message: eventRequest?.message || '' }));
                   }}
                 >
                   Cancel
