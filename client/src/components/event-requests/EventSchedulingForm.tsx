@@ -416,7 +416,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       autoSaveTimeoutRef.current = null;
     }
     try { localStorage.removeItem(getAutoSaveKey()); } catch (e) { /* ignore */ }
-  }, [getAutoSaveKey]);
+    try { localStorage.removeItem(getCallNotesKey()); } catch (e) { /* ignore */ }
+  }, [getAutoSaveKey, getCallNotesKey]);
 
   const saveToLocalStorage = useCallback(() => {
     if (!formInitialized) return;
