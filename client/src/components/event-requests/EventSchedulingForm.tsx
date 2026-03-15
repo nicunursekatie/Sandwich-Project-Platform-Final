@@ -753,6 +753,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onClose();
     },
     onError: (error: any) => {
+      setIsSubmitting(false);
+      saveToLocalStorage();
       const serverMessage = error?.data?.message || error?.message;
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       let errorTitle = 'Creation Failed';
