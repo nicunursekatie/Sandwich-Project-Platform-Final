@@ -561,7 +561,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
           <FitBoundsOnLoad points={allPoints} />
           <MapController center={mapCenter} zoom={mapZoom} flyKey={flyKey} />
 
-          <MarkerClusterGroup chunkedLoading maxClusterRadius={60}>
+          <MarkerClusterGroup key={`${eventStatusFilters.join(',')}-${Object.entries(entityFilters).filter(([,v]) => v).map(([k]) => k).join(',')}`} chunkedLoading maxClusterRadius={60}>
             {visibleEntities.map(entity => (
               <Marker
                 key={entity.id}
