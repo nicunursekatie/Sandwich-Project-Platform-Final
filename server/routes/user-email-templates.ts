@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { db } from '../db';
 import { userEmailTemplates, emailLogs, eventRequests, users } from '@shared/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, isNull } from 'drizzle-orm';
 import { isAuthenticated } from '../auth';
 import { logger } from '../utils/production-safe-logger';
 import { sendEmail } from '../sendgrid';
@@ -346,6 +346,45 @@ export function createEventEmailRouter(): Router {
         error: 'Failed to send email',
         details: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+  });
+
+  // GET /api/events/email-logs/orphaned - Returns email logs where the event was deleted (eventId set to null)
+  router.get('/email-logs/orphaned', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = req.user;
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const logs = await db
+        .select({
+          id: emailLogs.id,
+          eventId: emailLogs.eventId,
+          sentAt: emailLogs.sentAt,
+          sentBy: emailLogs.sentBy,
+          recipientEmail: emailLogs.recipientEmail,
+          subject: emailLogs.subject,
+          body: emailLogs.body,
+          templateType: emailLogs.templateType,
+          senderFirstName: users.firstName,
+          senderLastName: users.lastName,
+          senderEmail: users.email,
+        })
+        .from(emailLogs)
+        .leftJoin(users, eq(emailLogs.sentBy, users.id))
+        .where(isNull(emailLogs.eventId))
+        .orderBy(desc(emailLogs.sentAt));
+
+      const formattedLogs = logs.map((log) => ({
+        ...log,
+        senderName: `${log.senderFirstName || ''} ${log.senderLastName || ''}`.trim() || log.senderEmail || 'Unknown',
+      }));
+
+      res.json(formattedLogs);
+    } catch (error) {
+      logger.error('Failed to fetch orphaned email logs:', error);
+      res.status(500).json({ error: 'Failed to fetch orphaned email logs' });
     }
   });
 
