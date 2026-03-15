@@ -23,37 +23,58 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// --- Marker Icons (one per entity type) ---
-const MARKER_SHADOW = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png';
-const MARKER_BASE = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-';
+// --- Brand Colors ---
+const ENTITY_COLORS: Record<EntityType, string> = {
+  event: '#236383',
+  host: '#007E8C',
+  recipient: '#47B3CB',
+  driver: '#FBAD3F',
+  volunteer: '#A31C31',
+};
 
-function makeIcon(color: string) {
-  return new L.Icon({
-    iconUrl: `${MARKER_BASE}${color}.png`,
-    shadowUrl: MARKER_SHADOW,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+// --- Custom SVG Marker Icons ---
+// Events use a diamond/star shape to distinguish from person/entity pins
+
+function makePinSvg(color: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="14" cy="13" r="5.5" fill="#fff" opacity="0.9"/>
+  </svg>`;
+}
+
+function makeDiamondSvg(color: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+    <path d="M16 0L30 14L16 36L2 14Z" fill="${color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M16 8L22 14L16 24L10 14Z" fill="#fff" opacity="0.85"/>
+  </svg>`;
+}
+
+function makeSearchSvg(): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#FBAD3F" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="14" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+    <line x1="18" y1="16" x2="21" y2="19" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function makeSvgIcon(svg: string, size: [number, number], anchor: [number, number], popupAnchor: [number, number]) {
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: size,
+    iconAnchor: anchor,
+    popupAnchor: popupAnchor,
   });
 }
 
 const ENTITY_ICONS = {
-  event: makeIcon('blue'),
-  host: makeIcon('green'),
-  recipient: makeIcon('violet'),
-  driver: makeIcon('orange'),
-  volunteer: makeIcon('red'),
-  search: makeIcon('gold'),
+  event: makeSvgIcon(makeDiamondSvg(ENTITY_COLORS.event), [32, 40], [16, 40], [0, -36]),
+  host: makeSvgIcon(makePinSvg(ENTITY_COLORS.host), [28, 40], [14, 40], [0, -36]),
+  recipient: makeSvgIcon(makePinSvg(ENTITY_COLORS.recipient), [28, 40], [14, 40], [0, -36]),
+  driver: makeSvgIcon(makePinSvg(ENTITY_COLORS.driver), [28, 40], [14, 40], [0, -36]),
+  volunteer: makeSvgIcon(makePinSvg(ENTITY_COLORS.volunteer), [28, 40], [14, 40], [0, -36]),
+  search: makeSvgIcon(makeSearchSvg(), [28, 40], [14, 40], [0, -36]),
 } as const;
-
-const ENTITY_COLORS: Record<EntityType, string> = {
-  event: '#3b82f6',
-  host: '#22c55e',
-  recipient: '#8b5cf6',
-  driver: '#f97316',
-  volunteer: '#ef4444',
-};
 
 const ENTITY_LABELS: Record<EntityType, { label: string; icon: typeof MapPin }> = {
   event: { label: 'Events', icon: MapPin },
@@ -487,7 +508,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
           {routeResult && routeResult.coordinates.length > 0 && (
             <Polyline
               positions={routeResult.coordinates}
-              pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.8 }}
+              pathOptions={{ color: '#236383', weight: 4, opacity: 0.8 }}
             />
           )}
         </MapContainer>
