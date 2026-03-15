@@ -209,7 +209,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
 
   // State
   const [entityFilters, setEntityFilters] = useState<Record<EntityType, boolean>>({
-    event: true, host: true, recipient: true, driver: true, volunteer: true,
+    event: true, host: false, recipient: false, driver: false, volunteer: false,
   });
   const [addressSearch, setAddressSearch] = useState('');
   const [searchedLocation, setSearchedLocation] = useState<{ address: string; latitude: number; longitude: number } | null>(null);
@@ -561,8 +561,9 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
           <FitBoundsOnLoad points={allPoints} />
           <MapController center={mapCenter} zoom={mapZoom} flyKey={flyKey} />
 
-          <MarkerClusterGroup key={`${eventStatusFilters.join(',')}-${Object.entries(entityFilters).filter(([,v]) => v).map(([k]) => k).join(',')}`} chunkedLoading maxClusterRadius={60}>
-            {visibleEntities.map(entity => (
+          {/* Events — clustered separately so cluster counts only reflect events */}
+          <MarkerClusterGroup key={`events-${eventStatusFilters.join(',')}`} chunkedLoading maxClusterRadius={60}>
+            {visibleEntities.filter(e => e.type === 'event').map(entity => (
               <Marker
                 key={entity.id}
                 position={[entity.latitude, entity.longitude]}
@@ -574,12 +575,30 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
                     entity={entity}
                     isSelected={isSelected(entity.id)}
                     onSelectForRoute={() => handleSelectForRoute(entity)}
-                    onEventClick={entity.type === 'event' && onEventClick ? () => onEventClick(entity.metadata.raw) : undefined}
+                    onEventClick={onEventClick ? () => onEventClick(entity.metadata.raw) : undefined}
                   />
                 </Popup>
               </Marker>
             ))}
           </MarkerClusterGroup>
+
+          {/* Non-event entities — individual markers, not clustered with events */}
+          {visibleEntities.filter(e => e.type !== 'event').map(entity => (
+            <Marker
+              key={entity.id}
+              position={[entity.latitude, entity.longitude]}
+              icon={ENTITY_ICONS[entity.type]}
+              ref={(ref) => { if (ref) markerRefs.current.set(entity.id, ref); }}
+            >
+              <Popup maxWidth={280} minWidth={200}>
+                <EntityPopup
+                  entity={entity}
+                  isSelected={isSelected(entity.id)}
+                  onSelectForRoute={() => handleSelectForRoute(entity)}
+                />
+              </Popup>
+            </Marker>
+          ))}
 
           {/* Search result marker */}
           {searchedLocation && (

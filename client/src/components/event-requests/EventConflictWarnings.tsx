@@ -3,19 +3,20 @@
  *
  * Displays scheduling conflict warnings for events.
  * Warns about but doesn't prevent event creation.
+ * Includes weekly capacity suggestions and clickable badges to view the calendar.
  */
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { AlertTriangle, AlertCircle, Calendar, Truck, User, Building, Mic, Clock } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Calendar, Truck, User, Building, Mic, Clock, Lightbulb, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ConflictWarning {
-  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict';
-  severity: 'warning' | 'critical';
+  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict' | 'high_volume_week';
+  severity: 'warning' | 'critical' | 'suggestion';
   message: string;
   conflictingEventId?: number;
   conflictingEventName?: string;
@@ -36,12 +37,14 @@ interface EventConflictWarningsProps {
   eventEndTime?: string | null;
   pickupTime?: string | null;
   vanDriverNeeded?: boolean | null;
+  isDhlVan?: boolean | null;
   selfTransport?: boolean | null;
   assignedVanDriverId?: string | null;
   assignedSpeakerIds?: string[] | null;
   assignedRecipientIds?: string[] | null;
   organizationName?: string | null;
   enabled?: boolean;
+  onViewCalendar?: () => void;
   // Legacy props for backwards compatibility
   vanBooked?: string | null;
   driverName?: string | null;
@@ -56,6 +59,8 @@ const getWarningIcon = (type: ConflictWarning['type']) => {
       return <User className="h-4 w-4" />;
     case 'high_volume_day':
       return <Calendar className="h-4 w-4" />;
+    case 'high_volume_week':
+      return <Lightbulb className="h-4 w-4" />;
     case 'recipient_conflict':
       return <Building className="h-4 w-4" />;
     case 'speaker_conflict':
@@ -75,6 +80,8 @@ const getWarningLabel = (type: ConflictWarning['type']) => {
       return 'Driver Conflict';
     case 'high_volume_day':
       return 'Busy Day';
+    case 'high_volume_week':
+      return 'Busy Week';
     case 'recipient_conflict':
       return 'Recipient Conflict';
     case 'speaker_conflict':
@@ -93,12 +100,14 @@ export function EventConflictWarnings({
   eventEndTime,
   pickupTime,
   vanDriverNeeded,
+  isDhlVan,
   selfTransport,
   assignedVanDriverId,
   assignedSpeakerIds,
   assignedRecipientIds,
   organizationName,
   enabled = true,
+  onViewCalendar,
   // Legacy props
   vanBooked,
   driverName,
@@ -116,6 +125,7 @@ export function EventConflictWarnings({
       eventEndTime,
       pickupTime,
       vanDriverNeeded,
+      isDhlVan,
       selfTransport,
       assignedVanDriverId,
       JSON.stringify(assignedSpeakerIds),
@@ -135,6 +145,7 @@ export function EventConflictWarnings({
         eventEndTime,
         pickupTime,
         vanDriverNeeded,
+        isDhlVan,
         selfTransport,
         assignedVanDriverId,
         assignedSpeakerIds,
@@ -181,6 +192,19 @@ export function EventConflictWarnings({
   // Group warnings by severity
   const criticalWarnings = conflicts.warnings.filter(w => w.severity === 'critical');
   const regularWarnings = conflicts.warnings.filter(w => w.severity === 'warning');
+  const suggestions = conflicts.warnings.filter(w => w.severity === 'suggestion');
+
+  const ViewCalendarLink = () => onViewCalendar ? (
+    <button
+      type="button"
+      onClick={onViewCalendar}
+      className="inline-flex items-center gap-1 text-xs font-medium underline underline-offset-2 hover:no-underline mt-2"
+    >
+      <Calendar className="h-3 w-3" />
+      View Calendar to find open dates
+      <ExternalLink className="h-3 w-3" />
+    </button>
+  ) : null;
 
   return (
     <div className="space-y-3">
@@ -214,6 +238,7 @@ export function EventConflictWarnings({
             <p className="mt-3 text-xs text-muted-foreground">
               These conflicts may cause logistical issues. Please review before proceeding.
             </p>
+            <ViewCalendarLink />
           </AlertDescription>
         </Alert>
       )}
@@ -240,6 +265,48 @@ export function EventConflictWarnings({
                 </li>
               ))}
             </ul>
+            <ViewCalendarLink />
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Suggestions (weekly capacity) */}
+      {suggestions.length > 0 && (
+        <Alert className="border-[#47B3CB] bg-[#47B3CB]/5">
+          <Lightbulb className="h-4 w-4 text-[#007E8C]" />
+          <AlertTitle className="flex items-center gap-2 text-[#236383]">
+            <span>Suggestion</span>
+            <Badge variant="outline" className="text-xs border-[#47B3CB] text-[#007E8C]">
+              High Volume Week
+            </Badge>
+          </AlertTitle>
+          <AlertDescription className="text-[#236383]">
+            <ul className="mt-2 space-y-2">
+              {suggestions.map((warning, index) => (
+                <li key={index} className="flex items-start gap-2 text-sm">
+                  {getWarningIcon(warning.type)}
+                  <div>
+                    {warning.message}
+                    {warning.details?.events && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {(warning.details.events as Array<{ name: string | null; sandwiches: number }>).slice(0, 5).map((e, i) => (
+                          <span key={i} className="block">
+                            {e.name || 'Unnamed Event'}: ~{e.sandwiches.toLocaleString()} sandwiches
+                          </span>
+                        ))}
+                        {warning.details.events.length > 5 && (
+                          <span className="block">+{warning.details.events.length - 5} more events</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-xs text-muted-foreground">
+              This won't prevent scheduling — it's a suggestion to help balance the week's workload.
+            </p>
+            <ViewCalendarLink />
           </AlertDescription>
         </Alert>
       )}
@@ -262,6 +329,7 @@ export function useEventConflicts(eventData: EventConflictWarningsProps) {
       eventData.eventEndTime,
       eventData.pickupTime,
       eventData.vanDriverNeeded,
+      eventData.isDhlVan,
       eventData.selfTransport,
       eventData.assignedVanDriverId,
       JSON.stringify(eventData.assignedSpeakerIds),
@@ -283,6 +351,7 @@ export function useEventConflicts(eventData: EventConflictWarningsProps) {
         eventEndTime: eventData.eventEndTime,
         pickupTime: eventData.pickupTime,
         vanDriverNeeded: eventData.vanDriverNeeded,
+        isDhlVan: eventData.isDhlVan,
         selfTransport: eventData.selfTransport,
         assignedVanDriverId: eventData.assignedVanDriverId,
         assignedSpeakerIds: eventData.assignedSpeakerIds,

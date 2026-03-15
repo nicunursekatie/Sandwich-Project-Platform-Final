@@ -48,6 +48,7 @@ import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { getPrimaryContextualAction, getContextualTooltip } from '@/lib/contextual-actions';
+import { useEventRequestContext } from '../context/EventRequestContext';
 import type { EventRequest } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
@@ -502,8 +503,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
                           style={{ backgroundColor: '#FBAD3F' }}
+                          onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                         >
                           <AlertTriangle className="w-3 h-3" />
                           {datePopulationInfo.scheduledCount} scheduled
@@ -512,6 +514,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <TooltipContent>
                         <p>{indicatorTooltips.scheduledConflict}</p>
                         <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.scheduledCount} event{datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date</p>
+                        <p className="text-xs text-blue-500 mt-1 font-medium">Click to view calendar</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -519,8 +522,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
                           style={{ backgroundColor: '#007E8C' }}
+                          onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                         >
                           <Calendar className="w-3 h-3" />
                           {datePopulationInfo.inProcessCount} in process
@@ -529,6 +533,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       <TooltipContent>
                         <p>{indicatorTooltips.inProcessConflict}</p>
                         <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.inProcessCount} event{datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date</p>
+                        <p className="text-xs text-blue-500 mt-1 font-medium">Click to view calendar</p>
                       </TooltipContent>
                     </Tooltip>
                   )}
@@ -771,6 +776,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   editingValue = '',
   tempIsConfirmed = false,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showConfirmToggle, setShowConfirmToggle] = useState(false);
