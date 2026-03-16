@@ -925,6 +925,8 @@ export default function DriverPlanningDashboard() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<'details' | null>(null);
   const [mobileFullscreenMap, setMobileFullscreenMap] = useState(false);
+  const [desktopLegendCollapsed, setDesktopLegendCollapsed] = useState(false);
+  const [mobileLegendCollapsed, setMobileLegendCollapsed] = useState(false);
   const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(true);
   const [showPendingEvents, setShowPendingEvents] = useState(false);
@@ -3775,49 +3777,63 @@ export default function DriverPlanningDashboard() {
 
           <div className="border-t bg-white px-4 py-3">
             <div className="flex flex-wrap items-start gap-3">
-              <div className="bg-white rounded-lg shadow-sm border p-3 inline-block" data-testid="driver-planning-legend">
-                <div className="text-xs font-semibold mb-2">Legend</div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center gap-2">
-                    <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
-                    </svg>
-                    <span>Event</span>
+              <div className="bg-white rounded-lg shadow-sm border inline-block" data-testid="driver-planning-legend">
+                <button
+                  onClick={() => setDesktopLegendCollapsed(!desktopLegendCollapsed)}
+                  className="flex items-center gap-1.5 w-full p-2 text-xs font-semibold hover:bg-gray-50 rounded-lg"
+                >
+                  <span>Legend</span>
+                  <svg
+                    className={`w-3 h-3 transition-transform ${desktopLegendCollapsed ? '' : 'rotate-180'}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                {!desktopLegendCollapsed && (
+                  <div className="space-y-1.5 text-xs px-2 pb-2">
+                    <div className="flex items-center gap-2">
+                      <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                      </svg>
+                      <span>Event</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                      </svg>
+                      <span>Selected Event</span>
+                    </div>
+                    {effectiveSelectedEvent && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
+                          <span>Host (circle)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
+                          <span>Recipient (diamond)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
+                          <span>Driver (triangle)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                            <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
+                          </svg>
+                          <span>Host+Driver</span>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
+                          <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
+                          <span>Selected = orange</span>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
-                    </svg>
-                    <span>Selected Event</span>
-                  </div>
-                  {effectiveSelectedEvent && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
-                        <span>Host (circle)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                        <span>Recipient (diamond)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
-                        <span>Driver (triangle)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
-                          <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
-                        </svg>
-                        <span>Host+Driver</span>
-                      </div>
-                      <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
-                        <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-                        <span>Selected = orange</span>
-                      </div>
-                    </>
-                  )}
-                </div>
+                )}
               </div>
 
               {fullTripRoute && selectedDriver && selectedDestination && (
@@ -5846,43 +5862,57 @@ export default function DriverPlanningDashboard() {
             )}
           </div>
 
-          {/* Mobile Legend - repositioned */}
-          <div className="absolute top-3 left-3 bg-white rounded-lg shadow-lg p-2 z-[1000]">
-            <div className="text-[10px] font-semibold mb-1">Legend</div>
-            <div className="space-y-0.5 text-[10px]">
-              <div className="flex items-center gap-1">
-                <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
-                </svg>
-                <span>Event (pin)</span>
+          {/* Mobile Legend - collapsible */}
+          <div className="absolute top-3 left-3 bg-white rounded-lg shadow-lg z-[1000]">
+            <button
+              onClick={() => setMobileLegendCollapsed(!mobileLegendCollapsed)}
+              className="flex items-center gap-1 w-full p-2 text-[10px] font-semibold hover:bg-gray-50 rounded-lg"
+            >
+              <span>Legend</span>
+              <svg
+                className={`w-2.5 h-2.5 transition-transform ${mobileLegendCollapsed ? '' : 'rotate-180'}`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            {!mobileLegendCollapsed && (
+              <div className="space-y-0.5 text-[10px] px-2 pb-2">
+                <div className="flex items-center gap-1">
+                  <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                  </svg>
+                  <span>Event (pin)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                  </svg>
+                  <span>Selected Event</span>
+                </div>
+                {selectedEvent && (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-green-500 border border-white" />
+                      <span>Host (circle)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-purple-500 border border-white rotate-45" style={{ borderRadius: '1px' }} />
+                      <span>Recipient (diamond)</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
+                      <span>Driver (triangle)</span>
+                    </div>
+                    <div className="flex items-center gap-1 pt-0.5 border-t border-gray-200 mt-0.5">
+                      <div className="w-2 h-2 rounded-full bg-orange-500 border border-white" />
+                      <span>Selected = orange</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="flex items-center gap-1">
-                <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
-                </svg>
-                <span>Selected Event</span>
-              </div>
-              {selectedEvent && (
-                <>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-green-500 border border-white" />
-                    <span>Host (circle)</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-purple-500 border border-white rotate-45" style={{ borderRadius: '1px' }} />
-                    <span>Recipient (diamond)</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
-                    <span>Driver (triangle)</span>
-                  </div>
-                  <div className="flex items-center gap-1 pt-0.5 border-t border-gray-200 mt-0.5">
-                    <div className="w-2 h-2 rounded-full bg-orange-500 border border-white" />
-                    <span>Selected = orange</span>
-                  </div>
-                </>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Selected Event Quick Info - Bottom of map in fullscreen mode */}
