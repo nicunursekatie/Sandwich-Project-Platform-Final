@@ -15,15 +15,7 @@ import { sendEventReminderSMS } from '../sms-service';
 import { getEventNotificationPreferences, getUserMetadata, getUserPhoneNumber } from '@shared/types';
 import type { EventNotificationPreferences } from '@shared/types';
 import { generateImpactReport, saveImpactReport } from './ai-impact-reports';
-import { processTspContactFollowups } from './tsp-contact-followup-service';
-import { processSmartTspFollowups } from './tsp-smart-followup-service';
-import { processCorporateFollowups } from './corporate-followup-service';
 import { processWeeklyDigests } from './weekly-digest-service';
-import {
-  processCorporate24hEscalations,
-  processApproachingIncompleteEvents,
-  processWeeklyContactReminders,
-} from './event-notification-dispatcher';
 import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
 import { processPredictionAlerts } from './prediction-alert-service';
@@ -1080,7 +1072,7 @@ export function initializeCronJobs() {
   // Cron format: minute hour day-of-month month day-of-week
   // '0 9,15 * * *' = At 9:00 AM and 3:00 PM every day
   // DISABLED: Automatic volunteer reminders replaced by user-controlled per-event
-  // check-in reminder toggles (CheckInReminderToggle component).
+  // check-in reminder rules (ReminderRulesManager component).
   // TSP contacts can now enable/disable reminders individually per event.
   const volunteerReminderJob = cron.schedule('0 9,15 * * *', async () => {
     cronLogger.info('Volunteer reminder job DISABLED - using per-event check-in toggles instead');
@@ -1201,7 +1193,7 @@ export function initializeCronJobs() {
   const tspFollowupJob = cron.schedule('0 8,16 * * *', async () => {
     cronLogger.info('TSP follow-up job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
-    scheduled: true,
+    scheduled: false,
     timezone: 'America/New_York'
   });
 
@@ -1216,7 +1208,7 @@ export function initializeCronJobs() {
     // DISABLED: Replaced by user-controlled per-event check-in reminders
     cronLogger.info('Corporate follow-up job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
-    scheduled: true,
+    scheduled: false,
     timezone: 'America/New_York'
   });
 
@@ -1300,7 +1292,7 @@ export function initializeCronJobs() {
   const corporate24hEscalationJob = cron.schedule('0 9,13,17 * * *', async () => {
     cronLogger.info('Corporate 24h escalation job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
-    scheduled: true,
+    scheduled: false,
     timezone: 'America/New_York'
   });
 
@@ -1310,7 +1302,7 @@ export function initializeCronJobs() {
   const eventApproachingJob = cron.schedule('0 9 * * *', async () => {
     cronLogger.info('Event approaching job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
-    scheduled: true,
+    scheduled: false,
     timezone: 'America/New_York'
   });
 
@@ -1320,7 +1312,7 @@ export function initializeCronJobs() {
   const weeklyContactReminderJob = cron.schedule('0 10 * * 1-5', async () => {
     cronLogger.info('Weekly contact reminder job is DISABLED - replaced by user-controlled check-in reminders');
   }, {
-    scheduled: true,
+    scheduled: false,
     timezone: 'America/New_York'
   });
 

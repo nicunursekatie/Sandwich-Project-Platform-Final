@@ -32,6 +32,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { TollFreeVerificationPanel } from './toll-free-verification-panel';
 import AlertPreferences from './alert-preferences';
+import CheckInReminderPreferences from './check-in-reminder-preferences';
 import UserEmailTemplatesSettings from './user-email-templates-settings';
 import { useMobilePreference } from '@/mobile/components/mobile-layout-prompt';
 
@@ -730,9 +731,12 @@ export default function UserProfile() {
         </Card>
       )}
 
-      {/* Notifications Tab - Now Alert Preferences */}
+      {/* Notifications Tab - Alert Preferences + Check-In Reminder Defaults */}
       {activeTab === 'notifications' && (
-        <AlertPreferences />
+        <div className="space-y-6">
+          <AlertPreferences />
+          <CheckInReminderPreferences />
+        </div>
       )}
 
       {/* Toll-Free Verification Panel - Admin Only */}

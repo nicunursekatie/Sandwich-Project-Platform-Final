@@ -1,42 +1,15 @@
 import express from 'express';
 import { db } from '../db';
-import { eventCheckInReminders, eventRequests, REMINDER_RULE_TYPES } from '@shared/schema';
+import { eventCheckInReminders, eventReminderSnoozes, eventRequests, REMINDER_RULE_TYPES } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { calculateNextDue, ReminderFrequency } from '../utils/reminder-scheduling';
 
 const router = express.Router();
 
 const VALID_RULE_TYPES = Object.values(REMINDER_RULE_TYPES);
 const VALID_FREQUENCIES = ['daily', 'every_3_days', 'weekly', 'biweekly'];
 const VALID_CHANNELS = ['email', 'sms', 'both'];
-
-// Condition-based rules (everything except general_checkin) should be evaluated
-// on the next cron run so they fire promptly if the condition is already met.
-function isConditionBasedRule(ruleType: string): boolean {
-  return ruleType !== REMINDER_RULE_TYPES.GENERAL_CHECKIN;
-}
-
-function calculateNextDue(frequency: string, fromDate: Date = new Date()): Date {
-  const next = new Date(fromDate);
-  switch (frequency) {
-    case 'daily':
-      next.setDate(next.getDate() + 1);
-      break;
-    case 'every_3_days':
-      next.setDate(next.getDate() + 3);
-      break;
-    case 'weekly':
-      next.setDate(next.getDate() + 7);
-      break;
-    case 'biweekly':
-      next.setDate(next.getDate() + 14);
-      break;
-    default:
-      next.setDate(next.getDate() + 7);
-  }
-  next.setHours(9, 0, 0, 0);
-  return next;
-}
 
 // GET /api/event-check-in-reminders/:eventRequestId
 // Get ALL reminder rules for a specific event request (for current user)
@@ -296,6 +269,162 @@ router.delete('/:eventRequestId/:ruleType', async (req: any, res) => {
   } catch (error) {
     logger.error('Error deleting reminder rule:', error);
     res.status(500).json({ error: 'Failed to delete reminder rule' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Snooze endpoints
+// ---------------------------------------------------------------------------
+
+const VALID_SNOOZE_TYPES = ['timed', 'until_date', 'until_contact'];
+
+/**
+ * Verifies the current user is authorized to manage reminders for the given event.
+ * Returns the event row if authorized, or sends an error response and returns null.
+ */
+async function authorizeSnoozeAccess(req: any, res: any, eventRequestId: number): Promise<boolean> {
+  const [event] = await db
+    .select({
+      id: eventRequests.id,
+      tspContactAssigned: eventRequests.tspContactAssigned,
+      tspContact: eventRequests.tspContact,
+    })
+    .from(eventRequests)
+    .where(eq(eventRequests.id, eventRequestId))
+    .limit(1);
+
+  if (!event) {
+    res.status(404).json({ error: 'Event request not found' });
+    return false;
+  }
+
+  const userId = req.user.id;
+  const role = req.user.role;
+  const isAdminUser = role === 'admin' || role === 'super_admin';
+  const isAssigned =
+    (event.tspContactAssigned && event.tspContactAssigned === userId) ||
+    (event.tspContact && event.tspContact === userId);
+
+  if (!isAssigned && !isAdminUser) {
+    res.status(403).json({ error: 'Not authorized to manage reminders for this event' });
+    return false;
+  }
+
+  return true;
+}
+
+// GET /api/event-check-in-reminders/:eventRequestId/snooze
+router.get('/:eventRequestId/snooze', async (req: any, res) => {
+  try {
+    const eventRequestId = parseInt(req.params.eventRequestId);
+    if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    if (!await authorizeSnoozeAccess(req, res, eventRequestId)) return;
+
+    const [snooze] = await db
+      .select()
+      .from(eventReminderSnoozes)
+      .where(
+        and(
+          eq(eventReminderSnoozes.eventRequestId, eventRequestId),
+          eq(eventReminderSnoozes.userId, req.user.id),
+          eq(eventReminderSnoozes.active, true),
+        ),
+      )
+      .limit(1);
+
+    res.json({ snooze: snooze || null });
+  } catch (error) {
+    logger.error('Error getting snooze:', error);
+    res.status(500).json({ error: 'Failed to get snooze status' });
+  }
+});
+
+// POST /api/event-check-in-reminders/:eventRequestId/snooze
+router.post('/:eventRequestId/snooze', async (req: any, res) => {
+  try {
+    const eventRequestId = parseInt(req.params.eventRequestId);
+    if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    if (!await authorizeSnoozeAccess(req, res, eventRequestId)) return;
+
+    const { snoozeType, snoozedUntil, reason } = req.body;
+
+    if (!VALID_SNOOZE_TYPES.includes(snoozeType)) {
+      return res.status(400).json({ error: 'Invalid snooze type' });
+    }
+
+    let computedUntil: Date | null = null;
+    if (snoozeType === 'timed') {
+      const days = parseInt(snoozedUntil);
+      if (!days || days < 1) return res.status(400).json({ error: 'Timed snooze requires a positive number of days' });
+      computedUntil = new Date();
+      computedUntil.setDate(computedUntil.getDate() + days);
+      computedUntil.setHours(9, 0, 0, 0);
+    } else if (snoozeType === 'until_date') {
+      // Parse as local date (YYYY-MM-DD or ISO string) and normalize to 9 AM
+      // to avoid timezone-related early expiry when the client sends a date-only string.
+      const raw = new Date(snoozedUntil);
+      if (isNaN(raw.getTime())) return res.status(400).json({ error: 'Invalid date' });
+      computedUntil = new Date(raw.getFullYear(), raw.getMonth(), raw.getDate(), 9, 0, 0, 0);
+    }
+    // until_contact: computedUntil stays null (open-ended)
+
+    // Upsert: cancel any existing snooze and create a new one
+    await db
+      .update(eventReminderSnoozes)
+      .set({ active: false, cancelledAt: new Date() })
+      .where(
+        and(
+          eq(eventReminderSnoozes.eventRequestId, eventRequestId),
+          eq(eventReminderSnoozes.userId, req.user.id),
+          eq(eventReminderSnoozes.active, true),
+        ),
+      );
+
+    const [snooze] = await db
+      .insert(eventReminderSnoozes)
+      .values({
+        eventRequestId,
+        userId: req.user.id,
+        snoozeType,
+        snoozedUntil: computedUntil,
+        reason: reason || null,
+        active: true,
+      })
+      .returning();
+
+    logger.info(`Snooze created for event ${eventRequestId} by ${req.user.id}: ${snoozeType}`);
+    res.json({ snooze });
+  } catch (error) {
+    logger.error('Error creating snooze:', error);
+    res.status(500).json({ error: 'Failed to create snooze' });
+  }
+});
+
+// DELETE /api/event-check-in-reminders/:eventRequestId/snooze
+router.delete('/:eventRequestId/snooze', async (req: any, res) => {
+  try {
+    const eventRequestId = parseInt(req.params.eventRequestId);
+    if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    if (!await authorizeSnoozeAccess(req, res, eventRequestId)) return;
+
+    await db
+      .update(eventReminderSnoozes)
+      .set({ active: false, cancelledAt: new Date() })
+      .where(
+        and(
+          eq(eventReminderSnoozes.eventRequestId, eventRequestId),
+          eq(eventReminderSnoozes.userId, req.user.id),
+          eq(eventReminderSnoozes.active, true),
+        ),
+      );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error cancelling snooze:', error);
+    res.status(500).json({ error: 'Failed to cancel snooze' });
   }
 });
 
