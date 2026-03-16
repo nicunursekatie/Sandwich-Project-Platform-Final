@@ -614,59 +614,64 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
 
     const shouldAssignVolunteer = (status === 'confirmed' || status === 'assigned') && !!signup.volunteerUserId;
 
-    // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
-    if (shouldAssignVolunteer) {
-      const [event] = await db
-        .select({
-          id: eventRequests.id,
-          assignedDriverIds: eventRequests.assignedDriverIds,
-          assignedSpeakerIds: eventRequests.assignedSpeakerIds,
-          assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+    // Wrap assignment + status update in a transaction to prevent race conditions
+    // when two concurrent approvals read and write the same event assignment arrays.
+    const [updatedSignup] = await db.transaction(async (trx) => {
+      // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
+      if (shouldAssignVolunteer) {
+        const [event] = await trx
+          .select({
+            id: eventRequests.id,
+            assignedDriverIds: eventRequests.assignedDriverIds,
+            assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+            assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+          })
+          .from(eventRequests)
+          .where(eq(eventRequests.id, signup.eventRequestId))
+          .limit(1);
+
+        if (!event) {
+          throw Object.assign(new Error('Event not found for this signup'), { statusCode: 404 });
+        }
+
+        const assignedUserId = signup.volunteerUserId as string;
+        const addUnique = (ids?: string[] | null) =>
+          Array.from(new Set([...(ids || []), assignedUserId]));
+
+        const assignmentUpdates: {
+          assignedDriverIds?: string[];
+          assignedSpeakerIds?: string[];
+          assignedVolunteerIds?: string[];
+        } = {};
+
+        if (signup.role === 'driver') {
+          assignmentUpdates.assignedDriverIds = addUnique(event.assignedDriverIds);
+        } else if (signup.role === 'speaker') {
+          assignmentUpdates.assignedSpeakerIds = addUnique(event.assignedSpeakerIds);
+        } else {
+          assignmentUpdates.assignedVolunteerIds = addUnique(event.assignedVolunteerIds);
+        }
+
+        await trx
+          .update(eventRequests)
+          .set(assignmentUpdates)
+          .where(eq(eventRequests.id, signup.eventRequestId));
+      }
+
+      // Update the signup status
+      const effectiveStatus = shouldAssignVolunteer ? 'assigned' : status;
+      return trx
+        .update(eventVolunteers)
+        .set({
+          status: effectiveStatus,
+          confirmedAt: effectiveStatus === 'confirmed' || effectiveStatus === 'assigned' ? new Date() : null,
+          assignedBy: coordinatorId,
+          notes: notes || signup.notes,
+          updatedAt: new Date(),
         })
-        .from(eventRequests)
-        .where(eq(eventRequests.id, signup.eventRequestId))
-        .limit(1);
-
-      if (!event) {
-        return res.status(404).json({ error: 'Event not found for this signup' });
-      }
-
-      const assignedUserId = signup.volunteerUserId as string;
-      const addUnique = (ids?: string[] | null) =>
-        Array.from(new Set([...(ids || []), assignedUserId]));
-
-      const assignmentUpdates: {
-        assignedDriverIds?: string[];
-        assignedSpeakerIds?: string[];
-        assignedVolunteerIds?: string[];
-      } = {};
-
-      if (signup.role === 'driver') {
-        assignmentUpdates.assignedDriverIds = addUnique(event.assignedDriverIds);
-      } else if (signup.role === 'speaker') {
-        assignmentUpdates.assignedSpeakerIds = addUnique(event.assignedSpeakerIds);
-      } else {
-        assignmentUpdates.assignedVolunteerIds = addUnique(event.assignedVolunteerIds);
-      }
-
-      await db
-        .update(eventRequests)
-        .set(assignmentUpdates)
-        .where(eq(eventRequests.id, signup.eventRequestId));
-    }
-
-    // Update the signup status
-    const [updatedSignup] = await db
-      .update(eventVolunteers)
-      .set({
-        status: shouldAssignVolunteer ? 'assigned' : status,
-        confirmedAt: status === 'confirmed' || status === 'assigned' ? new Date() : null,
-        assignedBy: coordinatorId,
-        notes: notes || signup.notes,
-        updatedAt: new Date(),
-      })
-      .where(eq(eventVolunteers.id, signupId))
-      .returning();
+        .where(eq(eventVolunteers.id, signupId))
+        .returning();
+    });
 
     // TODO: Send notification to volunteer about status change
 
@@ -678,6 +683,9 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
       signup: updatedSignup,
     });
   } catch (error) {
+    if (error instanceof Error && (error as Error & { statusCode?: number }).statusCode === 404) {
+      return res.status(404).json({ error: error.message });
+    }
     logger.error('Error updating signup status:', error);
     res.status(500).json({ error: 'Failed to update signup status' });
   }
