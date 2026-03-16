@@ -135,14 +135,15 @@ export function DateTimePicker({
           <Button
             variant="outline"
             className={cn(
-              'w-full justify-start text-left font-normal',
+              'w-full justify-start text-left font-normal overflow-hidden',
               !selectedDate && 'text-muted-foreground'
             )}
             disabled={disabled}
             data-testid={testId}
+            title={getDisplayText()}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {getDisplayText()}
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+            <span className="min-w-0 truncate">{getDisplayText()}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">

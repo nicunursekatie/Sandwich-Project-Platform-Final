@@ -1603,7 +1603,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={() => setShowComments(true)}
-                className="ml-2 border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+                className="ml-2 border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-auto max-w-full whitespace-normal break-words text-left"
               >
                 <MessageSquare className="w-4 h-4 mr-1" />
                 Add Comment
@@ -1630,14 +1630,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-stretch sm:items-center">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   size="sm"
                   variant="default"
                   onClick={onSchedule}
-                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-8"
+                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-auto max-w-full whitespace-normal break-words text-left"
                 >
                   <Calendar className="w-4 h-4 mr-1" />
                   Mark Scheduled
@@ -1673,7 +1673,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onScheduleCall}
-                  className="h-8"
+                  className="h-auto max-w-full whitespace-normal break-words text-left"
                 >
                   <Phone className="w-4 h-4 mr-1" />
                   {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
@@ -1688,7 +1688,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               size="sm"
               variant="outline"
               onClick={onLogContact}
-              className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-8"
+              className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-auto max-w-full whitespace-normal break-words text-left"
               title="Log a contact attempt or conversation"
             >
               <MessageSquare className="w-4 h-4 mr-1" />
@@ -1704,7 +1704,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {onResendToolkit && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline" onClick={onResendToolkit} className="h-8">
+                  <Button size="sm" variant="outline" onClick={onResendToolkit} className="h-auto max-w-full whitespace-normal break-words text-left">
                     <Package className="w-4 h-4 mr-1" />
                     Resend Toolkit
                   </Button>
@@ -1723,7 +1723,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAssignTspContact}
-                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-8"
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-auto max-w-full whitespace-normal break-words text-left"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
                     Assign TSP Contact
@@ -1743,7 +1743,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAiSuggest}
-                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-8"
+                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-auto max-w-full whitespace-normal break-words text-left"
                     data-testid="button-ai-suggest-date"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
@@ -1764,7 +1764,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAiIntakeAssist}
-                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-8"
+                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-auto max-w-full whitespace-normal break-words text-left"
                     data-testid="button-ai-intake-assist"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
@@ -1809,7 +1809,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       size="sm"
                       variant={contextualAction?.action === 'schedule' ? 'default' : 'outline'}
                       onClick={handleClick}
-                      className={`h-8 ${contextualAction?.action === 'schedule' ? 'bg-[#007E8C] hover:bg-[#005f6b]' : ''}`}
+                      className={`h-auto max-w-full whitespace-normal break-words text-left ${contextualAction?.action === 'schedule' ? 'bg-[#007E8C] hover:bg-[#005f6b]' : ''}`}
                       data-testid="button-edit-request"
                     >
                       {contextualAction?.action === 'schedule' ? (
@@ -1868,7 +1868,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               e.stopPropagation();
               setShowAuditLog(!showAuditLog);
             }}
-            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2"
             data-testid="button-toggle-audit-log"
             type="button"
           >
