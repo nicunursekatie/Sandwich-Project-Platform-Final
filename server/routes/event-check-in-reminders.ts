@@ -10,6 +10,12 @@ const VALID_RULE_TYPES = Object.values(REMINDER_RULE_TYPES);
 const VALID_FREQUENCIES = ['daily', 'every_3_days', 'weekly', 'biweekly'];
 const VALID_CHANNELS = ['email', 'sms', 'both'];
 
+// Condition-based rules (everything except general_checkin) should be evaluated
+// on the next cron run so they fire promptly if the condition is already met.
+function isConditionBasedRule(ruleType: string): boolean {
+  return ruleType !== REMINDER_RULE_TYPES.GENERAL_CHECKIN;
+}
+
 function calculateNextDue(frequency: string, fromDate: Date = new Date()): Date {
   const next = new Date(fromDate);
   switch (frequency) {
@@ -95,7 +101,12 @@ router.post('/', async (req: any, res) => {
     const safeThreshold = typeof thresholdDays === 'number' && thresholdDays > 0 ? thresholdDays : 7;
     const isEnabled = enabled !== false;
 
-    const nextDueAt = isEnabled ? calculateNextDue(safeFrequency) : null;
+    // Condition-based rules check daily starting tomorrow at 9 AM.
+    // The user can already see the event's current state, so no need to fire immediately.
+    // Frequency-based rules (general_checkin) schedule based on their configured frequency.
+    const nextDueAt = isEnabled
+      ? (isConditionBasedRule(safeRuleType) ? calculateNextDue('daily') : calculateNextDue(safeFrequency))
+      : null;
 
     // Upsert: check if rule of this type already exists for this event+user
     const [existing] = await db
@@ -179,7 +190,9 @@ router.post('/bulk', async (req: any, res) => {
       const safeChannel = VALID_CHANNELS.includes(rule.channel) ? rule.channel : 'email';
       const safeThreshold = typeof rule.thresholdDays === 'number' && rule.thresholdDays > 0 ? rule.thresholdDays : 7;
       const isEnabled = rule.enabled !== false;
-      const nextDueAt = isEnabled ? calculateNextDue(safeFrequency) : null;
+      const nextDueAt = isEnabled
+        ? (isConditionBasedRule(safeRuleType) ? calculateNextDue('daily') : calculateNextDue(safeFrequency))
+        : null;
 
       const [existing] = await db
         .select()
