@@ -175,9 +175,6 @@ export default function CheckInReminderPreferencesEditor() {
   const [rules, setRules] = useState<DefaultReminderRule[]>(defaultRules);
   const [corpRules, setCorpRules] = useState<DefaultReminderRule[]>(defaultCorpRules);
   const [channel, setChannel] = useState(serverPrefs?.defaultChannel ?? 'email');
-  const [showCorporate, setShowCorporate] = useState(
-    () => serverPrefs?.corporateRules?.some((r) => r.enabled) ?? false,
-  );
 
   // Reset local state when server data changes (e.g. after a reload or cache update).
   // `defaultRules` and `defaultCorpRules` are useMemo values derived solely from
@@ -187,7 +184,6 @@ export default function CheckInReminderPreferencesEditor() {
     setRules(defaultRules);
     setCorpRules(defaultCorpRules);
     setChannel(serverPrefs?.defaultChannel ?? 'email');
-    setShowCorporate(serverPrefs?.corporateRules?.some((r) => r.enabled) ?? false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverPrefs]);
 
