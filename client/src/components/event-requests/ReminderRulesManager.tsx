@@ -115,7 +115,7 @@ const RULE_TYPE_CONFIG = {
   },
   missing_details: {
     label: 'Missing Key Details',
-    description: 'Alert if sandwich count/type, location, or pickup time are missing',
+    description: 'Alert if sandwich count/type, location, or pickup time are still missing within your specified number of days before the event',
     defaultThreshold: 7,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of event',
