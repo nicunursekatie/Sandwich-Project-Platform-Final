@@ -1080,7 +1080,7 @@ export function initializeCronJobs() {
   // Cron format: minute hour day-of-month month day-of-week
   // '0 9,15 * * *' = At 9:00 AM and 3:00 PM every day
   // DISABLED: Automatic volunteer reminders replaced by user-controlled per-event
-  // check-in reminder toggles (CheckInReminderToggle component).
+  // check-in reminder rules (ReminderRulesManager component).
   // TSP contacts can now enable/disable reminders individually per event.
   const volunteerReminderJob = cron.schedule('0 9,15 * * *', async () => {
     cronLogger.info('Volunteer reminder job DISABLED - using per-event check-in toggles instead');

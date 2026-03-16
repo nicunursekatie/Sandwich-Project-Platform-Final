@@ -3,34 +3,13 @@ import { db } from '../db';
 import { eventCheckInReminders, eventRequests, REMINDER_RULE_TYPES } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { calculateNextDue } from '../utils/reminder-scheduling';
 
 const router = express.Router();
 
 const VALID_RULE_TYPES = Object.values(REMINDER_RULE_TYPES);
 const VALID_FREQUENCIES = ['daily', 'every_3_days', 'weekly', 'biweekly'];
 const VALID_CHANNELS = ['email', 'sms', 'both'];
-
-function calculateNextDue(frequency: string, fromDate: Date = new Date()): Date {
-  const next = new Date(fromDate);
-  switch (frequency) {
-    case 'daily':
-      next.setDate(next.getDate() + 1);
-      break;
-    case 'every_3_days':
-      next.setDate(next.getDate() + 3);
-      break;
-    case 'weekly':
-      next.setDate(next.getDate() + 7);
-      break;
-    case 'biweekly':
-      next.setDate(next.getDate() + 14);
-      break;
-    default:
-      next.setDate(next.getDate() + 7);
-  }
-  next.setHours(9, 0, 0, 0);
-  return next;
-}
 
 // GET /api/event-check-in-reminders/:eventRequestId
 // Get ALL reminder rules for a specific event request (for current user)

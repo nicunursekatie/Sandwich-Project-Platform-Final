@@ -20,6 +20,11 @@ import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
 import { getUserMetadata } from '@shared/types';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
+import {
+  calculateNextDue,
+  CONDITION_COOLDOWN_FREQUENCY,
+  CONDITION_CHECK_FREQUENCY,
+} from '../utils/reminder-scheduling';
 
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -57,32 +62,6 @@ const RULE_TYPE_LABELS: Record<string, { label: string; getDescription: (thresho
   },
 };
 
-function calculateNextDue(frequency: string, fromDate: Date = new Date()): Date {
-  const next = new Date(fromDate);
-  switch (frequency) {
-    case 'daily':
-      next.setDate(next.getDate() + 1);
-      break;
-    case 'every_3_days':
-      next.setDate(next.getDate() + 3);
-      break;
-    case 'weekly':
-      next.setDate(next.getDate() + 7);
-      break;
-    case 'biweekly':
-      next.setDate(next.getDate() + 14);
-      break;
-    default:
-      next.setDate(next.getDate() + 7);
-  }
-  next.setHours(9, 0, 0, 0);
-  return next;
-}
-
-// Condition-based rules check daily when the condition hasn't been met yet.
-// After sending a notification, use a cooldown to avoid spamming.
-const CONDITION_CHECK_INTERVAL_DAYS = 1; // check daily
-const CONDITION_COOLDOWN_DAYS = 3; // don't re-send for 3 days after a notification
 
 function isConditionBasedRule(ruleType: string): boolean {
   return ruleType !== REMINDER_RULE_TYPES.GENERAL_CHECKIN;
@@ -342,7 +321,7 @@ export async function processCheckInReminders(): Promise<{
           // Condition not met — reschedule for next check but don't send
           // Condition-based rules recheck daily; frequency-based use their frequency
           const nextDue = isConditionBasedRule(reminder.ruleType)
-            ? calculateNextDue('daily')
+            ? calculateNextDue(CONDITION_CHECK_FREQUENCY)
             : calculateNextDue(reminder.frequency);
           await db
             .update(eventCheckInReminders)
@@ -424,7 +403,7 @@ export async function processCheckInReminders(): Promise<{
         // Condition-based rules use a cooldown after sending to avoid spam;
         // frequency-based rules (general_checkin) use their configured frequency
         const nextDue = isConditionBasedRule(reminder.ruleType)
-          ? calculateNextDue('every_3_days') // 3-day cooldown after sending
+          ? calculateNextDue(CONDITION_COOLDOWN_FREQUENCY)
           : calculateNextDue(reminder.frequency);
         await db
           .update(eventCheckInReminders)
