@@ -1869,7 +1869,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               e.stopPropagation();
               setShowAuditLog(!showAuditLog);
             }}
-            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2 h-8"
+            className="w-full justify-between text-gray-600 hover:text-gray-800 p-2"
             data-testid="button-toggle-audit-log"
             type="button"
           >
