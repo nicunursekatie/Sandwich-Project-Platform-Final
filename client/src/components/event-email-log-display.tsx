@@ -36,11 +36,12 @@ interface EventEmailLogDisplayProps {
 }
 
 export default function EventEmailLogDisplay({ eventId, compact = false }: EventEmailLogDisplayProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [dataRequested, setDataRequested] = useState(false); // Controls lazy-load fetch trigger
+  const [listExpanded, setListExpanded] = useState(false); // Controls multi-email collapsible list
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
 
-  // Lazy-load: only fetch email logs when the user expands the section (or in full/non-compact view)
-  const shouldFetch = !compact || expanded;
+  // Lazy-load: only fetch email logs when the user requests it (or in full/non-compact view)
+  const shouldFetch = !compact || dataRequested;
 
   const { data: logs, isLoading } = useQuery<EmailLogEntry[]>({
     queryKey: [`/api/events/${eventId}/email-logs`],
@@ -52,17 +53,16 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
   });
 
   // In compact mode, show a lightweight toggle before data is fetched
-  if (compact && !expanded && !logs) {
+  if (compact && !dataRequested && !logs) {
     return (
-      <Collapsible open={expanded} onOpenChange={setExpanded}>
-        <CollapsibleTrigger asChild>
-          <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-            <Mail className="w-3 h-3" />
-            <ChevronRight className="w-3 h-3" />
-            View email history
-          </button>
-        </CollapsibleTrigger>
-      </Collapsible>
+      <button
+        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        onClick={() => setDataRequested(true)}
+      >
+        <Mail className="w-3 h-3" />
+        <ChevronRight className="w-3 h-3" />
+        View email history
+      </button>
     );
   }
 
@@ -76,7 +76,7 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
   }
 
   if (!logs || logs.length === 0) {
-    if (compact && expanded) {
+    if (compact && dataRequested) {
       return (
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
           <Mail className="w-3 h-3" />
@@ -113,10 +113,10 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
 
         {/* Expandable log list if multiple */}
         {hasMultiple && (
-          <Collapsible open={expanded} onOpenChange={setExpanded}>
+          <Collapsible open={listExpanded} onOpenChange={setListExpanded}>
             <CollapsibleTrigger asChild>
               <button className="flex items-center gap-1 text-xs text-primary hover:underline">
-                {expanded ? (
+                {listExpanded ? (
                   <ChevronDown className="w-3 h-3" />
                 ) : (
                   <ChevronRight className="w-3 h-3" />

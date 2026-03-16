@@ -374,6 +374,10 @@ export function createEventEmailRouter(): Router {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
+      if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+        return res.status(403).json({ error: 'Insufficient permissions to view email logs' });
+      }
+
       const logs = await db
         .select({
           id: emailLogs.id,
@@ -411,6 +415,10 @@ export function createEventEmailRouter(): Router {
       const user = req.user;
       if (!user?.id) {
         return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_VIEW)) {
+        return res.status(403).json({ error: 'Insufficient permissions to view email logs' });
       }
 
       const eventId = parseInt(req.params.eventId);
