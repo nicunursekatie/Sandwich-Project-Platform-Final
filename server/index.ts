@@ -189,9 +189,10 @@ async function bootstrap() {
   try {
     serverLogger.info('🚀 Starting The Sandwich Project server...');
 
-    // Use PORT from environment (Replit Autoscale sets PORT=80), fallback to 80 for production, 5000 for dev
+    // Use PORT from environment (Replit Autoscale sets PORT=80), fallback to 80 for production, 3000 for dev
+    // Note: dev default is 3000 (not 5000) to avoid conflicting with PORT=5000 production workflow
     const port =
-      process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 5000);
+      process.env.PORT || (process.env.NODE_ENV === 'production' ? 80 : 3000);
     const host = '0.0.0.0';
 
     serverLogger.info(
