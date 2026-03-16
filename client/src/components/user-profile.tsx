@@ -734,8 +734,8 @@ export default function UserProfile() {
       {/* Notifications Tab - Alert Preferences + Check-In Reminder Defaults */}
       {activeTab === 'notifications' && (
         <div className="space-y-6">
-          <AlertPreferences />
           <CheckInReminderPreferences />
+          <AlertPreferences />
         </div>
       )}
 
