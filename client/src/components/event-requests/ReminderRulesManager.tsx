@@ -416,7 +416,7 @@ export function ReminderRulesManager({
             {!hasGlobalDefaults && !hasPerEventRules && (
               <p className="text-xs text-gray-500">
                 Set up your default reminders in{' '}
-                <a href="/dashboard?section=user-profile&tab=notifications" className="text-[#007E8C] underline">
+                <a href="/profile?tab=notifications" className="text-[#007E8C] underline">
                   Profile → Alerts
                 </a>{' '}
                 to apply them to all events.
