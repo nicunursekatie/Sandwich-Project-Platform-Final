@@ -23,6 +23,7 @@ export interface Tour {
   estimatedTime?: string;
   afterComplete?: () => void; // Optional callback to run after tour completes
   requiredPermission?: string; // Permission required to view/start this tour (uses PERMISSIONS from auth-utils)
+  allowedEmails?: string[]; // If set, only users with these emails can see this tour
 }
 
 export type TourCategory = 
@@ -1345,6 +1346,124 @@ export const TOURS: Tour[] = [
           }
         }
       }
+    ]
+  },
+  {
+    id: 'event-reminders-walkthrough',
+    title: 'Event Reminders',
+    description: 'Learn how to set up automatic reminders so you never miss an event deadline — unfilled roles, missing details, and more.',
+    category: 'events-calendar',
+    icon: 'Bell',
+    estimatedTime: '3 min',
+    allowedEmails: [
+      'katielong2316@gmail.com',
+      'christine@thesandwichproject.org',
+      'brendabonilla55@gmail.com',
+      'brigith@thesandwichproject.org',
+    ],
+    steps: [
+      {
+        id: 'reminders-intro',
+        title: 'Introducing Event Reminders',
+        description: 'The new Reminders feature helps you stay on top of your events automatically. It works in two layers: global defaults (set once in your profile) and per-event controls (on each event card). Let\'s walk through both!',
+        targetSelector: '[data-nav-id="event-requests"]',
+        position: 'center',
+      },
+      {
+        id: 'reminders-profile-nav',
+        title: 'Step 1: Set Your Global Defaults',
+        description: 'First, go to your Profile page. Click your profile icon or navigate to Profile from the menu. We\'ll set up your default reminder rules there.',
+        targetSelector: '[data-nav-id="profile"]',
+        position: 'right',
+        navigationAction: {
+          section: 'profile'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="profile"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'reminders-alerts-tab',
+        title: 'Open the Alerts Tab',
+        description: 'Click the Alerts tab to see your notification and reminder settings. This is where you configure your default reminder rules that apply to all your events.',
+        targetSelector: '[data-tour="alerts-tab"]',
+        position: 'bottom',
+        waitForElement: true,
+        beforeShow: () => {
+          // Make sure we're on the profile page with the notifications tab
+          const url = new URL(window.location.href);
+          if (!url.pathname.includes('/profile')) {
+            window.location.href = '/profile?tab=notifications';
+          } else {
+            const tab = document.querySelector('[data-testid="button-notifications-tab"]');
+            if (tab instanceof HTMLElement) {
+              tab.click();
+            }
+          }
+        }
+      },
+      {
+        id: 'reminders-preferences-card',
+        title: 'Your Default Reminder Rules',
+        description: 'This is the Event Check-In Reminders card. Here you can toggle on rules like "Staffing Needs Unmet" or "Missing Key Details," set how many days before an event they should fire, and choose to be notified by email, SMS, or both. These defaults apply to every event you\'re assigned to.',
+        targetSelector: '[data-tour="reminder-preferences"]',
+        position: 'top',
+        waitForElement: true,
+        beforeShow: () => {
+          const tab = document.querySelector('[data-testid="button-notifications-tab"]');
+          if (tab instanceof HTMLElement) {
+            tab.click();
+          }
+        }
+      },
+      {
+        id: 'reminders-how-rules-work',
+        title: 'How Reminder Rules Work',
+        description: 'Each rule monitors a specific condition. For example, "Staffing Needs Unmet" checks if driver/speaker/volunteer roles are still unfilled within your threshold (e.g., 7 days before the event). The system checks conditions daily at 9 AM and sends you an alert if the condition is met.',
+        targetSelector: '[data-tour="reminder-preferences"]',
+        position: 'top',
+      },
+      {
+        id: 'reminders-go-to-events',
+        title: 'Step 2: Per-Event Reminders',
+        description: 'Now let\'s see how reminders work on individual event cards. Navigate to Event Requests to see your scheduled events.',
+        targetSelector: '[data-nav-id="event-requests"]',
+        position: 'right',
+        navigationAction: {
+          section: 'event-requests'
+        },
+        beforeShow: () => {
+          const navItem = document.querySelector('[data-nav-id="event-requests"]');
+          if (navItem instanceof HTMLElement) {
+            navItem.click();
+          }
+        }
+      },
+      {
+        id: 'reminders-bell-button',
+        title: 'The Reminders Button',
+        description: 'On each scheduled event card, you\'ll see a Reminders button (bell icon). If it\'s teal, your default reminders are active. If it\'s gray, no reminders are set. Click it to see the quick-action menu.',
+        targetSelector: '[data-tour="reminder-button"]',
+        position: 'left',
+        waitForElement: true,
+      },
+      {
+        id: 'reminders-popover-actions',
+        title: 'Quick Actions',
+        description: 'From this menu you can: toggle all reminders on/off for this event, snooze reminders temporarily (1 day, 3 days, 1 week, or until a custom date with a reason), or click "Customize" to override your global defaults with event-specific thresholds. Most of the time, just the toggle and snooze are all you need!',
+        targetSelector: '[data-tour="reminder-button"]',
+        position: 'left',
+      },
+      {
+        id: 'reminders-summary',
+        title: 'You\'re All Set!',
+        description: 'To recap: (1) Set your default rules in Profile → Alerts — this is a one-time setup. (2) On each event card, use the bell button to toggle, snooze, or customize. The system checks daily and sends alerts by email or SMS when conditions are met. You\'ll never miss an approaching deadline again!',
+        targetSelector: '[data-nav-id="event-requests"]',
+        position: 'center',
+      },
     ]
   }
 ];

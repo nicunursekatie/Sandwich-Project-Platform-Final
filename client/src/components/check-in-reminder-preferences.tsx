@@ -269,7 +269,7 @@ export default function CheckInReminderPreferencesEditor() {
   const generalRules = RULE_TYPES.filter((rt) => rt.category === 'all');
 
   return (
-    <Card>
+    <Card data-tour="reminder-preferences">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlarmClock className="w-5 h-5 text-[#007E8C]" />

@@ -403,6 +403,7 @@ export default function UserProfile() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
           data-testid="button-notifications-tab"
+          data-tour="alerts-tab"
         >
           <Bell className="w-4 h-4 inline mr-2" />
           Alerts

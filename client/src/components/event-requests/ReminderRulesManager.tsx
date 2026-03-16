@@ -342,6 +342,7 @@ export function ReminderRulesManager({
           <Button
             variant="outline"
             size="sm"
+            data-tour="reminder-button"
             className={`h-8 relative ${
               activeSnooze
                 ? 'border-amber-400 text-amber-600 hover:bg-amber-50'
@@ -380,7 +381,7 @@ export function ReminderRulesManager({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="end">
+        <PopoverContent className="w-72 p-0" align="end" data-tour="reminder-popover">
           {/* Status summary */}
           <div className="p-3 space-y-2">
             {activeSnooze ? (
