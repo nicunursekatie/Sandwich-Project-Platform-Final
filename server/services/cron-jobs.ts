@@ -1255,7 +1255,14 @@ export function initializeCronJobs() {
   // Sends portfolio summary to all TSP contacts with active events
   // Cron format: minute hour day-of-month month day-of-week
   // '0 8 * * 1' = At 8:00 AM on Monday
+  // PRODUCTION ONLY: Prevents duplicate digests from dev/staging instances
+  const isProduction = process.env.NODE_ENV === 'production';
+
   const weeklyDigestJob = cron.schedule('0 8 * * 1', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping weekly digest - not production environment');
+      return;
+    }
     cronLogger.info('Running weekly digest email job...');
     try {
       const result = await processWeeklyDigests();
@@ -1330,6 +1337,10 @@ export function initializeCronJobs() {
   // Comprehensive email with pipeline snapshot, calendar, stalled events, and action items
   // Cron format: '0 18 * * 0' = At 6:00 PM every Sunday
   const adminDigestJob = cron.schedule('0 18 * * 0', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping admin weekly digest - not production environment');
+      return;
+    }
     cronLogger.info('Running admin weekly digest email...');
     try {
       const result = await processAdminWeeklyDigest();
@@ -1360,6 +1371,10 @@ export function initializeCronJobs() {
   // Concise text with pipeline numbers, stalled count, and top priority
   // Cron format: '0 8 * * 1' = At 8:00 AM every Monday
   const adminSmsPulseJob = cron.schedule('0 8 * * 1', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping admin SMS pulse - not production environment');
+      return;
+    }
     cronLogger.info('Running admin Monday SMS pulse...');
     try {
       const result = await processAdminWeeklySms();
@@ -1396,6 +1411,10 @@ export function initializeCronJobs() {
   // 30%+ above or below the 12-month average (includes AI recommendations)
   // Cron format: '0 10 1 * *' = At 10:00 AM on the 1st day of every month
   const predictionAlertJob = cron.schedule('0 10 1 * *', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping prediction alerts - not production environment');
+      return;
+    }
     cronLogger.info('Running monthly prediction demand alert...');
     try {
       const result = await processPredictionAlerts();
@@ -1427,6 +1446,10 @@ export function initializeCronJobs() {
   // User-controlled check-in reminders - runs every hour at :15
   // Processes per-event reminder toggles set by TSP contacts
   const checkInReminderJob = cron.schedule('15 * * * *', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping check-in reminders - not production environment');
+      return;
+    }
     cronLogger.info('Running check-in reminder processing...');
     try {
       const result = await processCheckInReminders();
