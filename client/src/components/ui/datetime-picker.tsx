@@ -142,7 +142,7 @@ export function DateTimePicker({
             data-testid={testId}
           >
             <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            <span className="min-w-0 truncate">{getDisplayText()}</span>
+            <span className="min-w-0 truncate" title={getDisplayText()}>{getDisplayText()}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
