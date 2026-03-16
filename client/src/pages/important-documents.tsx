@@ -425,8 +425,8 @@ export default function ImportantDocuments() {
   const [deleteDocName, setDeleteDocName] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  const isAdmin = !!user && !isAuthLoading &&
-    (user.role === 'admin' || user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
+  const isSuperAdmin = !!user && !isAuthLoading &&
+    (user.role === 'super_admin' || user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
 
   // Fetch uploaded documents from the database
   const fetchUploadedDocs = useCallback(async () => {
@@ -434,8 +434,8 @@ export default function ImportantDocuments() {
       const res = await fetch('/api/documents', { credentials: 'include' });
       if (res.ok) {
         const data: UploadedDocument[] = await res.json();
-        // Filter to only active, non-confidential documents
-        setUploadedDocs(data.filter(d => d.isActive && d.category !== 'confidential'));
+        // Filter to only active documents; confidential docs are already filtered server-side
+        setUploadedDocs(data.filter(d => d.isActive));
       }
     } catch (err) {
       logger.error('Failed to fetch uploaded documents:', err);
@@ -802,7 +802,7 @@ export default function ImportantDocuments() {
             </div>
 
             {/* Upload button - admin only */}
-            {isAdmin && (
+            {isSuperAdmin && (
               <Button
                 onClick={() => setUploadDialogOpen(true)}
                 className="bg-brand-primary hover:bg-brand-primary-dark text-white px-6 py-3 text-base font-medium flex items-center gap-2 shadow-md"
@@ -897,7 +897,7 @@ export default function ImportantDocuments() {
                         </div>
                       </div>
                       {/* Delete button for uploaded documents - admin only */}
-                      {isAdmin && doc.dbDocumentId && (
+                      {isSuperAdmin && doc.dbDocumentId && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1292,6 +1292,7 @@ export default function ImportantDocuments() {
                     <SelectItem value="Sandwich Making">Sandwich Making</SelectItem>
                     <SelectItem value="Reference Lists">Reference Lists</SelectItem>
                     <SelectItem value="Tools">Tools</SelectItem>
+                    <SelectItem value="confidential">Confidential</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

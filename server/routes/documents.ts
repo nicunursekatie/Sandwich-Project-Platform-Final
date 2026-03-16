@@ -82,6 +82,10 @@ documentsRouter.post('/request-upload-url', async (req: AuthenticatedRequest, re
       return res.status(401).json({ error: 'Authentication required' });
     }
 
+    if (user.role !== 'super_admin' && user.email !== 'admin@sandwich.project' && user.email !== 'katielong2316@gmail.com') {
+      return res.status(403).json({ error: 'Only super admins can upload documents' });
+    }
+
     const { name, size, contentType } = req.body;
 
     if (!name) {
@@ -118,6 +122,10 @@ documentsRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
     const user = getUser(req);
     if (!user || !user.email) {
       return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (user.role !== 'super_admin' && user.email !== 'admin@sandwich.project' && user.email !== 'katielong2316@gmail.com') {
+      return res.status(403).json({ error: 'Only super admins can create documents' });
     }
 
     const { title, description, category, fileName, originalName, fileSize, mimeType, objectPath } = req.body;
@@ -363,14 +371,14 @@ documentsRouter.delete(
         return res.status(404).json({ error: 'Document not found' });
       }
 
-      if (document.uploadedBy !== user.id && user.role !== 'admin') {
+      if (user.role !== 'super_admin' && user.email !== 'admin@sandwich.project' && user.email !== 'katielong2316@gmail.com') {
         logger.warn(
           `Unauthorized delete attempt: ${user.email} tried to delete document ID ${documentId}`
         );
         return res
           .status(403)
           .json({
-            error: 'Only the uploader or admin can delete this document',
+            error: 'Only super admins can delete documents',
           });
       }
 

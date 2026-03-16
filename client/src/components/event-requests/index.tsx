@@ -20,6 +20,7 @@ import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AllEventsTab } from './tabs/AllEventsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { PlanningTab } from './tabs/PlanningTab';
+import { SandwichDestinationOverview } from './tabs/SandwichDestinationOverview';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -463,6 +464,7 @@ const EventRequestsManagementContent: React.FC = () => {
         user?.permissions?.includes('view_admin_overview') ||
         user?.role === 'super_admin') {
       tabs.planning = <PlanningTab eventRequests={eventRequests} />;
+      tabs.sandwich_overview = <SandwichDestinationOverview eventRequests={eventRequests} />;
     }
 
     return tabs;
