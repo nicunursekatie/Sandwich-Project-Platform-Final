@@ -131,10 +131,9 @@ export function ReminderRulesManager({
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Show for the assigned TSP contact, Katie, or Christine
-  const ADMIN_REMINDER_EMAILS = ['katielong2316@gmail.com', 'christine@thesandwichproject.org'];
+  // Show for the assigned TSP contact or any admin/super_admin
   const isAssignedContact = user?.id && tspContactUserId && user.id === tspContactUserId;
-  const isAdminUser = user?.email && ADMIN_REMINDER_EMAILS.includes(user.email.toLowerCase());
+  const isAdminUser = user?.role === 'super_admin' || user?.role === 'admin';
   if (!isAssignedContact && !isAdminUser) return null;
 
   const { data, isLoading } = useQuery({

@@ -708,7 +708,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // updates effectiveEventRequest.message. Keep the form in sync so saving the form
   // doesn't overwrite the scratchpad's notes with stale data.
   useEffect(() => {
-    if (!formInitialized || !effectiveEventRequest?.message) return;
+    if (!formInitialized || effectiveEventRequest?.message === undefined) return;
     const serverMessage = effectiveEventRequest.message || '';
     const baselineMessage = originalFormDataRef.current?.message || '';
     const formMessage = (formData as any).message || '';

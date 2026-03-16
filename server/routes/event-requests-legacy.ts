@@ -2100,7 +2100,7 @@ router.patch(
       );
 
       // Fetch the updated event request for response and audit logging
-      const updatedEventRequest = await storage.getEventRequestById(id);
+      let updatedEventRequest = await storage.getEventRequestById(id);
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
 
@@ -2373,7 +2373,7 @@ router.post(
       );
 
       // Fetch the updated event request for response and audit logging
-      const updatedEventRequest = await storage.getEventRequestById(id);
+      let updatedEventRequest = await storage.getEventRequestById(id);
 
       if (!updatedEventRequest) {
         return res.status(404).json({ message: 'Event request not found' });
@@ -2471,7 +2471,7 @@ router.patch(
       }
 
       // Always update the updatedAt timestamp
-      const updatedEventRequest = await storage.updateEventRequest(id, {
+      let updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
       });
@@ -3471,7 +3471,7 @@ router.put(
       }
 
       // Always update the updatedAt timestamp
-      const updatedEventRequest = await storage.updateEventRequest(id, {
+      let updatedEventRequest = await storage.updateEventRequest(id, {
         ...processedUpdates,
         updatedAt: new Date(),
       });
