@@ -2100,7 +2100,7 @@ router.patch(
       );
 
       // Fetch the updated event request for response and audit logging
-      const updatedEventRequest = await storage.getEventRequestById(id);
+      let updatedEventRequest = await storage.getEventRequestById(id);
 
       // REMOVED: No longer updating Google Sheets - one-way sync only
 
