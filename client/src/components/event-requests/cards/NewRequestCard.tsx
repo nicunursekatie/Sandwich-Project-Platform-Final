@@ -1173,7 +1173,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-stretch sm:items-center">
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
             {/* TSP Contact Assignment - only show if not already assigned and user has permission */}
             {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
@@ -1182,7 +1182,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAssignTspContact}
-                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-auto max-w-full whitespace-normal break-words text-left"
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
                     Assign TSP Contact
@@ -1202,7 +1202,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAiSuggest}
-                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10 h-auto max-w-full whitespace-normal break-words text-left"
+                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
                     data-testid="button-ai-suggest-date"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
@@ -1223,7 +1223,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAiIntakeAssist}
-                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10 h-auto max-w-full whitespace-normal break-words text-left"
+                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10"
                     data-testid="button-ai-intake-assist"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
@@ -1242,7 +1242,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   size="sm"
                   variant="default"
                   onClick={onToolkit}
-                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white h-auto max-w-full whitespace-normal break-words text-left"
+                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
                 >
                   <Package className="w-4 h-4 mr-1" />
                   Send Toolkit
@@ -1259,7 +1259,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onScheduleCall}
-                  className="h-auto max-w-full whitespace-normal break-words text-left"
+                 
                 >
                   <Phone className="w-4 h-4 mr-1" />
                   Schedule Call
@@ -1276,7 +1276,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onLogContact}
-                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-auto max-w-full whitespace-normal break-words text-left"
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
                 >
                   <MessageSquare className="w-4 h-4 mr-1" />
                   Log Contact
@@ -1300,7 +1300,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={onNonEvent}
-                    className="text-stone-500 hover:text-stone-700 hover:bg-stone-100 h-auto max-w-full whitespace-normal break-words text-left"
+                    className="text-stone-500 hover:text-stone-700 hover:bg-stone-100"
                     data-testid="button-non-event"
                   >
                     <Ban className="w-4 h-4 mr-1" />
@@ -1322,7 +1322,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onEdit}
-                  className="h-auto max-w-full whitespace-normal break-words text-left"
+                 
                   data-testid="button-edit-request"
                 >
                   <Edit className="w-4 h-4 mr-1.5" />
