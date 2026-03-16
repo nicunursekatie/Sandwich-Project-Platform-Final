@@ -593,6 +593,9 @@ async function bootstrap() {
       });
     });
 
+    // Save the REAL process.exit BEFORE any override so shutdown always works
+    const realExit = process.exit.bind(process);
+
     // Graceful shutdown handler - works in both dev and production
     const shutdown = async (signal: string) => {
       serverLogger.info(`Received ${signal}, starting graceful shutdown...`);
@@ -600,13 +603,13 @@ async function bootstrap() {
       // Close server gracefully
       httpServer.close(() => {
         serverLogger.info('HTTP server closed gracefully');
-        process.exit(0);
+        realExit(0);
       });
 
       // Force shutdown after 10 seconds if graceful shutdown fails
       setTimeout(() => {
         serverLogger.warn('Forcing shutdown after timeout');
-        process.exit(1);
+        realExit(1);
       }, 10000);
     };
 
@@ -633,8 +636,8 @@ async function bootstrap() {
         setTimeout(() => {}, 1000);
       });
 
-      // Strategy 3: Override process.exit
-      const originalExit = process.exit;
+      // Strategy 3: Override process.exit to prevent accidental exits from libraries,
+      // but SIGTERM/SIGINT use realExit (saved above) so they always work.
       process.exit = ((code?: number) => {
         logger.log({
           message: `⚠ Prevented process.exit(${code}) in production mode`,
@@ -655,6 +658,7 @@ async function bootstrap() {
         message: '✅ Production infinite keep-alive loop started',
         level: 'info',
       });
+
     }
 
     logger.log({
