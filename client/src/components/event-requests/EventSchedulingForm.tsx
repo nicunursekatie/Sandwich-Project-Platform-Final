@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEventRequestContext } from './context/EventRequestContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,7 @@ import {
 import {
   Trash2,
   FileText,
+  StickyNote,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
@@ -261,6 +263,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
 
+  // Scratchpad context for opening the standalone scratchpad dialog
+  const { setScratchpadEventRequest, setShowScratchpad } = useEventRequestContext();
+
   // ── Data Fetching ──────────────────────────────────────────────────
 
   const { data: fullEventRequest } = useQuery<EventRequest>({
@@ -342,13 +347,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Call notes scratchpad (capture-first, structure-later)
-  const [callNotesLocalSavedAt, setCallNotesLocalSavedAt] = useState<Date | null>(null);
-  const [callNotesSyncedAt, setCallNotesSyncedAt] = useState<Date | null>(null);
-  const [callNotesSyncError, setCallNotesSyncError] = useState<string>('');
-  const callNotesLastSyncedValueRef = useRef<string>('');
+  // Version tracking for optimistic locking
   const callNotesExpectedVersionRef = useRef<string | null>(null);
-  const callNotesConflictWarnedRef = useRef(false);
 
 
   const { toast } = useToast();
@@ -359,27 +359,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const isCreateMode = mode === 'create' || !eventRequest;
 
-  const getCallNotesKey = useCallback(() => {
-    return `call_notes_event_${eventRequest?.id || 'new'}`;
-  }, [eventRequest?.id]);
-
-  const parseCallNotesDraft = useCallback((rawValue: string | null): { message: string; savedAt: string | null; baseUpdatedAt: string | null } | null => {
-    if (!rawValue) return null;
-    try {
-      const parsed = JSON.parse(rawValue);
-      if (parsed && typeof parsed === 'object' && typeof parsed.message === 'string') {
-        return {
-          message: parsed.message,
-          savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : null,
-          baseUpdatedAt: typeof parsed.baseUpdatedAt === 'string' ? parsed.baseUpdatedAt : null,
-        };
-      }
-    } catch {
-      // Backward compatibility: old format was plain string
-      return { message: rawValue, savedAt: null, baseUpdatedAt: null };
-    }
-    return null;
-  }, []);
 
 
 
@@ -416,8 +395,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       autoSaveTimeoutRef.current = null;
     }
     try { localStorage.removeItem(getAutoSaveKey()); } catch (e) { /* ignore */ }
-    try { localStorage.removeItem(getCallNotesKey()); } catch (e) { /* ignore */ }
-  }, [getAutoSaveKey, getCallNotesKey]);
+  }, [getAutoSaveKey]);
 
   const saveToLocalStorage = useCallback(() => {
     if (!formInitialized) return;
@@ -719,109 +697,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (isCreateMode) setShowContactInfo(true);
   }, [isCreateMode]);
 
-  // ── Call Notes Scratchpad ──────────────────────────────────────────
+  // ── Version Tracking for Optimistic Locking ──────────────────────
 
   useEffect(() => {
-callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
-}, [effectiveEventRequest?.updatedAt]);
+    callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
+  }, [effectiveEventRequest?.updatedAt]);
 
-useEffect(() => {
-  if (!dialogOpen || !formInitialized) return;
-  callNotesConflictWarnedRef.current = false;
-  setCallNotesSyncError('');
-}, [dialogOpen, formInitialized, eventRequest?.id]);
-
-useEffect(() => {
-  if (!dialogOpen || !formInitialized) return;
-
-  const serverMessage = String(originalFormDataRef.current?.message ?? '');
-
-  callNotesLastSyncedValueRef.current = serverMessage;
-  setCallNotesSyncedAt(serverMessage ? new Date() : null);
-
-  try {
-    const restoredRaw = localStorage.getItem(getCallNotesKey());
-    const draft = parseCallNotesDraft(restoredRaw);
-    if (!draft || !draft.message || draft.message === serverMessage) return;
-
-    const hasServerMessage = !!(serverMessage && serverMessage.trim());
-    const matchesServerVersion = !!(
-      draft.baseUpdatedAt &&
-      callNotesExpectedVersionRef.current &&
-      draft.baseUpdatedAt === callNotesExpectedVersionRef.current
-    );
-
-    if (isCreateMode || !hasServerMessage || matchesServerVersion) {
-      setFormData(prev => ({ ...prev, message: draft.message }));
-      setCallNotesLocalSavedAt(new Date());
-      setCallNotesSyncError('');
-    } else if (!callNotesConflictWarnedRef.current) {
-      callNotesConflictWarnedRef.current = true;
-      setCallNotesSyncError('Local draft differs from latest server notes');
-      toast({
-        title: 'Call notes conflict detected',
-        description: 'A local draft exists but server notes are newer. We kept server notes to prevent overwriting.',
-        duration: 8000,
-      });
-    }
-  } catch {
-    // ignore localStorage failures
-  }
-}, [dialogOpen, formInitialized, getCallNotesKey, isCreateMode, parseCallNotesDraft, toast]);
-
+  // ── Sync message field from scratchpad ──────────────────────────
+  // When the standalone scratchpad syncs call notes to the server, the query cache
+  // updates effectiveEventRequest.message. Keep the form in sync so saving the form
+  // doesn't overwrite the scratchpad's notes with stale data.
   useEffect(() => {
-    if (!dialogOpen || !formInitialized) return;
-    try {
-      localStorage.setItem(getCallNotesKey(), JSON.stringify({
-        message: formData.message || '',
-        savedAt: new Date().toISOString(),
-        baseUpdatedAt: callNotesExpectedVersionRef.current,
-      }));
-      setCallNotesLocalSavedAt(new Date());
-    } catch {
-      // ignore localStorage failures
-    }
-  }, [dialogOpen, formInitialized, formData.message, getCallNotesKey]);
+    if (!formInitialized || !effectiveEventRequest?.message) return;
+    const serverMessage = effectiveEventRequest.message || '';
+    const baselineMessage = originalFormDataRef.current?.message || '';
+    const formMessage = (formData as any).message || '';
 
-  const syncCallNotesMutation = useMutation({
-    mutationFn: ({ id, message }: { id: number; message: string }) => {
-      const payload: Record<string, any> = { message };
-      if (callNotesExpectedVersionRef.current) {
-        payload._expectedVersion = callNotesExpectedVersionRef.current;
+    // Only update if: server message changed from baseline AND form hasn't locally modified it
+    if (serverMessage !== baselineMessage && formMessage === baselineMessage) {
+      setFormData((prev: any) => ({ ...prev, message: serverMessage }));
+      if (originalFormDataRef.current) {
+        originalFormDataRef.current = { ...originalFormDataRef.current, message: serverMessage };
       }
-      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
-    },
-    networkMode: 'always',
-    onSuccess: (updatedEvent: any, variables) => {
-      callNotesLastSyncedValueRef.current = variables.message;
-      const newVersion = updatedEvent?.updatedAt ? String(updatedEvent.updatedAt) : null;
-      if (newVersion) callNotesExpectedVersionRef.current = newVersion;
-      if (updatedEvent && variables?.id) {
-        queryClient.setQueryData(['/api/event-requests', variables.id, 'full'], (prev: any) => ({ ...(prev || {}), ...updatedEvent }));
-      }
-      setCallNotesSyncedAt(new Date());
-      setCallNotesSyncError('');
-    },
-    onError: (error: any) => {
-      const conflict = error?.status === 409 || error?.code?.includes('CONFLICT');
-      setCallNotesSyncError(conflict ? 'Sync conflict - refresh to merge latest notes' : 'Sync pending');
-    },
-  });
-
-  useEffect(() => {
-    if (!dialogOpen || !eventRequest?.id || !formInitialized) return;
-
-    const interval = setInterval(() => {
-      if (isSubmitting) return;
-
-      const currentMessage = formData.message || '';
-      const hasUnsyncedChanges = currentMessage !== callNotesLastSyncedValueRef.current;
-      if (!hasUnsyncedChanges || syncCallNotesMutation.isPending) return;
-      syncCallNotesMutation.mutate({ id: eventRequest.id, message: currentMessage });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [dialogOpen, eventRequest?.id, formInitialized, formData.message, isSubmitting, syncCallNotesMutation]);
+    }
+  }, [effectiveEventRequest?.message, formInitialized]);
 
 
   // ── Mutations ──────────────────────────────────────────────────────
@@ -1140,27 +1039,25 @@ useEffect(() => {
             </div>
           )}
 
-          {/* Call Notes Scratchpad */}
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4" data-testid="call-notes-scratchpad">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <Label htmlFor="callNotesScratchpad" className="text-sm font-semibold text-amber-900">Call Notes Scratchpad</Label>
-              <span className="text-xs text-amber-800">
-                Saved locally {callNotesLocalSavedAt ? callNotesLocalSavedAt.toLocaleTimeString() : '—'}
-                {' · '}
-                Synced {callNotesSyncedAt ? callNotesSyncedAt.toLocaleTimeString() : 'pending'}
-                {callNotesSyncError ? ` · ${callNotesSyncError}` : ''}
-              </span>
-            </div>
-            <Textarea
-              id="callNotesScratchpad"
-              value={formData.message || ''}
-              onChange={(e) => {
-                setFormData(prev => ({ ...prev, message: e.target.value }));
-                setCallNotesSyncError('');
+          {/* Open Call Notes Scratchpad button */}
+          <div className="mb-4" data-testid="call-notes-scratchpad">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 flex items-center justify-center gap-2 py-3"
+              onClick={() => {
+                if (eventRequest) {
+                  setScratchpadEventRequest(eventRequest);
+                  setShowScratchpad(true);
+                }
               }}
-              placeholder="Capture everything from the call here first. You can organize details into structured fields after the call."
-              className="min-h-[120px] bg-white"
-            />
+            >
+              <StickyNote className="w-4 h-4" />
+              Open Call Notes Scratchpad
+              {formData.message && (
+                <span className="text-xs opacity-75 ml-1">(has notes)</span>
+              )}
+            </Button>
           </div>
 
           {/* Progress Indicator */}
@@ -1262,6 +1159,7 @@ useEffect(() => {
               <DeliverySection
                 formData={formData as EventFormData}
                 setFormData={setFormData}
+                eventRequestId={eventRequest?.id}
               />
 
               {/* Refrigeration */}

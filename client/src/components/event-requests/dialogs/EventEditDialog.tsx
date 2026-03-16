@@ -860,7 +860,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                         <div key={recipientId} className="flex items-center justify-between bg-white p-2 rounded border">
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{recipient?.name || `Recipient #${recipientId}`}</span>
-                            {getRecipientDisplayRegion(recipient) && (
+                            {recipient && getRecipientDisplayRegion(recipient) && (
                               <span className="text-xs text-gray-500">{getRecipientDisplayRegion(recipient)}</span>
                             )}
                             {recipient?.address && (

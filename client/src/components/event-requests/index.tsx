@@ -80,6 +80,7 @@ import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import { NonEventDialog } from './dialogs/NonEventDialog';
 import { RescheduleDialog } from './dialogs/RescheduleDialog';
 import IntakeCallDialog from './IntakeCallDialog';
+import { CallNotesScratchpadDialog } from './CallNotesScratchpadDialog';
 import NextActionDialog from './NextActionDialog';
 import { DashboardSummaryCards } from './DashboardSummaryCards';
 import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
@@ -178,6 +179,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
+    showScratchpad,
+    setShowScratchpad,
     showDeclineDialog,
     setShowDeclineDialog,
     showCancelDialog,
@@ -232,6 +235,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
+    scratchpadEventRequest,
+    setScratchpadEventRequest,
     reasonDialogEventRequest,
     setReasonDialogEventRequest,
     nonEventDialogEventRequest,
@@ -1200,6 +1205,16 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
           />
         )}
+
+        {/* Call Notes Scratchpad - independent floating dialog */}
+        <CallNotesScratchpadDialog
+          eventRequest={scratchpadEventRequest}
+          isOpen={showScratchpad}
+          onClose={() => {
+            setShowScratchpad(false);
+            setScratchpadEventRequest(null);
+          }}
+        />
 
         {/* Next Action Dialog */}
         {nextActionEventRequest && (

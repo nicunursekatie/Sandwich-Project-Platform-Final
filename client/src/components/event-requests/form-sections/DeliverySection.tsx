@@ -4,33 +4,82 @@
  * Handles event address, overnight holding, and delivery destination selection.
  */
 import * as React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { MapPin, RotateCw } from 'lucide-react';
 import type { EventFormData } from './types';
 
 interface DeliverySectionProps {
   formData: EventFormData;
   setFormData: React.Dispatch<React.SetStateAction<any>>;
+  eventRequestId?: number;
 }
 
 export const DeliverySection: React.FC<DeliverySectionProps> = ({
   formData,
   setFormData,
+  eventRequestId,
 }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const geocodeMutation = useMutation({
+    mutationFn: (id: number) =>
+      apiRequest('POST', `/api/event-map/geocode/${id}`),
+    onSuccess: (data: any) => {
+      toast({
+        title: 'Address geocoded',
+        description: `Coordinates updated (${parseFloat(data.latitude).toFixed(4)}, ${parseFloat(data.longitude).toFixed(4)})`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Geocoding failed',
+        description: error?.message || 'Could not geocode this address',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return (
     <>
       {/* Address */}
       <div>
         <Label htmlFor="eventAddress">Event Address</Label>
-        <Input
-          id="eventAddress"
-          value={formData.eventAddress}
-          onChange={(e) => setFormData((prev: any) => ({ ...prev, eventAddress: e.target.value }))}
-          placeholder="Enter the event location address"
-        />
+        <div className="flex gap-2">
+          <Input
+            id="eventAddress"
+            value={formData.eventAddress}
+            onChange={(e) => setFormData((prev: any) => ({ ...prev, eventAddress: e.target.value }))}
+            placeholder="Enter the event location address"
+            className="flex-1"
+          />
+          {eventRequestId && formData.eventAddress && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0 gap-1.5 text-xs"
+              onClick={() => geocodeMutation.mutate(eventRequestId)}
+              disabled={geocodeMutation.isPending}
+              title="Re-geocode this address to update map pin location"
+            >
+              {geocodeMutation.isPending ? (
+                <RotateCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <MapPin className="w-3.5 h-3.5" />
+              )}
+              Geocode
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Delivery Destinations */}

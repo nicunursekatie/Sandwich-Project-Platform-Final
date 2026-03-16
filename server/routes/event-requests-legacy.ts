@@ -2119,6 +2119,7 @@ router.patch(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.log(`✅ Geocoded event ${id}: ${validatedData.eventAddress}`);
           } else {
             logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${validatedData.eventAddress}`);
@@ -2490,6 +2491,7 @@ router.patch(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
           } else {
             logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${processedUpdates.eventAddress}`);
@@ -3008,6 +3010,8 @@ router.patch(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            // Update the response object so client gets new coordinates
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.info(`✅ Re-geocoded event ${id} via PATCH /:id: ${processedUpdates.eventAddress}`);
           }
         } catch (geocodeError) {
@@ -3487,6 +3491,7 @@ router.put(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
           } else {
             logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${processedUpdates.eventAddress}`);
