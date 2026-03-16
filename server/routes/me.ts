@@ -594,9 +594,13 @@ meRouter.patch('/sms-campaigns', async (req: AuthenticatedRequest, res: Response
     const smsConsent = metadata.smsConsent || {};
 
     // Verify user has confirmed SMS opt-in
-    // Legacy accounts may have enabled=true without an explicit status field
-    const smsStatus = smsConsent.status || (smsConsent.enabled ? 'confirmed' : 'not_opted_in');
-    if (smsStatus !== 'confirmed' || !smsConsent.enabled) {
+    // Accept various legacy data shapes: status='confirmed', enabled=true, or phoneNumber present with confirmed status
+    const hasConfirmedStatus = smsConsent.status === 'confirmed';
+    const hasEnabledFlag = smsConsent.enabled === true || smsConsent.enabled === 'true';
+    const hasPhone = !!smsConsent.phoneNumber;
+    const isConfirmed = hasConfirmedStatus || hasEnabledFlag || (hasPhone && smsConsent.status !== 'pending_confirmation');
+    logger.info(`SMS campaigns update - user ${normalizedUserId}: status=${smsConsent.status}, enabled=${smsConsent.enabled}, phone=${hasPhone}, isConfirmed=${isConfirmed}`);
+    if (!isConfirmed) {
       return res.status(400).json({
         error: 'You must first confirm SMS opt-in before updating campaign preferences',
       });
