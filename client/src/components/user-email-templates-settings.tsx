@@ -77,8 +77,7 @@ export default function UserEmailTemplatesSettings() {
   const { data: templates, isLoading } = useQuery<TemplateData>({
     queryKey: ['/api/user/email-templates'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/user/email-templates');
-      return res.json();
+      return await apiRequest('GET', '/api/user/email-templates');
     },
   });
 
@@ -86,8 +85,7 @@ export default function UserEmailTemplatesSettings() {
   const { data: defaults } = useQuery<DefaultTemplates>({
     queryKey: ['/api/user/email-templates/defaults'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/user/email-templates/defaults');
-      return res.json();
+      return await apiRequest('GET', '/api/user/email-templates/defaults');
     },
   });
 
@@ -105,13 +103,12 @@ export default function UserEmailTemplatesSettings() {
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('PUT', '/api/user/email-templates', {
+      return await apiRequest('PUT', '/api/user/email-templates', {
         newOrgSubject,
         newOrgBody,
         returningContactSubject,
         returningContactBody,
       });
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/email-templates'] });
@@ -134,11 +131,10 @@ export default function UserEmailTemplatesSettings() {
     mutationFn: async () => {
       const subject = activeTemplateTab === 'new_org' ? newOrgSubject : returningContactSubject;
       const body = activeTemplateTab === 'new_org' ? newOrgBody : returningContactBody;
-      const res = await apiRequest('POST', '/api/user/email-templates/preview', {
+      return await apiRequest('POST', '/api/user/email-templates/preview', {
         subject,
         body,
       });
-      return res.json();
     },
     onSuccess: (data) => {
       setPreviewData(data);

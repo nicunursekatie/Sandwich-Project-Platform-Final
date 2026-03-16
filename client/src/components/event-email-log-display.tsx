@@ -46,8 +46,8 @@ export default function EventEmailLogDisplay({ eventId, compact = false }: Event
   const { data: logs, isLoading } = useQuery<EmailLogEntry[]>({
     queryKey: [`/api/events/${eventId}/email-logs`],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/events/${eventId}/email-logs`);
-      return res.json();
+      const data = await apiRequest('GET', `/api/events/${eventId}/email-logs`);
+      return data;
     },
     enabled: shouldFetch,
   });

@@ -66,8 +66,8 @@ export default function EventSendTemplateEmailDialog({
   const { data: templates } = useQuery<TemplateData>({
     queryKey: ['/api/user/email-templates'],
     queryFn: async () => {
-      const res = await apiRequest('GET', '/api/user/email-templates');
-      return res.json();
+      const data = await apiRequest('GET', '/api/user/email-templates');
+      return data;
     },
     enabled: isOpen,
   });
@@ -109,12 +109,12 @@ export default function EventSendTemplateEmailDialog({
   // Send email mutation
   const sendMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', `/api/events/${eventId}/send-email`, {
+      const data = await apiRequest('POST', `/api/events/${eventId}/send-email`, {
         subject,
         body,
         templateType: useReturningTemplate ? 'returning_contact' : 'new_org',
       });
-      return res.json();
+      return data;
     },
     onMutate: () => {
       setDialogState('sending');
