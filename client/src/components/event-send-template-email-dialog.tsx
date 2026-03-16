@@ -90,6 +90,19 @@ export default function EventSendTemplateEmailDialog({
       setDialogState('compose');
       setSentResult(null);
       setUseReturningTemplate(isReturning);
+      // Reset subject/body to template defaults so edited-but-unsent content doesn't persist
+      if (templates) {
+        if (isReturning) {
+          setSubject(templates.returningContactSubject);
+          setBody(templates.returningContactBody);
+        } else {
+          setSubject(templates.newOrgSubject);
+          setBody(templates.newOrgBody);
+        }
+      } else {
+        setSubject('');
+        setBody('');
+      }
     }
   }, [isOpen, isReturning]);
 
