@@ -3,7 +3,7 @@ import { db } from '../db';
 import { eventCheckInReminders, eventReminderSnoozes, eventRequests, REMINDER_RULE_TYPES } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
-import { calculateNextDue } from '../utils/reminder-scheduling';
+import { calculateNextDue, ReminderFrequency } from '../utils/reminder-scheduling';
 
 const router = express.Router();
 
@@ -278,11 +278,48 @@ router.delete('/:eventRequestId/:ruleType', async (req: any, res) => {
 
 const VALID_SNOOZE_TYPES = ['timed', 'until_date', 'until_contact'];
 
+/**
+ * Verifies the current user is authorized to manage reminders for the given event.
+ * Returns the event row if authorized, or sends an error response and returns null.
+ */
+async function authorizeSnoozeAccess(req: any, res: any, eventRequestId: number): Promise<boolean> {
+  const [event] = await db
+    .select({
+      id: eventRequests.id,
+      tspContactAssigned: eventRequests.tspContactAssigned,
+      tspContact: eventRequests.tspContact,
+    })
+    .from(eventRequests)
+    .where(eq(eventRequests.id, eventRequestId))
+    .limit(1);
+
+  if (!event) {
+    res.status(404).json({ error: 'Event request not found' });
+    return false;
+  }
+
+  const userId = req.user.id;
+  const role = req.user.role;
+  const isAdminUser = role === 'admin' || role === 'super_admin';
+  const isAssigned =
+    (event.tspContactAssigned && event.tspContactAssigned === userId) ||
+    (event.tspContact && event.tspContact === userId);
+
+  if (!isAssigned && !isAdminUser) {
+    res.status(403).json({ error: 'Not authorized to manage reminders for this event' });
+    return false;
+  }
+
+  return true;
+}
+
 // GET /api/event-check-in-reminders/:eventRequestId/snooze
 router.get('/:eventRequestId/snooze', async (req: any, res) => {
   try {
     const eventRequestId = parseInt(req.params.eventRequestId);
     if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    if (!await authorizeSnoozeAccess(req, res, eventRequestId)) return;
 
     const [snooze] = await db
       .select()
@@ -309,6 +346,8 @@ router.post('/:eventRequestId/snooze', async (req: any, res) => {
     const eventRequestId = parseInt(req.params.eventRequestId);
     if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
 
+    if (!await authorizeSnoozeAccess(req, res, eventRequestId)) return;
+
     const { snoozeType, snoozedUntil, reason } = req.body;
 
     if (!VALID_SNOOZE_TYPES.includes(snoozeType)) {
@@ -323,8 +362,11 @@ router.post('/:eventRequestId/snooze', async (req: any, res) => {
       computedUntil.setDate(computedUntil.getDate() + days);
       computedUntil.setHours(9, 0, 0, 0);
     } else if (snoozeType === 'until_date') {
-      computedUntil = new Date(snoozedUntil);
-      if (isNaN(computedUntil.getTime())) return res.status(400).json({ error: 'Invalid date' });
+      // Parse as local date (YYYY-MM-DD or ISO string) and normalize to 9 AM
+      // to avoid timezone-related early expiry when the client sends a date-only string.
+      const raw = new Date(snoozedUntil);
+      if (isNaN(raw.getTime())) return res.status(400).json({ error: 'Invalid date' });
+      computedUntil = new Date(raw.getFullYear(), raw.getMonth(), raw.getDate(), 9, 0, 0, 0);
     }
     // until_contact: computedUntil stays null (open-ended)
 
@@ -365,6 +407,8 @@ router.delete('/:eventRequestId/snooze', async (req: any, res) => {
   try {
     const eventRequestId = parseInt(req.params.eventRequestId);
     if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    if (!await authorizeSnoozeAccess(req, res, eventRequestId)) return;
 
     await db
       .update(eventReminderSnoozes)

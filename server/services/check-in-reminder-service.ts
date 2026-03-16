@@ -14,15 +14,15 @@
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
 import { eventCheckInReminders, eventReminderSnoozes, eventRequests, users, REMINDER_RULE_TYPES } from '@shared/schema';
-import { and, eq, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
 import { getUserMetadata, getCheckInReminderPreferences } from '@shared/types';
-import type { DefaultReminderRule } from '@shared/types';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import {
   calculateNextDue,
+  ReminderFrequency,
   CONDITION_COOLDOWN_FREQUENCY,
   CONDITION_CHECK_FREQUENCY,
 } from '../utils/reminder-scheduling';
@@ -271,15 +271,19 @@ async function applyGlobalDefaultsToNewEvents(): Promise<number> {
       if (!prefs?.configured) continue;
 
       const enabledRules = prefs.rules.filter(r => r.enabled);
-      if (enabledRules.length === 0) continue;
+      const enabledCorpRules = prefs.corporateRules?.filter(r => r.enabled) ?? [];
+      if (enabledRules.length === 0 && enabledCorpRules.length === 0) continue;
 
-      // Find events this user is TSP contact for
+      // Find events this user is TSP contact for (either tspContactAssigned or tspContact)
       const assignedEvents = await db
         .select({ id: eventRequests.id, status: eventRequests.status, isCorporatePriority: eventRequests.isCorporatePriority })
         .from(eventRequests)
         .where(
           and(
-            eq(eventRequests.tspContactAssigned, user.id),
+            or(
+              eq(eventRequests.tspContactAssigned, user.id),
+              eq(eventRequests.tspContact, user.id),
+            ),
             sql`${eventRequests.status} IN (${sql.join(activeStatuses.map(s => sql`${s}`), sql`, `)})`,
             sql`${eventRequests.deletedAt} IS NULL`,
           ),
@@ -302,8 +306,8 @@ async function applyGlobalDefaultsToNewEvents(): Promise<number> {
 
         // Determine which rule set to use
         const isCorp = event.isCorporatePriority === true;
-        const rulesToApply = isCorp && prefs.corporateRules?.some(r => r.enabled)
-          ? prefs.corporateRules.filter(r => r.enabled)
+        const rulesToApply = isCorp && enabledCorpRules.length > 0
+          ? enabledCorpRules
           : enabledRules;
 
         // Create per-event rows from defaults
@@ -317,7 +321,7 @@ async function applyGlobalDefaultsToNewEvents(): Promise<number> {
             thresholdDays: rule.thresholdDays,
             frequency: isCondBased ? 'daily' : rule.frequency,
             channel: prefs.defaultChannel,
-            nextDueAt: calculateNextDue(isCondBased ? 'daily' : rule.frequency),
+            nextDueAt: calculateNextDue(isCondBased ? 'daily' : rule.frequency as ReminderFrequency),
           }).onConflictDoNothing(); // unique index prevents duplicates
           provisioned++;
         }
@@ -363,6 +367,25 @@ export async function processCheckInReminders(): Promise<{
 
     logger.info(`[CheckInReminders] Processing ${dueReminders.length} due reminders`);
 
+    // Prefetch all active snoozes for the affected event+user pairs to avoid per-reminder N+1 queries.
+    const affectedEventIds = [...new Set(dueReminders.map(r => r.eventRequestId))];
+    const allActiveSnoozes = affectedEventIds.length > 0
+      ? await db
+          .select()
+          .from(eventReminderSnoozes)
+          .where(
+            and(
+              inArray(eventReminderSnoozes.eventRequestId, affectedEventIds),
+              eq(eventReminderSnoozes.active, true),
+            ),
+          )
+      : [];
+    // Build a lookup map keyed by "eventRequestId:userId" for O(1) access in the loop
+    const snoozeMap = new Map<string, typeof allActiveSnoozes[0]>();
+    for (const snooze of allActiveSnoozes) {
+      snoozeMap.set(`${snooze.eventRequestId}:${snooze.userId}`, snooze);
+    }
+
     for (const reminder of dueReminders) {
       processed++;
 
@@ -392,18 +415,8 @@ export async function processCheckInReminders(): Promise<{
           continue;
         }
 
-        // Check for active snooze on this event+user
-        const [activeSnooze] = await db
-          .select()
-          .from(eventReminderSnoozes)
-          .where(
-            and(
-              eq(eventReminderSnoozes.eventRequestId, reminder.eventRequestId),
-              eq(eventReminderSnoozes.userId, reminder.userId),
-              eq(eventReminderSnoozes.active, true),
-            ),
-          )
-          .limit(1);
+        // Check for active snooze on this event+user (using prefetched map)
+        const activeSnooze = snoozeMap.get(`${reminder.eventRequestId}:${reminder.userId}`) ?? null;
 
         if (activeSnooze) {
           let snoozeSuppressed = false;
@@ -422,6 +435,7 @@ export async function processCheckInReminders(): Promise<{
                 .update(eventReminderSnoozes)
                 .set({ active: false, cancelledAt: new Date() })
                 .where(eq(eventReminderSnoozes.id, activeSnooze.id));
+              snoozeMap.delete(`${reminder.eventRequestId}:${reminder.userId}`);
               logger.info(`[CheckInReminders] Auto-cancelled until_contact snooze for event ${reminder.eventRequestId} (new contact logged)`);
             } else {
               snoozeSuppressed = true;
@@ -436,12 +450,22 @@ export async function processCheckInReminders(): Promise<{
                 .update(eventReminderSnoozes)
                 .set({ active: false, cancelledAt: new Date() })
                 .where(eq(eventReminderSnoozes.id, activeSnooze.id));
+              snoozeMap.delete(`${reminder.eventRequestId}:${reminder.userId}`);
             }
           }
 
           if (snoozeSuppressed) {
-            // Reschedule for tomorrow and skip
-            const nextDue = calculateNextDue('daily');
+            // For timed/until_date snoozes, reschedule to just after snooze end to avoid daily writes.
+            // For until_contact (open-ended), fall back to daily check.
+            let nextDue: Date;
+            if (activeSnooze.snoozedUntil) {
+              // Re-check the day after the snooze expires (9 AM)
+              nextDue = new Date(activeSnooze.snoozedUntil);
+              nextDue.setDate(nextDue.getDate() + 1);
+              nextDue.setHours(9, 0, 0, 0);
+            } else {
+              nextDue = calculateNextDue('daily');
+            }
             await db
               .update(eventCheckInReminders)
               .set({ nextDueAt: nextDue, updatedAt: new Date() })
@@ -462,7 +486,7 @@ export async function processCheckInReminders(): Promise<{
           // Condition-based rules recheck daily; frequency-based use their frequency
           const nextDue = isConditionBasedRule(reminder.ruleType)
             ? calculateNextDue(CONDITION_CHECK_FREQUENCY)
-            : calculateNextDue(reminder.frequency);
+            : calculateNextDue(reminder.frequency as ReminderFrequency);
           await db
             .update(eventCheckInReminders)
             .set({ nextDueAt: nextDue, updatedAt: new Date() })
@@ -544,7 +568,7 @@ export async function processCheckInReminders(): Promise<{
         // frequency-based rules (general_checkin) use their configured frequency
         const nextDue = isConditionBasedRule(reminder.ruleType)
           ? calculateNextDue(CONDITION_COOLDOWN_FREQUENCY)
-          : calculateNextDue(reminder.frequency);
+          : calculateNextDue(reminder.frequency as ReminderFrequency);
         await db
           .update(eventCheckInReminders)
           .set({
