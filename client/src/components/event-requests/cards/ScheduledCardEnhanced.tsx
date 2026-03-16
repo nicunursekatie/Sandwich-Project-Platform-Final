@@ -1644,22 +1644,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
         {/* Next Action - Prominent display for intake tracking */}
         {request.nextAction ? (
-          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg min-w-0">
+            <div className="flex flex-wrap items-start justify-between gap-2 min-w-0">
+              <div className="flex items-start gap-2 flex-1 min-w-0">
                 <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
                 <div className="min-w-0">
                   <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
-                  <span className="ml-2 text-amber-900 font-medium">{request.nextAction}</span>
+                  <p className="mt-1 text-amber-900 font-medium break-words">{request.nextAction}</p>
                 </div>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="flex gap-1 sm:gap-2 flex-wrap w-full sm:w-auto sm:justify-end">
                 {onEditNextAction && (
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={onEditNextAction}
-                    className="h-7 w-7 p-0 text-amber-700 hover:bg-amber-100"
+                    className="h-auto min-h-7 px-2 py-1 text-amber-700 hover:bg-amber-100"
                     title="Edit action"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -1670,7 +1670,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={onCompleteNextAction}
-                    className="h-7 w-7 p-0 text-green-600 hover:bg-green-100"
+                    className="h-auto min-h-7 px-2 py-1 text-green-600 hover:bg-green-100"
                     title="Complete action"
                   >
                     <Check className="w-3.5 h-3.5" />
@@ -3607,9 +3607,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
 
         {/* Action Buttons Row */}
-        <div className="flex flex-wrap gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
+        <div className="flex flex-wrap gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10 items-stretch sm:items-center">
           <Button
             onClick={onContact}
+            className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
           >
             <Mail className="w-4 h-4 mr-2" />
             Contact Organizer
@@ -3618,6 +3619,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             size="sm"
             variant="outline"
             onClick={onLogContact}
+            className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
           >
             <MessageSquare className="w-4 h-4 mr-1" />
             Log Contact
@@ -3632,17 +3634,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               size="sm"
               variant="outline"
               onClick={onAiIntakeAssist}
-              className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
+              className="border-purple-500/30 text-purple-600 hover:bg-purple-50 h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
               data-testid="button-ai-intake-check"
             >
               <Sparkles className="w-4 h-4 mr-1" />
               AI Intake Check
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={onReschedule}>
+          <Button size="sm" variant="outline" onClick={onReschedule} className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left">
             Reschedule
           </Button>
-          <Button size="sm" onClick={onFollowUp}>
+          <Button size="sm" onClick={onFollowUp} className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left">
             Follow Up
           </Button>
 
@@ -3651,7 +3653,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               size="sm"
               variant="outline"
               onClick={onAssignTspContact}
-              className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
+              className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10 h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
             >
               <UserPlus className="w-4 h-4 mr-1" />
               Assign TSP Contact

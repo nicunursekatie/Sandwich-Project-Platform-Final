@@ -2796,10 +2796,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t items-stretch sm:items-center">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={onView}>
+                <Button size="sm" variant="outline" onClick={onView} className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left">
                   <Eye className="w-4 h-4 mr-1" />
                   View Details
                 </Button>
@@ -2811,7 +2811,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={onEdit}>
+                <Button size="sm" variant="outline" onClick={onEdit} className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left">
                   <Edit2 className="w-4 h-4 mr-1" />
                   Edit Event
                 </Button>
@@ -2828,7 +2828,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onFollowUp1Day}
-                    className="bg-brand-primary-lighter hover:bg-brand-primary-light"
+                    className="bg-brand-primary-lighter hover:bg-brand-primary-light h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
                   >
                     <MessageCircle className="w-4 h-4 mr-1" />
                     1-Day Follow-up
@@ -2847,7 +2847,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onFollowUp1Month}
-                    className="bg-purple-50 hover:bg-purple-100"
+                    className="bg-purple-50 hover:bg-purple-100 h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
                   >
                     <MessageCircle className="w-4 h-4 mr-1" />
                     1-Month Follow-up
@@ -2862,7 +2862,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             {onViewCollectionLog && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button size="sm" variant="outline" onClick={onViewCollectionLog}>
+                  <Button size="sm" variant="outline" onClick={onViewCollectionLog} className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left">
                     <FileText className="w-4 h-4 mr-1" />
                     Collection Log
                   </Button>
@@ -2875,7 +2875,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" variant="outline" onClick={onContact}>
+                <Button size="sm" variant="outline" onClick={onContact} className="h-auto min-h-8 max-w-full whitespace-normal break-words text-left">
                   <Mail className="w-4 h-4 mr-1" />
                   Contact
                 </Button>
@@ -2891,7 +2891,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onLogContact}
-                  className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+                  className="text-base border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
                 >
                   <FileText className="w-4 h-4 mr-1" />
                   Log Contact
@@ -2910,7 +2910,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={onAssignTspContact}
-                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                    className="border-yellow-500 text-yellow-700 hover:bg-yellow-50 h-auto min-h-8 max-w-full whitespace-normal break-words text-left"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
                     Assign TSP Contact
