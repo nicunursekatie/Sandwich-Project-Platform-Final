@@ -550,41 +550,6 @@ export default function GmailStyleInbox() {
     },
   });
 
-  // Auto-save draft effect - DISABLED: /api/drafts endpoint doesn't exist yet
-  // TODO: Implement drafts API endpoint if auto-save is needed
-  // useEffect(() => {
-  //   if (composeRecipient || composeSubject || composeContent) {
-  //     if (autoSaveTimer) {
-  //       clearTimeout(autoSaveTimer);
-  //     }
-  //
-  //     const timer = setTimeout(() => {
-  //       const draft = {
-  //         id: currentDraft?.id,
-  //         recipientId: composeRecipient,
-  //         recipientName:
-  //           users.find((u) => u.id === composeRecipient)?.firstName +
-  //             ' ' +
-  //             users.find((u) => u.id === composeRecipient)?.lastName || '',
-  //         subject: composeSubject,
-  //         content: composeContent,
-  //         lastSaved: new Date().toISOString(),
-  //       };
-  //
-  //       saveDraftMutation.mutate(draft);
-  //       setCurrentDraft(draft as Draft);
-  //     }, 2000);
-  //
-  //     setAutoSaveTimer(timer);
-  //   }
-  //
-  //   return () => {
-  //     if (autoSaveTimer) {
-  //       clearTimeout(autoSaveTimer);
-  //     }
-  //   };
-  // }, [composeRecipient, composeSubject, composeContent]);
-
   // Handle file upload for attachments
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;

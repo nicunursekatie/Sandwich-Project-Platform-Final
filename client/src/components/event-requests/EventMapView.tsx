@@ -1,17 +1,25 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import {
-  Search, Loader2, X, Navigation, MapPin, Building2, Heart, Car, Users, Route,
+  Search, Loader2, X, Navigation, MapPin, Building2, Heart, Car, Users, Route, Filter,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 
@@ -23,37 +31,58 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// --- Marker Icons (one per entity type) ---
-const MARKER_SHADOW = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png';
-const MARKER_BASE = 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-';
+// --- Brand Colors ---
+const ENTITY_COLORS: Record<EntityType, string> = {
+  event: '#236383',
+  host: '#007E8C',
+  recipient: '#47B3CB',
+  driver: '#FBAD3F',
+  volunteer: '#A31C31',
+};
 
-function makeIcon(color: string) {
-  return new L.Icon({
-    iconUrl: `${MARKER_BASE}${color}.png`,
-    shadowUrl: MARKER_SHADOW,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+// --- Custom SVG Marker Icons ---
+// Events use a diamond/star shape to distinguish from person/entity pins
+
+function makePinSvg(color: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="14" cy="13" r="5.5" fill="#fff" opacity="0.9"/>
+  </svg>`;
+}
+
+function makeDiamondSvg(color: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+    <path d="M16 0L30 14L16 36L2 14Z" fill="${color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M16 8L22 14L16 24L10 14Z" fill="#fff" opacity="0.85"/>
+  </svg>`;
+}
+
+function makeSearchSvg(): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#FBAD3F" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="14" cy="12" r="5" fill="none" stroke="#fff" stroke-width="2"/>
+    <line x1="18" y1="16" x2="21" y2="19" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function makeSvgIcon(svg: string, size: [number, number], anchor: [number, number], popupAnchor: [number, number]) {
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: size,
+    iconAnchor: anchor,
+    popupAnchor: popupAnchor,
   });
 }
 
 const ENTITY_ICONS = {
-  event: makeIcon('blue'),
-  host: makeIcon('green'),
-  recipient: makeIcon('violet'),
-  driver: makeIcon('orange'),
-  volunteer: makeIcon('red'),
-  search: makeIcon('gold'),
+  event: makeSvgIcon(makeDiamondSvg(ENTITY_COLORS.event), [32, 40], [16, 40], [0, -36]),
+  host: makeSvgIcon(makePinSvg(ENTITY_COLORS.host), [28, 40], [14, 40], [0, -36]),
+  recipient: makeSvgIcon(makePinSvg(ENTITY_COLORS.recipient), [28, 40], [14, 40], [0, -36]),
+  driver: makeSvgIcon(makePinSvg(ENTITY_COLORS.driver), [28, 40], [14, 40], [0, -36]),
+  volunteer: makeSvgIcon(makePinSvg(ENTITY_COLORS.volunteer), [28, 40], [14, 40], [0, -36]),
+  search: makeSvgIcon(makeSearchSvg(), [28, 40], [14, 40], [0, -36]),
 } as const;
-
-const ENTITY_COLORS: Record<EntityType, string> = {
-  event: '#3b82f6',
-  host: '#22c55e',
-  recipient: '#8b5cf6',
-  driver: '#f97316',
-  volunteer: '#ef4444',
-};
 
 const ENTITY_LABELS: Record<EntityType, { label: string; icon: typeof MapPin }> = {
   event: { label: 'Events', icon: MapPin },
@@ -160,9 +189,27 @@ function formatDistance(meters: number): string {
 function EventMapView({ onEventClick }: EventMapViewProps) {
   const { toast } = useToast();
 
+  // Event status filter
+  const ALL_EVENT_STATUSES = ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'cancelled'];
+  const [eventStatusFilters, setEventStatusFilters] = useState<string[]>(['scheduled', 'rescheduled']);
+
+  const toggleEventStatusFilter = (status: string) => {
+    if (status === 'scheduled') {
+      setEventStatusFilters(prev => {
+        const has = prev.includes('scheduled');
+        if (has) return prev.filter(s => s !== 'scheduled' && s !== 'rescheduled');
+        return [...prev, 'scheduled', 'rescheduled'];
+      });
+    } else {
+      setEventStatusFilters(prev =>
+        prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+      );
+    }
+  };
+
   // State
   const [entityFilters, setEntityFilters] = useState<Record<EntityType, boolean>>({
-    event: true, host: true, recipient: true, driver: true, volunteer: true,
+    event: true, host: false, recipient: false, driver: false, volunteer: false,
   });
   const [addressSearch, setAddressSearch] = useState('');
   const [searchedLocation, setSearchedLocation] = useState<{ address: string; latitude: number; longitude: number } | null>(null);
@@ -199,8 +246,9 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
   const allEntities = useMemo(() => {
     const entities: MapEntity[] = [];
 
-    // Events
+    // Events (filtered by selected statuses)
     events.forEach((e: any) => {
+      if (!eventStatusFilters.includes(e.status)) return;
       const lat = parseFloat(String(e.latitude));
       const lng = parseFloat(String(e.longitude));
       if (isNaN(lat) || isNaN(lng)) return;
@@ -271,7 +319,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
     });
 
     return entities;
-  }, [events, hosts, recipients, driverCandidates]);
+  }, [events, hosts, recipients, driverCandidates, eventStatusFilters]);
 
   // Entity counts
   const entityCounts = useMemo(() => {
@@ -389,6 +437,71 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
         {/* Divider */}
         <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
 
+        {/* Event status filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs">
+              <Filter className="w-3.5 h-3.5 mr-1" />
+              Event Status
+              {eventStatusFilters.length < ALL_EVENT_STATUSES.length && (
+                <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px]">
+                  {eventStatusFilters.filter(s => s !== 'rescheduled').length}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-52">
+            <DropdownMenuLabel>Filter Events by Status</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.length === ALL_EVENT_STATUSES.length}
+              onCheckedChange={() => {
+                if (eventStatusFilters.length === ALL_EVENT_STATUSES.length) {
+                  setEventStatusFilters(['scheduled', 'rescheduled']);
+                } else {
+                  setEventStatusFilters([...ALL_EVENT_STATUSES]);
+                }
+              }}
+            >
+              <span className="font-medium text-sm">Select All</span>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('new')}
+              onCheckedChange={() => toggleEventStatusFilter('new')}
+            >
+              <Badge className="bg-blue-100 text-blue-800 border-blue-300 mr-2">New</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('in_process')}
+              onCheckedChange={() => toggleEventStatusFilter('in_process')}
+            >
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 mr-2">In Process</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('scheduled')}
+              onCheckedChange={() => toggleEventStatusFilter('scheduled')}
+            >
+              <Badge className="bg-green-100 text-green-800 border-green-300 mr-2">Scheduled</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('completed')}
+              onCheckedChange={() => toggleEventStatusFilter('completed')}
+            >
+              <Badge className="bg-teal-100 text-teal-800 border-teal-300 mr-2">Completed</Badge>
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={eventStatusFilters.includes('cancelled')}
+              onCheckedChange={() => toggleEventStatusFilter('cancelled')}
+            >
+              <Badge className="bg-red-100 text-red-800 border-red-300 mr-2">Cancelled</Badge>
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-300 mx-1 hidden sm:block" />
+
         {/* Address search */}
         <div className="flex items-center gap-1 flex-1 min-w-[200px] max-w-md">
           <Input
@@ -448,8 +561,9 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
           <FitBoundsOnLoad points={allPoints} />
           <MapController center={mapCenter} zoom={mapZoom} flyKey={flyKey} />
 
-          <MarkerClusterGroup chunkedLoading maxClusterRadius={60}>
-            {visibleEntities.map(entity => (
+          {/* Events — clustered separately so cluster counts only reflect events */}
+          <MarkerClusterGroup key={`events-${eventStatusFilters.join(',')}`} chunkedLoading maxClusterRadius={60}>
+            {visibleEntities.filter(e => e.type === 'event').map(entity => (
               <Marker
                 key={entity.id}
                 position={[entity.latitude, entity.longitude]}
@@ -461,12 +575,30 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
                     entity={entity}
                     isSelected={isSelected(entity.id)}
                     onSelectForRoute={() => handleSelectForRoute(entity)}
-                    onEventClick={entity.type === 'event' && onEventClick ? () => onEventClick(entity.metadata.raw) : undefined}
+                    onEventClick={onEventClick ? () => onEventClick(entity.metadata.raw) : undefined}
                   />
                 </Popup>
               </Marker>
             ))}
           </MarkerClusterGroup>
+
+          {/* Non-event entities — individual markers, not clustered with events */}
+          {visibleEntities.filter(e => e.type !== 'event').map(entity => (
+            <Marker
+              key={entity.id}
+              position={[entity.latitude, entity.longitude]}
+              icon={ENTITY_ICONS[entity.type]}
+              ref={(ref) => { if (ref) markerRefs.current.set(entity.id, ref); }}
+            >
+              <Popup maxWidth={280} minWidth={200}>
+                <EntityPopup
+                  entity={entity}
+                  isSelected={isSelected(entity.id)}
+                  onSelectForRoute={() => handleSelectForRoute(entity)}
+                />
+              </Popup>
+            </Marker>
+          ))}
 
           {/* Search result marker */}
           {searchedLocation && (
@@ -487,7 +619,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
           {routeResult && routeResult.coordinates.length > 0 && (
             <Polyline
               positions={routeResult.coordinates}
-              pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.8 }}
+              pathOptions={{ color: '#236383', weight: 4, opacity: 0.8 }}
             />
           )}
         </MapContainer>

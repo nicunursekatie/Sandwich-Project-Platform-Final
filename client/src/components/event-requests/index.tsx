@@ -20,6 +20,7 @@ import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AllEventsTab } from './tabs/AllEventsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
 import { PlanningTab } from './tabs/PlanningTab';
+import { SandwichDestinationOverview } from './tabs/SandwichDestinationOverview';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +80,7 @@ import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import { NonEventDialog } from './dialogs/NonEventDialog';
 import { RescheduleDialog } from './dialogs/RescheduleDialog';
 import IntakeCallDialog from './IntakeCallDialog';
+import { CallNotesScratchpadDialog } from './CallNotesScratchpadDialog';
 import NextActionDialog from './NextActionDialog';
 import { DashboardSummaryCards } from './DashboardSummaryCards';
 import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
@@ -177,6 +179,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
+    showScratchpad,
+    setShowScratchpad,
     showDeclineDialog,
     setShowDeclineDialog,
     showCancelDialog,
@@ -231,6 +235,8 @@ const EventRequestsManagementContent: React.FC = () => {
     setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
+    scratchpadEventRequest,
+    setScratchpadEventRequest,
     reasonDialogEventRequest,
     setReasonDialogEventRequest,
     nonEventDialogEventRequest,
@@ -463,6 +469,7 @@ const EventRequestsManagementContent: React.FC = () => {
         user?.permissions?.includes('view_admin_overview') ||
         user?.role === 'super_admin') {
       tabs.planning = <PlanningTab eventRequests={eventRequests} />;
+      tabs.sandwich_overview = <SandwichDestinationOverview eventRequests={eventRequests} />;
     }
 
     return tabs;
@@ -1198,6 +1205,16 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
           />
         )}
+
+        {/* Call Notes Scratchpad - independent floating dialog */}
+        <CallNotesScratchpadDialog
+          eventRequest={scratchpadEventRequest}
+          isOpen={showScratchpad}
+          onClose={() => {
+            setShowScratchpad(false);
+            setScratchpadEventRequest(null);
+          }}
+        />
 
         {/* Next Action Dialog */}
         {nextActionEventRequest && (

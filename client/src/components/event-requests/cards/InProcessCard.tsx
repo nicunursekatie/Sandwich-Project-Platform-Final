@@ -78,6 +78,7 @@ import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { QuickScheduleButton } from '@/components/event-requests/QuickScheduleButton';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw } from 'lucide-react';
+import { useEventRequestContext } from '../context/EventRequestContext';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -307,7 +308,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   className={`whitespace-nowrap cursor-help ${
                     returningOrgData.isReturningContact
                       ? 'bg-purple-50 text-purple-700 border-purple-300'
-                      : 'bg-amber-50 text-amber-700 border-amber-300'
+                      : (request.email || request.firstName || request.lastName || request.phone)
+                        ? 'bg-amber-50 text-amber-700 border-amber-300'
+                        : 'bg-gray-50 text-gray-600 border-gray-300'
                   }`}
                 >
                   <RefreshCw className="w-3 h-3 mr-1" />
@@ -317,7 +320,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   )}
                   {returningOrgData.isReturningContact
                     ? <span className="ml-1 text-xs opacity-80">&middot; Same Contact</span>
-                    : <span className="ml-1 text-xs opacity-80">&middot; New Contact</span>
+                    : (request.email || request.firstName || request.lastName || request.phone)
+                      ? <span className="ml-1 text-xs opacity-80">&middot; New Contact</span>
+                      : null
                   }
                   {returningOrgData.pastEventCount > 0 && (
                     <span className="ml-1 text-xs opacity-80">
@@ -356,7 +361,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     <p className="text-xs text-purple-600 font-medium mt-2">
                       Same contact as a previous event &mdash; personalize your outreach!
                     </p>
-                  ) : (
+                  ) : (request.email || request.firstName || request.lastName || request.phone) ? (
                     <div className="mt-2">
                       {returningOrgData.pastContactName && (
                         <p className="text-xs text-muted-foreground">
@@ -365,6 +370,17 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       )}
                       <p className="text-xs text-amber-600 font-medium">
                         New contact for this org &mdash; treat as a first-time outreach
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      {returningOrgData.pastContactName && (
+                        <p className="text-xs text-muted-foreground">
+                          Past contact: {returningOrgData.pastContactName}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 font-medium">
+                        No contact information provided for this request
                       </p>
                     </div>
                   )}
@@ -607,8 +623,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
                     style={{ backgroundColor: '#FBAD3F' }}
+                    onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                   >
                     <AlertTriangle className="w-3 h-3" />
                     {datePopulationInfo.scheduledCount} scheduled
@@ -617,6 +634,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <TooltipContent>
                   <p>{indicatorTooltips.scheduledConflict}</p>
                   <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.scheduledCount} event{datePopulationInfo.scheduledCount > 1 ? 's' : ''} on this date</p>
+                  <p className="text-xs text-blue-500 mt-1 font-medium">Click to view calendar</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -624,8 +642,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
+                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
                     style={{ backgroundColor: '#007E8C' }}
+                    onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                   >
                     <Calendar className="w-3 h-3" />
                     {datePopulationInfo.inProcessCount} in process
@@ -634,6 +653,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <TooltipContent>
                   <p>{indicatorTooltips.inProcessConflict}</p>
                   <p className="text-xs text-muted-foreground mt-1">{datePopulationInfo.inProcessCount} event{datePopulationInfo.inProcessCount > 1 ? 's' : ''} on this date</p>
+                  <p className="text-xs text-blue-500 mt-1 font-medium">Click to view calendar</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -866,6 +886,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   editingValue = '',
   tempIsConfirmed = false,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const [showAuditLog, setShowAuditLog] = useState(false);
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);

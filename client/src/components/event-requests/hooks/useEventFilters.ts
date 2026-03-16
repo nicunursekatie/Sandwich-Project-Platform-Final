@@ -4,6 +4,28 @@ import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useAuth } from '@/hooks/useAuth';
 
+// Helper to parse time string (HH:MM or H:MM AM/PM) to minutes since midnight
+function parseTimeToMinutes(timeStr: string | null | undefined): number {
+  if (!timeStr) return 0;
+  const str = timeStr.trim().toUpperCase();
+  // Try 24-hour format first (HH:MM)
+  const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+  }
+  // Try 12-hour format (H:MM AM/PM)
+  const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = parseInt(match12[2], 10);
+    const isPM = match12[3] === 'PM';
+    if (isPM && hours !== 12) hours += 12;
+    if (!isPM && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+  return 0;
+}
+
 export const useEventFilters = () => {
   const {
     eventRequests,
@@ -428,7 +450,8 @@ export const useEventFilters = () => {
       }
 
       const matchesStatus =
-        statusFilter === 'all' || request.status === statusFilter;
+        statusFilter === 'all' || request.status === statusFilter ||
+        (statusFilter === 'scheduled' && request.status === 'rescheduled');
 
       // Completed events are always considered confirmed
       const isEventConfirmed = request.status === 'completed' || request.isConfirmed;
@@ -440,28 +463,6 @@ export const useEventFilters = () => {
 
       return matchesSearch && matchesStatus && matchesConfirmation;
     });
-
-    // Helper to parse time string (HH:MM or H:MM AM/PM) to minutes since midnight
-    const parseTimeToMinutes = (timeStr: string | null | undefined): number => {
-      if (!timeStr) return 0;
-      const str = timeStr.trim().toUpperCase();
-      // Try 24-hour format first (HH:MM)
-      const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
-      if (match24) {
-        return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
-      }
-      // Try 12-hour format (H:MM AM/PM)
-      const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
-      if (match12) {
-        let hours = parseInt(match12[1], 10);
-        const minutes = parseInt(match12[2], 10);
-        const isPM = match12[3] === 'PM';
-        if (isPM && hours !== 12) hours += 12;
-        if (!isPM && hours === 12) hours = 0;
-        return hours * 60 + minutes;
-      }
-      return 0;
-    };
 
     // Sort the filtered results
     filtered.sort((a: EventRequest, b: EventRequest) => {
@@ -527,7 +528,7 @@ export const useEventFilters = () => {
     const source =
       status === 'all' || status === 'my_assignments'
         ? eventRequests
-        : eventRequests.filter((req: EventRequest) => req.status === status);
+        : eventRequests.filter((req: EventRequest) => req.status === status || (status === 'scheduled' && req.status === 'rescheduled'));
 
     return source
       .filter((request: EventRequest) => {
@@ -538,8 +539,8 @@ export const useEventFilters = () => {
           // AND filter by selected statuses in myAssignmentsStatusFilter
           matchesStatus = isUserAssignedToEvent(request) && myAssignmentsStatusFilter.includes(request.status);
         } else if (status !== 'all') {
-          // Regular status filtering (already scoped source, but keep guard)
-          matchesStatus = request.status === status;
+          // Regular status filtering - include rescheduled in scheduled tab
+          matchesStatus = request.status === status || (status === 'scheduled' && request.status === 'rescheduled');
         }
 
         let matchesSearch = debouncedSearchQuery === '';
@@ -593,28 +594,6 @@ export const useEventFilters = () => {
         return matchesStatus && matchesSearch && matchesConfirmation;
       })
       .sort((a: EventRequest, b: EventRequest) => {
-        // Helper to parse time string (HH:MM or H:MM AM/PM) to minutes since midnight
-        const parseTimeToMinutes = (timeStr: string | null | undefined): number => {
-          if (!timeStr) return 0;
-          const str = timeStr.trim().toUpperCase();
-          // Try 24-hour format first (HH:MM)
-          const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
-          if (match24) {
-            return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
-          }
-          // Try 12-hour format (H:MM AM/PM)
-          const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
-          if (match12) {
-            let hours = parseInt(match12[1], 10);
-            const minutes = parseInt(match12[2], 10);
-            const isPM = match12[3] === 'PM';
-            if (isPM && hours !== 12) hours += 12;
-            if (!isPM && hours === 12) hours = 0;
-            return hours * 60 + minutes;
-          }
-          return 0;
-        };
-
         switch (sortBy) {
           case 'event_date_desc':
             // Use scheduledEventDate if available, otherwise desiredEventDate

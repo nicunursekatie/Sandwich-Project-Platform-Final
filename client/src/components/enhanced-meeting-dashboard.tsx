@@ -39,10 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ObjectUploader } from '@/components/ObjectUploader';
 import { ProjectAssigneeSelector } from '@/components/project-assignee-selector';
-import { TaskAssigneeSelector } from '@/components/task-assignee-selector';
-import { ProjectTasksView } from './meetings/dashboard/sections/ProjectTasksView';
 import { NewMeetingDialog } from './meetings/dashboard/dialogs/NewMeetingDialog';
 import { EditMeetingDialog } from './meetings/dashboard/dialogs/EditMeetingDialog';
 import { AddProjectDialog } from './meetings/dashboard/dialogs/AddProjectDialog';
@@ -52,8 +49,7 @@ import { AgendaPlanningTab } from './meetings/dashboard/tabs/AgendaPlanningTab';
 import { NotesTab } from './meetings/dashboard/tabs/NotesTab';
 import { NotesHistoryTab } from './meetings/dashboard/tabs/NotesHistoryTab';
 import { getCategoryIcon } from './meetings/dashboard/utils/categories';
-import { formatStatusText, getStatusBadgeProps } from './meetings/dashboard/utils/status';
-import { formatMeetingDate, formatMeetingTime, isPastMeeting, getCurrentDateRange, formatSectionName } from './meetings/dashboard/utils/date';
+import { isPastMeeting, getCurrentDateRange } from './meetings/dashboard/utils/date';
 import {
   CalendarDays,
   Clock,
@@ -150,7 +146,6 @@ export default function EnhancedMeetingDashboard() {
     Record<number, 'none' | 'agenda' | 'tabled'>
   >({});
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [isSavingProgress, setIsSavingProgress] = useState(false);
 
   // Local state for text inputs to ensure responsiveness
   const [localProjectText, setLocalProjectText] = useState<
@@ -232,8 +227,6 @@ export default function EnhancedMeetingDashboard() {
 
   const {
     uploadedFiles,
-    uploadingFiles,
-    uploadProgress,
     uploadFile,
     deleteFile,
     setUploadedFiles,

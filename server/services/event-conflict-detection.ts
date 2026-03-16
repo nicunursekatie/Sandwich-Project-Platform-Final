@@ -18,8 +18,8 @@ import { eq, and, ne, gte, lte, or, sql, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 
 export interface ConflictWarning {
-  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict';
-  severity: 'warning' | 'critical';
+  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict' | 'high_volume_week';
+  severity: 'warning' | 'critical' | 'suggestion';
   message: string;
   conflictingEventId?: number;
   conflictingEventName?: string;
@@ -380,15 +380,76 @@ export async function checkEventConflicts(
       }
     }
 
+    // Check 7: Weekly capacity check (sandwich volume for the week)
+    // This is a suggestion, not a warning - helps groups choose lighter weeks
+    try {
+      const WEEKLY_SANDWICH_THRESHOLD = 4000;
+      // Get Monday and Sunday of the event's week
+      const dayOfWeek = scheduledDate.getUTCDay(); // 0=Sun, 1=Mon, ...
+      const monday = new Date(scheduledDate);
+      monday.setUTCDate(scheduledDate.getUTCDate() - ((dayOfWeek + 6) % 7)); // Go back to Monday
+      monday.setUTCHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setUTCDate(monday.getUTCDate() + 6);
+      sunday.setUTCHours(23, 59, 59, 999);
+
+      const weekEvents = await db
+        .select()
+        .from(eventRequests)
+        .where(
+          and(
+            gte(eventRequests.scheduledEventDate, monday),
+            lte(eventRequests.scheduledEventDate, sunday),
+            or(
+              eq(eventRequests.status, 'scheduled'),
+              eq(eventRequests.status, 'rescheduled')
+            ),
+            ...(eventData.id ? [ne(eventRequests.id, eventData.id)] : [])
+          )
+        );
+
+      const weekSandwichTotal = weekEvents.reduce((sum, e) => {
+        return sum + (e.estimatedSandwichCount || 0);
+      }, 0);
+      const weekEventCount = weekEvents.length;
+
+      if (weekSandwichTotal >= WEEKLY_SANDWICH_THRESHOLD) {
+        const weekLabel = `${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        warnings.push({
+          type: 'high_volume_week',
+          severity: 'suggestion',
+          message: `This week (${weekLabel}) already has ${weekEventCount} scheduled event${weekEventCount !== 1 ? 's' : ''} totaling ~${weekSandwichTotal.toLocaleString()} sandwiches. Consider suggesting a lighter week.`,
+          details: {
+            weekStart: monday.toISOString(),
+            weekEnd: sunday.toISOString(),
+            weekSandwichTotal,
+            weekEventCount,
+            threshold: WEEKLY_SANDWICH_THRESHOLD,
+            events: weekEvents.map(e => ({
+              id: e.id,
+              name: e.organizationName,
+              date: e.scheduledEventDate,
+              sandwiches: e.estimatedSandwichCount || 0,
+            })),
+          },
+        });
+      }
+    } catch (err) {
+      logger.warn('Could not check weekly capacity:', err);
+    }
+
     // Generate summary
     const criticalCount = warnings.filter(w => w.severity === 'critical').length;
     const warningCount = warnings.filter(w => w.severity === 'warning').length;
+
+    const suggestionCount = warnings.filter(w => w.severity === 'suggestion').length;
 
     let summary = 'No conflicts detected';
     if (warnings.length > 0) {
       const parts = [];
       if (criticalCount > 0) parts.push(`${criticalCount} critical`);
       if (warningCount > 0) parts.push(`${warningCount} warning${warningCount > 1 ? 's' : ''}`);
+      if (suggestionCount > 0) parts.push(`${suggestionCount} suggestion${suggestionCount > 1 ? 's' : ''}`);
       summary = `${parts.join(', ')} found`;
     }
 
@@ -513,5 +574,90 @@ export async function getConflictsForDate(date: Date): Promise<{
       highVolume: false,
       eventCount: 0,
     };
+  }
+}
+
+/**
+ * Get weekly capacity summary for a date range.
+ * Returns sandwich totals and event counts per week (Mon–Sun).
+ */
+export async function getWeeklyCapacity(
+  rangeStart: Date,
+  rangeEnd: Date
+): Promise<Array<{
+  weekStart: string;
+  weekEnd: string;
+  sandwichTotal: number;
+  eventCount: number;
+  events: Array<{ id: number; name: string | null; date: string | null; sandwiches: number }>;
+}>> {
+  try {
+    const events = await db
+      .select()
+      .from(eventRequests)
+      .where(
+        and(
+          gte(eventRequests.scheduledEventDate, rangeStart),
+          lte(eventRequests.scheduledEventDate, rangeEnd),
+          or(
+            eq(eventRequests.status, 'scheduled'),
+            eq(eventRequests.status, 'rescheduled')
+          )
+        )
+      );
+
+    // Group events by week (Monday start)
+    const weekMap = new Map<string, {
+      weekStart: Date;
+      weekEnd: Date;
+      sandwichTotal: number;
+      eventCount: number;
+      events: Array<{ id: number; name: string | null; date: string | null; sandwiches: number }>;
+    }>();
+
+    for (const event of events) {
+      if (!event.scheduledEventDate) continue;
+      const eventDate = new Date(event.scheduledEventDate);
+      const dayOfWeek = eventDate.getUTCDay();
+      const monday = new Date(eventDate);
+      monday.setUTCDate(eventDate.getUTCDate() - ((dayOfWeek + 6) % 7));
+      monday.setUTCHours(0, 0, 0, 0);
+      const weekKey = monday.toISOString().split('T')[0];
+
+      if (!weekMap.has(weekKey)) {
+        const sunday = new Date(monday);
+        sunday.setUTCDate(monday.getUTCDate() + 6);
+        weekMap.set(weekKey, {
+          weekStart: monday,
+          weekEnd: sunday,
+          sandwichTotal: 0,
+          eventCount: 0,
+          events: [],
+        });
+      }
+
+      const week = weekMap.get(weekKey)!;
+      week.sandwichTotal += event.estimatedSandwichCount || 0;
+      week.eventCount += 1;
+      week.events.push({
+        id: event.id,
+        name: event.organizationName,
+        date: event.scheduledEventDate ? getDateString(new Date(event.scheduledEventDate)) : null,
+        sandwiches: event.estimatedSandwichCount || 0,
+      });
+    }
+
+    return Array.from(weekMap.values())
+      .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime())
+      .map(w => ({
+        weekStart: getDateString(w.weekStart),
+        weekEnd: getDateString(w.weekEnd),
+        sandwichTotal: w.sandwichTotal,
+        eventCount: w.eventCount,
+        events: w.events,
+      }));
+  } catch (error) {
+    logger.error('Error getting weekly capacity:', error);
+    return [];
   }
 }

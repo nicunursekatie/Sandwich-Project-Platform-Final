@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, CheckCircle2 } from 'lucide-react';
 import { EventConflictWarnings } from '../EventConflictWarnings';
+import { useEventRequestContext } from '../context/EventRequestContext';
 import type { EventFormData } from './types';
 
 interface EventScheduleSectionProps {
@@ -32,6 +33,8 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
   onVanConflictReset,
   onScheduledDateChange,
 }) => {
+  const { setViewMode } = useEventRequestContext();
+
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-white">
       <div className="flex items-center gap-3 pb-2 border-b">
@@ -48,12 +51,14 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
         eventEndTime={formData.eventEndTime || null}
         pickupTime={formData.pickupTime || null}
         vanDriverNeeded={formData.vanDriverNeeded}
+        isDhlVan={formData.isDhlVan}
         selfTransport={formData.selfTransport}
         assignedVanDriverId={formData.assignedVanDriverId || null}
         assignedSpeakerIds={eventRequest?.assignedSpeakerIds || null}
         assignedRecipientIds={formData.assignedRecipientIds || null}
         organizationName={formData.organizationName || eventRequest?.organizationName || null}
         enabled={!!formData.eventDate}
+        onViewCalendar={() => setViewMode('calendar')}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

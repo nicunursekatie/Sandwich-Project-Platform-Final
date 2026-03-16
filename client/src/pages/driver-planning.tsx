@@ -1016,7 +1016,9 @@ export default function DriverPlanningDashboard() {
     setFocusedItem(item);
 
     // Only fetch route if we have a selected event or custom location with coordinates
-    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) {
+    // Also verify the clicked item has valid coordinates
+    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude ||
+        !item.latitude || !item.longitude) {
       setDrivingRoute(null);
       return;
     }
@@ -2401,13 +2403,15 @@ export default function DriverPlanningDashboard() {
       // Auto-populate destination if there's exactly one designated recipient with coordinates
       if (currentDesignatedRecipients.length === 1) {
         const recipient = currentDesignatedRecipients[0];
-        setSelectedDestination({
-          type: 'recipient',
-          id: recipient.id,
-          name: recipient.name || 'Recipient',
-          latitude: recipient.latitude!,
-          longitude: recipient.longitude!,
-        });
+        if (recipient.latitude && recipient.longitude) {
+          setSelectedDestination({
+            type: 'recipient',
+            id: recipient.id,
+            name: recipient.name || 'Recipient',
+            latitude: recipient.latitude,
+            longitude: recipient.longitude,
+          });
+        }
       }
     }, 100);
 
@@ -3072,7 +3076,7 @@ export default function DriverPlanningDashboard() {
 
             {/* Event markers - when an event is selected, only show events on the same date */}
             {/* Only show permanent labels for selected event; others show labels on hover */}
-            {eventsToShowOnMap.map((event) => {
+            {eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
@@ -5204,7 +5208,7 @@ export default function DriverPlanningDashboard() {
             />
             <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
-            {eventsToShowOnMap.map((event) => {
+            {eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
@@ -5592,7 +5596,7 @@ export default function DriverPlanningDashboard() {
             />
             <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
-            {eventsToShowOnMap.map((event) => {
+            {eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;

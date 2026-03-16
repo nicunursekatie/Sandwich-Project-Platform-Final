@@ -42,6 +42,8 @@ import {
   HandHeart,
   Wrench,
   BookOpen,
+  MessageSquare,
+  UsersRound,
 } from 'lucide-react';
 import { NavItem } from './nav.types';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -83,6 +85,27 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_TEAM_CHAT,
     group: 'communication',
     highlighted: true,
+    navigateAndExpand: true,
+  },
+  {
+    id: 'chat-dms',
+    label: 'Direct Messages',
+    icon: MessageSquare,
+    href: 'chat?tab=dms',
+    permission: PERMISSIONS.NAV_TEAM_CHAT,
+    group: 'communication',
+    parentId: 'chat',
+    isSubItem: true,
+  },
+  {
+    id: 'chat-groups',
+    label: 'Group Messages',
+    icon: UsersRound,
+    href: 'chat?tab=groups',
+    permission: PERMISSIONS.NAV_TEAM_CHAT,
+    group: 'communication',
+    parentId: 'chat',
+    isSubItem: true,
   },
   {
     id: 'inbox-consolidated',

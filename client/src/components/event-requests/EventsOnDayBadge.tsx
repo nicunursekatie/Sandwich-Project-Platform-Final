@@ -1,8 +1,9 @@
 /**
  * Events On Day Badge Component
- * 
+ *
  * Shows a badge indicating how many events are scheduled/pending for a given date.
  * Used on NEW and IN_PROCESS cards to give visibility into scheduling conflicts.
+ * Clicking the badge navigates to the calendar view.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ interface EventsOnDayBadgeProps {
   date: Date | string | null | undefined;
   currentEventId?: number;
   className?: string;
+  onViewCalendar?: () => void;
 }
 
 interface DateConflictResult {
@@ -28,8 +30,8 @@ interface DateConflictResult {
   eventCount: number;
 }
 
-export function EventsOnDayBadge({ date, currentEventId, className = '' }: EventsOnDayBadgeProps) {
-  const dateStr = date 
+export function EventsOnDayBadge({ date, currentEventId, className = '', onViewCalendar }: EventsOnDayBadgeProps) {
+  const dateStr = date
     ? (typeof date === 'string' ? date.split('T')[0] : date.toISOString().split('T')[0])
     : null;
 
@@ -69,13 +71,20 @@ export function EventsOnDayBadge({ date, currentEventId, className = '' }: Event
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
+  const handleClick = () => {
+    if (onViewCalendar) {
+      onViewCalendar();
+    }
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge 
-            variant={getBadgeVariant()} 
-            className={`text-xs flex items-center gap-1 cursor-help ${getBadgeClasses()} ${className}`}
+          <Badge
+            variant={getBadgeVariant()}
+            className={`text-xs flex items-center gap-1 ${onViewCalendar ? 'cursor-pointer hover:opacity-80' : 'cursor-help'} ${getBadgeClasses()} ${className}`}
+            onClick={handleClick}
           >
             {hasVanConflicts ? (
               <AlertTriangle className="h-3 w-3" />
@@ -103,6 +112,11 @@ export function EventsOnDayBadge({ date, currentEventId, className = '' }: Event
             {count > 0 && count < 3 && !hasVanConflicts && (
               <p className="text-muted-foreground text-xs">
                 Other events scheduled - review for conflicts
+              </p>
+            )}
+            {onViewCalendar && (
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                Click to view calendar
               </p>
             )}
           </div>

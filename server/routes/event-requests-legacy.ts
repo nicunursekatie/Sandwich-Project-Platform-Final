@@ -2119,6 +2119,7 @@ router.patch(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.log(`✅ Geocoded event ${id}: ${validatedData.eventAddress}`);
           } else {
             logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${validatedData.eventAddress}`);
@@ -2490,6 +2491,7 @@ router.patch(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
           } else {
             logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${processedUpdates.eventAddress}`);
@@ -2997,6 +2999,26 @@ router.patch(
         return res.status(404).json({ message: 'Event request not found' });
       }
 
+      // Re-geocode if address was provided and either changed or coordinates are missing
+      const addressChanged4 = processedUpdates.eventAddress && processedUpdates.eventAddress !== originalEvent.eventAddress;
+      const missingCoords4 = processedUpdates.eventAddress && (!updatedEventRequest.latitude || !updatedEventRequest.longitude);
+      if (addressChanged4 || missingCoords4) {
+        try {
+          const coords = await geocodeAddress(processedUpdates.eventAddress);
+          if (coords) {
+            await storage.updateEventRequest(id, {
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
+            // Update the response object so client gets new coordinates
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
+            logger.info(`✅ Re-geocoded event ${id} via PATCH /:id: ${processedUpdates.eventAddress}`);
+          }
+        } catch (geocodeError) {
+          logger.error(`Failed to geocode event ${id}:`, geocodeError);
+        }
+      }
+
       // REMOVED: No longer updating Google Sheets - one-way sync only
 
       // Enhanced audit logging with detailed field changes
@@ -3469,6 +3491,7 @@ router.put(
               latitude: coords.latitude,
               longitude: coords.longitude,
             });
+            updatedEventRequest = { ...updatedEventRequest, latitude: coords.latitude, longitude: coords.longitude } as any;
             logger.log(`✅ Geocoded event ${id}: ${processedUpdates.eventAddress}`);
           } else {
             logger.warn(`⚠️ Geocoding returned no results for event ${id}: ${processedUpdates.eventAddress}`);

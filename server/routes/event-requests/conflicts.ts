@@ -30,10 +30,18 @@ router.post('/check-conflicts', isAuthenticated, async (req, res) => {
       scheduledEventDate: req.body.scheduledEventDate,
       eventStartTime: req.body.eventStartTime,
       eventEndTime: req.body.eventEndTime,
+      pickupTime: req.body.pickupTime,
+      vanDriverNeeded: req.body.vanDriverNeeded,
+      isDhlVan: req.body.isDhlVan,
+      selfTransport: req.body.selfTransport,
+      assignedVanDriverId: req.body.assignedVanDriverId,
+      assignedSpeakerIds: req.body.assignedSpeakerIds,
+      assignedRecipientIds: req.body.assignedRecipientIds,
+      organizationName: req.body.organizationName,
+      // Legacy fields
       vanBooked: req.body.vanBooked,
       driverName: req.body.driverName,
       recipientId: req.body.recipientId,
-      organizationName: req.body.organizationName,
     };
 
     const result = await checkEventConflicts(eventData);
@@ -75,6 +83,30 @@ router.get('/conflicts-for-date', isAuthenticated, async (req, res) => {
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+/**
+ * Get weekly capacity summary for a date range
+ * GET /api/event-requests/weekly-capacity?start=2026-03-01&end=2026-04-30
+ *
+ * Returns sandwich totals and event counts per week for the given range.
+ * Used by calendar view to highlight light vs heavy weeks.
+ */
+router.get('/weekly-capacity', isAuthenticated, async (req, res) => {
+  try {
+    const startStr = req.query.start as string;
+    const endStr = req.query.end as string;
+    if (!startStr || !endStr) {
+      return res.status(400).json({ error: 'start and end date parameters required' });
+    }
+
+    const { getWeeklyCapacity } = await import('../../services/event-conflict-detection');
+    const result = await getWeeklyCapacity(new Date(startStr), new Date(endStr));
+    res.json(result);
+  } catch (error) {
+    logger.error('Error getting weekly capacity:', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 

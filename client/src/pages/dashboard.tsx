@@ -131,6 +131,9 @@ const GroupsInsightsDashboard = lazyWithRetry(() => import('@/components/groups-
 const EventContactsDirectory = lazyWithRetry(() => import('@/components/event-contacts-directory'));
 const EventContactDetail = lazyWithRetry(() => import('@/pages/event-contact-detail'));
 const LogosPage = lazyWithRetry(() => import('@/pages/logos'));
+const Flyers = lazyWithRetry(() => import('@/pages/flyers'));
+const Governance = lazyWithRetry(() => import('@/pages/governance'));
+const CleanupAudit = lazyWithRetry(() => import('@/pages/cleanup-audit'));
 const ImportantLinks = lazyWithRetry(() => import('@/pages/important-links'));
 const Resources = lazyWithRetry(() => import('@/pages/resources').then(m => ({ default: m.Resources })));
 const AutoFormFiller = lazyWithRetry(() => import('@/pages/auto-form-filler').then(m => ({ default: m.AutoFormFiller })));
@@ -572,7 +575,7 @@ export default function Dashboard({
               </div>
             </div>
             <div className="flex-1 min-h-0">
-              <StreamChatRooms />
+              <StreamChatRooms defaultTab={urlParams.tab} />
             </div>
           </div>
         );
@@ -691,6 +694,18 @@ export default function Dashboard({
         return <CoolerTrackingPage />;
       case 'important-links':
         return <ImportantLinks />;
+      case 'flyers':
+        return <Flyers />;
+      case 'logos':
+        return <LogosPage />;
+      case 'performance-dashboard':
+        return <PerformanceDashboard />;
+      case 'data-management':
+        return <DataManagement />;
+      case 'governance':
+        return <Governance />;
+      case 'cleanup-audit':
+        return <CleanupAudit />;
       case 'analytics':
         return (
           <div className="p-6">
@@ -755,7 +770,7 @@ export default function Dashboard({
       case 'committee':
       case 'committee-chat':
         // Redirect to main Team Chat
-        return <StreamChatRooms />;
+        return <StreamChatRooms defaultTab={urlParams.tab} />;
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':

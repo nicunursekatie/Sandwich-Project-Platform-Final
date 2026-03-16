@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -9,6 +9,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   FileText,
   Download,
@@ -20,6 +30,12 @@ import {
   Share2,
   Copy,
   Lock,
+  Plus,
+  Trash2,
+  Upload,
+  Loader2,
+  X,
+  Cloud,
 } from 'lucide-react';
 import { DocumentPreview } from '@/components/document-preview';
 import { ConfidentialDocuments } from '@/components/confidential-documents';
@@ -33,7 +49,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { logger } from '@/lib/logger';
 
@@ -47,6 +75,28 @@ export interface AdminDocument {
   size?: string;
   lastModified?: string;
   importance: 'critical' | 'high' | 'normal';
+  /** If set, this document came from the database and can be deleted */
+  dbDocumentId?: number;
+  uploadedByName?: string;
+  createdAt?: string;
+}
+
+/** A document record from the documents API */
+interface UploadedDocument {
+  id: number;
+  title: string;
+  description: string | null;
+  fileName: string;
+  originalName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  category: string;
+  isActive: boolean;
+  uploadedBy: string;
+  uploadedByName: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const adminDocuments: AdminDocument[] = [
@@ -256,7 +306,7 @@ export const adminDocuments: AdminDocument[] = [
   },
 ];
 
-const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Reference Lists', 'Toolkit'];
+const categories = ['All', 'Legal & Tax', 'Governance', 'Forms', 'Safety Guidelines', 'Labels & Printing', 'Sandwich Making', 'Reference Lists', 'Toolkit', 'General'];
 
 // Logo files information
 const logoFiles = [
@@ -312,6 +362,40 @@ const logoFiles = [
   },
 ];
 
+/** Helper to map MIME type to AdminDocument type */
+function mimeToDocType(mime: string): AdminDocument['type'] {
+  if (mime.startsWith('image/')) return 'image';
+  if (mime === 'application/pdf') return 'pdf';
+  if (mime.includes('wordprocessingml') || mime === 'application/msword') return 'docx';
+  if (mime.includes('spreadsheetml') || mime === 'application/vnd.ms-excel') return 'xlsx';
+  return 'pdf'; // default
+}
+
+/** Convert an uploaded DB document to AdminDocument shape */
+function dbDocToAdminDoc(doc: UploadedDocument): AdminDocument {
+  return {
+    id: `uploaded-${doc.id}`,
+    name: doc.title,
+    description: doc.description || '',
+    category: doc.category || 'General',
+    path: doc.filePath.startsWith('/objects/')
+      ? `/api/documents/${doc.id}/download`
+      : doc.filePath,
+    type: mimeToDocType(doc.mimeType),
+    importance: 'normal',
+    dbDocumentId: doc.id,
+    uploadedByName: doc.uploadedByName,
+    createdAt: doc.createdAt,
+  };
+}
+
+/** Format file size for display */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ImportantDocuments() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const { toast } = useToast();
@@ -321,6 +405,44 @@ export default function ImportantDocuments() {
   const [previewDocument, setPreviewDocument] = useState<AdminDocument | null>(
     null
   );
+
+  // Uploaded documents from the database
+  const [uploadedDocs, setUploadedDocs] = useState<UploadedDocument[]>([]);
+  const [loadingUploaded, setLoadingUploaded] = useState(true);
+
+  // Upload dialog state
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState('');
+  const [uploadDescription, setUploadDescription] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('General');
+  const [uploadImportance, setUploadImportance] = useState<'critical' | 'high' | 'normal'>('normal');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete confirmation state
+  const [deleteDocId, setDeleteDocId] = useState<number | null>(null);
+  const [deleteDocName, setDeleteDocName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const isSuperAdmin = !!user && !isAuthLoading &&
+    (user.role === 'super_admin' || user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
+
+  // Fetch uploaded documents from the database
+  const fetchUploadedDocs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/documents', { credentials: 'include' });
+      if (res.ok) {
+        const data: UploadedDocument[] = await res.json();
+        // Filter to only active documents; confidential docs are already filtered server-side
+        setUploadedDocs(data.filter(d => d.isActive));
+      }
+    } catch (err) {
+      logger.error('Failed to fetch uploaded documents:', err);
+    } finally {
+      setLoadingUploaded(false);
+    }
+  }, []);
 
   // Track page view for activity tracking
   useEffect(() => {
@@ -337,11 +459,22 @@ export default function ImportantDocuments() {
     track('view_important_documents');
   }, []);
 
+  // Load uploaded documents
+  useEffect(() => {
+    fetchUploadedDocs();
+  }, [fetchUploadedDocs]);
+
   // Show confidential tab only to admin users
   const hasConfidentialAccess = !!user && !isAuthLoading &&
     (user.email === 'admin@sandwich.project' || user.email === 'katielong2316@gmail.com');
 
-  const filteredDocuments = adminDocuments.filter(
+  // Merge static + uploaded documents
+  const allDocuments: AdminDocument[] = [
+    ...adminDocuments,
+    ...uploadedDocs.map(dbDocToAdminDoc),
+  ];
+
+  const filteredDocuments = allDocuments.filter(
     (doc) => {
       if (selectedCategory === 'All') return true;
       // Map "Toolkit" filter to "Tools" category for backward compatibility
@@ -349,6 +482,118 @@ export default function ImportantDocuments() {
       return doc.category === categoryToMatch;
     }
   );
+
+  // Upload handler
+  const handleUpload = async () => {
+    if (!uploadFile || !uploadTitle.trim()) {
+      toast({ title: 'Missing fields', description: 'Please provide a file and title.', variant: 'destructive' });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Step 1: Request presigned upload URL
+      const urlRes = await fetch('/api/documents/request-upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: uploadFile.name,
+          size: uploadFile.size,
+          contentType: uploadFile.type,
+        }),
+      });
+
+      if (!urlRes.ok) {
+        const err = await urlRes.json();
+        throw new Error(err.error || 'Failed to get upload URL');
+      }
+
+      const { uploadURL, objectPath } = await urlRes.json();
+
+      // Step 2: Upload file to cloud storage
+      const uploadRes = await fetch(uploadURL, {
+        method: 'PUT',
+        headers: { 'Content-Type': uploadFile.type },
+        body: uploadFile,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload file to storage');
+      }
+
+      // Step 3: Create document record in database
+      const createRes = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: uploadTitle.trim(),
+          description: uploadDescription.trim() || null,
+          category: uploadCategory,
+          fileName: uploadFile.name,
+          originalName: uploadFile.name,
+          fileSize: uploadFile.size,
+          mimeType: uploadFile.type,
+          objectPath,
+        }),
+      });
+
+      if (!createRes.ok) {
+        const err = await createRes.json();
+        throw new Error(err.error || 'Failed to create document record');
+      }
+
+      toast({ title: 'Document uploaded', description: `"${uploadTitle.trim()}" has been added successfully.` });
+
+      // Reset form and refresh
+      setUploadDialogOpen(false);
+      resetUploadForm();
+      fetchUploadedDocs();
+    } catch (err: any) {
+      logger.error('Upload failed:', err);
+      toast({ title: 'Upload failed', description: err.message || 'Something went wrong. Please try again.', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const resetUploadForm = () => {
+    setUploadFile(null);
+    setUploadTitle('');
+    setUploadDescription('');
+    setUploadCategory('General');
+    setUploadImportance('normal');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Delete handler
+  const handleDelete = async () => {
+    if (!deleteDocId) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/documents/${deleteDocId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to delete document');
+      }
+
+      toast({ title: 'Document removed', description: `"${deleteDocName}" has been removed.` });
+      setDeleteDocId(null);
+      setDeleteDocName('');
+      fetchUploadedDocs();
+    } catch (err: any) {
+      logger.error('Delete failed:', err);
+      toast({ title: 'Delete failed', description: err.message || 'Something went wrong.', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleDownload = async (doc: AdminDocument) => {
     if (doc.type === 'link') {
@@ -375,6 +620,12 @@ export default function ImportantDocuments() {
   const handlePreview = (doc: AdminDocument) => {
     if (doc.type === 'link') {
       window.open(doc.path, '_blank');
+    } else if (doc.dbDocumentId) {
+      // For uploaded documents, use the preview endpoint
+      setPreviewDocument({
+        ...doc,
+        path: `/api/documents/${doc.dbDocumentId}/preview`,
+      });
     } else {
       setPreviewDocument(doc);
     }
@@ -526,27 +777,40 @@ export default function ImportantDocuments() {
     <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-16">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
-              <FileText className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                Important Documents & Logos
-              </h1>
-              <p className="text-lg text-gray-600">
-                Key documents, forms, and official logos for The Sandwich
-                Project
-              </p>
-              <div className="mt-3 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2 inline-block">
-                <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
-                  Organization EIN
-                </div>
-                <div className="text-lg font-bold text-teal-900 font-mono">
-                  87-0939484
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-brand-primary to-brand-primary-dark rounded-xl shadow-[0_4px_12px_rgba(35,99,131,0.15),0_2px_4px_rgba(35,99,131,0.1)] hover:shadow-[0_8px_24px_rgba(35,99,131,0.2),0_4px_8px_rgba(35,99,131,0.15)] transition-all duration-300 ease-in-out">
+                <FileText className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                  Important Documents & Logos
+                </h1>
+                <p className="text-lg text-gray-600">
+                  Key documents, forms, and official logos for The Sandwich
+                  Project
+                </p>
+                <div className="mt-3 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2 inline-block">
+                  <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
+                    Organization EIN
+                  </div>
+                  <div className="text-lg font-bold text-teal-900 font-mono">
+                    87-0939484
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Upload button - admin only */}
+            {isSuperAdmin && (
+              <Button
+                onClick={() => setUploadDialogOpen(true)}
+                className="bg-brand-primary hover:bg-brand-primary-dark text-white px-6 py-3 text-base font-medium flex items-center gap-2 shadow-md"
+              >
+                <Plus className="w-5 h-5" />
+                Upload Document
+              </Button>
+            )}
           </div>
         </div>
 
@@ -620,7 +884,11 @@ export default function ImportantDocuments() {
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start space-x-4 min-w-0 flex-1">
                         <div className="flex-shrink-0 p-3 bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-xl shadow-inner">
-                          <FileText className="h-5 w-5 text-brand-primary" />
+                          {doc.dbDocumentId ? (
+                            <Cloud className="h-5 w-5 text-brand-primary" />
+                          ) : (
+                            <FileText className="h-5 w-5 text-brand-primary" />
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <CardTitle className="text-lg font-bold text-gray-900 leading-tight group-hover:text-brand-primary transition-colors break-words">
@@ -628,6 +896,22 @@ export default function ImportantDocuments() {
                           </CardTitle>
                         </div>
                       </div>
+                      {/* Delete button for uploaded documents - admin only */}
+                      {isSuperAdmin && doc.dbDocumentId && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="flex-shrink-0 h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteDocId(doc.dbDocumentId!);
+                            setDeleteDocName(doc.name);
+                          }}
+                          title="Remove this document"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                       <Badge className="text-xs font-semibold px-3 py-1 bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 rounded-full shadow-sm">
@@ -640,6 +924,11 @@ export default function ImportantDocuments() {
                         {doc.type.toUpperCase()}
                       </Badge>
                       {getImportanceBadge(doc.importance)}
+                      {doc.dbDocumentId && (
+                        <Badge variant="outline" className="text-xs px-2 py-0.5 border-teal-300 text-teal-600 bg-teal-50 rounded-full">
+                          Uploaded
+                        </Badge>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 flex-1 flex flex-col px-6 pb-6">
@@ -915,6 +1204,168 @@ export default function ImportantDocuments() {
             </div>
           </div>
         )}
+
+        {/* Upload Document Dialog */}
+        <Dialog open={uploadDialogOpen} onOpenChange={(open) => {
+          setUploadDialogOpen(open);
+          if (!open) resetUploadForm();
+        }}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-brand-primary">
+                <Upload className="w-5 h-5" />
+                Upload New Document
+              </DialogTitle>
+              <DialogDescription>
+                Upload a document to make it available on this page. Supported formats: PDF, Word, Excel, PowerPoint, images, and CSV.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              {/* File picker */}
+              <div>
+                <Label htmlFor="upload-file" className="text-sm font-medium">File</Label>
+                <div className="mt-1">
+                  <input
+                    ref={fileInputRef}
+                    id="upload-file"
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.csv"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setUploadFile(file);
+                      // Auto-fill title from filename if empty
+                      if (file && !uploadTitle) {
+                        const nameWithoutExt = file.name.replace(/\.[^.]+$/, '');
+                        setUploadTitle(nameWithoutExt);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 cursor-pointer"
+                  />
+                  {uploadFile && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {uploadFile.name} ({formatFileSize(uploadFile.size)})
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Title */}
+              <div>
+                <Label htmlFor="upload-title" className="text-sm font-medium">Title</Label>
+                <Input
+                  id="upload-title"
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g., Volunteer Handbook 2026"
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <Label htmlFor="upload-desc" className="text-sm font-medium">Description (optional)</Label>
+                <Textarea
+                  id="upload-desc"
+                  value={uploadDescription}
+                  onChange={(e) => setUploadDescription(e.target.value)}
+                  placeholder="Brief description of this document"
+                  rows={2}
+                  className="mt-1"
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <Label className="text-sm font-medium">Category</Label>
+                <Select value={uploadCategory} onValueChange={setUploadCategory}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="General">General</SelectItem>
+                    <SelectItem value="Legal & Tax">Legal & Tax</SelectItem>
+                    <SelectItem value="Governance">Governance</SelectItem>
+                    <SelectItem value="Forms">Forms</SelectItem>
+                    <SelectItem value="Safety Guidelines">Safety Guidelines</SelectItem>
+                    <SelectItem value="Labels & Printing">Labels & Printing</SelectItem>
+                    <SelectItem value="Sandwich Making">Sandwich Making</SelectItem>
+                    <SelectItem value="Reference Lists">Reference Lists</SelectItem>
+                    <SelectItem value="Tools">Tools</SelectItem>
+                    <SelectItem value="confidential">Confidential</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setUploadDialogOpen(false);
+                  resetUploadForm();
+                }}
+                disabled={uploading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpload}
+                disabled={uploading || !uploadFile || !uploadTitle.trim()}
+                className="bg-brand-primary hover:bg-brand-primary-dark text-white"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteDocId} onOpenChange={(open) => {
+          if (!open) {
+            setDeleteDocId(null);
+            setDeleteDocName('');
+          }
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Document</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove "{deleteDocName}"? This will remove it from the documents page. The file can be recovered by an administrator if needed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Remove
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

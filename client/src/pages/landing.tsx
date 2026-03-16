@@ -7,12 +7,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Heart,
   Users,
   Calendar,
   MessageSquare,
   TrendingUp,
-  MapPin,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';

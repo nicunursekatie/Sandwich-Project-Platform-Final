@@ -3,9 +3,6 @@
  *
  * These functions use the JSONB fields (driverDetails, speakerDetails, volunteerDetails)
  * as the source of truth, rather than the legacy array columns.
- *
- * This consolidates the dual-storage pattern where both arrays and JSONB exist.
- * Mirrors the client-side assignment-utils.ts for consistency.
  */
 
 type EventWithAssignments = {
@@ -42,10 +39,7 @@ function parseDetails(details?: Record<string, any> | string | null): Record<str
   return null;
 }
 
-/**
- * Get all driver IDs from the event (excluding van driver)
- */
-export function getDriverIds(event: EventWithAssignments): string[] {
+function getDriverIds(event: EventWithAssignments): string[] {
   const parsed = parseDetails(event.driverDetails);
   if (parsed) return Object.keys(parsed);
   if (event.assignedDriverIds && event.assignedDriverIds.length > 0) {
@@ -54,10 +48,7 @@ export function getDriverIds(event: EventWithAssignments): string[] {
   return [];
 }
 
-/**
- * Get count of regular drivers assigned (excluding van driver and DHL)
- */
-export function getDriverCount(event: EventWithAssignments): number {
+function getDriverCount(event: EventWithAssignments): number {
   return getDriverIds(event).length;
 }
 
@@ -71,26 +62,7 @@ export function getTotalDriverCount(event: EventWithAssignments): number {
   return count;
 }
 
-/**
- * Check if a specific person is assigned as a driver
- */
-export function hasDriver(event: EventWithAssignments, personId: string): boolean {
-  const parsed = parseDetails(event.driverDetails);
-  return !!(parsed?.[personId]);
-}
-
-/**
- * Get driver details for a specific person
- */
-export function getDriverDetail(event: EventWithAssignments, personId: string): any | null {
-  const parsed = parseDetails(event.driverDetails);
-  return parsed?.[personId] ?? null;
-}
-
-/**
- * Get all speaker IDs from the event
- */
-export function getSpeakerIds(event: EventWithAssignments): string[] {
+function getSpeakerIds(event: EventWithAssignments): string[] {
   const parsed = parseDetails(event.speakerDetails);
   if (parsed) return Object.keys(parsed);
   if (event.assignedSpeakerIds && event.assignedSpeakerIds.length > 0) {
@@ -106,26 +78,7 @@ export function getSpeakerCount(event: EventWithAssignments): number {
   return getSpeakerIds(event).length;
 }
 
-/**
- * Check if a specific person is assigned as a speaker
- */
-export function hasSpeaker(event: EventWithAssignments, personId: string): boolean {
-  const parsed = parseDetails(event.speakerDetails);
-  return !!(parsed?.[personId]);
-}
-
-/**
- * Get speaker details for a specific person
- */
-export function getSpeakerDetail(event: EventWithAssignments, personId: string): any | null {
-  const parsed = parseDetails(event.speakerDetails);
-  return parsed?.[personId] ?? null;
-}
-
-/**
- * Get all volunteer IDs from the event
- */
-export function getVolunteerIds(event: EventWithAssignments): string[] {
+function getVolunteerIds(event: EventWithAssignments): string[] {
   const parsed = parseDetails(event.volunteerDetails);
   if (parsed) return Object.keys(parsed);
   if (event.assignedVolunteerIds && event.assignedVolunteerIds.length > 0) {
@@ -139,32 +92,6 @@ export function getVolunteerIds(event: EventWithAssignments): string[] {
  */
 export function getVolunteerCount(event: EventWithAssignments): number {
   return getVolunteerIds(event).length;
-}
-
-/**
- * Check if a specific person is assigned as a volunteer
- */
-export function hasVolunteer(event: EventWithAssignments, personId: string): boolean {
-  const parsed = parseDetails(event.volunteerDetails);
-  return !!(parsed?.[personId]);
-}
-
-/**
- * Get volunteer details for a specific person
- */
-export function getVolunteerDetail(event: EventWithAssignments, personId: string): any | null {
-  const parsed = parseDetails(event.volunteerDetails);
-  return parsed?.[personId] ?? null;
-}
-
-/**
- * Check if a person is assigned in any role
- */
-export function isPersonAssigned(event: EventWithAssignments, personId: string): boolean {
-  return hasDriver(event, personId) ||
-         hasSpeaker(event, personId) ||
-         hasVolunteer(event, personId) ||
-         event.assignedVanDriverId === personId;
 }
 
 /**

@@ -1438,6 +1438,7 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
       hasHostedEvent: boolean;
       latestEventDate: Date | null;
       statuses: Set<string>;
+      locations: Set<string>;
     }>();
 
     // Process event requests
@@ -1453,6 +1454,7 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
           hasHostedEvent: false,
           latestEventDate: null,
           statuses: new Set(),
+          locations: new Set(),
         });
       }
 
@@ -1462,6 +1464,10 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
 
       if (e.status) {
         org.statuses.add(e.status);
+      }
+
+      if (e.eventAddress) {
+        org.locations.add(e.eventAddress);
       }
 
       if (e.status === 'completed' || e.status === 'contact_completed') {
@@ -1491,6 +1497,7 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
             hasHostedEvent: true, // If in collections, they hosted
             latestEventDate: c.collectionDate ? new Date(c.collectionDate) : null,
             statuses: new Set(['completed']),
+            locations: new Set(),
           });
         }
 
@@ -1556,7 +1563,13 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
     const orgList = allOrgs
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 50)
-      .map(o => `- ${o.name}${o.eventCount > 0 ? ` - ${o.eventCount} events` : ''}${o.sandwichCount > 0 ? `, ${o.sandwichCount.toLocaleString()} sandwiches` : ''}`);
+      .map(o => {
+        const parts = [`- ${o.name}`];
+        if (o.eventCount > 0) parts.push(`${o.eventCount} events`);
+        if (o.sandwichCount > 0) parts.push(`${o.sandwichCount.toLocaleString()} sandwiches`);
+        if (o.locations.size > 0) parts.push(`locations: ${Array.from(o.locations).join('; ')}`);
+        return parts.join(' | ');
+      });
 
     // Use contextData from the component if available
     const componentStats = contextData?.summaryStats;
@@ -1594,8 +1607,15 @@ ${recentOrgs.join('\n') || '- No recent activity'}
 ### Groups Directory (first 50 alphabetically)
 ${orgList.join('\n')}
 
+### Organizations with Known Locations
+${allOrgs
+  .filter(o => o.locations.size > 0)
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map(o => `- ${o.name}: ${Array.from(o.locations).join('; ')}`)
+  .join('\n') || '- No location data available'}
+
 ### About This Data
-The Groups Catalog tracks all partner organizations that work with The Sandwich Project for sandwich-making events, including schools, churches, businesses, nonprofits, and community organizations. Data is derived from event requests and sandwich collection logs.
+The Groups Catalog tracks all partner organizations that work with The Sandwich Project for sandwich-making events, including schools, churches, businesses, nonprofits, and community organizations. Data is derived from event requests and sandwich collection logs. Location data comes from event addresses — this may be the organization's own location, a member's home, a church, or another venue where sandwiches were made. Use these addresses to answer questions about which groups are near a particular city or area.
 `;
   } catch (error) {
     logger.error('Error building organizations context', { error });

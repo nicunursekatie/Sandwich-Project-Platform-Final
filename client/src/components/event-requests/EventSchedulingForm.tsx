@@ -1,8 +1,10 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEventRequestContext } from './context/EventRequestContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -19,6 +21,7 @@ import {
 import {
   Trash2,
   FileText,
+  StickyNote,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
@@ -260,6 +263,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
 
+  // Scratchpad context for opening the standalone scratchpad dialog
+  const { setScratchpadEventRequest, setShowScratchpad } = useEventRequestContext();
+
   // ── Data Fetching ──────────────────────────────────────────────────
 
   const { data: fullEventRequest } = useQuery<EventRequest>({
@@ -341,6 +347,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Version tracking for optimistic locking
+  const callNotesExpectedVersionRef = useRef<string | null>(null);
+
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -348,6 +358,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Derived Values ─────────────────────────────────────────────────
 
   const isCreateMode = mode === 'create' || !eventRequest;
+
+
+
 
   const canRemoveCorporatePriority = useMemo(() => {
     const allowedEmails = [
@@ -684,13 +697,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (isCreateMode) setShowContactInfo(true);
   }, [isCreateMode]);
 
+  // ── Version Tracking for Optimistic Locking ──────────────────────
+
+  useEffect(() => {
+    callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
+  }, [effectiveEventRequest?.updatedAt]);
+
+  // ── Sync message field from scratchpad ──────────────────────────
+  // When the standalone scratchpad syncs call notes to the server, the query cache
+  // updates effectiveEventRequest.message. Keep the form in sync so saving the form
+  // doesn't overwrite the scratchpad's notes with stale data.
+  useEffect(() => {
+    if (!formInitialized || !effectiveEventRequest?.message) return;
+    const serverMessage = effectiveEventRequest.message || '';
+    const baselineMessage = originalFormDataRef.current?.message || '';
+    const formMessage = (formData as any).message || '';
+
+    // Only update if: server message changed from baseline AND form hasn't locally modified it
+    if (serverMessage !== baselineMessage && formMessage === baselineMessage) {
+      setFormData((prev: any) => ({ ...prev, message: serverMessage }));
+      if (originalFormDataRef.current) {
+        originalFormDataRef.current = { ...originalFormDataRef.current, message: serverMessage };
+      }
+    }
+  }, [effectiveEventRequest?.message, formInitialized]);
+
+
   // ── Mutations ──────────────────────────────────────────────────────
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
       const payload = { ...data };
       // Use effectiveEventRequest (full data) for version check, not the stale prop
-      const latestUpdatedAt = effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
+      const latestUpdatedAt = callNotesExpectedVersionRef.current || effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
       if (latestUpdatedAt) payload._expectedVersion = latestUpdatedAt;
       return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },
@@ -753,6 +792,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onClose();
     },
     onError: (error: any) => {
+      setIsSubmitting(false);
+      saveToLocalStorage();
       const serverMessage = error?.data?.message || error?.message;
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       let errorTitle = 'Creation Failed';
@@ -839,13 +880,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return;
     }
 
-    // Manual entry source required for new events
+    // Manual entry source is strongly recommended, but should not block saves.
+    // Intake often captures details over multiple touchpoints/calls.
     if (isCreateMode && !formData.manualEntrySource) {
-      logger.log('⛔ Save blocked: no manual entry source');
-      alert('Please select where this request came from before submitting.');
-      setIsSubmitting(false);
+      logger.log('⚠️ Save continuing without manual entry source');
+      toast({
+        title: 'Request source not selected',
+        description: 'Save will continue. You can add "How did this request come in?" later from Primary Contact Information.',
+        duration: 5000,
+      });
       setShowContactInfo(true);
-      return;
     }
 
     // Build server payload using extracted utility
@@ -995,6 +1039,27 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           )}
 
+          {/* Open Call Notes Scratchpad button */}
+          <div className="mb-4" data-testid="call-notes-scratchpad">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 flex items-center justify-center gap-2 py-3"
+              onClick={() => {
+                if (eventRequest) {
+                  setScratchpadEventRequest(eventRequest);
+                  setShowScratchpad(true);
+                }
+              }}
+            >
+              <StickyNote className="w-4 h-4" />
+              Open Call Notes Scratchpad
+              {formData.message && (
+                <span className="text-xs opacity-75 ml-1">(has notes)</span>
+              )}
+            </Button>
+          </div>
+
           {/* Progress Indicator */}
           <div className="bg-slate-50 rounded-lg p-3 border mb-4">
             <div className="flex items-center justify-between mb-2">
@@ -1007,114 +1072,143 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           </div>
 
+          {/* Workflow Guidance */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-900 font-medium">Lifecycle workflow guidance</p>
+            <p className="text-sm text-blue-800 mt-1">
+              Save anytime as details come in. To move to <span className="font-semibold">Scheduled</span>, only an event date is required.
+              All other details can be completed later.
+            </p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
 
-            {/* Contact Info */}
-            <ContactInfoSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isExpanded={showContactInfo}
-              onToggle={() => setShowContactInfo(!showContactInfo)}
-              isComplete={sectionStatus.contact}
-              isCreateMode={isCreateMode}
-            />
+            {/* Lifecycle & Core Scheduling */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">1) Lifecycle & Core Scheduling</h3>
 
-            {/* Backup Contact */}
-            <BackupContactSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isExpanded={showBackupContactInfo}
-              onToggle={() => setShowBackupContactInfo(!showBackupContactInfo)}
-            />
+              {/* Status & Toolkit */}
+              <StatusToolkitSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                eventRequest={eventRequest}
+                canRemoveCorporatePriority={!!canRemoveCorporatePriority}
+                onStatusChange={handleStatusChange}
+              />
 
-            {/* Status & Toolkit */}
-            <StatusToolkitSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              eventRequest={eventRequest}
-              canRemoveCorporatePriority={!!canRemoveCorporatePriority}
-              onStatusChange={handleStatusChange}
-            />
-
-            {/* Event Schedule */}
-            <EventScheduleSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isComplete={sectionStatus.schedule}
-              eventRequest={eventRequest}
-              formatDateForInput={formatDateForInput}
-              onVanConflictReset={() => setVanConflictChecked(false)}
-              onScheduledDateChange={(newDate) => {
-                setPendingDateChange(newDate);
-                setShowDateConfirmation(true);
-              }}
-            />
-
-            {/* Delivery */}
-            <DeliverySection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-            />
-
-            {/* Sandwich Planning */}
-            <SandwichPlanningSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              sandwichMode={sandwichMode}
-              setSandwichMode={setSandwichMode}
-              isComplete={sectionStatus.sandwiches}
-            />
-
-            {/* Attendees */}
-            <AttendeeSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              attendeeMode={attendeeMode}
-              setAttendeeMode={setAttendeeMode}
-            />
-
-            {/* Refrigeration */}
-            <div>
-              <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
-              <Select value={formData.hasRefrigeration} onValueChange={(value) => setFormData(prev => ({ ...prev, hasRefrigeration: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select refrigeration status" />
-                </SelectTrigger>
-                <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-                  <SelectItem value="true">Yes</SelectItem>
-                  <SelectItem value="false">No</SelectItem>
-                  <SelectItem value="unknown">Unknown</SelectItem>
-                </SelectContent>
-              </Select>
-              <RefrigerationWarningAlert
-                sandwichTypes={formData.sandwichTypes}
-                hasRefrigeration={
-                  formData.hasRefrigeration === 'true' ? true :
-                  formData.hasRefrigeration === 'false' ? false : null
-                }
-                className="mt-2"
+              {/* Event Schedule */}
+              <EventScheduleSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isComplete={sectionStatus.schedule}
+                eventRequest={eventRequest}
+                formatDateForInput={formatDateForInput}
+                onVanConflictReset={() => setVanConflictChecked(false)}
+                onScheduledDateChange={(newDate) => {
+                  setPendingDateChange(newDate);
+                  setShowDateConfirmation(true);
+                }}
               />
             </div>
 
-            {/* Resource Requirements */}
-            <ResourceRequirementsSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              vanDrivers={vanDrivers}
-              isComplete={sectionStatus.resources}
-            />
+            {/* Contacts */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">2) Contacts</h3>
 
-            {/* TSP Contact */}
-            <TspContactSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              users={users}
-              isCollaborationEnabled={isCollaborationEnabled}
-              isFieldLockedByOther={isFieldLockedByOther}
-              getFieldLock={getFieldLock}
-              handleFieldFocus={handleFieldFocus}
-              handleFieldBlur={handleFieldBlur}
-            />
+              {/* Contact Info */}
+              <ContactInfoSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isExpanded={showContactInfo}
+                onToggle={() => setShowContactInfo(!showContactInfo)}
+                isComplete={sectionStatus.contact}
+                isCreateMode={isCreateMode}
+              />
+
+              {/* Backup Contact */}
+              <BackupContactSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isExpanded={showBackupContactInfo}
+                onToggle={() => setShowBackupContactInfo(!showBackupContactInfo)}
+              />
+            </div>
+
+            {/* Planning & Logistics */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">3) Planning & Logistics</h3>
+
+              {/* Sandwich Planning */}
+              <SandwichPlanningSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                sandwichMode={sandwichMode}
+                setSandwichMode={setSandwichMode}
+                isComplete={sectionStatus.sandwiches}
+              />
+
+              {/* Attendees */}
+              <AttendeeSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                attendeeMode={attendeeMode}
+                setAttendeeMode={setAttendeeMode}
+              />
+
+              {/* Delivery */}
+              <DeliverySection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                eventRequestId={eventRequest?.id}
+              />
+
+              {/* Refrigeration */}
+              <div>
+                <Label htmlFor="hasRefrigeration">Refrigeration Available?</Label>
+                <Select value={formData.hasRefrigeration} onValueChange={(value) => setFormData(prev => ({ ...prev, hasRefrigeration: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select refrigeration status" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                    <SelectItem value="true">Yes</SelectItem>
+                    <SelectItem value="false">No</SelectItem>
+                    <SelectItem value="unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+                <RefrigerationWarningAlert
+                  sandwichTypes={formData.sandwichTypes}
+                  hasRefrigeration={
+                    formData.hasRefrigeration === 'true' ? true :
+                    formData.hasRefrigeration === 'false' ? false : null
+                  }
+                  className="mt-2"
+                />
+              </div>
+
+              {/* Resource Requirements */}
+              <ResourceRequirementsSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                vanDrivers={vanDrivers}
+                isComplete={sectionStatus.resources}
+              />
+            </div>
+
+            {/* Internal Coordination */}
+            <div className="bg-white border rounded-lg p-4 space-y-4">
+              <h3 className="text-base font-semibold text-[#236383]">4) Internal Coordination & Notes</h3>
+
+              {/* TSP Contact */}
+              <TspContactSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                users={users}
+                isCollaborationEnabled={isCollaborationEnabled}
+                isFieldLockedByOther={isFieldLockedByOther}
+                getFieldLock={getFieldLock}
+                handleFieldFocus={handleFieldFocus}
+                handleFieldBlur={handleFieldBlur}
+              />
 
             {/* Contact Attempts History */}
             {eventRequest && (eventRequest.contactAttempts > 0 || eventRequest.unresponsiveNotes) && (
@@ -1167,26 +1261,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </div>
             )}
 
-            {/* Notes & Requirements */}
-            <NotesSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-              isComplete={sectionStatus.notes}
-              eventRequest={eventRequest}
-              isMessageEditable={isMessageEditable}
-              setIsMessageEditable={setIsMessageEditable}
-              isCollaborationEnabled={isCollaborationEnabled}
-              isFieldLockedByOther={isFieldLockedByOther}
-              getFieldLock={getFieldLock}
-              handleFieldFocus={handleFieldFocus}
-              handleFieldBlur={handleFieldBlur}
-            />
+              {/* Notes & Requirements */}
+              <NotesSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+                isComplete={sectionStatus.notes}
+                isMessageEditable={isMessageEditable}
+                setIsMessageEditable={setIsMessageEditable}
+                isCollaborationEnabled={isCollaborationEnabled}
+                isFieldLockedByOther={isFieldLockedByOther}
+                getFieldLock={getFieldLock}
+                handleFieldFocus={handleFieldFocus}
+                handleFieldBlur={handleFieldBlur}
+              />
 
-            {/* Volunteer Instructions */}
-            <InstructionsSection
-              formData={formData as EventFormData}
-              setFormData={setFormData}
-            />
+              {/* Volunteer Instructions */}
+              <InstructionsSection
+                formData={formData as EventFormData}
+                setFormData={setFormData}
+              />
+            </div>
 
             {/* Completed Event Details */}
             <CompletedEventSection

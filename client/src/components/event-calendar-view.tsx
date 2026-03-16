@@ -344,11 +344,8 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [statusFilters, setStatusFilters] = useState<string[]>([
-    'new',
-    'in_process',
     'scheduled',
-    'completed',
-    'cancelled',
+    'rescheduled',
   ]);
   const [hideCancelled, setHideCancelled] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -396,12 +393,26 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     return filtered;
   }, [events, statusFilters, filterByNeeds, hideCancelled]);
 
+  const ALL_STATUSES = ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'cancelled'];
+
   const toggleStatusFilter = (status: string) => {
-    setStatusFilters((prev) =>
-      prev.includes(status)
-        ? prev.filter((s) => s !== status)
-        : [...prev, status]
-    );
+    // Toggling 'scheduled' also toggles 'rescheduled' since they're shown together
+    if (status === 'scheduled') {
+      setStatusFilters((prev) => {
+        const hasScheduled = prev.includes('scheduled');
+        if (hasScheduled) {
+          return prev.filter((s) => s !== 'scheduled' && s !== 'rescheduled');
+        } else {
+          return [...prev, 'scheduled', 'rescheduled'];
+        }
+      });
+    } else {
+      setStatusFilters((prev) =>
+        prev.includes(status)
+          ? prev.filter((s) => s !== status)
+          : [...prev, status]
+      );
+    }
   };
 
   // Get the first and last day of the current month
@@ -591,15 +602,28 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                 <Button variant="outline" size="sm" className="px-2 sm:px-3">
                   <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
                   <span className="hidden sm:inline">Filter Status</span>
-                  {statusFilters.length < 5 && (
+                  {statusFilters.length < ALL_STATUSES.length && (
                     <Badge variant="secondary" className="ml-1 sm:ml-2 text-[10px] sm:text-xs">
-                      {statusFilters.length}
+                      {statusFilters.filter(s => s !== 'rescheduled').length}
                     </Badge>
                   )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={statusFilters.length === ALL_STATUSES.length}
+                  onCheckedChange={() => {
+                    if (statusFilters.length === ALL_STATUSES.length) {
+                      setStatusFilters(['scheduled', 'rescheduled']);
+                    } else {
+                      setStatusFilters([...ALL_STATUSES]);
+                    }
+                  }}
+                >
+                  <span className="font-medium text-sm">Select All</span>
+                </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuCheckboxItem
                   checked={statusFilters.includes('new')}

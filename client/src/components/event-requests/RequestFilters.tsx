@@ -22,6 +22,7 @@ import {
   Pause,
   BarChart3,
   ClipboardList,
+  Truck,
   LayoutList,
   Hourglass,
   AlertCircle,
@@ -82,6 +83,7 @@ interface RequestFiltersProps {
     my_assignments: ReactNode;
     admin_overview?: ReactNode;
     planning?: ReactNode;
+    sandwich_overview?: ReactNode;
   };
 
   // Pagination info
@@ -143,6 +145,16 @@ export default function RequestFilters({
       label: 'Planning',
       shortLabel: 'Planning',
       icon: ClipboardList,
+    });
+  }
+
+  // Add sandwich destination overview tab if user has permission
+  if (hasAdminOverviewPermission && children.sandwich_overview) {
+    tabConfig.push({
+      value: 'sandwich_overview',
+      label: 'Sandwich Destinations',
+      shortLabel: 'Destinations',
+      icon: Truck,
     });
   }
 

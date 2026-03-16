@@ -13,7 +13,6 @@ import {
   Minimize2,
   Maximize2,
   Sparkles,
-  BarChart3,
   Copy,
   Check,
   Image,
