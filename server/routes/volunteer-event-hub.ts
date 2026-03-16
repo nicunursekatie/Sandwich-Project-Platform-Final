@@ -612,11 +612,54 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
       return res.status(404).json({ error: 'Signup not found' });
     }
 
+    const shouldAssignVolunteer = (status === 'confirmed' || status === 'assigned') && !!signup.volunteerUserId;
+
+    // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
+    if (shouldAssignVolunteer) {
+      const [event] = await db
+        .select({
+          id: eventRequests.id,
+          assignedDriverIds: eventRequests.assignedDriverIds,
+          assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+          assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+        })
+        .from(eventRequests)
+        .where(eq(eventRequests.id, signup.eventRequestId))
+        .limit(1);
+
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found for this signup' });
+      }
+
+      const assignedUserId = signup.volunteerUserId as string;
+      const addUnique = (ids?: string[] | null) =>
+        Array.from(new Set([...(ids || []), assignedUserId]));
+
+      const assignmentUpdates: {
+        assignedDriverIds?: string[];
+        assignedSpeakerIds?: string[];
+        assignedVolunteerIds?: string[];
+      } = {};
+
+      if (signup.role === 'driver') {
+        assignmentUpdates.assignedDriverIds = addUnique(event.assignedDriverIds);
+      } else if (signup.role === 'speaker') {
+        assignmentUpdates.assignedSpeakerIds = addUnique(event.assignedSpeakerIds);
+      } else {
+        assignmentUpdates.assignedVolunteerIds = addUnique(event.assignedVolunteerIds);
+      }
+
+      await db
+        .update(eventRequests)
+        .set(assignmentUpdates)
+        .where(eq(eventRequests.id, signup.eventRequestId));
+    }
+
     // Update the signup status
     const [updatedSignup] = await db
       .update(eventVolunteers)
       .set({
-        status,
+        status: shouldAssignVolunteer ? 'assigned' : status,
         confirmedAt: status === 'confirmed' || status === 'assigned' ? new Date() : null,
         assignedBy: coordinatorId,
         notes: notes || signup.notes,
