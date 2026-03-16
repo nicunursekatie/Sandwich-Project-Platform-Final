@@ -509,15 +509,38 @@ meRouter.put('/check-in-reminder-preferences', async (req: AuthenticatedRequest,
       return res.status(400).json({ message: 'rules must be an array' });
     }
 
-    const validateRuleArray = (arr: any[]) => arr.map(r => ({
-      ruleType: VALID_REMINDER_RULE_TYPES.includes(r.ruleType) ? r.ruleType : 'general_checkin',
-      enabled: r.enabled === true,
-      thresholdDays: typeof r.thresholdDays === 'number' && r.thresholdDays > 0 ? r.thresholdDays : 7,
-      frequency: VALID_FREQUENCIES.includes(r.frequency) ? r.frequency : 'weekly',
-    }));
+    type ValidatedRule = { ruleType: string; enabled: boolean; thresholdDays: number; frequency: string };
+    const validateRuleArray = (arr: any[]): ValidatedRule[] | null => {
+      const hasInvalidEntry = arr.some(r => r === null || typeof r !== 'object');
+      if (hasInvalidEntry) {
+        return null; // signal validation failure
+      }
+      const result: ValidatedRule[] = [];
+      for (const r of arr) {
+        if (!VALID_REMINDER_RULE_TYPES.includes(r.ruleType)) {
+          return null; // reject unknown rule types instead of silently coercing
+        }
+        result.push({
+          ruleType: r.ruleType as string,
+          enabled: r.enabled === true,
+          thresholdDays: typeof r.thresholdDays === 'number' && r.thresholdDays > 0 ? r.thresholdDays : 7,
+          frequency: VALID_FREQUENCIES.includes(r.frequency) ? r.frequency : 'weekly',
+        });
+      }
+      return result;
+    };
 
     const validatedRules = validateRuleArray(rules);
-    const validatedCorpRules = Array.isArray(corporateRules) ? validateRuleArray(corporateRules) : undefined;
+    if (validatedRules === null) {
+      return res.status(400).json({ message: 'rules contains invalid entries' });
+    }
+    let validatedCorpRules: ValidatedRule[] | undefined;
+    if (Array.isArray(corporateRules)) {
+      validatedCorpRules = validateRuleArray(corporateRules);
+      if (validatedCorpRules === null) {
+        return res.status(400).json({ message: 'corporateRules contains invalid entries' });
+      }
+    }
 
     const allUsers = await storage.getAllUsers();
     const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);

@@ -5,7 +5,7 @@
  * and provide type safety across the application.
  */
 
-import type { User as DrizzleUser } from './schema';
+import type { User as DrizzleUser, ReminderRuleType } from './schema';
 
 /**
  * SMS Consent structure stored in user metadata
@@ -38,10 +38,11 @@ export interface EventNotificationPreferences {
  * When a user has no per-event overrides, these rules apply automatically.
  */
 export interface DefaultReminderRule {
-  ruleType: string;
+  ruleType: ReminderRuleType;
   enabled: boolean;
   thresholdDays: number;
-  frequency: string; // only used by general_checkin; condition-based rules ignore this
+  /** Frequency for general_checkin; condition-based rules ignore this field */
+  frequency: 'daily' | 'every_3_days' | 'weekly' | 'biweekly';
 }
 
 /**

@@ -16,8 +16,8 @@ const FREQUENCY_DAYS: Record<ReminderFrequency, number> = {
  * Calculate the next due date for a reminder based on its frequency.
  * Always normalizes to 9:00 AM to avoid off-hours notifications.
  */
-export function calculateNextDue(frequency: string, fromDate: Date = new Date()): Date {
-  const days = FREQUENCY_DAYS[frequency as ReminderFrequency] ?? 7;
+export function calculateNextDue(frequency: ReminderFrequency, fromDate: Date = new Date()): Date {
+  const days = FREQUENCY_DAYS[frequency] ?? 7;
   const next = new Date(fromDate);
   next.setDate(next.getDate() + days);
   next.setHours(9, 0, 0, 0);

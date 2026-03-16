@@ -15,6 +15,7 @@ import {
   time,
   date,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -2750,10 +2751,11 @@ export const eventReminderSnoozes = pgTable(
     cancelledAt: timestamp('cancelled_at'), // when snooze was manually cancelled or auto-cleared
   },
   (table) => ({
-    eventUserIdx: uniqueIndex('idx_reminder_snoozes_event_user').on(
-      table.eventRequestId,
-      table.userId,
-    ),
+    // Only one *active* snooze per event+user at a time.
+    // Inactive (cancelled/expired) rows are kept as history and are not constrained.
+    activeEventUserIdx: uniqueIndex('idx_reminder_snoozes_active_event_user')
+      .on(table.eventRequestId, table.userId)
+      .where(sql`active = true`),
     activeIdx: index('idx_reminder_snoozes_active').on(table.active),
   }),
 );

@@ -223,7 +223,7 @@ export function ReminderRulesManager({
   const isAdminUser = user?.role === 'super_admin' || user?.role === 'admin';
   if (!isAssignedContact && !isAdminUser) return null;
 
-  // Fetch per-event rules
+  // Fetch per-event rules — only when the popover is opened to avoid N+1 on event lists
   const { data: rulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ['check-in-reminder', eventRequestId],
     queryFn: async () => {
@@ -233,9 +233,10 @@ export function ReminderRulesManager({
       if (!res.ok) throw new Error('Failed to fetch reminders');
       return res.json();
     },
+    enabled: popoverOpen,
   });
 
-  // Fetch global defaults
+  // Fetch global defaults (shared/cached, safe to always enable)
   const { data: globalPrefs } = useQuery({
     queryKey: ['/api/me/check-in-reminder-preferences'],
     queryFn: async () => {
@@ -247,7 +248,7 @@ export function ReminderRulesManager({
     },
   });
 
-  // Fetch snooze status
+  // Fetch snooze status — only when the popover is opened to avoid N+1 on event lists
   const { data: snoozeData } = useQuery({
     queryKey: ['check-in-snooze', eventRequestId],
     queryFn: async () => {
@@ -257,6 +258,7 @@ export function ReminderRulesManager({
       if (!res.ok) return { snooze: null };
       return res.json();
     },
+    enabled: popoverOpen,
   });
 
   const existingRules: ReminderRule[] = rulesData?.reminders || [];

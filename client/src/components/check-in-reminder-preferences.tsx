@@ -10,7 +10,7 @@
  * an optional "Customize" escape hatch.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { AlarmClock, Loader2, Save, Info, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -179,15 +179,17 @@ export default function CheckInReminderPreferencesEditor() {
     () => serverPrefs?.corporateRules?.some((r) => r.enabled) ?? false,
   );
 
-  // Reset local state when server data changes
-  const [lastServerSnapshot, setLastServerSnapshot] = useState(serverPrefs);
-  if (serverPrefs !== lastServerSnapshot) {
-    setLastServerSnapshot(serverPrefs);
+  // Reset local state when server data changes (e.g. after a reload or cache update).
+  // `defaultRules` and `defaultCorpRules` are useMemo values derived solely from
+  // `serverPrefs`, so they will always be in sync when `serverPrefs` changes.
+  // Including them as effect dependencies would cause a double-run without benefit.
+  useEffect(() => {
     setRules(defaultRules);
     setCorpRules(defaultCorpRules);
     setChannel(serverPrefs?.defaultChannel ?? 'email');
     setShowCorporate(serverPrefs?.corporateRules?.some((r) => r.enabled) ?? false);
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverPrefs]);
 
   const saveMutation = useMutation({
     mutationFn: (prefs: Prefs) =>
