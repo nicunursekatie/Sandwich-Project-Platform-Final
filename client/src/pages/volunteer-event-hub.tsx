@@ -636,7 +636,8 @@ export default function VolunteerEventHub() {
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [showOnlyNeeds, setShowOnlyNeeds] = useState(false); // Default to showing all events
+  const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // User location for distance calculation on map
   const [userAddress, setUserAddress] = useState('');
@@ -732,13 +733,42 @@ export default function VolunteerEventHub() {
 
   // Filter events
   const filteredEvents = useMemo(() => {
-    return events.filter(event => {
-      if (roleFilter === 'speaker' && event.speakersUnfilled === 0) return false;
-      if (roleFilter === 'volunteer' && event.volunteersUnfilled === 0) return false;
-      if (roleFilter === 'driver' && event.driversUnfilled === 0) return false;
-      return true;
-    });
-  }, [events, roleFilter]);
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return events
+      .filter(event => {
+        if (normalizedSearch) {
+          const searchableText = [
+            event.organizationName,
+            event.organizationCategory || '',
+            event.department || '',
+            event.eventAddress || '',
+            event.city || '',
+            event.state || '',
+            event.eventNotes || '',
+          ].join(' ').toLowerCase();
+
+          if (!searchableText.includes(normalizedSearch)) return false;
+        }
+
+        if (roleFilter === 'speaker' && event.speakersUnfilled === 0) return false;
+        if (roleFilter === 'volunteer' && event.volunteersUnfilled === 0) return false;
+        if (roleFilter === 'driver' && event.driversUnfilled === 0) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.hasUnfilledNeeds !== b.hasUnfilledNeeds) {
+          return a.hasUnfilledNeeds ? -1 : 1;
+        }
+
+        const dateA = a.scheduledEventDate || a.desiredEventDate;
+        const dateB = b.scheduledEventDate || b.desiredEventDate;
+        if (dateA && dateB) return new Date(dateA).getTime() - new Date(dateB).getTime();
+        if (dateA) return -1;
+        if (dateB) return 1;
+        return a.organizationName.localeCompare(b.organizationName);
+      });
+  }, [events, roleFilter, searchTerm]);
 
   // Calculate summary metrics for dashboard cards
   const summaryMetrics = useMemo(() => {
@@ -973,6 +1003,16 @@ export default function VolunteerEventHub() {
 
         {/* Filters & View Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by school, city, address, or notes..."
+              className="pl-9"
+            />
+          </div>
+
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={roleFilter} onValueChange={setRoleFilter}>

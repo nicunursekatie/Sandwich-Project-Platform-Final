@@ -160,10 +160,10 @@ function SignupCard({ signup, onUpdateStatus }: {
               <Button
                 size="sm"
                 className="bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => onUpdateStatus(signup.id, 'confirmed')}
+                onClick={() => onUpdateStatus(signup.id, 'assigned')}
               >
                 <CheckCircle className="w-4 h-4 mr-1" />
-                Approve
+                Approve & Assign
               </Button>
               <Button
                 size="sm"
@@ -223,9 +223,9 @@ export default function VolunteerSignupAdmin() {
     },
     onSuccess: (_, { status }) => {
       toast({
-        title: status === 'confirmed' ? 'Signup approved' : 'Signup declined',
-        description: status === 'confirmed'
-          ? 'The volunteer has been confirmed for this event.'
+        title: status === 'assigned' ? 'Signup approved' : 'Signup declined',
+        description: status === 'assigned'
+          ? 'The volunteer has been assigned to this event.'
           : 'The signup has been declined.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
