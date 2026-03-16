@@ -1833,10 +1833,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
 
                   {/* Desktop: Original grid layout */}
-                  <div className="hidden sm:flex flex-row items-start justify-between gap-4">
-                    <div className="grid grid-cols-3 gap-3 text-sm flex-1">
+                  <div className="hidden sm:flex flex-row items-start justify-between gap-4 min-w-0">
+                    <div className="grid grid-cols-3 gap-3 text-sm flex-1 min-w-0">
                       {/* Start Time */}
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[#236383] text-sm uppercase font-semibold mb-1">Start</div>
                         {isEditingThisCard && editingField === 'eventStartTime' ? (
                           <div className="flex flex-col gap-2">
@@ -1865,7 +1865,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
 
                       {/* End Time */}
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[#236383] text-sm uppercase font-semibold mb-1">End</div>
                         {isEditingThisCard && editingField === 'eventEndTime' ? (
                           <div className="flex flex-col gap-2">
@@ -1894,14 +1894,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </div>
 
                     {/* Pickup Time */}
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-gray-700 text-sm uppercase font-semibold mb-1">Pickup</div>
                       {isEditingThisCard && editingField === 'pickupDateTime' ? (
                         <div className="flex flex-col gap-2">
                           <DateTimePicker
                             value={editingValue}
                             onChange={setEditingValue}
-                            className="h-10 text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20"
+                            className="h-10 min-w-0 w-full text-base border-[#007E8C]/30 focus:border-[#007E8C] focus:ring-2 focus:ring-[#007E8C]/20"
                           />
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" onClick={saveEdit} className="h-8 px-3 text-sm" aria-label="Save">
@@ -1916,7 +1916,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         </div>
                       ) : (
                         <div>
-                          <div className="text-base font-bold group cursor-pointer text-gray-900 flex items-center gap-2 flex-wrap" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
+                          <div className="text-base font-bold group cursor-pointer text-gray-900 flex items-center gap-2 flex-wrap min-w-0" onClick={() => canEdit && startEditing('pickupDateTime', request.pickupDateTime?.toString() || '')}>
                             {(() => {
                               // Check if overnight holding is set and use overnight pickup time if available
                               // Overnight pickup is always next day
@@ -1937,7 +1937,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 return (
                                   <>
                                     <span>{timeStr}</span>
-                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold whitespace-nowrap shrink-0 px-2 py-0.5">
+                                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold max-w-full whitespace-normal break-words px-2 py-0.5">
                                       Next Day {nextDayDate ? `(${nextDayDate})` : ''}
                                     </Badge>
                                   </>
@@ -1973,7 +1973,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   return (
                                     <>
                                       <span>{timeStr}</span>
-                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold whitespace-nowrap shrink-0 px-2 py-0.5">
+                                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs font-semibold max-w-full whitespace-normal break-words px-2 py-0.5">
                                         Next Day ({nextDayDateStr})
                                       </Badge>
                                     </>
@@ -1998,7 +1998,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 whitespace-nowrap px-3 h-9 text-sm mt-4"
+                      className="bg-[#007E8C]/10 hover:bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 px-3 h-auto min-h-9 max-w-full whitespace-normal break-words text-sm mt-4"
                       onClick={() => {
                         setTempStartTime(formatTimeForInput(request.eventStartTime || ''));
                         setTempEndTime(formatTimeForInput(request.eventEndTime || ''));
