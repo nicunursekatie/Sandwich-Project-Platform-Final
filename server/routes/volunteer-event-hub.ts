@@ -614,13 +614,17 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
 
     const shouldAssignVolunteer = (status === 'confirmed' || status === 'assigned') && !!signup.volunteerUserId;
 
-    // Wrap assignment + status update in a transaction to prevent race conditions
-    // when two concurrent approvals read and write the same event assignment arrays.
-    const [updatedSignup] = await db.transaction(async (trx) => {
-      // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
-      if (shouldAssignVolunteer) {
-        const [event] = await trx
-          .select({
+// Wrap assignment + status update in a transaction to prevent race conditions
+// when two concurrent approvals read and write the same event assignment arrays.
+const effectiveStatus = shouldAssignVolunteer ? 'assigned' : status;
+const isConfirmedOrAssigned = effectiveStatus === 'confirmed' || effectiveStatus === 'assigned';
+
+let updatedSignup: typeof signup | undefined;
+
+await db.transaction(async (tx) => {
+  // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
+  if (shouldAssignVolunteer) {
+    const [event] = await tx          .select({
             id: eventRequests.id,
             assignedDriverIds: eventRequests.assignedDriverIds,
             assignedSpeakerIds: eventRequests.assignedSpeakerIds,
@@ -631,7 +635,9 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
           .limit(1);
 
         if (!event) {
-          throw Object.assign(new Error('Event not found for this signup'), { statusCode: 404 });
+          const error = new Error('Event not found for this signup') as Error & { statusCode?: number };
+          error.statusCode = 404;
+          throw error;
         }
 
         const assignedUserId = signup.volunteerUserId as string;
@@ -652,34 +658,35 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
           assignmentUpdates.assignedVolunteerIds = addUnique(event.assignedVolunteerIds);
         }
 
-        await trx
+        await tx
           .update(eventRequests)
           .set(assignmentUpdates)
           .where(eq(eventRequests.id, signup.eventRequestId));
       }
 
       // Update the signup status
-      const effectiveStatus = shouldAssignVolunteer ? 'assigned' : status;
-      return trx
+      const [signupRow] = await tx
         .update(eventVolunteers)
         .set({
           status: effectiveStatus,
-          confirmedAt: effectiveStatus === 'confirmed' || effectiveStatus === 'assigned' ? new Date() : null,
+          confirmedAt: isConfirmedOrAssigned ? new Date() : null,
           assignedBy: coordinatorId,
           notes: notes || signup.notes,
           updatedAt: new Date(),
         })
         .where(eq(eventVolunteers.id, signupId))
         .returning();
+
+      updatedSignup = signupRow;
     });
 
     // TODO: Send notification to volunteer about status change
 
-    logger.info(`Volunteer signup ${signupId} status updated to ${status} by ${coordinatorId}`);
+    logger.info(`Volunteer signup ${signupId} status updated to ${effectiveStatus} by ${coordinatorId}`);
 
     res.json({
       success: true,
-      message: `Signup ${status} successfully`,
+      message: `Signup ${effectiveStatus} successfully`,
       signup: updatedSignup,
     });
   } catch (error) {
@@ -687,6 +694,11 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
       return res.status(404).json({ error: error.message });
     }
     logger.error('Error updating signup status:', error);
+    const maybeStatusError = error as Error & { statusCode?: number };
+    if (maybeStatusError.statusCode === 404) {
+      return res.status(404).json({ error: maybeStatusError.message });
+    }
+
     res.status(500).json({ error: 'Failed to update signup status' });
   }
 });
