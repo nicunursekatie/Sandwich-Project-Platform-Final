@@ -467,7 +467,7 @@ export default function HostResources() {
             title="All Hosts Directory"
             description="Browse the complete list of host collection sites and their details."
             icon={Building2}
-            href="hosts"
+            href="dashboard?section=hosts"
           />
         </div>
       </section>

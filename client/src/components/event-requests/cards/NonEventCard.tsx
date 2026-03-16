@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Ban, Eye, Trash2, Calendar, Building } from 'lucide-react';
+import { Ban, Eye, Edit2, Trash2, Calendar, Building } from 'lucide-react';
 import { statusColors, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import type { EventRequest } from '@shared/schema';
 
@@ -10,6 +10,7 @@ interface NonEventCardProps {
   request: EventRequest;
   resolveUserName: (userId: string | undefined) => string;
   onView: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }
 
@@ -17,6 +18,7 @@ export const NonEventCard: React.FC<NonEventCardProps> = ({
   request,
   resolveUserName,
   onView,
+  onEdit,
   onDelete,
 }) => {
   const borderColor = statusBorderColors['non_event'] || '#78716C';
@@ -57,6 +59,15 @@ export const NonEventCard: React.FC<NonEventCardProps> = ({
               title="View details"
             >
               <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onEdit}
+              className="h-8 w-8 p-0"
+              title="Edit event"
+            >
+              <Edit2 className="h-4 w-4" />
             </Button>
             <Button
               size="sm"
