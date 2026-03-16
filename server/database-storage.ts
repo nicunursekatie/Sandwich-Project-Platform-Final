@@ -56,6 +56,7 @@ import {
   searchAnalytics,
   emailTemplateSections,
   ambassadorCandidates,
+  hostResources,
   type User,
   type InsertUser,
   type UpsertUser,
@@ -157,6 +158,8 @@ import {
   type AmbassadorCandidate,
   type InsertAmbassadorCandidate,
   type UpdateAmbassadorCandidate,
+  type HostResource,
+  type InsertHostResource,
 } from '@shared/schema';
 import { db } from './db';
 import {
@@ -5309,5 +5312,46 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(asc(ambassadorCandidates.nextFollowUpDate));
+  }
+
+  // Host Resources
+  async getHostResources(): Promise<HostResource[]> {
+    return await db
+      .select()
+      .from(hostResources)
+      .where(eq(hostResources.isActive, true))
+      .orderBy(asc(hostResources.category), asc(hostResources.sortOrder));
+  }
+
+  async getHostResource(id: number): Promise<HostResource | undefined> {
+    const [resource] = await db
+      .select()
+      .from(hostResources)
+      .where(eq(hostResources.id, id));
+    return resource || undefined;
+  }
+
+  async createHostResource(data: InsertHostResource): Promise<HostResource> {
+    const [resource] = await db
+      .insert(hostResources)
+      .values(data)
+      .returning();
+    return resource;
+  }
+
+  async updateHostResource(id: number, data: Partial<InsertHostResource>): Promise<HostResource | undefined> {
+    const [resource] = await db
+      .update(hostResources)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(hostResources.id, id))
+      .returning();
+    return resource || undefined;
+  }
+
+  async deleteHostResource(id: number): Promise<boolean> {
+    const result = await db
+      .delete(hostResources)
+      .where(eq(hostResources.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }

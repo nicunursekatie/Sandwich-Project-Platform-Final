@@ -91,6 +91,7 @@ import { createUserEmailTemplatesRouter, createEventEmailRouter } from './user-e
 import volunteerEventHubRouter from './volunteer-event-hub';
 import { createEventContactsRouter } from './event-contacts';
 import { createPermissionRequestsRouter } from './permission-requests';
+import hostResourcesRouter from './host-resources';
 import { apiKeysRouter } from './api-keys';
 import { apiKeyAuth, requireApiKeyOrSession, apiKeyReadOnly } from '../middleware/api-key-auth';
 import externalEventRequestsRouter from './external-event-requests';
@@ -507,6 +508,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     resourcesRouter
   );
   router.use('/api/resources', createErrorHandler('resources'));
+
+  // Host Resources - manageable reference materials for host resources page
+  router.use(
+    '/api/host-resources',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    hostResourcesRouter
+  );
+  router.use('/api/host-resources', createErrorHandler('host-resources'));
 
   // Proxy for GitHub Pages content (bypasses X-Frame-Options restrictions)
   const ALLOWED_PROXY_ORIGINS = [
