@@ -34,6 +34,38 @@ export interface EventNotificationPreferences {
 }
 
 /**
+ * A single default reminder rule in the user's global preferences.
+ * When a user has no per-event overrides, these rules apply automatically.
+ */
+export interface DefaultReminderRule {
+  ruleType: string;
+  enabled: boolean;
+  thresholdDays: number;
+  frequency: string; // only used by general_checkin; condition-based rules ignore this
+}
+
+/**
+ * Global Check-In Reminder Preferences
+ * Stored in user metadata. Sets default reminder rules that apply to all
+ * events unless overridden per-event. Eliminates the need to configure
+ * reminders individually on every event card.
+ *
+ * Supports two tiers: standard (default) and corporate priority.
+ * Corporate events use `corporateRules` if present, otherwise fall back
+ * to `rules`.
+ */
+export interface CheckInReminderPreferences {
+  /** Whether the user has configured their defaults (false = never set up) */
+  configured: boolean;
+  /** Default notification channel for all rules */
+  defaultChannel: 'email' | 'sms' | 'both';
+  /** Default rules and their thresholds (standard events) */
+  rules: DefaultReminderRule[];
+  /** Optional tighter rules for corporate priority events */
+  corporateRules?: DefaultReminderRule[];
+}
+
+/**
  * User Metadata structure
  * Defines all properties that can be stored in the users.metadata JSONB field
  */
@@ -46,6 +78,9 @@ export interface UserMetadata {
 
   // Event notification preferences
   eventNotificationPreferences?: EventNotificationPreferences;
+
+  // Global check-in reminder defaults (applied to all events unless overridden)
+  checkInReminderPreferences?: CheckInReminderPreferences;
 
   // Additional contact information
   phoneNumber?: string;
@@ -215,6 +250,17 @@ export function getEventNotificationPreferences(
     secondaryReminderHours: 1,
     secondaryReminderType: 'email',
   };
+}
+
+/**
+ * Helper to get check-in reminder preferences from user metadata.
+ * Returns null if the user has never configured their defaults.
+ */
+export function getCheckInReminderPreferences(
+  user: DrizzleUser | User | null | undefined
+): CheckInReminderPreferences | null {
+  const metadata = getUserMetadata(user);
+  return metadata.checkInReminderPreferences ?? null;
 }
 
 // ============================================================================

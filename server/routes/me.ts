@@ -3,8 +3,8 @@ import type { IStorage } from '../storage';
 import { storage } from '../storage-wrapper';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
-import { getUserMetadata, getEventNotificationPreferences } from '@shared/types';
-import type { EventNotificationPreferences } from '@shared/types';
+import { getUserMetadata, getEventNotificationPreferences, getCheckInReminderPreferences } from '@shared/types';
+import type { EventNotificationPreferences, CheckInReminderPreferences } from '@shared/types';
 
 interface DashboardItem {
   id: number;
@@ -456,6 +456,90 @@ meRouter.put('/notification-preferences', async (req: AuthenticatedRequest, res:
   } catch (error) {
     logger.error('Failed to update notification preferences', error);
     res.status(500).json({ message: 'Failed to update notification preferences' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Check-In Reminder Preferences (global defaults for event reminders)
+// ---------------------------------------------------------------------------
+
+const VALID_REMINDER_RULE_TYPES = [
+  'no_contact', 'stale_event', 'date_approaching_inprocess',
+  'date_approaching_scheduled', 'staffing_unmet', 'missing_details', 'general_checkin',
+];
+const VALID_CHANNELS = ['email', 'sms', 'both'];
+const VALID_FREQUENCIES = ['daily', 'every_3_days', 'weekly', 'biweekly'];
+
+// GET /check-in-reminder-preferences
+meRouter.get('/check-in-reminder-preferences', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) return res.status(401).json({ message: 'Authentication required' });
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) return res.status(400).json({ message: 'Invalid user identifier' });
+
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+    if (!fullUser) return res.status(404).json({ message: 'User not found' });
+
+    const preferences = getCheckInReminderPreferences(fullUser);
+    res.json(preferences);
+  } catch (error) {
+    logger.error('Failed to fetch check-in reminder preferences', error);
+    res.status(500).json({ message: 'Failed to fetch check-in reminder preferences' });
+  }
+});
+
+// PUT /check-in-reminder-preferences
+meRouter.put('/check-in-reminder-preferences', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) return res.status(401).json({ message: 'Authentication required' });
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) return res.status(400).json({ message: 'Invalid user identifier' });
+
+    const { defaultChannel, rules, corporateRules } = req.body as CheckInReminderPreferences;
+
+    if (!VALID_CHANNELS.includes(defaultChannel)) {
+      return res.status(400).json({ message: 'Invalid channel' });
+    }
+    if (!Array.isArray(rules)) {
+      return res.status(400).json({ message: 'rules must be an array' });
+    }
+
+    const validateRuleArray = (arr: any[]) => arr.map(r => ({
+      ruleType: VALID_REMINDER_RULE_TYPES.includes(r.ruleType) ? r.ruleType : 'general_checkin',
+      enabled: r.enabled === true,
+      thresholdDays: typeof r.thresholdDays === 'number' && r.thresholdDays > 0 ? r.thresholdDays : 7,
+      frequency: VALID_FREQUENCIES.includes(r.frequency) ? r.frequency : 'weekly',
+    }));
+
+    const validatedRules = validateRuleArray(rules);
+    const validatedCorpRules = Array.isArray(corporateRules) ? validateRuleArray(corporateRules) : undefined;
+
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+    if (!fullUser) return res.status(404).json({ message: 'User not found' });
+
+    const metadata = getUserMetadata(fullUser);
+    const updatedPreferences: CheckInReminderPreferences = {
+      configured: true,
+      defaultChannel,
+      rules: validatedRules,
+      corporateRules: validatedCorpRules,
+    };
+
+    await storage.updateUser(normalizedUserId, {
+      metadata: { ...metadata, checkInReminderPreferences: updatedPreferences },
+    });
+
+    logger.info(`Updated check-in reminder preferences for user ${normalizedUserId}`);
+    res.json({ success: true, preferences: updatedPreferences });
+  } catch (error) {
+    logger.error('Failed to update check-in reminder preferences', error);
+    res.status(500).json({ message: 'Failed to update check-in reminder preferences' });
   }
 });
 

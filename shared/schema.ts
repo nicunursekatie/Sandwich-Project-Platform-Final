@@ -2730,6 +2730,36 @@ export const REMINDER_RULE_TYPES = {
 
 export type ReminderRuleType = typeof REMINDER_RULE_TYPES[keyof typeof REMINDER_RULE_TYPES];
 
+// Event reminder snooze / pause state
+// When a snooze is active, ALL check-in reminders for that event+user are suppressed.
+// Snooze types:
+//   'timed'         — paused for a set number of days from now
+//   'until_date'    — paused until a specific calendar date
+//   'until_contact' — paused until a new contact is logged on the event
+export const eventReminderSnoozes = pgTable(
+  'event_reminder_snoozes',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull(),
+    userId: varchar('user_id').notNull(),
+    snoozeType: varchar('snooze_type').notNull(), // 'timed', 'until_date', 'until_contact'
+    snoozedUntil: timestamp('snoozed_until'), // null for 'until_contact' (open-ended)
+    reason: text('reason'), // optional note ("waiting for org to respond", etc.)
+    active: boolean('active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    cancelledAt: timestamp('cancelled_at'), // when snooze was manually cancelled or auto-cleared
+  },
+  (table) => ({
+    eventUserIdx: uniqueIndex('idx_reminder_snoozes_event_user').on(
+      table.eventRequestId,
+      table.userId,
+    ),
+    activeIdx: index('idx_reminder_snoozes_active').on(table.active),
+  }),
+);
+
+export type EventReminderSnooze = typeof eventReminderSnoozes.$inferSelect;
+
 // Event collaboration comments table for team discussion on event planning
 export const eventCollaborationComments = pgTable(
   'event_collaboration_comments',

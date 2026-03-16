@@ -1,6 +1,6 @@
 import express from 'express';
 import { db } from '../db';
-import { eventCheckInReminders, eventRequests, REMINDER_RULE_TYPES } from '@shared/schema';
+import { eventCheckInReminders, eventReminderSnoozes, eventRequests, REMINDER_RULE_TYPES } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { calculateNextDue } from '../utils/reminder-scheduling';
@@ -262,6 +262,118 @@ router.delete('/:eventRequestId/:ruleType', async (req: any, res) => {
   } catch (error) {
     logger.error('Error deleting reminder rule:', error);
     res.status(500).json({ error: 'Failed to delete reminder rule' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Snooze endpoints
+// ---------------------------------------------------------------------------
+
+const VALID_SNOOZE_TYPES = ['timed', 'until_date', 'until_contact'];
+
+// GET /api/event-check-in-reminders/:eventRequestId/snooze
+router.get('/:eventRequestId/snooze', async (req: any, res) => {
+  try {
+    const eventRequestId = parseInt(req.params.eventRequestId);
+    if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    const [snooze] = await db
+      .select()
+      .from(eventReminderSnoozes)
+      .where(
+        and(
+          eq(eventReminderSnoozes.eventRequestId, eventRequestId),
+          eq(eventReminderSnoozes.userId, req.user.id),
+          eq(eventReminderSnoozes.active, true),
+        ),
+      )
+      .limit(1);
+
+    res.json({ snooze: snooze || null });
+  } catch (error) {
+    logger.error('Error getting snooze:', error);
+    res.status(500).json({ error: 'Failed to get snooze status' });
+  }
+});
+
+// POST /api/event-check-in-reminders/:eventRequestId/snooze
+router.post('/:eventRequestId/snooze', async (req: any, res) => {
+  try {
+    const eventRequestId = parseInt(req.params.eventRequestId);
+    if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    const { snoozeType, snoozedUntil, reason } = req.body;
+
+    if (!VALID_SNOOZE_TYPES.includes(snoozeType)) {
+      return res.status(400).json({ error: 'Invalid snooze type' });
+    }
+
+    let computedUntil: Date | null = null;
+    if (snoozeType === 'timed') {
+      const days = parseInt(snoozedUntil);
+      if (!days || days < 1) return res.status(400).json({ error: 'Timed snooze requires a positive number of days' });
+      computedUntil = new Date();
+      computedUntil.setDate(computedUntil.getDate() + days);
+      computedUntil.setHours(9, 0, 0, 0);
+    } else if (snoozeType === 'until_date') {
+      computedUntil = new Date(snoozedUntil);
+      if (isNaN(computedUntil.getTime())) return res.status(400).json({ error: 'Invalid date' });
+    }
+    // until_contact: computedUntil stays null (open-ended)
+
+    // Upsert: cancel any existing snooze and create a new one
+    await db
+      .update(eventReminderSnoozes)
+      .set({ active: false, cancelledAt: new Date() })
+      .where(
+        and(
+          eq(eventReminderSnoozes.eventRequestId, eventRequestId),
+          eq(eventReminderSnoozes.userId, req.user.id),
+          eq(eventReminderSnoozes.active, true),
+        ),
+      );
+
+    const [snooze] = await db
+      .insert(eventReminderSnoozes)
+      .values({
+        eventRequestId,
+        userId: req.user.id,
+        snoozeType,
+        snoozedUntil: computedUntil,
+        reason: reason || null,
+        active: true,
+      })
+      .returning();
+
+    logger.info(`Snooze created for event ${eventRequestId} by ${req.user.id}: ${snoozeType}`);
+    res.json({ snooze });
+  } catch (error) {
+    logger.error('Error creating snooze:', error);
+    res.status(500).json({ error: 'Failed to create snooze' });
+  }
+});
+
+// DELETE /api/event-check-in-reminders/:eventRequestId/snooze
+router.delete('/:eventRequestId/snooze', async (req: any, res) => {
+  try {
+    const eventRequestId = parseInt(req.params.eventRequestId);
+    if (isNaN(eventRequestId)) return res.status(400).json({ error: 'Invalid event request ID' });
+
+    await db
+      .update(eventReminderSnoozes)
+      .set({ active: false, cancelledAt: new Date() })
+      .where(
+        and(
+          eq(eventReminderSnoozes.eventRequestId, eventRequestId),
+          eq(eventReminderSnoozes.userId, req.user.id),
+          eq(eventReminderSnoozes.active, true),
+        ),
+      );
+
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error cancelling snooze:', error);
+    res.status(500).json({ error: 'Failed to cancel snooze' });
   }
 });
 

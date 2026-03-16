@@ -1,7 +1,35 @@
+/**
+ * ReminderRulesManager — Per-event reminder control
+ *
+ * The primary interface for managing reminders on individual event cards.
+ *
+ * Architecture (two-layer system):
+ *   Layer 1: Global defaults — configured once in Profile → Alerts tab
+ *   Layer 2: This component — per-event toggle, snooze, and optional overrides
+ *
+ * Most users just use the toggle (on/off) and snooze buttons. The "Customize"
+ * option is an escape hatch for events that need different thresholds than
+ * the user's global defaults.
+ */
+
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { AlarmClock, Loader2, Plus, Trash2, Save, AlertTriangle } from 'lucide-react';
+import {
+  Bell,
+  BellOff,
+  Loader2,
+  Plus,
+  Trash2,
+  Save,
+  AlertTriangle,
+  PauseCircle,
+  PlayCircle,
+  Settings2,
+  CalendarClock,
+  MessageSquareMore,
+  Clock,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,9 +37,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -22,6 +54,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
 // ---------------------------------------------------------------------------
@@ -34,16 +67,10 @@ interface ReminderRulesManagerProps {
   eventStatus?: string | null;
 }
 
-/**
- * Each rule type is either *condition-based* (system checks daily, fires when
- * the condition is met) or *frequency-based* (fires on a recurring cadence the
- * user chooses).  The config below drives both the UI and save-time
- * normalization so the rest of the code never needs to branch on this.
- */
 const RULE_TYPE_CONFIG = {
   no_contact: {
     label: 'No Contact Logged',
-    description: 'Alert when no contact has been logged for a set number of days',
+    description: 'Alert when no contact for a set number of days',
     defaultThreshold: 5,
     thresholdPrefix: 'After',
     thresholdLabel: 'days with no contact',
@@ -52,7 +79,7 @@ const RULE_TYPE_CONFIG = {
   },
   stale_event: {
     label: 'Stale / No Updates',
-    description: 'Alert when no updates have been made for a set number of days',
+    description: 'Alert when no updates for a set number of days',
     defaultThreshold: 7,
     thresholdPrefix: 'After',
     thresholdLabel: 'days with no updates',
@@ -61,7 +88,7 @@ const RULE_TYPE_CONFIG = {
   },
   date_approaching_inprocess: {
     label: 'Desired Date Approaching',
-    description: 'Alert when the desired event date is coming up soon',
+    description: 'Alert when desired date is coming up soon',
     defaultThreshold: 14,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of desired date',
@@ -70,7 +97,7 @@ const RULE_TYPE_CONFIG = {
   },
   date_approaching_scheduled: {
     label: 'Event Date Approaching',
-    description: 'Alert when the scheduled event date is coming up soon',
+    description: 'Alert when scheduled date is coming up soon',
     defaultThreshold: 7,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of event',
@@ -79,7 +106,7 @@ const RULE_TYPE_CONFIG = {
   },
   staffing_unmet: {
     label: 'Staffing Needs Unmet',
-    description: 'Alert if roles are still unfilled close to the event date',
+    description: 'Alert if roles are still unfilled close to event',
     defaultThreshold: 7,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of event',
@@ -88,7 +115,7 @@ const RULE_TYPE_CONFIG = {
   },
   missing_details: {
     label: 'Missing Key Details',
-    description: 'Alert if sandwich count/type, location, or pickup time are still missing',
+    description: 'Alert if sandwich count/type, location, or pickup time are missing',
     defaultThreshold: 7,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of event',
@@ -130,11 +157,19 @@ interface ReminderRule {
   lastSentAt?: string | null;
 }
 
+interface Snooze {
+  id: number;
+  snoozeType: string;
+  snoozedUntil: string | null;
+  reason: string | null;
+  active: boolean;
+  createdAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Serialize rules into a stable string for dirty-state comparison. */
 function serializeRules(rules: ReminderRule[]): string {
   return JSON.stringify(
     rules
@@ -149,7 +184,6 @@ function serializeRules(rules: ReminderRule[]): string {
   );
 }
 
-/** Normalize rules before saving — condition-based rules always use 'daily'. */
 function normalizeForSave(rules: ReminderRule[]): ReminderRule[] {
   return rules.map(r => {
     const config = RULE_TYPE_CONFIG[r.ruleType as RuleType];
@@ -157,8 +191,17 @@ function normalizeForSave(rules: ReminderRule[]): ReminderRule[] {
   });
 }
 
+function formatSnoozeLabel(snooze: Snooze): string {
+  if (snooze.snoozeType === 'until_contact') return 'Paused until contact';
+  if (snooze.snoozedUntil) {
+    const d = new Date(snooze.snoozedUntil);
+    return `Paused until ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+  return 'Paused';
+}
+
 // ---------------------------------------------------------------------------
-// Main component
+// Main component — compact popover on event cards
 // ---------------------------------------------------------------------------
 
 export function ReminderRulesManager({
@@ -169,15 +212,18 @@ export function ReminderRulesManager({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState(false);
-  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [snoozeMenuOpen, setSnoozeMenuOpen] = useState(false);
   const editorDirtyRef = useRef(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
   const isAssignedContact = user?.id && tspContactUserId && user.id === tspContactUserId;
   const isAdminUser = user?.role === 'admin' || user?.role === 'super_admin';
   if (!isAssignedContact && !isAdminUser) return null;
 
-  const { data, isLoading, dataUpdatedAt } = useQuery({
+  // Fetch per-event rules
+  const { data: rulesData, isLoading: rulesLoading } = useQuery({
     queryKey: ['check-in-reminder', eventRequestId],
     queryFn: async () => {
       const res = await fetch(`/api/event-check-in-reminders/${eventRequestId}`, {
@@ -186,99 +232,257 @@ export function ReminderRulesManager({
       if (!res.ok) throw new Error('Failed to fetch reminders');
       return res.json();
     },
-    enabled: isOpen,
   });
 
-  const existingRules: ReminderRule[] = data?.reminders || [];
-  const activeRuleCount = existingRules.filter((r: ReminderRule) => r.enabled).length;
-
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open && editorDirtyRef.current) {
-        setShowUnsavedWarning(true);
-        return;
-      }
-      setIsOpen(open);
+  // Fetch global defaults
+  const { data: globalPrefs } = useQuery({
+    queryKey: ['/api/me/check-in-reminder-preferences'],
+    queryFn: async () => {
+      const res = await fetch('/api/me/check-in-reminder-preferences', {
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      return res.json();
     },
-    [],
-  );
+  });
+
+  // Fetch snooze status
+  const { data: snoozeData } = useQuery({
+    queryKey: ['check-in-snooze', eventRequestId],
+    queryFn: async () => {
+      const res = await fetch(`/api/event-check-in-reminders/${eventRequestId}/snooze`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return { snooze: null };
+      return res.json();
+    },
+  });
+
+  const existingRules: ReminderRule[] = rulesData?.reminders || [];
+  const activeRuleCount = existingRules.filter((r: ReminderRule) => r.enabled).length;
+  const hasPerEventRules = existingRules.length > 0;
+  const hasGlobalDefaults = globalPrefs?.configured === true;
+  const activeSnooze: Snooze | null = snoozeData?.snooze || null;
+
+  // Determine the effective state for the bell icon
+  const isEffectivelyActive = activeSnooze
+    ? false
+    : hasPerEventRules
+      ? activeRuleCount > 0
+      : hasGlobalDefaults;
+
+  // --- Snooze mutations ---
+
+  const snoozeMutation = useMutation({
+    mutationFn: async (body: { snoozeType: string; snoozedUntil?: string | number; reason?: string }) => {
+      const res = await fetch(`/api/event-check-in-reminders/${eventRequestId}/snooze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Failed to snooze');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['check-in-snooze', eventRequestId] });
+      setSnoozeMenuOpen(false);
+      setPopoverOpen(false);
+      toast({ title: 'Reminders paused', description: 'You can resume anytime from this menu.' });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to pause reminders.', variant: 'destructive' }),
+  });
+
+  const unsnoozeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/event-check-in-reminders/${eventRequestId}/snooze`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to unsnooze');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['check-in-snooze', eventRequestId] });
+      setPopoverOpen(false);
+      toast({ title: 'Reminders resumed' });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to resume reminders.', variant: 'destructive' }),
+  });
+
+  const handleCustomizeClose = useCallback((open: boolean) => {
+    if (!open && editorDirtyRef.current) {
+      setShowUnsavedWarning(true);
+      return;
+    }
+    setCustomizeOpen(open);
+  }, []);
 
   const handleDiscardAndClose = useCallback(() => {
     setShowUnsavedWarning(false);
     editorDirtyRef.current = false;
-    setIsOpen(false);
+    setCustomizeOpen(false);
   }, []);
+
+  if (rulesLoading) {
+    return (
+      <div className="flex items-center gap-1 text-gray-400">
+        <Loader2 className="w-3 h-3 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
           <Button
             variant="outline"
             size="sm"
             className={`h-8 relative ${
-              activeRuleCount > 0
-                ? 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'
-                : 'text-gray-500 hover:bg-gray-100'
+              activeSnooze
+                ? 'border-amber-400 text-amber-600 hover:bg-amber-50'
+                : isEffectivelyActive
+                  ? 'border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10'
+                  : 'text-gray-400 hover:bg-gray-100'
             }`}
-            title={activeRuleCount > 0 ? `${activeRuleCount} active reminder(s)` : 'Set up reminders'}
+            title={
+              activeSnooze
+                ? formatSnoozeLabel(activeSnooze)
+                : isEffectivelyActive
+                  ? `Reminders active${hasPerEventRules ? ` (${activeRuleCount} custom)` : ' (using defaults)'}`
+                  : 'Set up reminders'
+            }
           >
-            <AlarmClock className="w-4 h-4 mr-1" />
-            Reminders
-            {activeRuleCount > 0 && (
-              <Badge
-                variant="secondary"
-                className="ml-1 h-4 min-w-4 px-1 text-[10px] bg-[#007E8C] text-white hover:bg-[#007E8C]"
-              >
-                {activeRuleCount}
-              </Badge>
+            {activeSnooze ? (
+              <PauseCircle className="w-4 h-4 mr-1" />
+            ) : isEffectivelyActive ? (
+              <Bell className="w-4 h-4 mr-1" />
+            ) : (
+              <BellOff className="w-4 h-4 mr-1" />
+            )}
+            {activeSnooze ? (
+              <span className="text-xs">Paused</span>
+            ) : isEffectivelyActive ? (
+              <>
+                <span className="hidden sm:inline text-xs">Reminders</span>
+                {hasPerEventRules && activeRuleCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px] bg-[#007E8C] text-white hover:bg-[#007E8C]">
+                    {activeRuleCount}
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <span className="hidden sm:inline text-xs">Reminders</span>
             )}
           </Button>
-        </DialogTrigger>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-0" align="end">
+          {/* Status summary */}
+          <div className="p-3 space-y-2">
+            {activeSnooze ? (
+              <div className="flex items-start gap-2 text-amber-700 bg-amber-50 rounded-lg p-2">
+                <PauseCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <div className="text-xs">
+                  <p className="font-medium">{formatSnoozeLabel(activeSnooze)}</p>
+                  {activeSnooze.reason && (
+                    <p className="text-amber-600 mt-0.5">{activeSnooze.reason}</p>
+                  )}
+                </div>
+              </div>
+            ) : isEffectivelyActive ? (
+              <div className="flex items-center gap-2 text-[#007E8C]">
+                <Bell className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  {hasPerEventRules
+                    ? `${activeRuleCount} custom rule${activeRuleCount !== 1 ? 's' : ''} active`
+                    : 'Using your default rules'}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400">
+                <BellOff className="w-4 h-4" />
+                <span className="text-sm">
+                  {hasGlobalDefaults
+                    ? 'No reminders for this event'
+                    : 'No default reminders configured'}
+                </span>
+              </div>
+            )}
+
+            {!hasGlobalDefaults && !hasPerEventRules && (
+              <p className="text-xs text-gray-500">
+                Set up your default reminders in{' '}
+                <a href="/dashboard?section=user-profile&tab=notifications" className="text-[#007E8C] underline">
+                  Profile → Alerts
+                </a>{' '}
+                to apply them to all events.
+              </p>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Actions */}
+          <div className="p-2 space-y-1">
+            {activeSnooze ? (
+              <button
+                onClick={() => unsnoozeMutation.mutate()}
+                disabled={unsnoozeMutation.isPending}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-md hover:bg-gray-100 transition-colors text-[#007E8C]"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Resume reminders
+                {unsnoozeMutation.isPending && <Loader2 className="w-3 h-3 animate-spin ml-auto" />}
+              </button>
+            ) : (
+              <SnoozeMenu
+                open={snoozeMenuOpen}
+                onOpenChange={setSnoozeMenuOpen}
+                onSnooze={(body) => snoozeMutation.mutate(body)}
+                isPending={snoozeMutation.isPending}
+              />
+            )}
+
+            <button
+              onClick={() => {
+                setPopoverOpen(false);
+                setCustomizeOpen(true);
+              }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-md hover:bg-gray-100 transition-colors text-gray-700"
+            >
+              <Settings2 className="w-4 h-4" />
+              Customize rules for this event
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Customize dialog */}
+      <Dialog open={customizeOpen} onOpenChange={handleCustomizeClose}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg">
-              <AlarmClock className="w-5 h-5 text-[#007E8C]" />
-              Reminder Rules
+              <Settings2 className="w-5 h-5 text-[#007E8C]" />
+              Custom Rules for This Event
             </DialogTitle>
             <DialogDescription className="text-sm text-gray-500">
-              Configure when you want to be reminded about this event.
+              Override your default reminder rules for this specific event.
             </DialogDescription>
           </DialogHeader>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-[#007E8C]" />
-            </div>
-          ) : (
-            <RulesEditor
-              // Using dataUpdatedAt as key forces a clean remount when server
-              // data changes, eliminating the need for useEffect sync.
-              key={dataUpdatedAt}
-              eventRequestId={eventRequestId}
-              serverRules={existingRules}
-              eventStatus={eventStatus || 'new'}
-              onDirtyChange={(dirty) => {
-                editorDirtyRef.current = dirty;
-              }}
-              onSaved={() => {
-                editorDirtyRef.current = false;
-                queryClient.invalidateQueries({
-                  queryKey: ['check-in-reminder', eventRequestId],
-                });
-                toast({
-                  title: 'Reminders saved',
-                  description: 'Your reminder rules have been updated.',
-                });
-              }}
-              onError={() => {
-                toast({
-                  title: 'Error',
-                  description: 'Failed to save reminder settings.',
-                  variant: 'destructive',
-                });
-              }}
-            />
-          )}
+          <RulesEditor
+            key={rulesData ? JSON.stringify(rulesData.reminders) : 'empty'}
+            eventRequestId={eventRequestId}
+            serverRules={existingRules}
+            eventStatus={eventStatus || 'new'}
+            onDirtyChange={(dirty) => { editorDirtyRef.current = dirty; }}
+            onSaved={() => {
+              editorDirtyRef.current = false;
+              queryClient.invalidateQueries({ queryKey: ['check-in-reminder', eventRequestId] });
+              toast({ title: 'Custom rules saved' });
+            }}
+            onError={() => toast({ title: 'Error', description: 'Failed to save.', variant: 'destructive' })}
+          />
         </DialogContent>
       </Dialog>
 
@@ -290,24 +494,16 @@ export function ReminderRulesManager({
               <AlertTriangle className="w-5 h-5 text-amber-500" />
               Unsaved Changes
             </DialogTitle>
-            <DialogDescription className="text-sm text-gray-600">
-              You have unsaved reminder changes. Closing will discard them.
+            <DialogDescription>
+              You have unsaved changes. Closing will discard them.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2 justify-end mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowUnsavedWarning(false)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowUnsavedWarning(false)}>
               Keep Editing
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDiscardAndClose}
-            >
-              Discard Changes
+            <Button variant="destructive" size="sm" onClick={handleDiscardAndClose}>
+              Discard
             </Button>
           </div>
         </DialogContent>
@@ -317,7 +513,97 @@ export function ReminderRulesManager({
 }
 
 // ---------------------------------------------------------------------------
-// Rules editor (inner form)
+// Snooze sub-menu
+// ---------------------------------------------------------------------------
+
+function SnoozeMenu({
+  open,
+  onOpenChange,
+  onSnooze,
+  isPending,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSnooze: (body: { snoozeType: string; snoozedUntil?: string | number; reason?: string }) => void;
+  isPending: boolean;
+}) {
+  const [snoozeDate, setSnoozeDate] = useState('');
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => onOpenChange(true)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-md hover:bg-gray-100 transition-colors text-gray-700"
+      >
+        <PauseCircle className="w-4 h-4" />
+        Pause reminders...
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="px-3 py-1 text-xs text-gray-500 font-medium uppercase tracking-wide">
+        Pause reminders
+      </p>
+      {[
+        { label: 'For 3 days', type: 'timed', value: 3 },
+        { label: 'For 1 week', type: 'timed', value: 7 },
+        { label: 'For 2 weeks', type: 'timed', value: 14 },
+      ].map(opt => (
+        <button
+          key={opt.value}
+          disabled={isPending}
+          onClick={() => onSnooze({ snoozeType: opt.type, snoozedUntil: opt.value })}
+          className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded-md hover:bg-gray-100 transition-colors text-gray-700"
+        >
+          <Clock className="w-3.5 h-3.5 text-gray-400" />
+          {opt.label}
+        </button>
+      ))}
+
+      <div className="flex items-center gap-1.5 px-3 py-1.5">
+        <CalendarClock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <Input
+          type="date"
+          value={snoozeDate}
+          onChange={(e) => setSnoozeDate(e.target.value)}
+          className="h-7 text-xs flex-1"
+          min={new Date().toISOString().split('T')[0]}
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs px-2"
+          disabled={!snoozeDate || isPending}
+          onClick={() => onSnooze({ snoozeType: 'until_date', snoozedUntil: snoozeDate })}
+        >
+          Set
+        </Button>
+      </div>
+
+      <button
+        disabled={isPending}
+        onClick={() => onSnooze({ snoozeType: 'until_contact', reason: 'Waiting on contact response' })}
+        className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded-md hover:bg-gray-100 transition-colors text-gray-700"
+      >
+        <MessageSquareMore className="w-3.5 h-3.5 text-gray-400" />
+        Until next contact is logged
+      </button>
+
+      <Separator />
+      <button
+        onClick={() => onOpenChange(false)}
+        className="w-full px-3 py-1.5 text-xs text-gray-400 text-left hover:text-gray-600"
+      >
+        Cancel
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rules editor (inner form, used by customize dialog)
 // ---------------------------------------------------------------------------
 
 function RulesEditor({
@@ -335,8 +621,6 @@ function RulesEditor({
   onSaved: () => void;
   onError: () => void;
 }) {
-  // Initialize local state directly from props — no useEffect needed because
-  // the parent uses `key={dataUpdatedAt}` to remount on server data changes.
   const [rules, setRules] = useState<ReminderRule[]>(() =>
     serverRules.map(r => ({ ...r })),
   );
@@ -344,34 +628,27 @@ function RulesEditor({
     () => serverRules[0]?.channel || 'email',
   );
 
-  // Stable snapshot of server state for dirty comparison
   const serverSnapshot = useRef(serializeRules(serverRules));
 
-  // Notify parent whenever dirty state changes
   const updateDirtyState = useCallback(
     (nextRules: ReminderRule[]) => {
-      const isDirty = serializeRules(nextRules) !== serverSnapshot.current;
-      onDirtyChange(isDirty);
+      onDirtyChange(serializeRules(nextRules) !== serverSnapshot.current);
     },
     [onDirtyChange],
   );
 
   const isDirty = serializeRules(rules) !== serverSnapshot.current;
 
-  // Available rule types for the current event status
   const availableRuleTypes = useMemo(() => {
     return (Object.entries(RULE_TYPE_CONFIG) as [RuleType, (typeof RULE_TYPE_CONFIG)[RuleType]][])
       .filter(([, config]) => (config.applicableStatuses as readonly string[]).includes(eventStatus))
       .map(([type, config]) => ({ type, ...config }));
   }, [eventStatus]);
 
-  // Rule types not yet added
   const addableRuleTypes = useMemo(() => {
     const existingTypes = new Set(rules.map(r => r.ruleType));
     return availableRuleTypes.filter(rt => !existingTypes.has(rt.type));
   }, [availableRuleTypes, rules]);
-
-  // --- Mutations ---
 
   const bulkSaveMutation = useMutation({
     mutationFn: async (rulesToSave: ReminderRule[]) => {
@@ -410,8 +687,6 @@ function RulesEditor({
     onError,
   });
 
-  // --- Actions ---
-
   const addRule = (ruleType: RuleType) => {
     const config = RULE_TYPE_CONFIG[ruleType];
     setRules(prev => {
@@ -440,9 +715,7 @@ function RulesEditor({
 
   const removeRule = (index: number) => {
     const rule = rules[index];
-    if (rule.id) {
-      deleteMutation.mutate(rule.ruleType);
-    }
+    if (rule.id) deleteMutation.mutate(rule.ruleType);
     setRules(prev => {
       const next = prev.filter((_, i) => i !== index);
       updateDirtyState(next);
@@ -450,15 +723,10 @@ function RulesEditor({
     });
   };
 
-  const handleSave = () => {
-    bulkSaveMutation.mutate(rules);
-  };
-
   const isSaving = bulkSaveMutation.isPending || deleteMutation.isPending;
 
   return (
     <div className="space-y-4 mt-2">
-      {/* Global channel preference */}
       <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
         <Label className="text-sm font-medium text-gray-700">Notify via</Label>
         <Select
@@ -477,54 +745,40 @@ function RulesEditor({
           </SelectTrigger>
           <SelectContent>
             {CHANNEL_OPTIONS.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Existing rules */}
       {rules.length === 0 ? (
-        <div className="text-center py-6 text-gray-400 text-sm">
-          No reminders configured. Add one below.
+        <div className="text-center py-4 text-gray-400 text-sm">
+          No custom rules. This event uses your default rules.
         </div>
       ) : (
         <div className="space-y-3">
           {rules.map((rule, index) => {
             const config = RULE_TYPE_CONFIG[rule.ruleType as RuleType];
             if (!config) return null;
-
             return (
               <div
                 key={rule.ruleType}
                 className={`border rounded-lg p-3 space-y-3 transition-colors ${
-                  rule.enabled
-                    ? 'border-[#007E8C]/30 bg-[#007E8C]/5'
-                    : 'border-gray-200 bg-gray-50'
+                  rule.enabled ? 'border-[#007E8C]/30 bg-[#007E8C]/5' : 'border-gray-200 bg-gray-50'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <Switch
                       checked={rule.enabled}
-                      onCheckedChange={(checked) =>
-                        updateRule(index, { enabled: checked })
-                      }
+                      onCheckedChange={(checked) => updateRule(index, { enabled: checked })}
                       className="flex-shrink-0"
                     />
                     <div className="min-w-0">
-                      <p
-                        className={`text-sm font-semibold truncate ${
-                          rule.enabled ? 'text-gray-900' : 'text-gray-400'
-                        }`}
-                      >
+                      <p className={`text-sm font-semibold truncate ${rule.enabled ? 'text-gray-900' : 'text-gray-400'}`}>
                         {config.label}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {config.description}
-                      </p>
+                      <p className="text-xs text-gray-500 truncate">{config.description}</p>
                     </div>
                   </div>
                   <Button
@@ -537,47 +791,34 @@ function RulesEditor({
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
-
                 {rule.enabled && (
                   <div className="flex items-center gap-3 flex-wrap">
                     {config.isConditionBased ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-500">
-                          {config.thresholdPrefix}
-                        </span>
+                        <span className="text-xs text-gray-500">{config.thresholdPrefix}</span>
                         <Input
                           type="number"
                           min={1}
                           max={365}
                           value={rule.thresholdDays}
-                          onChange={(e) =>
-                            updateRule(index, {
-                              thresholdDays: parseInt(e.target.value) || 1,
-                            })
-                          }
+                          onChange={(e) => updateRule(index, { thresholdDays: parseInt(e.target.value) || 1 })}
                           className="w-16 h-7 text-sm text-center"
                         />
-                        <span className="text-xs text-gray-500 whitespace-nowrap">
-                          {config.thresholdLabel}
-                        </span>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">{config.thresholdLabel}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-gray-500">Remind me</span>
                         <Select
                           value={rule.frequency}
-                          onValueChange={(val) =>
-                            updateRule(index, { frequency: val })
-                          }
+                          onValueChange={(val) => updateRule(index, { frequency: val })}
                         >
                           <SelectTrigger className="w-32 h-7 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {FREQUENCY_OPTIONS.map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -591,12 +832,9 @@ function RulesEditor({
         </div>
       )}
 
-      {/* Add rule buttons */}
       {addableRuleTypes.length > 0 && (
         <div className="space-y-2">
-          <Label className="text-xs text-gray-500 uppercase tracking-wide">
-            Add reminder
-          </Label>
+          <Label className="text-xs text-gray-500 uppercase tracking-wide">Add rule</Label>
           <div className="grid gap-2">
             {addableRuleTypes.map((rt) => (
               <button
@@ -605,35 +843,21 @@ function RulesEditor({
                 className="flex items-center gap-2 text-left px-3 py-2 rounded-lg border border-dashed border-gray-300 hover:border-[#007E8C] hover:bg-[#007E8C]/5 transition-colors text-sm text-gray-600 hover:text-[#007E8C]"
               >
                 <Plus className="w-3.5 h-3.5 flex-shrink-0" />
-                <div>
-                  <span className="font-medium">{rt.label}</span>
-                  <span className="text-xs text-gray-400 ml-2">
-                    {rt.description}
-                  </span>
-                </div>
+                <span className="font-medium">{rt.label}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* Save button — only shows when there are unsaved changes */}
       {rules.length > 0 && (
         <Button
-          className={`w-full text-white ${
-            isDirty
-              ? 'bg-[#007E8C] hover:bg-[#006570]'
-              : 'bg-gray-400 cursor-default'
-          }`}
-          onClick={handleSave}
+          className={`w-full text-white ${isDirty ? 'bg-[#007E8C] hover:bg-[#006570]' : 'bg-gray-400 cursor-default'}`}
+          onClick={() => bulkSaveMutation.mutate(rules)}
           disabled={isSaving || !isDirty}
         >
-          {isSaving ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : (
-            <Save className="w-4 h-4 mr-2" />
-          )}
-          {isDirty ? 'Save Changes' : 'Saved'}
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+          {isDirty ? 'Save Custom Rules' : 'Saved'}
         </Button>
       )}
     </div>

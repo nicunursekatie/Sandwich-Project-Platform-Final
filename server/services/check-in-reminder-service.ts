@@ -13,12 +13,13 @@
 
 import sgMail from '@sendgrid/mail';
 import { db } from '../db';
-import { eventCheckInReminders, eventRequests, users, REMINDER_RULE_TYPES } from '@shared/schema';
-import { and, eq, lte } from 'drizzle-orm';
+import { eventCheckInReminders, eventReminderSnoozes, eventRequests, users, REMINDER_RULE_TYPES } from '@shared/schema';
+import { and, eq, lte, sql } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
-import { getUserMetadata } from '@shared/types';
+import { getUserMetadata, getCheckInReminderPreferences } from '@shared/types';
+import type { DefaultReminderRule } from '@shared/types';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import {
   calculateNextDue,
@@ -253,6 +254,81 @@ async function sendReminderSMS(
   }
 }
 
+/**
+ * For users who have configured global defaults, auto-provision per-event
+ * rows on any assigned events that don't have rows yet.  This runs once
+ * per cron cycle and is idempotent — if rows already exist, it skips.
+ */
+async function applyGlobalDefaultsToNewEvents(): Promise<number> {
+  let provisioned = 0;
+  try {
+    // Find users who have global defaults configured
+    const allUsers = await db.select().from(users);
+    const activeStatuses = ['new', 'in_process', 'scheduled', 'stalled'];
+
+    for (const user of allUsers) {
+      const prefs = getCheckInReminderPreferences(user);
+      if (!prefs?.configured) continue;
+
+      const enabledRules = prefs.rules.filter(r => r.enabled);
+      if (enabledRules.length === 0) continue;
+
+      // Find events this user is TSP contact for
+      const assignedEvents = await db
+        .select({ id: eventRequests.id, status: eventRequests.status, isCorporatePriority: eventRequests.isCorporatePriority })
+        .from(eventRequests)
+        .where(
+          and(
+            eq(eventRequests.tspContactAssigned, user.id),
+            sql`${eventRequests.status} IN (${sql.join(activeStatuses.map(s => sql`${s}`), sql`, `)})`,
+            sql`${eventRequests.deletedAt} IS NULL`,
+          ),
+        );
+
+      for (const event of assignedEvents) {
+        // Check if this event already has any rules for this user
+        const [existingRule] = await db
+          .select({ id: eventCheckInReminders.id })
+          .from(eventCheckInReminders)
+          .where(
+            and(
+              eq(eventCheckInReminders.eventRequestId, event.id),
+              eq(eventCheckInReminders.userId, user.id),
+            ),
+          )
+          .limit(1);
+
+        if (existingRule) continue; // Already has per-event rules
+
+        // Determine which rule set to use
+        const isCorp = event.isCorporatePriority === true;
+        const rulesToApply = isCorp && prefs.corporateRules?.some(r => r.enabled)
+          ? prefs.corporateRules.filter(r => r.enabled)
+          : enabledRules;
+
+        // Create per-event rows from defaults
+        for (const rule of rulesToApply) {
+          const isCondBased = rule.ruleType !== 'general_checkin';
+          await db.insert(eventCheckInReminders).values({
+            eventRequestId: event.id,
+            userId: user.id,
+            ruleType: rule.ruleType,
+            enabled: true,
+            thresholdDays: rule.thresholdDays,
+            frequency: isCondBased ? 'daily' : rule.frequency,
+            channel: prefs.defaultChannel,
+            nextDueAt: calculateNextDue(isCondBased ? 'daily' : rule.frequency),
+          }).onConflictDoNothing(); // unique index prevents duplicates
+          provisioned++;
+        }
+      }
+    }
+  } catch (error) {
+    logger.error('[CheckInReminders] Error applying global defaults:', error);
+  }
+  return provisioned;
+}
+
 export async function processCheckInReminders(): Promise<{
   processed: number;
   sent: number;
@@ -264,6 +340,12 @@ export async function processCheckInReminders(): Promise<{
   let errors = 0;
 
   try {
+    // Auto-provision per-event rules from global defaults for new events
+    const provisioned = await applyGlobalDefaultsToNewEvents();
+    if (provisioned > 0) {
+      logger.info(`[CheckInReminders] Provisioned ${provisioned} rules from global defaults`);
+    }
+
     // Get all enabled reminders that are due
     const dueReminders = await db
       .select()
@@ -308,6 +390,64 @@ export async function processCheckInReminders(): Promise<{
             .set({ enabled: false, updatedAt: new Date() })
             .where(eq(eventCheckInReminders.id, reminder.id));
           continue;
+        }
+
+        // Check for active snooze on this event+user
+        const [activeSnooze] = await db
+          .select()
+          .from(eventReminderSnoozes)
+          .where(
+            and(
+              eq(eventReminderSnoozes.eventRequestId, reminder.eventRequestId),
+              eq(eventReminderSnoozes.userId, reminder.userId),
+              eq(eventReminderSnoozes.active, true),
+            ),
+          )
+          .limit(1);
+
+        if (activeSnooze) {
+          let snoozeSuppressed = false;
+
+          if (activeSnooze.snoozeType === 'until_contact') {
+            // Auto-cancel if a new contact was logged after the snooze was created
+            const contactLog = event.contactAttemptsLog as Array<{ timestamp: string }> | null;
+            const latestContact = contactLog?.reduce(
+              (latest: string | null, entry: { timestamp: string }) =>
+                !latest || entry.timestamp > latest ? entry.timestamp : latest,
+              null,
+            );
+            if (latestContact && new Date(latestContact) > activeSnooze.createdAt) {
+              // Contact logged since snooze — auto-cancel
+              await db
+                .update(eventReminderSnoozes)
+                .set({ active: false, cancelledAt: new Date() })
+                .where(eq(eventReminderSnoozes.id, activeSnooze.id));
+              logger.info(`[CheckInReminders] Auto-cancelled until_contact snooze for event ${reminder.eventRequestId} (new contact logged)`);
+            } else {
+              snoozeSuppressed = true;
+            }
+          } else if (activeSnooze.snoozedUntil) {
+            // Timed or until_date: check if snooze has expired
+            if (now <= activeSnooze.snoozedUntil) {
+              snoozeSuppressed = true;
+            } else {
+              // Snooze expired — auto-cancel
+              await db
+                .update(eventReminderSnoozes)
+                .set({ active: false, cancelledAt: new Date() })
+                .where(eq(eventReminderSnoozes.id, activeSnooze.id));
+            }
+          }
+
+          if (snoozeSuppressed) {
+            // Reschedule for tomorrow and skip
+            const nextDue = calculateNextDue('daily');
+            await db
+              .update(eventCheckInReminders)
+              .set({ nextDueAt: nextDue, updatedAt: new Date() })
+              .where(eq(eventCheckInReminders.id, reminder.id));
+            continue;
+          }
         }
 
         // Evaluate whether the rule's condition is met
