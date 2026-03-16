@@ -613,16 +613,18 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
     }
 
     const shouldAssignVolunteer = (status === 'confirmed' || status === 'assigned') && !!signup.volunteerUserId;
-    const effectiveStatus = shouldAssignVolunteer ? 'assigned' : status;
-    const isConfirmedOrAssigned = effectiveStatus === 'confirmed' || effectiveStatus === 'assigned';
 
-    let updatedSignup: typeof signup | undefined;
+// Wrap assignment + status update in a transaction to prevent race conditions
+// when two concurrent approvals read and write the same event assignment arrays.
+const effectiveStatus = shouldAssignVolunteer ? 'assigned' : status;
+const isConfirmedOrAssigned = effectiveStatus === 'confirmed' || effectiveStatus === 'assigned';
 
-    await db.transaction(async (tx) => {
-      // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
-      if (shouldAssignVolunteer) {
-        const [event] = await tx
-          .select({
+let updatedSignup: typeof signup | undefined;
+
+await db.transaction(async (tx) => {
+  // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
+  if (shouldAssignVolunteer) {
+    const [event] = await tx          .select({
             id: eventRequests.id,
             assignedDriverIds: eventRequests.assignedDriverIds,
             assignedSpeakerIds: eventRequests.assignedSpeakerIds,
@@ -688,6 +690,9 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
       signup: updatedSignup,
     });
   } catch (error) {
+    if (error instanceof Error && (error as Error & { statusCode?: number }).statusCode === 404) {
+      return res.status(404).json({ error: error.message });
+    }
     logger.error('Error updating signup status:', error);
     const maybeStatusError = error as Error & { statusCode?: number };
     if (maybeStatusError.statusCode === 404) {
