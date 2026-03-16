@@ -218,8 +218,9 @@ export function ReminderRulesManager({
   const editorDirtyRef = useRef(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
+  // Show for the assigned TSP contact or any admin/super_admin
   const isAssignedContact = user?.id && tspContactUserId && user.id === tspContactUserId;
-  const isAdminUser = user?.role === 'admin' || user?.role === 'super_admin';
+  const isAdminUser = user?.role === 'super_admin' || user?.role === 'admin';
   if (!isAssignedContact && !isAdminUser) return null;
 
   // Fetch per-event rules

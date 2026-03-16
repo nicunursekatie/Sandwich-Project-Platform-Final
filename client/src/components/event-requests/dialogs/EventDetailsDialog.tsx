@@ -32,6 +32,7 @@ import type { EventRequest } from '@shared/schema';
 import { formatEventDate } from '../utils';
 import { parseSandwichTypes, formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import { RefrigerationWarningBadge } from '../RefrigerationWarningBadge';
+import EventEmailLogDisplay from '@/components/event-email-log-display';
 
 interface EventDetailsDialogProps {
   event: EventRequest | null;
@@ -339,6 +340,16 @@ export function EventDetailsDialog({
                     {resolveRecipientName(id)}
                   </Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Email History */}
+          {event.id && (
+            <div className="space-y-2">
+              <h3 className="font-semibold text-sm text-gray-700">Email History</h3>
+              <div className="pl-6">
+                <EventEmailLogDisplay eventId={event.id} />
               </div>
             </div>
           )}

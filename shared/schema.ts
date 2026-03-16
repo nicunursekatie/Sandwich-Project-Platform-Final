@@ -4739,6 +4739,53 @@ export type EmailTemplateSection = typeof emailTemplateSections.$inferSelect;
 export type InsertEmailTemplateSection = z.infer<typeof insertEmailTemplateSectionSchema>;
 export type UpdateEmailTemplateSection = z.infer<typeof updateEmailTemplateSectionSchema>;
 
+// User Email Templates - Per-user customizable templates for new org / returning contact emails
+export const userEmailTemplates = pgTable('user_email_templates', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  newOrgSubject: text('new_org_subject'),
+  newOrgBody: text('new_org_body'),
+  returningContactSubject: text('returning_contact_subject'),
+  returningContactBody: text('returning_contact_body'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('idx_user_email_templates_user_id').on(table.userId),
+]);
+
+export const insertUserEmailTemplateSchema = createInsertSchema(userEmailTemplates).omit({
+  id: true,
+});
+export const updateUserEmailTemplateSchema = createInsertSchema(userEmailTemplates)
+  .omit({ id: true, userId: true })
+  .partial();
+
+export type UserEmailTemplate = typeof userEmailTemplates.$inferSelect;
+export type InsertUserEmailTemplate = z.infer<typeof insertUserEmailTemplateSchema>;
+export type UpdateUserEmailTemplate = z.infer<typeof updateUserEmailTemplateSchema>;
+
+// Email Logs - Tracks all outbound emails sent via the event system
+export const emailLogs = pgTable('email_logs', {
+  id: serial('id').primaryKey(),
+  eventId: integer('event_id').references(() => eventRequests.id, { onDelete: 'set null' }),
+  sentAt: timestamp('sent_at').defaultNow(),
+  sentBy: varchar('sent_by').references(() => users.id, { onDelete: 'set null' }),
+  recipientEmail: text('recipient_email').notNull(),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  templateType: text('template_type'), // 'new_org' | 'returning_contact'
+}, (table) => [
+  index('idx_email_logs_event_id').on(table.eventId),
+  index('idx_email_logs_sent_by').on(table.sentBy),
+]);
+
+export const insertEmailLogSchema = createInsertSchema(emailLogs).omit({
+  id: true,
+  sentAt: true,
+});
+
+export type EmailLog = typeof emailLogs.$inferSelect;
+export type InsertEmailLog = z.infer<typeof insertEmailLogSchema>;
+
 // Password reset and initial password setup tokens
 // Replaces in-memory token storage for production scalability
 export const passwordResetTokens = pgTable('password_reset_tokens', {

@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLocation } from 'wouter';
-import { User, Lock, Save, Bell, Smartphone, Monitor } from 'lucide-react';
+import { User, Lock, Save, Bell, Smartphone, Monitor, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,6 +33,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { TollFreeVerificationPanel } from './toll-free-verification-panel';
 import AlertPreferences from './alert-preferences';
 import CheckInReminderPreferences from './check-in-reminder-preferences';
+import UserEmailTemplatesSettings from './user-email-templates-settings';
 import { useMobilePreference } from '@/mobile/components/mobile-layout-prompt';
 
 const profileSchema = z.object({
@@ -80,13 +81,13 @@ export default function UserProfile() {
   const getTabFromURL = () => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'password' || tabParam === 'notifications' || tabParam === 'profile') {
+    if (tabParam === 'password' || tabParam === 'notifications' || tabParam === 'profile' || tabParam === 'email-templates') {
       return tabParam;
     }
     return 'profile'; // default
   };
-  
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications'>(getTabFromURL());
+
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications' | 'email-templates'>(getTabFromURL());
   const [phoneNumber, setPhoneNumber] = useState('');
   const [consent, setConsent] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
@@ -405,6 +406,17 @@ export default function UserProfile() {
         >
           <Bell className="w-4 h-4 inline mr-2" />
           Alerts
+        </button>
+        <button
+          onClick={() => setActiveTab('email-templates')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'email-templates'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Mail className="w-4 h-4 inline mr-2" />
+          Email Templates
         </button>
       </div>
 
@@ -733,6 +745,11 @@ export default function UserProfile() {
           <Separator />
           <TollFreeVerificationPanel />
         </div>
+      )}
+
+      {/* Email Templates Tab */}
+      {activeTab === 'email-templates' && (
+        <UserEmailTemplatesSettings />
       )}
     </div>
   );
