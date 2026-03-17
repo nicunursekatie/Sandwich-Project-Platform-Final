@@ -89,7 +89,7 @@ const RULE_TYPES = [
   {
     ruleType: 'missing_details',
     label: 'Missing Key Details',
-    description: 'Alert if sandwich count/type, location, or pickup time are still missing',
+    description: 'Alert if sandwich count/type, location, or pickup time are still missing within your specified number of days before the event',
     defaultThreshold: 7,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of event',
@@ -175,9 +175,6 @@ export default function CheckInReminderPreferencesEditor() {
   const [rules, setRules] = useState<DefaultReminderRule[]>(defaultRules);
   const [corpRules, setCorpRules] = useState<DefaultReminderRule[]>(defaultCorpRules);
   const [channel, setChannel] = useState(serverPrefs?.defaultChannel ?? 'email');
-  const [showCorporate, setShowCorporate] = useState(
-    () => serverPrefs?.corporateRules?.some((r) => r.enabled) ?? false,
-  );
 
   // Reset local state when server data changes (e.g. after a reload or cache update).
   // `defaultRules` and `defaultCorpRules` are useMemo values derived solely from
@@ -187,7 +184,6 @@ export default function CheckInReminderPreferencesEditor() {
     setRules(defaultRules);
     setCorpRules(defaultCorpRules);
     setChannel(serverPrefs?.defaultChannel ?? 'email');
-    setShowCorporate(serverPrefs?.corporateRules?.some((r) => r.enabled) ?? false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverPrefs]);
 
@@ -252,7 +248,7 @@ export default function CheckInReminderPreferencesEditor() {
       configured: true,
       defaultChannel: channel as 'email' | 'sms' | 'both',
       rules,
-      corporateRules: showCorporate ? corpRules : undefined,
+      corporateRules: corpRules,
     });
   };
 
@@ -269,7 +265,7 @@ export default function CheckInReminderPreferencesEditor() {
   const generalRules = RULE_TYPES.filter((rt) => rt.category === 'all');
 
   return (
-    <Card>
+    <Card data-tour="reminder-preferences">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <AlarmClock className="w-5 h-5 text-[#007E8C]" />
@@ -346,64 +342,56 @@ export default function CheckInReminderPreferencesEditor() {
 
         {/* Corporate priority overrides */}
         <div className="border-t pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-purple-600" />
-              <div>
-                <h3 className="text-sm font-semibold text-gray-800">
-                  Corporate Priority Events
-                </h3>
-                <p className="text-xs text-gray-500">
-                  Tighter thresholds for corporate events that need faster follow-up
-                </p>
-              </div>
+          <div className="flex items-center gap-2 mb-3">
+            <Building2 className="w-4 h-4 text-purple-600" />
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">
+                Corporate Priority Events
+              </h3>
+              <p className="text-xs text-gray-500">
+                Tighter thresholds for corporate events that need faster follow-up. Toggle individual rules on/off and customize their thresholds.
+              </p>
             </div>
-            <Switch
-              checked={showCorporate}
-              onCheckedChange={setShowCorporate}
-            />
           </div>
 
-          {showCorporate && (
-            <div className="space-y-4 pl-1 border-l-2 border-purple-200 ml-2">
-              <div className="pl-4">
-                <RuleSection
-                  title="In-process corporate events"
-                  subtitle="Tighter cadence for high-priority corporate requests"
-                  ruleTypes={inProcessRules}
-                  rules={corpRules}
-                  onToggle={handleCorpToggle}
-                  onThreshold={handleCorpThreshold}
-                  onFrequency={handleCorpFrequency}
-                  accentColor="purple"
-                />
-              </div>
-              <div className="pl-4">
-                <RuleSection
-                  title="Scheduled corporate events"
-                  subtitle="Earlier warnings for corporate event dates"
-                  ruleTypes={scheduledRules}
-                  rules={corpRules}
-                  onToggle={handleCorpToggle}
-                  onThreshold={handleCorpThreshold}
-                  onFrequency={handleCorpFrequency}
-                  accentColor="purple"
-                />
-              </div>
-              <div className="pl-4">
-                <RuleSection
-                  title="General (corporate)"
-                  subtitle="Periodic check-in for corporate events"
-                  ruleTypes={generalRules}
-                  rules={corpRules}
-                  onToggle={handleCorpToggle}
-                  onThreshold={handleCorpThreshold}
-                  onFrequency={handleCorpFrequency}
-                  accentColor="purple"
-                />
-              </div>
+          <div className="space-y-4 pl-1 border-l-2 border-purple-200 ml-2">
+            <div className="pl-4">
+              <RuleSection
+                title="In-process corporate events"
+                subtitle="Tighter cadence for high-priority corporate requests"
+                ruleTypes={inProcessRules}
+                rules={corpRules}
+                onToggle={handleCorpToggle}
+                onThreshold={handleCorpThreshold}
+                onFrequency={handleCorpFrequency}
+                accentColor="purple"
+              />
             </div>
-          )}
+            <div className="pl-4">
+              <RuleSection
+                title="Scheduled corporate events"
+                subtitle="Earlier warnings for corporate event dates"
+                ruleTypes={scheduledRules}
+                rules={corpRules}
+                onToggle={handleCorpToggle}
+                onThreshold={handleCorpThreshold}
+                onFrequency={handleCorpFrequency}
+                accentColor="purple"
+              />
+            </div>
+            <div className="pl-4">
+              <RuleSection
+                title="General (corporate)"
+                subtitle="Periodic check-in for corporate events"
+                ruleTypes={generalRules}
+                rules={corpRules}
+                onToggle={handleCorpToggle}
+                onThreshold={handleCorpThreshold}
+                onFrequency={handleCorpFrequency}
+                accentColor="purple"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Save */}

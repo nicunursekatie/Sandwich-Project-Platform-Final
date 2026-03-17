@@ -85,6 +85,11 @@ export const NonEventTab: React.FC = () => {
                 setIsEditing(false);
                 setShowEventDetails(true);
               }}
+              onEdit={() => {
+                setSelectedEventRequest(request);
+                setIsEditing(true);
+                setShowEventDetails(true);
+              }}
               onDelete={() => {
                 if (window.confirm('Are you sure you want to permanently delete this non-event?')) {
                   deleteEventRequestMutation.mutate(request.id);

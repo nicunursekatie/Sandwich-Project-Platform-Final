@@ -130,6 +130,8 @@ import {
   type EmailTemplateSection,
   type InsertEmailTemplateSection,
   type UpdateEmailTemplateSection,
+  type HostResource,
+  type InsertHostResource,
 } from '@shared/schema';
 
 export interface IStorage {
@@ -775,6 +777,13 @@ export interface IStorage {
   createEmailTemplateSection(data: InsertEmailTemplateSection): Promise<EmailTemplateSection>;
   updateEmailTemplateSection(id: number, data: UpdateEmailTemplateSection): Promise<EmailTemplateSection | undefined>;
   resetEmailTemplateSectionToDefault(id: number): Promise<EmailTemplateSection | undefined>;
+
+  // Host Resources (manageable reference materials)
+  getHostResources(): Promise<HostResource[]>;
+  getHostResource(id: number): Promise<HostResource | undefined>;
+  createHostResource(data: InsertHostResource): Promise<HostResource>;
+  updateHostResource(id: number, data: Partial<InsertHostResource>): Promise<HostResource | undefined>;
+  deleteHostResource(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -3732,6 +3741,15 @@ export class MemStorage implements IStorage {
   async deleteAvailabilitySlot(id: number): Promise<void> {
     this.availabilitySlots.delete(id);
   }
+
+  // Host Resources (in-memory stubs)
+  async getHostResources(): Promise<HostResource[]> { return []; }
+  async getHostResource(_id: number): Promise<HostResource | undefined> { return undefined; }
+  async createHostResource(data: InsertHostResource): Promise<HostResource> {
+    return { id: 0, ...data, isActive: true, createdAt: new Date(), updatedAt: new Date() } as HostResource;
+  }
+  async updateHostResource(_id: number, _data: Partial<InsertHostResource>): Promise<HostResource | undefined> { return undefined; }
+  async deleteHostResource(_id: number): Promise<boolean> { return false; }
 }
 
 // GoogleSheetsStorage removed completely to prevent conflicts with meeting management system

@@ -115,7 +115,7 @@ const RULE_TYPE_CONFIG = {
   },
   missing_details: {
     label: 'Missing Key Details',
-    description: 'Alert if sandwich count/type, location, or pickup time are missing',
+    description: 'Alert if sandwich count/type, location, or pickup time are still missing within your specified number of days before the event',
     defaultThreshold: 7,
     thresholdPrefix: 'Within',
     thresholdLabel: 'days of event',
@@ -342,6 +342,7 @@ export function ReminderRulesManager({
           <Button
             variant="outline"
             size="sm"
+            data-tour="reminder-button"
             className={`h-8 relative ${
               activeSnooze
                 ? 'border-amber-400 text-amber-600 hover:bg-amber-50'
@@ -380,7 +381,7 @@ export function ReminderRulesManager({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="end">
+        <PopoverContent className="w-72 p-0" align="end" data-tour="reminder-popover">
           {/* Status summary */}
           <div className="p-3 space-y-2">
             {activeSnooze ? (

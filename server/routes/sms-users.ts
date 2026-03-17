@@ -107,6 +107,13 @@ router.get('/users/sms-status', isAuthenticated, async (req, res) => {
     const hostsOptedIn = hasConfirmedOptIn && campaignTypes.includes('hosts');
     const eventsOptedIn = hasConfirmedOptIn && campaignTypes.includes('events');
     
+    // Sync smsAlertsEnabled column if it's out of date
+    if (hasConfirmedOptIn && !user.smsAlertsEnabled) {
+      storage.updateUser(userId, { smsAlertsEnabled: true }).catch(() => {});
+    } else if (!hasConfirmedOptIn && user.smsAlertsEnabled) {
+      storage.updateUser(userId, { smsAlertsEnabled: false }).catch(() => {});
+    }
+
     res.json({
       hasOptedIn: hasConfirmedOptIn,
       phoneNumber: smsConsent.phoneNumber || null,
@@ -246,7 +253,7 @@ router.post('/users/sms-opt-out', isAuthenticated, async (req, res) => {
       },
     };
 
-    await storage.updateUser(userId, { metadata: updatedMetadata });
+    await storage.updateUser(userId, { metadata: updatedMetadata, smsAlertsEnabled: false });
 
     logger.log(`✅ SMS opt-out successful for user ${user.email}`);
 
@@ -409,7 +416,7 @@ router.post('/users/sms-confirm', isAuthenticated, async (req, res) => {
       },
     };
 
-    await storage.updateUser(userId, { metadata: updatedMetadata });
+    await storage.updateUser(userId, { metadata: updatedMetadata, smsAlertsEnabled: true });
 
     const redactedPhone = smsConsent.phoneNumber ? `***${smsConsent.phoneNumber.slice(-4)}` : 'unknown';
     logger.log(`✅ SMS confirmation successful for user ID: ${userId} (${redactedPhone})`);
@@ -960,7 +967,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         },
       };
 
-      await storage.updateUser(userWithPendingConfirmation.id, { metadata: updatedMetadata });
+      await storage.updateUser(userWithPendingConfirmation.id, { metadata: updatedMetadata, smsAlertsEnabled: true });
 
       logger.log(`✅ SMS confirmation via YES reply successful for user ID: ${userWithPendingConfirmation.id} (${redactedPhone})`);
 
@@ -1085,7 +1092,7 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         },
       };
 
-      await storage.updateUser(userWithMatchingCode.id, { metadata: updatedMetadata });
+      await storage.updateUser(userWithMatchingCode.id, { metadata: updatedMetadata, smsAlertsEnabled: true });
 
       logger.log(`✅ SMS confirmation via verification code successful for user ID: ${userWithMatchingCode.id} (${redactedPhone})`);
 

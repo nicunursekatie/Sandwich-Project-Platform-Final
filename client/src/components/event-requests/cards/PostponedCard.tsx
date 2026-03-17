@@ -44,6 +44,7 @@ import {
 interface PostponedCardProps {
   request: EventRequest;
   onView: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   onContact: () => void;
   onCall: () => void;
@@ -282,6 +283,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 export const PostponedCard: React.FC<PostponedCardProps> = ({
   request,
   onView,
+  onEdit,
   onDelete,
   onContact,
   onCall,
@@ -469,6 +471,18 @@ export const PostponedCard: React.FC<PostponedCardProps> = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p>View event details</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={onEdit} data-testid="button-edit" className="h-8">
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Edit Event
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Edit this event</p>
               </TooltipContent>
             </Tooltip>
 

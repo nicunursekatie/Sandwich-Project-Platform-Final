@@ -217,6 +217,34 @@ export const promotionGraphicsUpload = multer({
   },
 });
 
+// Configure multer for host resource uploads (PDFs and images for host resources page)
+export const hostResourceUpload = multer({
+  dest: 'uploads/host-resources/',
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
+
+    const allowedExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const hasValidType = allowedTypes.includes(file.mimetype);
+    const hasValidExtension = allowedExtensions.some((ext) =>
+      file.originalname.toLowerCase().endsWith(ext)
+    );
+
+    if (hasValidType || hasValidExtension) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and image files (JPG, PNG, GIF, WEBP) are allowed for host resources'));
+    }
+  },
+});
+
 // Configure multer for sign-in sheet photo uploads (for photo scanner feature)
 export const signInSheetUpload = multer({
   dest: 'uploads/signin-sheets/',

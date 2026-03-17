@@ -458,6 +458,11 @@ export const MyAssignmentsTab: React.FC = () => {
               setIsEditing(false);
               setShowEventDetails(true);
             }}
+            onEdit={() => {
+              setSelectedEventRequest(request);
+              setIsEditing(true);
+              setShowEventDetails(true);
+            }}
             onReactivate={() => {
               if (window.confirm('Do you want to reactivate this event request?')) {
                 handleStatusChange(request.id, 'new');

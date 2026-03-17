@@ -1315,7 +1315,7 @@ function SMSSetupSection({
   // Update campaign types mutation
   const updateCampaignsMutation = useMutation({
     mutationFn: (types: CampaignType[]) =>
-      apiRequest('PATCH', '/api/users/sms-campaigns', { campaignTypes: types }),
+      apiRequest('PATCH', '/api/me/sms-campaigns', { campaignTypes: types }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/sms-status'] });
       toast({

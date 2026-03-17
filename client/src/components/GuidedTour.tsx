@@ -105,9 +105,9 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
   
   // Filter tours based on user permissions
   const availableTours = useMemo(() => {
-    // If no user, show tours without permission requirements
+    // If no user, show tours without permission or email requirements
     if (!user) {
-      return TOURS.filter(tour => !tour.requiredPermission);
+      return TOURS.filter(tour => !tour.requiredPermission && !tour.allowedEmails);
     }
     
     // Spread the full user object to preserve all fields (role, permissions, legacyRole, etc.)
@@ -118,6 +118,10 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
     };
     
     return TOURS.filter(tour => {
+      // If email-restricted, check email first
+      if (tour.allowedEmails && tour.allowedEmails.length > 0) {
+        if (!user.email || !tour.allowedEmails.includes(user.email.toLowerCase())) return false;
+      }
       // If no permission required, tour is available to everyone
       if (!tour.requiredPermission) return true;
       // Check if user has the required permission

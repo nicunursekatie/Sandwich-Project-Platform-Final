@@ -640,10 +640,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset pagination when filters change
+  // Reset pagination when filters or tab change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedSearchQuery, statusFilter, sortBy]);
+  }, [activeTab, debouncedSearchQuery, statusFilter, sortBy]);
 
   // Track if we've already handled the initial event to prevent reopening
   const [hasHandledInitialEvent, setHasHandledInitialEvent] = useState(false);

@@ -566,4 +566,77 @@ meRouter.put('/check-in-reminder-preferences', async (req: AuthenticatedRequest,
   }
 });
 
+// ---------------------------------------------------------------------------
+// SMS Campaign Preferences (user updating their own SMS notification types)
+// ---------------------------------------------------------------------------
+
+import { z } from 'zod';
+
+const smsCampaignsSchema = z.object({
+  campaignTypes: z.array(z.enum(['hosts', 'events'])).min(1, 'At least one campaign type is required'),
+});
+
+meRouter.patch('/sms-campaigns', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const user = getUser(req);
+    if (!user) return res.status(401).json({ message: 'Authentication required' });
+
+    const normalizedUserId = normalizeToString(user.id);
+    if (!normalizedUserId) return res.status(400).json({ message: 'Invalid user identifier' });
+
+    const { campaignTypes } = smsCampaignsSchema.parse(req.body);
+
+    const allUsers = await storage.getAllUsers();
+    const fullUser = allUsers.find((u) => normalizeToString(u.id) === normalizedUserId);
+    if (!fullUser) return res.status(404).json({ message: 'User not found' });
+
+    const metadata = (fullUser.metadata as any) || {};
+    const smsConsent = metadata.smsConsent || {};
+
+    // Verify user has confirmed SMS opt-in
+    // Accept various legacy data shapes: status='confirmed', enabled=true, or phoneNumber present with confirmed status
+    const hasConfirmedStatus = smsConsent.status === 'confirmed';
+    const hasEnabledFlag = smsConsent.enabled === true || smsConsent.enabled === 'true';
+    const hasPhone = !!smsConsent.phoneNumber;
+    const isConfirmed = hasConfirmedStatus || hasEnabledFlag || (hasPhone && smsConsent.status !== 'pending_confirmation');
+    logger.info(`SMS campaigns update - user ${normalizedUserId}: status=${smsConsent.status}, enabled=${smsConsent.enabled}, phone=${hasPhone}, isConfirmed=${isConfirmed}`);
+    if (!isConfirmed) {
+      return res.status(400).json({
+        error: 'You must first confirm SMS opt-in before updating campaign preferences',
+      });
+    }
+
+    const updatedMetadata = {
+      ...metadata,
+      smsConsent: {
+        ...smsConsent,
+        campaignTypes: campaignTypes,
+        campaignType: campaignTypes[0], // Keep legacy field in sync
+        campaignsUpdatedAt: new Date().toISOString(),
+      },
+    };
+
+    await storage.updateUser(normalizedUserId, { metadata: updatedMetadata });
+
+    logger.info(`SMS campaign types updated for user ${normalizedUserId}: ${campaignTypes.join(', ')}`);
+
+    res.json({
+      success: true,
+      message: 'SMS campaign preferences updated',
+      campaignTypes: campaignTypes,
+      hostsOptedIn: campaignTypes.includes('hosts'),
+      eventsOptedIn: campaignTypes.includes('events'),
+    });
+  } catch (error) {
+    if ((error as any).name === 'ZodError') {
+      return res.status(400).json({
+        error: 'Invalid request',
+        details: (error as any).errors,
+      });
+    }
+    logger.error('Failed to update SMS campaign preferences', error);
+    res.status(500).json({ message: 'Failed to update SMS campaign preferences' });
+  }
+});
+
 export default meRouter;

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -35,6 +35,9 @@ import {
   Share2,
   Eye,
   Image,
+  Trash2,
+  Upload,
+  Plus,
 } from 'lucide-react';
 import {
   Dialog,
@@ -42,7 +45,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import type { HostResource } from '@shared/schema';
 
 // Brand colors: #236383 (dark teal), #47b3cb (light teal), #007e8c (primary teal), #a31c41 (burgundy), #fbad3f (gold)
 
@@ -108,17 +122,19 @@ function ResourceCard({
   );
 }
 
-// Image guide card with download and share
+// Image guide card with download, share, and optional delete
 function ImageGuideCard({
   title,
   description,
   imageUrl,
   fileName,
+  onDelete,
 }: {
   title: string;
   description: string;
   imageUrl: string;
   fileName: string;
+  onDelete?: () => void;
 }) {
   const { toast } = useToast();
 
@@ -208,23 +224,38 @@ function ImageGuideCard({
           >
             <Share2 className="w-4 h-4" />
           </Button>
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={(e) => {
+                e.preventDefault();
+                onDelete();
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// Document download card with preview
+// Document download card with preview and optional delete
 function DocumentCard({
   title,
   description,
   fileType,
   downloadUrl,
+  onDelete,
 }: {
   title: string;
   description: string;
   fileType: string;
   downloadUrl: string;
+  onDelete?: () => void;
 }) {
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const { toast } = useToast();
@@ -295,13 +326,26 @@ function DocumentCard({
       >
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* PDF Thumbnail Preview */}
-            <div className="relative w-full sm:w-32 h-40 sm:h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 group">
-              <iframe
-                src={`${downloadUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                className="w-full h-full pointer-events-none"
-                title={`Preview of ${title}`}
-              />
+            {/* PDF Thumbnail - renders actual document preview */}
+            <div className="relative w-full sm:w-32 h-40 sm:h-24 bg-white rounded-lg overflow-hidden flex-shrink-0 group border border-[#a31c41]/20">
+              {fileType.toUpperCase() === 'PDF' ? (
+                <object
+                  data={`${downloadUrl}#page=1&view=FitH`}
+                  type="application/pdf"
+                  className="w-full h-full pointer-events-none"
+                  aria-label={`Preview of ${title}`}
+                >
+                  <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
+                    <FileText className="w-8 h-8 text-[#a31c41]/60" />
+                    <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">{fileType}</span>
+                  </div>
+                </object>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
+                  <FileText className="w-8 h-8 text-[#a31c41]/60" />
+                  <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">{fileType}</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2">
                   <Eye className="w-4 h-4 text-[#007e8c]" />
@@ -351,6 +395,20 @@ function DocumentCard({
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Share</span>
                 </Button>
+                {onDelete && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Delete</span>
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -401,8 +459,209 @@ function DocumentCard({
   );
 }
 
+
+// Upload dialog for admin users
+function UploadResourceDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [title, setTitle] = React.useState('');
+  const [description, setDescription] = React.useState('');
+  const [category, setCategory] = React.useState<string>('document');
+  const [file, setFile] = React.useState<File | null>(null);
+  const [uploading, setUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setCategory('document');
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file || !title || !description) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('category', category);
+
+      const res = await fetch('/api/host-resources/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Upload failed');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/host-resources'] });
+      toast({ title: 'Upload complete', description: `"${title}" has been added to host resources.` });
+      resetForm();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Could not upload the file.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5 text-[#007e8c]" />
+            Upload Resource
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="resource-title">Title</Label>
+            <Input
+              id="resource-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Deli Sandwich Making 101"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="resource-description">Description</Label>
+            <Textarea
+              id="resource-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of this resource..."
+              rows={2}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="resource-category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="document">Document (PDF)</SelectItem>
+                <SelectItem value="image">Assembly Guide (Image)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="resource-file">File</Label>
+            <Input
+              ref={fileInputRef}
+              id="resource-file"
+              type="file"
+              accept={category === 'document' ? '.pdf' : '.jpg,.jpeg,.png,.gif,.webp'}
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              {category === 'document' ? 'PDF files up to 15MB' : 'Image files (JPG, PNG, WEBP) up to 15MB'}
+            </p>
+          </div>
+
+          {file && (
+            <div className="text-sm text-muted-foreground bg-gray-50 rounded-lg p-3">
+              Selected: <span className="font-medium">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(1)} MB)
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={uploading || !file || !title || !description}
+              className="bg-[#007e8c] hover:bg-[#236383] text-white"
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function HostResources() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [uploadOpen, setUploadOpen] = React.useState(false);
+
+  const isAdmin = user && (
+    user.role === 'admin' ||
+    user.role === 'admin_coordinator' ||
+    user.role === 'super_admin'
+  );
+
+  // Fetch resources from API
+  const { data: apiResources, isLoading } = useQuery<HostResource[]>({
+    queryKey: ['/api/host-resources'],
+  });
+
+  // Map API resources (DB auto-seeds defaults on first empty fetch)
+  const resources = (apiResources || []).map(r => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    category: r.category,
+    fileType: r.fileType || '',
+    fileUrl: r.fileUrl,
+    fileName: r.fileName || r.fileUrl.split('/').pop() || 'file',
+  }));
+
+  const documents = resources.filter(r => r.category === 'document');
+  const images = resources.filter(r => r.category === 'image');
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/host-resources/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/host-resources'] });
+      toast({ title: 'Resource deleted', description: 'The resource has been removed.' });
+    },
+    onError: () => {
+      toast({ title: 'Delete failed', description: 'Could not delete the resource.', variant: 'destructive' });
+    },
+  });
+
+  const handleDelete = (id: number, title: string) => {
+    if (window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  // Admins can delete any resource (all resources now have real DB IDs)
+  const canDelete = !!isAdmin;
 
   return (
     <div className="p-4 sm:p-6 space-y-8 max-w-6xl mx-auto">
@@ -418,7 +677,19 @@ export default function HostResources() {
           Everything you need to run your sandwich collection site.
           Access tools, download documents, and find important information all in one place.
         </p>
+        {isAdmin && (
+          <Button
+            onClick={() => setUploadOpen(true)}
+            className="mt-3 bg-[#007e8c] hover:bg-[#236383] text-white gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Upload New Resource
+          </Button>
+        )}
       </div>
+
+      {/* Upload Dialog */}
+      {isAdmin && <UploadResourceDialog open={uploadOpen} onOpenChange={setUploadOpen} />}
 
       {/* Quick Links Section */}
       <section>
@@ -467,7 +738,7 @@ export default function HostResources() {
             title="All Hosts Directory"
             description="Browse the complete list of host collection sites and their details."
             icon={Building2}
-            href="hosts"
+            href="dashboard?section=hosts"
           />
         </div>
       </section>
@@ -482,48 +753,26 @@ export default function HostResources() {
           Download and print these documents for your collection site.
         </p>
         <div className="space-y-3">
-          <DocumentCard
-            title="TSP Host Handbook"
-            description="Complete guide for host collection sites — everything you need to know about hosting a sandwich collection"
-            fileType="PDF"
-            downloadUrl="/attached_assets/TSP-Host-Handbook (8).pdf"
-          />
-          <DocumentCard
-            title="Deli Sandwich Labels"
-            description="Pre-formatted labels for deli meat sandwiches with ingredient info"
-            fileType="PDF"
-            downloadUrl="/documents/deli-labels.pdf"
-          />
-          <DocumentCard
-            title="PB&J Sandwich Labels"
-            description="Pre-formatted labels for peanut butter & jelly sandwiches"
-            fileType="PDF"
-            downloadUrl="/documents/pbj-labels.pdf"
-          />
-          <DocumentCard
-            title="Volunteer Sign-In Sheet"
-            description="Sign-in sheet for tracking volunteer attendance at your site"
-            fileType="PDF"
-            downloadUrl="/documents/volunteer-sign-in-sheet.pdf"
-          />
-          <DocumentCard
-            title="Food Safety for Hosts"
-            description="Food safety guidelines and best practices for host collection sites"
-            fileType="PDF"
-            downloadUrl="/documents/food-safety-hosts.pdf"
-          />
-          <DocumentCard
-            title="Deli Sandwich Making 101"
-            description="Step-by-step guide for making deli sandwiches"
-            fileType="PDF"
-            downloadUrl="/documents/deli-sandwich-making-101.pdf"
-          />
-          <DocumentCard
-            title="PB&J Sandwich Making 101"
-            description="Step-by-step guide for making peanut butter & jelly sandwiches"
-            fileType="PDF"
-            downloadUrl="/documents/pbj-sandwich-making-101.pdf"
-          />
+          {isLoading ? (
+            <>
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </>
+          ) : documents.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No documents available.</p>
+          ) : (
+            documents.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                title={doc.title}
+                description={doc.description}
+                fileType={doc.fileType}
+                downloadUrl={doc.fileUrl}
+                onDelete={canDelete ? () => handleDelete(doc.id, doc.title) : undefined}
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -537,30 +786,26 @@ export default function HostResources() {
           Visual guides for proper sandwich assembly. Download or share these with your volunteers.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ImageGuideCard
-            title="Sandwich Assembly"
-            description="Basic sandwich assembly guide showing cheese, meat, and cheese layers"
-            imageUrl="/images/sandwich-assembly.png"
-            fileName="sandwich-assembly.png"
-          />
-          <ImageGuideCard
-            title="White Bread Sandwich"
-            description="Complete sandwich with white bread - bread, cheese, meat, cheese, bread"
-            imageUrl="/images/sandwich-white-bread.png"
-            fileName="sandwich-white-bread.png"
-          />
-          <ImageGuideCard
-            title="Why Cheese on the Bottom"
-            description="Cheese acts as a moisture barrier to keep bread from getting soggy"
-            imageUrl="/images/why-cheese-bottom.png"
-            fileName="why-cheese-bottom.png"
-          />
-          <ImageGuideCard
-            title="PB&J Assembly"
-            description="Peanut butter on both slices, jelly on one - 3 easy steps"
-            imageUrl="/images/pbj-assembly.png"
-            fileName="pbj-assembly.png"
-          />
+          {isLoading ? (
+            <>
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </>
+          ) : images.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4 col-span-full">No assembly guides available.</p>
+          ) : (
+            images.map((img) => (
+              <ImageGuideCard
+                key={img.id}
+                title={img.title}
+                description={img.description}
+                imageUrl={img.fileUrl}
+                fileName={img.fileName}
+                onDelete={canDelete ? () => handleDelete(img.id, img.title) : undefined}
+              />
+            ))
+          )}
         </div>
       </section>
 

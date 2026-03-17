@@ -4854,6 +4854,33 @@ export type TspContactFollowup = typeof tspContactFollowups.$inferSelect;
 export type InsertTspContactFollowup = z.infer<typeof insertTspContactFollowupSchema>;
 
 // ============================================================================
+// HOST RESOURCES - Manageable reference materials for the Host Resources page
+// ============================================================================
+
+export const hostResources = pgTable('host_resources', {
+  id: serial('id').primaryKey(),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  category: varchar('category', { length: 50 }).notNull(), // 'document' | 'image' | 'link'
+  fileType: varchar('file_type', { length: 20 }), // 'PDF', 'JPEG', 'PNG', etc.
+  fileUrl: text('file_url').notNull(), // URL path like /documents/foo.pdf or /images/bar.png
+  fileName: varchar('file_name', { length: 255 }), // Download filename
+  sortOrder: integer('sort_order').notNull().default(0),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const insertHostResourceSchema = createInsertSchema(hostResources).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type HostResource = typeof hostResources.$inferSelect;
+export type InsertHostResource = z.infer<typeof insertHostResourceSchema>;
+
+// ============================================================================
 // EVENT CONTACTS DIRECTORY - Aggregated view of contacts from event requests
 // ============================================================================
 
