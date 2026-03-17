@@ -326,12 +326,26 @@ function DocumentCard({
       >
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* PDF Thumbnail */}
-            <div className="relative w-full sm:w-32 h-40 sm:h-24 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15 rounded-lg overflow-hidden flex-shrink-0 group flex items-center justify-center border border-[#a31c41]/20">
-              <div className="flex flex-col items-center gap-1">
-                <FileText className="w-8 h-8 text-[#a31c41]/60" />
-                <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">{fileType}</span>
-              </div>
+            {/* PDF Thumbnail - renders actual document preview */}
+            <div className="relative w-full sm:w-32 h-40 sm:h-24 bg-white rounded-lg overflow-hidden flex-shrink-0 group border border-[#a31c41]/20">
+              {fileType.toUpperCase() === 'PDF' ? (
+                <object
+                  data={`${downloadUrl}#page=1&view=FitH`}
+                  type="application/pdf"
+                  className="w-full h-full pointer-events-none"
+                  aria-label={`Preview of ${title}`}
+                >
+                  <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
+                    <FileText className="w-8 h-8 text-[#a31c41]/60" />
+                    <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">{fileType}</span>
+                  </div>
+                </object>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
+                  <FileText className="w-8 h-8 text-[#a31c41]/60" />
+                  <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">{fileType}</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-2">
                   <Eye className="w-4 h-4 text-[#007e8c]" />
@@ -445,20 +459,6 @@ function DocumentCard({
   );
 }
 
-// Hardcoded fallback data used when API returns empty (before migration runs)
-const FALLBACK_DOCUMENTS: Array<{ title: string; description: string; category: string; fileType: string; fileUrl: string; fileName: string }> = [
-  { title: 'TSP Host Handbook', description: 'Complete guide for host collection sites — everything you need to know about hosting a sandwich collection', category: 'document', fileType: 'PDF', fileUrl: '/documents/tsp-host-handbook.pdf', fileName: 'tsp-host-handbook.pdf' },
-  { title: 'Deli Sandwich Labels', description: 'Pre-formatted labels for deli meat sandwiches with ingredient info', category: 'document', fileType: 'PDF', fileUrl: '/documents/deli-labels.pdf', fileName: 'deli-labels.pdf' },
-  { title: 'PB&J Sandwich Labels', description: 'Pre-formatted labels for peanut butter & jelly sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/pbj-labels.pdf', fileName: 'pbj-labels.pdf' },
-  { title: 'Volunteer Sign-In Sheet', description: 'Sign-in sheet for tracking volunteer attendance at your site', category: 'document', fileType: 'PDF', fileUrl: '/documents/volunteer-sign-in-sheet.pdf', fileName: 'volunteer-sign-in-sheet.pdf' },
-  { title: 'Food Safety for Hosts', description: 'Food safety guidelines and best practices for host collection sites', category: 'document', fileType: 'PDF', fileUrl: '/documents/food-safety-hosts.pdf', fileName: 'food-safety-hosts.pdf' },
-  { title: 'Deli Sandwich Making 101', description: 'Step-by-step guide for making deli sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/deli-sandwich-making-101.pdf', fileName: 'deli-sandwich-making-101.pdf' },
-  { title: 'PB&J Sandwich Making 101', description: 'Step-by-step guide for making peanut butter & jelly sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/pbj-sandwich-making-101.pdf', fileName: 'pbj-sandwich-making-101.pdf' },
-  { title: 'Deli Sandwich Assembly', description: 'Deli sandwich assembly guide with portion sizes in ounces', category: 'image', fileType: 'JPEG', fileUrl: '/images/sandwich-assembly.jpeg', fileName: 'deli-sandwich-assembly-ounces.jpeg' },
-  { title: 'White Bread Sandwich', description: 'Complete sandwich with white bread - bread, cheese, meat, cheese, bread', category: 'image', fileType: 'PNG', fileUrl: '/images/sandwich-white-bread.png', fileName: 'sandwich-white-bread.png' },
-  { title: 'Why Cheese on the Bottom', description: 'Cheese acts as a moisture barrier to keep bread from getting soggy', category: 'image', fileType: 'PNG', fileUrl: '/images/why-cheese-bottom.png', fileName: 'why-cheese-bottom.png' },
-  { title: 'PB&J Assembly', description: 'Peanut butter on both slices, jelly on one - 3 easy steps', category: 'image', fileType: 'PNG', fileUrl: '/images/pbj-assembly.png', fileName: 'pbj-assembly.png' },
-];
 
 // Upload dialog for admin users
 function UploadResourceDialog({
@@ -624,18 +624,16 @@ export default function HostResources() {
     queryKey: ['/api/host-resources'],
   });
 
-  // Use API data if available, otherwise use fallback
-  const resources = apiResources && apiResources.length > 0
-    ? apiResources.map(r => ({
-        id: r.id,
-        title: r.title,
-        description: r.description,
-        category: r.category,
-        fileType: r.fileType || '',
-        fileUrl: r.fileUrl,
-        fileName: r.fileName || r.fileUrl.split('/').pop() || 'file',
-      }))
-    : FALLBACK_DOCUMENTS.map((r, i) => ({ id: i, ...r }));
+  // Map API resources (DB auto-seeds defaults on first empty fetch)
+  const resources = (apiResources || []).map(r => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    category: r.category,
+    fileType: r.fileType || '',
+    fileUrl: r.fileUrl,
+    fileName: r.fileName || r.fileUrl.split('/').pop() || 'file',
+  }));
 
   const documents = resources.filter(r => r.category === 'document');
   const images = resources.filter(r => r.category === 'image');
@@ -662,8 +660,8 @@ export default function HostResources() {
     }
   };
 
-  // Only show delete buttons if data came from the API (has real IDs)
-  const canDelete = isAdmin && apiResources && apiResources.length > 0;
+  // Admins can delete any resource (all resources now have real DB IDs)
+  const canDelete = !!isAdmin;
 
   return (
     <div className="p-4 sm:p-6 space-y-8 max-w-6xl mx-auto">

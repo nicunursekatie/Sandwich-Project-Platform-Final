@@ -8,10 +8,42 @@ import { hostResourceUpload } from '../middleware/uploads';
 
 const router = Router();
 
-// GET all active host resources
+// Default resources to seed into the database on first fetch
+const DEFAULT_RESOURCES = [
+  { title: 'TSP Host Handbook', description: 'Complete guide for host collection sites — everything you need to know about hosting a sandwich collection', category: 'document', fileType: 'PDF', fileUrl: '/documents/tsp-host-handbook.pdf', fileName: 'tsp-host-handbook.pdf', sortOrder: 1, isActive: true },
+  { title: 'Deli Sandwich Labels', description: 'Pre-formatted labels for deli meat sandwiches with ingredient info', category: 'document', fileType: 'PDF', fileUrl: '/documents/deli-labels.pdf', fileName: 'deli-labels.pdf', sortOrder: 2, isActive: true },
+  { title: 'PB&J Sandwich Labels', description: 'Pre-formatted labels for peanut butter & jelly sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/pbj-labels.pdf', fileName: 'pbj-labels.pdf', sortOrder: 3, isActive: true },
+  { title: 'Volunteer Sign-In Sheet', description: 'Sign-in sheet for tracking volunteer attendance at your site', category: 'document', fileType: 'PDF', fileUrl: '/documents/volunteer-sign-in-sheet.pdf', fileName: 'volunteer-sign-in-sheet.pdf', sortOrder: 4, isActive: true },
+  { title: 'Food Safety for Hosts', description: 'Food safety guidelines and best practices for host collection sites', category: 'document', fileType: 'PDF', fileUrl: '/documents/food-safety-hosts.pdf', fileName: 'food-safety-hosts.pdf', sortOrder: 5, isActive: true },
+  { title: 'Deli Sandwich Making 101', description: 'Step-by-step guide for making deli sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/deli-sandwich-making-101.pdf', fileName: 'deli-sandwich-making-101.pdf', sortOrder: 6, isActive: true },
+  { title: 'PB&J Sandwich Making 101', description: 'Step-by-step guide for making peanut butter & jelly sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/pbj-sandwich-making-101.pdf', fileName: 'pbj-sandwich-making-101.pdf', sortOrder: 7, isActive: true },
+  { title: 'Deli Sandwich Assembly', description: 'Deli sandwich assembly guide with portion sizes in ounces', category: 'image', fileType: 'JPEG', fileUrl: '/images/sandwich-assembly.jpeg', fileName: 'deli-sandwich-assembly-ounces.jpeg', sortOrder: 1, isActive: true },
+  { title: 'White Bread Sandwich', description: 'Complete sandwich with white bread - bread, cheese, meat, cheese, bread', category: 'image', fileType: 'PNG', fileUrl: '/images/sandwich-white-bread.png', fileName: 'sandwich-white-bread.png', sortOrder: 2, isActive: true },
+  { title: 'Why Cheese on the Bottom', description: 'Cheese acts as a moisture barrier to keep bread from getting soggy', category: 'image', fileType: 'PNG', fileUrl: '/images/why-cheese-bottom.png', fileName: 'why-cheese-bottom.png', sortOrder: 3, isActive: true },
+  { title: 'PB&J Assembly', description: 'Peanut butter on both slices, jelly on one - 3 easy steps', category: 'image', fileType: 'PNG', fileUrl: '/images/pbj-assembly.png', fileName: 'pbj-assembly.png', sortOrder: 4, isActive: true },
+];
+
+let seeded = false;
+
+// GET all active host resources (seeds default data on first empty fetch)
 router.get('/', async (_req, res) => {
   try {
-    const resources = await storage.getHostResources();
+    let resources = await storage.getHostResources();
+
+    // Auto-seed default resources if DB is empty (first load)
+    if (resources.length === 0 && !seeded) {
+      seeded = true;
+      logger.info('Seeding default host resources into database');
+      for (const item of DEFAULT_RESOURCES) {
+        try {
+          await storage.createHostResource(item);
+        } catch (err) {
+          logger.error(`Failed to seed resource: ${item.title}`, err);
+        }
+      }
+      resources = await storage.getHostResources();
+    }
+
     res.json(resources);
   } catch (error) {
     logger.error('Failed to get host resources', error);
@@ -37,7 +69,7 @@ router.post('/upload', hostResourceUpload.single('file'), async (req: any, res) 
     // Determine destination directory based on category
     const ext = path.extname(file.originalname).toLowerCase();
     const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
-    const isPdf = ext === '.pdf';
+
 
     // Sanitize filename: lowercase, replace spaces with hyphens, remove special chars
     const sanitizedName = file.originalname
