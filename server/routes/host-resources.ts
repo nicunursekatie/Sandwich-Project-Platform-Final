@@ -25,23 +25,28 @@ const DEFAULT_RESOURCES = [
 
 let seeded = false;
 
-// GET all active host resources (seeds default data on first empty fetch)
+// GET all active host resources (seeds missing defaults on first fetch)
 router.get('/', async (_req, res) => {
   try {
     let resources = await storage.getHostResources();
 
-    // Auto-seed default resources if DB is empty (first load)
-    if (resources.length === 0 && !seeded) {
+    // Auto-seed any default resources not already in the DB (by fileUrl)
+    if (!seeded) {
       seeded = true;
-      logger.info('Seeding default host resources into database');
-      for (const item of DEFAULT_RESOURCES) {
-        try {
-          await storage.createHostResource(item);
-        } catch (err) {
-          logger.error(`Failed to seed resource: ${item.title}`, err);
+      const existingUrls = new Set(resources.map(r => r.fileUrl));
+      const missing = DEFAULT_RESOURCES.filter(d => !existingUrls.has(d.fileUrl));
+
+      if (missing.length > 0) {
+        logger.info(`Seeding ${missing.length} missing default host resources into database`);
+        for (const item of missing) {
+          try {
+            await storage.createHostResource(item);
+          } catch (err) {
+            logger.error(`Failed to seed resource: ${item.title}`, err);
+          }
         }
+        resources = await storage.getHostResources();
       }
-      resources = await storage.getHostResources();
     }
 
     res.json(resources);
