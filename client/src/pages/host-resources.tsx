@@ -8,7 +8,16 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
+import { Document, Thumbnail, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
 import { useAuth } from '@/hooks/useAuth';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'react-pdf/node_modules/pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 // UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -243,6 +252,40 @@ function ImageGuideCard({
   );
 }
 
+// Renders the first page of a PDF as a real thumbnail using react-pdf
+function PdfThumbnail({ url, title }: { url: string; title: string }) {
+  const [error, setError] = React.useState(false);
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
+        <FileText className="w-8 h-8 text-[#a31c41]/60" />
+        <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">PDF</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full flex items-start justify-center overflow-hidden bg-white">
+      <Document
+        file={url}
+        onLoadError={() => setError(true)}
+        loading={
+          <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
+            <FileText className="w-8 h-8 text-[#a31c41]/60 animate-pulse" />
+          </div>
+        }
+      >
+        <Thumbnail
+          pageNumber={1}
+          width={128}
+          onItemClick={() => {}}
+        />
+      </Document>
+    </div>
+  );
+}
+
 // Document download card with preview and optional delete
 function DocumentCard({
   title,
@@ -329,17 +372,7 @@ function DocumentCard({
             {/* PDF Thumbnail - renders actual document preview */}
             <div className="relative w-full sm:w-32 h-40 sm:h-24 bg-white rounded-lg overflow-hidden flex-shrink-0 group border border-[#a31c41]/20">
               {fileType.toUpperCase() === 'PDF' ? (
-                <object
-                  data={`${downloadUrl}#page=1&view=FitH`}
-                  type="application/pdf"
-                  className="w-full h-full pointer-events-none"
-                  aria-label={`Preview of ${title}`}
-                >
-                  <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
-                    <FileText className="w-8 h-8 text-[#a31c41]/60" />
-                    <span className="text-[10px] font-semibold text-[#a31c41]/60 uppercase tracking-wide">{fileType}</span>
-                  </div>
-                </object>
+                <PdfThumbnail url={downloadUrl} title={title} />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-1 bg-gradient-to-br from-[#a31c41]/5 to-[#a31c41]/15">
                   <FileText className="w-8 h-8 text-[#a31c41]/60" />
