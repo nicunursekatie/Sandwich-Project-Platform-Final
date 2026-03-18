@@ -114,14 +114,9 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
   // Helper function to process a new message (used by both socket and polling)
   const processNewMessage = useCallback((message: InstantMessage) => {
-    // Skip messages from yourself entirely - they're added by the sendMessage API response
-    // This prevents duplicate messages (the API adds it, then socket would add it again)
-    if (message.senderId === user?.id) {
-      logger.log('[InstantMessaging] Skipping own message');
-      return;
-    }
-
-    // Skip if we've already seen this message
+    // Skip if we've already seen this message (deduplicates both own messages sent from
+    // this device — whose ID is stamped into lastMessageIdRef by sendMessage — and
+    // any message the polling or socket may deliver more than once)
     if (message.id <= lastMessageIdRef.current) {
       return;
     }
@@ -402,8 +397,10 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
 
       const newMessage: InstantMessage = await response.json();
 
-      // Add message to window with deduplication check
-      // The socket may also broadcast this message, so we need to prevent duplicates
+      // Mark this message ID as seen so the socket echo back to this device is deduped
+      lastMessageIdRef.current = Math.max(lastMessageIdRef.current, newMessage.id);
+
+      // Add message to window
       setOpenWindows(prev =>
         prev.map(w => {
           if (w.id === windowId) {
