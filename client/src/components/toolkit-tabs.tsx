@@ -40,7 +40,7 @@ const safetyDocuments: ToolkitDocument[] = [
   },
   {
     name: 'Food Safety Volunteers Guide',
-    path: '/attached_assets/20230525-TSP-Food Safety Volunteers_1749341933308.pdf',
+    path: '/attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf',
     type: 'pdf',
     category: 'Safety Guidelines',
     description:
@@ -94,7 +94,7 @@ const labelDocuments: ToolkitDocument[] = [
 const sandwichMakingDocuments: ToolkitDocument[] = [
   {
     name: 'Deli Sandwich Making 101',
-    path: '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
+    path: '/attached_assets/Deli Sandwich Making 101 03172026.pdf',
     type: 'pdf',
     category: 'Sandwich Making',
     description:
@@ -102,11 +102,19 @@ const sandwichMakingDocuments: ToolkitDocument[] = [
   },
   {
     name: 'PBJ Sandwich Making 101',
-    path: '/attached_assets/20250622-TSP-PBJ Sandwich Making 101_1749341916236.pdf',
+    path: '/attached_assets/PBJ Sandwich Making 2 101 03172026.pdf',
     type: 'pdf',
     category: 'Sandwich Making',
     description:
       'Step-by-step instructions for making peanut butter and jelly sandwiches',
+  },
+  {
+    name: 'Group Event Reference Guide',
+    path: '/attached_assets/Group_Event_Reference_Guide Final.pdf',
+    type: 'pdf',
+    category: 'Sandwich Making',
+    description:
+      'Complete reference guide for planning and running group sandwich-making events',
   },
   {
     name: 'Sandwich Inventory List',

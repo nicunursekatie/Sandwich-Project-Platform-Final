@@ -167,7 +167,7 @@ export default function GroupCatalog({
 
   // Consolidated filter state
   const [filters, setFilters] = useState({
-    status: ['contacted', 'scheduled', 'completed', 'declined', 'past'] as string[],
+    status: [] as string[],
     category: [] as string[],
     dateRange: {} as { from?: Date; to?: Date },
     hostedEvents: [] as string[], // 'hosted', 'not-hosted'

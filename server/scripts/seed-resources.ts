@@ -94,7 +94,7 @@ const initialResources = [
       'Comprehensive safety protocols for volunteers preparing and delivering sandwiches',
     type: 'link' as const,
     category: 'operations_safety',
-    url: '/attached_assets/20230525-TSP-Food Safety Volunteers_1749341933308.pdf',
+    url: '/attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf',
     isPinnedGlobal: false,
   },
   {
@@ -138,7 +138,7 @@ const initialResources = [
     description: 'Complete guide to preparing deli sandwiches according to TSP standards',
     type: 'link' as const,
     category: 'training',
-    url: '/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf',
+    url: '/attached_assets/Deli Sandwich Making 101 03172026.pdf',
     isPinnedGlobal: false,
   },
   {
@@ -146,7 +146,7 @@ const initialResources = [
     description: 'Step-by-step instructions for making peanut butter and jelly sandwiches',
     type: 'link' as const,
     category: 'training',
-    url: '/attached_assets/20250622-TSP-PBJ Sandwich Making 101_1749341916236.pdf',
+    url: '/attached_assets/PBJ Sandwich Making 2 101 03172026.pdf',
     isPinnedGlobal: false,
   },
   {

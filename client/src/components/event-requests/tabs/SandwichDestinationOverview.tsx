@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { format, addWeeks, startOfWeek, endOfWeek, addDays, isWithinInterval, isBefore, isAfter } from 'date-fns';
+import { useEventQueries } from '../hooks/useEventQueries';
+import { parsePostgresArray } from '../utils';
 
 interface SandwichDestinationOverviewProps {
   eventRequests: EventRequest[];
@@ -59,6 +61,41 @@ const parseLocalDate = (dateString: string): Date => {
 export function SandwichDestinationOverview({ eventRequests }: SandwichDestinationOverviewProps) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [timeRange, setTimeRange] = useState<TimeRange>('1week');
+
+  const { recipients, hostContacts } = useEventQueries();
+
+  const resolveRecipientName = (id: string): string => {
+    // custom-timestamp-Name or custom:Name
+    if (id.startsWith('custom-') || id.startsWith('custom:')) {
+      const parts = id.split('-');
+      if (parts.length >= 3) return parts.slice(2).join('-');
+      if (id.includes(':')) return id.split(':')[1];
+      return id.replace('custom-', '').replace('custom:', '');
+    }
+    // typed IDs like "recipient:123" or "host:123"
+    if (id.includes(':')) {
+      const [type, ...rest] = id.split(':');
+      const numId = Number(rest.join(':'));
+      if (!isNaN(numId)) {
+        if (type === 'recipient') {
+          const r = recipients.find((r: any) => r.id === numId);
+          if (r) return r.name;
+        } else if (type === 'host') {
+          const hc = hostContacts.find((h: any) => h.id === numId);
+          if (hc) return hc.displayName || hc.name || hc.hostLocationName || `Host ${numId}`;
+        }
+      }
+    }
+    // plain numeric ID
+    if (!isNaN(Number(id))) {
+      const numId = Number(id);
+      const r = recipients.find((r: any) => r.id === numId);
+      if (r) return r.name;
+      const hc = hostContacts.find((h: any) => h.id === numId);
+      if (hc) return hc.displayName || hc.name || hc.hostLocationName || `ID ${numId}`;
+    }
+    return id;
+  };
 
   // Compute the date window
   const { windowStart, windowEnd, windowLabel } = useMemo(() => {
@@ -142,9 +179,18 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
       const sandwichCount = event.estimatedSandwichCount || 0;
       const allocations = (event.recipientAllocations as RecipientAllocation[] | null) || [];
 
-      if (allocations.length > 0) {
+      // Fall back to assignedRecipientIds when no explicit allocations are set
+      const effectiveAllocations: RecipientAllocation[] = allocations.length > 0
+        ? allocations
+        : parsePostgresArray(event.assignedRecipientIds).map((id) => ({
+            recipientId: id,
+            recipientName: resolveRecipientName(id),
+            sandwichCount: 0,
+          }));
+
+      if (effectiveAllocations.length > 0) {
         // Event has recipient allocations — add each allocation to its group
-        for (const alloc of allocations) {
+        for (const alloc of effectiveAllocations) {
           const key = alloc.recipientId || alloc.recipientName;
           if (!groups.has(key)) {
             groups.set(key, {
@@ -190,7 +236,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
     }
 
     return { recipientGroups: sortedGroups, unallocatedEvents };
-  }, [eventsInWindow]);
+  }, [eventsInWindow, recipients, hostContacts]);
 
   // Compute totals
   const totalSandwiches = useMemo(() => {

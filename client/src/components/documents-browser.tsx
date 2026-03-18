@@ -23,21 +23,21 @@ const documentFiles: DocumentFile[] = [
   },
   {
     name: "Food Safety Volunteers Guide",
-    path: "/attached_assets/20230525-TSP-Food Safety Volunteers_1749341916234.pdf",
+    path: "/attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf",
     type: "pdf",
     category: "Training",
     description: "Essential food safety guidelines for all volunteers"
   },
   {
     name: "Deli Sandwich Making 101",
-    path: "/attached_assets/20240622-TSP-Deli Sandwich Making 101_1749341916236.pdf", 
+    path: "/attached_assets/Deli Sandwich Making 101 03172026.pdf",
     type: "pdf",
     category: "Training",
     description: "Step-by-step guide for preparing deli sandwiches"
   },
   {
     name: "PBJ Sandwich Making 101",
-    path: "/attached_assets/20250622-TSP-PBJ Sandwich Making 101_1749341916236.pdf",
+    path: "/attached_assets/PBJ Sandwich Making 2 101 03172026.pdf",
     type: "pdf", 
     category: "Training",
     description: "Instructions for peanut butter and jelly sandwich preparation"
