@@ -118,13 +118,15 @@ ${Object.entries(yearlyTotals)
   .join('\n')}
 
 #### Weekly Seasonal Patterns (Historical Averages by Week of Year)
-These are the average sandwiches collected per week, based on ${Math.max(...weeklyAverages.map(w => w.yearsOfData))} years of data:
+Average sandwiches collected per week of year across all available years. Use these exact figures when asked about any specific week number.
 
-**Historically LOW collection weeks (prepare for reduced volume):**
-${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
+${weeklyAverages.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (${w.yearsOfData} year${w.yearsOfData !== 1 ? 's' : ''} of data)`).join('\n')}
 
-**Historically HIGH collection weeks (expect increased volume):**
-${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
+**Historically LOW collection weeks (bottom 10):**
+${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()}`).join('\n')}
+
+**Historically HIGH collection weeks (top 10):**
+${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()}`).join('\n')}
 
 #### Top Host Locations (All-Time Historical)
 ${Object.entries(locationTotals)
@@ -133,7 +135,7 @@ ${Object.entries(locationTotals)
   .map(([location, total]) => `- ${location}: ${total.toLocaleString()} sandwiches`)
   .join('\n')}
 
-Note: Week numbers follow ISO standard (Week 1 starts first week of January). Use this historical data to predict seasonal trends and identify which upcoming weeks are typically low or high for collections.
+Note: Week numbers follow ISO standard (Week 1 starts first week of January). When asked about a specific week number, always look it up in the weekly list above and give the exact average.
 `;
   } catch (err) {
     logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
