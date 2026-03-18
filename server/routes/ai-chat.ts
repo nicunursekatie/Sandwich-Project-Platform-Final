@@ -585,6 +585,43 @@ Note: Week numbers follow ISO standard (Week 1 starts first week of January). Us
     logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
   }
 
+  // Build compact raw record list for full per-entry analysis
+  const rawRecords = collections
+    .slice()
+    .sort((a, b) => (a.collectionDate || '').localeCompare(b.collectionDate || ''))
+    .map(c => {
+      const count = getCollectionSandwichCount(c);
+      let deli = c.individualDeli ?? 0;
+      let turkey = c.individualTurkey ?? 0;
+      let ham = c.individualHam ?? 0;
+      let pbj = c.individualPbj ?? 0;
+      let generic = c.individualGeneric ?? 0;
+      const groups: string[] = [];
+
+      if (c.groupCollections && Array.isArray(c.groupCollections)) {
+        (c.groupCollections as any[]).forEach((g: any) => {
+          deli += g.deli ?? 0;
+          turkey += g.turkey ?? 0;
+          ham += g.ham ?? 0;
+          pbj += g.pbj ?? 0;
+          generic += g.generic ?? 0;
+          const gCount = Number(g.count) || Number(g.sandwichCount) || 0;
+          if (g.name && gCount > 0) groups.push(`${g.name}: ${gCount}`);
+        });
+      }
+
+      const typeParts: string[] = [];
+      if (deli > 0) typeParts.push(`deli:${deli}`);
+      if (turkey > 0) typeParts.push(`turkey:${turkey}`);
+      if (ham > 0) typeParts.push(`ham:${ham}`);
+      if (pbj > 0) typeParts.push(`pbj:${pbj}`);
+      if (generic > 0) typeParts.push(`generic:${generic}`);
+
+      const typeStr = typeParts.length > 0 ? ` [${typeParts.join(' ')}]` : '';
+      const groupStr = groups.length > 0 ? ` {groups: ${groups.join('; ')}}` : '';
+      return `${c.collectionDate} | ${c.hostName} | ${count}${typeStr}${groupStr}`;
+    });
+
   return `
 ## Sandwich Collection Data Summary
 ${componentContext}
@@ -594,16 +631,15 @@ ${componentContext}
 - Average Sandwiches Per Collection: ${avgCollectionSize}
 - Number of Active Host Locations: ${Object.keys(hostStats).length}
 
-### Collections by Month (Recent 6 Months from Collection Log)
-${recentMonths.map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`).join('\n')}
-
 ### All-Time Monthly Data (from Collection Log)
 ${Object.entries(monthlyStats)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
+
+### Every Collection Log Entry (date | host | total [type breakdown] {groups})
+${rawRecords.join('\n')}
 ${historicalContext}
-Note: Individual sandwich collections are typically logged on Wednesday or Thursday (weekly collection day is Wednesday). Day-of-week analysis is not meaningful for individual collections.
 `;
 }
 
