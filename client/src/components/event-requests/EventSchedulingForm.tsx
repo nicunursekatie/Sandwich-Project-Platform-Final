@@ -937,6 +937,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
 
       logger.log('🔄 Updating event:', eventRequest.id, 'Changed fields:', Object.keys(filteredEventData), 'Van:', filteredEventData.vanDriverNeeded);
+      // VAN DRIVER DEBUG: always log so bug can be diagnosed in production
+      console.info('[VAN DRIVER SAVE] event:', eventRequest.id, 'in filteredEventData:', { vanDriverNeeded: filteredEventData.vanDriverNeeded, assignedVanDriverId: filteredEventData.assignedVanDriverId, isDhlVan: filteredEventData.isDhlVan }, 'in formData:', { vanDriverNeeded: (formData as any).vanDriverNeeded, assignedVanDriverId: (formData as any).assignedVanDriverId, isDhlVan: (formData as any).isDhlVan }, 'original baseline:', { vanDriverNeeded: originalFormDataRef.current?.vanDriverNeeded, assignedVanDriverId: originalFormDataRef.current?.assignedVanDriverId, isDhlVan: originalFormDataRef.current?.isDhlVan });
       updateEventRequestMutation.mutate({ id: eventRequest.id, data: filteredEventData });
     } else {
       logger.log('➕ Creating new event');
