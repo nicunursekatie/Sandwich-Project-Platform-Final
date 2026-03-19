@@ -401,6 +401,10 @@ export async function checkReturningOrganization(
     dateCollected: string | null;
   };
   pastContactName?: string;
+  /** When contact matches but org doesn't, these are the orgs the contact previously submitted under */
+  contactPastOrgs?: string[];
+  /** When contact matches with a different org name, similarity score between current and past org names (0-1) */
+  orgSimilarityScore?: number;
 }> {
   try {
     // Validate input
@@ -579,7 +583,10 @@ export async function checkReturningOrganization(
     const mostRecentEvent = matchingEvents[0];
     const mostRecentCollection = matchingCollections[0];
 
-    // Check if the current contact matches any past event contacts
+    // Check if the current contact matches any past event contacts.
+    // This is done INDEPENDENTLY of org matching — a returning contact should be
+    // flagged even if their org name is slightly different this time.
+    //
     // IMPORTANT: Name-only matching is NOT sufficient since people can share names.
     // We require either:
     // 1. Email match (strongest signal), OR
@@ -587,13 +594,15 @@ export async function checkReturningOrganization(
     // Name alone is NOT enough to flag as returning contact.
     let isReturningContact = false;
     let pastContactName: string | undefined;
+    let contactPastOrgs: string[] | undefined;
+    let orgSimilarityScore: number | undefined;
 
+    const normalizedContactEmail = contactEmail?.trim().toLowerCase();
+    const normalizedContactName = contactName?.trim().toLowerCase();
+    const normalizedContactPhone = contactPhone?.replace(/\D/g, '');
+
+    // First check within org-matched events (if any)
     if (isReturning && matchingEvents.length > 0) {
-      const normalizedContactEmail = contactEmail?.trim().toLowerCase();
-      const normalizedContactName = contactName?.trim().toLowerCase();
-      // Normalize phone by removing all non-digits for comparison
-      const normalizedContactPhone = contactPhone?.replace(/\D/g, '');
-
       for (const event of matchingEvents) {
         const eventEmail = event.email?.trim().toLowerCase();
         const eventFullName = [event.firstName, event.lastName]
@@ -603,34 +612,115 @@ export async function checkReturningOrganization(
           .toLowerCase();
         const eventPhone = event.phone?.replace(/\D/g, '');
 
-        // Email match is strongest signal - if emails match, it's the same person
         if (normalizedContactEmail && eventEmail && normalizedContactEmail === eventEmail) {
           isReturningContact = true;
           pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
           break;
         }
 
-        // Name + phone match is secondary validation
-        // Two people can have the same name, but name + phone is much more reliable
         if (normalizedContactName && eventFullName && normalizedContactName === eventFullName) {
-          // Name matches - now verify with phone
           if (normalizedContactPhone && eventPhone && normalizedContactPhone === eventPhone) {
             isReturningContact = true;
             pastContactName = [event.firstName, event.lastName].filter(Boolean).join(' ') || undefined;
             break;
           }
-          // Name matches but phone doesn't match or isn't available - don't flag as returning contact
-          // This prevents false positives from people with the same name
         }
       }
 
-      // If not a returning contact, grab the most recent past contact name for context
-      // This helps the team know who the previous contact was (even if it's a different person)
+      // If not a returning contact within matched org, grab past contact name for context
       if (!isReturningContact && mostRecentEvent) {
         const recentName = [mostRecentEvent.firstName, mostRecentEvent.lastName].filter(Boolean).join(' ');
         if (recentName) {
           pastContactName = recentName;
         }
+      }
+    }
+
+    // INDEPENDENT CONTACT CHECK: If the contact wasn't found within org-matched events,
+    // search ALL past events by email (or name+phone). This catches the case where
+    // the same person submits under a slightly different org name.
+    if (!isReturningContact && (normalizedContactEmail || (normalizedContactName && normalizedContactPhone))) {
+      try {
+        const excludeCondition = currentEventId
+          ? sql`AND ${eventRequests.id} != ${currentEventId}`
+          : sql``;
+
+        let contactMatchedEvents: { id: number; organizationName: string | null; department: string | null; firstName: string | null; lastName: string | null; email: string | null; phone: string | null; scheduledEventDate: Date | null; desiredEventDate: Date | null; status: string | null }[] = [];
+
+        if (normalizedContactEmail) {
+          // Search by email across ALL past events
+          contactMatchedEvents = await db
+            .select({
+              id: eventRequests.id,
+              organizationName: eventRequests.organizationName,
+              department: eventRequests.department,
+              firstName: eventRequests.firstName,
+              lastName: eventRequests.lastName,
+              email: eventRequests.email,
+              phone: eventRequests.phone,
+              scheduledEventDate: eventRequests.scheduledEventDate,
+              desiredEventDate: eventRequests.desiredEventDate,
+              status: eventRequests.status,
+            })
+            .from(eventRequests)
+            .where(sql`LOWER(TRIM(${eventRequests.email})) = ${normalizedContactEmail}
+                       AND ${eventRequests.deletedAt} IS NULL
+                       ${excludeCondition}`)
+            .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
+        }
+
+        // If no email match, try name + phone
+        if (contactMatchedEvents.length === 0 && normalizedContactName && normalizedContactPhone) {
+          contactMatchedEvents = await db
+            .select({
+              id: eventRequests.id,
+              organizationName: eventRequests.organizationName,
+              department: eventRequests.department,
+              firstName: eventRequests.firstName,
+              lastName: eventRequests.lastName,
+              email: eventRequests.email,
+              phone: eventRequests.phone,
+              scheduledEventDate: eventRequests.scheduledEventDate,
+              desiredEventDate: eventRequests.desiredEventDate,
+              status: eventRequests.status,
+            })
+            .from(eventRequests)
+            .where(sql`LOWER(TRIM(CONCAT(${eventRequests.firstName}, ' ', ${eventRequests.lastName}))) = ${normalizedContactName}
+                       AND REGEXP_REPLACE(${eventRequests.phone}, '[^0-9]', '', 'g') = ${normalizedContactPhone}
+                       AND ${eventRequests.deletedAt} IS NULL
+                       ${excludeCondition}`)
+            .orderBy(sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) DESC`);
+        }
+
+        if (contactMatchedEvents.length > 0) {
+          isReturningContact = true;
+          const firstMatch = contactMatchedEvents[0];
+          pastContactName = [firstMatch.firstName, firstMatch.lastName].filter(Boolean).join(' ') || undefined;
+
+          // Collect the unique org names this contact previously submitted under
+          const pastOrgNames = [...new Set(
+            contactMatchedEvents
+              .map(e => e.organizationName)
+              .filter((n): n is string => !!n && n.trim().length > 0)
+          )];
+          contactPastOrgs = pastOrgNames;
+
+          // If the org didn't match through normal matching, check how similar the
+          // current org name is to the contact's past org names. A high similarity
+          // suggests it's the same org with a slight name variation (e.g. missing "& Youth").
+          if (!isReturning && pastOrgNames.length > 0) {
+            let bestSimilarity = 0;
+            for (const pastOrg of pastOrgNames) {
+              const similarity = calculateSimilarity(orgName, pastOrg);
+              if (similarity > bestSimilarity) {
+                bestSimilarity = similarity;
+              }
+            }
+            orgSimilarityScore = bestSimilarity;
+          }
+        }
+      } catch (contactQueryError) {
+        logger.warn('Independent contact lookup failed, continuing with org-based results', { error: contactQueryError });
       }
     }
 
@@ -684,7 +774,9 @@ export async function checkReturningOrganization(
         id: mostRecentCollection.id,
         dateCollected: mostRecentCollection.dateCollected,
       } : undefined,
-      pastContactName: effectiveIsReturning ? pastContactName : undefined,
+      pastContactName: (effectiveIsReturning || isReturningContact) ? pastContactName : undefined,
+      contactPastOrgs,
+      orgSimilarityScore,
     };
   } catch (error) {
     logger.error('Error checking returning organization', { orgName, currentEventId, error });

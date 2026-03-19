@@ -17,6 +17,10 @@ interface ReturningOrganizationData {
     dateCollected: string | null;
   };
   pastContactName?: string;
+  /** Org names the contact previously submitted under (when contact matches but org doesn't) */
+  contactPastOrgs?: string[];
+  /** Similarity score between current org name and contact's past org names (0-1) */
+  orgSimilarityScore?: number;
 }
 
 /**

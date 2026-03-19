@@ -50,6 +50,7 @@ import {
   Minus,
   Check,
   HelpCircle,
+  User,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -1028,6 +1029,55 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             No contact information provided for this request
                           </p>
                         </div>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+                );
+              })()}
+              {/* Returning Contact badge - shows when the contact person has submitted before but org didn't match */}
+              {!returningOrgData?.isReturning && returningOrgData?.isReturningContact && (() => {
+                const likelySameOrg = returningOrgData.orgSimilarityScore && returningOrgData.orgSimilarityScore >= 0.7;
+                return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={`whitespace-nowrap cursor-help mt-1 ${
+                        likelySameOrg
+                          ? 'bg-orange-50 text-orange-700 border-orange-300'
+                          : 'bg-purple-50 text-purple-700 border-purple-300'
+                      }`}
+                    >
+                      <User className="w-3 h-3 mr-1" />
+                      Returning Contact
+                      {likelySameOrg
+                        ? <span className="ml-1 text-xs opacity-80">&middot; Likely Same Org</span>
+                        : <span className="ml-1 text-xs opacity-80">&middot; Different Org</span>
+                      }
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-medium">This contact has submitted a request before!</p>
+                      {returningOrgData.contactPastOrgs && returningOrgData.contactPastOrgs.length > 0 && (
+                        <p className="text-sm">
+                          Previously submitted under: {returningOrgData.contactPastOrgs.join(', ')}
+                        </p>
+                      )}
+                      {likelySameOrg ? (
+                        <p className="text-xs text-orange-600 font-medium mt-2">
+                          The org name is similar to a past submission &mdash; likely the same organization with a slightly different name. Consider updating the org name on one to match.
+                        </p>
+                      ) : (
+                        <p className="text-xs text-purple-600 font-medium mt-2">
+                          Same person, different organization &mdash; personalize your outreach!
+                        </p>
+                      )}
+                      {returningOrgData.pastContactName && (
+                        <p className="text-xs text-muted-foreground">
+                          Past name on file: {returningOrgData.pastContactName}
+                        </p>
                       )}
                     </div>
                   </TooltipContent>

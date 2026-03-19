@@ -123,6 +123,19 @@ export const StatusDefinitionsPanel: React.FC = () => {
               </li>
             </ul>
           </div>
+
+          {/* Close button at the bottom so users can collapse after reading */}
+          <div className="mt-3 flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 text-gray-600 hover:text-gray-900"
+              onClick={() => setIsOpen(false)}
+            >
+              <ChevronUp className="w-4 h-4" />
+              Collapse
+            </Button>
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
