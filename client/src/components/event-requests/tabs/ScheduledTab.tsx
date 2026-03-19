@@ -412,7 +412,7 @@ export const ScheduledTab: React.FC = () => {
     setInlineSandwichTypes(prev => prev.filter((_, i) => i !== index));
   };
 
-  const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet', currentValue: boolean) => {
+  const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet' | 'showOnVolunteerHub', currentValue: boolean) => {
     const data: Record<string, any> = { [field]: !currentValue };
     // Track when the event was added to the official sheet
     if (field === 'addedToOfficialSheet') {

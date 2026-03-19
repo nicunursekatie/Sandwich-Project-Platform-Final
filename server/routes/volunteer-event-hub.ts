@@ -167,6 +167,227 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
   }
 }
 
+/**
+ * Send confirmation email to volunteer after they sign up (pending approval)
+ */
+async function sendVolunteerSignupConfirmationEmail(
+  volunteerName: string,
+  volunteerEmail: string,
+  organizationName: string,
+  eventDate: string | Date | null,
+  eventStartTime: string | null,
+  eventEndTime: string | null,
+  eventAddress: string | null,
+  roles: string[]
+): Promise<void> {
+  if (!process.env.SENDGRID_API_KEY || !volunteerEmail) {
+    return;
+  }
+
+  try {
+    const formattedDate = eventDate
+      ? new Date(eventDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : 'Date TBD';
+
+    const timeDisplay = eventStartTime
+      ? `${eventStartTime}${eventEndTime ? ` – ${eventEndTime}` : ''}`
+      : null;
+
+    const roleDisplay = roles
+      .map((role) => (
+        role === 'driver' ? 'Driver'
+        : role === 'speaker' ? 'Speaker'
+        : role === 'general' ? 'General Volunteer'
+        : role
+      ))
+      .join(', ');
+
+    const msg = {
+      to: volunteerEmail,
+      from: 'katie@thesandwichproject.org',
+      subject: `Signup Received — ${organizationName} on ${formattedDate}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #236383; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+            .event-details { background: #e6f7f9; padding: 15px; border-left: 4px solid #236383; margin: 15px 0; }
+            .status-note { background: #FEF3CD; border: 1px solid #FFEEBA; padding: 15px; border-radius: 6px; margin: 15px 0; }
+            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Thanks for Signing Up, ${volunteerName}!</h1>
+            </div>
+            <div class="content">
+              <p>We've received your volunteer signup request for the following event:</p>
+
+              <div class="event-details">
+                <strong>Event:</strong> ${organizationName}<br>
+                <strong>Date:</strong> ${formattedDate}<br>
+                ${timeDisplay ? `<strong>Time:</strong> ${timeDisplay}<br>` : ''}
+                ${eventAddress ? `<strong>Location:</strong> ${eventAddress}<br>` : ''}
+                <strong>Role${roles.length > 1 ? 's' : ''}:</strong> ${roleDisplay}
+              </div>
+
+              <div class="status-note">
+                <strong>What happens next?</strong><br>
+                A coordinator will review your signup and confirm your participation. You'll receive another email once you're confirmed.
+              </div>
+
+              <p>Thank you for volunteering with The Sandwich Project! Your help makes a real difference in fighting food insecurity in our community.</p>
+
+              ${EMAIL_FOOTER_HTML}
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+Thanks for Signing Up, ${volunteerName}!
+
+We've received your volunteer signup request:
+
+Event: ${organizationName}
+Date: ${formattedDate}
+${timeDisplay ? `Time: ${timeDisplay}` : ''}
+${eventAddress ? `Location: ${eventAddress}` : ''}
+Role${roles.length > 1 ? 's' : ''}: ${roleDisplay}
+
+WHAT HAPPENS NEXT:
+A coordinator will review your signup and confirm your participation. You'll receive another email once you're confirmed.
+
+Thank you for volunteering with The Sandwich Project!
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+      `.trim(),
+    };
+
+    await sgMail.send(msg);
+    logger.info(`Volunteer signup confirmation email sent to ${volunteerEmail}`);
+  } catch (error) {
+    logger.error('Error sending volunteer signup confirmation email:', error);
+  }
+}
+
+/**
+ * Send confirmation email to volunteer when their signup is approved
+ */
+async function sendVolunteerApprovalEmail(
+  volunteerName: string,
+  volunteerEmail: string,
+  organizationName: string,
+  eventDate: string | Date | null,
+  eventStartTime: string | null,
+  eventEndTime: string | null,
+  eventAddress: string | null,
+  role: string | null
+): Promise<void> {
+  if (!process.env.SENDGRID_API_KEY || !volunteerEmail) {
+    return;
+  }
+
+  try {
+    const formattedDate = eventDate
+      ? new Date(eventDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })
+      : 'Date TBD';
+
+    const timeDisplay = eventStartTime
+      ? `${eventStartTime}${eventEndTime ? ` – ${eventEndTime}` : ''}`
+      : null;
+
+    const roleDisplay = role === 'driver' ? 'Driver'
+      : role === 'speaker' ? 'Speaker'
+      : role === 'general' ? 'General Volunteer'
+      : role || 'Volunteer';
+
+    const msg = {
+      to: volunteerEmail,
+      from: 'katie@thesandwichproject.org',
+      subject: `You're Confirmed — ${organizationName} on ${formattedDate}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #22c55e; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
+            .event-details { background: #e6f7f9; padding: 15px; border-left: 4px solid #22c55e; margin: 15px 0; }
+            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>You're Confirmed!</h1>
+            </div>
+            <div class="content">
+              <p>Great news, ${volunteerName}! Your volunteer signup has been confirmed. Here are the details:</p>
+
+              <div class="event-details">
+                <strong>Event:</strong> ${organizationName}<br>
+                <strong>Date:</strong> ${formattedDate}<br>
+                ${timeDisplay ? `<strong>Time:</strong> ${timeDisplay}<br>` : ''}
+                ${eventAddress ? `<strong>Location:</strong> ${eventAddress}<br>` : ''}
+                <strong>Your Role:</strong> ${roleDisplay}
+              </div>
+
+              <p>We'll send you a reminder before the event. If your plans change and you can no longer make it, please let us know as soon as possible so we can find a replacement.</p>
+
+              <p>Thank you for making a difference with The Sandwich Project!</p>
+
+              ${EMAIL_FOOTER_HTML}
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      text: `
+You're Confirmed!
+
+Great news, ${volunteerName}! Your volunteer signup has been confirmed.
+
+Event: ${organizationName}
+Date: ${formattedDate}
+${timeDisplay ? `Time: ${timeDisplay}` : ''}
+${eventAddress ? `Location: ${eventAddress}` : ''}
+Your Role: ${roleDisplay}
+
+We'll send you a reminder before the event. If your plans change, please let us know so we can find a replacement.
+
+Thank you for making a difference with The Sandwich Project!
+
+---
+The Sandwich Project - Fighting food insecurity one sandwich at a time
+      `.trim(),
+    };
+
+    await sgMail.send(msg);
+    logger.info(`Volunteer approval confirmation email sent to ${volunteerEmail}`);
+  } catch (error) {
+    logger.error('Error sending volunteer approval confirmation email:', error);
+  }
+}
+
 // ============================================================================
 // Public Event Browsing Routes (for volunteers)
 // ============================================================================
@@ -190,9 +411,13 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
       .select()
       .from(eventRequests)
       .where(
-        or(
-          eq(eventRequests.status, 'scheduled'),
-          eq(eventRequests.status, 'completed')
+        and(
+          eq(eventRequests.showOnVolunteerHub, true),
+          or(
+            eq(eventRequests.status, 'scheduled'),
+            eq(eventRequests.status, 'rescheduled'),
+            eq(eventRequests.status, 'completed')
+          )
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
@@ -442,6 +667,18 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
       notes
     );
 
+    // Send confirmation email to the volunteer
+    await sendVolunteerSignupConfirmationEmail(
+      volunteerName,
+      user.preferredEmail || user.email || '',
+      event.organizationName || 'Unknown Organization',
+      event.scheduledEventDate || event.desiredEventDate,
+      event.eventStartTime,
+      event.eventEndTime,
+      event.eventAddress,
+      normalizedRoles
+    );
+
     logger.info(`Volunteer signup created: ${volunteerName} for event ${eventId} as ${normalizedRoles.join(', ')}`);
 
     res.status(201).json({
@@ -681,7 +918,31 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
       updatedSignup = signupRow;
     });
 
-    // TODO: Send notification to volunteer about status change
+    // Send confirmation email to volunteer when approved
+    if (isConfirmedOrAssigned && signup.volunteerEmail) {
+      try {
+        const [event] = await db
+          .select()
+          .from(eventRequests)
+          .where(eq(eventRequests.id, signup.eventRequestId))
+          .limit(1);
+
+        if (event) {
+          await sendVolunteerApprovalEmail(
+            signup.volunteerName || 'Volunteer',
+            signup.volunteerEmail,
+            event.organizationName || 'Unknown Organization',
+            event.scheduledEventDate || event.desiredEventDate,
+            event.eventStartTime,
+            event.eventEndTime,
+            event.eventAddress,
+            signup.role
+          );
+        }
+      } catch (emailError) {
+        logger.error('Failed to send volunteer approval email, but signup was still approved:', emailError);
+      }
+    }
 
     logger.info(`Volunteer signup ${signupId} status updated to ${effectiveStatus} by ${coordinatorId}`);
 

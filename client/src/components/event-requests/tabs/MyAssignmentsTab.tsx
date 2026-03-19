@@ -104,7 +104,7 @@ export const MyAssignmentsTab: React.FC = () => {
   } = useEventRequestContext();
 
   // Helper functions for ScheduledCardEnhanced
-  const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet', currentValue: boolean) => {
+  const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet' | 'showOnVolunteerHub', currentValue: boolean) => {
     const data: Record<string, any> = { [field]: !currentValue };
     if (field === 'addedToOfficialSheet') {
       data.addedToOfficialSheetAt = !currentValue ? new Date().toISOString() : null;

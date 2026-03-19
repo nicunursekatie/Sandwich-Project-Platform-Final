@@ -127,7 +127,7 @@ interface ScheduledCardEnhancedProps {
   setEditingValue: (value: string) => void;
   tempIsConfirmed: boolean;
   setTempIsConfirmed: (value: boolean) => void;
-  quickToggleBoolean: (field: 'isConfirmed' | 'addedToOfficialSheet', value: boolean) => void;
+  quickToggleBoolean: (field: 'isConfirmed' | 'addedToOfficialSheet' | 'showOnVolunteerHub', value: boolean) => void;
   setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
   setInlineTotalCount: (count: number) => void;
   setInlineRangeMin: (count: number) => void;
@@ -1282,6 +1282,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               {request.addedToOfficialSheet
                 ? `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
                 : 'Not on Calendar'}
+            </Badge>
+
+            <Badge
+              onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('showOnVolunteerHub', (request as any).showOnVolunteerHub); }}
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+                (request as any).showOnVolunteerHub
+                  ? 'bg-gradient-to-br from-[#9333EA] to-[#A855F7] text-white border border-[#9333EA]'
+                  : 'bg-gradient-to-br from-gray-400 to-gray-500 text-white border border-gray-400'
+              }`}
+            >
+              {(request as any).showOnVolunteerHub ? 'On Volunteer Hub' : 'Not on Hub'}
             </Badge>
 
             {request.isMlkDayEvent && <MlkDayBadge />}

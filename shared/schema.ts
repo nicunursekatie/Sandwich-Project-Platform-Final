@@ -2217,6 +2217,7 @@ export const eventRequests = pgTable(
       .notNull()
       .default(false), // Whether scheduled event has been manually added to the official events Google Sheet (not synced)
     addedToOfficialSheetAt: timestamp('added_to_official_sheet_at'), // When the event was added to the official Google Sheet
+    showOnVolunteerHub: boolean('show_on_volunteer_hub').notNull().default(false), // Whether this event is visible on the Volunteer Event Hub for volunteer signups
     message: text('message'), // Other relevant info about the group
 
     // Previous hosting experience
