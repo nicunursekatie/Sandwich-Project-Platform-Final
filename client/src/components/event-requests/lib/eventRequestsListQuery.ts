@@ -74,7 +74,7 @@ export function buildEventRequestsListFilterParams(
   if (activeTab === 'declined') {
     return { status: 'declined,cancelled' };
   }
-  if (['completed', 'postponed', 'standby', 'stalled'].includes(activeTab)) {
+  if (['completed', 'standby', 'stalled'].includes(activeTab)) {
     return { status: activeTab };
   }
 
@@ -85,7 +85,7 @@ export function buildEventRequestsListFilterParams(
 
   // For "my_assignments", admin_overview, planning, etc:
   // Only load active events (new, in_process, scheduled) by default.
-  // Completed/declined/postponed events are lazy-loaded when those tabs are clicked.
+  // Completed/declined events are lazy-loaded when those tabs are clicked.
   return { status: 'new,in_process,scheduled' };
 }
 

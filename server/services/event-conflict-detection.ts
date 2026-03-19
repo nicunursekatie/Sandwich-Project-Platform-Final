@@ -139,7 +139,7 @@ export async function checkEventConflicts(
     const allRelevantConditions = [
       gte(eventRequests.scheduledEventDate, startOfDay),
       lte(eventRequests.scheduledEventDate, endOfDay),
-      // Include new, in_process, scheduled, and rescheduled events (not cancelled/completed/postponed/declined)
+      // Include new, in_process, scheduled, and rescheduled events (not cancelled/completed/declined)
       or(
         eq(eventRequests.status, 'new'),
         eq(eventRequests.status, 'in_process'),

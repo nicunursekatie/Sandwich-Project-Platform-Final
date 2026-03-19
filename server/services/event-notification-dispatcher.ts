@@ -806,7 +806,7 @@ export async function processCorporate24hEscalations(): Promise<{ sent: number; 
   const results = { sent: 0, skipped: 0 };
 
   // Find corporate priority events in active statuses only
-  // Explicitly exclude: completed, declined, cancelled, postponed, stalled, standby, scheduled
+  // Explicitly exclude: completed, declined, cancelled, stalled, standby, scheduled
   const corporateEvents = await db
     .select()
     .from(eventRequests)

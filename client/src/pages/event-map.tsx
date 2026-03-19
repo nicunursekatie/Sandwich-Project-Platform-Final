@@ -273,7 +273,6 @@ const statusIcons = {
   scheduled: createColorIcon('blue'),
   completed: createColorIcon('green'),
   declined: createColorIcon('grey'),
-  postponed: createColorIcon('orange'),
   cancelled: createColorIcon('red'),
 };
 
@@ -283,7 +282,6 @@ const statusColors = {
   scheduled: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   completed: 'bg-green-100 text-green-800 border-green-300',
   declined: 'bg-gray-100 text-gray-800 border-gray-300',
-  postponed: 'bg-orange-100 text-orange-800 border-orange-300',
   cancelled: 'bg-red-100 text-red-800 border-red-300',
 };
 
@@ -426,7 +424,6 @@ const generateClusterTooltip = (cluster: any): string => {
     scheduled: '🔵 Scheduled',
     completed: '🟢 Completed',
     declined: '⚪ Declined',
-    postponed: '🟤 Postponed',
     cancelled: '🔴 Cancelled',
   };
 

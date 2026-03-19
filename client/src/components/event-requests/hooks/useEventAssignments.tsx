@@ -619,7 +619,7 @@ export const useEventAssignments = () => {
   /**
    * Handle status change with validation, reason-capture dialogs, and undo.
    *
-   * For declined, cancelled, and postponed: returns 'needs_reason' so the caller
+   * For declined, cancelled: returns 'needs_reason' so the caller
    * can open the appropriate reason dialog instead of doing the change inline.
    *
    * Returns: 'done' | 'needs_reason' | 'blocked'
@@ -648,8 +648,8 @@ export const useEventAssignments = () => {
       return 'blocked';
     }
 
-    // For declined, cancelled, postponed, non_event, and rescheduled: signal to caller to open reason/date dialog
-    if (status === 'declined' || status === 'cancelled' || status === 'postponed' || status === 'non_event' || status === 'rescheduled') {
+    // For declined, cancelled, non_event, and rescheduled: signal to caller to open reason/date dialog
+    if (status === 'declined' || status === 'cancelled' || status === 'non_event' || status === 'rescheduled') {
       return 'needs_reason';
     }
 

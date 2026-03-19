@@ -471,7 +471,7 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
     }
 
     // Check for duplicates (same org + same date)
-    // Exclude soft-deleted events and cancelled/declined/postponed events
+    // Exclude soft-deleted events and cancelled/declined events
     // Check both scheduledEventDate and desiredEventDate to catch events that might not be fully scheduled yet
     const eventDateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD format
     const existingEvents = await db
@@ -493,8 +493,8 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
             sql`DATE(${eventRequests.desiredEventDate}) = DATE(${eventDate.toISOString()})`
           ),
           isNull(eventRequests.deletedAt), // Exclude soft-deleted events
-          // Only check against active statuses - allow duplicates if the existing event is cancelled/declined/postponed
-          sql`${eventRequests.status} NOT IN ('cancelled', 'declined', 'postponed')`
+          // Only check against active statuses - allow duplicates if the existing event is cancelled/declined
+          sql`${eventRequests.status} NOT IN ('cancelled', 'declined')`
         )
       );
 
@@ -508,7 +508,7 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
         existingDeletedAt: existing.deletedAt,
         targetDate: data.date,
         isDeleted: !!existing.deletedAt,
-        isInactiveStatus: ['cancelled', 'declined', 'postponed'].includes(existing.status),
+        isInactiveStatus: ['cancelled', 'declined'].includes(existing.status),
       });
       return res.status(409).json({
         success: false,
@@ -523,8 +523,8 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
           message: 'This event was found by duplicate check. If it should not block creation, check:',
           checks: {
             isDeleted: !!existing.deletedAt,
-            isInactiveStatus: ['cancelled', 'declined', 'postponed'].includes(existing.status),
-            shouldExclude: !!existing.deletedAt || ['cancelled', 'declined', 'postponed'].includes(existing.status)
+            isInactiveStatus: ['cancelled', 'declined'].includes(existing.status),
+            shouldExclude: !!existing.deletedAt || ['cancelled', 'declined'].includes(existing.status)
           }
         }
       });
@@ -786,7 +786,6 @@ const VALID_EVENT_REQUEST_STATUSES = [
   'rescheduled',
   'completed',
   'declined',
-  'postponed',
   'cancelled',
   'non_event',
   'standby',
@@ -1571,7 +1570,6 @@ router.get(
         rescheduled: 0,
         completed: 0,
         declined: 0,
-        postponed: 0,
         cancelled: 0,
         non_event: 0,
         standby: 0,
@@ -1579,7 +1577,7 @@ router.get(
         my_assignments: 0,
       };
 
-      const terminalStatuses = new Set(['completed', 'declined', 'postponed', 'cancelled', 'non_event', 'stalled']);
+      const terminalStatuses = new Set(['completed', 'declined', 'cancelled', 'non_event', 'stalled']);
 
       // Helper to check if user is assigned to an event
       const isUserAssigned = (event: any): boolean => {
@@ -1645,7 +1643,7 @@ router.get(
 
         // Count my_assignments for non-terminal events.
         // Keep behavior aligned with the previous frontend implementation:
-        // include everything except completed/declined/postponed/cancelled/non_event.
+        // include everything except completed/declined/cancelled/non_event.
         if (event.status && !terminalStatuses.has(event.status) && isUserAssigned(event)) {
           counts.my_assignments++;
         }
@@ -2778,18 +2776,6 @@ router.patch(
           // cancelledReason and cancelledNotes come from the request body if provided
         }
 
-        // Track reason metadata for postponed status
-        if (processedUpdates.status === 'postponed') {
-          processedUpdates.postponedAt = new Date();
-          processedUpdates.postponedBy = req.user?.id || null;
-          // Preserve the original scheduled date
-          if (originalEvent.scheduledEventDate && !processedUpdates.originalScheduledDate) {
-            processedUpdates.originalScheduledDate = originalEvent.scheduledEventDate;
-          }
-          processedUpdates.wasPostponed = true;
-          processedUpdates.postponementCount = (originalEvent.postponementCount || 0) + 1;
-        }
-
         // Track metadata for non_event status
         if (processedUpdates.status === 'non_event') {
           processedUpdates.nonEventAt = new Date();
@@ -2805,10 +2791,6 @@ router.patch(
           processedUpdates.wasPostponed = true;
         }
 
-        // When rescheduling from postponed back to scheduled, mark the postponement history
-        if (processedUpdates.status === 'scheduled' && originalEvent.status === 'postponed') {
-          processedUpdates.wasPostponed = true;
-        }
       }
 
       // Automatically set isConfirmed = true when scheduledEventDate is set
@@ -5040,140 +5022,6 @@ router.patch('/:id/mlk-day', isAuthenticated, requirePermission('EVENT_REQUESTS_
   }
 });
 
-// Mark event as postponed (with optional immediate reschedule)
-router.post('/:id/postpone', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { postponementReason, tentativeNewDate, postponementNotes, hasNewDate, newScheduledDate } = req.body;
-
-    // Validate required field
-    if (!postponementReason) {
-      return res.status(400).json({ message: 'Postponement reason is required' });
-    }
-
-    // Get original data for audit logging
-    const originalEvent = await storage.getEventRequestById(id);
-    if (!originalEvent) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Validate: only scheduled, rescheduled, or postponed events can be postponed
-    if (originalEvent.status !== 'scheduled' && originalEvent.status !== 'rescheduled' && originalEvent.status !== 'postponed') {
-      return res.status(400).json({
-        message: 'Only Scheduled, Rescheduled, or Postponed events can be postponed. If this event has not been scheduled yet, keep it in its current status.',
-        error: 'INVALID_STATUS_TRANSITION',
-      });
-    }
-
-    // Branch: immediate reschedule (has new date) vs. postponed (no date yet)
-    if (hasNewDate && newScheduledDate) {
-      // IMMEDIATE RESCHEDULE: Event moves to rescheduled with new date, records postponement history
-      const updateData: any = {
-        status: 'rescheduled', // moves to rescheduled status
-        postponementReason: postponementReason,
-        postponementNotes: postponementNotes || null,
-        scheduledEventDate: parseDateOnly(newScheduledDate),
-        originalScheduledDate: originalEvent.scheduledEventDate || originalEvent.desiredEventDate || null,
-        wasPostponed: true,
-        postponementCount: (originalEvent.postponementCount || 0) + 1,
-        postponedAt: new Date(),
-        postponedBy: req.user?.id || null,
-        statusChangedAt: new Date(),
-      };
-
-      const updatedEventRequest = await storage.updateEventRequest(id, updateData);
-
-      if (!updatedEventRequest) {
-        return res.status(404).json({ message: 'Event request not found' });
-      }
-
-      await AuditLogger.logEventRequestChange(
-        id.toString(),
-        originalEvent,
-        updatedEventRequest,
-        {
-          userId: req.user?.id,
-          ipAddress: req.ip || req.connection?.remoteAddress,
-          userAgent: req.get('User-Agent'),
-          sessionId: req.session?.id || req.sessionID,
-        }
-      );
-
-      await logActivity(
-        req,
-        res,
-        'EVENT_REQUESTS_STATUS_CHANGE',
-        `Postponed and rescheduled event to ${new Date(newScheduledDate).toLocaleDateString()}: ${originalEvent.organizationName} (#${id})`,
-        {
-          postponementReason,
-          newScheduledDate,
-          originalDate: originalEvent.scheduledEventDate,
-          organizationName: originalEvent.organizationName,
-        }
-      );
-
-      res.json(updatedEventRequest);
-    } else {
-      // NO NEW DATE: Move to postponed status
-      const updateData: any = {
-        status: 'postponed',
-        postponementReason: postponementReason,
-        postponementNotes: postponementNotes || null,
-        scheduledEventDate: null, // Clear the scheduled date since there's no confirmed date
-        originalScheduledDate: originalEvent.scheduledEventDate || originalEvent.desiredEventDate || null,
-        wasPostponed: true,
-        postponementCount: (originalEvent.postponementCount || 0) + 1,
-        postponedAt: new Date(),
-        postponedBy: req.user?.id || null,
-        statusChangedAt: new Date(),
-      };
-
-      // Add tentative new date if provided
-      if (tentativeNewDate) {
-        updateData.tentativeNewDate = parseDateOnly(tentativeNewDate);
-      }
-
-      const updatedEventRequest = await storage.updateEventRequest(id, updateData);
-
-      if (!updatedEventRequest) {
-        return res.status(404).json({ message: 'Event request not found' });
-      }
-
-      await AuditLogger.logEventRequestChange(
-        id.toString(),
-        originalEvent,
-        updatedEventRequest,
-        {
-          userId: req.user?.id,
-          ipAddress: req.ip || req.connection?.remoteAddress,
-          userAgent: req.get('User-Agent'),
-          sessionId: req.session?.id || req.sessionID,
-        }
-      );
-
-      await logActivity(
-        req,
-        res,
-        'EVENT_REQUESTS_STATUS_CHANGE',
-        `Marked event as postponed: ${originalEvent.organizationName} (#${id})`,
-        {
-          postponementReason,
-          tentativeNewDate: tentativeNewDate || null,
-          organizationName: originalEvent.organizationName,
-        }
-      );
-
-      res.json(updatedEventRequest);
-    }
-  } catch (error) {
-    logger.error('Error postponing event:', error);
-    res.status(500).json({
-      message: 'Failed to postpone event',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
-});
-
 // SMS Routes - MOVED to ./event-requests/sms.ts
 // Routes moved: POST /:id/send-details-sms, POST /:id/send-correction-sms
 
@@ -5235,7 +5083,7 @@ router.get(
       const endOfLastWeek = new Date(startOfWeek);
       endOfLastWeek.setMilliseconds(-1);
 
-      // Active events (not completed, declined, cancelled, postponed)
+      // Active events (not completed, declined, cancelled)
       const activeStatuses = ['new', 'in_process', 'scheduled', 'rescheduled'];
       const activeEvents = allEventRequests.filter(event =>
         activeStatuses.includes(event.status || '')
@@ -5261,7 +5109,7 @@ router.get(
       // Events happening today or tomorrow (upcoming deadlines)
       const upcomingDeadlines = allEventRequests.filter(event => {
         if (event.status === 'completed' || event.status === 'declined' ||
-            event.status === 'cancelled' || event.status === 'postponed') {
+            event.status === 'cancelled') {
           return false;
         }
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -5336,14 +5184,14 @@ router.get(
       }, 0);
 
       // Last week's events for completion rate
-      // Only count events that were actually attempted (exclude cancelled/declined/postponed)
+      // Only count events that were actually attempted (exclude cancelled/declined)
       const lastWeekEvents = allEventRequests.filter(event => {
         const eventDate = event.scheduledEventDate || event.desiredEventDate;
         if (!eventDate) return false;
         const date = parseDateOnly(eventDate);
         if (!date || date < startOfLastWeek || date > endOfLastWeek) return false;
         // Exclude events that were intentionally not attempted
-        if (event.status === 'cancelled' || event.status === 'declined' || event.status === 'postponed') {
+        if (event.status === 'cancelled' || event.status === 'declined') {
           return false;
         }
         return true;

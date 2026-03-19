@@ -63,7 +63,7 @@ type EventReminder = {
   eventRequestId: number | null;
   title: string;
   description: string | null;
-  reminderType: 'follow_up' | 'deadline' | 'check_in' | 'postponed' | 'custom';
+  reminderType: 'follow_up' | 'deadline' | 'check_in' | 'custom';
   dueDate: string;
   assignedToUserId: string | null;
   assignedToName: string | null;
@@ -89,7 +89,6 @@ const createReminderSchema = z.object({
     'follow_up',
     'deadline',
     'check_in',
-    'postponed',
     'custom',
   ]),
   dueDate: z.string().min(1, 'Due date is required'),
@@ -259,8 +258,6 @@ export default function EventRemindersManagement() {
         return 'Deadline';
       case 'check_in':
         return 'Check In';
-      case 'postponed':
-        return 'Postponed';
       case 'custom':
         return 'Custom';
       default:
@@ -432,7 +429,6 @@ export default function EventRemindersManagement() {
                             <SelectItem value="follow_up">Follow Up</SelectItem>
                             <SelectItem value="deadline">Deadline</SelectItem>
                             <SelectItem value="check_in">Check In</SelectItem>
-                            <SelectItem value="postponed">Postponed</SelectItem>
                             <SelectItem value="custom">Custom</SelectItem>
                           </SelectContent>
                         </Select>

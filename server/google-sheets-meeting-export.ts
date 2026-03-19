@@ -305,7 +305,6 @@ export class GoogleSheetsMeetingExporter {
       case 'rejected':
       case 'cancelled':
       case 'deferred':
-      case 'postponed':
         return 'Blocked';
 
       default:

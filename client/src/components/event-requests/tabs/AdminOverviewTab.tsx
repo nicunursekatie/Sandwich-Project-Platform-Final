@@ -18,7 +18,6 @@ interface TspContactStats {
     scheduled: number;
     completed: number;
     declined: number;
-    postponed: number;
   };
   events: EventRequest[];
 }
@@ -70,12 +69,12 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const tspContactStats = useMemo(() => {
     const statsMap = new Map<string, TspContactStats>();
 
-    // Filter out completed/declined/postponed events by default unless includeCompleted is true
+    // Filter out completed/declined events by default unless includeCompleted is true
     let baseFilteredRequests = eventRequests;
     if (!includeCompleted) {
       baseFilteredRequests = eventRequests.filter(e => {
         const status = e.status?.toLowerCase();
-        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled' && status !== 'contact_completed';
+        return status !== 'completed' && status !== 'declined' && status !== 'cancelled' && status !== 'contact_completed';
       });
     }
 
@@ -115,7 +114,6 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
             scheduled: 0,
             completed: 0,
             declined: 0,
-            postponed: 0,
           },
           events: [],
         });
@@ -163,7 +161,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
     ? eventRequests
     : eventRequests.filter(e => {
         const status = e.status?.toLowerCase();
-        return status !== 'completed' && status !== 'declined' && status !== 'postponed' && status !== 'cancelled' && status !== 'contact_completed';
+        return status !== 'completed' && status !== 'declined' && status !== 'cancelled' && status !== 'contact_completed';
       });
 
   // Count events by status
@@ -354,11 +352,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                           Declined: {stat.byStatus.declined}
                         </Badge>
                       )}
-                      {stat.byStatus.postponed > 0 && (
-                        <Badge variant="outline" className="text-xs border-slate-400 bg-slate-50" style={{ color: '#236383' }}>
-                          Postponed: {stat.byStatus.postponed}
-                        </Badge>
-                      )}
+
                     </div>
                   </button>
 
@@ -418,7 +412,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
 
                             if (eventSortBy === 'status') {
                               // Sort by status first, then date (most upcoming first)
-                              const statusOrder = { new: 0, in_process: 1, scheduled: 2, completed: 3, declined: 4, postponed: 5, cancelled: 6, contact_completed: 7 };
+                              const statusOrder = { new: 0, in_process: 1, scheduled: 2, completed: 3, declined: 4, cancelled: 5, contact_completed: 6 };
                               const statusA = statusOrder[a.status?.toLowerCase() as keyof typeof statusOrder] ?? 99;
                               const statusB = statusOrder[b.status?.toLowerCase() as keyof typeof statusOrder] ?? 99;
                               if (statusA !== statusB) return statusA - statusB;
@@ -446,8 +440,6 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                   ? 'bg-[#E8F7FB] border-l-[#007E8C] border-slate-200 hover:shadow-md'
                                   : event.status === 'declined' || event.status === 'cancelled'
                                   ? 'bg-[#FAE7ED] border-l-[#A31C41] border-slate-200 hover:shadow-md'
-                                  : event.status === 'postponed'
-                                  ? 'bg-slate-50 border-l-slate-400 border-slate-200 hover:shadow-md'
                                   : 'bg-white border-l-slate-300 border-slate-200 hover:shadow-md'
                               }`}
                             >
@@ -497,8 +489,6 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                         ? 'border-[#007E8C] text-[#236383] bg-[#007E8C]/10'
                                         : event.status === 'declined' || event.status === 'cancelled'
                                         ? 'border-[#A31C41] text-[#A31C41]'
-                                        : event.status === 'postponed'
-                                        ? 'border-slate-400 text-slate-600'
                                         : event.status === 'contact_completed'
                                         ? 'border-[#007E8C] text-[#236383] bg-[#007E8C]/5'
                                         : 'border-slate-300 text-slate-600'

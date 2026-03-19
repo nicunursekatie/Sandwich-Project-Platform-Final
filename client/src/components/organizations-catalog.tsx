@@ -69,7 +69,6 @@ interface OrganizationContact {
     | 'scheduled'
     | 'past'
     | 'declined'
-    | 'postponed'
     | 'cancelled'
     | 'contact_completed'
     | 'in_process';
@@ -556,7 +555,7 @@ export default function GroupCatalog({
     const matchesDateEnd = !filters.dateRange.to || !eventDate || eventDate <= filters.dateRange.to;
 
     // Hosted events filter
-    // "Never Hosted" = organizations that were declined/postponed/cancelled (they engaged but never hosted)
+    // "Never Hosted" = organizations that were declined/cancelled (they engaged but never hosted)
     // "Has Hosted" = organizations with completed events or collection data
     // CRITICAL: If actualSandwichTotal > 0, they DEFINITELY hosted - exclude from "Never Hosted"
     const matchesHosted = filters.hostedEvents.length === 0 ||
@@ -564,7 +563,7 @@ export default function GroupCatalog({
       (filters.hostedEvents.includes('not-hosted') && 
         !org.hasHostedEvent && 
         (!org.actualSandwichTotal || org.actualSandwichTotal === 0) && 
-        ['declined', 'postponed', 'cancelled'].includes(org.status));
+        ['declined', 'cancelled'].includes(org.status));
 
     return matchesSearch && matchesCategory && matchesStatus && matchesDateStart && matchesDateEnd && matchesHosted;
   });
@@ -896,7 +895,6 @@ export default function GroupCatalog({
                 { value: 'scheduled', label: 'Upcoming Events', count: allOrganizations.filter(o => o.status === 'scheduled').length },
                 { value: 'completed', label: 'Completed', count: allOrganizations.filter(o => o.status === 'completed').length },
                 { value: 'declined', label: 'Declined', count: allOrganizations.filter(o => o.status === 'declined').length },
-                { value: 'postponed', label: 'Postponed', count: allOrganizations.filter(o => o.status === 'postponed').length },
                 { value: 'cancelled', label: 'Cancelled', count: allOrganizations.filter(o => o.status === 'cancelled').length },
                 { value: 'past', label: 'Past Events', count: allOrganizations.filter(o => o.status === 'past').length },
               ],
@@ -932,7 +930,7 @@ export default function GroupCatalog({
                 { value: 'not-hosted', label: 'Never Hosted', count: allOrganizations.filter(o => 
                   !o.hasHostedEvent && 
                   (!o.actualSandwichTotal || o.actualSandwichTotal === 0) &&
-                  ['declined', 'postponed', 'cancelled'].includes(o.status)
+                  ['declined', 'cancelled'].includes(o.status)
                 ).length },
               ],
             },

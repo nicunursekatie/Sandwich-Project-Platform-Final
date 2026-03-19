@@ -41,8 +41,6 @@ export const statusColors: Record<string, string> = {
     'bg-gradient-to-br from-[#47B3CB] to-[#6bc4d4] text-white border-2 border-[#47B3CB] shadow-md',
   declined:
     'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
-  postponed:
-    'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
   cancelled:
     'bg-gradient-to-br from-[#A31C41] to-[#c5245a] text-white border-2 border-[#A31C41] font-bold shadow-lg',
   non_event:
@@ -61,7 +59,6 @@ export const statusBorderColors: Record<string, string> = {
   rescheduled: '#236383', // Same as scheduled
   completed: '#47B3CB', // Vibrant light blue
   declined: '#A31C41', // Vibrant red
-  postponed: '#A31C41', // Vibrant red
   cancelled: '#A31C41', // Vibrant red
   non_event: '#78716C', // Warm gray (stone)
   standby: '#9333EA', // Purple
@@ -76,7 +73,6 @@ export const statusBgColors: Record<string, string> = {
   rescheduled: 'bg-[#E4EFF6]', // Same as scheduled
   completed: 'bg-[#E8F7FB]', // Solid light sky blue
   declined: 'bg-[#FAE7ED]', // Solid light crimson
-  postponed: 'bg-[#FAE7ED]', // Solid light crimson
   cancelled: 'bg-[#FAE7ED]', // Solid light crimson
   non_event: 'bg-[#F5F5F4]', // Light stone
   standby: 'bg-[#F3E8FF]', // Light purple
@@ -109,7 +105,6 @@ export const statusIcons: Record<string, any> = {
   rescheduled: RefreshCw,
   completed: CheckCircle,
   declined: XCircle,
-  postponed: Clock,
   cancelled: XCircle,
   non_event: Ban,
   standby: Hourglass,
@@ -129,7 +124,6 @@ export const statusOptions = [
   { value: 'rescheduled', label: 'Rescheduled' },
   { value: 'completed', label: 'Completed' },
   { value: 'declined', label: 'Declined' },
-  { value: 'postponed', label: 'Postponed' },
   { value: 'cancelled', label: 'Cancelled' },
   { value: 'non_event', label: 'Non-Event' },
   { value: 'standby', label: 'Standby' },
@@ -141,10 +135,9 @@ export const statusTooltips: Record<string, string> = {
   new: 'New request awaiting initial review and contact',
   in_process: 'Has received the toolkit and at least one contact attempt has been made',
   scheduled: 'Event is on our calendar with the majority of details nailed down',
-  rescheduled: 'Previously postponed or scheduled event now confirmed for a new date',
-  completed: 'Event date has passed and the event was not cancelled or postponed',
+  rescheduled: 'Previously scheduled event now confirmed for a new date',
+  completed: 'Event date has passed and the event was not cancelled',
   declined: 'Organization was in process but decided not to proceed',
-  postponed: 'Previously scheduled event delayed — no new date confirmed yet',
   cancelled: 'Previously scheduled event cancelled without intention to reschedule',
   non_event: 'Not a real event request — e.g., sandwich drop-off, general inquiry',
   standby: 'Contact is waiting on something specific before planning can continue',

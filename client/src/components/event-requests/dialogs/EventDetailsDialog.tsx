@@ -56,8 +56,6 @@ const getStatusColor = (status: string) => {
     case 'cancelled':
     case 'declined':
       return 'bg-red-100 text-red-800 border-red-300';
-    case 'postponed':
-      return 'bg-gray-100 text-gray-800 border-gray-300';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-300';
   }
@@ -71,7 +69,6 @@ const getStatusLabel = (status: string) => {
     completed: 'Completed',
     cancelled: 'Cancelled',
     declined: 'Declined',
-    postponed: 'Postponed',
   };
   return labels[status] || status;
 };

@@ -11,7 +11,6 @@ import { InProcessTab } from './tabs/InProcessTab';
 import { ScheduledTab } from './tabs/ScheduledTab';
 import { CompletedTab } from './tabs/CompletedTab';
 import { DeclinedTab } from './tabs/DeclinedTab';
-import { PostponedTab } from './tabs/PostponedTab';
 import { StandbyTab } from './tabs/StandbyTab';
 import { StalledTab } from './tabs/StalledTab';
 import { NonEventTab } from './tabs/NonEventTab';
@@ -75,7 +74,6 @@ import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
 import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
-import { PostponementDialog } from './dialogs/PostponementDialog';
 import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import { NonEventDialog } from './dialogs/NonEventDialog';
 import { RescheduleDialog } from './dialogs/RescheduleDialog';
@@ -84,6 +82,7 @@ import { CallNotesScratchpadDialog } from './CallNotesScratchpadDialog';
 import NextActionDialog from './NextActionDialog';
 import { DashboardSummaryCards } from './DashboardSummaryCards';
 import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
+import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { logger } from '@/lib/logger';
 import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
@@ -175,8 +174,6 @@ const EventRequestsManagementContent: React.FC = () => {
     setShowAiDateSuggestionDialog,
     showAiIntakeAssistantDialog,
     setShowAiIntakeAssistantDialog,
-    showPostponementDialog,
-    setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
     showScratchpad,
@@ -231,8 +228,6 @@ const EventRequestsManagementContent: React.FC = () => {
     setAiSuggestionEventRequest,
     aiIntakeAssistantEventRequest,
     setAiIntakeAssistantEventRequest,
-    postponementEventRequest,
-    setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
     scratchpadEventRequest,
@@ -298,40 +293,6 @@ const EventRequestsManagementContent: React.FC = () => {
       toast({
         title: 'Sync Failed',
         description: error?.message || 'Failed to sync from Google Sheets',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Postpone event mutation (supports both postpone-to-status and immediate-reschedule)
-  const postponeEventMutation = useMutation({
-    mutationFn: async ({ eventId, data }: {
-      eventId: number;
-      data: {
-        postponementReason: string;
-        hasNewDate?: boolean;
-        newScheduledDate?: string;
-        tentativeNewDate?: string;
-        postponementNotes?: string;
-      };
-    }) => {
-      return apiRequest('POST', `/api/event-requests/${eventId}/postpone`, data);
-    },
-    onSuccess: (_, variables) => {
-      const wasRescheduled = variables.data.hasNewDate && variables.data.newScheduledDate;
-      toast({
-        title: wasRescheduled ? 'Event rescheduled' : 'Event postponed',
-        description: wasRescheduled
-          ? 'The event has been rescheduled to the new date. The original date is preserved for reference.'
-          : 'The event has been marked as postponed.',
-      });
-      invalidateEventRequestQueries(queryClient);
-    },
-    onError: (error: any) => {
-      logger.error('Error postponing event:', error);
-      toast({
-        title: 'Error',
-        description: error?.data?.message || error?.message || 'Failed to postpone event',
         variant: 'destructive',
       });
     },
@@ -449,7 +410,6 @@ const EventRequestsManagementContent: React.FC = () => {
       scheduled: <ScheduledTab />,
       completed: <CompletedTab />,
       declined: <DeclinedTab />,
-      postponed: <PostponedTab />,
       standby: <StandbyTab />,
       stalled: <StalledTab />,
       non_event: <NonEventTab />,
@@ -489,18 +449,6 @@ const EventRequestsManagementContent: React.FC = () => {
       id: selectedEventRequest.id,
       scheduledCallDate: combinedDateTime,
     });
-  };
-
-  // Handle postponement using standardized mutation pattern
-  const handlePostpone = (eventId: number, data: {
-    postponementReason: string;
-    hasNewDate?: boolean;
-    newScheduledDate?: string;
-    tentativeNewDate?: string;
-    postponementNotes?: string;
-  }) => {
-    trackButtonClick('postpone_event', 'event_requests');
-    postponeEventMutation.mutate({ eventId, data });
   };
 
   // Handle floating button click to switch to scheduled + spreadsheet view
@@ -831,7 +779,12 @@ const EventRequestsManagementContent: React.FC = () => {
               </Link>
             </div>
             {/* Status Definitions Reference */}
-            <StatusDefinitionsPanel />
+            <OnboardingTooltip
+              step="status-definitions-review"
+              position="bottom"
+            >
+              <StatusDefinitionsPanel />
+            </OnboardingTooltip>
 
             {/* Filters and Tabs */}
             <RequestFilters
@@ -1099,19 +1052,6 @@ const EventRequestsManagementContent: React.FC = () => {
               setSelectedEventRequest(aiIntakeAssistantEventRequest);
               setIsEditing(true);
             }}
-          />
-        )}
-
-        {/* Postponement Dialog */}
-        {postponementEventRequest && (
-          <PostponementDialog
-            isOpen={showPostponementDialog}
-            onClose={() => {
-              setShowPostponementDialog(false);
-              setPostponementEventRequest(null);
-            }}
-            request={postponementEventRequest}
-            onPostpone={handlePostpone}
           />
         )}
 

@@ -79,8 +79,6 @@ interface EventRequestContextType {
   setShowAiDateSuggestionDialog: (show: boolean) => void;
   showAiIntakeAssistantDialog: boolean;
   setShowAiIntakeAssistantDialog: (show: boolean) => void;
-  showPostponementDialog: boolean;
-  setShowPostponementDialog: (show: boolean) => void;
   showIntakeCallDialog: boolean;
   setShowIntakeCallDialog: (show: boolean) => void;
   showScratchpad: boolean;
@@ -115,8 +113,6 @@ interface EventRequestContextType {
   setAiSuggestionEventRequest: (event: EventRequest | null) => void;
   aiIntakeAssistantEventRequest: EventRequest | null;
   setAiIntakeAssistantEventRequest: (event: EventRequest | null) => void;
-  postponementEventRequest: EventRequest | null;
-  setPostponementEventRequest: (event: EventRequest | null) => void;
   intakeCallEventRequest: EventRequest | null;
   setIntakeCallEventRequest: (event: EventRequest | null) => void;
   scratchpadEventRequest: EventRequest | null;
@@ -214,7 +210,6 @@ interface EventRequestContextType {
     rescheduled: number;
     completed: number;
     declined: number;
-    postponed: number;
     cancelled: number;
     non_event: number;
     standby: number;
@@ -264,7 +259,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       return initialTab;
     }
     // Default to 'new' for event requests when no tab is specified
@@ -322,7 +317,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     rescheduled: number;
     completed: number;
     declined: number;
-    postponed: number;
     cancelled: number;
     non_event: number;
     standby: number;
@@ -351,7 +345,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
     if (initialTab && validTabs.includes(initialTab)) {
       logger.log('[EventRequestContext] Setting activeTab from initialTab:', initialTab);
       setActiveTab(initialTab);
@@ -369,7 +363,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
     const sectionFromUrl = urlParams.get('section');
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
 
     // Only update if we're on the event-requests section and there's a valid tab in the URL
     if (sectionFromUrl === 'event-requests' && tabFromUrl && validTabs.includes(tabFromUrl)) {
@@ -413,7 +407,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [showEditContactDialog, setShowEditContactDialog] = useState(false);
   const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
   const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
-  const [showPostponementDialog, setShowPostponementDialog] = useState(false);
   const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
   const [showScratchpad, setShowScratchpad] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
@@ -432,7 +425,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [editContactAttemptData, setEditContactAttemptData] = useState<any | null>(null);
   const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
   const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
-  const [postponementEventRequest, setPostponementEventRequest] = useState<EventRequest | null>(null);
   const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
   const [scratchpadEventRequest, setScratchpadEventRequest] = useState<EventRequest | null>(null);
   const [reasonDialogEventRequest, setReasonDialogEventRequest] = useState<EventRequest | null>(null);
@@ -587,7 +579,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     rescheduled: serverStatusCounts?.rescheduled ?? 0,
     completed: serverStatusCounts?.completed ?? 0,
     declined: serverStatusCounts?.declined ?? 0,
-    postponed: serverStatusCounts?.postponed ?? 0,
     cancelled: serverStatusCounts?.cancelled ?? 0,
     non_event: serverStatusCounts?.non_event ?? 0,
     standby: serverStatusCounts?.standby ?? 0,
@@ -610,7 +601,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Synchronize statusFilter with activeTab (only for status-based tabs)
   useEffect(() => {
     // Only sync statusFilter for tabs that correspond to status values
-    if (['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments'].includes(activeTab)) {
+    if (['all', 'new', 'in_process', 'scheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments'].includes(activeTab)) {
       setStatusFilter(activeTab);
     }
     // For admin_overview and planning tabs, don't change statusFilter
@@ -658,7 +649,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'postponed', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
@@ -682,7 +673,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
             setActiveTab('standby');
           } else if (targetEvent.status === 'stalled') {
             setActiveTab('stalled');
-          } else if (targetEvent.status === 'declined' || targetEvent.status === 'postponed' || targetEvent.status === 'cancelled') {
+          } else if (targetEvent.status === 'declined' || targetEvent.status === 'cancelled') {
             setActiveTab('declined');
           } else {
             setActiveTab('new');
@@ -771,8 +762,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setShowAiDateSuggestionDialog,
     showAiIntakeAssistantDialog,
     setShowAiIntakeAssistantDialog,
-    showPostponementDialog,
-    setShowPostponementDialog,
     showIntakeCallDialog,
     setShowIntakeCallDialog,
     showScratchpad,
@@ -807,8 +796,6 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     setAiSuggestionEventRequest,
     aiIntakeAssistantEventRequest,
     setAiIntakeAssistantEventRequest,
-    postponementEventRequest,
-    setPostponementEventRequest,
     intakeCallEventRequest,
     setIntakeCallEventRequest,
     scratchpadEventRequest,
@@ -905,12 +892,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     showCollectionLog, showAssignmentDialog, showTspContactAssignmentDialog,
     showSandwichPlanningModal, showStaffingPlanningModal, showLogContactDialog,
     showEditContactDialog, showAiDateSuggestionDialog, showAiIntakeAssistantDialog,
-    showPostponementDialog, showIntakeCallDialog, showScratchpad, showNextActionDialog, showNonEventDialog, showRescheduleDialog,
+    showIntakeCallDialog, showScratchpad, showNextActionDialog, showNonEventDialog, showRescheduleDialog,
     // Event references (13)
     schedulingEventRequest, toolkitEventRequest, collectionLogEventRequest,
     contactEventRequest, tspContactEventRequest, logContactEventRequest,
     editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,
-    aiIntakeAssistantEventRequest, postponementEventRequest, intakeCallEventRequest, scratchpadEventRequest,
+    aiIntakeAssistantEventRequest, intakeCallEventRequest, scratchpadEventRequest,
     nextActionEventRequest, nextActionMode, nonEventDialogEventRequest, rescheduleDialogEventRequest,
     // Assignment state (6)
     assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment, editingAssignmentPersonId, isVanDriverAssignment,

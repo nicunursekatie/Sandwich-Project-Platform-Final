@@ -14,7 +14,6 @@ export const EVENT_STATUSES = [
   'rescheduled',
   'completed',
   'declined',
-  'postponed',
   'cancelled',
   'non_event',
   'standby',
@@ -45,27 +44,22 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
   scheduled: {
     label: 'Scheduled',
     definition: 'Event is on our calendar and the majority of details are nailed down. All details should be finalized at least a few days before the event whenever possible.',
-    guidance: 'Assign drivers, speakers, and volunteers. Can move to Completed, Cancelled, or Postponed. If the date changes, move to Rescheduled.',
+    guidance: 'Assign drivers, speakers, and volunteers. Can move to Completed, Cancelled, or Rescheduled. If the event needs to be rescheduled but no new date is available yet, move to Standby.',
   },
   rescheduled: {
     label: 'Rescheduled',
-    definition: 'A previously scheduled or postponed event that has been assigned a new confirmed date.',
-    guidance: 'Treat like a scheduled event. Can move to Completed, Cancelled, or Postponed.',
+    definition: 'A previously scheduled event that has been assigned a new confirmed date.',
+    guidance: 'Treat like a scheduled event. Can move to Completed, Cancelled, or Standby.',
   },
   completed: {
     label: 'Completed',
-    definition: 'The event date has passed and the event was not cancelled or postponed.',
+    definition: 'The event date has passed and the event was not cancelled.',
     guidance: 'Complete follow-up tasks: 1-day follow-up, 1-month follow-up, and social media post request.',
   },
   declined: {
     label: 'Declined',
     definition: 'The organization was in process but decided not to proceed with hosting an event.',
     guidance: 'Record the reason. Can be reactivated if they come back.',
-  },
-  postponed: {
-    label: 'Postponed',
-    definition: 'A previously scheduled event that needs to happen at a later date but no new date is confirmed yet.',
-    guidance: 'Follow up to determine a new date. Once a new date is confirmed, move to Rescheduled.',
   },
   cancelled: {
     label: 'Cancelled',
@@ -79,8 +73,8 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
   },
   standby: {
     label: 'Standby',
-    definition: 'The event was in process, but the contact is waiting on something specific (e.g., information or permission from someone in their organization) in order to continue planning.',
-    guidance: 'Follow closely. Move to Scheduled once the blocker is resolved.',
+    definition: 'Only events that have been first moved to In Process status should be given a status of Standby. These are events where the Group Contact is waiting on something specific (e.g., information or permission from someone in their organization) in order for us to move forward with the planning process. In the rare circumstance that a Scheduled event needs to be rescheduled and the group cannot provide a new date right away, that event should also be moved to Standby until we receive the new date.',
+    guidance: 'Follow closely. Move to In Process, Scheduled, Declined, or Stalled as appropriate.',
   },
   stalled: {
     label: 'Stalled',
@@ -96,22 +90,22 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
  * Key business rules:
  * - Cancelled requires the event to have been Scheduled first
  * - In Process events that don't happen become Declined (not Cancelled)
- * - Postponed events move to Rescheduled once a new date is confirmed
  * - Non-Event is terminal — only reachable from New Request
  * - Rescheduled has the same outbound transitions as Scheduled
  * - Completed is typically a terminal state but can be reopened to Scheduled if needed
+ * - Standby covers events waiting on the group contact, including scheduled events
+ *   that need to be rescheduled but don't have a new date yet
  */
 export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   new: ['in_process', 'non_event', 'declined', 'standby', 'stalled'],
   in_process: ['scheduled', 'declined', 'standby', 'stalled'],
-  scheduled: ['completed', 'cancelled', 'postponed', 'rescheduled', 'in_process'],  // in_process allows undoing accidental scheduling
-  rescheduled: ['completed', 'cancelled', 'postponed', 'in_process'],
+  scheduled: ['completed', 'cancelled', 'rescheduled', 'standby', 'in_process'],  // in_process allows undoing accidental scheduling
+  rescheduled: ['completed', 'cancelled', 'standby', 'in_process'],
   completed: ['scheduled'],  // Reopen if needed (e.g., data entry error)
   declined: ['new', 'in_process'],  // Can reactivate if they come back
-  postponed: ['rescheduled', 'cancelled'],  // Reschedule or cancel
   cancelled: ['scheduled'],  // Can reinstate if the group comes back
   non_event: [],  // Terminal — no transitions out
-  standby: ['in_process', 'declined', 'stalled'],
+  standby: ['in_process', 'scheduled', 'declined', 'stalled'],  // scheduled allows setting a date from standby
   stalled: ['in_process', 'declined', 'new'],
 };
 
@@ -134,20 +128,16 @@ export function getTransitionError(from: EventStatus, to: EventStatus): string {
   const toLabel = toDef?.label || to;
 
   // Provide specific guidance for common mistakes
-  if (to === 'cancelled' && from !== 'scheduled' && from !== 'rescheduled' && from !== 'postponed' && from !== 'cancelled') {
-    return `Cannot cancel an event that is "${fromLabel}". Only Scheduled, Rescheduled, or Postponed events can be cancelled. If this event won't proceed, mark it as Declined instead.`;
+  if (to === 'cancelled' && from !== 'scheduled' && from !== 'rescheduled' && from !== 'cancelled') {
+    return `Cannot cancel an event that is "${fromLabel}". Only Scheduled or Rescheduled events can be cancelled. If this event won't proceed, mark it as Declined instead.`;
   }
 
   if (to === 'completed' && from !== 'scheduled' && from !== 'rescheduled' && from !== 'completed') {
     return `Cannot mark a "${fromLabel}" event as Completed. The event must be Scheduled or Rescheduled first.`;
   }
 
-  if (to === 'postponed' && from !== 'scheduled' && from !== 'rescheduled') {
-    return `Cannot postpone a "${fromLabel}" event. Only Scheduled or Rescheduled events can be postponed.`;
-  }
-
-  if (to === 'rescheduled' && from !== 'scheduled' && from !== 'postponed') {
-    return `Cannot reschedule a "${fromLabel}" event. Only Scheduled or Postponed events can be rescheduled.`;
+  if (to === 'rescheduled' && from !== 'scheduled' && from !== 'standby') {
+    return `Cannot reschedule a "${fromLabel}" event. Only Scheduled or Standby events can be rescheduled.`;
   }
 
   if (to === 'non_event' && from !== 'new') {

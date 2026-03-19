@@ -2225,7 +2225,7 @@ export const eventRequests = pgTable(
       .default('i_dont_know'), // 'yes', 'no', 'i_dont_know'
 
     // System tracking
-    status: varchar('status').notNull().default('new'), // 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'postponed', 'cancelled', 'non_event', 'standby', 'stalled'
+    status: varchar('status').notNull().default('new'), // 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'cancelled', 'non_event', 'standby', 'stalled'
     statusChangedAt: timestamp('status_changed_at'), // When the status was last changed (used for follow-up badge logic)
     assignedTo: varchar('assigned_to'), // User ID of person handling this request
     nextAction: text('next_action'), // What needs to happen next for this event (intake tracking)

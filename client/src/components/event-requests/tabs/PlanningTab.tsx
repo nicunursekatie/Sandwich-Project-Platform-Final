@@ -55,7 +55,6 @@ export function PlanningTab({
       'scheduled': 'scheduled',
       'completed': 'completed',
       'declined': 'declined',
-      'postponed': 'declined',
       'cancelled': 'declined',
     };
 

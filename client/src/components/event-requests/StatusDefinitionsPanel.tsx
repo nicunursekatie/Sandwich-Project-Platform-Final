@@ -21,15 +21,14 @@ const statusOrder: EventStatus[] = [
   'rescheduled',
   'completed',
   'declined',
-  'postponed',
   'cancelled',
   'non_event',
   'standby',
   'stalled',
 ];
 
-export const StatusDefinitionsPanel: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+export const StatusDefinitionsPanel: React.FC<{ defaultOpen?: boolean }> = ({ defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -105,20 +104,19 @@ export const StatusDefinitionsPanel: React.FC = () => {
             })}
           </div>
 
-          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
-            <strong>Key rules:</strong>
-            <ul className="mt-1 space-y-1 list-disc list-inside">
+          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <strong className="text-base">Key rules:</strong>
+            <ul className="mt-2 space-y-2 list-disc list-inside">
               <li>
                 <strong>Cancelled</strong> is only for events that were already{' '}
                 <strong>Scheduled</strong>. If an In Process event doesn't happen,
                 use <strong>Declined</strong>.
               </li>
               <li>
-                <strong>Postponed</strong> is only for <strong>Scheduled</strong>{' '}
-                events that need to change their date.
+                If a <strong>Scheduled</strong> event needs to be rescheduled but the group cannot provide a new date right away, move it to <strong>Standby</strong> until the new date is confirmed.
               </li>
               <li>
-                All status changes to Declined, Cancelled, or Postponed require a
+                All status changes to Declined or Cancelled require a
                 reason to be recorded.
               </li>
             </ul>

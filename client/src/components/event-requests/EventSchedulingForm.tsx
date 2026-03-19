@@ -949,7 +949,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Status Change Handler ──────────────────────────────────────────
 
   const handleStatusChange = (newStatus: EventStatus) => {
-    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'postponed' || newStatus === 'non_event' || newStatus === 'rescheduled') {
+    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'non_event' || newStatus === 'rescheduled') {
       const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
       toast({
         title: 'Status Change Requires Documentation',

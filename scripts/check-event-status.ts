@@ -39,7 +39,7 @@ async function checkEventStatus(eventId: number) {
 
     // Check if it would be excluded by our duplicate check
     const isDeleted = !!event.deletedAt;
-    const isInactiveStatus = ['cancelled', 'declined', 'postponed'].includes(event.status);
+    const isInactiveStatus = ['cancelled', 'declined'].includes(event.status);
     const wouldBeExcluded = isDeleted || isInactiveStatus;
 
     console.log(`\n🔍 Duplicate Check Analysis:`);

@@ -158,16 +158,16 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   const endDateStr = toDateString(endDate);
 
   // Statuses that should be excluded from statistics (events that didn't/won't happen)
-  const EXCLUDED_STATUSES = ['cancelled', 'postponed', 'declined'];
+  const EXCLUDED_STATUSES = ['cancelled', 'declined'];
 
   // Get all events in the period - use scheduledEventDate OR desiredEventDate (matching component)
   const allEventRequests = await db.query.eventRequests.findMany();
 
-  // Filter events by date range and exclude cancelled/postponed/declined (same as component does client-side)
+  // Filter events by date range and exclude cancelled/declined (same as component does client-side)
   const events = allEventRequests.filter(e => {
     const eventDate = e.scheduledEventDate || e.desiredEventDate;
     if (!eventDate) return false;
-    // Exclude events that didn't happen (cancelled, postponed, declined)
+    // Exclude events that didn't happen (cancelled, declined)
     if (e.status && EXCLUDED_STATUSES.includes(e.status)) return false;
     // Convert event date to string for comparison
     const eventDateStr = toDateString(new Date(eventDate));

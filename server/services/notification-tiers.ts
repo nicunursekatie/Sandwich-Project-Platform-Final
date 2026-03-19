@@ -233,7 +233,7 @@ export function hasSuccessfulContact(
 ): boolean {
   // Check 1: Status is terminal/inactive - no escalation needed
   // Include ALL non-active statuses to prevent false escalations
-  if (['scheduled', 'completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby'].includes(status)) {
+  if (['scheduled', 'completed', 'declined', 'cancelled', 'stalled', 'standby'].includes(status)) {
     return true;
   }
 
@@ -316,7 +316,7 @@ export function needsCorporate24hEscalation(
   }
 
   // Skip terminal/inactive statuses
-  if (['completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby', 'scheduled'].includes(status)) {
+  if (['completed', 'declined', 'cancelled', 'stalled', 'standby', 'scheduled'].includes(status)) {
     return false;
   }
 
@@ -542,7 +542,7 @@ export function getEventUrgency(
   isCorporatePriority: boolean
 ): 'high' | 'medium' | 'low' {
   // Corporate priority is always at least medium (but only for active events)
-  if (isCorporatePriority && !['completed', 'declined', 'cancelled', 'stalled', 'postponed', 'standby', 'scheduled'].includes(status)) {
+  if (isCorporatePriority && !['completed', 'declined', 'cancelled', 'stalled', 'standby', 'scheduled'].includes(status)) {
     // Check if it needs escalation
     const daysSinceContact = lastContactAttempt
       ? (Date.now() - new Date(lastContactAttempt).getTime()) / (1000 * 60 * 60 * 24)

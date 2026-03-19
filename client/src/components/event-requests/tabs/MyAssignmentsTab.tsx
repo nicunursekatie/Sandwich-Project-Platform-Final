@@ -611,14 +611,6 @@ export const MyAssignmentsTab: React.FC = () => {
               </Badge>
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
-              checked={myAssignmentsStatusFilter.includes('postponed')}
-              onCheckedChange={() => toggleStatusFilter('postponed')}
-            >
-              <Badge className="bg-purple-100 text-purple-800 border-purple-300 mr-2">
-                Postponed
-              </Badge>
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
               checked={myAssignmentsStatusFilter.includes('declined')}
               onCheckedChange={() => toggleStatusFilter('declined')}
             >

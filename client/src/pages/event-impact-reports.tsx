@@ -284,7 +284,6 @@ const STATUS_COLORS: Record<string, string> = {
   new: 'bg-gray-100 text-gray-800',
   declined: 'bg-red-100 text-red-800',
   cancelled: 'bg-red-100 text-red-800',
-  postponed: 'bg-orange-100 text-orange-800',
 };
 
 export default function EventImpactReports() {
@@ -706,7 +705,7 @@ export default function EventImpactReports() {
     const allEvents = [...mergedEventRequests, ...trulyUnlinkedCollections, ...orphanedAsStandalone];
 
     // Statuses that should be excluded from statistics (events that didn't/won't happen)
-    const EXCLUDED_STATUSES = ['cancelled', 'postponed', 'declined'];
+    const EXCLUDED_STATUSES = ['cancelled', 'declined'];
 
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
@@ -716,14 +715,14 @@ export default function EventImpactReports() {
 
       const inRange = eventDate >= dateRange.start && eventDate <= dateRange.end;
 
-      // Status filter - if user selects "all", exclude cancelled/postponed/declined by default
+      // Status filter - if user selects "all", exclude cancelled/declined by default
       // If user explicitly selects a specific status, show only that status
       let matchesStatus = false;
       if (statusFilter === 'all') {
         // Exclude events that didn't happen from the default "all" view
         matchesStatus = !EXCLUDED_STATUSES.includes(event.status);
       } else {
-        // User explicitly selected a status (including cancelled/postponed/declined)
+        // User explicitly selected a status (including cancelled/declined)
         matchesStatus = event.status === statusFilter;
       }
 
@@ -1480,7 +1479,6 @@ export default function EventImpactReports() {
                         --- Excluded from stats ---
                       </SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="postponed">Postponed</SelectItem>
                       <SelectItem value="declined">Declined</SelectItem>
                     </SelectContent>
                   </Select>

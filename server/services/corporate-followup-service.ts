@@ -427,7 +427,7 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
     // Find all corporate priority events that:
     // 1. Are corporate priority (isCorporatePriority = true)
     // 2. Have a TSP contact assigned
-    // 3. Are in new/in_process status (not completed, declined, postponed, cancelled)
+    // 3. Are in new/in_process status (not completed, declined, cancelled)
     // 4. Protocol status is 'active' (not 'completed' or 'stalled')
     const corporateEvents = await db
       .select({

@@ -12,7 +12,6 @@ interface DashboardSummaryCardsProps {
     scheduled: number;
     completed: number;
     declined: number;
-    postponed: number;
     cancelled: number;
     my_assignments: number;
   };

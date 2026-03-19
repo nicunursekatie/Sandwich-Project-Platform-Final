@@ -32,7 +32,6 @@ const statusLabels: Record<string, string> = {
   completed: 'Completed',
   declined: 'Declined',
   cancelled: 'Cancelled',
-  postponed: 'Postponed',
 };
 
 const statusStyles: Record<string, string> = {
@@ -42,7 +41,6 @@ const statusStyles: Record<string, string> = {
   completed: 'bg-gray-100 text-gray-700 border-gray-200',
   declined: 'bg-rose-50 text-rose-700 border-rose-200',
   cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
-  postponed: 'bg-purple-50 text-purple-700 border-purple-200',
 };
 
 export const AllEventsTab: React.FC = () => {
@@ -128,12 +126,6 @@ export const AllEventsTab: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-rose-500" />
                   Declined
-                </div>
-              </SelectItem>
-              <SelectItem value="postponed">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-purple-500" />
-                  Postponed
                 </div>
               </SelectItem>
               <SelectItem value="cancelled">

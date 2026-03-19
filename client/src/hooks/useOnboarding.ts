@@ -12,7 +12,8 @@ export type OnboardingStep =
   | 'smart-search-intro'        // Smart search feature
   | 'holding-zone-intro'        // Holding zone explanation
   | 'project-threads-intro'     // Project threads
-  | 'toolkit-apps-intro';       // Toolkit & Apps menu item (formerly Quick Tools)
+  | 'toolkit-apps-intro'        // Toolkit & Apps menu item (formerly Quick Tools)
+  | 'status-definitions-review'; // One-time prompt to review updated status definitions
 
 const STORAGE_KEY = 'sandwich-onboarding-completed';
 
@@ -161,5 +162,10 @@ export const onboardingContent: Record<OnboardingStep, { title: string; message:
     title: 'Toolkit & Apps',
     message: 'Your one-stop hub for the Event Toolkit, Flyers, Inventory Calculator, Donation Receipts, Donor Management, and more!',
     action: 'Check it out'
+  },
+  'status-definitions-review': {
+    title: 'Status Definitions Updated',
+    message: 'We\'ve simplified event statuses — Postponed has been removed. Please review the updated Status Definitions to make sure you\'re using the right status for each event.',
+    action: 'Review Now'
   }
 };

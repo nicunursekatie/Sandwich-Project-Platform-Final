@@ -121,16 +121,6 @@ const columnConfigs: Record<string, Array<{ header: string; key: string; formatt
     { header: 'Created At', key: 'createdAt', formatter: (v) => formatDate(v) },
   ],
 
-  postponed: [
-    ...getBaseColumns(),
-    { header: 'Original Date', key: 'desiredEventDate', formatter: (v) => formatDate(v) },
-    { header: 'Tentative New Date', key: 'tentativeNewDate', formatter: (v) => formatDate(v) },
-    { header: 'Postponement Reason', key: 'postponementReason' },
-    { header: 'Postponement Notes', key: 'postponementNotes' },
-    { header: 'Status Changed', key: 'statusChangedAt', formatter: (v) => formatDate(v) },
-    { header: 'Message', key: 'message' },
-  ],
-
   my_assignments: [
     ...getBaseColumns(),
     { header: 'Status', key: 'status' },
@@ -195,7 +185,6 @@ export async function exportEventRequestsToExcel(
     scheduled: 'Scheduled Events',
     completed: 'Completed Events',
     declined: 'Declined Requests',
-    postponed: 'Postponed Events',
     my_assignments: 'My Assignments',
   };
 
@@ -217,7 +206,6 @@ export function getStatusDisplayName(status: string): string {
     scheduled: 'Scheduled',
     completed: 'Completed',
     declined: 'Declined',
-    postponed: 'Postponed',
     my_assignments: 'My Assignments',
   };
   return names[status] || status;

@@ -27,7 +27,6 @@ interface TspContactStats {
     scheduled: number;
     completed: number;
     declined: number;
-    postponed: number;
   };
   events: EventRequest[];
 }
@@ -73,7 +72,6 @@ export function AdminOverviewDialog({
             scheduled: 0,
             completed: 0,
             declined: 0,
-            postponed: 0,
           },
           events: [],
         });
@@ -278,11 +276,7 @@ export function AdminOverviewDialog({
                         Declined: {stat.byStatus.declined}
                       </Badge>
                     )}
-                    {stat.byStatus.postponed > 0 && (
-                      <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">
-                        Postponed: {stat.byStatus.postponed}
-                      </Badge>
-                    )}
+
                   </div>
                 </div>
               ))}
