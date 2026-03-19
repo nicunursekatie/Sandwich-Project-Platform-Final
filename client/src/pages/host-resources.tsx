@@ -724,6 +724,31 @@ export default function HostResources() {
       {/* Upload Dialog */}
       {isAdmin && <UploadResourceDialog open={uploadOpen} onOpenChange={setUploadOpen} />}
 
+      {/* Featured: Host Handbook */}
+      <section>
+        <a
+          href="https://tsp-host-handbook-ylfb92u.gamma.site/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
+          <Card className="bg-gradient-to-r from-[#007e8c]/10 to-[#236383]/10 border-[#007e8c]/30 hover:from-[#007e8c]/20 hover:to-[#236383]/20 transition-colors cursor-pointer">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="p-3 bg-white rounded-lg shadow-sm flex-shrink-0">
+                <BookOpen className="w-6 h-6 text-[#007e8c]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-[#236383]">TSP Host Handbook</h3>
+                <p className="text-sm text-gray-600 mt-0.5">
+                  Complete guide for host collection sites — everything you need to know about hosting a sandwich collection.
+                </p>
+              </div>
+              <ExternalLink className="w-5 h-5 text-[#007e8c] flex-shrink-0" />
+            </CardContent>
+          </Card>
+        </a>
+      </section>
+
       {/* Quick Links Section */}
       <section>
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
