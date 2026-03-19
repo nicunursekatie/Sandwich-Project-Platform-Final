@@ -108,17 +108,17 @@ async function getHistoricalCollectionsContext(): Promise<string> {
 
     return `
 
-### Historical Data (Authoritative Source: 2020-2025)
-This is verified historical data from Scott's tracking system, providing accurate trend analysis.
+### Historical Seasonal Baseline Data (2020–2025 patterns only)
+⚠️ IMPORTANT: This section contains historical seasonal patterns only. For any questions about recent totals, current year data, or specific recent weeks/months, ALWAYS use the live Collection Log Entries — NOT these yearly totals. The 2026 row here is incomplete and should be ignored for recent data questions.
 
-#### Yearly Totals (Verified)
+#### Historical Yearly Totals (for trend reference only — use live log for recent years)
 ${Object.entries(yearlyTotals)
   .sort(([a], [b]) => parseInt(a) - parseInt(b))
-  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches`)
+  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches (historical baseline)`)
   .join('\n')}
 
 #### Weekly Seasonal Patterns (Historical Averages by Week of Year)
-Average sandwiches collected per week of year across all available years. Use these exact figures when asked about any specific week number.
+Use these only for understanding seasonal trends (e.g., which weeks are typically slow or busy). Do NOT use these figures when answering questions about actual recent totals.
 
 ${weeklyAverages.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (${w.yearsOfData} year${w.yearsOfData !== 1 ? 's' : ''} of data)`).join('\n')}
 
@@ -135,7 +135,7 @@ ${Object.entries(locationTotals)
   .map(([location, total]) => `- ${location}: ${total.toLocaleString()} sandwiches`)
   .join('\n')}
 
-Note: Week numbers follow ISO standard (Week 1 starts first week of January). When asked about a specific week number, always look it up in the weekly list above and give the exact average.
+Note: Week numbers follow ISO standard (Week 1 starts first week of January).
 `;
   } catch (err) {
     logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
@@ -553,17 +553,17 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
 
       historicalContext = `
 
-### Historical Data (Authoritative Source: 2020-2025)
-This is verified historical data from Scott's tracking system, providing accurate trend analysis.
+### Historical Seasonal Baseline Data (2020–2025 patterns only)
+⚠️ IMPORTANT: This section contains historical seasonal patterns only. For any questions about recent totals, current year data, or specific recent weeks/months, ALWAYS use the live Collection Log Entries listed above — NOT these yearly totals. The 2026 row here is incomplete and should be ignored for recent data questions.
 
-#### Yearly Totals (Verified)
+#### Historical Yearly Totals (for trend reference only — use live log for recent years)
 ${Object.entries(yearlyTotals)
   .sort(([a], [b]) => parseInt(a) - parseInt(b))
-  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches`)
+  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches (historical baseline)`)
   .join('\n')}
 
 #### Weekly Seasonal Patterns (Historical Averages by Week of Year)
-These are the average sandwiches collected per week, based on ${Math.max(...weeklyAverages.map(w => w.yearsOfData))} years of data:
+Use these only for understanding seasonal trends. Do NOT use these figures when answering questions about actual recent totals — use the live collection entries for that.
 
 **Historically LOW collection weeks (prepare for reduced volume):**
 ${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
@@ -571,14 +571,7 @@ ${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} s
 **Historically HIGH collection weeks (expect increased volume):**
 ${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
 
-#### Top Host Locations (All-Time Historical)
-${Object.entries(locationTotals)
-  .sort(([, a], [, b]) => b - a)
-  .slice(0, 15)
-  .map(([location, total]) => `- ${location}: ${total.toLocaleString()} sandwiches`)
-  .join('\n')}
-
-Note: Week numbers follow ISO standard (Week 1 starts first week of January). Use this historical data to predict seasonal trends and identify which upcoming weeks are typically low or high for collections.
+Note: Week numbers follow ISO standard (Week 1 starts first week of January). Use this only to predict seasonal trends, not for current data.
 `;
     }
   } catch (err) {
@@ -586,9 +579,17 @@ Note: Week numbers follow ISO standard (Week 1 starts first week of January). Us
   }
 
   // Build compact raw record list for full per-entry analysis
-  const rawRecords = collections
+  // Sort NEWEST-FIRST so recent data appears at the top of the AI context and is never
+  // cut off by token limits. Cap at 600 records to stay well within context windows
+  // (all-time monthly stats above already cover the full history).
+  const MAX_RAW_RECORDS = 600;
+  const sortedCollections = collections
     .slice()
-    .sort((a, b) => (a.collectionDate || '').localeCompare(b.collectionDate || ''))
+    .sort((a, b) => (b.collectionDate || '').localeCompare(a.collectionDate || ''));
+  const truncatedCollections = sortedCollections.slice(0, MAX_RAW_RECORDS);
+  const omittedCount = sortedCollections.length - truncatedCollections.length;
+
+  const rawRecords = truncatedCollections
     .map(c => {
       const count = getCollectionSandwichCount(c);
       let deli = c.individualDeli ?? 0;
@@ -637,8 +638,8 @@ ${Object.entries(monthlyStats)
   .map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
 
-### Every Collection Log Entry (date | host | total [type breakdown] {groups})
-${rawRecords.join('\n')}
+### Recent Collection Log Entries (newest first — date | host | total [type breakdown] {groups})
+${omittedCount > 0 ? `Note: Showing the ${MAX_RAW_RECORDS} most recent of ${collections.length} total entries. Full history is captured in the monthly totals above.\n` : ''}${rawRecords.join('\n')}
 ${historicalContext}
 `;
 }
