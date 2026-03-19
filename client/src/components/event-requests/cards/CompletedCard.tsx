@@ -401,6 +401,43 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {/* Rescheduled indicator - shows original date when event was rescheduled */}
+            {request.originalScheduledDate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 cursor-help">
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Rescheduled from {new Date(request.originalScheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <div className="space-y-1">
+                    <p className="font-medium">This event was rescheduled</p>
+                    <p className="text-sm">Originally scheduled: {new Date(request.originalScheduledDate).toLocaleDateString()}</p>
+                    {request.postponementReason && (
+                      <p className="text-sm">Reason: {request.postponementReason}</p>
+                    )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {/* Was Postponed indicator - shows when event went through postponement */}
+            {request.wasPostponed && !request.originalScheduledDate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 cursor-help">
+                    <History className="w-3 h-3 mr-1" />
+                    Previously Rescheduled
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This event was rescheduled before completion</p>
+                  {request.postponementReason && (
+                    <p className="text-sm mt-1">Reason: {request.postponementReason}</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            )}
             {/* Corporate Priority Badge */}
             {(request as any).isCorporatePriority && (
               <Tooltip>

@@ -807,7 +807,7 @@ export async function notifyPastDateInProcessEvents(): Promise<{
 
 /**
  * Auto-complete scheduled events whose event date has passed
- * Runs nightly to move events from "scheduled" to "completed" status
+ * Runs nightly to move events from "scheduled" or "rescheduled" to "completed" status
  * Exported so it can be called manually if needed
  */
 export async function autoCompletePassedEvents(): Promise<{
@@ -824,19 +824,19 @@ export async function autoCompletePassedEvents(): Promise<{
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Find all scheduled events where the scheduled date is before today
+    // Find all scheduled and rescheduled events where the scheduled date is before today
     const passedEvents = await db
       .select()
       .from(eventRequests)
       .where(
         and(
-          eq(eventRequests.status, 'scheduled'),
+          sql`${eventRequests.status} IN ('scheduled', 'rescheduled')`,
           sql`${eventRequests.scheduledEventDate} < ${today}`,
           isNull(eventRequests.deletedAt)
         )
       );
 
-    cronLogger.info(`Found ${passedEvents.length} scheduled events with passed dates to auto-complete`);
+    cronLogger.info(`Found ${passedEvents.length} scheduled/rescheduled events with passed dates to auto-complete`);
 
     for (const event of passedEvents) {
       try {
