@@ -502,6 +502,53 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
     .slice(0, 6)
     .reverse();
 
+  // Pre-compute weekly totals for current and previous calendar year
+  // so the AI never has to manually aggregate daily raw records into weeks
+  const currentYear = new Date().getFullYear();
+  const prevYear = currentYear - 1;
+
+  function getISOWeekKey(dateStr: string): string {
+    const d = new Date(dateStr + 'T12:00:00');
+    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = tmp.getUTCDay() || 7;
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((tmp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    // Return Monday of that ISO week as a human-readable label
+    const monday = new Date(dateStr + 'T12:00:00');
+    const dow = monday.getDay();
+    const diff = monday.getDate() - dow + (dow === 0 ? -6 : 1);
+    monday.setDate(diff);
+    const label = monday.toISOString().substring(0, 10);
+    return label;
+  }
+
+  const weeklyStats: Record<string, { sandwiches: number; collections: number; year: number }> = {};
+  // Use the full unfiltered dataset so we always cover full year context
+  for (const c of allCollections) {
+    if (c.deletedAt || !c.collectionDate) continue;
+    const yr = new Date(c.collectionDate + 'T12:00:00').getFullYear();
+    if (yr !== currentYear && yr !== prevYear) continue;
+    const key = getISOWeekKey(c.collectionDate);
+    if (!weeklyStats[key]) weeklyStats[key] = { sandwiches: 0, collections: 0, year: yr };
+    weeklyStats[key].sandwiches += getCollectionSandwichCount(c);
+    weeklyStats[key].collections++;
+  }
+
+  // Also compute yearly totals for current and previous year from the full dataset
+  const yearTotals: Record<number, { sandwiches: number; collections: number }> = {};
+  for (const c of allCollections) {
+    if (c.deletedAt || !c.collectionDate) continue;
+    const yr = new Date(c.collectionDate + 'T12:00:00').getFullYear();
+    if (!yearTotals[yr]) yearTotals[yr] = { sandwiches: 0, collections: 0 };
+    yearTotals[yr].sandwiches += getCollectionSandwichCount(c);
+    yearTotals[yr].collections++;
+  }
+
+  const recentWeeklyRows = Object.entries(weeklyStats)
+    .sort(([a], [b]) => b.localeCompare(a)) // newest first
+    .slice(0, 60); // last ~13 months of weekly data
+
   // Fetch authoritative historical data for complete context
   // This is Scott's verified data from 2020-2024 and 2025 through Aug 6
   let historicalContext = '';
@@ -631,15 +678,20 @@ ${componentContext}
 - Total Sandwiches in Log: ${totalSandwiches.toLocaleString()}
 - Average Sandwiches Per Collection: ${avgCollectionSize}
 - Number of Active Host Locations: ${Object.keys(hostStats).length}
+${[currentYear, prevYear].filter(y => yearTotals[y]).map(y => `- ${y} YTD Total: ${yearTotals[y].sandwiches.toLocaleString()} sandwiches across ${yearTotals[y].collections} collections`).join('\n')}
 
-### All-Time Monthly Data (from Collection Log)
+### Pre-Computed Weekly Totals — ${prevYear} & ${currentYear} (week starting Monday | sandwiches | entries)
+Use these exact figures when answering any question about weekly sandwich counts for ${prevYear} or ${currentYear}. Do NOT manually calculate from raw entries.
+${recentWeeklyRows.map(([weekStart, s]) => `- Week of ${weekStart}: ${s.sandwiches.toLocaleString()} sandwiches (${s.collections} entries)`).join('\n')}
+
+### Monthly Totals — Most Recent First
 ${Object.entries(monthlyStats)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([month, stats]) => `- ${month}: ${stats.collections} collections, ${stats.sandwiches.toLocaleString()} sandwiches`)
+  .sort(([a], [b]) => b.localeCompare(a))
+  .map(([month, stats]) => `- ${month}: ${stats.collections} entries, ${stats.sandwiches.toLocaleString()} sandwiches`)
   .join('\n')}
 
 ### Recent Collection Log Entries (newest first — date | host | total [type breakdown] {groups})
-${omittedCount > 0 ? `Note: Showing the ${MAX_RAW_RECORDS} most recent of ${collections.length} total entries. Full history is captured in the monthly totals above.\n` : ''}${rawRecords.join('\n')}
+${omittedCount > 0 ? `Note: Showing the ${MAX_RAW_RECORDS} most recent of ${collections.length} total entries. Full monthly history is in the section above.\n` : ''}${rawRecords.join('\n')}
 ${historicalContext}
 `;
 }
