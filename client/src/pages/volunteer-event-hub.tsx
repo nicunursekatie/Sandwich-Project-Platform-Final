@@ -234,10 +234,10 @@ function RoleBadge({ role }: { role: string }) {
 // Status badge component
 function StatusBadge({ status }: { status: string }) {
   const config = {
-    pending: { label: 'Pending Approval', className: 'bg-[#fbad3f]/10 text-[#fbad3f] border-[#fbad3f]/30' },
-    confirmed: { label: 'Confirmed', className: 'bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30' },
-    declined: { label: 'Declined', className: 'bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30' },
-    assigned: { label: 'Assigned', className: 'bg-[#236383]/10 text-[#236383] border-[#236383]/30' },
+    pending: { label: 'Pending Approval', className: 'bg-[#fbad3f]/20 text-[#d4910e] border-[#fbad3f]/40 font-medium' },
+    confirmed: { label: 'Confirmed', className: 'bg-green-100 text-green-700 border-green-300 font-medium' },
+    declined: { label: 'Declined', className: 'bg-[#a31c41]/15 text-[#a31c41] border-[#a31c41]/30' },
+    assigned: { label: 'Assigned', className: 'bg-[#47b3cb]/20 text-[#236383] border-[#47b3cb]/40 font-medium' },
   }[status] || { label: status, className: 'bg-gray-100 text-gray-800 border-gray-200' };
 
   return (
@@ -247,7 +247,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// Event card component
+// Event card component — volunteer-facing, clean and simple
 function EventCard({
   event,
   onSignup,
@@ -262,52 +262,43 @@ function EventCard({
     ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
 
+  // Build a simple list of roles needed
+  const rolesNeeded: string[] = [];
+  if (event.speakersUnfilled > 0) rolesNeeded.push(`Speaker${event.speakersUnfilled > 1 ? 's' : ''}`);
+  if (event.volunteersUnfilled > 0) rolesNeeded.push(`Volunteer${event.volunteersUnfilled > 1 ? 's' : ''}`);
+  if (event.driversUnfilled > 0) rolesNeeded.push(`Driver${event.driversUnfilled > 1 ? 's' : ''}`);
+  if (event.vanDriverNeeded) rolesNeeded.push('Van Driver');
+
   return (
-    <Card className={cn(
-      "hover:shadow-md transition-shadow border-l-4",
-      event.status === 'completed' ? 'border-l-gray-400 opacity-80' : 'border-l-[#007e8c]'
-    )}>
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-base truncate">{event.organizationName}</CardTitle>
-            {event.department && (
-              <CardDescription className="text-xs truncate">{event.department}</CardDescription>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            {event.status === 'completed' && (
-              <Badge className="bg-gray-200 text-gray-600 text-xs">Completed</Badge>
-            )}
-            {event.organizationCategory && (
-              <Badge variant="secondary" className="text-xs bg-[#236383]/10 text-[#236383]">
-                {event.organizationCategory}
-              </Badge>
-            )}
-          </div>
+    <Card className="hover:shadow-lg transition-all hover:border-[#47b3cb] border-l-4 border-l-[#47b3cb]">
+      <CardContent className="p-4 space-y-3">
+        {/* Organization name and date */}
+        <div>
+          <h3 className="font-semibold text-base text-[#236383]">{event.organizationName}</h3>
+          {event.department && (
+            <p className="text-sm text-muted-foreground">{event.department}</p>
+          )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Date & Time */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+
+        {/* Date & Time — single line when possible */}
+        <div className="flex items-center gap-2 text-sm">
           <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
-          <span>{formattedDate}</span>
+          <span className="font-medium">
+            {formattedDate}
+            {event.eventStartTime && (
+              <span className="font-normal text-muted-foreground">
+                {' '}at {formatTimeForDisplay(event.eventStartTime)}
+                {event.eventEndTime && ` – ${formatTimeForDisplay(event.eventEndTime)}`}
+              </span>
+            )}
+          </span>
         </div>
-        {event.eventStartTime && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="w-4 h-4 shrink-0 text-[#007e8c]" />
-            <span>
-              {formatTimeForDisplay(event.eventStartTime)}
-              {event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}
-            </span>
-          </div>
-        )}
 
         {/* Location */}
         {event.eventAddress && (
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-[#007e8c]" />
-            <span className="break-words">
+            <span>
               {event.eventAddress}
               {event.city && `, ${event.city}`}
               {event.state && `, ${event.state}`}
@@ -315,104 +306,66 @@ function EventCard({
           </div>
         )}
 
-        {/* Sandwich count */}
-        {event.estimatedSandwichCount && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Sandwich className="w-4 h-4 shrink-0 text-[#fbad3f]" />
-            <span>{event.estimatedSandwichCount.toLocaleString()} sandwiches</span>
+        {/* Roles needed — simple badges */}
+        {rolesNeeded.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-gray-700">Needed:</span>
+            {event.speakersUnfilled > 0 && (
+              <Badge variant="outline" className="bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30 gap-1">
+                <Mic className="w-3 h-3" />
+                Speaker{event.speakersUnfilled > 1 ? ` (${event.speakersUnfilled})` : ''}
+              </Badge>
+            )}
+            {event.volunteersUnfilled > 0 && (
+              <Badge variant="outline" className="bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 gap-1">
+                <UserCheck className="w-3 h-3" />
+                Volunteer{event.volunteersUnfilled > 1 ? ` (${event.volunteersUnfilled})` : ''}
+              </Badge>
+            )}
+            {event.driversUnfilled > 0 && (
+              <Badge variant="outline" className="bg-[#236383]/10 text-[#236383] border-[#236383]/30 gap-1">
+                <Car className="w-3 h-3" />
+                Driver{event.driversUnfilled > 1 ? ` (${event.driversUnfilled})` : ''}
+              </Badge>
+            )}
+            {event.vanDriverNeeded && (
+              <Badge variant="outline" className="bg-[#fbad3f]/10 text-[#fbad3f] border-[#fbad3f]/30 gap-1">
+                <Car className="w-3 h-3" />
+                Van Driver
+              </Badge>
+            )}
           </div>
         )}
-
-        {/* Transportation info */}
-        {(event.selfTransport !== null || event.pickupTime) && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Car className="w-4 h-4 shrink-0 text-[#236383]" />
-            <span>
-              {event.selfTransport ? 'Self-transport' : event.pickupTime ? `Pickup at ${formatTimeForDisplay(event.pickupTime)}` : 'Transportation TBD'}
-            </span>
+        {rolesNeeded.length === 0 && (
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 gap-1">
+              <Check className="w-3 h-3" />
+              Fully Staffed — extra help still welcome!
+            </Badge>
           </div>
         )}
-
-        {/* Event notes/description - key info for decision making */}
-        {event.eventNotes && (
-          <div className="bg-[#47b3cb]/10 rounded-lg p-3 text-sm">
-            <p className="text-gray-700 line-clamp-3">{event.eventNotes}</p>
-          </div>
-        )}
-
-        {/* Staffing roles */}
-        <div className="space-y-1.5">
-          {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
-            <div className="flex items-center gap-2 text-sm">
-              <Mic className="w-3.5 h-3.5 text-[#a31c41] shrink-0" />
-              <span className="font-medium text-[#a31c41]">Speakers</span>
-              <span className={`text-xs ${event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}`}>
-                {event.speakersAssigned}/{event.speakersNeeded} filled
-              </span>
-              {event.speakersUnfilled > 0 && (
-                <Badge className="bg-[#a31c41] text-white text-[10px] px-1.5 py-0">
-                  {event.speakersUnfilled} needed
-                </Badge>
-              )}
-            </div>
-          )}
-          {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
-            <div className="flex items-center gap-2 text-sm">
-              <UserCheck className="w-3.5 h-3.5 text-[#007e8c] shrink-0" />
-              <span className="font-medium text-[#007e8c]">Volunteers</span>
-              <span className={`text-xs ${event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}`}>
-                {event.volunteersAssigned}/{event.volunteersNeeded} filled
-              </span>
-              {event.volunteersUnfilled > 0 && (
-                <Badge className="bg-[#007e8c] text-white text-[10px] px-1.5 py-0">
-                  {event.volunteersUnfilled} needed
-                </Badge>
-              )}
-            </div>
-          )}
-          {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
-            <div className="flex items-center gap-2 text-sm">
-              <Car className="w-3.5 h-3.5 text-[#236383] shrink-0" />
-              <span className="font-medium text-[#236383]">Drivers</span>
-              <span className={`text-xs ${event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}`}>
-                {event.driversAssigned}/{event.driversNeeded} filled
-              </span>
-              {event.driversUnfilled > 0 && (
-                <Badge className="bg-[#236383] text-white text-[10px] px-1.5 py-0">
-                  {event.driversUnfilled} needed
-                </Badge>
-              )}
-            </div>
-          )}
-          {event.vanDriverNeeded && (
-            <div className="flex items-center gap-2 text-sm">
-              <Car className="w-3.5 h-3.5 text-[#fbad3f] shrink-0" />
-              <span className="font-medium text-[#fbad3f]">Van Driver Needed</span>
-            </div>
-          )}
-        </div>
 
         {/* Action button */}
-        <div className="pt-2 border-t">
-          {event.status === 'completed' ? (
-            <p className="text-sm text-gray-500 text-center italic py-1">This event has been completed</p>
-          ) : existingSignup ? (
-            <div className="flex items-center justify-between">
+        <div className="pt-2">
+          {existingSignup ? (
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-[#47b3cb]/15 to-[#007e8c]/10 border border-[#47b3cb]/30">
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-[#007e8c]" />
-                <span className="text-sm text-muted-foreground">
-                  Signed up as {existingSignup.role}
+                <div className="bg-[#007e8c] rounded-full p-0.5">
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-sm font-medium text-[#236383]">
+                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : existingSignup.role === 'speaker' ? 'Speaker' : existingSignup.role === 'driver' ? 'Driver' : existingSignup.role}
                 </span>
               </div>
               <StatusBadge status={existingSignup.status} />
             </div>
           ) : (
             <Button
-              className="w-full bg-[#007e8c] hover:bg-[#236383]"
+              className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
               onClick={() => onSignup(event.id)}
             >
               <HandHeart className="w-4 h-4 mr-2" />
-              {event.hasUnfilledNeeds ? 'Volunteer for this Event' : 'Sign Up to Help'}
+              Sign Up to Volunteer
             </Button>
           )}
         </div>
@@ -601,7 +554,7 @@ function SignupDialog({
           <Button
             onClick={() => onSubmit(selectedRoles, notes)}
             disabled={selectedRoles.length === 0 || isSubmitting}
-            className="bg-[#007e8c] hover:bg-[#236383]"
+            className="bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white shadow-sm"
           >
             {isSubmitting ? (
               <>
@@ -628,7 +581,7 @@ export default function VolunteerEventHub() {
   const queryClient = useQueryClient();
 
   // View state
-  const [view, setView] = useState<'calendar' | 'map' | 'list'>('calendar');
+  const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups'>('list');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
@@ -898,176 +851,139 @@ export default function VolunteerEventHub() {
   return (
     <TooltipProvider>
       <div className="p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <HandHeart className="w-7 h-7 text-[#007e8c]" />
-              Volunteer Event Hub
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Browse upcoming events and sign up to volunteer
-            </p>
-          </div>
-
-          {/* My Signups Summary */}
-          {mySignups.length > 0 && (
-            <Card className="sm:w-auto">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-[#007e8c]/10 p-2 rounded-full">
-                    <Check className="w-5 h-5 text-[#007e8c]" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{mySignups.length} Active Signup{mySignups.length > 1 ? 's' : ''}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {mySignups.filter(s => s.status === 'pending').length} pending approval
-                    </p>
-                  </div>
+        {/* Header with gradient banner */}
+        <div className="bg-gradient-to-r from-[#007e8c] to-[#47b3cb] rounded-xl p-6 text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg">
+                  <HandHeart className="w-7 h-7" />
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Total Events */}
-          <div className="bg-[#007e8c]/10 border border-[#007e8c]/20 rounded-lg p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-[#007e8c] p-2 rounded-lg bg-white/50">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-[#007e8c]">
-                  {summaryMetrics.totalEvents}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">
-                  Upcoming Events
-                </div>
-              </div>
+                Volunteer Event Hub
+              </h1>
+              <p className="text-white/80 mt-2 text-base">
+                Find an event, pick a role, and sign up — it's that simple.
+              </p>
             </div>
+            {mySignups.length > 0 && (
+              <button
+                onClick={() => setView('my_signups')}
+                className="bg-white/20 hover:bg-white/30 transition-colors rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2"
+              >
+                <UserCheck className="w-4 h-4" />
+                {mySignups.length} Active Signup{mySignups.length !== 1 ? 's' : ''}
+              </button>
+            )}
           </div>
 
-          {/* Drivers Needed */}
-          <div className="bg-[#236383]/10 border border-[#236383]/20 rounded-lg p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-[#236383] p-2 rounded-lg bg-white/50">
-                <Car className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-[#236383]">
-                  {summaryMetrics.totalDriverOpenings}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">
-                  Drivers Needed
-                </div>
-              </div>
+          {/* Summary stats inline */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+            <div className="bg-white/15 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold">{summaryMetrics.totalEvents}</div>
+              <div className="text-xs text-white/70">Upcoming Events</div>
             </div>
-          </div>
-
-          {/* Speakers Needed */}
-          <div className="bg-[#a31c41]/10 border border-[#a31c41]/20 rounded-lg p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-[#a31c41] p-2 rounded-lg bg-white/50">
-                <Mic className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-[#a31c41]">
-                  {summaryMetrics.totalSpeakerOpenings}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">
-                  Speakers Needed
-                </div>
-              </div>
+            <div className="bg-white/15 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold">{summaryMetrics.totalDriverOpenings}</div>
+              <div className="text-xs text-white/70">Drivers Needed</div>
             </div>
-          </div>
-
-          {/* Total Volunteer Openings */}
-          <div className="bg-[#fbad3f]/10 border border-[#fbad3f]/20 rounded-lg p-3 sm:p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-[#fbad3f] p-2 rounded-lg bg-white/50">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-[#fbad3f]">
-                  {summaryMetrics.totalOpenings}
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">
-                  Total Openings
-                </div>
-              </div>
+            <div className="bg-white/15 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold">{summaryMetrics.totalSpeakerOpenings}</div>
+              <div className="text-xs text-white/70">Speakers Needed</div>
+            </div>
+            <div className="bg-white/15 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold">{summaryMetrics.totalOpenings}</div>
+              <div className="text-xs text-white/70">Total Openings</div>
             </div>
           </div>
         </div>
 
         {/* Filters & View Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative w-full sm:max-w-sm">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by school, city, address, or notes..."
-              className="pl-9"
-            />
-          </div>
+          {view !== 'my_signups' && (
+            <>
+              <div className="relative w-full sm:max-w-sm">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by organization, city, or address..."
+                  className="pl-9"
+                />
+              </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Filter by role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="speaker">Speakers Needed</SelectItem>
-                <SelectItem value="volunteer">Volunteers Needed</SelectItem>
-                <SelectItem value="driver">Drivers Needed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="flex items-center gap-2">
+                <Filter className="w-4 h-4 text-muted-foreground" />
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Filter by role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="speaker">Speakers Needed</SelectItem>
+                    <SelectItem value="volunteer">Volunteers Needed</SelectItem>
+                    <SelectItem value="driver">Drivers Needed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="showOnlyNeeds"
-              checked={showOnlyNeeds}
-              onCheckedChange={(checked) => setShowOnlyNeeds(checked === true)}
-            />
-            <Label htmlFor="showOnlyNeeds" className="text-sm cursor-pointer">
-              Only show events that need help
-            </Label>
-          </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="showOnlyNeeds"
+                  checked={showOnlyNeeds}
+                  onCheckedChange={(checked) => setShowOnlyNeeds(checked === true)}
+                />
+                <Label htmlFor="showOnlyNeeds" className="text-sm cursor-pointer">
+                  Only show events that need help
+                </Label>
+              </div>
+            </>
+          )}
 
           <div className="flex-1" />
 
-          <div className="flex rounded-lg border p-1">
+          <div className="flex rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-1">
             <Button
-              variant={view === 'calendar' ? 'secondary' : 'ghost'}
+              variant="ghost"
+              size="sm"
+              onClick={() => setView('list')}
+              className={`gap-1.5 ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+            >
+              <List className="w-4 h-4" />
+              Events
+            </Button>
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => setView('calendar')}
-              className="gap-1.5"
+              className={`gap-1.5 ${view === 'calendar' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <CalendarDays className="w-4 h-4" />
               Calendar
             </Button>
             <Button
-              variant={view === 'map' ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="sm"
               onClick={() => setView('map')}
-              className="gap-1.5"
+              className={`gap-1.5 ${view === 'map' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <MapIcon className="w-4 h-4" />
               Map
             </Button>
             <Button
-              variant={view === 'list' ? 'secondary' : 'ghost'}
+              variant="ghost"
               size="sm"
-              onClick={() => setView('list')}
-              className="gap-1.5"
+              onClick={() => setView('my_signups')}
+              className={`gap-1.5 ${view === 'my_signups' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <List className="w-4 h-4" />
-              List
+              <UserCheck className="w-4 h-4" />
+              My Signups
+              {mySignups.length > 0 && (
+                <span className={`ml-1 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center ${
+                  view === 'my_signups' ? 'bg-white text-[#007e8c]' : 'bg-[#007e8c] text-white'
+                }`}>
+                  {mySignups.length}
+                </span>
+              )}
             </Button>
           </div>
         </div>
@@ -1475,58 +1391,84 @@ export default function VolunteerEventHub() {
               )}
             </div>
           </TabsContent>
-        </Tabs>
 
-        {/* My Signups Section */}
-        {mySignups.length > 0 && (
-          <Card className="border-t-4 border-t-[#007e8c]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-[#007e8c]" />
-                My Volunteer Signups
-              </CardTitle>
-              <CardDescription>
-                Events you've signed up to help with
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {mySignups.map(signup => (
-                  <div
-                    key={signup.id}
-                    className="flex items-center justify-between p-3 rounded-lg border"
+          {/* My Signups View */}
+          <TabsContent value="my_signups" className="mt-0">
+            {mySignups.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <HandHeart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No Signups Yet</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Browse upcoming events and sign up to volunteer!
+                  </p>
+                  <Button
+                    className="mt-4 bg-[#007e8c] hover:bg-[#236383]"
+                    onClick={() => setView('list')}
                   >
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="font-medium">{signup.event.organizationName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {signup.event.scheduledEventDate
-                            ? format(parseISO(signup.event.scheduledEventDate), 'MMM d, yyyy')
-                            : 'Date TBD'}
-                          {signup.event.eventStartTime && ` at ${formatTimeForDisplay(signup.event.eventStartTime)}`}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <RoleBadge role={signup.role} />
-                      <StatusBadge status={signup.status} />
-                      {signup.status === 'pending' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => cancelSignupMutation.mutate(signup.id)}
-                          disabled={cancelSignupMutation.isPending}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                    Browse Events
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {mySignups.map(signup => {
+                  const signupDate = signup.event.scheduledEventDate || signup.event.desiredEventDate;
+                  const formattedSignupDate = signupDate
+                    ? format(parseISO(signupDate), 'EEEE, MMMM d, yyyy')
+                    : 'Date TBD';
+
+                  return (
+                    <Card key={signup.id} className="border-l-4 border-l-[#47b3cb] hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div>
+                              <h3 className="font-semibold text-base">{signup.event.organizationName}</h3>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
+                                <span>
+                                  {formattedSignupDate}
+                                  {signup.event.eventStartTime && ` at ${formatTimeForDisplay(signup.event.eventStartTime)}`}
+                                </span>
+                              </div>
+                              {signup.event.eventAddress && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                  <MapPin className="w-4 h-4 shrink-0 text-[#007e8c]" />
+                                  <span>{signup.event.eventAddress}{signup.event.city && `, ${signup.event.city}`}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <span>Signed up {format(parseISO(signup.signedUpAt), 'MMM d, yyyy')}</span>
+                              {signup.notes && <span>— {signup.notes}</span>}
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2 shrink-0">
+                            <RoleBadge role={signup.role} />
+                            <StatusBadge status={signup.status} />
+                            {signup.status === 'pending' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => cancelSignupMutation.mutate(signup.id)}
+                                disabled={cancelSignupMutation.isPending}
+                              >
+                                <X className="w-3 h-3 mr-1" />
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Signup Dialog */}
         <SignupDialog

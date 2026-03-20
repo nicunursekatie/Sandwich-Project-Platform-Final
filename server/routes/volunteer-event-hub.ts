@@ -415,8 +415,7 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
           eq(eventRequests.showOnVolunteerHub, true),
           or(
             eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled'),
-            eq(eventRequests.status, 'completed')
+            eq(eventRequests.status, 'rescheduled')
           )
         )
       )
