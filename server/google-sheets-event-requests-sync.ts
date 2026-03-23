@@ -962,23 +962,24 @@ export class EventRequestsGoogleSheetsService {
       department: getColumnIndex(['department/team if applicable', 'department/team', 'department team', 'departmentteam', 'department', 'team', 'dept', 'division', 'department / team']),
       eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location', 'where will the event take place?', 'event address']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
-      desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date']),
+      desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date', 'preferred event date', 'date of event', 'event date requested', 'desired date', 'sandwich event date', 'host event date']),
       previouslyHosted: getColumnIndex(['has your organization done an event with us before', 'has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
       message: getColumnIndex(['message', 'additional details', 'details', 'description', 'comments', 'notes', 'additional information']),
       status: getColumnIndex(['status', 'current status', 'state', 'event status']),
     };
 
-    // Log detected headers and column mapping for debugging
-    logger.log('📋 Detected sheet headers:', headers);
-    logger.log('📋 Column mapping result:', {
+    // Log detected headers and column mapping for debugging (logger.info = visible in production)
+    logger.info('📋 Detected sheet headers:', JSON.stringify(headers));
+    logger.info('📋 Column mapping result:', JSON.stringify({
       organizationName: columnMapping.organizationName >= 0 ? `Found at column ${columnMapping.organizationName}` : 'NOT FOUND',
       eventLocation: columnMapping.eventLocation >= 0 ? `Found at column ${columnMapping.eventLocation}` : 'NOT FOUND',
       email: columnMapping.email >= 0 ? `Found at column ${columnMapping.email}` : 'NOT FOUND',
       name: columnMapping.name >= 0 ? `Found at column ${columnMapping.name}` : 'NOT FOUND',
+      desiredEventDate: columnMapping.desiredEventDate >= 0 ? `Found at column ${columnMapping.desiredEventDate}` : 'NOT FOUND ⚠️',
       message: columnMapping.message >= 0 ? `Found at column ${columnMapping.message}` : 'NOT FOUND',
       previouslyHosted: columnMapping.previouslyHosted >= 0 ? `Found at column ${columnMapping.previouslyHosted}` : 'NOT FOUND',
       department: columnMapping.department >= 0 ? `Found at column ${columnMapping.department}` : 'NOT FOUND',
-    });
+    }));
 
     // Check if we failed to detect most headers - might need fallback to fixed positions
     const mappedColumnsCount = Object.values(columnMapping).filter(idx => idx >= 0).length;
@@ -1002,7 +1003,10 @@ export class EventRequestsGoogleSheetsService {
       columnMapping.previouslyHosted = 8; // Column I - Previously Hosted
       columnMapping.status = 9; // Column J - Status (if exists)
 
-      logger.log('📋 Using FIXED column positions:', columnMapping);
+      logger.info('📋 Using FIXED column positions:', JSON.stringify(columnMapping));
+    } else if (columnMapping.desiredEventDate < 0) {
+      logger.warn('⚠️ desiredEventDate column NOT FOUND in sheet headers — event dates will be null for all rows');
+      logger.warn('⚠️ Searched for variations of: desired event date, event date, date requested, preferred date, requested date, preferred event date, date of event, desired date, date');
     }
 
     // Read data rows
@@ -1012,7 +1016,7 @@ export class EventRequestsGoogleSheetsService {
     });
 
     const rows = response.data.values || [];
-    logger.log(`Reading ${rows.length} rows from Google Sheets`);
+    logger.info(`📊 Reading ${rows.length} rows from Google Sheets (desiredEventDate at column index ${columnMapping.desiredEventDate})`);
     
     if (rows.length === 0) {
       logger.warn('⚠️ No data rows found in Google Sheet - check if sheet has data or range is correct');
@@ -1092,6 +1096,13 @@ export class EventRequestsGoogleSheetsService {
       const messageValue = getFieldValue(columnMapping.message);
       const eventLocationValue = getFieldValue(columnMapping.eventLocation);
       const dateValue = getFieldValue(columnMapping.desiredEventDate);
+      
+      // Warn on rows that have org/email but no date — helps diagnose column mapping issues
+      const orgOrEmail = getFieldValue(columnMapping.organizationName) || getFieldValue(columnMapping.email);
+      if (orgOrEmail && !dateValue) {
+        const rawDateCell = columnMapping.desiredEventDate >= 0 ? row[columnMapping.desiredEventDate] : '(column not mapped)';
+        logger.warn(`⚠️ Row ${actualRowNumber}: org/email present but desiredEventDate is empty. Raw cell value: "${rawDateCell}", column index: ${columnMapping.desiredEventDate}`);
+      }
 
       // Combine message with event location if event location exists
       const combinedMessage = (() => {
