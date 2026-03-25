@@ -785,7 +785,7 @@ export class EventRequestsGoogleSheetsService {
     try {
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${this.worksheetName}!A:Z`,
+        range: `${this.worksheetName}!A:AZ`,
       });
       existingData = response.data.values || [];
     } catch (error) {
@@ -925,7 +925,7 @@ export class EventRequestsGoogleSheetsService {
     // First, read the header row to build dynamic column mapping
     const headerResponse = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range: `${this.worksheetName}!A1:Z1`,
+      range: `${this.worksheetName}!A1:AZ1`,
     });
 
     const headers = headerResponse.data.values?.[0] || [];
@@ -962,7 +962,7 @@ export class EventRequestsGoogleSheetsService {
       department: getColumnIndex(['department/team if applicable', 'department/team', 'department team', 'departmentteam', 'department', 'team', 'dept', 'division', 'department / team']),
       eventLocation: getColumnIndex(['event location', 'location', 'event site', 'venue', 'sandwich location', 'where will the event take place?', 'event address']),
       phone: getColumnIndex(['phone number', 'phone', 'contact phone', 'telephone', 'mobile', 'cell phone']),
-      desiredEventDate: getColumnIndex(['desired event date', 'event date', 'date requested', 'preferred date', 'requested date', 'preferred event date', 'date of event', 'event date requested', 'desired date', 'sandwich event date', 'host event date']),
+      desiredEventDate: getColumnIndex(['proposed event date', 'desired event date', 'event date', 'date requested', 'preferred date', 'requested date', 'preferred event date', 'date of event', 'event date requested', 'desired date', 'sandwich event date', 'host event date']),
       previouslyHosted: getColumnIndex(['has your organization done an event with us before', 'has your organization done an event with us before?', 'previously hosted', 'previous event', 'hosted before', 'past event']),
       message: getColumnIndex(['message', 'additional details', 'details', 'description', 'comments', 'notes', 'additional information']),
       status: getColumnIndex(['status', 'current status', 'state', 'event status']),
@@ -1012,7 +1012,7 @@ export class EventRequestsGoogleSheetsService {
     // Read data rows
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range: `${this.worksheetName}!A2:Z1000`,
+      range: `${this.worksheetName}!A2:AZ1000`,
     });
 
     const rows = response.data.values || [];
@@ -1161,14 +1161,14 @@ export class EventRequestsGoogleSheetsService {
 
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${this.worksheetName}!A1:Z1`,
+        range: `${this.worksheetName}!A1:AZ1`,
       });
 
       const headers = response.data.values?.[0] || [];
 
       const dataResponse = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${this.worksheetName}!A2:Z1000`,
+        range: `${this.worksheetName}!A2:AZ1000`,
       });
 
       const rowCount = dataResponse.data.values?.length || 0;
