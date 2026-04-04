@@ -1352,13 +1352,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       <StandbyFollowUpDialog
         open={showStandbyFollowUpDialog}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !standbySaveClickedRef.current) {
             setShowStandbyFollowUpDialog(false);
-            if (!standbySaveClickedRef.current) {
-              setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
-              setIsSubmitting(false);
-            }
-            standbySaveClickedRef.current = false;
+            setFormData(prev => ({ ...prev, status: eventRequest?.status || 'new' }));
+            setIsSubmitting(false);
           }
         }}
         followUpDate={standbyFollowUpDate}
@@ -1369,7 +1366,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           standbySaveClickedRef.current = true;
           setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
           setShowStandbyFollowUpDialog(false);
-          await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
+          try {
+            await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
+          } finally {
+            standbySaveClickedRef.current = false;
+          }
         }}
       />
 

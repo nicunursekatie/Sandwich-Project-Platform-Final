@@ -39,7 +39,7 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
   in_process: {
     label: 'In Process',
     definition: 'Has received the toolkit and at least one contact attempt has been made.',
-    guidance: 'Work with the contact to finalize event details. Can move to Scheduled, Declined, Standby, or Stalled.',
+    guidance: 'Work with the contact to finalize event details. Can move to Scheduled, Declined, Standby, Stalled, or Non-Event.',
   },
   scheduled: {
     label: 'Scheduled',
@@ -68,8 +68,8 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
   },
   non_event: {
     label: 'Non-Event',
-    definition: 'A new request that was never a real event request (e.g., someone dropping off sandwiches they already made, general inquiries that are not event requests).',
-    guidance: 'Only applies to New Requests that do not belong in the event pipeline.',
+    definition: 'A request that was never a real event request (e.g., someone dropping off sandwiches they already made, general inquiries that are not event requests).',
+    guidance: 'Applies to New Requests or In Process events that turn out not to be real event requests.',
   },
   standby: {
     label: 'Standby',
@@ -90,7 +90,7 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
  * Key business rules:
  * - Cancelled requires the event to have been Scheduled first
  * - In Process events that don't happen become Declined (not Cancelled)
- * - Non-Event is terminal — only reachable from New Request
+ * - Non-Event is terminal — reachable from New Request or In Process
  * - Rescheduled has the same outbound transitions as Scheduled
  * - Completed is typically a terminal state but can be reopened to Scheduled if needed
  * - Standby covers events waiting on the group contact, including scheduled events
@@ -98,7 +98,7 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
  */
 export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   new: ['in_process', 'non_event', 'declined', 'standby', 'stalled'],
-  in_process: ['scheduled', 'declined', 'standby', 'stalled'],
+  in_process: ['scheduled', 'declined', 'standby', 'stalled', 'non_event'],
   scheduled: ['completed', 'cancelled', 'rescheduled', 'standby', 'in_process'],  // in_process allows undoing accidental scheduling
   rescheduled: ['completed', 'cancelled', 'standby', 'in_process'],
   completed: ['scheduled'],  // Reopen if needed (e.g., data entry error)
@@ -140,8 +140,8 @@ export function getTransitionError(from: EventStatus, to: EventStatus): string {
     return `Cannot reschedule a "${fromLabel}" event. Only Scheduled or Standby events can be rescheduled.`;
   }
 
-  if (to === 'non_event' && from !== 'new') {
-    return `Cannot mark a "${fromLabel}" event as Non-Event. Only New Requests can be marked as Non-Event.`;
+  if (to === 'non_event' && from !== 'new' && from !== 'in_process') {
+    return `Cannot mark a "${fromLabel}" event as Non-Event. Only New Requests and In Process events can be marked as Non-Event.`;
   }
 
   const allowedLabels = (VALID_STATUS_TRANSITIONS[from] || [])
