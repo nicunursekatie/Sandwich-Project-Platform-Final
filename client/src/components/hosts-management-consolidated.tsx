@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Package,
   HelpCircle,
+  Download,
 } from 'lucide-react';
 
 // Lazy load map and cooler tracking components
@@ -932,6 +933,23 @@ export default function HostsManagementConsolidated() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/hosts/export-csv', { credentials: 'include' });
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hosts-export-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      toast({ title: 'Export completed successfully', description: `Exported hosts and contacts to CSV` });
+    } catch {
+      toast({ title: 'Export failed', description: 'Failed to export hosts data', variant: 'destructive' });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1457,6 +1475,15 @@ export default function HostsManagementConsolidated() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Button
+          variant="outline"
+          onClick={handleExport}
+          disabled={!hostsWithContacts || hostsWithContacts.length === 0}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export CSV
+        </Button>
 
         <Button
           variant="outline"
