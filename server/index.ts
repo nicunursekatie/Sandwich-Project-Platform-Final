@@ -136,8 +136,14 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
   } else if (path === '/' || path.endsWith('.html')) {
-    // HTML pages - minimal caching with revalidation
-    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    // HTML pages - never cache to avoid stale SPA shells after deploys
+    res.setHeader('Cache-Control', 'no-store');
+  } else if (!path.startsWith('/api/')) {
+    // SPA routes (e.g. /dashboard) should also avoid caching HTML
+    const accept = req.headers.accept || '';
+    if (accept.includes('text/html')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
   }
 
   next();
