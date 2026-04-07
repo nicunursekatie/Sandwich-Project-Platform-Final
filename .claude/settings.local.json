@@ -68,7 +68,8 @@
       "Bash(git revert:*)",
       "Bash(for file in /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/__tests__/celebration-toast.test.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/design-system-example.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-request-audit-log.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/constants.ts /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/pages/design-system-showcase.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/pages/grant-metrics.tsx)",
       "Bash(do)",
-      "Read(//Users/katielong/Documents/Sandwich-Project-Platform-Final/**)"
+      "Read(//Users/katielong/Documents/Sandwich-Project-Platform-Final/**)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

@@ -803,14 +803,42 @@ export class PlanningSheetSyncService {
   }
 
   /**
-   * Find the correct row index to insert a new event based on date ordering.
+   * Parse a time string like "2:00 PM" or "14:00" to minutes since midnight for comparison.
+   * Returns null if the time string can't be parsed.
+   */
+  private parseTimeToMinutes(timeStr: string): number | null {
+    if (!timeStr || !timeStr.trim()) return null;
+
+    // Try 12-hour format: "2:00 PM", "10:30 AM"
+    const match12 = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (match12) {
+      let hours = parseInt(match12[1], 10);
+      const minutes = parseInt(match12[2], 10);
+      const ampm = match12[3].toUpperCase();
+      if (ampm === 'PM' && hours !== 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    }
+
+    // Try 24-hour format: "14:00", "09:30"
+    const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (match24) {
+      return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the correct row index to insert a new event based on date ordering,
+   * with secondary sort by time (start time or pickup time) within the same date.
    * Returns the row index where the new row should be inserted (rows after this will shift down).
    * If no suitable position is found, returns null (append to end).
    */
-  private async findInsertionRowIndex(eventDate: Date): Promise<number | null> {
+  private async findInsertionRowIndex(eventDate: Date, eventTimeStr?: string | null): Promise<number | null> {
     const sheetRows = await this.readPlanningSheet();
 
-    logger.log(`[PlanningSheet] Finding insertion point for event date: ${eventDate.toISOString()}`);
+    logger.log(`[PlanningSheet] Finding insertion point for event date: ${eventDate.toISOString()}${eventTimeStr ? `, time: ${eventTimeStr}` : ''}`);
     logger.log(`[PlanningSheet] Sheet has ${sheetRows.length} rows`);
 
     if (sheetRows.length === 0) {
@@ -822,24 +850,39 @@ export class PlanningSheetSyncService {
     const firstRows = sheetRows.slice(0, 5);
     logger.log(`[PlanningSheet] First 5 row dates: ${firstRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
 
-    // Find the first row with a date AFTER the event date
-    // We want to insert BEFORE that row (so the new event is in chronological order)
+    const eventTimeMinutes = eventTimeStr ? this.parseTimeToMinutes(eventTimeStr) : null;
+
+    // Find the correct insertion point based on date, then time within same date
     for (const row of sheetRows) {
       const rowDate = this.parseSheetDate(row.date);
-      if (rowDate && rowDate > eventDate) {
-        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} (parsed: ${rowDate.toISOString()}) which is AFTER event date ${eventDate.toISOString()}`);
-        // Insert before this row
+      if (!rowDate) continue;
+
+      if (rowDate > eventDate) {
+        // This row's date is after our event date — insert before it
+        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} which is AFTER event date`);
         return row.rowIndex;
+      }
+
+      // Same date — check time-based ordering
+      if (rowDate.getTime() === eventDate.getTime() && eventTimeMinutes !== null) {
+        // Compare by start time first, then pickup time
+        const rowTime = this.parseTimeToMinutes(row.eventStartTime) ??
+                        this.parseTimeToMinutes(row.pickUpTime);
+
+        if (rowTime !== null && eventTimeMinutes < rowTime) {
+          // Our event is earlier in the day — insert before this row
+          logger.log(`[PlanningSheet] Found insertion point by time: row ${row.rowIndex} has time ${row.eventStartTime || row.pickUpTime} which is AFTER event time ${eventTimeStr}`);
+          return row.rowIndex;
+        }
       }
     }
 
     // Log the last few dates to help debug
     const lastRows = sheetRows.slice(-5);
     logger.log(`[PlanningSheet] Last 5 row dates: ${lastRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
-    logger.log(`[PlanningSheet] No row found with date after ${eventDate.toISOString()}, will append to end`);
+    logger.log(`[PlanningSheet] No row found with date/time after event, will append to end`);
 
-    // No row found with a later date - check if we should append
-    // If all dates are before or equal to our date, append to end
+    // No row found with a later date - append to end
     return null;
   }
 
@@ -992,9 +1035,12 @@ export class PlanningSheetSyncService {
         // Normalize to midnight for date-only comparison (ignore time component)
         eventDateObj = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth(), eventDateObj.getDate());
 
-        // Find the correct insertion point based on date
-        logger.log(`[PlanningSheet] Event date for insertion (normalized): ${eventDateObj.toISOString()}`);
-        const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj);
+        // Get event time for secondary sort within same date
+        const eventTime = event[0].eventStartTime || event[0].pickupDateTime || null;
+
+        // Find the correct insertion point based on date and time
+        logger.log(`[PlanningSheet] Event date for insertion (normalized): ${eventDateObj.toISOString()}, time: ${eventTime || 'none'}`);
+        const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj, eventTime);
         logger.log(`[PlanningSheet] insertBeforeRow result: ${insertBeforeRow}`);
 
         if (insertBeforeRow !== null) {
@@ -1093,7 +1139,15 @@ export class PlanningSheetSyncService {
 
     // Try to match by organization name + date
     const eventDate = e.scheduledEventDate || e.desiredEventDate;
-    const eventDateStr = eventDate ? new Date(eventDate).toLocaleDateString('en-US', {
+    const eventDateObj = eventDate ? new Date(eventDate) : null;
+    // Format with 2-digit year to match what eventToSheetRow writes (M/D/YY)
+    const eventDateStr2Digit = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit'
+    }) : '';
+    // Also format with 4-digit year as fallback (M/D/YYYY)
+    const eventDateStr4Digit = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
       month: 'numeric',
       day: 'numeric',
       year: 'numeric'
@@ -1102,10 +1156,22 @@ export class PlanningSheetSyncService {
     for (const row of sheetRows) {
       // Match by organization name (case-insensitive) and date
       const orgMatch = row.groupName.toLowerCase().trim() === (e.organizationName || '').toLowerCase().trim();
-      const dateMatch = row.date === eventDateStr;
+      // Match date in either format (2-digit or 4-digit year) for robustness
+      const dateMatch = row.date === eventDateStr2Digit || row.date === eventDateStr4Digit;
 
       if (orgMatch && dateMatch) {
         return row;
+      }
+
+      // Fallback: parse both dates and compare by actual date values
+      if (orgMatch && eventDateObj) {
+        const rowDate = this.parseSheetDate(row.date);
+        if (rowDate &&
+            rowDate.getFullYear() === eventDateObj.getFullYear() &&
+            rowDate.getMonth() === eventDateObj.getMonth() &&
+            rowDate.getDate() === eventDateObj.getDate()) {
+          return row;
+        }
       }
     }
 

@@ -96,6 +96,124 @@ async function geocodeWithGoogle(
 }
 
 /**
+ * Parse an address string into structured components for OSM structured query
+ */
+function parseAddressComponents(address: string): { street?: string; city?: string; state?: string; postalcode?: string; country?: string } {
+  // Split by comma and trim each part
+  const parts = address.split(',').map(p => p.trim()).filter(Boolean);
+
+  if (parts.length === 0) return {};
+
+  const result: { street?: string; city?: string; state?: string; postalcode?: string; country?: string } = {};
+  result.country = 'US';
+
+  if (parts.length >= 3) {
+    // Typical format: "123 Street, City, State Zip" or "123 Street, City, State, Zip"
+    result.street = parts[0];
+    result.city = parts[1];
+
+    // Last part(s) might be "GA 30024" or "GA, 30024" or "Georgia"
+    const stateZipPart = parts.slice(2).join(' ');
+    const stateZipMatch = stateZipPart.match(/^\s*(GA|Georgia)\s*,?\s*(\d{5})?\s*$/i);
+    if (stateZipMatch) {
+      result.state = 'GA';
+      if (stateZipMatch[2]) result.postalcode = stateZipMatch[2];
+    } else {
+      // Just use what we have
+      result.state = parts[2];
+      if (parts[3]) result.postalcode = parts[3].replace(/\D/g, '').slice(0, 5);
+    }
+  } else if (parts.length === 2) {
+    result.street = parts[0];
+    result.city = parts[1];
+    result.state = 'GA';
+  } else {
+    // Single part — just use as-is
+    result.street = parts[0];
+    result.state = 'GA';
+  }
+
+  return result;
+}
+
+/**
+ * Geocode using OpenStreetMap Nominatim API
+ * Tries structured query first (more reliable), then falls back to free-form
+ */
+async function geocodeWithOSM(
+  normalizedAddress: string,
+  originalAddress: string
+): Promise<{ latitude: string; longitude: string } | null> {
+  const headers = {
+    'User-Agent': 'TheSandwichProject/1.0 (nonprofit organization)',
+  };
+
+  // Attempt 1: Structured query (more reliable for specific addresses)
+  const components = parseAddressComponents(normalizedAddress);
+  if (components.street && (components.city || components.postalcode)) {
+    const params = new URLSearchParams({ format: 'json', limit: '1' });
+    if (components.street) params.set('street', components.street);
+    if (components.city) params.set('city', components.city);
+    if (components.state) params.set('state', components.state);
+    if (components.postalcode) params.set('postalcode', components.postalcode);
+    if (components.country) params.set('country', components.country);
+
+    logger.info(`OSM structured query: ${params.toString()}`);
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+        { headers }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0) {
+          logger.info(`OpenStreetMap structured SUCCESS: "${originalAddress}" -> (${data[0].lat}, ${data[0].lon})`);
+          return { latitude: data[0].lat, longitude: data[0].lon };
+        }
+      }
+      logger.info(`OSM structured query returned no results, trying free-form`);
+    } catch (error) {
+      logger.warn(`OSM structured query error, trying free-form: ${error}`);
+    }
+
+    // Rate limit between OSM requests
+    await new Promise(resolve => setTimeout(resolve, 1100));
+  }
+
+  // Attempt 2: Free-form query (original approach)
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalizedAddress)}&limit=1`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      const detail = `HTTP ${response.status} ${response.statusText}`;
+      logger.error(`OpenStreetMap API error for "${normalizedAddress}": ${detail}`);
+      setFailure('osm_http_error', detail);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      logger.info(`OpenStreetMap free-form SUCCESS: "${originalAddress}" -> (${data[0].lat}, ${data[0].lon})`);
+      return { latitude: data[0].lat, longitude: data[0].lon };
+    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    logger.error(`OpenStreetMap exception for "${normalizedAddress}": ${detail}`);
+    setFailure('osm_exception', detail);
+    return null;
+  }
+
+  setFailure('osm_zero_results', `No results for "${normalizedAddress}"`);
+  return null;
+}
+
+/**
  * Geocode an address to latitude and longitude
  * Primary: Google Geocoding API (more accurate, handles address variations better)
  * Fallback: OpenStreetMap Nominatim API (free, when Google unavailable)
@@ -125,41 +243,22 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult> 
       return { ...googleResult, source: 'google' };
     }
 
+    // Capture Google failure reason before OSM attempts overwrite it
+    const googleFailureReason = lastFailureReason;
+    const googleFailureDetail = lastFailureDetail;
+
     // Fallback to OpenStreetMap if Google fails or is not configured
     logger.info(`Falling back to OpenStreetMap for: "${normalizedAddress}"`);
 
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(normalizedAddress)}&limit=1`,
-      {
-        headers: {
-          'User-Agent': 'TheSandwichProject/1.0 (nonprofit organization)',
-        },
-      }
-    );
+    // Try structured query first (more reliable for specific addresses)
+    const osmResult = await geocodeWithOSM(normalizedAddress, address);
 
-    if (!response.ok) {
-      const detail = `HTTP ${response.status} ${response.statusText}`;
-      logger.error(`OpenStreetMap API error for "${normalizedAddress}": ${detail}`);
-      setFailure('osm_http_error', detail);
-      return null;
-    }
-
-    const data = await response.json();
-
-    if (data && data.length > 0) {
-      const result = data[0];
-      logger.info(
-        `OpenStreetMap SUCCESS: "${address}" -> (${result.lat}, ${result.lon})`
-      );
-      return {
-        latitude: result.lat,
-        longitude: result.lon,
-        source: 'openstreetmap',
-      };
+    if (osmResult) {
+      return { ...osmResult, source: 'openstreetmap' as const };
     }
 
     logger.warn(`OpenStreetMap returned 0 results for: "${normalizedAddress}"`);
-    setFailure('all_failed', `Both Google and OpenStreetMap failed for "${normalizedAddress}"`);
+    setFailure('all_failed', `Google: ${googleFailureDetail || googleFailureReason || 'unknown'}. OpenStreetMap: zero results for "${normalizedAddress}"`);
     logger.error(`ALL GEOCODING FAILED for address: "${normalizedAddress}" (original: "${address}")`);
     return null;
   } catch (error) {
