@@ -58,6 +58,97 @@ export function createHostsRouter(deps: RouterDependencies) {
   })
 );
 
+// Export hosts and contacts as CSV - MUST come before /:id route
+  router.get(
+    '/hosts/export-csv',
+    requirePermission(PERMISSIONS.HOSTS_VIEW),
+    asyncHandler(async (req, res) => {
+      const hostsWithContacts = await storage.getAllHostsWithContacts();
+
+      // CSV headers - one row per contact, with host info repeated
+      const headers = [
+        'Host ID',
+        'Host Name',
+        'Host Address',
+        'Host Status',
+        'Host Notes',
+        'Contact ID',
+        'Contact Name',
+        'Contact Role',
+        'Contact Phone',
+        'Contact Email',
+        'Contact Address',
+        'Host Location',
+        'Is Primary',
+        'Weekly Active',
+        'Driver Agreement Signed',
+        'Van Approved',
+        'Created At',
+      ];
+
+      const rows: string[][] = [];
+
+      for (const host of hostsWithContacts) {
+        if (host.status === 'hidden') continue;
+
+        if (host.contacts.length === 0) {
+          // Include hosts with no contacts as a single row
+          rows.push([
+            String(host.id),
+            host.name || '',
+            host.address || '',
+            host.status || '',
+            host.notes || '',
+            '', '', '', '', '', '', '', '', '', '', '',
+            host.createdAt ? new Date(host.createdAt).toISOString().split('T')[0] : '',
+          ]);
+        } else {
+          for (const contact of host.contacts) {
+            rows.push([
+              String(host.id),
+              host.name || '',
+              host.address || '',
+              host.status || '',
+              host.notes || '',
+              String(contact.id),
+              contact.name || '',
+              contact.role || '',
+              contact.phone || '',
+              contact.email || '',
+              contact.address || '',
+              contact.hostLocation || '',
+              contact.isPrimary ? 'Yes' : 'No',
+              contact.weeklyActive ? 'Yes' : 'No',
+              contact.driverAgreementSigned ? 'Yes' : 'No',
+              contact.vanApproved ? 'Yes' : 'No',
+              host.createdAt ? new Date(host.createdAt).toISOString().split('T')[0] : '',
+            ]);
+          }
+        }
+      }
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+          row.map(cell => {
+            const cellStr = String(cell).replace(/"/g, '""');
+            return cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')
+              ? `"${cellStr}"`
+              : cellStr;
+          }).join(',')
+        ),
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="hosts-export-${new Date().toISOString().split('T')[0]}.csv"`
+      );
+      res.send(csvContent);
+    })
+  );
+
 // Map endpoint - get host contacts with valid coordinates for map display
   // Falls back to host-level coordinates when a host has no geocoded contacts
   router.get(
