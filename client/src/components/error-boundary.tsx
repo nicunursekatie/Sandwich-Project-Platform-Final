@@ -50,6 +50,25 @@ export class ErrorBoundary extends Component<Props, State> {
         window.location.reload();
       }
     }
+
+    // Automatically report error to admin via email
+    try {
+      fetch('/api/client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+        }),
+      }).catch(() => {
+        // Silently ignore if the report itself fails
+      });
+    } catch {
+      // Silently ignore
+    }
   }
 
   handleReload = () => {

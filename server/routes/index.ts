@@ -1221,6 +1221,57 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/objects', createErrorHandler('objects'));
 
+  // Client-side error reporting — public, no auth required
+  // Rate-limited to 5 reports per IP per hour to prevent flooding
+  const clientErrorRateLimit = new Map<string, { count: number; resetAt: number }>();
+  router.post('/api/client-error', async (req, res) => {
+    try {
+      const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const limit = clientErrorRateLimit.get(ip);
+      if (limit) {
+        if (now < limit.resetAt && limit.count >= 5) {
+          res.status(429).json({ ok: false, reason: 'rate limited' });
+          return;
+        }
+        if (now >= limit.resetAt) {
+          clientErrorRateLimit.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
+        } else {
+          limit.count++;
+        }
+      } else {
+        clientErrorRateLimit.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
+      }
+
+      const { message, stack, url, userAgent, timestamp } = req.body || {};
+      const { sendEmail } = await import('../services/sendgrid');
+
+      const html = `
+        <h2 style="color:#b91c1c;">App Error Boundary Triggered</h2>
+        <table style="border-collapse:collapse;width:100%;font-family:monospace;font-size:13px;">
+          <tr><td style="padding:6px 10px;font-weight:bold;width:120px;">Time</td><td style="padding:6px 10px;">${timestamp || new Date().toISOString()}</td></tr>
+          <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;">Page URL</td><td style="padding:6px 10px;">${url || 'unknown'}</td></tr>
+          <tr><td style="padding:6px 10px;font-weight:bold;">Error</td><td style="padding:6px 10px;color:#b91c1c;">${message || 'No message'}</td></tr>
+          <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;">User Agent</td><td style="padding:6px 10px;">${userAgent || 'unknown'}</td></tr>
+        </table>
+        ${stack ? `<h3 style="margin-top:16px;">Stack Trace</h3><pre style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow:auto;font-size:12px;white-space:pre-wrap;">${stack}</pre>` : ''}
+      `;
+
+      await sendEmail({
+        to: 'katie@thesandwichproject.org',
+        from: 'noreply@thesandwichproject.org',
+        subject: `[TSP App Error] ${message || 'Unknown error'} — ${url || 'unknown page'}`,
+        html,
+        text: `Error: ${message}\nPage: ${url}\nTime: ${timestamp}\nUser Agent: ${userAgent}\n\nStack:\n${stack}`,
+      });
+
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error('Failed to send client error report:', err);
+      res.status(500).json({ ok: false });
+    }
+  });
+
   return router;
 }
 
