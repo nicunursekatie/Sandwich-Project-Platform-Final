@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import type { EventRequest } from '@shared/schema';
@@ -25,6 +26,8 @@ export const ScheduledTab: React.FC = () => {
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [rescheduleRequest, setRescheduleRequest] = useState<EventRequest | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   // Default to card view for all devices
   const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>(() => {
@@ -72,7 +75,7 @@ export const ScheduledTab: React.FC = () => {
   };
 
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, rescheduleEventMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, rescheduleEventMutation, createEventRequestMutation } = useEventMutations();
   const {
     handleStatusChange,
     openAssignmentDialog,
@@ -458,6 +461,12 @@ export const ScheduledTab: React.FC = () => {
     setRescheduleRequest(null);
   };
 
+  const performDuplicate = async (newEventData: Partial<EventRequest>) => {
+    await createEventRequestMutation.mutateAsync(newEventData);
+    setShowDuplicateDialog(false);
+    setDuplicateSourceRequest(null);
+  };
+
   const handleExport = async () => {
     if (scheduledRequests.length === 0) {
       toast({
@@ -596,6 +605,10 @@ export const ScheduledTab: React.FC = () => {
                   setRescheduleRequest(request);
                   setShowRescheduleDialog(true);
                 }}
+                onDuplicate={() => {
+                  setDuplicateSourceRequest(request);
+                  setShowDuplicateDialog(true);
+                }}
                 onAssignTspContact={() => {
                   setTspContactEventRequest(request);
                   setShowTspContactAssignmentDialog(true);
@@ -690,6 +703,15 @@ export const ScheduledTab: React.FC = () => {
       }}
       request={rescheduleRequest}
       onConfirm={performReschedule}
+    />
+    <DuplicateEventDialog
+      isOpen={showDuplicateDialog}
+      onClose={() => {
+        setShowDuplicateDialog(false);
+        setDuplicateSourceRequest(null);
+      }}
+      request={duplicateSourceRequest}
+      onConfirm={performDuplicate}
     />
     {ConfirmationDialogComponent}
   </>

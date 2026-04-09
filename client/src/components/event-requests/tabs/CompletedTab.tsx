@@ -1,19 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { CompletedCard } from '../cards/CompletedCard';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import type { EventRequest } from '@shared/schema';
 
 export const CompletedTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, createEventRequestMutation } = useEventMutations();
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
   const {
     handleStatusChange,
     resolveUserName,
@@ -159,6 +163,10 @@ export const CompletedTab: React.FC = () => {
                 handleStatusChange(request.id, 'scheduled');
               }
             }}
+            onDuplicate={() => {
+              setDuplicateSourceRequest(request);
+              setShowDuplicateDialog(true);
+            }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
               setShowTspContactAssignmentDialog(true);
@@ -181,6 +189,19 @@ export const CompletedTab: React.FC = () => {
         ))
         )}
       </div>
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

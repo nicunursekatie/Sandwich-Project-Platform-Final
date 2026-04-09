@@ -97,7 +97,7 @@ import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Copy } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 
 interface ScheduledCardEnhancedProps {
@@ -120,6 +120,7 @@ interface ScheduledCardEnhancedProps {
   onLogContact: () => void;
   onFollowUp: () => void;
   onReschedule: () => void;
+  onDuplicate?: () => void;
   onAiIntakeAssist?: () => void;
   startEditing: (field: string, value: string) => void;
   saveEdit: () => void;
@@ -193,6 +194,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onLogContact,
   onFollowUp,
   onReschedule,
+  onDuplicate,
   onAiIntakeAssist,
   startEditing,
   saveEdit,
@@ -3708,6 +3710,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           <Button size="sm" variant="outline" onClick={onReschedule}>
             Reschedule
           </Button>
+          {onDuplicate && (
+            <Button size="sm" variant="outline" onClick={onDuplicate}>
+              <Copy className="w-4 h-4 mr-1" />
+              New Event
+            </Button>
+          )}
           <Button size="sm" onClick={onFollowUp}>
             Follow Up
           </Button>
