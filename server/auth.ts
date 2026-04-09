@@ -210,7 +210,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       // Authentication successful - logging only errors and warnings
       // Debug: logger.log(`✅ Authentication successful for ${freshUser.email} (${freshUser.role})`)
     } else {
-      logger.log(`❌ User not found or inactive: ${req.session.user.email}`);
+      logger.warn(`❌ AUTH REJECTED — User not found or isActive=false: ${req.session.user.email}`);
       // User not found in database or inactive, clear invalid session
       req.session.destroy((err: unknown) => {
         if (err) logger.error('Session destroy error:', err);

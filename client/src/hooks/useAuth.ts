@@ -30,19 +30,18 @@ export function useAuth() {
     // Only log mobile authentication issues if there's an actual error AND not loading
     // This prevents false positives during normal loading states
     if (isMobile && error && !isLoading) {
-      logger.log('[useAuth] Mobile authentication issue detected:', {
+      logger.warn('[useAuth] Mobile authentication issue detected:', {
         error: error?.message,
         user: !!user,
         isLoading,
         userAgent: navigator.userAgent,
-        cookies: document.cookie,
       });
     }
 
     // Handle server restart - if we get auth error, try to login via temporary auth
     if (error && error.message?.includes('401') && !user && !isLoading) {
-      logger.log(
-        '[useAuth] Authentication expired, attempting to restore session'
+      logger.warn(
+        '[useAuth] Authentication expired — session needs to be restored'
       );
       // Don't redirect immediately - let the user handle authentication manually
       // This prevents unnecessary redirects when the user is already trying to log in
