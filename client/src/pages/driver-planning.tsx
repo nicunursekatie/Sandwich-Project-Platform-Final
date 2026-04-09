@@ -2978,23 +2978,25 @@ export default function DriverPlanningDashboard() {
                             No assignments yet.
                           </div>
                         )}
-                        {canEditEvents && (
+                        {(canEditEvents || event.eventAddress) && (
                           <div className="pt-1 mt-1 border-t border-gray-100 flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto min-h-0 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 px-1 py-0.5"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                // Open edit dialog for this event (it's already selected since this only shows when isSelected)
-                                setEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit2 className="w-3 h-3 mr-1" />
-                              Edit Event
-                            </Button>
+                            {canEditEvents && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto min-h-0 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 px-1 py-0.5"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  // Open edit dialog for this event (it's already selected since this only shows when isSelected)
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit2 className="w-3 h-3 mr-1" />
+                                Edit Event
+                              </Button>
+                            )}
                             {event.eventAddress && (
                               <Button
                                 type="button"
@@ -5158,6 +5160,23 @@ export default function DriverPlanningDashboard() {
                           No req
                         </Badge>
                       )}
+                      {(!event.latitude || !event.longitude) && event.eventAddress && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1 py-0 cursor-pointer hover:bg-gray-100 ml-1"
+                          onClick={(e) => handleGeocodeEvent(e, event.id)}
+                          title="Click to geocode this event's address"
+                        >
+                          {geocodingEventId === event.id ? (
+                            <>
+                              <Loader2 className="w-2.5 h-2.5 mr-1 animate-spin" />
+                              Geocoding...
+                            </>
+                          ) : (
+                            'Needs geocode'
+                          )}
+                        </Badge>
+                      )}
                       {isSelected && (
                         <div className="pt-2 border-t border-gray-100 space-y-1">
                           {getTspContactLabel(event) && (
@@ -6479,6 +6498,23 @@ export default function DriverPlanningDashboard() {
                                 >
                                   <Users className="w-3.5 h-3.5 mr-1" />
                                   {`${volunteersAssigned}/${volunteersNeeded} vol`}
+                                </Badge>
+                              )}
+                              {(!event.latitude || !event.longitude) && event.eventAddress && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs px-2 py-0.5 cursor-pointer hover:bg-gray-100"
+                                  onClick={(e) => handleGeocodeEvent(e, event.id)}
+                                  title="Click to geocode this event's address"
+                                >
+                                  {geocodingEventId === event.id ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      Geocoding...
+                                    </>
+                                  ) : (
+                                    'Needs geocode'
+                                  )}
                                 </Badge>
                               )}
                               {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (

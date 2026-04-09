@@ -151,35 +151,47 @@ async function geocodeWithOSM(
   // Attempt 1: Structured query (more reliable for specific addresses)
   const components = parseAddressComponents(normalizedAddress);
   if (components.street && (components.city || components.postalcode)) {
-    const params = new URLSearchParams({ format: 'json', limit: '1' });
-    if (components.street) params.set('street', components.street);
-    if (components.city) params.set('city', components.city);
-    if (components.state) params.set('state', components.state);
-    if (components.postalcode) params.set('postalcode', components.postalcode);
-    if (components.country) params.set('country', components.country);
+    // Try multiple street variations — OSM often stores directional suffixes
+    // as full words ("Northwest") but addresses use abbreviations ("NW")
+    const streetVariations = [components.street];
 
-    logger.info(`OSM structured query: ${params.toString()}`);
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?${params.toString()}`,
-        { headers }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.length > 0) {
-          logger.info(`OpenStreetMap structured SUCCESS: "${originalAddress}" -> (${data[0].lat}, ${data[0].lon})`);
-          return { latitude: data[0].lat, longitude: data[0].lon };
-        }
-      }
-      logger.info(`OSM structured query returned no results, trying free-form`);
-    } catch (error) {
-      logger.warn(`OSM structured query error, trying free-form: ${error}`);
+    // Strip trailing directional abbreviations (NW, NE, SW, SE, N, S, E, W)
+    const strippedStreet = components.street.replace(/\s+(NW|NE|SW|SE|N|S|E|W)$/i, '').trim();
+    if (strippedStreet !== components.street) {
+      streetVariations.push(strippedStreet);
     }
 
-    // Rate limit between OSM requests
-    await new Promise(resolve => setTimeout(resolve, 1100));
+    for (const street of streetVariations) {
+      const params = new URLSearchParams({ format: 'json', limit: '1' });
+      params.set('street', street);
+      if (components.city) params.set('city', components.city);
+      if (components.state) params.set('state', components.state);
+      if (components.postalcode) params.set('postalcode', components.postalcode);
+      if (components.country) params.set('country', components.country);
+
+      logger.info(`OSM structured query: ${params.toString()}`);
+
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+          { headers }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            logger.info(`OpenStreetMap structured SUCCESS: "${originalAddress}" -> (${data[0].lat}, ${data[0].lon})`);
+            return { latitude: data[0].lat, longitude: data[0].lon };
+          }
+        }
+        logger.info(`OSM structured query (street="${street}") returned no results`);
+      } catch (error) {
+        logger.warn(`OSM structured query error: ${error}`);
+      }
+
+      // Rate limit between OSM requests
+      await new Promise(resolve => setTimeout(resolve, 1100));
+    }
   }
 
   // Attempt 2: Free-form query (original approach)

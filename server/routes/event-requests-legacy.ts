@@ -1506,6 +1506,7 @@ router.get(
         // ========== TRACKING FLAGS ==========
         addedToOfficialSheet: event.addedToOfficialSheet,
         addedToOfficialSheetAt: event.addedToOfficialSheetAt,
+        showOnVolunteerHub: (event as any).showOnVolunteerHub, // ScheduledCardEnhanced badge
         isUnresponsive: event.isUnresponsive,
         contactAttempts: event.contactAttempts,
         lastContactAttempt: event.lastContactAttempt, // NewRequestCard
