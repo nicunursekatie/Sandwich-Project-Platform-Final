@@ -191,7 +191,7 @@ export default function SimpleNav({
         'events': {
           bg: 'bg-[#007E8C]',
           hover: 'hover:bg-[#006270]',
-          border: 'border-l-[#FBAD3F]',
+          border: 'border-l-[#47B3CB]',
           gradient: 'from-[#007E8C] to-[#006270]'
         },
         'network': {
@@ -359,7 +359,7 @@ export default function SimpleNav({
                 active
                   ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
                   : item.highlighted
-                    ? 'hover:bg-gradient-to-br hover:from-[#FBAD3F]/10 hover:to-[#FBAD3F]/20 text-[#FBAD3F] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
+                    ? 'hover:bg-gradient-to-br hover:from-[#47B3CB]/10 hover:to-[#47B3CB]/20 text-[#47B3CB] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
                     : item.accentColor
                       ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-semibold'
                       : item.isSubItem
@@ -436,7 +436,7 @@ export default function SimpleNav({
                 <item.icon
                   className={`h-4 w-4 flex-shrink-0 ${
                     isCollapsed ? '' : 'mr-2 sm:mr-3'
-                  } ${item.highlighted && !active ? 'text-[#FBAD3F]' : ''}`}
+                  } ${item.highlighted && !active ? 'text-[#47B3CB]' : ''}`}
 
                 />
               )}
@@ -455,7 +455,7 @@ export default function SimpleNav({
                       delay={2000}
                       completeOnChildClick={true}
                     >
-                      <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#FBAD3F] text-white text-[9px] font-bold animate-bounce">
+                      <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#47B3CB] text-white text-[9px] font-bold animate-bounce">
                         !
                       </span>
                     </OnboardingTooltip>

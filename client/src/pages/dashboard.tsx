@@ -1145,11 +1145,11 @@ export default function Dashboard({
                   </div>
 
                   {/* Amazon Wishlist Quick Access */}
-                  <div className="bg-gradient-to-r from-[#FBAD3F]/10 to-[#FBAD3F]/20 border-2 border-[#FBAD3F] rounded-lg px-3 py-2.5 shadow-sm">
+                  <div className="bg-gradient-to-r from-[#47B3CB]/10 to-[#47B3CB]/20 border-2 border-[#47B3CB] rounded-lg px-3 py-2.5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
-                        <Gift className="w-4 h-4 text-[#FBAD3F]" />
-                        <div className="text-xs text-[#FBAD3F] font-bold uppercase tracking-wide">
+                        <Gift className="w-4 h-4 text-[#47B3CB]" />
+                        <div className="text-xs text-[#47B3CB] font-bold uppercase tracking-wide">
                           Amazon Wishlist
                         </div>
                       </div>
@@ -1159,7 +1159,7 @@ export default function Dashboard({
                         href="https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV/ref=nav_wishlist_lists_4"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-[#FBAD3F] hover:bg-[#E89A2F] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
+                        className="flex-1 bg-[#47B3CB] hover:bg-[#3A9AB5] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
                         title="Open Amazon Wishlist"
                       >
                         <ExternalLink className="w-3 h-3" />
@@ -1173,7 +1173,7 @@ export default function Dashboard({
                             logger.error('Copy failed:', err);
                           }
                         }}
-                        className="bg-[#FBAD3F]/20 hover:bg-[#FBAD3F]/30 text-[#FBAD3F] px-2 py-1.5 rounded transition-colors"
+                        className="bg-[#47B3CB]/20 hover:bg-[#47B3CB]/30 text-[#47B3CB] px-2 py-1.5 rounded transition-colors"
                         title="Copy wishlist link to clipboard"
                       >
                         <Copy className="w-3 h-3" />
