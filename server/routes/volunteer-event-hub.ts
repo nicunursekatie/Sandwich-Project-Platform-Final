@@ -16,6 +16,8 @@ import {
   insertEventVolunteerSchema
 } from '@shared/schema';
 import { isAuthenticated } from '../auth';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
 import { EmailNotificationService } from '../services/email-notification-service';
@@ -846,6 +848,13 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
 
     if (!signup) {
       return res.status(404).json({ error: 'Signup not found' });
+    }
+
+    // Driver signups require DRIVER_SIGNUP_APPROVE permission
+    if (signup.role === 'driver' && (status === 'confirmed' || status === 'assigned')) {
+      if (!hasPermission(req.user, PERMISSIONS.DRIVER_SIGNUP_APPROVE)) {
+        return res.status(403).json({ error: 'DRIVER_SIGNUP_APPROVE permission required to approve driver signups' });
+      }
     }
 
     const shouldAssignVolunteer = (status === 'confirmed' || status === 'assigned') && !!signup.volunteerUserId;

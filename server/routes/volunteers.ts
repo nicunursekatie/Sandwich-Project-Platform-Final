@@ -5,6 +5,28 @@ import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
 
+/** Roles that may view and edit internal volunteer directory notes */
+const VOLUNTEER_NOTES_ADMIN_ROLES = new Set([
+  'super_admin',
+  'admin',
+  'admin_coordinator',
+  'admin_viewer',
+]);
+
+function getRequestUser(req: any) {
+  return req.user ?? req.session?.user;
+}
+
+function canViewVolunteerNotes(req: any): boolean {
+  const role = getRequestUser(req)?.role;
+  return !!role && VOLUNTEER_NOTES_ADMIN_ROLES.has(role);
+}
+
+function redactVolunteerNotes(req: any, volunteer: any) {
+  if (!volunteer || canViewVolunteerNotes(req)) return volunteer;
+  return { ...volunteer, notes: null };
+}
+
 async function geocodeVolunteerIfNeeded(volunteerData: any, existing?: any) {
   const address = volunteerData.address || volunteerData.homeAddress;
   const shouldGeocode =
@@ -40,7 +62,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
   router.get('/', isAuthenticated, async (req: any, res: any) => {
     try {
       const volunteers = await storage.getAllVolunteers();
-      res.json(volunteers);
+      res.json(volunteers.map((v: any) => redactVolunteerNotes(req, v)));
     } catch (error) {
       logger.error('Failed to get volunteers', error);
       res.status(500).json({ message: 'Failed to get volunteers' });
@@ -82,6 +104,8 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       ];
       const csvContent = [headers.join(',')];
 
+      const showNotes = canViewVolunteerNotes(req);
+
       for (const volunteer of volunteers) {
         const escapeCSV = (str: string | null | undefined) => {
           if (!str) return '';
@@ -103,7 +127,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
           escapeCSV(volunteer.hostLocation),
           escapeCSV(volunteer.routeDescription),
           escapeCSV(volunteer.availabilityNotes),
-          escapeCSV(volunteer.notes),
+          showNotes ? escapeCSV(volunteer.notes) : '',
           volunteer.emailAgreementSent ? 'Yes' : 'No',
           volunteer.voicemailLeft ? 'Yes' : 'No',
           escapeCSV(volunteer.inactiveReason),
@@ -129,7 +153,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
-      res.json(volunteer);
+      res.json(redactVolunteerNotes(req, volunteer));
     } catch (error) {
       logger.error('Failed to get volunteer', error);
       res.status(500).json({ message: 'Failed to get volunteer' });
@@ -140,6 +164,9 @@ export function createVolunteersRouter(deps: RouterDependencies) {
   router.post('/', isAuthenticated, async (req: any, res: any) => {
     try {
       const validatedData = insertVolunteerSchema.parse(req.body);
+      if (!canViewVolunteerNotes(req)) {
+        delete validatedData.notes;
+      }
       const dataWithGeo = await geocodeVolunteerIfNeeded(validatedData);
       const volunteer = await storage.createVolunteer(dataWithGeo);
 
@@ -156,7 +183,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         }
       );
 
-      res.status(201).json(volunteer);
+      res.status(201).json(redactVolunteerNotes(req, volunteer));
     } catch (error) {
       logger.error('Failed to create volunteer', error);
       res.status(500).json({ message: 'Failed to create volunteer' });
@@ -174,7 +201,11 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
 
-      const updatePayload = await geocodeVolunteerIfNeeded(req.body, oldVolunteer);
+      const body = { ...req.body };
+      if (!canViewVolunteerNotes(req)) {
+        delete body.notes;
+      }
+      const updatePayload = await geocodeVolunteerIfNeeded(body, oldVolunteer);
       const volunteer = await storage.updateVolunteer(id, updatePayload);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
@@ -194,7 +225,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         }
       );
 
-      res.json(volunteer);
+      res.json(redactVolunteerNotes(req, volunteer));
     } catch (error) {
       logger.error('Failed to update volunteer', error);
       res.status(500).json({ message: 'Failed to update volunteer' });
@@ -212,7 +243,11 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
 
-      const volunteer = await storage.updateVolunteer(id, req.body);
+      const body = { ...req.body };
+      if (!canViewVolunteerNotes(req)) {
+        delete body.notes;
+      }
+      const volunteer = await storage.updateVolunteer(id, body);
       if (!volunteer) {
         return res.status(404).json({ message: 'Volunteer not found' });
       }
@@ -231,7 +266,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         }
       );
 
-      res.json(volunteer);
+      res.json(redactVolunteerNotes(req, volunteer));
     } catch (error) {
       logger.error('Failed to update volunteer', error);
       res.status(500).json({ message: 'Failed to update volunteer' });

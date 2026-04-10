@@ -333,6 +333,8 @@ export const PERMISSIONS = {
   NAV_AUTO_FORM_FILLER: 'NAV_AUTO_FORM_FILLER', // Access to Auto Form Filler tab
   NAV_SERVICE_HOURS_FORM: 'NAV_SERVICE_HOURS_FORM', // Access to Service Hours Form Generator
   NAV_VOLUNTEER_HUB: 'NAV_VOLUNTEER_HUB', // Access to Volunteer Hub tab
+  NAV_DRIVER_HUB: 'NAV_DRIVER_HUB', // Access to Driver Hub tab
+  NAV_EVENT_SIGNUP_HUB: 'NAV_EVENT_SIGNUP_HUB', // Access to Event Sign-Up Hub parent nav
   NAV_HOST_RESOURCES: 'NAV_HOST_RESOURCES', // Access to Host Resources tab
   NAV_MAPS: 'NAV_MAPS', // Access to Maps section
   NAV_DIRECTORY: 'NAV_DIRECTORY', // Access to Directory tab
@@ -345,6 +347,9 @@ export const PERMISSIONS = {
   NAV_SMART_SEARCH_ADMIN: 'NAV_SMART_SEARCH_ADMIN', // Access to SmartSearch AI admin
   NAV_QUICK_TOOLS: 'NAV_QUICK_TOOLS', // Access to Quick Tools
   NAV_DOCUMENTS: 'NAV_DOCUMENTS', // Access to Documents section
+
+  // DRIVER HUB - Driver signup management
+  DRIVER_SIGNUP_APPROVE: 'DRIVER_SIGNUP_APPROVE', // Approve/decline driver signups from the Driver Hub
 
   // ADMIN - Administrative access
   ADMIN_PANEL_ACCESS: 'ADMIN_PANEL_ACCESS', // Access to admin panel/user management
@@ -387,6 +392,8 @@ export const PERMISSION_DEPENDENCIES: Record<string, string[]> = {
   [PERMISSIONS.NAV_USER_MANAGEMENT]: [PERMISSIONS.USERS_VIEW],
   [PERMISSIONS.NAV_ROUTE_MAP]: [PERMISSIONS.HOSTS_VIEW],
   [PERMISSIONS.NAV_VOLUNTEER_HUB]: [PERMISSIONS.VOLUNTEERS_VIEW],
+  [PERMISSIONS.NAV_DRIVER_HUB]: [PERMISSIONS.DRIVERS_VIEW],
+  [PERMISSIONS.NAV_EVENT_SIGNUP_HUB]: [], // Parent nav — children control their own access
   [PERMISSIONS.NAV_HOST_RESOURCES]: [PERMISSIONS.HOSTS_VIEW],
   [PERMISSIONS.NAV_MAPS]: [PERMISSIONS.EVENT_REQUESTS_VIEW],
   [PERMISSIONS.NAV_DIRECTORY]: [PERMISSIONS.VOLUNTEERS_VIEW],
