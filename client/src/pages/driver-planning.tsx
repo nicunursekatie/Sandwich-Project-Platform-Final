@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, Tooltip } from 'react-leaflet';
 import { useLocation } from 'wouter';
 
 import {
@@ -862,6 +862,16 @@ function MapResizeObserver() {
     };
   }, [map]);
 
+  return null;
+}
+
+// Handles clicks on the map background to deselect the current event
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
   return null;
 }
 
@@ -3077,6 +3087,11 @@ export default function DriverPlanningDashboard() {
               fullTripRoute={fullTripRoute}
             />
             <MapResizeObserver />
+            <MapClickHandler onMapClick={() => {
+              setSelectedEvent(null);
+              clearTripPlanningState();
+              setCustomLocation(null);
+            }} />
 
             {/* Event markers - when an event is selected, only show events on the same date */}
             {/* Only show permanent labels for selected event; others show labels on hover */}
@@ -3837,6 +3852,113 @@ export default function DriverPlanningDashboard() {
                   </div>
                 )}
               </div>
+
+              {/* Selected Event Quick Details */}
+              {selectedEvent && selectedEvent.id !== -1 && (
+                <div className="bg-white rounded-lg shadow-sm border p-3 flex-1 min-w-[260px] max-w-[500px]">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-900 leading-tight">
+                      {selectedEvent.organizationName || 'Unknown'}
+                    </h4>
+                    <button
+                      onClick={() => { setSelectedEvent(null); clearTripPlanningState(); }}
+                      className="text-gray-400 hover:text-gray-600 p-0.5 hover:bg-gray-100 rounded flex-shrink-0"
+                      title="Deselect event"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                    {/* Date & Time */}
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                      <span>
+                        {(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate)
+                          ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
+                          : 'No date'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                      <span>
+                        {selectedEvent.eventStartTime
+                          ? `${formatTime12Hour(selectedEvent.eventStartTime)}${selectedEvent.eventEndTime ? ` – ${formatTime12Hour(selectedEvent.eventEndTime)}` : ''}`
+                          : 'No time set'}
+                      </span>
+                    </div>
+                    {/* Address */}
+                    <div className="col-span-2 flex items-start gap-1.5 mt-0.5">
+                      <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-500 leading-tight">{selectedEvent.eventAddress || 'No address'}</span>
+                    </div>
+                    {/* Sandwiches */}
+                    {selectedEvent.estimatedSandwichCount && selectedEvent.estimatedSandwichCount > 0 && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Package className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
+                      </div>
+                    )}
+                    {/* Pickup time */}
+                    {selectedEvent.pickupTime && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Truck className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span>Pickup: {formatTime12Hour(selectedEvent.pickupTime)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Staffing summary */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                    {selectedEvent.selfTransport ? (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Self-transport</Badge>
+                    ) : (
+                      <>
+                        {(() => {
+                          const driversNeeded = selectedEvent.driversNeeded || 0;
+                          const driversAssigned = getTotalDriverCount(selectedEvent);
+                          const fulfilled = driversAssigned >= driversNeeded;
+                          return driversNeeded > 0 ? (
+                            <Badge variant={fulfilled ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              <Truck className="w-2.5 h-2.5 mr-0.5" />
+                              {driversAssigned}/{driversNeeded} drivers
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {selectedEvent.vanDriverNeeded && (
+                          <Badge
+                            variant={selectedEvent.assignedVanDriverId || selectedEvent.isDhlVan ? 'default' : 'destructive'}
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {selectedEvent.isDhlVan ? 'DHL Van' : selectedEvent.assignedVanDriverId ? 'Van assigned' : 'Van needed'}
+                          </Badge>
+                        )}
+                        {(() => {
+                          const needed = selectedEvent.speakersNeeded || 0;
+                          const assigned = getSpeakerCount(selectedEvent);
+                          return needed > 0 ? (
+                            <Badge variant={assigned >= needed ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              <Megaphone className="w-2.5 h-2.5 mr-0.5" />
+                              {assigned}/{needed} spk
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {(() => {
+                          const needed = selectedEvent.volunteersNeeded || 0;
+                          const assigned = getVolunteerCount(selectedEvent);
+                          return needed > 0 ? (
+                            <Badge variant={assigned >= needed ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              <Users className="w-2.5 h-2.5 mr-0.5" />
+                              {assigned}/{needed} vol
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {!selectedEvent.driversNeeded && !selectedEvent.vanDriverNeeded && !selectedEvent.speakersNeeded && !selectedEvent.volunteersNeeded && (
+                          <span className="text-[10px] text-gray-400">No staffing requirements set</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {fullTripRoute && selectedDriver && selectedDestination && (
                 <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px]">
