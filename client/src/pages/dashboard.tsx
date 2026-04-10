@@ -842,14 +842,14 @@ export default function Dashboard({
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <MultiViewProvider initialSection={activeSection}>
-        <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+        <div className="bg-gray-50 h-screen flex flex-col overflow-hidden safe-area-inset">
         {/* Reviewer Banner - shows for read-only reviewer accounts */}
         <ReviewerBanner />
         {/* Announcement Banner */}
         <AnnouncementBanner />
         
         {/* Top Header */}
-        <div className="bg-brand-primary border-b border-brand-primary-dark shadow-md px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full">
+        <div className="bg-brand-primary border-b border-brand-primary-dark shadow-md px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full flex-shrink-0">
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             {/* Mobile menu button - positioned first for easy access */}
             <button
@@ -1087,7 +1087,7 @@ export default function Dashboard({
             </TooltipProvider>
           </div>
         </div>
-        <div className="flex flex-1 relative pt-[60px] md:pt-0">
+        <div className="flex flex-1 min-h-0 relative pt-[60px] md:pt-0">
           {/* Mobile overlay */}
           {isMobileMenuOpen && (
             <div
@@ -1186,12 +1186,12 @@ export default function Dashboard({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0 flex flex-col">
+          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0 min-h-0 flex flex-col">
             {/* Multi-View Toolbar */}
             <MultiViewToolbar currentSection={activeSection} />
 
             {/* Content Area */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <MultiViewContainer
                 renderContent={(section) => {
                   // Determine the content wrapper based on section type
