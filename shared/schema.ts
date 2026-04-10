@@ -151,6 +151,34 @@ export const userActivityLogs = pgTable(
   })
 );
 
+// Client error logs — errors caught by the React ErrorBoundary, also emailed to admin
+export const clientErrorLogs = pgTable(
+  'client_error_logs',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id'), // Null if user was not authenticated when error occurred
+    userEmail: varchar('user_email'), // Snapshot at time of error for quick lookup
+    userName: varchar('user_name'), // Snapshot at time of error
+    userRole: varchar('user_role'),
+    message: text('message').notNull(),
+    stack: text('stack'),
+    componentStack: text('component_stack'), // React component tree that crashed
+    url: text('url'), // Full page URL where error happened
+    referrer: text('referrer'),
+    userAgent: text('user_agent'),
+    viewportWidth: integer('viewport_width'),
+    viewportHeight: integer('viewport_height'),
+    ipAddress: varchar('ip_address'),
+    sessionId: varchar('session_id'),
+    emailSent: boolean('email_sent').default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    createdAtIdx: index('idx_client_error_logs_created_at').on(table.createdAt),
+    userIdx: index('idx_client_error_logs_user_id').on(table.userId),
+  })
+);
+
 // Team member availability calendar system
 export const availabilitySlots = pgTable('availability_slots', {
   id: serial('id').primaryKey(),

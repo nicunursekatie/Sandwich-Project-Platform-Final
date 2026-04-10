@@ -51,16 +51,21 @@ export class ErrorBoundary extends Component<Props, State> {
       }
     }
 
-    // Automatically report error to admin via email
+    // Automatically report error to admin via email and store in DB
     try {
       fetch('/api/client-error', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Send session cookie so server knows who the user is
         body: JSON.stringify({
           message: error.message,
           stack: error.stack,
+          componentStack: errorInfo?.componentStack || null,
           url: window.location.href,
+          referrer: document.referrer || null,
           userAgent: navigator.userAgent,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
           timestamp: new Date().toISOString(),
         }),
       }).catch(() => {
