@@ -410,6 +410,7 @@ const hostFocusedIcon = createHostIcon(colors.hostFocused);
 const recipientIcon = createRecipientIcon(colors.recipient);
 const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
 const driverIcon = createDriverIcon(colors.driver);
+const driverFocusedIcon = createDriverIcon('#ff9500'); // Orange when focused/clicked
 const hostDriverIcon = createHostDriverIcon(colors.host, colors.driver); // Combined icon for host+driver
 const volunteerIcon = createVolunteerIcon(colors.volunteer);
 const teamMemberIcon = createTeamMemberIcon(colors.teamMember);
@@ -3315,7 +3316,16 @@ export default function DriverPlanningDashboard() {
               <Marker
                 key={`driver-${driver.id}`}
                 position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
-                icon={driverIcon}
+                icon={focusedItem?.type === 'driver' && focusedItem?.id === driver.id ? driverFocusedIcon : driverIcon}
+                eventHandlers={{
+                  click: () => handleItemClick({
+                    type: 'driver',
+                    id: driver.id,
+                    latitude: driver.latitude,
+                    longitude: driver.longitude,
+                    name: driver.name
+                  })
+                }}
               >
                 <Tooltip
                   permanent
