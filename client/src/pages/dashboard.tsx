@@ -1102,22 +1102,22 @@ export default function Dashboard({
               isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             } md:translate-x-0 fixed md:relative z-50 ${
               isSidebarCollapsed ? 'w-16' : 'w-56 xs:w-64 sm:w-72'
-            } bg-gradient-to-b from-white to-orange-50/30 border-r-2 border-amber-200 shadow-lg flex flex-col transition-all duration-300 ease-in-out h-full`}
+            } bg-gradient-to-b from-[#1a3448] to-[#0f2535] border-r border-[#2d5470] shadow-xl flex flex-col transition-all duration-300 ease-in-out h-full`}
           >
             {/* Collapse Toggle Button */}
-            <div className="hidden md:flex justify-end p-2 border-b border-amber-200">
+            <div className="hidden md:flex justify-end p-2 border-b border-[#2d5470]">
               <button
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className="p-1.5 rounded-lg hover:bg-amber-100 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
                 aria-label={
                   isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
                 }
                 title={isSidebarCollapsed ? 'Click to expand navigation menu' : 'Click to collapse navigation menu'}
               >
                 {isSidebarCollapsed ? (
-                  <ChevronRight className="w-4 h-4 text-amber-700" />
+                  <ChevronRight className="w-4 h-4 text-white/60" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-amber-700 rotate-90" />
+                  <ChevronDown className="w-4 h-4 text-white/60 rotate-90" />
                 )}
               </button>
             </div>
@@ -1134,12 +1134,12 @@ export default function Dashboard({
 
               {/* EIN Information - Always visible at bottom */}
               {!isSidebarCollapsed && (
-                <div className="px-4 mt-6 pt-4 border-t border-amber-200 space-y-3">
-                  <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg px-3 py-2">
-                    <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
+                <div className="px-4 mt-6 pt-4 border-t border-[#2d5470] space-y-3">
+                  <div className="bg-white/8 border border-white/15 rounded-lg px-3 py-2">
+                    <div className="text-xs text-white/50 font-medium uppercase tracking-wide">
                       Organization EIN
                     </div>
-                    <div className="text-sm font-bold text-teal-900 font-mono">
+                    <div className="text-sm font-bold text-white/85 font-mono">
                       87-0939484
                     </div>
                   </div>

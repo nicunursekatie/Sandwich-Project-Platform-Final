@@ -359,12 +359,12 @@ export default function SimpleNav({
                 active
                   ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
                   : item.highlighted
-                    ? 'hover:bg-gradient-to-br hover:from-[#47B3CB]/10 hover:to-[#47B3CB]/20 text-[#47B3CB] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
+                    ? 'hover:bg-[#47B3CB]/20 text-[#47B3CB] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
                     : item.accentColor
-                      ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-semibold'
+                      ? 'hover:bg-white/10 rounded-lg hover:shadow-sm transition-all duration-200 font-semibold'
                       : item.isSubItem
-                        ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md hover:shadow-sm transition-all duration-200'
-                        : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-700 rounded-lg hover:shadow-sm transition-all duration-200'
+                        ? 'hover:bg-white/10 text-white/65 ml-4 mr-1 rounded-md hover:shadow-sm transition-all duration-200'
+                        : 'hover:bg-white/10 text-white/80 rounded-lg hover:shadow-sm transition-all duration-200'
               }
             `}
               style={!active && item.accentColor ? { color: item.accentColor } : undefined}
