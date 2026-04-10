@@ -32,6 +32,137 @@ interface RecipientFormProps {
 // Predefined focus areas
 const FOCUS_AREAS = ['Youth', 'Veterans', 'Seniors', 'Families', 'Unhoused', 'Refugees', 'Disabilities', 'Other'];
 
+const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+const DAY_ABBREV: Record<string, string> = {
+  Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu',
+  Friday: 'Fri', Saturday: 'Sat', Sunday: 'Sun',
+};
+
+type ScheduleEntry = { day: string; time: string; notes?: string };
+
+/** Reusable schedule entry list — supports multiple day/time combos with optional notes */
+function ScheduleEntryList({
+  entries,
+  onChange,
+  label,
+  idPrefix = '',
+}: {
+  entries: ScheduleEntry[];
+  onChange: (entries: ScheduleEntry[]) => void;
+  label: string;
+  idPrefix?: string;
+}) {
+  const addEntry = () => onChange([...entries, { day: '', time: '' }]);
+  const removeEntry = (idx: number) => onChange(entries.filter((_, i) => i !== idx));
+  const updateEntry = (idx: number, field: keyof ScheduleEntry, value: string) => {
+    const updated = entries.map((e, i) => (i === idx ? { ...e, [field]: value } : e));
+    onChange(updated);
+  };
+
+  const toggleDay = (idx: number, dayName: string) => {
+    const entry = entries[idx];
+    // Day field stores comma-separated day names (e.g. "Monday, Wednesday")
+    const currentDays = entry.day ? entry.day.split(',').map((d) => d.trim()).filter(Boolean) : [];
+    const newDays = currentDays.includes(dayName)
+      ? currentDays.filter((d) => d !== dayName)
+      : [...currentDays, dayName];
+    // Sort by day order
+    newDays.sort((a, b) => DAYS_OF_WEEK.indexOf(a as any) - DAYS_OF_WEEK.indexOf(b as any));
+    updateEntry(idx, 'day', newDays.join(', '));
+  };
+
+  return (
+    <div className="space-y-3">
+      {entries.map((entry, idx) => {
+        const selectedDays = entry.day ? entry.day.split(',').map((d) => d.trim()).filter(Boolean) : [];
+        return (
+          <div key={idx} className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                {label} {entries.length > 1 ? `#${idx + 1}` : 'time'}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeEntry(idx)}
+                className="text-slate-400 hover:text-red-500 p-0.5"
+                title="Remove"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {/* Day of week chips */}
+            <div>
+              <Label className="text-xs text-slate-600 mb-1.5 block">Days</Label>
+              <div className="flex flex-wrap gap-1">
+                {DAYS_OF_WEEK.map((day) => {
+                  const isSelected = selectedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(idx, day)}
+                      className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+                        isSelected
+                          ? 'bg-blue-100 border-blue-300 text-blue-800 font-medium'
+                          : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      {DAY_ABBREV[day] || day}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Also allow free text for non-standard day descriptions */}
+              <Input
+                type="text"
+                value={entry.day}
+                onChange={(e) => updateEntry(idx, 'day', e.target.value)}
+                placeholder="Or type: e.g. Every other Monday, 1st & 3rd Tuesday"
+                className="mt-1.5 text-xs h-8"
+                id={`${idPrefix}${label}-day-${idx}`}
+              />
+            </div>
+            {/* Time */}
+            <div>
+              <Label className="text-xs text-slate-600 mb-1 block">Time</Label>
+              <Input
+                type="text"
+                value={entry.time}
+                onChange={(e) => updateEntry(idx, 'time', e.target.value)}
+                placeholder="e.g. 9:00 AM, 11:30 AM - 1:00 PM"
+                className="text-xs h-8"
+                id={`${idPrefix}${label}-time-${idx}`}
+              />
+            </div>
+            {/* Notes */}
+            <div>
+              <Label className="text-xs text-slate-600 mb-1 block">Notes (optional)</Label>
+              <Input
+                type="text"
+                value={entry.notes || ''}
+                onChange={(e) => updateEntry(idx, 'notes', e.target.value)}
+                placeholder="e.g. Side entrance, call ahead"
+                className="text-xs h-8"
+                id={`${idPrefix}${label}-notes-${idx}`}
+              />
+            </div>
+          </div>
+        );
+      })}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={addEntry}
+        className="text-xs"
+      >
+        <Plus className="w-3 h-3 mr-1" />
+        Add {label} time
+      </Button>
+    </div>
+  );
+}
+
 // Contact methods
 const CONTACT_METHODS = [
   { id: 'text', label: 'Text' },
@@ -454,54 +585,51 @@ export function RecipientForm({
                 </div>
               )}
 
-              {/* Collection and Feeding Schedule Fields */}
+              {/* Collection Schedule */}
               <div className="col-span-2 border-t pt-3 mt-3">
                 <h5 className="font-medium text-sm text-slate-700 mb-3">
-                  Collection & Feeding Schedule
+                  Collection Schedule
                 </h5>
-              </div>
-              <div>
-                <Label htmlFor={inputId('collectionDay')}>Collection Day</Label>
-                <Input
-                  id={inputId('collectionDay')}
-                  type="text"
-                  value={formData.collectionDay}
-                  onChange={(e) => onFieldChange('collectionDay', e.target.value)}
-                  placeholder="Monday"
-                  data-testid="input-collection-day"
+                <ScheduleEntryList
+                  entries={formData.collectionSchedules.length > 0
+                    ? formData.collectionSchedules
+                    : (formData.collectionDay || formData.collectionTime)
+                      ? [{ day: formData.collectionDay, time: formData.collectionTime }]
+                      : []
+                  }
+                  onChange={(entries) => {
+                    onFieldChange('collectionSchedules', entries);
+                    // Sync legacy fields with first entry for backward compat
+                    const first = entries[0];
+                    onFieldChange('collectionDay', first?.day || '');
+                    onFieldChange('collectionTime', first?.time || '');
+                  }}
+                  label="collection"
+                  idPrefix={idPrefix}
                 />
               </div>
-              <div>
-                <Label htmlFor={inputId('collectionTime')}>Collection Time</Label>
-                <Input
-                  id={inputId('collectionTime')}
-                  type="text"
-                  value={formData.collectionTime}
-                  onChange={(e) => onFieldChange('collectionTime', e.target.value)}
-                  placeholder="9:00 AM"
-                  data-testid="input-collection-time"
-                />
-              </div>
-              <div>
-                <Label htmlFor={inputId('feedingDay')}>Feeding Day</Label>
-                <Input
-                  id={inputId('feedingDay')}
-                  type="text"
-                  value={formData.feedingDay}
-                  onChange={(e) => onFieldChange('feedingDay', e.target.value)}
-                  placeholder="Wednesday"
-                  data-testid="input-feeding-day"
-                />
-              </div>
-              <div>
-                <Label htmlFor={inputId('feedingTime')}>Feeding Time</Label>
-                <Input
-                  id={inputId('feedingTime')}
-                  type="text"
-                  value={formData.feedingTime}
-                  onChange={(e) => onFieldChange('feedingTime', e.target.value)}
-                  placeholder="12:00 PM"
-                  data-testid="input-feeding-time"
+
+              {/* Feeding Schedule */}
+              <div className="col-span-2 border-t pt-3 mt-1">
+                <h5 className="font-medium text-sm text-slate-700 mb-3">
+                  Feeding Schedule
+                </h5>
+                <ScheduleEntryList
+                  entries={formData.feedingSchedules.length > 0
+                    ? formData.feedingSchedules
+                    : (formData.feedingDay || formData.feedingTime)
+                      ? [{ day: formData.feedingDay, time: formData.feedingTime }]
+                      : []
+                  }
+                  onChange={(entries) => {
+                    onFieldChange('feedingSchedules', entries);
+                    // Sync legacy fields with first entry for backward compat
+                    const first = entries[0];
+                    onFieldChange('feedingDay', first?.day || '');
+                    onFieldChange('feedingTime', first?.time || '');
+                  }}
+                  label="feeding"
+                  idPrefix={idPrefix}
                 />
               </div>
             </div>
