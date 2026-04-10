@@ -106,8 +106,13 @@ const EventRequestsManagementContent: React.FC = () => {
       const searchInput = document.getElementById('event-requests-search');
       if (searchInput) {
         searchInput.focus();
-        // Scroll to top to make search visible
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Scroll to top to make search visible — use content container, fall back to window
+        const scrollEl = scrollContainerRef.current;
+        if (scrollEl) {
+          scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
     };
 
@@ -376,7 +381,12 @@ const EventRequestsManagementContent: React.FC = () => {
 
   // Scroll to top when component mounts
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollEl = scrollContainerRef.current;
+    if (scrollEl) {
+      scrollEl.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }, []);
 
   // State for volunteer opportunities dialog
@@ -384,21 +394,53 @@ const EventRequestsManagementContent: React.FC = () => {
 
   // State for back to top button
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
 
   // Track scroll position for back to top button
+  // Listens on the nearest scrollable ancestor (the dashboard content div), not window
   useEffect(() => {
-    const handleScroll = () => {
-      // Show button when scrolled down more than 400px
-      setShowBackToTop(window.scrollY > 400);
+    // Find the closest scrollable parent
+    const findScrollParent = (el: HTMLElement | null): HTMLElement | null => {
+      while (el) {
+        const style = getComputedStyle(el);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          return el;
+        }
+        el = el.parentElement;
+      }
+      return null;
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Small delay so the DOM is ready
+    const timer = setTimeout(() => {
+      const container =
+        findScrollParent(document.querySelector('[data-event-requests-root]') as HTMLElement) ||
+        null;
+      scrollContainerRef.current = container;
+
+      if (!container) return;
+
+      const handleScroll = () => {
+        setShowBackToTop(container.scrollTop > 400);
+      };
+      container.addEventListener('scroll', handleScroll, { passive: true });
+      // Also check right away
+      handleScroll();
+
+      return () => container.removeEventListener('scroll', handleScroll);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
-  // Scroll to top function
+  // Scroll to top function — scrolls the content container, not window
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   // Memoize tab children to prevent recreation on every render
@@ -543,7 +585,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4">
+      <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4" data-event-requests-root>
         {/* Header */}
         <div className="premium-card p-4 sm:p-6">
           <div className="space-y-4">
