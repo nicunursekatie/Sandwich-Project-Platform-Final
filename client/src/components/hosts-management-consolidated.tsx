@@ -2823,20 +2823,42 @@ export default function HostsManagementConsolidated() {
                     <Label className="text-sm font-medium text-slate-700">
                       Status
                     </Label>
-                    <Badge
-                      variant={
-                        selectedHost.status === 'active'
-                          ? 'default'
-                          : 'secondary'
-                      }
-                      className={
-                        selectedHost.status === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }
-                    >
-                      {selectedHost.status}
-                    </Badge>
+                    {canEdit ? (
+                      <Select
+                        value={selectedHost.status}
+                        onValueChange={(newStatus) => {
+                          if (newStatus === selectedHost.status) return;
+                          updateHostMutation.mutate({
+                            id: selectedHost.id,
+                            updates: { status: newStatus },
+                          });
+                        }}
+                        disabled={updateHostMutation.isPending}
+                      >
+                        <SelectTrigger className="h-8 w-36 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge
+                        variant={
+                          selectedHost.status === 'active'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                        className={
+                          selectedHost.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }
+                      >
+                        {selectedHost.status}
+                      </Badge>
+                    )}
                   </div>
                   {selectedHost.address && (
                     <div className="col-span-2">
