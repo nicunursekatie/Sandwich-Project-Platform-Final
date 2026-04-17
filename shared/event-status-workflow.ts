@@ -104,7 +104,7 @@ export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   completed: ['scheduled'],  // Reopen if needed (e.g., data entry error)
   declined: ['new', 'in_process'],  // Can reactivate if they come back
   cancelled: ['scheduled'],  // Can reinstate if the group comes back
-  non_event: [],  // Terminal — no transitions out
+  non_event: ['new', 'in_process'],  // Can reactivate if incorrectly marked
   standby: ['in_process', 'scheduled', 'declined', 'stalled'],  // scheduled allows setting a date from standby
   stalled: ['in_process', 'declined', 'new'],
 };
