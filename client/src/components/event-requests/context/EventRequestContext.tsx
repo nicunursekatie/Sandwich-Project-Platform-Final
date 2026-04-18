@@ -259,7 +259,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       return initialTab;
     }
     // Default to 'new' for event requests when no tab is specified
@@ -601,7 +601,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Synchronize statusFilter with activeTab (only for status-based tabs)
   useEffect(() => {
     // Only sync statusFilter for tabs that correspond to status values
-    if (['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments'].includes(activeTab)) {
+    if (['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'].includes(activeTab)) {
       setStatusFilter(activeTab);
     }
     // For admin_overview and planning tabs, don't change statusFilter
@@ -649,7 +649,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
