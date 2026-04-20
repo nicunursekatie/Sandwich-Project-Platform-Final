@@ -73,17 +73,29 @@ async function getUserSMSNumber(userId: string): Promise<string | null> {
     const metadata = getUserMetadata(user);
     const smsConsent = metadata.smsConsent;
 
-    // User must have confirmed opt-in and be on 'events' campaign (or no campaign = legacy)
     if (
-      smsConsent?.status === 'confirmed' &&
-      smsConsent.enabled &&
-      smsConsent.phoneNumber &&
-      (!smsConsent.campaignType || smsConsent.campaignType === 'events')
+      !smsConsent ||
+      smsConsent.status !== 'confirmed' ||
+      !smsConsent.enabled ||
+      !smsConsent.phoneNumber
     ) {
-      return smsConsent.phoneNumber;
+      return null;
     }
 
-    return null;
+    // User must be opted into the 'events' campaign. The UI writes the
+    // plural `campaignTypes` array when users pick multiple; the legacy
+    // singular `campaignType` is kept in sync only with the first item, so
+    // check both. Absent campaign info = legacy single-campaign setup, allow.
+    const campaignTypes: string[] = Array.isArray(smsConsent.campaignTypes)
+      ? smsConsent.campaignTypes
+      : smsConsent.campaignType
+        ? [smsConsent.campaignType]
+        : [];
+
+    const optedIntoEvents =
+      campaignTypes.length === 0 || campaignTypes.includes('events');
+
+    return optedIntoEvents ? smsConsent.phoneNumber : null;
   } catch (error) {
     logger.error(`Error getting SMS number for user ${userId}:`, error);
     return null;
