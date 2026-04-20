@@ -596,7 +596,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       for (const user of assignedUsers) {
         prefsByUser.set(
           user.id,
-          await getEffectivePrefs(user.id, ALERT_TYPES.TEAM_BOARD_ASSIGNMENT)
+          await getEffectivePrefs(user.id, ALERT_TYPES.HOLDING_ZONE_ASSIGNMENT)
         );
       }
 
@@ -1002,6 +1002,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           continue;
         }
 
+        // Respect the user's Alert Preferences for Holding Zone mentions.
+        const prefs = await getEffectivePrefs(user.id, ALERT_TYPES.HOLDING_ZONE_MENTION);
+        if (!prefs.emailEnabled) continue;
+
         const userName =
           user.displayName ||
           user.firstName ||
@@ -1310,6 +1314,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           logger.warn(`Skipping mention notification: user ${user.id} has no email.`);
           continue;
         }
+
+        // Respect the user's Alert Preferences for Holding Zone mentions.
+        const prefs = await getEffectivePrefs(user.id, ALERT_TYPES.HOLDING_ZONE_MENTION);
+        if (!prefs.emailEnabled) continue;
 
         const userName =
           user.displayName ||

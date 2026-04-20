@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
-import express from 'express';
+import type { Express } from 'express';
 import { PERMISSIONS } from '../../../shared/auth-utils';
 import {
   createTestServer,
@@ -14,10 +14,10 @@ import {
 } from '../../setup/test-server';
 
 // This will be populated by setup
-let app: express.Application;
-let testUser: Record<string, unknown>;
-let adminUser: Record<string, unknown>;
-let noPermissionsUser: Record<string, unknown>;
+let app: Express;
+let testUser: any;
+let adminUser: any;
+let noPermissionsUser: any;
 let authenticatedAgent: request.SuperAgentTest;
 let adminAgent: request.SuperAgentTest;
 let noPermissionsAgent: request.SuperAgentTest;
