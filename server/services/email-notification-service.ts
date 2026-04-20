@@ -105,12 +105,23 @@ export class EmailNotificationService {
   static async sendChatMentionNotification(
     notification: ChatMentionNotification
   ): Promise<boolean> {
-    if (!process.env.SENDGRID_API_KEY) {
-      logger.log('SendGrid not configured - skipping email notification');
+    // Respect the user's saved preferences. If both channels are off, skip.
+    const prefs = await getEffectivePrefs(
+      notification.mentionedUserId,
+      ALERT_TYPES.CHAT_MENTION
+    );
+    if (!prefs.emailEnabled && !prefs.smsEnabled) {
       return false;
     }
 
-    try {
+    const shouldSendEmail = prefs.emailEnabled && !!process.env.SENDGRID_API_KEY;
+    if (prefs.emailEnabled && !process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping chat mention email');
+    }
+
+    let anySent = false;
+
+    if (shouldSendEmail) {
       const msg = {
         to: notification.mentionedUserEmail,
         from: 'katie@thesandwichproject.org',
@@ -179,20 +190,30 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         `.trim(),
       };
 
-      await sgMail.send(msg);
-      logger.log(
-        `Chat mention notification sent to ${notification.mentionedUserEmail}`
-      );
-
-      // Send SMS notification if user has opted in
       try {
-        const mentionedUser = await db.select().from(users).where(eq(users.id, notification.mentionedUserId)).limit(1);
-        if (mentionedUser && mentionedUser.length > 0) {
+        await sgMail.send(msg);
+        logger.log(
+          `Chat mention notification sent to ${notification.mentionedUserEmail}`
+        );
+        anySent = true;
+      } catch (err) {
+        logger.error('Error sending chat mention email:', err);
+      }
+    }
+
+    if (prefs.smsEnabled) {
+      try {
+        const mentionedUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, notification.mentionedUserId))
+          .limit(1);
+        if (mentionedUser.length > 0) {
           const metadata = getUserMetadata(mentionedUser[0]);
           const smsConsent = metadata.smsConsent;
           if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
-            const messagePreview = notification.messageContent.length > 50 
-              ? notification.messageContent.substring(0, 50) + '...' 
+            const messagePreview = notification.messageContent.length > 50
+              ? notification.messageContent.substring(0, 50) + '...'
               : notification.messageContent;
             const chatUrl = this.getChatUrl(notification.channel);
             await sendChatMentionSMS(
@@ -204,17 +225,15 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
               chatUrl
             );
             logger.log(`Chat mention SMS sent to ${smsConsent.phoneNumber}`);
+            anySent = true;
           }
         }
       } catch (smsError) {
-        logger.error('Error sending chat mention SMS (email still succeeded):', smsError);
+        logger.error('Error sending chat mention SMS:', smsError);
       }
-
-      return true;
-    } catch (error) {
-      logger.error('Error sending chat mention notification:', error);
-      return false;
     }
+
+    return anySent;
   }
 
   /**

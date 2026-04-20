@@ -16,11 +16,12 @@ export const ALERT_TYPES = {
   VOLUNTEER_EVENT_REMINDER: 'volunteer_event_reminder',
   CHAT_MENTION: 'chat_mention',
   TEAM_BOARD_MENTION: 'team_board_mention',
+  ADMIN_WEEKLY_PULSE: 'admin_weekly_pulse',
 } as const;
 
 export type AlertType = typeof ALERT_TYPES[keyof typeof ALERT_TYPES];
 
-export type AlertCategory = 'event' | 'communication' | 'task' | 'collection';
+export type AlertCategory = 'event' | 'communication' | 'task' | 'collection' | 'admin';
 
 export interface AlertDefinition {
   type: AlertType;
@@ -84,7 +85,7 @@ export const ALERT_CATALOG: AlertDefinition[] = [
       "Reminder before an event you've signed up to volunteer, drive, or speak at.",
     category: 'event',
     availableChannels: ['email', 'sms'],
-    implemented: false,
+    implemented: true,
     defaults: { emailEnabled: true, smsEnabled: true, inAppEnabled: true },
   },
   {
@@ -94,7 +95,7 @@ export const ALERT_CATALOG: AlertDefinition[] = [
       'Get notified when someone @mentions you in a chat room.',
     category: 'communication',
     availableChannels: ['email', 'sms'],
-    implemented: false,
+    implemented: true,
     defaults: { emailEnabled: true, smsEnabled: false, inAppEnabled: true },
   },
   {
@@ -106,6 +107,16 @@ export const ALERT_CATALOG: AlertDefinition[] = [
     availableChannels: ['email', 'sms'],
     implemented: false,
     defaults: { emailEnabled: true, smsEnabled: false, inAppEnabled: true },
+  },
+  {
+    type: ALERT_TYPES.ADMIN_WEEKLY_PULSE,
+    name: 'Admin Weekly Pulse (Monday SMS)',
+    description:
+      'Short Monday morning text with the pipeline snapshot, stalled events, upcoming items, and the week\u2019s top priority. Super admins always receive this; other admins can opt in here.',
+    category: 'admin',
+    availableChannels: ['sms'],
+    implemented: true,
+    defaults: { emailEnabled: false, smsEnabled: false, inAppEnabled: false },
   },
 ];
 
