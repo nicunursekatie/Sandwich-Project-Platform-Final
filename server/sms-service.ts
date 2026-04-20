@@ -5,6 +5,8 @@ import { hosts } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { getUserMetadata } from '../shared/types';
 import { logger } from './utils/production-safe-logger';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { getEffectivePrefs } from './services/notifications/preferences';
 
 /**
  * Resolve the SMS provider asynchronously
@@ -105,6 +107,14 @@ export async function sendSMSReminder(
     const results = [];
     for (const user of optedInUsers) {
       try {
+        // Respect the user's notification preference for weekly collection
+        // reminders over SMS. Users who have turned this alert off shouldn't
+        // get SMS even if they're opted into the 'hosts' campaign.
+        const prefs = await getEffectivePrefs(user.id, ALERT_TYPES.WEEKLY_COLLECTION_REMINDER);
+        if (!prefs.smsEnabled) {
+          continue;
+        }
+
         const metadata = getUserMetadata(user);
         const smsConsent = metadata.smsConsent;
         const phoneNumber = smsConsent?.phoneNumber;

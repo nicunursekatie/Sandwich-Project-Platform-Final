@@ -538,38 +538,68 @@ export async function processAdminWeeklySms(): Promise<{ success: boolean; messa
   logger.log('Starting admin weekly SMS pulse...');
 
   try {
-    // Get admin user to find their phone number
+    // Get every admin user so we can send the pulse to each one that has a
+    // phone number on file. Previously this used .limit(1) which meant only
+    // whichever admin the DB returned first received the text.
     const adminUsers = await db
       .select()
       .from(users)
-      .where(eq(users.role, 'admin'))
-      .limit(1);
+      .where(eq(users.role, 'admin'));
 
     if (adminUsers.length === 0) {
       logger.warn('No admin user found for SMS pulse');
       return { success: false, message: 'No admin user found' };
     }
 
-    const adminUser = adminUsers[0];
-    const adminPhone = getUserPhoneNumber(adminUser);
+    const recipients = adminUsers
+      .map((user) => ({
+        user,
+        phone: getUserPhoneNumber(user),
+      }))
+      .filter((entry): entry is { user: typeof entry.user; phone: string } => !!entry.phone);
 
-    if (!adminPhone) {
-      logger.warn('Admin user has no phone number configured');
-      return { success: false, message: 'No admin phone number' };
+    const skippedWithoutPhone = adminUsers.length - recipients.length;
+    if (skippedWithoutPhone > 0) {
+      logger.warn(
+        `Admin SMS pulse: ${skippedWithoutPhone} admin user(s) skipped — no phone number on file`
+      );
+    }
+
+    if (recipients.length === 0) {
+      logger.warn('No admin users have a phone number configured');
+      return { success: false, message: 'No admin phone numbers on file' };
     }
 
     const data = await gatherDigestData();
     const smsText = buildAdminSmsText(data);
 
-    const result = await sendTSPFollowupReminderSMS(adminPhone, smsText);
+    let sent = 0;
+    const failures: string[] = [];
 
-    if (result.success) {
-      logger.log('Admin weekly SMS pulse sent successfully');
-      return { success: true, message: 'SMS pulse sent' };
-    } else {
-      logger.error('Admin weekly SMS pulse failed:', result.message);
-      return { success: false, message: result.message || 'SMS send failed' };
+    for (const { user, phone } of recipients) {
+      const result = await sendTSPFollowupReminderSMS(phone, smsText);
+      if (result.success) {
+        sent += 1;
+        logger.log(`Admin weekly SMS pulse sent to ${user.email || user.id}`);
+      } else {
+        const reason = result.message || 'SMS send failed';
+        failures.push(`${user.email || user.id}: ${reason}`);
+        logger.error(`Admin weekly SMS pulse failed for ${user.email || user.id}:`, reason);
+      }
     }
+
+    if (sent === 0) {
+      return {
+        success: false,
+        message: failures.length > 0 ? failures.join('; ') : 'SMS send failed',
+      };
+    }
+
+    const summary =
+      failures.length === 0
+        ? `SMS pulse sent to ${sent} admin${sent === 1 ? '' : 's'}`
+        : `SMS pulse sent to ${sent} admin${sent === 1 ? '' : 's'}; failures: ${failures.join('; ')}`;
+    return { success: true, message: summary };
   } catch (error) {
     logger.error('Error processing admin weekly SMS:', error);
     return { success: false, message: (error as Error).message };

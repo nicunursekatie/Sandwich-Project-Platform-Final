@@ -14,6 +14,8 @@ import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
 import { getUserMetadata } from '@shared/types';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { getEffectivePrefs } from './notifications/preferences';
 import {
   EventNotificationType,
   NOTIFICATION_TIER_CONFIG,
@@ -132,24 +134,61 @@ export async function sendTspAssignmentNotification(
   }
 
   const userName = user.displayName || user.firstName || 'there';
-  const phoneNumber = await getUserSMSNumber(userId);
 
-  // Build message
-  let message: string;
-  if (isCorporatePriority) {
-    message = `🏢 CORPORATE PRIORITY: You've been assigned to ${organizationName} (${dateStr}). Call today! ${eventUrl}`;
-  } else {
-    message = `🎯 New event: You're assigned to ${organizationName} (${dateStr}). ${eventUrl}`;
+  // Respect the user's saved preferences for this alert. If they've never
+  // saved anything, the catalog defaults (both channels on) apply.
+  const prefs = await getEffectivePrefs(userId, ALERT_TYPES.TSP_CONTACT_ASSIGNED);
+  if (!prefs.emailEnabled && !prefs.smsEnabled) {
+    logger.log(`User ${userId} disabled TSP assignment notifications — skipping`);
+    return false;
   }
 
-  // Send SMS if user has opted in
+  // Build SMS/email message body
+  const smsMessage = isCorporatePriority
+    ? `🏢 CORPORATE PRIORITY: You've been assigned to ${organizationName} (${dateStr}). Call today! ${eventUrl}`
+    : `🎯 New event: You're assigned to ${organizationName} (${dateStr}). ${eventUrl}`;
+
+  const phoneNumber = prefs.smsEnabled ? await getUserSMSNumber(userId) : null;
+
+  // Send over all channels the user has enabled AND is eligible for.
+  const results: boolean[] = [];
   if (phoneNumber) {
-    return await sendUrgentSMS(phoneNumber, message, 'tsp_contact_assigned');
-  } else {
-    // Fallback to email if no SMS
-    logger.log(`User ${userId} not opted into SMS - sending email for TSP assignment`);
-    return await sendTspAssignmentEmail(user.preferredEmail || user.email!, userName, organizationName, dateStr, eventUrl, isCorporatePriority);
+    results.push(await sendUrgentSMS(phoneNumber, smsMessage, 'tsp_contact_assigned'));
   }
+  if (prefs.emailEnabled) {
+    const toEmail = user.preferredEmail || user.email;
+    if (toEmail) {
+      results.push(
+        await sendTspAssignmentEmail(
+          toEmail,
+          userName,
+          organizationName,
+          dateStr,
+          eventUrl,
+          isCorporatePriority
+        )
+      );
+    }
+  } else if (prefs.smsEnabled && !phoneNumber) {
+    // User wanted SMS but hasn't opted in yet — fall back to email so the
+    // notification isn't silently dropped.
+    logger.log(`User ${userId} opted into SMS for TSP assignment but no phone on file — falling back to email`);
+    const toEmail = user.preferredEmail || user.email;
+    if (toEmail) {
+      results.push(
+        await sendTspAssignmentEmail(
+          toEmail,
+          userName,
+          organizationName,
+          dateStr,
+          eventUrl,
+          isCorporatePriority
+        )
+      );
+    }
+  }
+
+  return results.some((ok) => ok);
 }
 
 /**

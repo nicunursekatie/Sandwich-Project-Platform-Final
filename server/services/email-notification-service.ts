@@ -7,6 +7,8 @@ import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata } from '@shared/types';
 import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS, sendEventCommentSMS } from '../sms-service';
 import { getAppBaseUrl } from '../config/constants';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { getEffectivePrefs } from './notifications/preferences';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -570,10 +572,23 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         return false;
       }
 
-      // Send email to each assigned user
+      // Resolve each user's prefs once so we don't double-query below
+      const prefsByUser = new Map<string, Awaited<ReturnType<typeof getEffectivePrefs>>>();
+      for (const user of assignedUsers) {
+        prefsByUser.set(
+          user.id,
+          await getEffectivePrefs(user.id, ALERT_TYPES.TEAM_BOARD_ASSIGNMENT)
+        );
+      }
+
+      // Send email to each assigned user (only if they've opted in)
       for (const user of assignedUsers) {
         if (!user.email) {
           logger.warn(`User ${user.id} has no email - cannot send Holding Zone assignment notification`);
+          continue;
+        }
+        const prefs = prefsByUser.get(user.id);
+        if (!prefs?.emailEnabled) {
           continue;
         }
 
@@ -661,10 +676,15 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         logger.log(`Holding Zone assignment notification sent to ${userEmail} for item ${itemId}`);
       }
 
-      // Send SMS notifications to users who have opted in
+      // Send SMS notifications to users who (a) have opted in over SMS in
+      // their prefs and (b) have a confirmed phone number on file.
       const holdingZoneUrl = this.getTeamBoardUrl();
       for (const user of assignedUsers) {
         try {
+          const prefs = prefsByUser.get(user.id);
+          if (!prefs?.smsEnabled) {
+            continue;
+          }
           const metadata = getUserMetadata(user);
           const smsConsent = metadata.smsConsent;
           if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {

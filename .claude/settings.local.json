@@ -70,7 +70,8 @@
       "Bash(do)",
       "Read(//Users/katielong/Documents/Sandwich-Project-Platform-Final/**)",
       "Read(//tmp/**)",
-      "Bash(awk -F'[\\(,]' '{print $2}')"
+      "Bash(awk -F'[\\(,]' '{print $2}')",
+      "Bash(awk '/^function SMSSetupSection/,/^}/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/alert-preferences.tsx)"
     ],
     "deny": [],
     "ask": []

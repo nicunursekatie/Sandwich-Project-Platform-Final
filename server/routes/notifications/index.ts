@@ -7,6 +7,7 @@ import { createStandardMiddleware } from '../../middleware';
 import { smartNotificationsRouter } from './smart';
 import { analyticsRouter } from './analytics';
 import { actionsRouter } from './actions';
+import { alertPreferencesRouter } from './alert-preferences';
 import { z } from 'zod';
 import { logger } from '../../utils/production-safe-logger';
 
@@ -17,6 +18,9 @@ notificationsRouter.use(createStandardMiddleware());
 
 // Mount smart notification routes
 notificationsRouter.use('/smart', smartNotificationsRouter);
+
+// Mount alert preferences (user-facing Alert Preferences screen)
+notificationsRouter.use('/alert-preferences', alertPreferencesRouter);
 
 // Mount analytics routes
 notificationsRouter.use('/analytics', analyticsRouter);
