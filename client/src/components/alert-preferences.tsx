@@ -6,6 +6,7 @@ import {
   Smartphone,
   CheckCircle,
   Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -27,6 +28,9 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { SMSSetupSection } from './alert-preferences/SMSSetupSection';
+import { useAuth } from '@/hooks/useAuth';
+import { USER_ROLES } from '@shared/auth-utils';
+import { ALERT_TYPES } from '@shared/alert-catalog';
 
 /**
  * Alert Preferences
@@ -42,7 +46,7 @@ interface AlertRow {
   type: string;
   name: string;
   description: string;
-  category: 'event' | 'communication' | 'task' | 'collection';
+  category: 'event' | 'communication' | 'task' | 'collection' | 'admin';
   availableChannels: Array<'email' | 'sms' | 'in_app'>;
   implemented: boolean;
   emailEnabled: boolean;
@@ -66,6 +70,7 @@ const CATEGORY_ORDER: Array<AlertRow['category']> = [
   'task',
   'collection',
   'communication',
+  'admin',
 ];
 
 const CATEGORY_LABEL: Record<AlertRow['category'], string> = {
@@ -73,11 +78,15 @@ const CATEGORY_LABEL: Record<AlertRow['category'], string> = {
   task: 'Tasks & Assignments',
   collection: 'Collection Reminders',
   communication: 'Mentions & Messages',
+  admin: 'Admin Digests',
 };
 
 export default function AlertPreferences() {
   const { toast } = useToast();
   const client = useQueryClient();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === USER_ROLES.SUPER_ADMIN;
+  const isAdminRole = user?.role === USER_ROLES.ADMIN || isSuperAdmin;
 
   const { data, isLoading } = useQuery<AlertPreferencesResponse>({
     queryKey: ['/api/notifications/alert-preferences'],
@@ -140,12 +149,19 @@ export default function AlertPreferences() {
       task: [],
       collection: [],
       communication: [],
+      admin: [],
     };
     for (const alert of data?.alerts ?? []) {
+      // Admin-category alerts are only relevant to admin/super_admin users.
+      // Hide them from everyone else so the UI doesn't show toggles that
+      // would have no effect (the cron only sends to those two roles).
+      if (alert.category === 'admin' && !isAdminRole) {
+        continue;
+      }
       grouped[alert.category].push(alert);
     }
     return grouped;
-  }, [data]);
+  }, [data, isAdminRole]);
 
   return (
     <div className="space-y-6">
@@ -181,16 +197,26 @@ export default function AlertPreferences() {
                       {CATEGORY_LABEL[category]}
                     </h3>
                     <div className="space-y-2">
-                      {items.map((alert) => (
-                        <AlertRow
-                          key={alert.type}
-                          alert={alert}
-                          hasSmsOptIn={hasSmsOptIn}
-                          onChange={(updates) =>
-                            updateMutation.mutate({ type: alert.type, ...updates })
-                          }
-                        />
-                      ))}
+                      {items.map((alert) => {
+                        const superAdminForcedOn =
+                          isSuperAdmin &&
+                          alert.type === ALERT_TYPES.ADMIN_WEEKLY_PULSE;
+                        return (
+                          <AlertRow
+                            key={alert.type}
+                            alert={alert}
+                            hasSmsOptIn={hasSmsOptIn}
+                            lockedOnReason={
+                              superAdminForcedOn
+                                ? 'You receive this automatically as a super admin. This setting cannot be turned off here.'
+                                : undefined
+                            }
+                            onChange={(updates) =>
+                              updateMutation.mutate({ type: alert.type, ...updates })
+                            }
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -217,13 +243,21 @@ export default function AlertPreferences() {
 interface AlertRowProps {
   alert: AlertRow;
   hasSmsOptIn: boolean;
+  /**
+   * When set, the row is shown as "always on" and the user cannot toggle
+   * it off. Used for super admins viewing the Admin Weekly Pulse row, where
+   * delivery is guaranteed by role regardless of saved preferences.
+   */
+  lockedOnReason?: string;
   onChange: (updates: { emailEnabled?: boolean; smsEnabled?: boolean }) => void;
 }
 
-function AlertRow({ alert, hasSmsOptIn, onChange }: AlertRowProps) {
-  const isOn = alert.emailEnabled || alert.smsEnabled;
+function AlertRow({ alert, hasSmsOptIn, lockedOnReason, onChange }: AlertRowProps) {
+  const isLocked = Boolean(lockedOnReason);
+  const isOn = isLocked ? true : alert.emailEnabled || alert.smsEnabled;
 
   const toggleAll = (enabled: boolean) => {
+    if (isLocked) return;
     if (enabled) {
       // Turn back on: restore email by default (safe — everyone has email)
       onChange({ emailEnabled: true });
@@ -248,7 +282,16 @@ function AlertRow({ alert, hasSmsOptIn, onChange }: AlertRowProps) {
                 Coming soon
               </Badge>
             )}
-            {alert.implemented && alert.hasSavedPreference && isOn && (
+            {isLocked && (
+              <Badge
+                variant="outline"
+                className="text-xs text-brand-primary border-brand-primary/40"
+              >
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                Always on
+              </Badge>
+            )}
+            {!isLocked && alert.implemented && alert.hasSavedPreference && isOn && (
               <Badge variant="outline" className="text-xs text-green-700 border-green-300">
                 <CheckCircle className="h-3 w-3 mr-1" />
                 On
@@ -256,16 +299,19 @@ function AlertRow({ alert, hasSmsOptIn, onChange }: AlertRowProps) {
             )}
           </div>
           <p className="text-sm text-slate-600 mt-1">{alert.description}</p>
+          {isLocked && (
+            <p className="text-xs text-slate-500 italic mt-1">{lockedOnReason}</p>
+          )}
         </div>
         <Switch
           checked={isOn}
           onCheckedChange={toggleAll}
-          disabled={!alert.implemented}
+          disabled={!alert.implemented || isLocked}
           aria-label={`Enable ${alert.name}`}
         />
       </div>
 
-      {alert.implemented && isOn && (
+      {alert.implemented && !isLocked && isOn && (
         <div className="flex flex-wrap gap-4 pl-1">
           {alert.availableChannels.includes('email') && (
             <label className="flex items-center gap-2 text-sm cursor-pointer">

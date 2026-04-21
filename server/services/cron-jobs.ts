@@ -20,6 +20,8 @@ import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
 import { processPredictionAlerts } from './prediction-alert-service';
 import { processCheckInReminders } from './check-in-reminder-service';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { getEffectivePrefs } from './notifications/preferences';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -170,6 +172,17 @@ async function sendVolunteerReminders(): Promise<{
             };
           }
 
+          // Master toggle from Alert Preferences: if the user has turned
+          // Volunteer Event Reminders off (or disabled a channel), override
+          // the legacy per-user reminder prefs. Only registered users have
+          // alert prefs; unregistered volunteer signups fall back to defaults.
+          const alertPrefs = volunteer.volunteerUserId
+            ? await getEffectivePrefs(volunteer.volunteerUserId, ALERT_TYPES.VOLUNTEER_EVENT_REMINDER)
+            : { emailEnabled: true, smsEnabled: true, inAppEnabled: true, hasSavedPreference: false };
+          if (!alertPrefs.emailEnabled && !alertPrefs.smsEnabled) {
+            continue;
+          }
+
           // Check primary reminder (2-hour window for safety)
           if (
             preferences.primaryReminderEnabled &&
@@ -178,6 +191,7 @@ async function sendVolunteerReminders(): Promise<{
           ) {
             // Send email reminder if needed
             if (
+              alertPrefs.emailEnabled &&
               (preferences.primaryReminderType === 'email' || preferences.primaryReminderType === 'both') &&
               !volunteer.emailReminder1SentAt &&
               volunteerEmail
@@ -205,6 +219,7 @@ async function sendVolunteerReminders(): Promise<{
 
             // Send SMS reminder if needed
             if (
+              alertPrefs.smsEnabled &&
               (preferences.primaryReminderType === 'sms' || preferences.primaryReminderType === 'both') &&
               !volunteer.smsReminder1SentAt &&
               volunteerPhone
@@ -232,7 +247,7 @@ async function sendVolunteerReminders(): Promise<{
                   .update(eventVolunteers)
                   .set({ smsReminder1SentAt: new Date() })
                   .where(eq(eventVolunteers.id, volunteer.id));
-                
+
                 remindersSent++;
                 cronLogger.info(`Sent primary SMS reminder to ${volunteerPhone} for event ${event.id}`);
               }
@@ -247,6 +262,7 @@ async function sendVolunteerReminders(): Promise<{
           ) {
             // Send email reminder if needed
             if (
+              alertPrefs.emailEnabled &&
               (preferences.secondaryReminderType === 'email' || preferences.secondaryReminderType === 'both') &&
               !volunteer.emailReminder2SentAt &&
               volunteerEmail
@@ -274,6 +290,7 @@ async function sendVolunteerReminders(): Promise<{
 
             // Send SMS reminder if needed
             if (
+              alertPrefs.smsEnabled &&
               (preferences.secondaryReminderType === 'sms' || preferences.secondaryReminderType === 'both') &&
               !volunteer.smsReminder2SentAt &&
               volunteerPhone
@@ -359,6 +376,15 @@ async function sendVolunteerReminders(): Promise<{
             secondaryReminderType: 'email',
           };
 
+          // Master toggle from Alert Preferences
+          const alertPrefs = await getEffectivePrefs(
+            assignment.userId,
+            ALERT_TYPES.VOLUNTEER_EVENT_REMINDER
+          );
+          if (!alertPrefs.emailEnabled && !alertPrefs.smsEnabled) {
+            continue;
+          }
+
           // Check primary reminder
           if (
             preferences.primaryReminderEnabled &&
@@ -367,6 +393,7 @@ async function sendVolunteerReminders(): Promise<{
           ) {
             // Send email reminder
             if (
+              alertPrefs.emailEnabled &&
               (preferences.primaryReminderType === 'email' || preferences.primaryReminderType === 'both') &&
               volunteerEmail
             ) {
@@ -388,6 +415,7 @@ async function sendVolunteerReminders(): Promise<{
 
             // Send SMS reminder
             if (
+              alertPrefs.smsEnabled &&
               (preferences.primaryReminderType === 'sms' || preferences.primaryReminderType === 'both') &&
               volunteerPhone
             ) {
@@ -424,6 +452,7 @@ async function sendVolunteerReminders(): Promise<{
           ) {
             // Send email reminder
             if (
+              alertPrefs.emailEnabled &&
               (preferences.secondaryReminderType === 'email' || preferences.secondaryReminderType === 'both') &&
               volunteerEmail
             ) {
@@ -445,6 +474,7 @@ async function sendVolunteerReminders(): Promise<{
 
             // Send SMS reminder
             if (
+              alertPrefs.smsEnabled &&
               (preferences.secondaryReminderType === 'sms' || preferences.secondaryReminderType === 'both') &&
               volunteerPhone
             ) {
@@ -514,6 +544,16 @@ async function sendVolunteerReminders(): Promise<{
             const contactName = contact.displayName || contact.firstName || 'TSP Contact';
             const contactPhone = getUserPhoneNumber(contact);
 
+            // Master toggle — these are pre-event reminders for TSP contacts,
+            // not initial assignment alerts, so use VOLUNTEER_EVENT_REMINDER.
+            const alertPrefs = await getEffectivePrefs(
+              contactId,
+              ALERT_TYPES.VOLUNTEER_EVENT_REMINDER
+            );
+            if (!alertPrefs.emailEnabled && !alertPrefs.smsEnabled) {
+              continue;
+            }
+
             // Check primary reminder
             if (
               preferences.primaryReminderEnabled &&
@@ -522,6 +562,7 @@ async function sendVolunteerReminders(): Promise<{
             ) {
               // Send email
               if (
+                alertPrefs.emailEnabled &&
                 (preferences.primaryReminderType === 'email' || preferences.primaryReminderType === 'both') &&
                 contactEmail
               ) {
@@ -539,6 +580,7 @@ async function sendVolunteerReminders(): Promise<{
 
               // Send SMS
               if (
+                alertPrefs.smsEnabled &&
                 (preferences.primaryReminderType === 'sms' || preferences.primaryReminderType === 'both') &&
                 contactPhone
               ) {
@@ -572,6 +614,7 @@ async function sendVolunteerReminders(): Promise<{
             ) {
               // Send email
               if (
+                alertPrefs.emailEnabled &&
                 (preferences.secondaryReminderType === 'email' || preferences.secondaryReminderType === 'both') &&
                 contactEmail
               ) {
@@ -589,6 +632,7 @@ async function sendVolunteerReminders(): Promise<{
 
               // Send SMS
               if (
+                alertPrefs.smsEnabled &&
                 (preferences.secondaryReminderType === 'sms' || preferences.secondaryReminderType === 'both') &&
                 contactPhone
               ) {

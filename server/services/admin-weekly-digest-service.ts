@@ -26,6 +26,9 @@ import { logger } from '../utils/production-safe-logger';
 import { ADMIN_EMAIL, FROM_EMAIL, ORG_NAME, BRAND_PRIMARY, BRAND_SECONDARY } from '../config/organization';
 import { EMAIL_FOOTER_HTML, EMAIL_FOOTER_TEXT } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
+import { USER_ROLES } from '@shared/auth-utils';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { shouldSendOverChannel } from './notifications/preferences';
 
 // ─── Data Gathering ────────────────────────────────────────────────
 
@@ -538,36 +541,68 @@ export async function processAdminWeeklySms(): Promise<{ success: boolean; messa
   logger.log('Starting admin weekly SMS pulse...');
 
   try {
-    // Get every admin user so we can send the pulse to each one that has a
-    // phone number on file. Previously this used .limit(1) which meant only
-    // whichever admin the DB returned first received the text.
-    const adminUsers = await db
+    // Recipient policy:
+    //   • super_admin role → always receives the pulse (no opt-out here)
+    //   • admin role       → receives it only if they have opted in via the
+    //                        Alert Preferences screen (ADMIN_WEEKLY_PULSE, SMS)
+    //   • anyone else      → never receives it
+    const candidateUsers = await db
       .select()
       .from(users)
-      .where(eq(users.role, 'admin'));
+      .where(inArray(users.role, [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN]));
 
-    if (adminUsers.length === 0) {
-      logger.warn('No admin user found for SMS pulse');
-      return { success: false, message: 'No admin user found' };
+    if (candidateUsers.length === 0) {
+      logger.warn('No super_admin or admin users found for SMS pulse');
+      return { success: false, message: 'No super_admin or admin users found' };
     }
 
-    const recipients = adminUsers
-      .map((user) => ({
-        user,
-        phone: getUserPhoneNumber(user),
-      }))
-      .filter((entry): entry is { user: typeof entry.user; phone: string } => !!entry.phone);
+    const recipients: Array<{
+      user: (typeof candidateUsers)[number];
+      phone: string;
+      reason: 'super_admin_auto' | 'admin_opt_in';
+    }> = [];
+    let skippedNoPhone = 0;
+    let skippedNotOptedIn = 0;
 
-    const skippedWithoutPhone = adminUsers.length - recipients.length;
-    if (skippedWithoutPhone > 0) {
+    for (const user of candidateUsers) {
+      const phone = getUserPhoneNumber(user);
+      if (!phone) {
+        skippedNoPhone += 1;
+        continue;
+      }
+
+      if (user.role === USER_ROLES.SUPER_ADMIN) {
+        recipients.push({ user, phone, reason: 'super_admin_auto' });
+        continue;
+      }
+
+      // Plain admin: gated by their notification preference for this alert.
+      const optedIn = await shouldSendOverChannel(
+        user.id,
+        ALERT_TYPES.ADMIN_WEEKLY_PULSE,
+        'sms'
+      );
+      if (optedIn) {
+        recipients.push({ user, phone, reason: 'admin_opt_in' });
+      } else {
+        skippedNotOptedIn += 1;
+      }
+    }
+
+    if (skippedNoPhone > 0) {
       logger.warn(
-        `Admin SMS pulse: ${skippedWithoutPhone} admin user(s) skipped — no phone number on file`
+        `Admin SMS pulse: ${skippedNoPhone} candidate user(s) skipped — no phone number on file`
+      );
+    }
+    if (skippedNotOptedIn > 0) {
+      logger.log(
+        `Admin SMS pulse: ${skippedNotOptedIn} admin(s) skipped — not opted in to ADMIN_WEEKLY_PULSE SMS`
       );
     }
 
     if (recipients.length === 0) {
-      logger.warn('No admin users have a phone number configured');
-      return { success: false, message: 'No admin phone numbers on file' };
+      logger.warn('No eligible recipients for admin weekly SMS pulse');
+      return { success: false, message: 'No eligible recipients' };
     }
 
     const data = await gatherDigestData();
@@ -576,15 +611,20 @@ export async function processAdminWeeklySms(): Promise<{ success: boolean; messa
     let sent = 0;
     const failures: string[] = [];
 
-    for (const { user, phone } of recipients) {
+    for (const { user, phone, reason } of recipients) {
       const result = await sendTSPFollowupReminderSMS(phone, smsText);
       if (result.success) {
         sent += 1;
-        logger.log(`Admin weekly SMS pulse sent to ${user.email || user.id}`);
+        logger.log(
+          `Admin weekly SMS pulse sent to ${user.email || user.id} (${reason})`
+        );
       } else {
-        const reason = result.message || 'SMS send failed';
-        failures.push(`${user.email || user.id}: ${reason}`);
-        logger.error(`Admin weekly SMS pulse failed for ${user.email || user.id}:`, reason);
+        const failureReason = result.message || 'SMS send failed';
+        failures.push(`${user.email || user.id}: ${failureReason}`);
+        logger.error(
+          `Admin weekly SMS pulse failed for ${user.email || user.id}:`,
+          failureReason
+        );
       }
     }
 
@@ -597,8 +637,8 @@ export async function processAdminWeeklySms(): Promise<{ success: boolean; messa
 
     const summary =
       failures.length === 0
-        ? `SMS pulse sent to ${sent} admin${sent === 1 ? '' : 's'}`
-        : `SMS pulse sent to ${sent} admin${sent === 1 ? '' : 's'}; failures: ${failures.join('; ')}`;
+        ? `SMS pulse sent to ${sent} recipient${sent === 1 ? '' : 's'}`
+        : `SMS pulse sent to ${sent} recipient${sent === 1 ? '' : 's'}; failures: ${failures.join('; ')}`;
     return { success: true, message: summary };
   } catch (error) {
     logger.error('Error processing admin weekly SMS:', error);
