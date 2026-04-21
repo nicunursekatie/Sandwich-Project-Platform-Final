@@ -71,7 +71,8 @@
       "Read(//Users/katielong/Documents/Sandwich-Project-Platform-Final/**)",
       "Read(//tmp/**)",
       "Bash(awk -F'[\\(,]' '{print $2}')",
-      "Bash(awk '/^function SMSSetupSection/,/^}/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/alert-preferences.tsx)"
+      "Bash(awk '/^function SMSSetupSection/,/^}/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/alert-preferences.tsx)",
+      "Bash(awk 'NR>=44 && /^export const users = pgTable/,/^}\\\\\\);/ {print NR\": \"$0}' /Users/kathrynelong/Sandwich-Project-Platform-Final/shared/schema.ts)"
     ],
     "deny": [],
     "ask": []

@@ -41,9 +41,15 @@ export const migrations = pgTable('_migrations', {
 
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+//
+// Note on email uniqueness: the uniqueness constraint is defined as a
+// functional UNIQUE INDEX on LOWER(email) at the table level below, not as
+// a column-level `.unique()`. This enforces case-insensitive uniqueness in
+// the database (so `Foo@x.com` and `foo@x.com` can't both exist), matching
+// the normalization we do in app code via shared/email-utils.ts.
 export const users = pgTable('users', {
   id: varchar('id').primaryKey().notNull(),
-  email: varchar('email').unique(),
+  email: varchar('email'),
   password: varchar('password'), // For custom auth system
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
@@ -78,7 +84,13 @@ export const users = pgTable('users', {
   notifyOnNewIntake: boolean('notify_on_new_intake'),
   notifyOnTaskDue: boolean('notify_on_task_due'),
   notifyOnStatusChange: boolean('notify_on_status_change'),
-});
+}, (table) => ({
+  // Case-insensitive unique index on email. Lives here instead of as a
+  // column-level `.unique()` so the same email with different casing can't
+  // coexist (e.g., Foo@x.com vs foo@x.com). Matches the
+  // `users_email_lower_unique` index that exists in production.
+  emailLowerIdx: uniqueIndex('users_email_lower_unique').on(sql`LOWER(${table.email})`),
+}));
 
 // API Keys table for external app integrations
 export const apiKeys = pgTable('api_keys', {
