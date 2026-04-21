@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
-import express from 'express';
+import type { Express } from 'express';
 import { PERMISSIONS } from '../../../shared/auth-utils';
 import {
   createTestServer,
@@ -14,7 +14,7 @@ import {
   createAdminAgent,
 } from '../../setup/test-server';
 
-let app: express.Application;
+let app: Express;
 let testUser: any;
 let adminUser: any;
 let authenticatedAgent: request.SuperAgentTest;

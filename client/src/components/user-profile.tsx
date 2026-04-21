@@ -30,6 +30,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { PERMISSIONS } from '@shared/auth-utils';
 import { TollFreeVerificationPanel } from './toll-free-verification-panel';
 import AlertPreferences from './alert-preferences';
 import CheckInReminderPreferences from './check-in-reminder-preferences';

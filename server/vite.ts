@@ -77,10 +77,32 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve hashed assets (JS/CSS chunks) with long-term caching — the hash
+  // in the filename changes every build, so we're safe to cache them.
+  // Serve index.html with no-cache so users always get the latest bundle
+  // manifest. Without this, a stale index.html references JS chunks whose
+  // hashes no longer exist on disk, and dynamic imports 404.
+  app.use(
+    express.static(distPath, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+        } else if (/\.(js|css|woff2?|png|jpg|jpeg|gif|svg|ico)$/i.test(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    })
+  );
 
-  // fall through to index.html if the file doesn't exist
+  // SPA fallback: serve index.html for any non-file route, also with
+  // no-cache headers so the browser always checks for a fresh manifest.
   app.use('*', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.resolve(distPath, 'index.html'));
   });
 }

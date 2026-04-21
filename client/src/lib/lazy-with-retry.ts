@@ -27,9 +27,16 @@ function isStaleChunkError(error: unknown): boolean {
 }
 
 /**
- * Force a single page reload to pick up new chunk hashes.
- * Uses a timestamp guard so we never reload more than once per 30 seconds
- * (prevents infinite reload loops if the server is actually down).
+ * Force a reload that also cache-busts index.html.
+ *
+ * A plain `location.reload()` can still read a stale index.html from the
+ * HTTP cache — the browser sees a fresh-enough copy and re-uses it, which
+ * loops back to the same missing chunk. Appending a timestamp query param
+ * guarantees a new URL, so the browser has to re-fetch and honor the
+ * server's no-cache headers.
+ *
+ * Uses a short guard to prevent infinite reload loops if the server is
+ * actually down.
  */
 function reloadOnceForStaleChunks(): void {
   const lastReload = sessionStorage.getItem(RELOAD_KEY);
@@ -45,7 +52,17 @@ function reloadOnceForStaleChunks(): void {
 
   console.warn('Stale chunk detected after rebuild — reloading page to fetch updated assets...');
   sessionStorage.setItem(RELOAD_KEY, String(now));
-  window.location.reload();
+
+  // Cache-bust: strip any existing _v param and set a fresh one
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('_v');
+    url.searchParams.set('_v', String(now));
+    window.location.replace(url.toString());
+  } catch {
+    // Fall back to a plain reload if URL parsing fails for any reason
+    window.location.reload();
+  }
 }
 
 // Track failed imports for debugging purposes
@@ -124,6 +141,15 @@ export function clearFailedImportsCache(): void {
  * Call this once at app startup.
  */
 export function installChunkErrorHandler(): void {
+  // If we got this far, the current bundle loaded successfully — clear any
+  // old reload-guard timestamp so a future stale-chunk error can reload
+  // immediately instead of being blocked by the 30s cooldown.
+  try {
+    sessionStorage.removeItem(RELOAD_KEY);
+  } catch {
+    // sessionStorage may be unavailable (e.g., privacy mode); ignore
+  }
+
   window.addEventListener('unhandledrejection', (event) => {
     if (isStaleChunkError(event.reason)) {
       event.preventDefault(); // suppress the console error

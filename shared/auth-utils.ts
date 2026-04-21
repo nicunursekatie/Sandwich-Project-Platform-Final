@@ -141,6 +141,7 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_EDIT_TSP_CONTACT: 'EVENT_REQUESTS_EDIT_TSP_CONTACT', // Edit TSP contact assignments
   EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW: 'EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW', // View admin overview of all TSP contact assignments
   EVENT_REQUESTS_SEND_SMS: 'EVENT_REQUESTS_SEND_SMS', // Send event details via SMS to users
+  EVENT_CHECK_IN_ALERTS: 'EVENT_CHECK_IN_ALERTS', // Configure intake check-in reminders (no-contact, stale event, date-approaching, etc.) in profile Alerts tab
 
   // MESSAGES - Messaging system
   MESSAGES_VIEW: 'MESSAGES_VIEW',
@@ -558,6 +559,7 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.EVENT_REQUESTS_VIEW,
         PERMISSIONS.EVENT_REQUESTS_EDIT,
         PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
+        PERMISSIONS.EVENT_CHECK_IN_ALERTS,
         PERMISSIONS.ORGANIZATIONS_VIEW,
         PERMISSIONS.SUGGESTIONS_MANAGE,
 
