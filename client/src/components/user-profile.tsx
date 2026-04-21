@@ -733,11 +733,16 @@ export default function UserProfile() {
         </Card>
       )}
 
-      {/* Notifications Tab - Alert Preferences + Check-In Reminder Defaults */}
+      {/* Notifications Tab - Alert Preferences first, then intake-only
+          Check-In Reminders below (gated by EVENT_CHECK_IN_ALERTS). */}
       {activeTab === 'notifications' && (
         <div className="space-y-6">
-          <CheckInReminderPreferences />
           <AlertPreferences />
+          {(user?.role === 'super_admin' ||
+            (Array.isArray(user?.permissions) &&
+              (user.permissions as string[]).includes(PERMISSIONS.EVENT_CHECK_IN_ALERTS))) && (
+            <CheckInReminderPreferences />
+          )}
         </div>
       )}
 

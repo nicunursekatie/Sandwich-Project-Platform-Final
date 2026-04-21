@@ -567,21 +567,41 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
 router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const eventId = parseInt(req.params.eventId);
-    const userId = req.user?.id;
+    const callerId = req.user?.id;
 
     if (!eventId || isNaN(eventId)) {
       return res.status(400).json({ error: 'Valid event ID required' });
     }
 
-    if (!userId) {
+    if (!callerId) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Get user details
+    // Determine who this signup is FOR. Defaults to the caller (self-signup).
+    // If targetUserId is supplied and differs from the caller, require the
+    // assign-others permission — this is how coordinators staff events from
+    // the Volunteer Hub.
+    const { role, roles, notes, targetUserId: rawTargetUserId } = req.body;
+    const targetUserId =
+      typeof rawTargetUserId === 'string' && rawTargetUserId.trim() !== ''
+        ? rawTargetUserId.trim()
+        : callerId;
+    const isAssigningOther = targetUserId !== callerId;
+
+    if (isAssigningOther) {
+      const canAssignOthers = hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS);
+      if (!canAssignOthers) {
+        return res.status(403).json({
+          error: 'You do not have permission to assign other users to events.',
+        });
+      }
+    }
+
+    // Get target user details (the person being assigned / signing up)
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, targetUserId))
       .limit(1);
 
     if (!user) {
@@ -599,7 +619,6 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
       return res.status(404).json({ error: 'Event not found' });
     }
 
-    const { role, roles, notes } = req.body;
     const requestedRoles = Array.isArray(roles) ? roles : (role ? [role] : []);
     const normalizedRoles = Array.from(new Set(requestedRoles.filter(Boolean)));
 
@@ -612,14 +631,14 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
       return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
     }
 
-    // Check if user already signed up for this event with any requested role
+    // Check if target user already signed up for this event with any requested role
     const existingSignups = await db
       .select()
       .from(eventVolunteers)
       .where(
         and(
           eq(eventVolunteers.eventRequestId, eventId),
-          eq(eventVolunteers.volunteerUserId, userId),
+          eq(eventVolunteers.volunteerUserId, targetUserId),
           inArray(eventVolunteers.role, normalizedRoles)
         )
       )
@@ -628,63 +647,146 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     if (existingSignups.length > 0) {
       const existingRoles = existingSignups.map((signup) => signup.role).join(', ');
       return res.status(400).json({
-        error: `You have already signed up for this event as: ${existingRoles}`,
+        error: isAssigningOther
+          ? `${user.firstName || 'That user'} is already signed up for this event as: ${existingRoles}`
+          : `You have already signed up for this event as: ${existingRoles}`,
         existingSignup: existingSignups[0]
       });
     }
 
-    // Create the volunteer signup with pending status
     const volunteerName = user.displayName ||
       `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
       user.email?.split('@')[0] ||
       'Unknown';
 
+    // Coordinator assignments are pre-approved with status='assigned' (matches
+    // the existing vocabulary used by the PATCH /signup/:id/status route).
+    // Self-signups go to 'pending' for later coordinator review.
+    const status = isAssigningOther ? 'assigned' : 'pending';
+
+    // Driver assignments require DRIVER_SIGNUP_APPROVE (same rule the approval
+    // route enforces). A coordinator without driver-approval can't assign
+    // someone as a driver.
+    if (isAssigningOther && normalizedRoles.includes('driver')) {
+      const canApproveDrivers = hasPermission(req.user, PERMISSIONS.DRIVER_SIGNUP_APPROVE);
+      if (!canApproveDrivers) {
+        return res.status(403).json({
+          error: 'You need driver approval permission to assign someone as a driver.',
+        });
+      }
+    }
+
     const signedUpAt = new Date();
-    const newSignups = await db
-      .insert(eventVolunteers)
-      .values(
-        normalizedRoles.map((requestedRole) => ({
-          eventRequestId: eventId,
-          volunteerUserId: userId,
-          volunteerName: volunteerName,
-          volunteerEmail: user.preferredEmail || user.email,
-          volunteerPhone: user.phone,
-          role: requestedRole,
-          status: 'pending', // Coordinators will confirm
-          notes: notes || null,
-          signedUpAt,
-        }))
-      )
-      .returning();
+    const newSignups = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(eventVolunteers)
+        .values(
+          normalizedRoles.map((requestedRole) => ({
+            eventRequestId: eventId,
+            volunteerUserId: targetUserId,
+            volunteerName: volunteerName,
+            volunteerEmail: user.preferredEmail || user.email,
+            volunteerPhone: user.phone,
+            role: requestedRole,
+            status,
+            notes: notes || null,
+            signedUpAt,
+            assignedBy: isAssigningOther ? callerId : null,
+            confirmedAt: isAssigningOther ? signedUpAt : null,
+          }))
+        )
+        .returning();
 
-    // Send notification to coordinators
-    await sendVolunteerSignupNotification(
-      volunteerName,
-      user.preferredEmail || user.email || '',
-      eventId,
-      event.organizationName || 'Unknown Organization',
-      event.scheduledEventDate || event.desiredEventDate,
-      normalizedRoles,
-      notes
-    );
+      // Mirror assignment into eventRequests.assigned*Ids so the Event Request
+      // Management tab (and the rest of the app) reflects it immediately.
+      // This matches the PATCH /signup/:id/status mirror logic so the data
+      // shape stays consistent whether a coordinator assigns via the Hub or
+      // approves a self-signup.
+      if (isAssigningOther) {
+        const [eventRow] = await tx
+          .select({
+            assignedDriverIds: eventRequests.assignedDriverIds,
+            assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+            assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+          })
+          .from(eventRequests)
+          .where(eq(eventRequests.id, eventId))
+          .limit(1);
 
-    // Send confirmation email to the volunteer
-    await sendVolunteerSignupConfirmationEmail(
-      volunteerName,
-      user.preferredEmail || user.email || '',
-      event.organizationName || 'Unknown Organization',
-      event.scheduledEventDate || event.desiredEventDate,
-      event.eventStartTime,
-      event.eventEndTime,
-      event.eventAddress,
-      normalizedRoles
-    );
+        if (eventRow) {
+          const addUnique = (ids?: string[] | null) =>
+            Array.from(new Set([...(ids || []), targetUserId]));
+          const updates: {
+            assignedDriverIds?: string[];
+            assignedSpeakerIds?: string[];
+            assignedVolunteerIds?: string[];
+          } = {};
+          if (normalizedRoles.includes('driver')) {
+            updates.assignedDriverIds = addUnique(eventRow.assignedDriverIds);
+          }
+          if (normalizedRoles.includes('speaker')) {
+            updates.assignedSpeakerIds = addUnique(eventRow.assignedSpeakerIds);
+          }
+          if (normalizedRoles.includes('general')) {
+            updates.assignedVolunteerIds = addUnique(eventRow.assignedVolunteerIds);
+          }
+          if (Object.keys(updates).length > 0) {
+            await tx
+              .update(eventRequests)
+              .set(updates)
+              .where(eq(eventRequests.id, eventId));
+          }
+        }
+      }
 
-    logger.info(`Volunteer signup created: ${volunteerName} for event ${eventId} as ${normalizedRoles.join(', ')}`);
+      return inserted;
+    });
+
+    if (isAssigningOther) {
+      // Assignment flow: notify the assignee, skip the coordinator
+      // pending-review blast (there's nothing to review — it's already approved).
+      await sendVolunteerSignupConfirmationEmail(
+        volunteerName,
+        user.preferredEmail || user.email || '',
+        event.organizationName || 'Unknown Organization',
+        event.scheduledEventDate || event.desiredEventDate,
+        event.eventStartTime,
+        event.eventEndTime,
+        event.eventAddress,
+        normalizedRoles
+      );
+      logger.info(
+        `Volunteer assignment created by ${callerId}: ${volunteerName} -> event ${eventId} as ${normalizedRoles.join(', ')}`
+      );
+    } else {
+      // Self-signup flow: notify coordinators (approval needed) and confirm to the volunteer
+      await sendVolunteerSignupNotification(
+        volunteerName,
+        user.preferredEmail || user.email || '',
+        eventId,
+        event.organizationName || 'Unknown Organization',
+        event.scheduledEventDate || event.desiredEventDate,
+        normalizedRoles,
+        notes
+      );
+      await sendVolunteerSignupConfirmationEmail(
+        volunteerName,
+        user.preferredEmail || user.email || '',
+        event.organizationName || 'Unknown Organization',
+        event.scheduledEventDate || event.desiredEventDate,
+        event.eventStartTime,
+        event.eventEndTime,
+        event.eventAddress,
+        normalizedRoles
+      );
+      logger.info(`Volunteer signup created: ${volunteerName} for event ${eventId} as ${normalizedRoles.join(', ')}`);
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Your signup request has been submitted. A coordinator will confirm your participation.',
+      message: isAssigningOther
+        ? `${volunteerName} has been assigned to this event.`
+        : 'Your signup request has been submitted. A coordinator will confirm your participation.',
       signups: newSignups,
     });
   } catch (error) {
