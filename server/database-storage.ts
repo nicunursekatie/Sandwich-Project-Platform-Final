@@ -182,6 +182,7 @@ import {
 } from 'drizzle-orm';
 import type { IStorage } from './storage';
 import { logger } from './utils/production-safe-logger';
+import { normalizeEmail } from '@shared/email-utils';
 
 const UNASSIGNED_PROJECT_STATUSES: Array<Project['status']> = [
   'waiting',
@@ -203,23 +204,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    // Email lookups are case-insensitive (see shared/email-utils.ts for why).
+    // We normalize the input and compare against LOWER(email); the DB has a
+    // functional UNIQUE index on LOWER(email) that backs this up.
+    const normalized = normalizeEmail(email);
+    if (!normalized) return undefined;
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(sql`LOWER(${users.email}) = ${normalized}`);
     return user || undefined;
   }
 
   async createUser(userData: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(userData).returning();
+    const payload = userData.email
+      ? { ...userData, email: normalizeEmail(userData.email) }
+      : userData;
+    const [user] = await db.insert(users).values(payload).returning();
     return user;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    const payload = userData.email
+      ? { ...userData, email: normalizeEmail(userData.email) }
+      : userData;
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values(payload)
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          ...userData,
+          ...payload,
           updatedAt: new Date(),
         },
       })
@@ -247,9 +262,12 @@ export class DatabaseStorage implements IStorage {
     id: string,
     updates: Partial<User>
   ): Promise<User | undefined> {
+    const normalized = updates.email
+      ? { ...updates, email: normalizeEmail(updates.email) }
+      : updates;
     const [user] = await db
       .update(users)
-      .set({ ...updates, updatedAt: new Date() })
+      .set({ ...normalized, updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user || undefined;
@@ -309,10 +327,13 @@ export class DatabaseStorage implements IStorage {
 
   // Legacy user methods (for backwards compatibility)
   async getUserByUsername(username: string): Promise<User | undefined> {
+    // Username is the email address; match case-insensitively.
+    const normalized = normalizeEmail(username);
+    if (!normalized) return undefined;
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, username));
+      .where(sql`LOWER(${users.email}) = ${normalized}`);
     return user || undefined;
   }
 

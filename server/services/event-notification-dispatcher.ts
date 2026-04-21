@@ -1042,14 +1042,16 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     logger.log(`📋 In-process events: ${events.map(e => `ID:${e.id} "${e.organizationName}"`).join(', ')}`);
   }
 
-  // Get escalation recipients - Katie only
-  const escalationEmails = [
-    'katie@thesandwichproject.org'
-  ];
+  // Get escalation recipients - Katie only.
+  // Match case-insensitively against LOWER(email) so we don't miss a stored
+  // row whose casing drifted.
+  const escalationEmails = ['katie@thesandwichproject.org'].map((e) =>
+    e.trim().toLowerCase()
+  );
   const admins = await db
     .select()
     .from(users)
-    .where(inArray(users.email, escalationEmails));
+    .where(sql`LOWER(${users.email}) = ANY(${escalationEmails})`);
   const adminIds = admins.map((a) => a.id);
 
   // Collect stale events for batched escalation email
