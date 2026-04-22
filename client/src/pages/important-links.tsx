@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   Heart,
   LayoutDashboard,
+  BookOpen,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
@@ -55,6 +56,8 @@ export default function ImportantLinks() {
     'https://bread-and-butter-donors.lovable.app/';
   const internalHubUrl =
     'https://nicunursekatie.github.io/tsp-internal/index.html';
+  const volunteerHandbookUrl =
+    'https://tsp-host-handbook-ylfb92u.gamma.site/';
 
   // Proxied URLs for iframe embedding (bypasses X-Frame-Options)
   const proxyUrl = (url: string) => `/api/proxy/page?url=${encodeURIComponent(url)}`;
@@ -180,7 +183,11 @@ export default function ImportantLinks() {
 
       <Tabs defaultValue="toolkit" className="flex-1 flex flex-col">
         {/* Mobile: Horizontal scrollable tabs, Desktop: Grid */}
-        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-7 w-full mb-2 sm:mb-0">
+        <TabsList className="flex overflow-x-auto sm:grid sm:grid-cols-8 w-full mb-2 sm:mb-0">
+          <TabsTrigger value="handbook" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
+            <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+            Handbook
+          </TabsTrigger>
           <TabsTrigger value="toolkit" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap px-2 sm:px-3">
             <span className="hidden sm:inline">📦</span> Toolkit
           </TabsTrigger>
@@ -207,6 +214,78 @@ export default function ImportantLinks() {
             History
           </TabsTrigger>
         </TabsList>
+
+        {/* Volunteer Handbook Tab */}
+        <TabsContent value="handbook" className="flex-1 flex flex-col">
+          <Card className="flex-1 flex flex-col">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <BookOpen className="h-5 w-5" />
+                TSP Volunteer Handbook
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                The all-encompassing handbook for every volunteer role — policies, procedures, and reference material.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="space-y-3 sm:space-y-4 flex-1 flex flex-col">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() => {
+                      trackClick('open_handbook', 'Links', 'Opened Volunteer Handbook');
+                      window.open(volunteerHandbookUrl, '_blank');
+                    }}
+                    className="bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold px-4 sm:px-8 py-3 text-sm sm:text-base flex-1 h-11"
+                  >
+                    <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    Open Volunteer Handbook
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(volunteerHandbookUrl);
+                        alert('Link copied to clipboard!');
+                      } catch (error) {
+                        logger.error('Failed to copy:', error);
+                      }
+                    }}
+                    className="border-brand-orange text-brand-orange hover:bg-orange-50 px-4 sm:px-6 py-3 font-medium h-11"
+                  >
+                    📋 Copy Link
+                  </Button>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">Shareable Link:</h3>
+                  <code className="text-xs sm:text-sm bg-white px-2 sm:px-3 py-2 rounded border border-blue-200 block break-all">
+                    {volunteerHandbookUrl}
+                  </code>
+                  <p className="text-xs sm:text-sm text-blue-700 mt-2">
+                    Share this with any volunteer — bookmark it for quick reference.
+                  </p>
+                </div>
+
+                {/* Embedded Handbook — desktop only. Gamma sites block direct
+                    iframe embedding via X-Frame-Options, so we route through
+                    the /api/proxy/page endpoint like the other external tools. */}
+                <div className="border rounded-lg overflow-hidden flex-1 hidden sm:block">
+                  <iframe
+                    src={proxyUrl(volunteerHandbookUrl)}
+                    className="w-full h-full border-0"
+                    style={{
+                      minHeight: '600px',
+                      height: '100%',
+                    }}
+                    title="Volunteer Handbook"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Event Toolkit Tab */}
         <TabsContent value="toolkit" className="flex-1 flex flex-col">
@@ -893,6 +972,7 @@ export default function ImportantLinks() {
         }}
         getFullContext={() => ({
           rawData: [
+            { name: 'Volunteer Handbook', url: volunteerHandbookUrl, type: 'reference', description: "TSP's all-encompassing handbook for every volunteer role" },
             { name: 'Inventory Calculator', url: inventoryCalculatorUrl, type: 'tool' },
             { name: 'Event Estimator', url: eventEstimatorUrl, type: 'tool' },
             { name: 'Event Toolkit', url: eventToolkitUrl, type: 'tool' },
