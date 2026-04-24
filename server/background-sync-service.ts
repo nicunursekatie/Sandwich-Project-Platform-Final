@@ -44,21 +44,29 @@ export class BackgroundSyncService {
     this.serviceStartTime = new Date();
     this.consecutiveSkips = 0;
 
-    // Run sync immediately on startup with error handling
-    this.performSync()
-      .then(() => {
-        logger.log('✅ Initial background sync completed successfully');
-        syncLogger.info('Initial background sync completed');
-      })
-      .catch((error) => {
-        syncLogger.error('Initial background sync failed', { 
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
+    // Defer the initial sync by 45s after startup. This keeps the first
+    // post-deploy minute focused on serving real user traffic — the heavy
+    // sheet read + DB writes don't compete with cold-start request handling
+    // or with Neon's serverless cold start. Recurring syncs (every 30 min)
+    // are unaffected.
+    const INITIAL_SYNC_DELAY_MS = 45 * 1000;
+    logger.log(`⏳ Initial background sync deferred by ${INITIAL_SYNC_DELAY_MS / 1000}s to keep startup responsive`);
+    setTimeout(() => {
+      this.performSync()
+        .then(() => {
+          logger.log('✅ Initial background sync completed successfully');
+          syncLogger.info('Initial background sync completed');
+        })
+        .catch((error) => {
+          syncLogger.error('Initial background sync failed', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          logger.error('❌ Initial background sync failed:', error);
+          logger.log('⚠️ Background sync service will continue running and retry on next interval');
+          // CRITICAL: Don't stop the service - it will retry on the next interval
         });
-        logger.error('❌ Initial background sync failed:', error);
-        logger.log('⚠️ Background sync service will continue running and retry on next interval');
-        // CRITICAL: Don't stop the service - it will retry on the next interval
-      });
+    }, INITIAL_SYNC_DELAY_MS);
 
     // Set up recurring sync every 30 minutes (optimized for low-activity orgs)
     // CRITICAL: Use a wrapper that ensures sync continues even if errors occur
