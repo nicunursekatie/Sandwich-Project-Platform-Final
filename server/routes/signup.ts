@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { storage } from '../storage-wrapper';
 import { db } from '../db';
 import { users } from '@shared/schema';
+import { normalizeEmail } from '@shared/email-utils';
 import { logger } from '../utils/production-safe-logger';
 import { getDefaultPermissionsForRole, PERMISSIONS } from '@shared/auth-utils';
 import { requirePermission } from '../middleware/auth';
@@ -169,6 +170,9 @@ router.post('/auth/signup', async (req, res) => {
   try {
     // Validate request body
     const validatedData = signupSchema.parse(req.body);
+    // Canonicalize email immediately so signup and every downstream lookup
+    // agrees on casing. Backed by a LOWER(email) unique index in Postgres.
+    validatedData.email = normalizeEmail(validatedData.email);
 
     // Check if user already exists first
     const existingUser = await storage.getUserByEmail(validatedData.email);

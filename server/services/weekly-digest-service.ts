@@ -815,11 +815,12 @@ async function getAllActiveTspContacts(): Promise<string[]> {
     if (row.additionalContact2) contactIds.add(row.additionalContact2);
   }
 
-  // Always include the admin user so they receive a weekly digest
+  // Always include the admin user so they receive a weekly digest.
+  // Match case-insensitively to survive any stray-case config values.
   const adminUser = await db
     .select({ id: users.id })
     .from(users)
-    .where(eq(users.email, ADMIN_EMAIL))
+    .where(sql`LOWER(${users.email}) = ${ADMIN_EMAIL.trim().toLowerCase()}`)
     .limit(1);
 
   if (adminUser.length > 0) {

@@ -217,6 +217,19 @@ export default function UserManagementFinal() {
       );
     }
 
+    // Sort: active users first, inactive at the bottom.
+    // Within each group, sort alphabetically by last name, then first name.
+    const getName = (u: User) =>
+      `${(u.lastName ?? '').trim()} ${(u.firstName ?? '').trim()}`
+        .trim()
+        .toLowerCase() || (u.email ?? '').toLowerCase();
+
+    result = [...result].sort((a, b) => {
+      const activeDiff = Number(Boolean(b.isActive)) - Number(Boolean(a.isActive));
+      if (activeDiff !== 0) return activeDiff;
+      return getName(a).localeCompare(getName(b));
+    });
+
     return result;
   }, [baseFilteredUsers, filters]);
 

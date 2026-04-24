@@ -206,6 +206,17 @@ export const NAV_ITEMS: NavItem[] = [
     accentColor: '#007E8C',
   },
   {
+    id: 'volunteer-handbook',
+    label: 'Volunteer Handbook',
+    icon: BookOpen,
+    href: 'volunteer-handbook',
+    externalUrl: 'https://tsp-host-handbook-ylfb92u.gamma.site/',
+    // No permission — the handbook is the all-encompassing reference for
+    // every volunteer role and should be visible to everyone.
+    group: 'events',
+    accentColor: '#007E8C',
+  },
+  {
     id: 'driver-planning',
     label: 'Driver Planning',
     icon: Truck,
