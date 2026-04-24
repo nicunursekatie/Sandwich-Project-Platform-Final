@@ -18,6 +18,7 @@
  * - sync.ts - Google Sheets sync routes (not import)
  * - audit.ts - Audit log retrieval
  * - conflicts.ts - Conflict detection and returning org checks
+ * - lifecycle.ts - Lifecycle status updates (schedule calls, MLK Day, auto-complete)
  *
  * The legacy file (../event-requests-legacy.ts) still contains:
  * - Google Sheets IMPORT endpoint (CRITICAL)
@@ -46,6 +47,7 @@ import organizationsRouter from './organizations';
 import syncRouter from './sync';
 import auditRouter from './audit';
 import conflictsRouter from './conflicts';
+import lifecycleRouter from './lifecycle';
 
 const router = Router();
 
@@ -84,6 +86,7 @@ router.use('/', organizationsRouter);
 router.use('/', syncRouter);
 router.use('/', auditRouter);
 router.use('/', conflictsRouter);
+router.use('/', lifecycleRouter);
 
 export default router;
 
@@ -97,4 +100,5 @@ export {
   syncRouter,
   auditRouter,
   conflictsRouter,
+  lifecycleRouter,
 };
