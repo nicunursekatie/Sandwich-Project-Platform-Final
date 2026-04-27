@@ -3604,7 +3604,7 @@ export default function DriverPlanningDashboard() {
                         return dur.hasTraffic ? (
                           <span className="flex items-center gap-1">
                             {dur.text} min
-                            {dur.trafficDelay && dur.trafficDelay > 0 && (
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                               <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
                             )}
                           </span>
@@ -3654,7 +3654,7 @@ export default function DriverPlanningDashboard() {
                         return dur.hasTraffic ? (
                           <span className="flex items-center gap-1">
                             {dur.text} min
-                            {dur.trafficDelay && dur.trafficDelay > 0 && (
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                               <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
                             )}
                           </span>
@@ -3739,7 +3739,8 @@ export default function DriverPlanningDashboard() {
                       return dur.hasTraffic ? (
                         <span className="flex items-center gap-1">
                           {dur.text} min drive
-                          {dur.trafficDelay && dur.trafficDelay > 0 && (
+                          {/* Coerce to boolean so React doesn't render literal `0` when trafficDelay is 0/null */}
+                          {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                             <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
                           )}
                         </span>
@@ -4225,7 +4226,7 @@ export default function DriverPlanningDashboard() {
                                 return dur.hasTraffic ? (
                                   <span className="flex items-center gap-1">
                                     {dur.text} min
-                                    {dur.trafficDelay && dur.trafficDelay > 0 && (
+                                    {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                                       <span className="text-[10px] text-red-500">+{dur.trafficDelay}</span>
                                     )}
                                   </span>
@@ -4276,7 +4277,8 @@ export default function DriverPlanningDashboard() {
                           return dur.hasTraffic ? (
                             <span className="flex items-center gap-1">
                               {dur.text} min drive
-                              {dur.trafficDelay && dur.trafficDelay > 0 && (
+                              {/* Coerce to boolean so React doesn't render literal `0` when trafficDelay is 0/null */}
+                              {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                                 <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
                               )}
                             </span>

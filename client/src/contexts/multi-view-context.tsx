@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 
 export interface ViewPanel {
   id: string;
@@ -26,6 +26,50 @@ const MultiViewContext = createContext<MultiViewContextType | undefined>(undefin
 
 const MAX_PANELS = 4;
 
+// Persisted to sessionStorage so the multi-view layout survives reloads
+// (especially auto-reloads from the stale-chunk recovery path). sessionStorage
+// is the right scope: lasts as long as the tab is open, but a brand-new tab
+// starts fresh — we don't want a multi-view layout from yesterday surprising
+// the user when they come back.
+const STORAGE_KEY = 'tsp.multiView.v1';
+
+interface PersistedState {
+  panels: ViewPanel[];
+  activePanel: string | null;
+  isMultiViewEnabled: boolean;
+  splitLayout: 'horizontal' | 'vertical';
+}
+
+function loadPersistedState(): PersistedState | null {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedState>;
+    // Validate shape — if anything is off, drop the snapshot rather than
+    // crash the app on restore.
+    if (
+      !Array.isArray(parsed.panels) ||
+      parsed.panels.length === 0 ||
+      typeof parsed.isMultiViewEnabled !== 'boolean' ||
+      (parsed.splitLayout !== 'horizontal' && parsed.splitLayout !== 'vertical')
+    ) {
+      return null;
+    }
+    // Each panel must have id+section
+    if (!parsed.panels.every(p => p && typeof p.id === 'string' && typeof p.section === 'string')) {
+      return null;
+    }
+    return {
+      panels: parsed.panels as ViewPanel[],
+      activePanel: typeof parsed.activePanel === 'string' ? parsed.activePanel : null,
+      isMultiViewEnabled: parsed.isMultiViewEnabled,
+      splitLayout: parsed.splitLayout,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function generatePanelId(): string {
   return `panel-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
@@ -37,15 +81,41 @@ export function MultiViewProvider({
   children: React.ReactNode;
   initialSection?: string;
 }) {
-  const [panels, setPanels] = useState<ViewPanel[]>([
-    { id: 'primary', section: initialSection, title: 'Main View' }
-  ]);
-  const [activePanel, setActivePanel] = useState<string | null>('primary');
-  const [isMultiViewEnabled, setMultiViewEnabled] = useState(false);
-  const [splitLayout, setSplitLayout] = useState<'horizontal' | 'vertical'>('horizontal');
+  // Restore the previous multi-view layout on mount (lazy initializer).
+  // If nothing's persisted, fall back to the single-panel default.
+  const persistedRef = useRef<PersistedState | null>(null);
+  if (persistedRef.current === null) {
+    persistedRef.current = loadPersistedState();
+  }
+  const persisted = persistedRef.current;
+
+  const [panels, setPanels] = useState<ViewPanel[]>(() =>
+    persisted?.panels ?? [{ id: 'primary', section: initialSection, title: 'Main View' }]
+  );
+  const [activePanel, setActivePanel] = useState<string | null>(() =>
+    persisted?.activePanel ?? 'primary'
+  );
+  const [isMultiViewEnabled, setMultiViewEnabled] = useState(() =>
+    persisted?.isMultiViewEnabled ?? false
+  );
+  const [splitLayout, setSplitLayout] = useState<'horizontal' | 'vertical'>(() =>
+    persisted?.splitLayout ?? 'horizontal'
+  );
+
+  // After we've handled mount, the URL→primary sync should run as normal.
+  // But on the FIRST render after a reload-with-restored-state, we skip that
+  // sync once: otherwise the URL's `initialSection` would immediately clobber
+  // the restored primary panel's section.
+  const skipNextInitialSectionSyncRef = useRef<boolean>(persisted !== null);
 
   // Sync primary panel with initialSection when it changes from URL navigation
   useEffect(() => {
+    if (skipNextInitialSectionSyncRef.current) {
+      // Drop the first sync (restored from sessionStorage). Subsequent
+      // navigations will run normally.
+      skipNextInitialSectionSyncRef.current = false;
+      return;
+    }
     setPanels(prev => {
       const primary = prev.find(p => p.id === 'primary');
       if (primary && primary.section !== initialSection) {
@@ -63,6 +133,25 @@ export function MultiViewProvider({
       return prev;
     });
   }, [initialSection, isMultiViewEnabled, activePanel]);
+
+  // Persist whenever any piece of multi-view state changes. Cheap (small
+  // payload, sessionStorage is sync but fast) and runs after render so it
+  // never blocks paint.
+  useEffect(() => {
+    try {
+      const snapshot: PersistedState = {
+        panels,
+        activePanel,
+        isMultiViewEnabled,
+        splitLayout,
+      };
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch {
+      // sessionStorage may be unavailable (Safari private mode, etc.). The
+      // worst case is layout doesn't survive reload — same as before this
+      // feature existed. Don't crash the app.
+    }
+  }, [panels, activePanel, isMultiViewEnabled, splitLayout]);
 
   const canAddPanel = useMemo(() => panels.length < MAX_PANELS, [panels.length]);
 

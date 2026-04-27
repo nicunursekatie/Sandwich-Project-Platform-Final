@@ -1759,8 +1759,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Main Info Section - 3 Column Grid - responsive at all widths */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 lg:items-start">
+        {/* Main Info Section - 3 Column Grid.
+            Breakpoint is 2xl (≥1536px viewport) rather than lg (≥1024px).
+            Reason: in multi-view a 50%-width panel at 1280px viewport is only
+            ~640px wide. Tailwind's screen breakpoints respond to the viewport,
+            not the panel — so `lg:grid-cols-3` was forcing a 3-column layout
+            into a 640px panel and overflowing the contents on top of each
+            other. Bumping to 2xl means the 3-column layout only kicks in
+            when the viewport is wide enough that a half-panel is roomy. */}
+        <div className="grid grid-cols-1 2xl:grid-cols-3 gap-3 sm:gap-4 mb-4 2xl:items-start">
           {/* Column 1: Event Details */}
           <div className="flex flex-col h-full">
             {/* Event Details Card */}
@@ -2607,7 +2614,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Column 2: Team Assignments */}
-          <div className="flex flex-col h-full lg:order-2">
+          <div className="flex flex-col h-full 2xl:order-2">
             <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
@@ -3422,7 +3429,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
 
           {/* Column 3: Event Organizer & Recipient Logistics */}
-          <div className="flex flex-col gap-4 h-full lg:order-3">
+          <div className="flex flex-col gap-4 h-full 2xl:order-3">
             {/* Event Organizer */}
             <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
