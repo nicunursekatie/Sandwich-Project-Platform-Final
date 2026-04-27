@@ -25,23 +25,22 @@ export default function Flyers() {
     );
   }, [trackView]);
 
-  // Flyers configuration - add more flyers here as they become available
+  // Flyers configuration - add more flyers here as they become available.
+  // Note: an earlier "Digital Flyer" entry pointing at digital-flyer.html was
+  // removed because it just rendered the same content as this one wrapped in
+  // an extra iframe. The flyer below is The Sandwich Project's digital
+  // promotional flyer (links, QR codes, etc.) — was previously labeled
+  // "NCL Flyer" but that label isn't meaningful in-app, so it's been renamed.
   const flyers = [
     {
-      id: 'ncl',
-      name: 'NCL Flyer - Social Media & QR Codes',
+      id: 'digital',
+      name: 'Digital Flyer - Social Media & QR Codes',
       url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html',
       description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
     },
     {
-      id: 'digital',
-      name: 'Digital Flyer',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/digital-flyer.html',
-      description: 'Digital promotional flyer for The Sandwich Project',
-    },
-    {
       id: 'qr-margins',
-      name: 'QR Code Flyer with Margins',
+      name: 'QR Code Flyer with Margins (PDF)',
       url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/QR%20Code%20flyer%20with%20margins.pdf',
       description: 'Printable QR code flyer with margins for easy printing',
     },
@@ -135,8 +134,9 @@ export default function Flyers() {
               </p>
             </div>
 
-            {/* Flyer-specific content info - only show for NCL flyer */}
-            {selectedFlyer.id === 'ncl' && (
+            {/* Flyer-specific content info — only shown for the Digital Flyer
+                since that's the one with the social-media + QR code grid. */}
+            {selectedFlyer.id === 'digital' && (
               <div className="grid grid-cols-2 gap-2 sm:gap-4 p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-yellow-50 rounded-lg border">
                 <div className="text-center">
                   <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">✅ Social Media QR</p>
@@ -203,7 +203,7 @@ export default function Flyers() {
         suggestedQuestions={[
           "What flyers are available?",
           "How do I print a flyer?",
-          "What's on the NCL flyer?",
+          "What's on the Digital Flyer?",
           "How do I share a flyer?",
         ]}
       />
