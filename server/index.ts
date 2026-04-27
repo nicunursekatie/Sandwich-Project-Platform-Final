@@ -64,7 +64,15 @@ app.use(
             imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
             connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io', 'https://*.stream-io-api.com', 'wss://*.stream-io-api.com', 'https://*.stream-io-cdn.com', 'https://*.getstream.io', 'https://www.googletagmanager.com', 'https://www.google-analytics.com'],
-            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io', 'https://docs.google.com'],
+            // CSP frame-src — origins allowed in <iframe>. When adding a new
+            // embedded external page, check three things in order:
+            //   1. Add the origin here (otherwise the browser blocks the frame).
+            //   2. Check if the source sets X-Frame-Options. If yes, you need
+            //      to route through /api/proxy/page (see toolkit, donor mgmt
+            //      tabs in important-links.tsx for examples).
+            //   3. If the embed also fetches API data from the same origin,
+            //      add it to connectSrc below too.
+            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io', 'https://docs.google.com', 'https://nicunursekatie.github.io'],
             objectSrc: ["'none'"],
             baseUri: ["'self'", 'https://nicunursekatie.github.io'],
             formAction: ["'self'"],
