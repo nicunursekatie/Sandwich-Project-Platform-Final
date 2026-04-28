@@ -1090,6 +1090,11 @@ export const hostContacts = pgTable('host_contacts', {
   driverAgreementSigned: boolean('driver_agreement_signed').default(false), // Whether the host has signed the driver agreement
   vanApproved: boolean('van_approved').default(false), // Whether this host contact is approved to drive the van
   weeklyActive: boolean('weekly_active').default(false), // Auto-updated from external site scrape every Monday
+  // Soft-deactivation for hosts who've left the organization. UI surfaces
+  // this as "Former Host". Distinct from hosts.status (location-level, for
+  // the collection-log dropdown) and weeklyActive (weekly host-finder
+  // rotation) — those answer different questions.
+  isFormerHost: boolean('is_former_host').notNull().default(false),
   lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
   longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)

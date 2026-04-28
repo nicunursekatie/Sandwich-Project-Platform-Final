@@ -55,6 +55,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -173,6 +174,10 @@ export default function HostsManagementConsolidated() {
   const [contactFilter, setContactFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  // Former hosts are hidden by default; flip this to include them in the
+  // contacts view. The card list, the host grid in the locations view, and
+  // the search are all filtered by this.
+  const [showFormerHosts, setShowFormerHosts] = useState<boolean>(false);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'locations' | 'contacts'>(
     'contacts'
@@ -391,6 +396,12 @@ export default function HostsManagementConsolidated() {
 
     let filtered = allContacts;
 
+    // Hide former hosts unless the toggle is on. They stay in the data set
+    // for reference but don't clutter the active roster view.
+    if (!showFormerHosts) {
+      filtered = filtered.filter((contact) => !(contact as any).isFormerHost);
+    }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -437,7 +448,7 @@ export default function HostsManagementConsolidated() {
       // Then by name
       return a.name.localeCompare(b.name);
     });
-  }, [allContacts, searchTerm, locationFilter, roleFilter, viewMode]);
+  }, [allContacts, searchTerm, locationFilter, roleFilter, viewMode, showFormerHosts]);
 
   // Alias for backward compatibility
   const hosts = filteredHosts;
@@ -918,6 +929,7 @@ export default function HostsManagementConsolidated() {
       isPrimary: editingContact.isPrimary || false,
       driverAgreementSigned: editingContact.driverAgreementSigned || false,
       vanApproved: editingContact.vanApproved || false,
+      isFormerHost: editingContact.isFormerHost || false,
       notes: editingContact.notes?.trim() || '',
     };
 
@@ -1094,7 +1106,13 @@ export default function HostsManagementConsolidated() {
                   Contacts:
                 </div>
                 {(() => {
-                  const sortedContacts = sortContactsByPriority(host.contacts);
+                  // Hide former hosts unless the toggle is on (consistent
+                  // with the contacts-view filter; otherwise the location's
+                  // sub-list would show them but the dedicated view wouldn't).
+                  const visibleHostContacts = showFormerHosts
+                    ? host.contacts
+                    : host.contacts.filter((c) => !(c as any).isFormerHost);
+                  const sortedContacts = sortContactsByPriority(visibleHostContacts);
                   const isExpanded = expandedContacts.has(host.id);
                   // Show first 5 contacts by default, then allow expanding to see all
                   const contactsToShow = isExpanded
@@ -1647,15 +1665,27 @@ export default function HostsManagementConsolidated() {
         )}
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="hide-empty-hosts"
-              checked={hideEmptyHosts}
-              onCheckedChange={setHideEmptyHosts}
-            />
-            <Label htmlFor="hide-empty-hosts" className="text-sm font-medium">
-              Hide locations with no contacts
-            </Label>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="hide-empty-hosts"
+                checked={hideEmptyHosts}
+                onCheckedChange={setHideEmptyHosts}
+              />
+              <Label htmlFor="hide-empty-hosts" className="text-sm font-medium">
+                Hide locations with no contacts
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-former-hosts"
+                checked={showFormerHosts}
+                onCheckedChange={setShowFormerHosts}
+              />
+              <Label htmlFor="show-former-hosts" className="text-sm font-medium">
+                Show former hosts
+              </Label>
+            </div>
           </div>
 
           {/* Results Summary */}
@@ -1704,17 +1734,28 @@ export default function HostsManagementConsolidated() {
               {filteredContacts.map((contact) => (
                 <Card
                   key={contact.id}
-                  className="hover:shadow-md transition-shadow"
+                  className={`hover:shadow-md transition-shadow ${
+                    (contact as any).isFormerHost
+                      ? 'bg-gray-50 border-gray-300 opacity-75'
+                      : ''
+                  }`}
                 >
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       {/* Contact Header */}
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                          <h3 className={`font-semibold truncate ${
+                            (contact as any).isFormerHost ? 'text-gray-500' : 'text-gray-900'
+                          }`}>
                             {contact.name}
                           </h3>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {(contact as any).isFormerHost && (
+                              <Badge className="bg-gray-200 text-gray-700 border-gray-300 text-xs">
+                                Former Host
+                              </Badge>
+                            )}
                             {contact.weeklyActive && (
                               <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
                                 <CheckCircle className="w-3 h-3 mr-1" />
@@ -2079,6 +2120,49 @@ export default function HostsManagementConsolidated() {
                           </Label>
                         </div>
                       </div>
+                    </div>
+
+                    {/*
+                      Organization Status section. Intentionally separated
+                      from the Contact Settings toggles above because this
+                      isn't a flag — it's a distinct status. Uses the word
+                      "Former" rather than "inactive" so it doesn't collide
+                      with the location-level active/inactive (collection
+                      log dropdown) or the weekly availability flag.
+                    */}
+                    <div className="border-t pt-4">
+                      <h3 className="font-medium text-sm text-slate-700 mb-3">
+                        Organization Status
+                      </h3>
+                      <RadioGroup
+                        value={editingContact.isFormerHost ? 'former' : 'active'}
+                        onValueChange={(value) => {
+                          setEditingContact({
+                            ...editingContact,
+                            isFormerHost: value === 'former',
+                          });
+                        }}
+                        className="space-y-2"
+                      >
+                        <div className="flex items-start space-x-2">
+                          <RadioGroupItem value="active" id="edit-contact-status-active" className="mt-0.5" />
+                          <Label htmlFor="edit-contact-status-active" className="text-sm cursor-pointer font-normal">
+                            Active
+                            <span className="block text-xs text-slate-500">
+                              Currently part of TSP. Appears in active rosters and event assignments.
+                            </span>
+                          </Label>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <RadioGroupItem value="former" id="edit-contact-status-former" className="mt-0.5" />
+                          <Label htmlFor="edit-contact-status-former" className="text-sm cursor-pointer font-normal">
+                            Former Host
+                            <span className="block text-xs text-slate-500">
+                              No longer with TSP (left, moved, etc.). Hidden from active views by default; record kept for reference.
+                            </span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
                     </div>
 
                     <div className="flex justify-end space-x-2">
