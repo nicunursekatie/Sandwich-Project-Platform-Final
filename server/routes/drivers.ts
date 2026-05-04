@@ -191,6 +191,7 @@ export function createDriversRouter(deps: RouterDependencies) {
         'Route Description',
         'Availability Notes',
         'Email Agreement Sent',
+        'Survey Submitted',
         'Notes',
         'Created At'
       ];
@@ -217,6 +218,7 @@ export function createDriversRouter(deps: RouterDependencies) {
           driver.routeDescription || '',
           driver.availabilityNotes || '',
           driver.emailAgreementSent ? 'Yes' : 'No',
+          driver.surveySubmitted ? 'Yes' : 'No',
           driver.notes || '',
           driver.createdAt ? new Date(driver.createdAt).toISOString().split('T')[0] : ''
         ];

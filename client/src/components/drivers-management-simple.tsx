@@ -191,6 +191,7 @@ export default function DriversManagement() {
     unavailableReason: '',
     coolerStatus: '',
     agreementInDatabase: false,
+    surveySubmitted: false,
     neverFullyOnboarded: false,
     wantsToRestart: false,
     interestedInVanDriving: false,
@@ -375,6 +376,7 @@ export default function DriversManagement() {
       unavailableReason: '',
       coolerStatus: '',
       agreementInDatabase: false,
+      surveySubmitted: false,
       neverFullyOnboarded: false,
       wantsToRestart: false,
       interestedInVanDriving: false,
@@ -903,6 +905,21 @@ export default function DriversManagement() {
                         className="rounded border-gray-300"
                       />
                       <Label htmlFor="agreementInDatabase">Agreement Located in Database</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="surveySubmitted"
+                        checked={newDriver.surveySubmitted}
+                        onChange={(e) =>
+                          setNewDriver({
+                            ...newDriver,
+                            surveySubmitted: e.target.checked,
+                          })
+                        }
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="surveySubmitted">Driver Survey Submitted</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -1622,6 +1639,21 @@ export default function DriversManagement() {
                   className="rounded border-gray-300"
                 />
                 <Label htmlFor="edit-agreementInDatabase">Agreement Located in Database</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-surveySubmitted"
+                  checked={editingDriver.surveySubmitted || false}
+                  onChange={(e) =>
+                    setEditingDriver({
+                      ...editingDriver,
+                      surveySubmitted: e.target.checked,
+                    })
+                  }
+                  className="rounded border-gray-300"
+                />
+                <Label htmlFor="edit-surveySubmitted">Driver Survey Submitted</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
