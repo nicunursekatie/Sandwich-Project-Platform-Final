@@ -1113,6 +1113,20 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           <div className="space-y-3">
             {/* Event Date - First in left column */}
             {headerContent.eventDate}
+            {/* Event Location */}
+            {request.eventAddress && (
+              <div className="flex items-start gap-2 text-sm">
+                <MapPin className="w-4 h-4 text-[#007E8C] flex-shrink-0 mt-0.5" />
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#236383] font-medium hover:underline break-words"
+                >
+                  {request.eventAddress}
+                </a>
+              </div>
+            )}
             {/* Contact Attempts Info */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
