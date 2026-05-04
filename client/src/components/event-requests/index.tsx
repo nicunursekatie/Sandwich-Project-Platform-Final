@@ -24,7 +24,8 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download } from 'lucide-react';
+import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 const EventMapView = React.lazy(() => import('./EventMapView'));
@@ -125,6 +126,8 @@ const EventRequestsManagementContent: React.FC = () => {
     isLoading,
     viewMode,
     setViewMode,
+    scheduledViewMode,
+    setScheduledViewMode,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -642,8 +645,8 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
         </div>
 
-        {/* Alert strip — outstanding work items */}
-        <div className="flex flex-wrap items-center gap-2 px-2 sm:px-0">
+        {/* Alert banners — outstanding work items */}
+        <div className="flex flex-col sm:flex-row gap-2 px-2 sm:px-0">
           <MissingInfoSummaryDialog />
           <ToolkitSentPendingDialog />
         </div>
@@ -795,6 +798,39 @@ const EventRequestsManagementContent: React.FC = () => {
               {!isMobile && 'Map'}
             </button>
           </div>
+
+          {/* Card/Spreadsheet/Export — shown when on Scheduled tab in List view */}
+          {activeTab === 'scheduled' && viewMode === 'list' && (
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => { setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                {!isMobile && 'Cards'}
+              </button>
+              <button
+                onClick={() => { setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                <Table2 className="w-3.5 h-3.5" />
+                {!isMobile && 'Spreadsheet'}
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await exportEventRequestsToExcel(eventRequests, 'scheduled');
+                    toast({ title: 'Export complete' });
+                  } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
+                }}
+                disabled={eventRequests.length === 0}
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {!isMobile && 'Export'}
+              </button>
+            </div>
+          )}
 
           {/* Status Definitions - inline reference */}
           <OnboardingTooltip

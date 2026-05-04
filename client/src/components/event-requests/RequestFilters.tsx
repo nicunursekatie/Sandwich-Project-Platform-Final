@@ -123,12 +123,11 @@ export default function RequestFilters({
     user?.permissions?.includes('view_admin_overview') ||
     user?.role === 'super_admin';
 
-  // Tab configuration with icons and labels
-  const tabConfig = [];
+  // Navigation tabs (non-status pages)
+  const navTabs: Array<{ value: string; label: string; shortLabel: string; icon: any; count?: number; hasNotification?: boolean }> = [];
 
-  // Add admin overview tab first if user has permission
   if (hasAdminOverviewPermission && children.admin_overview) {
-    tabConfig.push({
+    navTabs.push({
       value: 'admin_overview',
       label: 'Admin Overview',
       shortLabel: 'Admin',
@@ -136,9 +135,8 @@ export default function RequestFilters({
     });
   }
 
-  // Add planning tab if user has permission
   if (hasAdminOverviewPermission && children.planning) {
-    tabConfig.push({
+    navTabs.push({
       value: 'planning',
       label: 'Planning',
       shortLabel: 'Planning',
@@ -148,7 +146,7 @@ export default function RequestFilters({
 
   // Add sandwich destination overview tab if user has permission
   if (hasAdminOverviewPermission && children.sandwich_overview) {
-    tabConfig.push({
+    navTabs.push({
       value: 'sandwich_overview',
       label: 'Sandwich Destinations',
       shortLabel: 'Destinations',
@@ -156,15 +154,17 @@ export default function RequestFilters({
     });
   }
 
-  // Add remaining tabs
-  tabConfig.push(
-    {
-      value: 'my_assignments',
-      label: 'My Assignments',
-      shortLabel: 'Mine',
-      icon: UserCheck,
-      count: statusCounts.my_assignments,
-    },
+  navTabs.push({
+    value: 'my_assignments',
+    label: 'My Assignments',
+    shortLabel: 'Mine',
+    icon: UserCheck,
+    count: statusCounts.my_assignments,
+  });
+
+  // Status filter tabs
+  const tabConfig: Array<{ value: string; label: string; shortLabel: string; icon: any; count?: number; hasNotification?: boolean }> = [
+    ...navTabs,
     {
       value: 'all',
       label: 'All',
@@ -236,7 +236,7 @@ export default function RequestFilters({
       icon: Ban,
       count: statusCounts.non_event,
     }
-  );
+  ];
 
   // Get current tab info for mobile selector
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
@@ -328,18 +328,43 @@ export default function RequestFilters({
         </Select>
       </div>
 
-      {/* Desktop: Traditional Tabs - Hidden on mobile */}
-      <div className="hidden md:block">
+      {/* Desktop: Tab Bar - Hidden on mobile */}
+      <div className="hidden md:block space-y-2">
+        {/* Navigation tabs (pages) — shown only if user has any nav tabs */}
+        {navTabs.length > 1 && (
+          <div className="flex items-center gap-1 pb-2 border-b border-gray-200">
+            {navTabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => onActiveTabChange(tab.value)}
+                className={`relative text-xs lg:text-sm whitespace-nowrap px-3 py-1.5 rounded-md font-medium transition-colors ${
+                  activeTab === tab.value
+                    ? 'bg-[#007E8C] text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+                data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
+                data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
+              >
+                <div className="flex items-center justify-center space-x-1">
+                  <tab.icon className="w-3 h-3 flex-shrink-0" />
+                  <span className="hidden lg:inline">{tab.label}</span>
+                  <span className="lg:hidden">{tab.shortLabel}</span>
+                  {tab.count !== undefined && <span className="text-xs opacity-70">({formatCount(tab.count)})</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Status filter tabs */}
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
             <TabsList className="inline-flex w-auto min-w-full gap-1">
-              {tabConfig.map((tab) => (
+              {tabConfig.filter(tab => !navTabs.some(nt => nt.value === tab.value)).map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
                     className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4"
-                    data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
-                    data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
                   >
                     <div className="flex items-center justify-center space-x-1">
                       <tab.icon className="w-3 h-3 flex-shrink-0" />

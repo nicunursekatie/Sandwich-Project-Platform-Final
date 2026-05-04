@@ -19,6 +19,8 @@ interface EventRequestContextType {
   // View state
   viewMode: 'list' | 'calendar' | 'map';
   setViewMode: (mode: 'list' | 'calendar' | 'map') => void;
+  scheduledViewMode: 'card' | 'spreadsheet';
+  setScheduledViewMode: (mode: 'card' | 'spreadsheet') => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   searchQuery: string;
@@ -275,6 +277,10 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // View state - use role-based defaults if no initialTab provided
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
+  const [scheduledViewMode, setScheduledViewMode] = useState<'card' | 'spreadsheet'>(() => {
+    const saved = localStorage.getItem('scheduledTabViewMode');
+    return saved === 'spreadsheet' ? 'spreadsheet' : 'card';
+  });
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
     if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
@@ -632,6 +638,8 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     // View state
     viewMode,
     setViewMode,
+    scheduledViewMode,
+    setScheduledViewMode,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -662,7 +670,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
     requestsByStatus, statusCounts,
     // View state this context owns
-    quickFilter, viewMode, activeTab, searchQuery, debouncedSearchQuery,
+    quickFilter, viewMode, scheduledViewMode, activeTab, searchQuery, debouncedSearchQuery,
     statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,
     // Pagination
     currentPage, itemsPerPage,

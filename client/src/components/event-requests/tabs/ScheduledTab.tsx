@@ -29,10 +29,8 @@ export const ScheduledTab: React.FC = () => {
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
-  // Default to card view for all devices
-  const [viewMode, setViewMode] = useState<'card' | 'spreadsheet'>(() => {
-    return 'card';
-  });
+  // Use context-level scheduled view mode so toolbar can control it
+  const { scheduledViewMode: viewMode, setScheduledViewMode: setViewMode } = useEventRequestContext();
   const [viewStartTime, setViewStartTime] = useState<number>(Date.now());
 
   // State for confirmation checkbox when editing dates
@@ -493,41 +491,9 @@ export const ScheduledTab: React.FC = () => {
 
   return (
     <>
-      {/* View Toggle - Always visible on scheduled tab */}
-      <div className="flex items-center justify-between mb-4 px-4">
-        <div className="text-sm text-gray-600">
-          {isLoading ? 'Loading...' : `${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''}`}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={scheduledRequests.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
-          <Button
-            variant={viewMode === 'card' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleViewModeChange('card')}
-            className="flex items-center gap-2"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            Card View
-          </Button>
-          <Button
-            variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleViewModeChange('spreadsheet')}
-            className="flex items-center gap-2"
-          >
-            <Table2 className="h-4 w-4" />
-            Spreadsheet View
-          </Button>
-        </div>
+      {/* Event count */}
+      <div className="text-sm text-gray-600 mb-4 px-4">
+        {isLoading ? 'Loading...' : `${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''}`}
       </div>
 
       {viewMode === 'spreadsheet' ? (
@@ -669,30 +635,6 @@ export const ScheduledTab: React.FC = () => {
             ))}
           </div>
         </BatchedCollaborationProvider>
-      )}
-
-      {/* Floating Action Button for Quick View Toggle */}
-      {scheduledRequests.length > 0 && !isMobile && (
-        <button
-          onClick={() => {
-            const newMode = viewMode === 'spreadsheet' ? 'card' : 'spreadsheet';
-            trackEvent('scheduled_tab_view_mode_toggle', {
-              view_mode: newMode,
-              previous_mode: viewMode,
-              source: 'floating_action_button',
-            });
-            setViewMode(newMode);
-          }}
-          className="fixed bottom-24 right-24 z-40 bg-[#007E8C] text-white p-4 rounded-full shadow-lg hover:bg-[#005f6b] transition-all duration-200 hover:scale-110 active:scale-95 flex items-center gap-2"
-          title={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
-          aria-label={viewMode === 'spreadsheet' ? 'Switch to Card View' : 'Switch to Spreadsheet View'}
-        >
-          {viewMode === 'spreadsheet' ? (
-            <LayoutGrid className="h-5 w-5" />
-          ) : (
-            <Table2 className="h-5 w-5" />
-          )}
-        </button>
       )}
 
     <RescheduleDialog

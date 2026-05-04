@@ -105,11 +105,13 @@ export function ToolkitSentPendingDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button
-          className="premium-btn-outline border-[#FBAD3F] text-[#FBAD3F] hover:bg-[#FBAD3F]/10 hover:border-[#FBAD3F]"
+          className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors text-sm font-medium cursor-pointer"
           data-testid="button-toolkit-sent-pending"
         >
-          <Clock className="w-4 h-4" aria-hidden="true" />
-          Toolkit Sent - Awaiting Schedule ({pendingEvents.length})
+          <Clock className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+          <span className="font-semibold">{pendingEvents.length}</span>
+          <span>Toolkit Sent - Awaiting Schedule</span>
+          <span className="ml-auto text-amber-400 text-xs">Click to review</span>
         </button>
       </DialogTrigger>
       <DialogContent className="w-[95vw] max-w-3xl max-h-[80vh] overflow-y-auto">
