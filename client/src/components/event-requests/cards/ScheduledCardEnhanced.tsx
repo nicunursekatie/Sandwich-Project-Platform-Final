@@ -5,6 +5,7 @@ import EventEmailLogDisplay from '@/components/event-email-log-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -2808,19 +2809,90 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const displayName = isCustom
                               ? extractCustomName(id)
                               : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                            const driverPersonNotes = (request.driverDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
+                            const notesFieldKey = `driver-notes-${id}`;
+                            const isEditingNotes = isEditingThisCard && editingField === notesFieldKey;
                             return (
-                            <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                            <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                              <div className="flex items-start gap-2">
+                                <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                                {canEdit && (
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => startEditing(notesFieldKey, driverPersonNotes)}
+                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                      title="Add/edit note"
+                                    >
+                                      <MessageSquare className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRemoveAssignment('driver', id)}
+                                      className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                              {isEditingNotes ? (
+                                <div className="mt-1.5 space-y-1">
+                                  <Textarea
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    placeholder="Add a note for this driver..."
+                                    className="text-sm min-h-[60px] resize-none"
+                                    autoFocus
+                                  />
+                                  <div className="flex items-center gap-1 justify-end">
+                                    {driverPersonNotes && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          const updatedDetails = {
+                                            ...((request.driverDetails as Record<string, any>) || {}),
+                                            [id]: { ...((request.driverDetails as Record<string, any>)?.[id] || {}), notes: null },
+                                          };
+                                          updateFieldsMutation.mutate({ driverDetails: updatedDetails });
+                                          cancelEdit();
+                                        }}
+                                        className="h-6 px-2 text-red-600 text-xs"
+                                      >
+                                        Delete
+                                      </Button>
+                                    )}
+                                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        const updatedDetails = {
+                                          ...((request.driverDetails as Record<string, any>) || {}),
+                                          [id]: { ...((request.driverDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
+                                        };
+                                        updateFieldsMutation.mutate({ driverDetails: updatedDetails });
+                                        cancelEdit();
+                                      }}
+                                      className="h-6 px-2 text-xs"
+                                    >
+                                      Save
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : driverPersonNotes ? (
+                                <p
+                                  className="mt-1 text-xs text-gray-600 italic cursor-pointer hover:text-gray-800 whitespace-pre-wrap"
+                                  onClick={() => canEdit && startEditing(notesFieldKey, driverPersonNotes)}
+                                  title={canEdit ? "Click to edit note" : undefined}
                                 >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
+                                  {driverPersonNotes}
+                                </p>
+                              ) : null}
                             </div>
                             );
                           })}
@@ -3002,9 +3074,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const isUnknown = displayName === 'Unknown Speaker';
                         const editingFieldKey = `speaker-name-${id}`;
                         const isEditing = isEditingThisCard && editingField === editingFieldKey;
-                        
+                        const speakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
+                        const speakerNotesFieldKey = `speaker-notes-${id}`;
+                        const isEditingSpeakerNotes = isEditingThisCard && editingField === speakerNotesFieldKey;
+
                         return (
-                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <div className="flex items-start gap-2">
                             {isEditing ? (
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <Input
@@ -3058,7 +3134,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               </div>
                             ) : (
                               <>
-                                <span 
+                                <span
                                   className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight cursor-pointer hover:underline"
                                   onClick={() => canEdit && startEditing(editingFieldKey, displayName)}
                                   title={canEdit ? "Click to edit speaker name" : undefined}
@@ -3071,17 +3147,84 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   )}
                                 </span>
                                 {canEdit && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleRemoveAssignment('speaker', id)}
-                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
+                                  <div className="flex items-center gap-0.5 shrink-0">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => startEditing(speakerNotesFieldKey, speakerPersonNotes)}
+                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                      title="Add/edit note"
+                                    >
+                                      <MessageSquare className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRemoveAssignment('speaker', id)}
+                                      className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 )}
                               </>
                             )}
+                            </div>
+                            {isEditingSpeakerNotes ? (
+                              <div className="mt-1.5 space-y-1">
+                                <Textarea
+                                  value={editingValue}
+                                  onChange={(e) => setEditingValue(e.target.value)}
+                                  placeholder="Add a note for this speaker..."
+                                  className="text-sm min-h-[60px] resize-none"
+                                  autoFocus
+                                />
+                                <div className="flex items-center gap-1 justify-end">
+                                  {speakerPersonNotes && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        const updatedDetails = {
+                                          ...((request.speakerDetails as Record<string, any>) || {}),
+                                          [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: null },
+                                        };
+                                        updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
+                                        cancelEdit();
+                                      }}
+                                      className="h-6 px-2 text-red-600 text-xs"
+                                    >
+                                      Delete
+                                    </Button>
+                                  )}
+                                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const updatedDetails = {
+                                        ...((request.speakerDetails as Record<string, any>) || {}),
+                                        [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
+                                      };
+                                      updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
+                                      cancelEdit();
+                                    }}
+                                    className="h-6 px-2 text-xs"
+                                  >
+                                    Save
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : speakerPersonNotes ? (
+                              <p
+                                className="mt-1 text-xs text-gray-600 italic cursor-pointer hover:text-gray-800 whitespace-pre-wrap"
+                                onClick={() => canEdit && startEditing(speakerNotesFieldKey, speakerPersonNotes)}
+                                title={canEdit ? "Click to edit note" : undefined}
+                              >
+                                {speakerPersonNotes}
+                              </p>
+                            ) : null}
                           </div>
                         );
                       })}
@@ -3248,26 +3391,97 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const displayName = isCustom
                           ? extractCustomName(id)
                           : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const volunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
+                        const volunteerNotesFieldKey = `volunteer-notes-${id}`;
+                        const isEditingVolunteerNotes = isEditingThisCard && editingField === volunteerNotesFieldKey;
                         return (
-                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                          {canEdit && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
+                        <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <div className="flex items-start gap-2">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                            {canEdit && (
+                              <div className="flex items-center gap-0.5 shrink-0">
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleRemoveAssignment('volunteer', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  onClick={() => startEditing(volunteerNotesFieldKey, volunteerPersonNotes)}
+                                  className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                  title="Add/edit note"
                                 >
-                                  <X className="w-3 h-3" />
+                                  <MessageSquare className="w-3 h-3" />
                                 </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Remove volunteer assignment</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRemoveAssignment('volunteer', id)}
+                                      className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Remove volunteer assignment</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            )}
+                          </div>
+                          {isEditingVolunteerNotes ? (
+                            <div className="mt-1.5 space-y-1">
+                              <Textarea
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                placeholder="Add a note for this volunteer..."
+                                className="text-sm min-h-[60px] resize-none"
+                                autoFocus
+                              />
+                              <div className="flex items-center gap-1 justify-end">
+                                {volunteerPersonNotes && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      const updatedDetails = {
+                                        ...((request.volunteerDetails as Record<string, any>) || {}),
+                                        [id]: { ...((request.volunteerDetails as Record<string, any>)?.[id] || {}), notes: null },
+                                      };
+                                      updateFieldsMutation.mutate({ volunteerDetails: updatedDetails });
+                                      cancelEdit();
+                                    }}
+                                    className="h-6 px-2 text-red-600 text-xs"
+                                  >
+                                    Delete
+                                  </Button>
+                                )}
+                                <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => {
+                                    const updatedDetails = {
+                                      ...((request.volunteerDetails as Record<string, any>) || {}),
+                                      [id]: { ...((request.volunteerDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
+                                    };
+                                    updateFieldsMutation.mutate({ volunteerDetails: updatedDetails });
+                                    cancelEdit();
+                                  }}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                          ) : volunteerPersonNotes ? (
+                            <p
+                              className="mt-1 text-xs text-gray-600 italic cursor-pointer hover:text-gray-800 whitespace-pre-wrap"
+                              onClick={() => canEdit && startEditing(volunteerNotesFieldKey, volunteerPersonNotes)}
+                              title={canEdit ? "Click to edit note" : undefined}
+                            >
+                              {volunteerPersonNotes}
+                            </p>
+                          ) : null}
                         </div>
                         );
                       })}
