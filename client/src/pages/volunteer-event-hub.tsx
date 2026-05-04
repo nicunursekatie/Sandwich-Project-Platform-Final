@@ -251,10 +251,14 @@ function StatusBadge({ status }: { status: string }) {
 function EventCard({
   event,
   onSignup,
+  onAssign,
+  canAssignOthers,
   existingSignup,
 }: {
   event: AvailableEvent;
   onSignup: (eventId: number) => void;
+  onAssign?: (eventId: number) => void;
+  canAssignOthers?: boolean;
   existingSignup?: MySignup;
 }) {
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -360,13 +364,25 @@ function EventCard({
               <StatusBadge status={existingSignup.status} />
             </div>
           ) : (
-            <Button
-              className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
-              onClick={() => onSignup(event.id)}
-            >
-              <HandHeart className="w-4 h-4 mr-2" />
-              Sign Up to Volunteer
-            </Button>
+            <div className="space-y-2">
+              <Button
+                className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
+                onClick={() => onSignup(event.id)}
+              >
+                <HandHeart className="w-4 h-4 mr-2" />
+                Sign Up to Volunteer
+              </Button>
+              {canAssignOthers && onAssign && (
+                <Button
+                  variant="outline"
+                  className="w-full h-9 border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5"
+                  onClick={() => onAssign(event.id)}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Assign Someone Else
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </CardContent>
@@ -574,6 +590,238 @@ function SignupDialog({
   );
 }
 
+// Assign-Others dialog: for users with EVENT_REQUESTS_ASSIGN_OTHERS who want
+// to staff an event with someone other than themselves. Mirrors SignupDialog
+// but adds a user picker and skips the self-signup pending-review flow.
+function AssignOthersDialog({
+  event,
+  open,
+  onOpenChange,
+  onSubmit,
+  isSubmitting,
+}: {
+  event: AvailableEvent | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (targetUserId: string, roles: string[], notes: string) => void;
+  isSubmitting: boolean;
+}) {
+  const [targetUserId, setTargetUserId] = useState<string>('');
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [notes, setNotes] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+
+  const { data: assignableUsers = [] } = useQuery<Array<{
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    displayName?: string | null;
+    email?: string | null;
+  }>>({
+    queryKey: ['/api/users/for-assignments'],
+    enabled: open,
+  });
+
+  const filteredUsers = useMemo(() => {
+    if (!userSearch.trim()) return assignableUsers;
+    const q = userSearch.toLowerCase();
+    return assignableUsers.filter((u) => {
+      const name = (u.displayName || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()).toLowerCase();
+      const email = (u.email ?? '').toLowerCase();
+      return name.includes(q) || email.includes(q);
+    });
+  }, [assignableUsers, userSearch]);
+
+  const availableRoles = useMemo(() => {
+    if (!event) return [] as Array<{ value: 'speaker' | 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }>;
+    const roles: Array<{ value: 'speaker' | 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }> = [];
+    if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
+      roles.push({
+        value: 'speaker',
+        label: event.speakersUnfilled > 0
+          ? `Speaker (${event.speakersUnfilled} needed)`
+          : `Speaker (${event.speakersAssigned}/${event.speakersNeeded} filled)`,
+        icon: Mic,
+        colorClass: 'text-[#a31c41]',
+        borderClass: 'border-[#a31c41]/30',
+        bgClass: 'bg-[#a31c41]/5',
+      });
+    }
+    roles.push({
+      value: 'general',
+      label: event.volunteersUnfilled > 0
+        ? `General Volunteer (${event.volunteersUnfilled} needed)`
+        : `General Volunteer`,
+      icon: UserCheck,
+      colorClass: 'text-[#007e8c]',
+      borderClass: 'border-[#007e8c]/30',
+      bgClass: 'bg-[#007e8c]/5',
+    });
+    if (event.driversNeeded > 0 || event.driversAssigned > 0) {
+      roles.push({
+        value: 'driver',
+        label: event.driversUnfilled > 0
+          ? `Driver (${event.driversUnfilled} needed)`
+          : `Driver (${event.driversAssigned}/${event.driversNeeded} filled)`,
+        icon: Car,
+        colorClass: 'text-[#236383]',
+        borderClass: 'border-[#236383]/30',
+        bgClass: 'bg-[#236383]/5',
+      });
+    }
+    return roles;
+  }, [event]);
+
+  useEffect(() => {
+    if (open && event) {
+      setTargetUserId('');
+      setSelectedRoles([availableRoles[0]?.value].filter(Boolean) as string[]);
+      setNotes('');
+      setUserSearch('');
+    }
+  }, [open, event, availableRoles]);
+
+  if (!event) return null;
+
+  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const formattedDate = eventDate
+    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    : 'Date TBD';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Assign Someone to Event</DialogTitle>
+          <DialogDescription>
+            Pre-approved assignment to {event.organizationName} on {formattedDate}. The person you assign will be notified immediately — no review step.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* User picker */}
+          <div className="space-y-2">
+            <Label htmlFor="assignee-search">Who are you assigning? *</Label>
+            <Input
+              id="assignee-search"
+              placeholder="Search by name or email..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+            />
+            <ScrollArea className="h-40 rounded-md border">
+              <div className="p-1 space-y-1">
+                {filteredUsers.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-4 text-center">
+                    No users match that search.
+                  </div>
+                ) : (
+                  filteredUsers.slice(0, 50).map((u) => {
+                    const label = u.displayName || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || u.id;
+                    const isSelected = targetUserId === u.id;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => setTargetUserId(u.id)}
+                        className={cn(
+                          'w-full text-left px-2 py-1.5 rounded text-sm transition-colors',
+                          isSelected ? 'bg-[#007e8c] text-white' : 'hover:bg-slate-100'
+                        )}
+                      >
+                        <div className="font-medium truncate">{label}</div>
+                        {u.email && (
+                          <div className={cn('text-xs truncate', isSelected ? 'text-white/80' : 'text-muted-foreground')}>
+                            {u.email}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Role selection */}
+          <div className="space-y-2">
+            <Label>Role(s) *</Label>
+            {availableRoles.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No roles are currently available for this event.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {availableRoles.map((role) => {
+                  const Icon = role.icon;
+                  const isSelected = selectedRoles.includes(role.value);
+                  return (
+                    <Label
+                      key={role.value}
+                      htmlFor={`assign-role-${role.value}`}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors',
+                        role.borderClass,
+                        isSelected ? role.bgClass : 'bg-white'
+                      )}
+                    >
+                      <Checkbox
+                        id={`assign-role-${role.value}`}
+                        checked={isSelected}
+                        onCheckedChange={(checked) => {
+                          setSelectedRoles((prev) => {
+                            if (checked === true) {
+                              return Array.from(new Set([...prev, role.value]));
+                            }
+                            return prev.filter((v) => v !== role.value);
+                          });
+                        }}
+                      />
+                      <Icon className={cn('w-4 h-4', role.colorClass)} />
+                      <span className="text-sm text-gray-700">{role.label}</span>
+                    </Label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="assign-notes">Notes (optional)</Label>
+            <Textarea
+              id="assign-notes"
+              placeholder="Anything the assignee should know..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => onSubmit(targetUserId, selectedRoles, notes)}
+            disabled={!targetUserId || selectedRoles.length === 0 || isSubmitting}
+            className="bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white shadow-sm"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Assigning...
+              </>
+            ) : (
+              'Confirm Assignment'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Main component
 export default function VolunteerEventHub() {
   const { user } = useAuth();
@@ -585,7 +833,14 @@ export default function VolunteerEventHub() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState<{ date: string; events: AvailableEvent[] } | null>(null);
+
+  // Can this user assign OTHERS to events (not just self-signup)?
+  const canAssignOthers =
+    user?.role === 'super_admin' ||
+    (Array.isArray(user?.permissions) &&
+      (user.permissions as string[]).includes('EVENT_REQUESTS_ASSIGN_OTHERS'));
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -649,6 +904,51 @@ export default function VolunteerEventHub() {
     onError: (error: Error) => {
       toast({
         title: 'Signup Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Assign-others mutation: coordinator assigning another user to an event.
+  // Hits the same /signup/:eventId endpoint with targetUserId set; the backend
+  // routes it through the pre-approved path and mirrors into event arrays.
+  const assignOthersMutation = useMutation({
+    mutationFn: async ({
+      eventId,
+      targetUserId,
+      roles,
+      notes,
+    }: {
+      eventId: number;
+      targetUserId: string;
+      roles: string[];
+      notes: string;
+    }) => {
+      const response = await fetch(`/api/volunteer-hub/signup/${eventId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId, roles, notes }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to assign');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Assignment complete',
+        description: data.message || 'User assigned to this event.',
+      });
+      setAssignDialogOpen(false);
+      setSelectedEvent(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Assignment failed',
         description: error.message,
         variant: 'destructive',
       });
@@ -800,10 +1100,25 @@ export default function VolunteerEventHub() {
     }
   };
 
+  const handleAssignClick = (eventId: number) => {
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+      setSelectedEvent(event);
+      setAssignDialogOpen(true);
+    }
+  };
+
   // Handle signup submit
   const handleSignupSubmit = (roles: string[], notes: string) => {
     if (selectedEvent) {
       signupMutation.mutate({ eventId: selectedEvent.id, roles, notes });
+    }
+  };
+
+  // Handle assign-others submit
+  const handleAssignSubmit = (targetUserId: string, roles: string[], notes: string) => {
+    if (selectedEvent) {
+      assignOthersMutation.mutate({ eventId: selectedEvent.id, targetUserId, roles, notes });
     }
   };
 
@@ -1385,6 +1700,8 @@ export default function VolunteerEventHub() {
                     key={event.id}
                     event={event}
                     onSignup={handleSignupClick}
+                    onAssign={canAssignOthers ? handleAssignClick : undefined}
+                    canAssignOthers={canAssignOthers}
                     existingSignup={getExistingSignup(event.id)}
                   />
                 ))
@@ -1478,6 +1795,17 @@ export default function VolunteerEventHub() {
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
         />
+
+        {/* Assign Others Dialog - only opened when a coordinator clicks "Assign Someone" */}
+        {canAssignOthers && (
+          <AssignOthersDialog
+            event={selectedEvent}
+            open={assignDialogOpen}
+            onOpenChange={setAssignDialogOpen}
+            onSubmit={handleAssignSubmit}
+            isSubmitting={assignOthersMutation.isPending}
+          />
+        )}
 
         {/* Day Events Dialog - shows all events for a selected day */}
         <Dialog open={!!selectedDayEvents} onOpenChange={(open) => !open && setSelectedDayEvents(null)}>

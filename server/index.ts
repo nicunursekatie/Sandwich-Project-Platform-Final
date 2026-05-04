@@ -36,12 +36,19 @@ const serverLogger = createServiceLogger('server');
 initializeSentry(app);
 serverLogger.info('Sentry monitoring initialized');
 
-// CRITICAL: Health check routes BEFORE any middleware - for deployment health checks
-// These must respond instantly so Replit Autoscale doesn't time out
-app.get('/healthz', (_req: Request, res: Response) => res.sendStatus(200));
-
 // Track initialization state for health responses
 let serverReady = false;
+
+// CRITICAL: Health check routes BEFORE any middleware - for deployment health checks
+// These respond instantly, but return 503 until the server has finished
+// registering routes so Replit doesn't switch traffic to a half-initialized
+// instance (which would otherwise produce 500s for the first ~30s after deploy).
+app.get('/healthz', (_req: Request, res: Response) => {
+  if (!serverReady) {
+    return res.status(503).json({ status: 'starting' });
+  }
+  res.sendStatus(200);
+});
 
 // Security headers via Helmet.js
 const isDevEnvironment = process.env.NODE_ENV === 'development';
@@ -57,7 +64,15 @@ app.use(
             imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
             connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io', 'https://*.stream-io-api.com', 'wss://*.stream-io-api.com', 'https://*.stream-io-cdn.com', 'https://*.getstream.io', 'https://www.googletagmanager.com', 'https://www.google-analytics.com'],
-            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io', 'https://docs.google.com'],
+            // CSP frame-src — origins allowed in <iframe>. When adding a new
+            // embedded external page, check three things in order:
+            //   1. Add the origin here (otherwise the browser blocks the frame).
+            //   2. Check if the source sets X-Frame-Options. If yes, you need
+            //      to route through /api/proxy/page (see toolkit, donor mgmt
+            //      tabs in important-links.tsx for examples).
+            //   3. If the embed also fetches API data from the same origin,
+            //      add it to connectSrc below too.
+            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io', 'https://docs.google.com', 'https://nicunursekatie.github.io'],
             objectSrc: ["'none'"],
             baseUri: ["'self'", 'https://nicunursekatie.github.io'],
             formAction: ["'self'"],

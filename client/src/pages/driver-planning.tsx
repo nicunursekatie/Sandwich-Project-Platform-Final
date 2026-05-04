@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, Tooltip } from 'react-leaflet';
 import { useLocation } from 'wouter';
 
 import {
@@ -410,6 +410,7 @@ const hostFocusedIcon = createHostIcon(colors.hostFocused);
 const recipientIcon = createRecipientIcon(colors.recipient);
 const recipientFocusedIcon = createRecipientIcon(colors.recipientFocused);
 const driverIcon = createDriverIcon(colors.driver);
+const driverFocusedIcon = createDriverIcon('#ff9500'); // Orange when focused/clicked
 const hostDriverIcon = createHostDriverIcon(colors.host, colors.driver); // Combined icon for host+driver
 const volunteerIcon = createVolunteerIcon(colors.volunteer);
 const teamMemberIcon = createTeamMemberIcon(colors.teamMember);
@@ -862,6 +863,16 @@ function MapResizeObserver() {
     };
   }, [map]);
 
+  return null;
+}
+
+// Handles clicks on the map background to deselect the current event
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
   return null;
 }
 
@@ -2978,23 +2989,25 @@ export default function DriverPlanningDashboard() {
                             No assignments yet.
                           </div>
                         )}
-                        {canEditEvents && (
+                        {(canEditEvents || event.eventAddress) && (
                           <div className="pt-1 mt-1 border-t border-gray-100 flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-auto min-h-0 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 px-1 py-0.5"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                // Open edit dialog for this event (it's already selected since this only shows when isSelected)
-                                setEditDialogOpen(true);
-                              }}
-                            >
-                              <Edit2 className="w-3 h-3 mr-1" />
-                              Edit Event
-                            </Button>
+                            {canEditEvents && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-auto min-h-0 text-xs text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10 px-1 py-0.5"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
+                                  // Open edit dialog for this event (it's already selected since this only shows when isSelected)
+                                  setEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit2 className="w-3 h-3 mr-1" />
+                                Edit Event
+                              </Button>
+                            )}
                             {event.eventAddress && (
                               <Button
                                 type="button"
@@ -3075,6 +3088,11 @@ export default function DriverPlanningDashboard() {
               fullTripRoute={fullTripRoute}
             />
             <MapResizeObserver />
+            <MapClickHandler onMapClick={() => {
+              setSelectedEvent(null);
+              clearTripPlanningState();
+              setCustomLocation(null);
+            }} />
 
             {/* Event markers - when an event is selected, only show events on the same date */}
             {/* Only show permanent labels for selected event; others show labels on hover */}
@@ -3298,7 +3316,16 @@ export default function DriverPlanningDashboard() {
               <Marker
                 key={`driver-${driver.id}`}
                 position={[parseFloat(driver.latitude), parseFloat(driver.longitude)]}
-                icon={driverIcon}
+                icon={focusedItem?.type === 'driver' && focusedItem?.id === driver.id ? driverFocusedIcon : driverIcon}
+                eventHandlers={{
+                  click: () => handleItemClick({
+                    type: 'driver',
+                    id: driver.id,
+                    latitude: driver.latitude,
+                    longitude: driver.longitude,
+                    name: driver.name
+                  })
+                }}
               >
                 <Tooltip
                   permanent
@@ -3577,7 +3604,7 @@ export default function DriverPlanningDashboard() {
                         return dur.hasTraffic ? (
                           <span className="flex items-center gap-1">
                             {dur.text} min
-                            {dur.trafficDelay && dur.trafficDelay > 0 && (
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                               <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
                             )}
                           </span>
@@ -3627,7 +3654,7 @@ export default function DriverPlanningDashboard() {
                         return dur.hasTraffic ? (
                           <span className="flex items-center gap-1">
                             {dur.text} min
-                            {dur.trafficDelay && dur.trafficDelay > 0 && (
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                               <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
                             )}
                           </span>
@@ -3712,7 +3739,8 @@ export default function DriverPlanningDashboard() {
                       return dur.hasTraffic ? (
                         <span className="flex items-center gap-1">
                           {dur.text} min drive
-                          {dur.trafficDelay && dur.trafficDelay > 0 && (
+                          {/* Coerce to boolean so React doesn't render literal `0` when trafficDelay is 0/null */}
+                          {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                             <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
                           )}
                         </span>
@@ -3835,6 +3863,113 @@ export default function DriverPlanningDashboard() {
                   </div>
                 )}
               </div>
+
+              {/* Selected Event Quick Details */}
+              {selectedEvent && selectedEvent.id !== -1 && (
+                <div className="bg-white rounded-lg shadow-sm border p-3 flex-1 min-w-[260px] max-w-[500px]">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h4 className="text-sm font-semibold text-gray-900 leading-tight">
+                      {selectedEvent.organizationName || 'Unknown'}
+                    </h4>
+                    <button
+                      onClick={() => { setSelectedEvent(null); clearTripPlanningState(); }}
+                      className="text-gray-400 hover:text-gray-600 p-0.5 hover:bg-gray-100 rounded flex-shrink-0"
+                      title="Deselect event"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                    {/* Date & Time */}
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                      <span>
+                        {(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate)
+                          ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
+                          : 'No date'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                      <span>
+                        {selectedEvent.eventStartTime
+                          ? `${formatTime12Hour(selectedEvent.eventStartTime)}${selectedEvent.eventEndTime ? ` – ${formatTime12Hour(selectedEvent.eventEndTime)}` : ''}`
+                          : 'No time set'}
+                      </span>
+                    </div>
+                    {/* Address */}
+                    <div className="col-span-2 flex items-start gap-1.5 mt-0.5">
+                      <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-500 leading-tight">{selectedEvent.eventAddress || 'No address'}</span>
+                    </div>
+                    {/* Sandwiches */}
+                    {selectedEvent.estimatedSandwichCount && selectedEvent.estimatedSandwichCount > 0 && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Package className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
+                      </div>
+                    )}
+                    {/* Pickup time */}
+                    {selectedEvent.pickupTime && (
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Truck className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span>Pickup: {formatTime12Hour(selectedEvent.pickupTime)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Staffing summary */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                    {selectedEvent.selfTransport ? (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Self-transport</Badge>
+                    ) : (
+                      <>
+                        {(() => {
+                          const driversNeeded = selectedEvent.driversNeeded || 0;
+                          const driversAssigned = getTotalDriverCount(selectedEvent);
+                          const fulfilled = driversAssigned >= driversNeeded;
+                          return driversNeeded > 0 ? (
+                            <Badge variant={fulfilled ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              <Truck className="w-2.5 h-2.5 mr-0.5" />
+                              {driversAssigned}/{driversNeeded} drivers
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {selectedEvent.vanDriverNeeded && (
+                          <Badge
+                            variant={selectedEvent.assignedVanDriverId || selectedEvent.isDhlVan ? 'default' : 'destructive'}
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {selectedEvent.isDhlVan ? 'DHL Van' : selectedEvent.assignedVanDriverId ? 'Van assigned' : 'Van needed'}
+                          </Badge>
+                        )}
+                        {(() => {
+                          const needed = selectedEvent.speakersNeeded || 0;
+                          const assigned = getSpeakerCount(selectedEvent);
+                          return needed > 0 ? (
+                            <Badge variant={assigned >= needed ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              <Megaphone className="w-2.5 h-2.5 mr-0.5" />
+                              {assigned}/{needed} spk
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {(() => {
+                          const needed = selectedEvent.volunteersNeeded || 0;
+                          const assigned = getVolunteerCount(selectedEvent);
+                          return needed > 0 ? (
+                            <Badge variant={assigned >= needed ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
+                              <Users className="w-2.5 h-2.5 mr-0.5" />
+                              {assigned}/{needed} vol
+                            </Badge>
+                          ) : null;
+                        })()}
+                        {!selectedEvent.driversNeeded && !selectedEvent.vanDriverNeeded && !selectedEvent.speakersNeeded && !selectedEvent.volunteersNeeded && (
+                          <span className="text-[10px] text-gray-400">No staffing requirements set</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {fullTripRoute && selectedDriver && selectedDestination && (
                 <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px]">
@@ -4091,7 +4226,7 @@ export default function DriverPlanningDashboard() {
                                 return dur.hasTraffic ? (
                                   <span className="flex items-center gap-1">
                                     {dur.text} min
-                                    {dur.trafficDelay && dur.trafficDelay > 0 && (
+                                    {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                                       <span className="text-[10px] text-red-500">+{dur.trafficDelay}</span>
                                     )}
                                   </span>
@@ -4142,7 +4277,8 @@ export default function DriverPlanningDashboard() {
                           return dur.hasTraffic ? (
                             <span className="flex items-center gap-1">
                               {dur.text} min drive
-                              {dur.trafficDelay && dur.trafficDelay > 0 && (
+                              {/* Coerce to boolean so React doesn't render literal `0` when trafficDelay is 0/null */}
+                              {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
                                 <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
                               )}
                             </span>
@@ -5156,6 +5292,23 @@ export default function DriverPlanningDashboard() {
                       ) : (
                         <Badge variant="outline" className="text-[10px] px-1 py-0 text-gray-400">
                           No req
+                        </Badge>
+                      )}
+                      {(!event.latitude || !event.longitude) && event.eventAddress && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1 py-0 cursor-pointer hover:bg-gray-100 ml-1"
+                          onClick={(e) => handleGeocodeEvent(e, event.id)}
+                          title="Click to geocode this event's address"
+                        >
+                          {geocodingEventId === event.id ? (
+                            <>
+                              <Loader2 className="w-2.5 h-2.5 mr-1 animate-spin" />
+                              Geocoding...
+                            </>
+                          ) : (
+                            'Needs geocode'
+                          )}
                         </Badge>
                       )}
                       {isSelected && (
@@ -6479,6 +6632,23 @@ export default function DriverPlanningDashboard() {
                                 >
                                   <Users className="w-3.5 h-3.5 mr-1" />
                                   {`${volunteersAssigned}/${volunteersNeeded} vol`}
+                                </Badge>
+                              )}
+                              {(!event.latitude || !event.longitude) && event.eventAddress && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs px-2 py-0.5 cursor-pointer hover:bg-gray-100"
+                                  onClick={(e) => handleGeocodeEvent(e, event.id)}
+                                  title="Click to geocode this event's address"
+                                >
+                                  {geocodingEventId === event.id ? (
+                                    <>
+                                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      Geocoding...
+                                    </>
+                                  ) : (
+                                    'Needs geocode'
+                                  )}
                                 </Badge>
                               )}
                               {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (

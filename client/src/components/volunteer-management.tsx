@@ -105,6 +105,13 @@ export default function VolunteerManagement() {
   const { canView, canAdd, canEdit } = useResourcePermissions('VOLUNTEERS');
   const canManage = canEdit;
 
+  const canViewVolunteerNotes =
+    !!user &&
+    (user.role === 'super_admin' ||
+      user.role === 'admin' ||
+      user.role === 'admin_coordinator' ||
+      user.role === 'admin_viewer');
+
   if (!canView) {
     return (
       <div className="p-6">
@@ -299,17 +306,19 @@ export default function VolunteerManagement() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const volunteerData = {
+    const volunteerData: Record<string, unknown> = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
-      notes: formData.notes,
       availability: formData.availability,
       isActive: formData.isActive,
       isDriver: formData.isDriver,
       isSpeaker: formData.isSpeaker,
     };
+    if (canViewVolunteerNotes) {
+      volunteerData.notes = formData.notes;
+    }
 
     saveVolunteer(volunteerData);
   };
@@ -568,7 +577,7 @@ export default function VolunteerManagement() {
                       </div>
                     )}
 
-                    {volunteer.notes && (
+                    {canViewVolunteerNotes && volunteer.notes && (
                       <div className="mt-3">
                         <div className="flex items-center gap-2 mb-2">
                           <FileText className="w-4 h-4 text-gray-400" />
@@ -721,17 +730,19 @@ export default function VolunteerManagement() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                  placeholder="Any additional notes about this volunteer..."
-                />
-              </div>
+              {canViewVolunteerNotes && (
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                    placeholder="Any additional notes about this volunteer..."
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="isActive">Status</Label>

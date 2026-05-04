@@ -92,7 +92,10 @@ export default function GrantMetrics() {
     );
   }, [trackView]);
 
-  // Fetch collections data - use high limit to ensure we get all records
+  // Fetch collections data - use high limit to ensure we get all records.
+  // staleTime kept short so the hero numbers reflect recent additions without
+  // making users wait through a long cache window. 30s trades a little extra
+  // refetch bandwidth for "looks fresh when you come back to the tab."
   const { data: collectionsData } = useQuery({
     queryKey: ['/api/sandwich-collections'],
     queryFn: async () => {
@@ -102,7 +105,9 @@ export default function GrantMetrics() {
       if (!response.ok) throw new Error('Failed to fetch collections');
       return response.json();
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   const collections = collectionsData?.collections || [];
@@ -121,10 +126,12 @@ export default function GrantMetrics() {
   // Note: hybridStats removed - collection log is the source of truth
   // Scott's Excel was a reference that stopped being updated in August 2025
 
-  // Fetch stats  
+  // Fetch stats — short staleTime so hero totals stay fresh (see comment above).
   const { data: stats } = useQuery({
     queryKey: ['/api/sandwich-collections/stats'],
-    staleTime: 2 * 60 * 1000, // 2 minutes - grant metrics need reasonable freshness
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   // Fetch recipients data
@@ -671,6 +678,61 @@ export default function GrantMetrics() {
   const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
   const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
 
+  // Derive live "weeks of service" and the peak single-week total directly
+  // from the collection log rather than hardcoding values that go stale.
+  //
+  // - weeksOfService: distinct Monday-keyed weeks with at least one collection.
+  //   For a program that's collected every week since April 2020, this equals
+  //   the consecutive-weeks streak claimed in the hero copy.
+  // - peakWeekTotal: the single highest weekly total (sum of sandwiches across
+  //   all hosts for that week). Grant copy has historically said "10,000+" as
+  //   the peak baseline — this surfaces the real current peak.
+  const { liveWeeksOfService, livePeakWeekTotal } = (() => {
+    const weekTotals = new Map<string, number>();
+    for (const c of collections) {
+      if (!c?.collectionDate) continue;
+      const date = parseCollectionDate(c.collectionDate);
+      if (Number.isNaN(date.getTime())) continue;
+      const monday = new Date(date);
+      const day = monday.getDay();
+      const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
+      monday.setDate(diff);
+      monday.setHours(0, 0, 0, 0);
+      const key = monday.toISOString().split('T')[0];
+      weekTotals.set(key, (weekTotals.get(key) || 0) + calculateTotalSandwiches(c));
+    }
+    const peak = weekTotals.size > 0 ? Math.max(...Array.from(weekTotals.values())) : 0;
+    return { liveWeeksOfService: weekTotals.size, livePeakWeekTotal: peak };
+  })();
+
+  // Format the peak number for the hero the way grant copy reads it:
+  // "10,000+", "12,500+", etc. Round DOWN to the nearest 500 so we never
+  // over-state; the "+" keeps the marketing cadence.
+  const formatHeroPeakWeek = (n: number): string => {
+    if (n <= 0) return '0';
+    const rounded = Math.floor(n / 500) * 500;
+    return `${rounded.toLocaleString()}+`;
+  };
+  const liveHeroPeakWeek = formatHeroPeakWeek(livePeakWeekTotal);
+
+  // Pre-format the big total sandwiches number for the hero: "2.5 Million",
+  // "750K", "1.2 Million" — matches the marketing voice of the original
+  // hardcoded "2.3 Million" while keeping the underlying count live.
+  const formatHeroSandwiches = (n: number): string => {
+    if (n >= 1_000_000) {
+      const millions = n / 1_000_000;
+      // One decimal for < 10M (e.g. "2.5 Million"), rounded for larger
+      return millions < 10
+        ? `${millions.toFixed(1)} Million`
+        : `${Math.round(millions)} Million`;
+    }
+    if (n >= 1_000) {
+      return `${Math.round(n / 1_000).toLocaleString()}K`;
+    }
+    return n.toLocaleString();
+  };
+  const liveHeroSandwiches = formatHeroSandwiches(metrics.totalSandwiches);
+
   // Get available years from data (fiscal or calendar)
   const availableFiscalYears = Array.from(
     new Set(
@@ -779,9 +841,9 @@ export default function GrantMetrics() {
         <div className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] rounded-2xl p-8 text-white shadow-xl">
           {/* Lead with Impact + Consistency */}
           <div className="text-center mb-8">
-            <div className="text-5xl md:text-7xl font-black text-[#fbad3f] mb-2">2.3 Million</div>
+            <div className="text-5xl md:text-7xl font-black text-[#fbad3f] mb-2">{liveHeroSandwiches}</div>
             <div className="text-xl md:text-2xl font-semibold text-white/90 mb-2">
-              sandwiches delivered over <span className="text-[#fbad3f] font-bold">291 consecutive weeks</span>
+              sandwiches delivered over <span className="text-[#fbad3f] font-bold">{liveWeeksOfService.toLocaleString()} consecutive weeks</span>
             </div>
             <div className="text-base md:text-lg text-white/70">
               Every single week since April 2020. No exceptions.
@@ -791,7 +853,7 @@ export default function GrantMetrics() {
           {/* Key Stats Grid - Capacity First, Then People */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">10,000+</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{liveHeroPeakWeek}</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Peak week baseline (up from 1,000 in 2020)</div>
             </div>
             <div className="text-center">
@@ -803,7 +865,7 @@ export default function GrantMetrics() {
               <div className="text-sm md:text-base text-white/90 mt-1">Volunteers powering the network</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">70+</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">50+</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Partner organizations served weekly</div>
             </div>
           </div>
@@ -1234,7 +1296,7 @@ export default function GrantMetrics() {
                 </div>
                 <div className="pt-3 border-t border-gray-200">
                   <div className="text-2xl font-bold text-[#236383] mb-1">
-                    70+ partners
+                    50+ partners
                   </div>
                   <p className="text-sm text-gray-600">
                     Organizations receiving deliveries weekly
@@ -1378,7 +1440,7 @@ export default function GrantMetrics() {
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
                 <div className="font-bold text-[#A31C41] mb-2">Weekly Consistency</div>
                 <p className="text-sm text-gray-700">
-                  291 consecutive weeks of service. No gaps. No exceptions. Institutional-grade reliability.
+                  {liveWeeksOfService.toLocaleString()} consecutive weeks of service. No gaps. No exceptions. Institutional-grade reliability.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
@@ -1753,7 +1815,7 @@ export default function GrantMetrics() {
                   <div className="p-3 bg-white rounded-lg border border-[#A31C41]/20">
                     <div className="font-semibold text-gray-900 mb-1">Strategic Distribution</div>
                     <div className="text-sm text-gray-700">
-                      <strong>70+ partner organizations</strong> receiving weekly deliveries in high-need zip codes
+                      <strong>50+ partner organizations</strong> receiving weekly deliveries in high-need zip codes
                     </div>
                   </div>
                   <div className="p-3 bg-[#FCE4E6] rounded-lg">

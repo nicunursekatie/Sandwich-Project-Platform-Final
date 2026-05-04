@@ -556,22 +556,34 @@ export class EventRequestsGoogleSheetsService {
 
             if (existingByRowId.length > 0) {
               const existing = existingByRowId[0];
-              // Backfill message if empty
-              const sheetMessage = (sanitizedData as any).message?.trim();
-              const dbMessage = existing.message?.trim();
-              if ((!dbMessage || dbMessage === '') && sheetMessage && sheetMessage.length > 0) {
-                try {
-                  await db
-                    .update(eventRequests)
-                    .set({ message: sheetMessage, updatedAt: new Date() })
-                    .where(eq(eventRequests.id, existing.id));
-                  logger.info(`📝 Backfilled message for event ${existing.id} (${existing.organizationName}) via row ID match`);
-                } catch (backfillError) {
-                  logger.warn(`Failed to backfill message for event ${existing.id}: ${backfillError}`);
+
+              // Guard against false matches when a NEW sheet resets row numbers.
+              // If the org names differ, this is a brand-new entry that happens to share
+              // a row index with an old entry from a previous sheet — fall through to
+              // hash-based detection so it gets created rather than silently skipped.
+              const incomingOrg = ((sanitizedData as any).organizationName || '').trim().toLowerCase();
+              const existingOrg = (existing.organizationName || '').trim().toLowerCase();
+              if (incomingOrg && existingOrg && incomingOrg !== existingOrg) {
+                logger.info(`⚠️ Row ID ${rowIdStr} matched existing entry "${existing.organizationName}" but incoming org is "${(sanitizedData as any).organizationName}" — treating as new entry`);
+                // fall through to hash-based duplicate detection below
+              } else {
+                // Same org — safe to treat as existing record, backfill message if needed
+                const sheetMessage = (sanitizedData as any).message?.trim();
+                const dbMessage = existing.message?.trim();
+                if ((!dbMessage || dbMessage === '') && sheetMessage && sheetMessage.length > 0) {
+                  try {
+                    await db
+                      .update(eventRequests)
+                      .set({ message: sheetMessage, updatedAt: new Date() })
+                      .where(eq(eventRequests.id, existing.id));
+                    logger.info(`📝 Backfilled message for event ${existing.id} (${existing.organizationName}) via row ID match`);
+                  } catch (backfillError) {
+                    logger.warn(`Failed to backfill message for event ${existing.id}: ${backfillError}`);
+                  }
                 }
+                updatedCount++;
+                continue;
               }
-              updatedCount++;
-              continue;
             }
           }
 
@@ -594,9 +606,25 @@ export class EventRequestsGoogleSheetsService {
 
           // Prioritize exact match (newStyleHash or externalIdTrimmed) over old-style hash match
           // This ensures we backfill the CORRECT record when same email is used for multiple events
-          let existingByHash = existingByHashAll.filter(r =>
-            r.externalId === newStyleHash || r.externalId === externalIdTrimmed
-          );
+          let existingByHash = existingByHashAll.filter(r => {
+            const matchesNewHash = r.externalId === newStyleHash;
+            const matchesExternalId = r.externalId === externalIdTrimmed;
+            if (!matchesNewHash && !matchesExternalId) return false;
+
+            // GUARD: if the match is via the sheet's explicit externalId column (not the
+            // hash we computed ourselves), validate that org names agree before treating
+            // it as a duplicate.  When a new sheet is created, column J may carry over
+            // stale IDs from the previous sheet that belong to completely different orgs.
+            if (matchesExternalId && !matchesNewHash) {
+              const existingOrgNorm = (r.organizationName || '').trim().toLowerCase();
+              const incomingOrgNorm = normalizedOrg.toLowerCase();
+              if (existingOrgNorm && incomingOrgNorm && existingOrgNorm !== incomingOrgNorm) {
+                logger.info(`⚠️ ExternalId "${externalIdTrimmed}" matched existing entry "${r.organizationName}" but incoming org is "${(sanitizedData as any).organizationName}" — ignoring stale/mismatched external_id, will treat as new`);
+                return false;
+              }
+            }
+            return true;
+          });
 
           // If no new-style match, fall back to old-style match ONLY if the event date also matches.
           // The old-style hash is email-only, so without a date check, repeat contacts (same email,
@@ -604,7 +632,11 @@ export class EventRequestsGoogleSheetsService {
           if (existingByHash.length === 0 && existingByHashAll.length > 0) {
             const incomingDate = (sanitizedData as any).desiredEventDate;
             const oldHashDateMatches = existingByHashAll.filter(r => {
-              if (!incomingDate || !r.desiredEventDate) return true; // if either date is missing, be conservative and treat as match
+              // CRITICAL FIX: missing dates must NOT be treated as matching dates.
+              // The old-style hash is email-only, so the date check is the only thing
+              // preventing repeat contacts from being blocked.  null === null is NOT
+              // evidence that two requests are for the same event.
+              if (!incomingDate || !r.desiredEventDate) return false;
               const existingDateStr = r.desiredEventDate instanceof Date
                 ? r.desiredEventDate.toISOString().split('T')[0]
                 : String(r.desiredEventDate).split('T')[0];
@@ -641,7 +673,7 @@ export class EventRequestsGoogleSheetsService {
 
           const recordExisted = (existingByHash && existingByHash.length > 0) ||
                                 (existingByOrgDateName && existingByOrgDateName.length > 0);
-          
+
           // Skip if already exists, BUT check for message backfill opportunity
           if (recordExisted) {
             // Determine which existing record to use for backfill - prioritize exact hash match

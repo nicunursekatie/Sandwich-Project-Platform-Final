@@ -14,6 +14,8 @@ import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
 import { getUserMetadata } from '@shared/types';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { getEffectivePrefs } from './notifications/preferences';
 import {
   EventNotificationType,
   NOTIFICATION_TIER_CONFIG,
@@ -73,17 +75,29 @@ async function getUserSMSNumber(userId: string): Promise<string | null> {
     const metadata = getUserMetadata(user);
     const smsConsent = metadata.smsConsent;
 
-    // User must have confirmed opt-in and be on 'events' campaign (or no campaign = legacy)
     if (
-      smsConsent?.status === 'confirmed' &&
-      smsConsent.enabled &&
-      smsConsent.phoneNumber &&
-      (!smsConsent.campaignType || smsConsent.campaignType === 'events')
+      !smsConsent ||
+      smsConsent.status !== 'confirmed' ||
+      !smsConsent.enabled ||
+      !smsConsent.phoneNumber
     ) {
-      return smsConsent.phoneNumber;
+      return null;
     }
 
-    return null;
+    // User must be opted into the 'events' campaign. The UI writes the
+    // plural `campaignTypes` array when users pick multiple; the legacy
+    // singular `campaignType` is kept in sync only with the first item, so
+    // check both. Absent campaign info = legacy single-campaign setup, allow.
+    const campaignTypes: string[] = Array.isArray(smsConsent.campaignTypes)
+      ? smsConsent.campaignTypes
+      : smsConsent.campaignType
+        ? [smsConsent.campaignType]
+        : [];
+
+    const optedIntoEvents =
+      campaignTypes.length === 0 || campaignTypes.includes('events');
+
+    return optedIntoEvents ? smsConsent.phoneNumber : null;
   } catch (error) {
     logger.error(`Error getting SMS number for user ${userId}:`, error);
     return null;
@@ -120,24 +134,61 @@ export async function sendTspAssignmentNotification(
   }
 
   const userName = user.displayName || user.firstName || 'there';
-  const phoneNumber = await getUserSMSNumber(userId);
 
-  // Build message
-  let message: string;
-  if (isCorporatePriority) {
-    message = `🏢 CORPORATE PRIORITY: You've been assigned to ${organizationName} (${dateStr}). Call today! ${eventUrl}`;
-  } else {
-    message = `🎯 New event: You're assigned to ${organizationName} (${dateStr}). ${eventUrl}`;
+  // Respect the user's saved preferences for this alert. If they've never
+  // saved anything, the catalog defaults (both channels on) apply.
+  const prefs = await getEffectivePrefs(userId, ALERT_TYPES.TSP_CONTACT_ASSIGNED);
+  if (!prefs.emailEnabled && !prefs.smsEnabled) {
+    logger.log(`User ${userId} disabled TSP assignment notifications — skipping`);
+    return false;
   }
 
-  // Send SMS if user has opted in
+  // Build SMS/email message body
+  const smsMessage = isCorporatePriority
+    ? `🏢 CORPORATE PRIORITY: You've been assigned to ${organizationName} (${dateStr}). Call today! ${eventUrl}`
+    : `🎯 New event: You're assigned to ${organizationName} (${dateStr}). ${eventUrl}`;
+
+  const phoneNumber = prefs.smsEnabled ? await getUserSMSNumber(userId) : null;
+
+  // Send over all channels the user has enabled AND is eligible for.
+  const results: boolean[] = [];
   if (phoneNumber) {
-    return await sendUrgentSMS(phoneNumber, message, 'tsp_contact_assigned');
-  } else {
-    // Fallback to email if no SMS
-    logger.log(`User ${userId} not opted into SMS - sending email for TSP assignment`);
-    return await sendTspAssignmentEmail(user.preferredEmail || user.email!, userName, organizationName, dateStr, eventUrl, isCorporatePriority);
+    results.push(await sendUrgentSMS(phoneNumber, smsMessage, 'tsp_contact_assigned'));
   }
+  if (prefs.emailEnabled) {
+    const toEmail = user.preferredEmail || user.email;
+    if (toEmail) {
+      results.push(
+        await sendTspAssignmentEmail(
+          toEmail,
+          userName,
+          organizationName,
+          dateStr,
+          eventUrl,
+          isCorporatePriority
+        )
+      );
+    }
+  } else if (prefs.smsEnabled && !phoneNumber) {
+    // User wanted SMS but hasn't opted in yet — fall back to email so the
+    // notification isn't silently dropped.
+    logger.log(`User ${userId} opted into SMS for TSP assignment but no phone on file — falling back to email`);
+    const toEmail = user.preferredEmail || user.email;
+    if (toEmail) {
+      results.push(
+        await sendTspAssignmentEmail(
+          toEmail,
+          userName,
+          organizationName,
+          dateStr,
+          eventUrl,
+          isCorporatePriority
+        )
+      );
+    }
+  }
+
+  return results.some((ok) => ok);
 }
 
 /**
@@ -991,14 +1042,16 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
     logger.log(`📋 In-process events: ${events.map(e => `ID:${e.id} "${e.organizationName}"`).join(', ')}`);
   }
 
-  // Get escalation recipients - Katie only
-  const escalationEmails = [
-    'katie@thesandwichproject.org'
-  ];
+  // Get escalation recipients - Katie only.
+  // Match case-insensitively against LOWER(email) so we don't miss a stored
+  // row whose casing drifted.
+  const escalationEmails = ['katie@thesandwichproject.org'].map((e) =>
+    e.trim().toLowerCase()
+  );
   const admins = await db
     .select()
     .from(users)
-    .where(inArray(users.email, escalationEmails));
+    .where(sql`LOWER(${users.email}) = ANY(${escalationEmails})`);
   const adminIds = admins.map((a) => a.id);
 
   // Collect stale events for batched escalation email

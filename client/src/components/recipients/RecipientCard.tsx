@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Edit, Trash2, Phone, Mail, MapPin, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Edit, Trash2, Phone, Mail, MapPin, ToggleLeft, ToggleRight, Clock, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +48,64 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
             <Badge variant={recipient.status === 'active' ? 'default' : 'secondary'}>
               {recipient.status}
             </Badge>
+
+            {/* Schedule display — prominently below name */}
+            {(() => {
+              const collectionSchedules: Array<{ day: string; time: string; notes?: string }> =
+                Array.isArray((recipient as any).collectionSchedules) && (recipient as any).collectionSchedules.length > 0
+                  ? (recipient as any).collectionSchedules
+                  : ((recipient as any).collectionDay || (recipient as any).collectionTime)
+                    ? [{ day: (recipient as any).collectionDay || '', time: (recipient as any).collectionTime || '' }]
+                    : [];
+
+              const feedingSchedules: Array<{ day: string; time: string; notes?: string }> =
+                Array.isArray((recipient as any).feedingSchedules) && (recipient as any).feedingSchedules.length > 0
+                  ? (recipient as any).feedingSchedules
+                  : ((recipient as any).feedingDay || (recipient as any).feedingTime)
+                    ? [{ day: (recipient as any).feedingDay || '', time: (recipient as any).feedingTime || '' }]
+                    : [];
+
+              if (collectionSchedules.length === 0 && feedingSchedules.length === 0) return null;
+
+              const formatSchedule = (entry: { day: string; time: string; notes?: string }) => {
+                const parts = [entry.day, entry.time].filter(Boolean);
+                const main = parts.length > 0 ? parts.join(' at ') : 'Not specified';
+                return entry.notes ? `${main} (${entry.notes})` : main;
+              };
+
+              return (
+                <div className="mt-2 space-y-1.5">
+                  {collectionSchedules.length > 0 && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <CalendarDays className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-medium text-blue-700">Collection:</span>{' '}
+                        {collectionSchedules.map((s, i) => (
+                          <span key={i} className="text-slate-600">
+                            {i > 0 && <span className="text-slate-400"> · </span>}
+                            {formatSchedule(s)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {feedingSchedules.length > 0 && (
+                    <div className="flex items-start gap-2 text-sm">
+                      <Clock className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-medium text-green-700">Feeding:</span>{' '}
+                        {feedingSchedules.map((s, i) => (
+                          <span key={i} className="text-slate-600">
+                            {i > 0 && <span className="text-slate-400"> · </span>}
+                            {formatSchedule(s)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           <div className="flex gap-2">
             <TooltipProvider>
@@ -140,7 +198,7 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
         )}
 
         {/* Operational Information */}
-        {(recipient.reportingGroup || (recipient as any).estimatedSandwiches || recipient.sandwichType || recipient.tspContact || recipient.contractSigned || (recipient as any).collectionDay || (recipient as any).feedingDay) && (
+        {(recipient.reportingGroup || (recipient as any).estimatedSandwiches || recipient.sandwichType || recipient.tspContact || recipient.contractSigned) && (
           <div className="border-t pt-3 mt-3">
             <div className="text-sm font-medium text-slate-700 mb-2">Operational Details</div>
             <div className="grid grid-cols-2 gap-2">
@@ -157,16 +215,6 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
               {recipient.sandwichType && (
                 <div className="text-sm text-slate-600">
                   <span className="font-medium">Sandwich Type:</span> {recipient.sandwichType}
-                </div>
-              )}
-              {((recipient as any).collectionDay || (recipient as any).collectionTime) && (
-                <div className="text-sm text-slate-600">
-                  <span className="font-medium">Collection:</span> {(recipient as any).collectionDay} {(recipient as any).collectionTime && `at ${(recipient as any).collectionTime}`}
-                </div>
-              )}
-              {((recipient as any).feedingDay || (recipient as any).feedingTime) && (
-                <div className="text-sm text-slate-600">
-                  <span className="font-medium">Feeding:</span> {(recipient as any).feedingDay} {(recipient as any).feedingTime && `at ${(recipient as any).feedingTime}`}
                 </div>
               )}
               <div className="col-span-2 flex items-center gap-2">

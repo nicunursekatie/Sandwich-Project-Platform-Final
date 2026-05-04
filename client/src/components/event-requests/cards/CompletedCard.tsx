@@ -32,6 +32,7 @@ import {
   Instagram,
   Home,
   MessageSquare,
+  Copy,
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';
@@ -92,6 +93,7 @@ interface CompletedCardProps {
   onFollowUp1Month: () => void;
   onViewCollectionLog?: () => void;
   onReschedule: () => void;
+  onDuplicate?: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
@@ -1534,6 +1536,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   onFollowUp1Month,
   onViewCollectionLog,
   onReschedule,
+  onDuplicate,
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
@@ -2984,15 +2987,33 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={onReschedule}
-                  title="Create new event based on this one"
+                  title="Reopen this event (data entry corrections)"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Create new event based on this one</p>
+                <p>Reopen this event (data entry corrections)</p>
               </TooltipContent>
             </Tooltip>
+
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onDuplicate}
+                    title="Create a new event for this group"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create a new event for this group</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {canDelete && (
               <Tooltip>

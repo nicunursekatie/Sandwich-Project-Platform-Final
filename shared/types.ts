@@ -8,13 +8,37 @@
 import type { User as DrizzleUser, ReminderRuleType } from './schema';
 
 /**
+ * SMS campaign a user can be opted into.
+ * - 'hosts': Collection reminders for host locations
+ * - 'events': Event coordination notifications (assignments, escalations, reminders)
+ */
+export type SmsCampaignType = 'hosts' | 'events';
+
+/**
  * SMS Consent structure stored in user metadata
  */
 export interface SmsConsent {
   enabled: boolean;
   phoneNumber: string;
+  /** Masked phone for display (e.g. in the UI dialog) */
+  displayPhone?: string;
+  /** Confirmed opt-in state — must be 'confirmed' to actually send SMS */
+  status?: 'pending_confirmation' | 'confirmed' | 'unsubscribed';
+  confirmedAt?: string;
+  confirmationMethod?: 'verification_code' | 'reply_yes' | 'manual';
   consentedAt?: string;
+  consentTimestamp?: string;
+  consentVersion?: string;
+  welcomeSmsSentAt?: string;
   unsubscribedAt?: string | null;
+  optOutTimestamp?: string;
+  verificationCode?: string;
+  verificationCodeExpiry?: string;
+  campaignsUpdatedAt?: string;
+  /** Legacy single-campaign field — kept in sync with campaignTypes[0] */
+  campaignType?: SmsCampaignType;
+  /** Canonical multi-campaign field — a user can be on both 'hosts' and 'events' */
+  campaignTypes?: SmsCampaignType[];
 }
 
 /**

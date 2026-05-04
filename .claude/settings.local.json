@@ -68,7 +68,13 @@
       "Bash(git revert:*)",
       "Bash(for file in /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/__tests__/celebration-toast.test.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/design-system-example.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-request-audit-log.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/constants.ts /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/pages/design-system-showcase.tsx /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/pages/grant-metrics.tsx)",
       "Bash(do)",
-      "Read(//Users/katielong/Documents/Sandwich-Project-Platform-Final/**)"
+      "Read(//Users/katielong/Documents/Sandwich-Project-Platform-Final/**)",
+      "Read(//tmp/**)",
+      "Bash(awk -F'[\\(,]' '{print $2}')",
+      "Bash(awk '/^function SMSSetupSection/,/^}/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/alert-preferences.tsx)",
+      "Bash(awk 'NR>=44 && /^export const users = pgTable/,/^}\\\\\\);/ {print NR\": \"$0}' /Users/kathrynelong/Sandwich-Project-Platform-Final/shared/schema.ts)",
+      "Bash(awk 'NR>=1185 && NR<=1240' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/hosts-management-consolidated.tsx)",
+      "Bash(awk '/<Button/,/<\\\\/Button>/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/hosts-management-consolidated.tsx)"
     ],
     "deny": [],
     "ask": []

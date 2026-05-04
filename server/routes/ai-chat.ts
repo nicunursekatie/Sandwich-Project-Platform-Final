@@ -2,7 +2,7 @@ import { Router, type Response } from 'express';
 import { db } from '../db';
 import { logger } from '../middleware/logger';
 import OpenAI from 'openai';
-import { userActivityLogs, authoritativeWeeklyCollections } from '@shared/schema';
+import { userActivityLogs } from '@shared/schema';
 import { sql, desc, and, gte } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../types/express';
 
@@ -54,89 +54,76 @@ function getCollectionSandwichCount(collection: any): number {
   return total;
 }
 
-// Helper function to fetch and format historical collection data for AI context
-// This provides the authoritative historical trends that enable seasonal analysis
+// Helper function to fetch and format historical collection data for AI context.
+//
+// Annual totals come from getHybridYearlyStats() (authoritative archive merged
+// with the live log at the 2025-08-06 cutoff) — this is the SAME computation
+// the /api/collections/hybrid-stats route uses, so the chat and the rest of
+// the app can never disagree on yearly numbers.
+//
+// Seasonal patterns (week-of-year averages, top-all-time locations) still come
+// from the authoritative archive only, since that's what they're actually for.
 async function getHistoricalCollectionsContext(): Promise<string> {
   try {
-    const authoritativeData = await db.select().from(authoritativeWeeklyCollections);
+    const { getHybridYearlyStats, getAuthoritativeSeasonalData } = await import(
+      '../services/collections/hybrid-stats'
+    );
+    const [yearly, seasonal] = await Promise.all([
+      getHybridYearlyStats(),
+      getAuthoritativeSeasonalData(),
+    ]);
 
-    if (authoritativeData.length === 0) {
+    if (!seasonal && Object.keys(yearly.byYear).length === 0) {
       return '';
     }
 
-    // Group by week of year to identify seasonal patterns
-    const weeklyPatterns: Record<number, { totalSandwiches: number; weekCount: number; years: Set<number> }> = {};
-    const yearlyTotals: Record<number, number> = {};
-    const locationTotals: Record<string, number> = {};
+    const yearlyLines = Object.values(yearly.byYear)
+      .sort((a, b) => a.year - b.year)
+      .map((y) => {
+        const sourceNote =
+          y.source === 'authoritative'
+            ? 'from authoritative archive'
+            : y.source === 'collection_log'
+              ? 'from live collection log'
+              : 'merged authoritative + live log';
+        return `- ${y.year}: ${y.sandwiches.toLocaleString()} sandwiches (${sourceNote})`;
+      })
+      .join('\n');
 
-    authoritativeData.forEach(record => {
-      // Weekly patterns (for seasonality analysis)
-      const weekNum = record.weekOfYear;
-      if (!weeklyPatterns[weekNum]) {
-        weeklyPatterns[weekNum] = { totalSandwiches: 0, weekCount: 0, years: new Set() };
-      }
-      weeklyPatterns[weekNum].totalSandwiches += record.sandwiches;
-      weeklyPatterns[weekNum].weekCount++;
-      weeklyPatterns[weekNum].years.add(record.year);
+    let out = `
 
-      // Yearly totals
-      if (!yearlyTotals[record.year]) {
-        yearlyTotals[record.year] = 0;
-      }
-      yearlyTotals[record.year] += record.sandwiches;
+### Canonical Yearly Totals (authoritative + live log, merged at ${yearly.cutoffDate})
+These numbers are the single source of truth for per-year totals. Use them verbatim when asked about any year's total.
 
-      // Location totals
-      if (!locationTotals[record.location]) {
-        locationTotals[record.location] = 0;
-      }
-      locationTotals[record.location] += record.sandwiches;
-    });
+${yearlyLines}
+`;
 
-    // Calculate average sandwiches per week for each week of year
-    const weeklyAverages = Object.entries(weeklyPatterns)
-      .map(([week, data]) => ({
-        week: parseInt(week),
-        avgSandwiches: Math.round(data.totalSandwiches / data.weekCount),
-        yearsOfData: data.years.size
-      }))
-      .sort((a, b) => a.week - b.week);
+    if (seasonal) {
+      out += `
+### Seasonal Patterns (historical averages only — do NOT use as year totals)
 
-    // Find historically low and high weeks
-    const sortedByAvg = [...weeklyAverages].sort((a, b) => a.avgSandwiches - b.avgSandwiches);
-    const lowWeeks = sortedByAvg.slice(0, 10);
-    const highWeeks = sortedByAvg.slice(-10).reverse();
-
-    return `
-
-### Historical Seasonal Baseline Data (2020–2025 patterns only)
-⚠️ IMPORTANT: This section contains historical seasonal patterns only. For any questions about recent totals, current year data, or specific recent weeks/months, ALWAYS use the live Collection Log Entries — NOT these yearly totals. The 2026 row here is incomplete and should be ignored for recent data questions.
-
-#### Historical Yearly Totals (for trend reference only — use live log for recent years)
-${Object.entries(yearlyTotals)
-  .sort(([a], [b]) => parseInt(a) - parseInt(b))
-  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches (historical baseline)`)
+#### Weekly Seasonal Patterns (avg sandwiches per week of year)
+${seasonal.weeklyAverages
+  .map(
+    (w) =>
+      `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (${w.yearsOfData} year${w.yearsOfData !== 1 ? 's' : ''} of data)`
+  )
   .join('\n')}
-
-#### Weekly Seasonal Patterns (Historical Averages by Week of Year)
-Use these only for understanding seasonal trends (e.g., which weeks are typically slow or busy). Do NOT use these figures when answering questions about actual recent totals.
-
-${weeklyAverages.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (${w.yearsOfData} year${w.yearsOfData !== 1 ? 's' : ''} of data)`).join('\n')}
 
 **Historically LOW collection weeks (bottom 10):**
-${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()}`).join('\n')}
+${seasonal.lowWeeks.map((w) => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()}`).join('\n')}
 
 **Historically HIGH collection weeks (top 10):**
-${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()}`).join('\n')}
+${seasonal.highWeeks.map((w) => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()}`).join('\n')}
 
-#### Top Host Locations (All-Time Historical)
-${Object.entries(locationTotals)
-  .sort(([, a], [, b]) => b - a)
-  .slice(0, 15)
-  .map(([location, total]) => `- ${location}: ${total.toLocaleString()} sandwiches`)
-  .join('\n')}
+#### Top Host Locations (all-time historical)
+${seasonal.topLocations.map((l) => `- ${l.location}: ${l.sandwiches.toLocaleString()} sandwiches`).join('\n')}
 
-Note: Week numbers follow ISO standard (Week 1 starts first week of January).
+Note: Week numbers follow ISO standard (Week 1 starts first week of January). Seasonal figures are averages across multiple years and are for trend reference only — never quote them as a year's actual total.
 `;
+    }
+
+    return out;
   } catch (err) {
     logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
     return '';
@@ -549,81 +536,9 @@ async function buildCollectionsContext(contextData?: Record<string, any>): Promi
     .sort(([a], [b]) => b.localeCompare(a)) // newest first
     .slice(0, 60); // last ~13 months of weekly data
 
-  // Fetch authoritative historical data for complete context
-  // This is Scott's verified data from 2020-2024 and 2025 through Aug 6
-  let historicalContext = '';
-  try {
-    const authoritativeData = await db.select().from(authoritativeWeeklyCollections);
-
-    if (authoritativeData.length > 0) {
-      // Group by week of year to identify seasonal patterns
-      const weeklyPatterns: Record<number, { totalSandwiches: number; weekCount: number; years: Set<number> }> = {};
-      const yearlyTotals: Record<number, number> = {};
-      const locationTotals: Record<string, number> = {};
-
-      authoritativeData.forEach(record => {
-        // Weekly patterns (for seasonality analysis)
-        const weekNum = record.weekOfYear;
-        if (!weeklyPatterns[weekNum]) {
-          weeklyPatterns[weekNum] = { totalSandwiches: 0, weekCount: 0, years: new Set() };
-        }
-        weeklyPatterns[weekNum].totalSandwiches += record.sandwiches;
-        weeklyPatterns[weekNum].weekCount++;
-        weeklyPatterns[weekNum].years.add(record.year);
-
-        // Yearly totals
-        if (!yearlyTotals[record.year]) {
-          yearlyTotals[record.year] = 0;
-        }
-        yearlyTotals[record.year] += record.sandwiches;
-
-        // Location totals
-        if (!locationTotals[record.location]) {
-          locationTotals[record.location] = 0;
-        }
-        locationTotals[record.location] += record.sandwiches;
-      });
-
-      // Calculate average sandwiches per week for each week of year
-      const weeklyAverages = Object.entries(weeklyPatterns)
-        .map(([week, data]) => ({
-          week: parseInt(week),
-          avgSandwiches: Math.round(data.totalSandwiches / data.weekCount),
-          yearsOfData: data.years.size
-        }))
-        .sort((a, b) => a.week - b.week);
-
-      // Find historically low and high weeks
-      const sortedByAvg = [...weeklyAverages].sort((a, b) => a.avgSandwiches - b.avgSandwiches);
-      const lowWeeks = sortedByAvg.slice(0, 10);
-      const highWeeks = sortedByAvg.slice(-10).reverse();
-
-      historicalContext = `
-
-### Historical Seasonal Baseline Data (2020–2025 patterns only)
-⚠️ IMPORTANT: This section contains historical seasonal patterns only. For any questions about recent totals, current year data, or specific recent weeks/months, ALWAYS use the live Collection Log Entries listed above — NOT these yearly totals. The 2026 row here is incomplete and should be ignored for recent data questions.
-
-#### Historical Yearly Totals (for trend reference only — use live log for recent years)
-${Object.entries(yearlyTotals)
-  .sort(([a], [b]) => parseInt(a) - parseInt(b))
-  .map(([year, total]) => `- ${year}: ${total.toLocaleString()} sandwiches (historical baseline)`)
-  .join('\n')}
-
-#### Weekly Seasonal Patterns (Historical Averages by Week of Year)
-Use these only for understanding seasonal trends. Do NOT use these figures when answering questions about actual recent totals — use the live collection entries for that.
-
-**Historically LOW collection weeks (prepare for reduced volume):**
-${lowWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
-
-**Historically HIGH collection weeks (expect increased volume):**
-${highWeeks.map(w => `- Week ${w.week}: avg ${w.avgSandwiches.toLocaleString()} sandwiches (based on ${w.yearsOfData} years)`).join('\n')}
-
-Note: Week numbers follow ISO standard (Week 1 starts first week of January). Use this only to predict seasonal trends, not for current data.
-`;
-    }
-  } catch (err) {
-    logger.warn('Could not fetch authoritative historical data for AI context', { error: err });
-  }
+  // Pull canonical yearly totals + seasonal patterns from the shared helper
+  // so this fallback path stays in sync with the primary AI context path.
+  const historicalContext = await getHistoricalCollectionsContext();
 
   // Build compact raw record list for full per-entry analysis
   // Sort NEWEST-FIRST so recent data appears at the top of the AI context and is never

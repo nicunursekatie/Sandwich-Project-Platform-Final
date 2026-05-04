@@ -41,9 +41,15 @@ export const migrations = pgTable('_migrations', {
 
 // User storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
+//
+// Note on email uniqueness: the uniqueness constraint is defined as a
+// functional UNIQUE INDEX on LOWER(email) at the table level below, not as
+// a column-level `.unique()`. This enforces case-insensitive uniqueness in
+// the database (so `Foo@x.com` and `foo@x.com` can't both exist), matching
+// the normalization we do in app code via shared/email-utils.ts.
 export const users = pgTable('users', {
   id: varchar('id').primaryKey().notNull(),
-  email: varchar('email').unique(),
+  email: varchar('email'),
   password: varchar('password'), // For custom auth system
   firstName: varchar('first_name'),
   lastName: varchar('last_name'),
@@ -78,7 +84,13 @@ export const users = pgTable('users', {
   notifyOnNewIntake: boolean('notify_on_new_intake'),
   notifyOnTaskDue: boolean('notify_on_task_due'),
   notifyOnStatusChange: boolean('notify_on_status_change'),
-});
+}, (table) => ({
+  // Case-insensitive unique index on email. Lives here instead of as a
+  // column-level `.unique()` so the same email with different casing can't
+  // coexist (e.g., Foo@x.com vs foo@x.com). Matches the
+  // `users_email_lower_unique` index that exists in production.
+  emailLowerIdx: uniqueIndex('users_email_lower_unique').on(sql`LOWER(${table.email})`),
+}));
 
 // API Keys table for external app integrations
 export const apiKeys = pgTable('api_keys', {
@@ -148,6 +160,34 @@ export const userActivityLogs = pgTable(
       table.userId,
       table.createdAt
     ),
+  })
+);
+
+// Client error logs — errors caught by the React ErrorBoundary, also emailed to admin
+export const clientErrorLogs = pgTable(
+  'client_error_logs',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id'), // Null if user was not authenticated when error occurred
+    userEmail: varchar('user_email'), // Snapshot at time of error for quick lookup
+    userName: varchar('user_name'), // Snapshot at time of error
+    userRole: varchar('user_role'),
+    message: text('message').notNull(),
+    stack: text('stack'),
+    componentStack: text('component_stack'), // React component tree that crashed
+    url: text('url'), // Full page URL where error happened
+    referrer: text('referrer'),
+    userAgent: text('user_agent'),
+    viewportWidth: integer('viewport_width'),
+    viewportHeight: integer('viewport_height'),
+    ipAddress: varchar('ip_address'),
+    sessionId: varchar('session_id'),
+    emailSent: boolean('email_sent').default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    createdAtIdx: index('idx_client_error_logs_created_at').on(table.createdAt),
+    userIdx: index('idx_client_error_logs_user_id').on(table.userId),
   })
 );
 
@@ -1050,6 +1090,11 @@ export const hostContacts = pgTable('host_contacts', {
   driverAgreementSigned: boolean('driver_agreement_signed').default(false), // Whether the host has signed the driver agreement
   vanApproved: boolean('van_approved').default(false), // Whether this host contact is approved to drive the van
   weeklyActive: boolean('weekly_active').default(false), // Auto-updated from external site scrape every Monday
+  // Soft-deactivation for hosts who've left the organization. UI surfaces
+  // this as "Former Host". Distinct from hosts.status (location-level, for
+  // the collection-log dropdown) and weeklyActive (weekly host-finder
+  // rotation) — those answer different questions.
+  isFormerHost: boolean('is_former_host').notNull().default(false),
   lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
   longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)

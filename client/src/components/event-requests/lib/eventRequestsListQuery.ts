@@ -75,7 +75,7 @@ export function buildEventRequestsListFilterParams(
   if (activeTab === 'declined') {
     return { status: 'declined,cancelled' };
   }
-  if (['completed', 'standby', 'stalled'].includes(activeTab)) {
+  if (['completed', 'standby', 'stalled', 'non_event'].includes(activeTab)) {
     return { status: activeTab };
   }
 

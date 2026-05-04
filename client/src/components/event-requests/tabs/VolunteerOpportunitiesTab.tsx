@@ -78,7 +78,12 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     const date = request.scheduledEventDate || request.desiredEventDate;
     if (!date) return 'Date TBD';
     try {
-      return format(new Date(date), 'EEEE, MMMM d, yyyy');
+      // Parse as local date to avoid UTC→Eastern off-by-one
+      const dateStr = typeof date === 'string' ? date : String(date);
+      const datePart = dateStr.split('T')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      const localDate = (year && month && day) ? new Date(year, month - 1, day) : new Date(date);
+      return format(localDate, 'EEEE, MMMM d, yyyy');
     } catch {
       return 'Invalid date';
     }

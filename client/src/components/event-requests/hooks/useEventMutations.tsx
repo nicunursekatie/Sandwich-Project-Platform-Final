@@ -578,13 +578,16 @@ export const useEventMutations = () => {
       logger.log('=== TSP CONTACT ASSIGNMENT SUCCESS ===');
       logger.log('Updated event:', updatedEvent);
 
-      const description = variables.tspContact
-        ? 'TSP contact has been successfully assigned and notified via email.'
-        : 'Custom TSP contact has been successfully assigned.';
+      const isRemoval = !variables.tspContact && !variables.customTspContact;
+      const isCustom = !!variables.customTspContact;
 
       toast({
-        title: 'TSP contact assigned',
-        description,
+        title: isRemoval ? 'TSP contact removed' : 'TSP contact assigned',
+        description: isRemoval
+          ? 'The TSP contact assignment has been cleared.'
+          : isCustom
+            ? 'Custom TSP contact has been successfully assigned.'
+            : 'TSP contact has been successfully assigned and notified.',
       });
 
       invalidateEventRequestQueries(queryClient);

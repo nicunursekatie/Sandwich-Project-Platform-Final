@@ -57,6 +57,12 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.DRIVERS_DELETE,
     ],
   },
+  DRIVER_HUB: {
+    label: 'Driver Hub',
+    permissions: [
+      PERMISSIONS.DRIVER_SIGNUP_APPROVE,
+    ],
+  },
   VOLUNTEERS: {
     label: 'Volunteers',
     permissions: [
@@ -122,6 +128,7 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT,
       PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
       PERMISSIONS.EVENT_REQUESTS_SEND_SMS,
+      PERMISSIONS.EVENT_CHECK_IN_ALERTS,
     ],
   },
   EVENT_INLINE_EDITING: {
@@ -376,7 +383,9 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.NAV_SERVICE_HOURS_FORM,
       PERMISSIONS.NAV_WISHLIST,
       PERMISSIONS.NAV_DOCUMENT_MANAGEMENT,
+      PERMISSIONS.NAV_EVENT_SIGNUP_HUB,
       PERMISSIONS.NAV_VOLUNTEER_HUB,
+      PERMISSIONS.NAV_DRIVER_HUB,
       PERMISSIONS.NAV_HOST_RESOURCES,
 
       // Admin
@@ -398,6 +407,10 @@ export function getPermissionLabel(permission: string): string {
   const customLabels: Record<string, string> = {
     [PERMISSIONS.NAV_IMPORTANT_LINKS]: 'Nav Quick Tools',
     [PERMISSIONS.NAV_PROMOTION]: 'Nav Social Media Graphics',
+    [PERMISSIONS.NAV_EVENT_SIGNUP_HUB]: 'Nav Event Sign-Up Hub',
+    [PERMISSIONS.NAV_DRIVER_HUB]: 'Nav Driver Hub',
+    [PERMISSIONS.DRIVER_SIGNUP_APPROVE]: 'Approve Driver Signups',
+    [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Event Check-In Alerts',
   };
 
   // Return custom label if exists
@@ -423,6 +436,7 @@ export function getPermissionDescription(permission: string): string {
     [PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS]: 'Assign team members to events',
     [PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW]: 'View admin overview of TSP contact assignments and workload distribution',
     [PERMISSIONS.EVENT_REQUESTS_SEND_SMS]: 'Send event details via SMS to selected users',
+    [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Configure intake check-in reminders (no-contact, stale event, date-approaching) in the profile Alerts tab',
 
     // Chat room descriptions
     [PERMISSIONS.CHAT_GENERAL]: 'Access to general team chat',

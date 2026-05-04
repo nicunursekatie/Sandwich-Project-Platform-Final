@@ -1221,6 +1221,221 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/objects', createErrorHandler('objects'));
 
+  // Client-side error reporting — public, no auth required (but reads session if present)
+  // Rate-limited to 5 reports per IP per hour to prevent flooding
+  const clientErrorRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+  // HTML-escape a string to prevent injection in the email template
+  const escapeHtml = (value: unknown): string => {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
+  router.post('/api/client-error', async (req, res) => {
+    try {
+      const ip =
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        req.socket.remoteAddress ||
+        'unknown';
+      const now = Date.now();
+      const limit = clientErrorRateLimit.get(ip);
+      if (limit) {
+        if (now < limit.resetAt && limit.count >= 5) {
+          res.status(429).json({ ok: false, reason: 'rate limited' });
+          return;
+        }
+        if (now >= limit.resetAt) {
+          clientErrorRateLimit.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
+        } else {
+          limit.count++;
+        }
+      } else {
+        clientErrorRateLimit.set(ip, { count: 1, resetAt: now + 60 * 60 * 1000 });
+      }
+
+      const {
+        message,
+        stack,
+        componentStack,
+        url,
+        referrer,
+        userAgent,
+        viewportWidth,
+        viewportHeight,
+        timestamp,
+      } = req.body || {};
+
+      // Read authenticated user from session if available
+      const sessionUser = (req as any).user || (req as any).session?.user;
+      const userId: string | null = sessionUser?.id || null;
+      const userEmail: string | null = sessionUser?.email || null;
+      const userName: string | null = sessionUser
+        ? [sessionUser.firstName, sessionUser.lastName].filter(Boolean).join(' ') ||
+          sessionUser.displayName ||
+          null
+        : null;
+      const userRole: string | null = sessionUser?.role || null;
+      const sessionId: string | null = (req as any).sessionID || null;
+
+      // Persist to DB — do this first so even if email fails we have a record
+      let emailSent = false;
+      let dbErrorId: number | null = null;
+      try {
+        const { db } = await import('../db');
+        const { clientErrorLogs } = await import('@shared/schema');
+        const [inserted] = await db
+          .insert(clientErrorLogs)
+          .values({
+            userId,
+            userEmail,
+            userName,
+            userRole,
+            message: message || 'Unknown error',
+            stack: stack || null,
+            componentStack: componentStack || null,
+            url: url || null,
+            referrer: referrer || null,
+            userAgent: userAgent || null,
+            viewportWidth:
+              typeof viewportWidth === 'number' ? viewportWidth : null,
+            viewportHeight:
+              typeof viewportHeight === 'number' ? viewportHeight : null,
+            ipAddress: ip,
+            sessionId,
+            emailSent: false,
+          })
+          .returning({ id: clientErrorLogs.id });
+        dbErrorId = inserted?.id ?? null;
+      } catch (dbErr) {
+        logger.error('Failed to persist client error to DB:', dbErr);
+      }
+
+      // Send admin email with full context
+      try {
+        const { sendEmail } = await import('../services/sendgrid');
+
+        const userLine = userId
+          ? `${escapeHtml(userName || userEmail || userId)}${userEmail ? ` &lt;${escapeHtml(userEmail)}&gt;` : ''}${userRole ? ` · ${escapeHtml(userRole)}` : ''}`
+          : '<em>Not signed in</em>';
+
+        const viewportStr =
+          viewportWidth && viewportHeight
+            ? `${escapeHtml(viewportWidth)}×${escapeHtml(viewportHeight)}`
+            : 'unknown';
+
+        const html = `
+          <h2 style="color:#b91c1c;margin-bottom:4px;">App Error Boundary Triggered</h2>
+          <p style="color:#6b7280;margin-top:0;font-size:13px;">A user's browser hit an unhandled error. Details below.</p>
+          <table style="border-collapse:collapse;width:100%;font-family:monospace;font-size:13px;margin-top:12px;">
+            <tr><td style="padding:6px 10px;font-weight:bold;width:140px;vertical-align:top;">Time</td><td style="padding:6px 10px;">${escapeHtml(timestamp || new Date().toISOString())}</td></tr>
+            <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">User</td><td style="padding:6px 10px;">${userLine}</td></tr>
+            <tr><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">User ID</td><td style="padding:6px 10px;">${escapeHtml(userId || 'anonymous')}</td></tr>
+            <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">Page URL</td><td style="padding:6px 10px;word-break:break-all;">${escapeHtml(url || 'unknown')}</td></tr>
+            <tr><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">Referrer</td><td style="padding:6px 10px;word-break:break-all;">${escapeHtml(referrer || 'none')}</td></tr>
+            <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;color:#b91c1c;vertical-align:top;">Error</td><td style="padding:6px 10px;color:#b91c1c;">${escapeHtml(message || 'No message')}</td></tr>
+            <tr><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">Viewport</td><td style="padding:6px 10px;">${viewportStr}</td></tr>
+            <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">User Agent</td><td style="padding:6px 10px;">${escapeHtml(userAgent || 'unknown')}</td></tr>
+            <tr><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">IP</td><td style="padding:6px 10px;">${escapeHtml(ip)}</td></tr>
+            <tr style="background:#fef2f2;"><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">Session</td><td style="padding:6px 10px;">${escapeHtml(sessionId || 'none')}</td></tr>
+            ${dbErrorId ? `<tr><td style="padding:6px 10px;font-weight:bold;vertical-align:top;">Log ID</td><td style="padding:6px 10px;">#${dbErrorId}</td></tr>` : ''}
+          </table>
+          ${componentStack ? `<h3 style="margin-top:20px;margin-bottom:6px;">React Component Stack</h3><pre style="background:#f3f4f6;color:#111827;padding:12px;border-radius:6px;overflow:auto;font-size:12px;white-space:pre-wrap;border:1px solid #e5e7eb;">${escapeHtml(componentStack)}</pre>` : ''}
+          ${stack ? `<h3 style="margin-top:20px;margin-bottom:6px;">JavaScript Stack Trace</h3><pre style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;overflow:auto;font-size:12px;white-space:pre-wrap;">${escapeHtml(stack)}</pre>` : ''}
+          <p style="margin-top:20px;color:#6b7280;font-size:12px;">View all errors in the admin panel under <strong>Error Logs</strong>.</p>
+        `;
+
+        const text = [
+          `Error: ${message || 'Unknown'}`,
+          `Time: ${timestamp || new Date().toISOString()}`,
+          `User: ${userName || userEmail || 'Not signed in'}${userId ? ` (${userId})` : ''}`,
+          `Role: ${userRole || 'n/a'}`,
+          `Page: ${url || 'unknown'}`,
+          `Referrer: ${referrer || 'none'}`,
+          `Viewport: ${viewportStr}`,
+          `User Agent: ${userAgent || 'unknown'}`,
+          `IP: ${ip}`,
+          `Session: ${sessionId || 'none'}`,
+          dbErrorId ? `Log ID: #${dbErrorId}` : '',
+          '',
+          componentStack ? `Component Stack:\n${componentStack}\n` : '',
+          stack ? `Stack:\n${stack}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
+
+        await sendEmail({
+          to: 'katie@thesandwichproject.org',
+          from: 'noreply@thesandwichproject.org',
+          subject: `[TSP App Error] ${message || 'Unknown error'} — ${url || 'unknown page'}`,
+          html,
+          text,
+        });
+        emailSent = true;
+      } catch (emailErr) {
+        logger.error('Failed to send client error email:', emailErr);
+      }
+
+      // Update DB row with email_sent flag if we had one
+      if (dbErrorId && emailSent) {
+        try {
+          const { db } = await import('../db');
+          const { clientErrorLogs } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          await db
+            .update(clientErrorLogs)
+            .set({ emailSent: true })
+            .where(eq(clientErrorLogs.id, dbErrorId));
+        } catch {
+          // non-fatal
+        }
+      }
+
+      res.json({ ok: true, logId: dbErrorId });
+    } catch (err) {
+      logger.error('Failed to handle client error report:', err);
+      res.status(500).json({ ok: false });
+    }
+  });
+
+  // Admin-only: fetch client error logs for the admin panel
+  router.get(
+    '/api/admin/client-error-logs',
+    deps.isAuthenticated,
+    deps.requirePermission('ADMIN_PANEL_ACCESS'),
+    async (req, res) => {
+      try {
+        const { db } = await import('../db');
+        const { clientErrorLogs } = await import('@shared/schema');
+        const { desc, gte, and, sql } = await import('drizzle-orm');
+
+        const daysParam = parseInt((req.query.days as string) || '7', 10);
+        const days = !isNaN(daysParam) && daysParam > 0 && daysParam <= 365 ? daysParam : 7;
+        const limitParam = parseInt((req.query.limit as string) || '200', 10);
+        const limit = !isNaN(limitParam) && limitParam > 0 && limitParam <= 1000 ? limitParam : 200;
+
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - days);
+
+        const logs = await db
+          .select()
+          .from(clientErrorLogs)
+          .where(gte(clientErrorLogs.createdAt, sinceDate))
+          .orderBy(desc(clientErrorLogs.createdAt))
+          .limit(limit);
+
+        res.json(logs);
+      } catch (err) {
+        logger.error('Failed to fetch client error logs:', err);
+        res.status(500).json({ error: 'Failed to fetch client error logs' });
+      }
+    }
+  );
+
   return router;
 }
 

@@ -1506,6 +1506,7 @@ router.get(
         // ========== TRACKING FLAGS ==========
         addedToOfficialSheet: event.addedToOfficialSheet,
         addedToOfficialSheetAt: event.addedToOfficialSheetAt,
+        showOnVolunteerHub: (event as any).showOnVolunteerHub, // ScheduledCardEnhanced badge
         isUnresponsive: event.isUnresponsive,
         contactAttempts: event.contactAttempts,
         lastContactAttempt: event.lastContactAttempt, // NewRequestCard
@@ -4908,143 +4909,11 @@ router.post('/:id/send-email', isAuthenticated, async (req, res) => {
 // AI Routes - MOVED to ./event-requests/ai.ts
 // Routes moved: POST /:id/ai-suggest-dates, POST /:id/ai-intake-assist, POST /:id/ai-categorize
 
-// Schedule a follow-up call
-router.patch('/:id/schedule-call', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { scheduledCallDate } = req.body;
-
-
-    // Validate the date
-    if (!scheduledCallDate) {
-      return res.status(400).json({ message: 'Scheduled call date is required' });
-    }
-
-    // Get original data for audit logging
-    const originalEvent = await storage.getEventRequestById(id);
-    if (!originalEvent) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Update the event request with the scheduled call date
-    const updatedEventRequest = await storage.updateEventRequest(id, {
-      scheduledCallDate: new Date(scheduledCallDate),
-      callScheduledAt: new Date(),
-      scheduledBy: req.user?.id,
-    });
-
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Log the change
-    await AuditLogger.logEventRequestChange(
-      id.toString(),
-      originalEvent,
-      updatedEventRequest,
-      {
-        userId: req.user?.id,
-        ipAddress: req.ip || req.connection?.remoteAddress,
-        userAgent: req.get('User-Agent'),
-        sessionId: req.session?.id || req.sessionID,
-      }
-    );
-
-    await logActivity(
-      req,
-      res,
-      'EVENT_REQUESTS_SCHEDULE_CALL',
-      `Scheduled call for event request: ${id}`,
-      { scheduledCallDate }
-    );
-
-    res.json(updatedEventRequest);
-  } catch (error) {
-    logger.error('Error scheduling call:', error);
-    res.status(500).json({ 
-      message: 'Failed to schedule call',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// Mark event as MLK Day event
-router.patch('/:id/mlk-day', isAuthenticated, requirePermission('EVENT_REQUESTS_EDIT'), async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    const { isMlkDayEvent } = req.body;
-
-    // Get original data for audit logging
-    const originalEvent = await storage.getEventRequestById(id);
-    if (!originalEvent) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Update the event request
-    const updatedEventRequest = await storage.updateEventRequest(id, {
-      isMlkDayEvent,
-      mlkDayMarkedAt: isMlkDayEvent ? new Date() : null,
-      mlkDayMarkedBy: isMlkDayEvent ? req.user?.id : null,
-    });
-
-    if (!updatedEventRequest) {
-      return res.status(404).json({ message: 'Event request not found' });
-    }
-
-    // Log the change
-    await AuditLogger.logEventRequestChange(
-      id.toString(),
-      originalEvent,
-      updatedEventRequest,
-      {
-        userId: req.user?.id,
-        ipAddress: req.ip || req.connection?.remoteAddress,
-        userAgent: req.get('User-Agent'),
-        sessionId: req.session?.id || req.sessionID,
-      }
-    );
-
-    await logActivity(
-      req,
-      res,
-      'EVENT_REQUESTS_MLK_DAY_UPDATE',
-      `${isMlkDayEvent ? 'Marked' : 'Unmarked'} event as MLK Day event: ${id}`,
-      { isMlkDayEvent }
-    );
-
-    res.json(updatedEventRequest);
-  } catch (error) {
-    logger.error('Error updating MLK Day status:', error);
-    res.status(500).json({ 
-      message: 'Failed to update MLK Day status',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
+// Lifecycle Routes - MOVED to ./event-requests/lifecycle.ts
+// Routes moved: PATCH /:id/schedule-call, PATCH /:id/mlk-day, POST /admin/auto-complete-passed
 
 // SMS Routes - MOVED to ./event-requests/sms.ts
 // Routes moved: POST /:id/send-details-sms, POST /:id/send-correction-sms
-
-// Manually trigger auto-complete for past events (admin only)
-router.post('/admin/auto-complete-passed', isAuthenticated, requirePermission('ADMIN_ACCESS'), async (req, res) => {
-  try {
-    const { autoCompletePassedEvents } = await import('../services/cron-jobs');
-    const result = await autoCompletePassedEvents();
-
-    res.json({
-      message: `Auto-complete completed: ${result.eventsCompleted} events moved to completed status`,
-      eventsCompleted: result.eventsCompleted,
-      errors: result.errors,
-      timestamp: result.timestamp,
-    });
-  } catch (error) {
-    logger.error('Error running manual auto-complete:', error);
-    res.status(500).json({
-      message: 'Failed to run auto-complete',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
 
 // Conflict Detection Routes - MOVED to ./event-requests/conflicts.ts
 // Routes moved: POST /check-conflicts, GET /conflicts-for-date, GET /check-returning-org

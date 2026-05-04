@@ -22,6 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMultiView } from '@/contexts/multi-view-context';
 import { useFloatingViews } from '@/contexts/floating-views-context';
 import { NAV_ITEMS } from '@/nav.config';
@@ -143,33 +144,43 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
                 <span className="hidden sm:inline text-xs">Add Panel</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 max-h-[400px] overflow-y-auto">
-              {Object.entries(groupedItems).map(([group, items]) => (
-                <React.Fragment key={group}>
-                  <DropdownMenuLabel className="text-xs text-slate-500">
-                    {GROUP_LABELS[group] || group}
-                  </DropdownMenuLabel>
-                  {items.map(item => {
-                    const Icon = item.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={item.id}
-                        onClick={() => addPanel(item.href, item.label)}
-                        disabled={panels.some(p => p.section === item.href)}
-                        className="flex items-center gap-2"
-                      >
-                        {item.customIcon ? (
-                          <img src={item.customIcon} alt="" className="h-4 w-4 opacity-60 flex-shrink-0" />
-                        ) : Icon ? (
-                          <Icon className="h-4 w-4 opacity-60 flex-shrink-0" />
-                        ) : null}
-                        <span className="truncate">{item.label}</span>
-                      </DropdownMenuItem>
-                    );
-                  })}
-                  <DropdownMenuSeparator />
-                </React.Fragment>
-              ))}
+            <DropdownMenuContent align="start" className="w-56 p-0">
+              {/*
+                ScrollArea (instead of plain overflow-y-auto) so users get a
+                visible scrollbar — the previous version silently clipped the
+                list at 400px with no affordance, causing users to think the
+                menu only contained the first few items.
+              */}
+              <ScrollArea className="max-h-[min(70vh,560px)]">
+                <div className="p-1">
+                  {Object.entries(groupedItems).map(([group, items]) => (
+                    <React.Fragment key={group}>
+                      <DropdownMenuLabel className="text-xs text-slate-500">
+                        {GROUP_LABELS[group] || group}
+                      </DropdownMenuLabel>
+                      {items.map(item => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={item.id}
+                            onClick={() => addPanel(item.href, item.label)}
+                            disabled={panels.some(p => p.section === item.href)}
+                            className="flex items-center gap-2"
+                          >
+                            {item.customIcon ? (
+                              <img src={item.customIcon} alt="" className="h-4 w-4 opacity-60 flex-shrink-0" />
+                            ) : Icon ? (
+                              <Icon className="h-4 w-4 opacity-60 flex-shrink-0" />
+                            ) : null}
+                            <span className="truncate">{item.label}</span>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuSeparator />
+                    </React.Fragment>
+                  ))}
+                </div>
+              </ScrollArea>
             </DropdownMenuContent>
           </DropdownMenu>
 

@@ -16,10 +16,20 @@ import { format } from 'date-fns';
 import { MapPin, Calendar, UserCheck, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 
+/** Parse a date string as local time (not UTC) to avoid off-by-one day shift */
+const parseLocalDate = (dateInput: string | Date): Date => {
+  if (dateInput instanceof Date) return dateInput;
+  // Extract YYYY-MM-DD part and construct at local midnight
+  const datePart = dateInput.split('T')[0];
+  const [year, month, day] = datePart.split('-').map(Number);
+  if (year && month && day) return new Date(year, month - 1, day);
+  return new Date(dateInput); // fallback
+};
+
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return 'Date TBD';
   try {
-    return format(new Date(date), 'EEE, MMM d, yyyy');
+    return format(parseLocalDate(date), 'EEE, MMM d, yyyy');
   } catch {
     return 'Date TBD';
   }

@@ -336,8 +336,32 @@ export default function SandwichCollectionLog() {
     }
   }, [editingCollection, trackView]);
 
-  // Debounce search filters to prevent excessive queries
+  // Debounce search filters to prevent excessive queries.
+  // Date <input type="date"> fields fire onChange for every intermediate
+  // "complete" value while the user is still typing the year (e.g. 0002,
+  // 0020, 0206, 2026). We let the controlled input track those keystrokes
+  // so the user can keep typing, but we only commit date filters to the
+  // query when the year looks plausible (1900-2099). This keeps the list
+  // from "refreshing" with results for bogus early years.
   useEffect(() => {
+    const isCommittableDate = (value: string) => {
+      if (!value) return true;
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+      if (!match) return false;
+      const year = parseInt(match[1], 10);
+      return year >= 1900 && year <= 2099;
+    };
+
+    const dateFieldsReady =
+      isCommittableDate(searchFilters.collectionDateFrom) &&
+      isCommittableDate(searchFilters.collectionDateTo) &&
+      isCommittableDate(searchFilters.createdAtFrom) &&
+      isCommittableDate(searchFilters.createdAtTo);
+
+    if (!dateFieldsReady) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
       logger.log('Setting debounced filters:', searchFilters);
       setDebouncedSearchFilters(searchFilters);

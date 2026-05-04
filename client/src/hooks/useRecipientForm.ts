@@ -32,6 +32,8 @@ export const getDefaultRecipientForm = () => ({
   collectionTime: '',
   feedingDay: '',
   feedingTime: '',
+  collectionSchedules: [] as Array<{ day: string; time: string; notes?: string }>,
+  feedingSchedules: [] as Array<{ day: string; time: string; notes?: string }>,
   hasSharedPost: false,
   sharedPostDate: '',
   averagePeopleServed: '',
@@ -124,6 +126,13 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
       sharedPostDate: (recipient as any).sharedPostDate
         ? new Date((recipient as any).sharedPostDate).toISOString().split('T')[0]
         : '',
+      // Schedule arrays — normalize from DB JSONB
+      collectionSchedules: Array.isArray((recipient as any).collectionSchedules)
+        ? (recipient as any).collectionSchedules
+        : [],
+      feedingSchedules: Array.isArray((recipient as any).feedingSchedules)
+        ? (recipient as any).feedingSchedules
+        : [],
     };
   }, []);
 

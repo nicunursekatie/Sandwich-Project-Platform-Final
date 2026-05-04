@@ -192,7 +192,7 @@ export function createAdminEventsRouter(deps: { isAuthenticated: any }) {
       }
 
       const { status, reason } = req.body;
-      const validStatuses = ['new', 'in_process', 'scheduled', 'completed', 'declined', 'cancelled', 'stalled', 'standby'];
+      const validStatuses = ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'cancelled', 'stalled', 'standby', 'non_event'];
 
       if (!status || !validStatuses.includes(status)) {
         return res.status(400).json({

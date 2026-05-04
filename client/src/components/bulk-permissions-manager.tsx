@@ -188,6 +188,7 @@ const COMPONENT_ACCESS_CONFIG = {
       { permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW, label: 'View Admin Overview', icon: BarChart3 },
       { permission: PERMISSIONS.EVENT_REQUESTS_EDIT_ALL_DETAILS, label: 'Edit All Event Details', icon: Edit },
       { permission: PERMISSIONS.EVENT_REQUESTS_DELETE_CARD, label: 'Delete Event Cards', icon: Edit },
+      { permission: PERMISSIONS.EVENT_CHECK_IN_ALERTS, label: 'Event Check-In Alerts', icon: Clock },
     ],
   },
   'Data Management': {

@@ -6,6 +6,7 @@ import { getEventRequestDefaults } from '@shared/role-view-defaults';
 import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
 import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
+import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
 
 interface EventRequestContextType {
   // Event requests data
@@ -235,7 +236,18 @@ interface EventRequestProviderProps {
   initialEventId?: number;
 }
 
-export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
+/**
+ * Public provider. Wraps the inner provider in EventDialogProvider so the
+ * inner can `useEventDialogState()` and pass dialog fields through on the
+ * existing EventRequestContext value (Strangler Pattern, PR 1 of 3).
+ */
+export const EventRequestProvider: React.FC<EventRequestProviderProps> = (props) => (
+  <EventDialogProvider>
+    <EventRequestProviderInner {...props} />
+  </EventDialogProvider>
+);
+
+const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   children,
   initialTab,
   initialEventId
@@ -243,6 +255,12 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Get current user for assignment checking
   const { user } = useAuth();
   const [location] = useLocation();
+
+  // Pull all dialog/active-event/assignment/inline-editing state from the
+  // newly-extracted EventDialogContext. We re-export each field through this
+  // context's value below so existing consumers don't need to change their
+  // imports yet (the destination of PR 2 is to switch them over).
+  const dialog = useEventDialogState();
 
   // Get role-based defaults for this user
   const roleDefaults = useMemo(() => {
@@ -259,7 +277,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       return initialTab;
     }
     // Default to 'new' for event requests when no tab is specified
@@ -345,7 +363,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
     if (initialTab && validTabs.includes(initialTab)) {
       logger.log('[EventRequestContext] Setting activeTab from initialTab:', initialTab);
       setActiveTab(initialTab);
@@ -363,7 +381,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
     const sectionFromUrl = urlParams.get('section');
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
 
     // Only update if we're on the event-requests section and there's a valid tab in the URL
     if (sectionFromUrl === 'event-requests' && tabFromUrl && validTabs.includes(tabFromUrl)) {
@@ -385,100 +403,10 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(roleDefaults.itemsPerPage);
 
-  // Selected event and editing
-  const [selectedEventRequest, setSelectedEventRequest] = useState<EventRequest | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // Dialog visibility states
-  const [showEventDetails, setShowEventDetails] = useState(false);
-  const [showEventDetailsPreview, setShowEventDetailsPreview] = useState(false);
-  const [showSchedulingDialog, setShowSchedulingDialog] = useState(false);
-  const [showToolkitSentDialog, setShowToolkitSentDialog] = useState(false);
-  const [showScheduleCallDialog, setShowScheduleCallDialog] = useState(false);
-  const [showOneDayFollowUpDialog, setShowOneDayFollowUpDialog] = useState(false);
-  const [showOneMonthFollowUpDialog, setShowOneMonthFollowUpDialog] = useState(false);
-  const [showContactOrganizerDialog, setShowContactOrganizerDialog] = useState(false);
-  const [showCollectionLog, setShowCollectionLog] = useState(false);
-  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
-  const [showTspContactAssignmentDialog, setShowTspContactAssignmentDialog] = useState(false);
-  const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
-  const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
-  const [showLogContactDialog, setShowLogContactDialog] = useState(false);
-  const [showEditContactDialog, setShowEditContactDialog] = useState(false);
-  const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
-  const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
-  const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
-  const [showScratchpad, setShowScratchpad] = useState(false);
-  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showNonEventDialog, setShowNonEventDialog] = useState(false);
-  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
-
-  // Event being acted upon
-  const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
-  const [toolkitEventRequest, setToolkitEventRequest] = useState<EventRequest | null>(null);
-  const [collectionLogEventRequest, setCollectionLogEventRequest] = useState<EventRequest | null>(null);
-  const [contactEventRequest, setContactEventRequest] = useState<EventRequest | null>(null);
-  const [tspContactEventRequest, setTspContactEventRequest] = useState<EventRequest | null>(null);
-  const [logContactEventRequest, setLogContactEventRequest] = useState<EventRequest | null>(null);
-  const [editContactEventRequest, setEditContactEventRequest] = useState<EventRequest | null>(null);
-  const [editContactAttemptData, setEditContactAttemptData] = useState<any | null>(null);
-  const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
-  const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
-  const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
-  const [scratchpadEventRequest, setScratchpadEventRequest] = useState<EventRequest | null>(null);
-  const [reasonDialogEventRequest, setReasonDialogEventRequest] = useState<EventRequest | null>(null);
-  const [nonEventDialogEventRequest, setNonEventDialogEventRequest] = useState<EventRequest | null>(null);
-  const [rescheduleDialogEventRequest, setRescheduleDialogEventRequest] = useState<EventRequest | null>(null);
-  const [showNextActionDialog, setShowNextActionDialog] = useState(false);
-  const [nextActionEventRequest, setNextActionEventRequest] = useState<EventRequest | null>(null);
-  const [nextActionMode, setNextActionMode] = useState<'add' | 'edit' | 'complete'>('add');
-
-  // Assignment state
-  const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
-  const [assignmentEventId, setAssignmentEventId] = useState<number | null>(null);
-  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
-  const [isEditingAssignment, setIsEditingAssignment] = useState(false);
-  const [editingAssignmentPersonId, setEditingAssignmentPersonId] = useState<string | null>(null);
-  const [isVanDriverAssignment, setIsVanDriverAssignment] = useState(false);
-
-  // Schedule call state
-  const [scheduleCallDate, setScheduleCallDate] = useState('');
-  const [scheduleCallTime, setScheduleCallTime] = useState('');
-
-  // Follow-up notes
-  const [followUpNotes, setFollowUpNotes] = useState('');
-
-  // Inline editing state
-  const [editingScheduledId, setEditingScheduledId] = useState<number | null>(null);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editingValue, setEditingValue] = useState<string>('');
-
-  // Inline sandwich editing
-  const [inlineSandwichMode, setInlineSandwichMode] = useState<'total' | 'types' | 'range'>('total');
-  const [inlineTotalCount, setInlineTotalCount] = useState(0);
-  const [inlineSandwichTypes, setInlineSandwichTypes] = useState<Array<{type: string, quantity: number}>>([]);
-  const [inlineRangeMin, setInlineRangeMin] = useState(0);
-  const [inlineRangeMax, setInlineRangeMax] = useState(0);
-  const [inlineRangeType, setInlineRangeType] = useState('');
-
-  // Modal sandwich editing
-  const [modalSandwichMode, setModalSandwichMode] = useState<'total' | 'types'>('total');
-  const [modalTotalCount, setModalTotalCount] = useState(0);
-  const [modalSandwichTypes, setModalSandwichTypes] = useState<Array<{type: string, quantity: number}>>([]);
-
-  // Completed event editing
-  const [editingCompletedId, setEditingCompletedId] = useState<number | null>(null);
-  const [completedEdit, setCompletedEdit] = useState<any>({});
-
-  // Custom person data
-  const [customPersonData, setCustomPersonData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    vanCapable: false,
-  });
+  // NOTE: Dialog/active-event/assignment/inline-editing state is no longer
+  // declared here — it lives in EventDialogContext. We read it via the
+  // `dialog` ref above and re-export it on this context's value for
+  // backwards compatibility (see PR plan).
 
   // Group requests by status
   const requestsByStatus = useMemo(() => {
@@ -601,7 +529,7 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
   // Synchronize statusFilter with activeTab (only for status-based tabs)
   useEffect(() => {
     // Only sync statusFilter for tabs that correspond to status values
-    if (['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments'].includes(activeTab)) {
+    if (['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'].includes(activeTab)) {
       setStatusFilter(activeTab);
     }
     // For admin_overview and planning tabs, don't change statusFilter
@@ -649,16 +577,15 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 
     if (initialEventId && eventRequests.length > 0 && !hasHandledInitialEvent) {
       const targetEvent = eventRequests.find(req => req.id === initialEventId);
       if (targetEvent) {
-        setSelectedEventRequest(targetEvent);
-        setShowEventDetails(true);
-        setIsEditing(false);
+        // Open the details dialog via the new EventDialogContext helper.
+        dialog.openEventDetails(targetEvent, { isEditing: false });
         setHasHandledInitialEvent(true); // Mark as handled to prevent reopening
         setLastHandledEventId(initialEventId); // Track which event was handled
 
@@ -685,9 +612,13 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     }
   }, [initialTab, initialEventId, eventRequests, hasHandledInitialEvent]);
 
-  // Memoize context value to prevent unnecessary re-renders of consumers.
-  // Setter functions from useState are guaranteed stable and excluded from dependencies.
+  // Memoize context value. Dialog/inline-editing fields come from the
+  // separate EventDialogContext via `dialog` and are spread here so existing
+  // consumers see the same shape (Strangler Pattern pass-through). PR 2 will
+  // switch consumers to call useEventDialogState() directly and remove the
+  // dialog spread, which is where the re-render perf win lands.
   const value: EventRequestContextType = useMemo(() => ({
+    // ---- Fields owned by this context ----
     // Data
     eventRequests,
     isLoading,
@@ -721,198 +652,24 @@ export const EventRequestProvider: React.FC<EventRequestProviderProps> = ({
     itemsPerPage,
     setItemsPerPage,
 
-    // Selected event
-    selectedEventRequest,
-    setSelectedEventRequest,
-    isEditing,
-    setIsEditing,
-
-    // Dialog states
-    showEventDetails,
-    setShowEventDetails,
-    showEventDetailsPreview,
-    setShowEventDetailsPreview,
-    showSchedulingDialog,
-    setShowSchedulingDialog,
-    showToolkitSentDialog,
-    setShowToolkitSentDialog,
-    showScheduleCallDialog,
-    setShowScheduleCallDialog,
-    showOneDayFollowUpDialog,
-    setShowOneDayFollowUpDialog,
-    showOneMonthFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
-    showContactOrganizerDialog,
-    setShowContactOrganizerDialog,
-    showCollectionLog,
-    setShowCollectionLog,
-    showAssignmentDialog,
-    setShowAssignmentDialog,
-    showTspContactAssignmentDialog,
-    setShowTspContactAssignmentDialog,
-    showSandwichPlanningModal,
-    setShowSandwichPlanningModal,
-    showStaffingPlanningModal,
-    setShowStaffingPlanningModal,
-    showLogContactDialog,
-    setShowLogContactDialog,
-    showEditContactDialog,
-    setShowEditContactDialog,
-    showAiDateSuggestionDialog,
-    setShowAiDateSuggestionDialog,
-    showAiIntakeAssistantDialog,
-    setShowAiIntakeAssistantDialog,
-    showIntakeCallDialog,
-    setShowIntakeCallDialog,
-    showScratchpad,
-    setShowScratchpad,
-    showDeclineDialog,
-    setShowDeclineDialog,
-    showCancelDialog,
-    setShowCancelDialog,
-    showNonEventDialog,
-    setShowNonEventDialog,
-    showRescheduleDialog,
-    setShowRescheduleDialog,
-
-    // Event references
-    schedulingEventRequest,
-    setSchedulingEventRequest,
-    toolkitEventRequest,
-    setToolkitEventRequest,
-    collectionLogEventRequest,
-    setCollectionLogEventRequest,
-    contactEventRequest,
-    setContactEventRequest,
-    tspContactEventRequest,
-    setTspContactEventRequest,
-    logContactEventRequest,
-    setLogContactEventRequest,
-    editContactEventRequest,
-    setEditContactEventRequest,
-    editContactAttemptData,
-    setEditContactAttemptData,
-    aiSuggestionEventRequest,
-    setAiSuggestionEventRequest,
-    aiIntakeAssistantEventRequest,
-    setAiIntakeAssistantEventRequest,
-    intakeCallEventRequest,
-    setIntakeCallEventRequest,
-    scratchpadEventRequest,
-    setScratchpadEventRequest,
-    reasonDialogEventRequest,
-    setReasonDialogEventRequest,
-    nonEventDialogEventRequest,
-    setNonEventDialogEventRequest,
-    rescheduleDialogEventRequest,
-    setRescheduleDialogEventRequest,
-    showNextActionDialog,
-    setShowNextActionDialog,
-    nextActionEventRequest,
-    setNextActionEventRequest,
-    nextActionMode,
-    setNextActionMode,
-
-    // Assignment
-    assignmentType,
-    setAssignmentType,
-    assignmentEventId,
-    setAssignmentEventId,
-    selectedAssignees,
-    setSelectedAssignees,
-    isEditingAssignment,
-    setIsEditingAssignment,
-    editingAssignmentPersonId,
-    setEditingAssignmentPersonId,
-    isVanDriverAssignment,
-    setIsVanDriverAssignment,
-
-    // Schedule call
-    scheduleCallDate,
-    setScheduleCallDate,
-    scheduleCallTime,
-    setScheduleCallTime,
-
-    // Follow-up
-    followUpNotes,
-    setFollowUpNotes,
-
-    // Inline editing
-    editingScheduledId,
-    setEditingScheduledId,
-    editingField,
-    setEditingField,
-    editingValue,
-    setEditingValue,
-
-    // Sandwich editing
-    inlineSandwichMode,
-    setInlineSandwichMode,
-    inlineTotalCount,
-    setInlineTotalCount,
-    inlineSandwichTypes,
-    setInlineSandwichTypes,
-    inlineRangeMin,
-    setInlineRangeMin,
-    inlineRangeMax,
-    setInlineRangeMax,
-    inlineRangeType,
-    setInlineRangeType,
-    modalSandwichMode,
-    setModalSandwichMode,
-    modalTotalCount,
-    setModalTotalCount,
-    modalSandwichTypes,
-    setModalSandwichTypes,
-
-    // Completed editing
-    editingCompletedId,
-    setEditingCompletedId,
-    completedEdit,
-    setCompletedEdit,
-
-    // Custom person
-    customPersonData,
-    setCustomPersonData,
+    // ---- Pass-through from EventDialogContext ----
+    // Spread last so the field shape matches what consumers expect today.
+    // Strip the helper-only `openEventDetails` field — it's part of the
+    // EventDialogContext API, not the back-compat surface.
+    ...(({ openEventDetails: _omit, ...rest }) => rest)(dialog),
   }), [
-    // Query results
+    // Query results / data this context owns
     eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
-    // Computed values
     requestsByStatus, statusCounts,
-    // View state
+    // View state this context owns
     quickFilter, viewMode, activeTab, searchQuery, debouncedSearchQuery,
     statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,
     // Pagination
     currentPage, itemsPerPage,
-    // Selected/editing
-    selectedEventRequest, isEditing,
-    // Dialog visibility (19 booleans)
-    showEventDetails, showSchedulingDialog, showToolkitSentDialog, showScheduleCallDialog,
-    showOneDayFollowUpDialog, showOneMonthFollowUpDialog, showContactOrganizerDialog,
-    showCollectionLog, showAssignmentDialog, showTspContactAssignmentDialog,
-    showSandwichPlanningModal, showStaffingPlanningModal, showLogContactDialog,
-    showEditContactDialog, showAiDateSuggestionDialog, showAiIntakeAssistantDialog,
-    showIntakeCallDialog, showScratchpad, showNextActionDialog, showNonEventDialog, showRescheduleDialog,
-    // Event references (13)
-    schedulingEventRequest, toolkitEventRequest, collectionLogEventRequest,
-    contactEventRequest, tspContactEventRequest, logContactEventRequest,
-    editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,
-    aiIntakeAssistantEventRequest, intakeCallEventRequest, scratchpadEventRequest,
-    nextActionEventRequest, nextActionMode, nonEventDialogEventRequest, rescheduleDialogEventRequest,
-    // Assignment state (6)
-    assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment, editingAssignmentPersonId, isVanDriverAssignment,
-    // Schedule call & follow-up (3)
-    scheduleCallDate, scheduleCallTime, followUpNotes,
-    // Inline editing (3)
-    editingScheduledId, editingField, editingValue,
-    // Sandwich editing (11)
-    inlineSandwichMode, inlineTotalCount, inlineSandwichTypes, inlineRangeMin,
-    inlineRangeMax, inlineRangeType, modalSandwichMode, modalTotalCount, modalSandwichTypes,
-    // Completed editing (2)
-    editingCompletedId, completedEdit,
-    // Custom person (1)
-    customPersonData,
-    // Note: All set* functions are excluded - useState setters are guaranteed stable
+    // Pass-through. We only need to depend on the dialog object identity
+    // because EventDialogProvider already memoizes its own value with the
+    // full sub-deps; if any dialog field changes, `dialog` is a new object.
+    dialog,
   ]);
 
   return (

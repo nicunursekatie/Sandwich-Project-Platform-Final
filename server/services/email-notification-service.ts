@@ -7,6 +7,8 @@ import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata } from '@shared/types';
 import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmentSMS, sendEventCommentSMS } from '../sms-service';
 import { getAppBaseUrl } from '../config/constants';
+import { ALERT_TYPES } from '@shared/alert-catalog';
+import { getEffectivePrefs } from './notifications/preferences';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -103,12 +105,23 @@ export class EmailNotificationService {
   static async sendChatMentionNotification(
     notification: ChatMentionNotification
   ): Promise<boolean> {
-    if (!process.env.SENDGRID_API_KEY) {
-      logger.log('SendGrid not configured - skipping email notification');
+    // Respect the user's saved preferences. If both channels are off, skip.
+    const prefs = await getEffectivePrefs(
+      notification.mentionedUserId,
+      ALERT_TYPES.CHAT_MENTION
+    );
+    if (!prefs.emailEnabled && !prefs.smsEnabled) {
       return false;
     }
 
-    try {
+    const shouldSendEmail = prefs.emailEnabled && !!process.env.SENDGRID_API_KEY;
+    if (prefs.emailEnabled && !process.env.SENDGRID_API_KEY) {
+      logger.log('SendGrid not configured - skipping chat mention email');
+    }
+
+    let anySent = false;
+
+    if (shouldSendEmail) {
       const msg = {
         to: notification.mentionedUserEmail,
         from: 'katie@thesandwichproject.org',
@@ -177,20 +190,30 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         `.trim(),
       };
 
-      await sgMail.send(msg);
-      logger.log(
-        `Chat mention notification sent to ${notification.mentionedUserEmail}`
-      );
-
-      // Send SMS notification if user has opted in
       try {
-        const mentionedUser = await db.select().from(users).where(eq(users.id, notification.mentionedUserId)).limit(1);
-        if (mentionedUser && mentionedUser.length > 0) {
+        await sgMail.send(msg);
+        logger.log(
+          `Chat mention notification sent to ${notification.mentionedUserEmail}`
+        );
+        anySent = true;
+      } catch (err) {
+        logger.error('Error sending chat mention email:', err);
+      }
+    }
+
+    if (prefs.smsEnabled) {
+      try {
+        const mentionedUser = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, notification.mentionedUserId))
+          .limit(1);
+        if (mentionedUser.length > 0) {
           const metadata = getUserMetadata(mentionedUser[0]);
           const smsConsent = metadata.smsConsent;
           if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
-            const messagePreview = notification.messageContent.length > 50 
-              ? notification.messageContent.substring(0, 50) + '...' 
+            const messagePreview = notification.messageContent.length > 50
+              ? notification.messageContent.substring(0, 50) + '...'
               : notification.messageContent;
             const chatUrl = this.getChatUrl(notification.channel);
             await sendChatMentionSMS(
@@ -202,17 +225,15 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
               chatUrl
             );
             logger.log(`Chat mention SMS sent to ${smsConsent.phoneNumber}`);
+            anySent = true;
           }
         }
       } catch (smsError) {
-        logger.error('Error sending chat mention SMS (email still succeeded):', smsError);
+        logger.error('Error sending chat mention SMS:', smsError);
       }
-
-      return true;
-    } catch (error) {
-      logger.error('Error sending chat mention notification:', error);
-      return false;
     }
+
+    return anySent;
   }
 
   /**
@@ -570,10 +591,23 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         return false;
       }
 
-      // Send email to each assigned user
+      // Resolve each user's prefs once so we don't double-query below
+      const prefsByUser = new Map<string, Awaited<ReturnType<typeof getEffectivePrefs>>>();
+      for (const user of assignedUsers) {
+        prefsByUser.set(
+          user.id,
+          await getEffectivePrefs(user.id, ALERT_TYPES.HOLDING_ZONE_ASSIGNMENT)
+        );
+      }
+
+      // Send email to each assigned user (only if they've opted in)
       for (const user of assignedUsers) {
         if (!user.email) {
           logger.warn(`User ${user.id} has no email - cannot send Holding Zone assignment notification`);
+          continue;
+        }
+        const prefs = prefsByUser.get(user.id);
+        if (!prefs?.emailEnabled) {
           continue;
         }
 
@@ -661,10 +695,15 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
         logger.log(`Holding Zone assignment notification sent to ${userEmail} for item ${itemId}`);
       }
 
-      // Send SMS notifications to users who have opted in
+      // Send SMS notifications to users who (a) have opted in over SMS in
+      // their prefs and (b) have a confirmed phone number on file.
       const holdingZoneUrl = this.getTeamBoardUrl();
       for (const user of assignedUsers) {
         try {
+          const prefs = prefsByUser.get(user.id);
+          if (!prefs?.smsEnabled) {
+            continue;
+          }
           const metadata = getUserMetadata(user);
           const smsConsent = metadata.smsConsent;
           if (smsConsent?.status === 'confirmed' && smsConsent.enabled && smsConsent.phoneNumber) {
@@ -962,6 +1001,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           logger.warn(`Skipping mention notification: user ${user.id} has no email.`);
           continue;
         }
+
+        // Respect the user's Alert Preferences for Holding Zone mentions.
+        const prefs = await getEffectivePrefs(user.id, ALERT_TYPES.HOLDING_ZONE_MENTION);
+        if (!prefs.emailEnabled) continue;
 
         const userName =
           user.displayName ||
@@ -1271,6 +1314,10 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
           logger.warn(`Skipping mention notification: user ${user.id} has no email.`);
           continue;
         }
+
+        // Respect the user's Alert Preferences for Holding Zone mentions.
+        const prefs = await getEffectivePrefs(user.id, ALERT_TYPES.HOLDING_ZONE_MENTION);
+        if (!prefs.emailEnabled) continue;
 
         const userName =
           user.displayName ||

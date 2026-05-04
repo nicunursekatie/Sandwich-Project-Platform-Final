@@ -155,6 +155,7 @@ const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
 const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
 const VolunteerEventHub = lazyWithRetry(() => import('@/pages/volunteer-event-hub'));
+const DriverHub = lazyWithRetry(() => import('@/pages/driver-hub'));
 const HostResources = lazyWithRetry(() => import('@/pages/host-resources'));
 const YearlyCalendar = lazyWithRetry(() => import('@/pages/yearly-calendar'));
 const Directory = lazyWithRetry(() => import('@/pages/directory'));
@@ -622,6 +623,8 @@ export default function Dashboard({
         return <DriverPlanningDashboard />;
       case 'volunteer-hub':
         return <VolunteerEventHub />;
+      case 'driver-hub':
+        return <DriverHub />;
       case 'host-resources':
         return <HostResources />;
       case 'recipients':
@@ -842,14 +845,14 @@ export default function Dashboard({
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
         <MultiViewProvider initialSection={activeSection}>
-        <div className="bg-gray-50 min-h-screen flex flex-col overflow-x-hidden safe-area-inset">
+        <div className="bg-gray-50 h-screen flex flex-col overflow-hidden safe-area-inset">
         {/* Reviewer Banner - shows for read-only reviewer accounts */}
         <ReviewerBanner />
         {/* Announcement Banner */}
         <AnnouncementBanner />
         
         {/* Top Header */}
-        <div className="bg-brand-primary border-b border-brand-primary-dark shadow-md px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full">
+        <div className="bg-brand-primary border-b border-brand-primary-dark shadow-md px-2 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center mobile-header-fix min-h-[60px] sm:min-h-[70px] overflow-x-hidden max-w-full flex-shrink-0">
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             {/* Mobile menu button - positioned first for easy access */}
             <button
@@ -1087,7 +1090,7 @@ export default function Dashboard({
             </TooltipProvider>
           </div>
         </div>
-        <div className="flex flex-1 relative pt-[60px] md:pt-0">
+        <div className="flex flex-1 min-h-0 relative pt-[60px] md:pt-0">
           {/* Mobile overlay */}
           {isMobileMenuOpen && (
             <div
@@ -1145,11 +1148,11 @@ export default function Dashboard({
                   </div>
 
                   {/* Amazon Wishlist Quick Access */}
-                  <div className="bg-gradient-to-r from-[#FBAD3F]/10 to-[#FBAD3F]/20 border-2 border-[#FBAD3F] rounded-lg px-3 py-2.5 shadow-sm">
+                  <div className="bg-gradient-to-r from-[#47B3CB]/10 to-[#47B3CB]/20 border-2 border-[#47B3CB] rounded-lg px-3 py-2.5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
-                        <Gift className="w-4 h-4 text-[#FBAD3F]" />
-                        <div className="text-xs text-[#FBAD3F] font-bold uppercase tracking-wide">
+                        <Gift className="w-4 h-4 text-[#006e7e]" />
+                        <div className="text-xs text-[#006e7e] font-bold uppercase tracking-wide">
                           Amazon Wishlist
                         </div>
                       </div>
@@ -1159,7 +1162,7 @@ export default function Dashboard({
                         href="https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV/ref=nav_wishlist_lists_4"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 bg-[#FBAD3F] hover:bg-[#E89A2F] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
+                        className="flex-1 bg-[#47B3CB] hover:bg-[#3A9AB5] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
                         title="Open Amazon Wishlist"
                       >
                         <ExternalLink className="w-3 h-3" />
@@ -1173,7 +1176,7 @@ export default function Dashboard({
                             logger.error('Copy failed:', err);
                           }
                         }}
-                        className="bg-[#FBAD3F]/20 hover:bg-[#FBAD3F]/30 text-[#FBAD3F] px-2 py-1.5 rounded transition-colors"
+                        className="bg-[#006e7e]/10 hover:bg-[#006e7e]/20 text-[#006e7e] px-2 py-1.5 rounded transition-colors"
                         title="Copy wishlist link to clipboard"
                       >
                         <Copy className="w-3 h-3" />
@@ -1186,12 +1189,12 @@ export default function Dashboard({
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0 flex flex-col">
+          <div className="flex-1 overflow-hidden w-full md:w-auto relative z-10 bg-[#F6F9FA] min-w-0 min-h-0 flex flex-col">
             {/* Multi-View Toolbar */}
             <MultiViewToolbar currentSection={activeSection} />
 
             {/* Content Area */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <MultiViewContainer
                 renderContent={(section) => {
                   // Determine the content wrapper based on section type
