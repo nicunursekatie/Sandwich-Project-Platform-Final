@@ -159,6 +159,7 @@ export default function DriversManagement() {
   const [agreementFilter, setAgreementFilter] = useState<string>('all');
   const [vanFilter, setVanFilter] = useState<string>('all');
   const [driverTypeFilter, setDriverTypeFilter] = useState<string>('all');
+  const [surveyFilter, setSurveyFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
 
@@ -276,8 +277,15 @@ export default function DriversManagement() {
       filtered = filtered.filter((driver) => driver.isEventDriver === true);
     }
 
+    // Apply survey filter
+    if (surveyFilter === 'submitted') {
+      filtered = filtered.filter((driver) => driver.surveySubmitted === true);
+    } else if (surveyFilter === 'not_submitted') {
+      filtered = filtered.filter((driver) => !driver.surveySubmitted);
+    }
+
     return filtered;
-  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, driverTypeFilter]);
+  }, [drivers, searchTerm, statusFilter, agreementFilter, vanFilter, driverTypeFilter, surveyFilter]);
 
   // Add driver mutation
   const addDriverMutation = useMutation({
@@ -1256,7 +1264,8 @@ export default function DriversManagement() {
               {(statusFilter !== 'all' ||
                 agreementFilter !== 'all' ||
                 vanFilter !== 'all' ||
-                driverTypeFilter !== 'all') && (
+                driverTypeFilter !== 'all' ||
+                surveyFilter !== 'all') && (
                 <Badge variant="secondary" className="ml-1">
                   {
                     [
@@ -1264,6 +1273,7 @@ export default function DriversManagement() {
                       agreementFilter !== 'all' && 'Agreement',
                       vanFilter !== 'all' && 'Van',
                       driverTypeFilter !== 'all' && 'Type',
+                      surveyFilter !== 'all' && 'Survey',
                     ].filter(Boolean).length
                   }
                 </Badge>
@@ -1350,6 +1360,22 @@ export default function DriversManagement() {
                 </Select>
               </div>
 
+              <div className="flex flex-col space-y-2">
+                <Label className="text-xs font-medium text-slate-600">
+                  Driver Survey
+                </Label>
+                <Select value={surveyFilter} onValueChange={setSurveyFilter}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Survey Status</SelectItem>
+                    <SelectItem value="submitted">Survey Submitted</SelectItem>
+                    <SelectItem value="not_submitted">Not Submitted</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-end">
                 <Button
                   variant="ghost"
@@ -1360,6 +1386,7 @@ export default function DriversManagement() {
                     setAgreementFilter('all');
                     setVanFilter('all');
                     setDriverTypeFilter('all');
+                    setSurveyFilter('all');
                   }}
                   className="text-slate-500 hover:text-slate-700"
                 >
@@ -1378,6 +1405,7 @@ export default function DriversManagement() {
             {agreementFilter !== 'all' && <span> • {agreementFilter === 'signed' ? 'Agreement Signed' : agreementFilter === 'signed_and_located' ? 'Signed + Located' : 'No Agreement'}</span>}
             {vanFilter !== 'all' && <span> • {vanFilter === 'approved' ? 'Van Approved' : vanFilter === 'approved_and_willing' ? 'Approved + Willing' : 'Van Interest'}</span>}
             {driverTypeFilter !== 'all' && <span> • {driverTypeFilter === 'weekly' ? 'Weekly Driver' : 'Event Driver'}</span>}
+            {surveyFilter !== 'all' && <span> • {surveyFilter === 'submitted' ? 'Survey Submitted' : 'Survey Not Submitted'}</span>}
           </div>
         </div>
       </div>
@@ -2036,7 +2064,7 @@ export default function DriversManagement() {
                 No drivers found
               </h3>
               <p className="text-gray-500">
-                {searchTerm || statusFilter !== 'all' || agreementFilter !== 'all' || vanFilter !== 'all' || driverTypeFilter !== 'all'
+                {searchTerm || statusFilter !== 'all' || agreementFilter !== 'all' || vanFilter !== 'all' || driverTypeFilter !== 'all' || surveyFilter !== 'all'
                   ? 'Try adjusting your search or filters.'
                   : 'Add your first driver to get started.'}
               </p>
