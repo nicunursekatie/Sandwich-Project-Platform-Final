@@ -925,6 +925,11 @@ router.get('/my-signups', isAuthenticated, async (req: AuthenticatedRequest, res
  */
 router.get('/pending-signups', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Only users with VOLUNTEER_SIGNUP_APPROVE can view pending signups
+    if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
+      return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required' });
+    }
+
     const showAll = req.query.all === 'true';
 
     const query = db
@@ -985,7 +990,14 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
       return res.status(404).json({ error: 'Signup not found' });
     }
 
-    // Driver signups require DRIVER_SIGNUP_APPROVE permission
+    // Approving/declining any signup requires VOLUNTEER_SIGNUP_APPROVE permission
+    if (status === 'confirmed' || status === 'assigned' || status === 'declined') {
+      if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
+        return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required to approve or decline signups' });
+      }
+    }
+
+    // Driver signups additionally require DRIVER_SIGNUP_APPROVE permission
     if (signup.role === 'driver' && (status === 'confirmed' || status === 'assigned')) {
       if (!hasPermission(req.user, PERMISSIONS.DRIVER_SIGNUP_APPROVE)) {
         return res.status(403).json({ error: 'DRIVER_SIGNUP_APPROVE permission required to approve driver signups' });

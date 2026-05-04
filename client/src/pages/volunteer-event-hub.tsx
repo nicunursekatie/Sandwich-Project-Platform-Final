@@ -842,6 +842,11 @@ export default function VolunteerEventHub() {
     (Array.isArray(user?.permissions) &&
       (user.permissions as string[]).includes('EVENT_REQUESTS_ASSIGN_OTHERS'));
 
+  const canApproveSignups =
+    user?.role === 'super_admin' ||
+    (Array.isArray(user?.permissions) &&
+      (user.permissions as string[]).includes('VOLUNTEER_SIGNUP_APPROVE'));
+
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
@@ -884,7 +889,7 @@ export default function VolunteerEventHub() {
       if (!response.ok) return [];
       return response.json();
     },
-    enabled: canAssignOthers,
+    enabled: canApproveSignups,
     refetchInterval: 30000,
   });
 
@@ -1334,7 +1339,7 @@ export default function VolunteerEventHub() {
                 </span>
               )}
             </Button>
-            {canAssignOthers && (
+            {canApproveSignups && (
               <Button
                 variant="ghost"
                 size="sm"
