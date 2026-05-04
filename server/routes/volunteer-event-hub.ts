@@ -677,70 +677,71 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     }
 
     const signedUpAt = new Date();
-    const newSignups = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(eventVolunteers)
-        .values(
-          normalizedRoles.map((requestedRole) => ({
-            eventRequestId: eventId,
-            volunteerUserId: targetUserId,
-            volunteerName: volunteerName,
-            volunteerEmail: user.preferredEmail || user.email,
-            volunteerPhone: user.phone,
-            role: requestedRole,
-            status,
-            notes: notes || null,
-            signedUpAt,
-            assignedBy: isAssigningOther ? callerId : null,
-            confirmedAt: isAssigningOther ? signedUpAt : null,
-          }))
-        )
-        .returning();
 
-      // Mirror assignment into eventRequests.assigned*Ids so the Event Request
-      // Management tab (and the rest of the app) reflects it immediately.
-      // This matches the PATCH /signup/:id/status mirror logic so the data
-      // shape stays consistent whether a coordinator assigns via the Hub or
-      // approves a self-signup.
-      if (isAssigningOther) {
-        const [eventRow] = await tx
-          .select({
-            assignedDriverIds: eventRequests.assignedDriverIds,
-            assignedSpeakerIds: eventRequests.assignedSpeakerIds,
-            assignedVolunteerIds: eventRequests.assignedVolunteerIds,
-          })
-          .from(eventRequests)
-          .where(eq(eventRequests.id, eventId))
-          .limit(1);
+    // Insert volunteer signups (one row per role).
+    // NOTE: db.transaction() is NOT used here because the Neon HTTP driver
+    // (used in production) does not support transactions. The two operations
+    // below are intentionally sequential without a transaction wrapper.
+    const newSignups = await db
+      .insert(eventVolunteers)
+      .values(
+        normalizedRoles.map((requestedRole) => ({
+          eventRequestId: eventId,
+          volunteerUserId: targetUserId,
+          volunteerName: volunteerName,
+          volunteerEmail: user.preferredEmail || user.email,
+          volunteerPhone: user.phone,
+          role: requestedRole,
+          status,
+          notes: notes || null,
+          signedUpAt,
+          assignedBy: isAssigningOther ? callerId : null,
+          confirmedAt: isAssigningOther ? signedUpAt : null,
+        }))
+      )
+      .returning();
 
-        if (eventRow) {
-          const addUnique = (ids?: string[] | null) =>
-            Array.from(new Set([...(ids || []), targetUserId]));
-          const updates: {
-            assignedDriverIds?: string[];
-            assignedSpeakerIds?: string[];
-            assignedVolunteerIds?: string[];
-          } = {};
-          if (normalizedRoles.includes('driver')) {
-            updates.assignedDriverIds = addUnique(eventRow.assignedDriverIds);
-          }
-          if (normalizedRoles.includes('speaker')) {
-            updates.assignedSpeakerIds = addUnique(eventRow.assignedSpeakerIds);
-          }
-          if (normalizedRoles.includes('general')) {
-            updates.assignedVolunteerIds = addUnique(eventRow.assignedVolunteerIds);
-          }
-          if (Object.keys(updates).length > 0) {
-            await tx
-              .update(eventRequests)
-              .set(updates)
-              .where(eq(eventRequests.id, eventId));
-          }
+    // Mirror assignment into eventRequests.assigned*Ids so the Event Request
+    // Management tab (and the rest of the app) reflects it immediately.
+    // This matches the PATCH /signup/:id/status mirror logic so the data
+    // shape stays consistent whether a coordinator assigns via the Hub or
+    // approves a self-signup.
+    if (isAssigningOther) {
+      const [eventRow] = await db
+        .select({
+          assignedDriverIds: eventRequests.assignedDriverIds,
+          assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+          assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+        })
+        .from(eventRequests)
+        .where(eq(eventRequests.id, eventId))
+        .limit(1);
+
+      if (eventRow) {
+        const addUnique = (ids?: string[] | null) =>
+          Array.from(new Set([...(ids || []), targetUserId]));
+        const updates: {
+          assignedDriverIds?: string[];
+          assignedSpeakerIds?: string[];
+          assignedVolunteerIds?: string[];
+        } = {};
+        if (normalizedRoles.includes('driver')) {
+          updates.assignedDriverIds = addUnique(eventRow.assignedDriverIds);
+        }
+        if (normalizedRoles.includes('speaker')) {
+          updates.assignedSpeakerIds = addUnique(eventRow.assignedSpeakerIds);
+        }
+        if (normalizedRoles.includes('general')) {
+          updates.assignedVolunteerIds = addUnique(eventRow.assignedVolunteerIds);
+        }
+        if (Object.keys(updates).length > 0) {
+          await db
+            .update(eventRequests)
+            .set(updates)
+            .where(eq(eventRequests.id, eventId));
         }
       }
-
-      return inserted;
-    });
+    }
 
     if (isAssigningOther) {
       // Assignment flow: notify the assignee, skip the coordinator
@@ -961,72 +962,68 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
 
     const shouldAssignVolunteer = (status === 'confirmed' || status === 'assigned') && !!signup.volunteerUserId;
 
-    // Wrap assignment + status update in a transaction to prevent race conditions
-    // when two concurrent approvals read and write the same event assignment arrays.
+    // NOTE: db.transaction() is NOT used here because the Neon HTTP driver
+    // (used in production) does not support transactions. Operations run sequentially.
     const effectiveStatus = shouldAssignVolunteer ? 'assigned' : status;
     const isConfirmedOrAssigned = effectiveStatus === 'confirmed' || effectiveStatus === 'assigned';
 
     let updatedSignup: typeof signup | undefined;
 
-    await db.transaction(async (tx) => {
-      // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
-      if (shouldAssignVolunteer) {
-        const [event] = await tx
-          .select({
-            id: eventRequests.id,
-            assignedDriverIds: eventRequests.assignedDriverIds,
-            assignedSpeakerIds: eventRequests.assignedSpeakerIds,
-            assignedVolunteerIds: eventRequests.assignedVolunteerIds,
-          })
-          .from(eventRequests)
-          .where(eq(eventRequests.id, signup.eventRequestId))
-          .limit(1);
+    // If approved, mirror manual assignment behavior by adding the volunteer to the event assignment arrays.
+    if (shouldAssignVolunteer) {
+      const [event] = await db
+        .select({
+          id: eventRequests.id,
+          assignedDriverIds: eventRequests.assignedDriverIds,
+          assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+          assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+        })
+        .from(eventRequests)
+        .where(eq(eventRequests.id, signup.eventRequestId))
+        .limit(1);
 
-        if (!event) {
-          const error = new Error('Event not found for this signup') as Error & { statusCode?: number };
-          error.statusCode = 404;
-          throw error;
-        }
-
-        const assignedUserId = signup.volunteerUserId as string;
-        const addUnique = (ids?: string[] | null) =>
-          Array.from(new Set([...(ids || []), assignedUserId]));
-
-        const assignmentUpdates: {
-          assignedDriverIds?: string[];
-          assignedSpeakerIds?: string[];
-          assignedVolunteerIds?: string[];
-        } = {};
-
-        if (signup.role === 'driver') {
-          assignmentUpdates.assignedDriverIds = addUnique(event.assignedDriverIds);
-        } else if (signup.role === 'speaker') {
-          assignmentUpdates.assignedSpeakerIds = addUnique(event.assignedSpeakerIds);
-        } else {
-          assignmentUpdates.assignedVolunteerIds = addUnique(event.assignedVolunteerIds);
-        }
-
-        await tx
-          .update(eventRequests)
-          .set(assignmentUpdates)
-          .where(eq(eventRequests.id, signup.eventRequestId));
+      if (!event) {
+        return res.status(404).json({ error: 'Event not found for this signup' });
       }
 
-      // Update the signup status
-      const [signupRow] = await tx
-        .update(eventVolunteers)
-        .set({
-          status: effectiveStatus,
-          confirmedAt: isConfirmedOrAssigned ? new Date() : null,
-          assignedBy: coordinatorId,
-          notes: notes || signup.notes,
-          updatedAt: new Date(),
-        })
-        .where(eq(eventVolunteers.id, signupId))
-        .returning();
+      const assignedUserId = signup.volunteerUserId as string;
+      const addUnique = (ids?: string[] | null) =>
+        Array.from(new Set([...(ids || []), assignedUserId]));
 
-      updatedSignup = signupRow;
-    });
+      const assignmentUpdates: {
+        assignedDriverIds?: string[];
+        assignedSpeakerIds?: string[];
+        assignedVolunteerIds?: string[];
+      } = {};
+
+      if (signup.role === 'driver') {
+        assignmentUpdates.assignedDriverIds = addUnique(event.assignedDriverIds);
+      } else if (signup.role === 'speaker') {
+        assignmentUpdates.assignedSpeakerIds = addUnique(event.assignedSpeakerIds);
+      } else {
+        assignmentUpdates.assignedVolunteerIds = addUnique(event.assignedVolunteerIds);
+      }
+
+      await db
+        .update(eventRequests)
+        .set(assignmentUpdates)
+        .where(eq(eventRequests.id, signup.eventRequestId));
+    }
+
+    // Update the signup status
+    const [signupRow] = await db
+      .update(eventVolunteers)
+      .set({
+        status: effectiveStatus,
+        confirmedAt: isConfirmedOrAssigned ? new Date() : null,
+        assignedBy: coordinatorId,
+        notes: notes || signup.notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventVolunteers.id, signupId))
+      .returning();
+
+    updatedSignup = signupRow;
 
     // Send confirmation email to volunteer when approved
     if (isConfirmedOrAssigned && signup.volunteerEmail) {
