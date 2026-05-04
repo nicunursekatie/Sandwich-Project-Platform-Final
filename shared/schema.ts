@@ -1096,6 +1096,7 @@ export const hostContacts = pgTable('host_contacts', {
   // the collection-log dropdown) and weeklyActive (weekly host-finder
   // rotation) — those answer different questions.
   isFormerHost: boolean('is_former_host').notNull().default(false),
+  alternateForContactId: integer('alternate_for_contact_id'), // ID of the host contact this person is an alternate for
   lastScraped: timestamp('last_scraped'), // Last time availability was scraped from external site
   latitude: decimal('latitude'), // Latitude coordinate for map display (nullable)
   longitude: decimal('longitude'), // Longitude coordinate for map display (nullable)
