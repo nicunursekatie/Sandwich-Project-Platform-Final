@@ -242,106 +242,35 @@ export default function RequestFilters({
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
 
   return (
-    <div className="space-y-6">
-      {/* Search - Always visible */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
-        <Input
-          id="event-requests-search"
-          placeholder="Search by organization, name, email, date, location, TSP contact, or volunteer..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 w-full"
-          data-testid="input-search-requests"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => onSearchChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#007E8C] hover:text-[#004f57] font-semibold"
-            aria-label="Clear search"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Mobile: Compact filters in a single row with labels */}
-      <div className="md:hidden flex gap-2">
-        <div className="flex-1 min-w-0">
-          <label className="text-xs text-gray-500 mb-1 block">Status</label>
-          <Select value={activeTab} onValueChange={onActiveTabChange}>
-            <SelectTrigger className="h-9 text-sm">
-              <div className="flex items-center space-x-1.5 truncate">
-                {currentTab && (
-                  <>
-                    <currentTab.icon className="w-3.5 h-3.5 text-[#007E8C] flex-shrink-0" />
-                    <span className="truncate">{currentTab.shortLabel}</span>
-                    {currentTab.count !== undefined && <span className="text-gray-500 text-xs">({formatCount(currentTab.count)})</span>}
-                  </>
-                )}
-              </div>
-            </SelectTrigger>
-            <SelectContent className="mobile-select-content">
-              {tabConfig.map((tab) => (
-                <SelectItem key={tab.value} value={tab.value} className="mobile-select-item">
-                  <div className="flex items-center space-x-2">
-                    <tab.icon className="w-4 h-4 text-[#007E8C]" />
-                    <span>{tab.label}</span>
-                    {tab.count !== undefined && <span className="text-gray-500">({formatCount(tab.count)})</span>}
-                    {tab.hasNotification && !statusCountsLoading && (
-                      <div className="w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-4">
+      {/* Search + filter dropdowns — single row */}
+      <div className="flex flex-col md:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
+          <Input
+            id="event-requests-search"
+            placeholder="Search by organization, name, email, date, location, TSP contact, or volunteer..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 w-full"
+            data-testid="input-search-requests"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#007E8C] hover:text-[#004f57] font-semibold"
+              aria-label="Clear search"
+            >
+              Clear
+            </button>
+          )}
         </div>
-        <div className="w-28 flex-shrink-0">
-          <label className="text-xs text-gray-500 mb-1 block">Filter</label>
-          <Select
-            value={confirmationFilter}
-            onValueChange={(value: any) => onConfirmationFilterChange(value)}
-          >
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="requested">Requested</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-32 flex-shrink-0">
-          <label className="text-xs text-gray-500 mb-1 block">Sort</label>
-          <Select
-            value={sortBy}
-            onValueChange={(value: any) => onSortByChange(value)}
-          >
-            <SelectTrigger className="h-9 text-sm" data-testid="sort-select-trigger">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-              <SelectItem value="created_date_desc">Newest</SelectItem>
-              <SelectItem value="created_date_asc">Oldest</SelectItem>
-              <SelectItem value="event_date_desc">Recent Event</SelectItem>
-              <SelectItem value="event_date_asc">Oldest Event</SelectItem>
-              <SelectItem value="organization_asc">Org A-Z</SelectItem>
-              <SelectItem value="organization_desc">Org Z-A</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Desktop: Filters in a row */}
-      <div className="hidden md:flex gap-4">
         <Select
           value={confirmationFilter}
           onValueChange={(value: any) => onConfirmationFilterChange(value)}
         >
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="Filter by..." />
           </SelectTrigger>
           <SelectContent className="z-[100]" position="popper" sideOffset={5}>
@@ -354,16 +283,47 @@ export default function RequestFilters({
           value={sortBy}
           onValueChange={(value: any) => onSortByChange(value)}
         >
-          <SelectTrigger className="w-56" data-testid="sort-select-trigger-desktop">
+          <SelectTrigger className="w-full md:w-52" data-testid="sort-select-trigger-desktop">
             <SelectValue placeholder="Sort by..." />
           </SelectTrigger>
           <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-            <SelectItem value="created_date_desc">Submission Date (Most Recent First)</SelectItem>
-            <SelectItem value="created_date_asc">Submission Date (Oldest First)</SelectItem>
-            <SelectItem value="event_date_desc">Event Date (Most Recent)</SelectItem>
+            <SelectItem value="created_date_desc">Newest First</SelectItem>
+            <SelectItem value="created_date_asc">Oldest First</SelectItem>
+            <SelectItem value="event_date_desc">Event Date (Recent)</SelectItem>
             <SelectItem value="event_date_asc">Event Date (Oldest)</SelectItem>
             <SelectItem value="organization_asc">Organization A-Z</SelectItem>
             <SelectItem value="organization_desc">Organization Z-A</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Mobile: Tab selector dropdown */}
+      <div className="md:hidden">
+        <Select value={activeTab} onValueChange={onActiveTabChange}>
+          <SelectTrigger className="h-9 text-sm">
+            <div className="flex items-center space-x-1.5 truncate">
+              {currentTab && (
+                <>
+                  <currentTab.icon className="w-3.5 h-3.5 text-[#007E8C] flex-shrink-0" />
+                  <span className="truncate">{currentTab.shortLabel}</span>
+                  {currentTab.count !== undefined && <span className="text-gray-500 text-xs">({formatCount(currentTab.count)})</span>}
+                </>
+              )}
+            </div>
+          </SelectTrigger>
+          <SelectContent className="mobile-select-content">
+            {tabConfig.map((tab) => (
+              <SelectItem key={tab.value} value={tab.value} className="mobile-select-item">
+                <div className="flex items-center space-x-2">
+                  <tab.icon className="w-4 h-4 text-[#007E8C]" />
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && <span className="text-gray-500">({formatCount(tab.count)})</span>}
+                  {tab.hasNotification && !statusCountsLoading && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
