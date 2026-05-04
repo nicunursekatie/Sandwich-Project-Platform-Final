@@ -645,8 +645,8 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
         </div>
 
-        {/* Alert banners — outstanding work items */}
-        <div className="flex flex-col sm:flex-row gap-2 px-2 sm:px-0">
+        {/* Alert banners — outstanding work items (full-width notification strips) */}
+        <div className="space-y-2">
           <MissingInfoSummaryDialog />
           <ToolkitSentPendingDialog />
         </div>
@@ -774,48 +774,53 @@ const EventRequestsManagementContent: React.FC = () => {
           {/* Spacer pushes view toggles + status defs to the right */}
           <div className="flex-1" />
 
-          {/* View mode toggle */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-            >
-              <List className="w-3.5 h-3.5" />
-              {!isMobile && 'List'}
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              {!isMobile && 'Calendar'}
-            </button>
-            <button
-              onClick={() => setViewMode('map')}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              {!isMobile && 'Map'}
-            </button>
-          </div>
-
-          {/* Card/Spreadsheet/Export — shown when on Scheduled tab in List view */}
-          {activeTab === 'scheduled' && viewMode === 'list' && (
+          {/* Unified view controls */}
+          <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
+              {activeTab === 'scheduled' && viewMode === 'list' ? (
+                <>
+                  <button
+                    onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    {!isMobile && 'Cards'}
+                  </button>
+                  <button
+                    onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    <Table2 className="w-3.5 h-3.5" />
+                    {!isMobile && 'Spreadsheet'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  {!isMobile && 'List'}
+                </button>
+              )}
               <button
-                onClick={() => { setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setViewMode('calendar')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
               >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                {!isMobile && 'Cards'}
+                <Calendar className="w-3.5 h-3.5" />
+                {!isMobile && 'Calendar'}
               </button>
               <button
-                onClick={() => { setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setViewMode('map')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
               >
-                <Table2 className="w-3.5 h-3.5" />
-                {!isMobile && 'Spreadsheet'}
+                <MapPin className="w-3.5 h-3.5" />
+                {!isMobile && 'Map'}
               </button>
+            </div>
+            {/* Export button — separate from toggle, shown when on scheduled tab */}
+            {activeTab === 'scheduled' && viewMode === 'list' && (
               <button
                 onClick={async () => {
                   try {
@@ -824,13 +829,13 @@ const EventRequestsManagementContent: React.FC = () => {
                   } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
                 }}
                 disabled={eventRequests.length === 0}
-                className="px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
               >
                 <Download className="w-3.5 h-3.5" />
                 {!isMobile && 'Export'}
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Status Definitions - inline reference */}
           <OnboardingTooltip

@@ -141,13 +141,13 @@ export function MissingInfoSummaryDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button
-          className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 transition-colors text-sm font-medium cursor-pointer"
+          className="w-full flex items-center gap-3 px-5 py-3 bg-red-50 border-l-4 border-l-red-500 border-y border-r border-red-100 text-red-800 hover:bg-red-100 transition-colors text-sm cursor-pointer rounded-r-lg"
           data-testid="button-missing-info-summary"
         >
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span className="font-semibold">{eventsWithMissingInfo.length}</span>
-          <span>Incomplete Events</span>
-          <span className="ml-auto text-red-400 text-xs">Click to review</span>
+          <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          <span className="font-bold text-lg leading-none">{eventsWithMissingInfo.length}</span>
+          <span className="font-medium">Incomplete Events need attention</span>
+          <span className="ml-auto text-red-400 text-xs font-medium">Click to review →</span>
         </button>
       </DialogTrigger>
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] overflow-y-auto">

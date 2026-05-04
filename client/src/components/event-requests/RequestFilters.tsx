@@ -329,24 +329,25 @@ export default function RequestFilters({
       </div>
 
       {/* Desktop: Tab Bar - Hidden on mobile */}
-      <div className="hidden md:block space-y-2">
-        {/* Navigation tabs (pages) — shown only if user has any nav tabs */}
-        {navTabs.length > 1 && (
-          <div className="flex items-center gap-1 pb-2 border-b border-gray-200">
+      <div className="hidden md:block space-y-3">
+        {/* Secondary navigation (pages/views) — visually distinct from status filters */}
+        {navTabs.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold mr-1">Views:</span>
             {navTabs.map((tab) => (
               <button
                 key={tab.value}
                 onClick={() => onActiveTabChange(tab.value)}
-                className={`relative text-xs lg:text-sm whitespace-nowrap px-3 py-1.5 rounded-md font-medium transition-colors ${
+                className={`text-xs lg:text-sm whitespace-nowrap px-3 py-1.5 rounded-md font-medium transition-colors border ${
                   activeTab === tab.value
-                    ? 'bg-[#007E8C] text-white'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    ? 'bg-[#236383] text-white border-[#236383] shadow-sm'
+                    : 'text-[#236383] border-[#236383]/20 bg-[#236383]/5 hover:bg-[#236383]/10 hover:border-[#236383]/40'
                 }`}
                 data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
                 data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
               >
-                <div className="flex items-center justify-center space-x-1">
-                  <tab.icon className="w-3 h-3 flex-shrink-0" />
+                <div className="flex items-center justify-center space-x-1.5">
+                  <tab.icon className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="hidden lg:inline">{tab.label}</span>
                   <span className="lg:hidden">{tab.shortLabel}</span>
                   {tab.count !== undefined && <span className="text-xs opacity-70">({formatCount(tab.count)})</span>}
@@ -356,7 +357,7 @@ export default function RequestFilters({
           </div>
         )}
 
-        {/* Status filter tabs */}
+        {/* Status filter tabs — the primary filter mechanism */}
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
             <TabsList className="inline-flex w-auto min-w-full gap-1">
