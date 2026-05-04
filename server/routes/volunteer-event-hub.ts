@@ -561,6 +561,38 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
 // ============================================================================
 
 /**
+ * Get current user's signup(s) for a specific event
+ */
+router.get('/signup/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const eventId = parseInt(req.params.eventId);
+    const userId = req.user?.id;
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const signups = await db
+      .select()
+      .from(eventVolunteers)
+      .where(
+        and(
+          eq(eventVolunteers.eventRequestId, eventId),
+          eq(eventVolunteers.volunteerUserId, userId)
+        )
+      );
+
+    res.json(signups);
+  } catch (error) {
+    logger.error('Error fetching signup for event:', error);
+    res.status(500).json({ error: 'Failed to fetch signup status' });
+  }
+});
+
+/**
  * Request to volunteer for an event
  * Creates a pending signup that coordinators must confirm
  */
