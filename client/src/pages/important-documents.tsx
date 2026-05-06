@@ -184,7 +184,7 @@ export const adminDocuments: AdminDocument[] = [
     name: 'Food Safety Volunteers Guide',
     description: 'Comprehensive safety protocols for volunteers preparing and delivering sandwiches',
     category: 'Tools',
-    path: '/attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf',
+    path: '/attached_assets/20260506-TSP-Food+Safety+Volunteers.pdf',
     type: 'pdf',
     importance: 'critical',
   },

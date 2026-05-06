@@ -23,7 +23,7 @@ const documentFiles: DocumentFile[] = [
   },
   {
     name: "Food Safety Volunteers Guide",
-    path: "/attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf",
+    path: "/attached_assets/20260506-TSP-Food+Safety+Volunteers.pdf",
     type: "pdf",
     category: "Training",
     description: "Essential food safety guidelines for all volunteers"

@@ -94,7 +94,7 @@ const initialResources = [
       'Comprehensive safety protocols for volunteers preparing and delivering sandwiches',
     type: 'link' as const,
     category: 'operations_safety',
-    url: '/attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf',
+    url: '/attached_assets/20260506-TSP-Food+Safety+Volunteers.pdf',
     isPinnedGlobal: false,
   },
   {

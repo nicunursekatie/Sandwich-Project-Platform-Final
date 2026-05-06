@@ -695,7 +695,7 @@ export function createEmailRouter(deps: RouterDependencies) {
               // Map document hashes to attached_assets files
               const hashToFileMap: Record<string, { file: string; name: string }> = {
                 '015b0f68ddb511633e7696caab59bfa7': {
-                  file: 'attached_assets/20260317-TSP-Food Safety Volunteers.docx.pdf',
+                  file: 'attached_assets/20260506-TSP-Food+Safety+Volunteers.pdf',
                   name: 'Food Safety Guide for Volunteers.pdf'
                 },
                 '3e375509b08b20265abdfa6afe632982': {

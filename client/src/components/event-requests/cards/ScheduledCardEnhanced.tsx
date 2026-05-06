@@ -174,6 +174,99 @@ const extractCustomName = (id: string): string => {
   return ''; // Return empty string so resolveUserName gets called
 };
 
+interface PersonNotesProps {
+  notes?: string;
+  canEdit: boolean;
+  isSaving?: boolean;
+  onSave: (notes: string) => void;
+}
+
+const PersonNotes: React.FC<PersonNotesProps> = ({ notes, canEdit, isSaving, onSave }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(notes ?? '');
+
+  const startEdit = () => {
+    setDraft(notes ?? '');
+    setIsEditing(true);
+  };
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if ((trimmed || '') === (notes ?? '')) {
+      setIsEditing(false);
+      return;
+    }
+    onSave(trimmed);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-start gap-1 mt-1 pl-1">
+        <FileText className="w-3 h-3 text-gray-500 mt-1.5 shrink-0" />
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit();
+            else if (e.key === 'Escape') setIsEditing(false);
+          }}
+          autoFocus
+          placeholder="Add notes (e.g. allergies, role, contact info)"
+          className="h-7 text-xs flex-1 min-w-0"
+        />
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={commit}
+          disabled={isSaving}
+          className="h-6 px-2 text-green-600 shrink-0"
+          aria-label="Save notes"
+        >
+          <Check className="w-3 h-3" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsEditing(false)}
+          className="h-6 px-2 text-gray-600 shrink-0"
+          aria-label="Cancel notes"
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  if (notes) {
+    return (
+      <div
+        className={`flex items-start gap-1 mt-1 pl-1 ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+        onClick={() => canEdit && startEdit()}
+        title={canEdit ? 'Click to edit notes' : undefined}
+      >
+        <FileText className="w-3 h-3 text-gray-500 mt-0.5 shrink-0" />
+        <span className="text-xs text-gray-700 italic flex-1 min-w-0 break-words leading-snug">
+          {notes}
+        </span>
+      </div>
+    );
+  }
+
+  if (!canEdit) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={startEdit}
+      className="mt-1 pl-1 flex items-center gap-1 text-xs text-gray-500 hover:text-[#236383]"
+    >
+      <FileText className="w-3 h-3" />
+      <span>Add notes</span>
+    </button>
+  );
+};
+
 export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   request,
   editingField,
@@ -2808,19 +2901,38 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const displayName = isCustom
                               ? extractCustomName(id)
                               : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                            const personNotes = (request.driverDetails as any)?.[id]?.notes as string | undefined;
                             return (
-                            <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                              <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
+                            <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                              <div className="flex items-start gap-2 min-w-0">
+                                <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('driver', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                              <PersonNotes
+                                notes={personNotes}
+                                canEdit={!!canEdit}
+                                isSaving={updateFieldsMutation.isPending}
+                                onSave={(newNotes) => {
+                                  const current = (request.driverDetails as Record<string, any>) || {};
+                                  const existing = current[id] || {};
+                                  const updated = newNotes
+                                    ? { ...current, [id]: { ...existing, notes: newNotes } }
+                                    : (() => {
+                                        const { notes: _omit, ...rest } = existing;
+                                        return { ...current, [id]: rest };
+                                      })();
+                                  updateFieldsMutation.mutate({ driverDetails: updated });
+                                }}
+                              />
                             </div>
                             );
                           })}
@@ -2844,23 +2956,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const displayName = isCustom
                               ? extractCustomName(id)
                               : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                            const personNotes = (request.driverDetails as any)?.[id]?.notes as string | undefined;
                             return (
-                            <div key={`tentative-${id}`} className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
-                              <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
-                                <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                                {displayName}
-                                <span className="text-xs text-amber-500">(tentative)</span>
-                              </span>
-                              {canEdit && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('driver', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              )}
+                            <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                              <div className="flex items-start gap-2 min-w-0">
+                                <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
+                                  <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                                  {displayName}
+                                  <span className="text-xs text-amber-500">(tentative)</span>
+                                </span>
+                                {canEdit && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('driver', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                )}
+                              </div>
+                              <PersonNotes
+                                notes={personNotes}
+                                canEdit={!!canEdit}
+                                isSaving={updateFieldsMutation.isPending}
+                                onSave={(newNotes) => {
+                                  const current = (request.driverDetails as Record<string, any>) || {};
+                                  const existing = current[id] || {};
+                                  const updated = newNotes
+                                    ? { ...current, [id]: { ...existing, notes: newNotes } }
+                                    : (() => {
+                                        const { notes: _omit, ...rest } = existing;
+                                        return { ...current, [id]: rest };
+                                      })();
+                                  updateFieldsMutation.mutate({ driverDetails: updated });
+                                }}
+                              />
                             </div>
                             );
                           })}
@@ -3002,16 +3133,39 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const isUnknown = displayName === 'Unknown Speaker';
                         const editingFieldKey = `speaker-name-${id}`;
                         const isEditing = isEditingThisCard && editingField === editingFieldKey;
-                        
+                        const personNotes = (request.speakerDetails as any)?.[id]?.notes as string | undefined;
+
                         return (
-                          <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                            {isEditing ? (
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Input
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
+                          <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <div className="flex items-start gap-2 min-w-0">
+                              {isEditing ? (
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Input
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        const updatedSpeakerDetails = {
+                                          ...(request.speakerDetails || {}),
+                                          [id]: {
+                                            ...((request.speakerDetails as any)?.[id] || {}),
+                                            name: editingValue.trim() || null,
+                                          },
+                                        };
+                                        updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
+                                        cancelEdit();
+                                      } else if (e.key === 'Escape') {
+                                        cancelEdit();
+                                      }
+                                    }}
+                                    autoFocus
+                                    className="h-8 text-base font-bold text-[#236383] flex-1 min-w-0"
+                                    placeholder="Speaker name"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
                                       const updatedSpeakerDetails = {
                                         ...(request.speakerDetails || {}),
                                         [id]: {
@@ -3021,66 +3175,64 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                       };
                                       updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
                                       cancelEdit();
-                                    } else if (e.key === 'Escape') {
-                                      cancelEdit();
-                                    }
-                                  }}
-                                  autoFocus
-                                  className="h-8 text-base font-bold text-[#236383] flex-1 min-w-0"
-                                  placeholder="Speaker name"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    const updatedSpeakerDetails = {
-                                      ...(request.speakerDetails || {}),
-                                      [id]: {
-                                        ...((request.speakerDetails as any)?.[id] || {}),
-                                        name: editingValue.trim() || null,
-                                      },
-                                    };
-                                    updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
-                                    cancelEdit();
-                                  }}
-                                  className="h-6 px-2 text-green-600 shrink-0"
-                                >
-                                  <Check className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={cancelEdit}
-                                  className="h-6 px-2 text-gray-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <span 
-                                  className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight cursor-pointer hover:underline"
-                                  onClick={() => canEdit && startEditing(editingFieldKey, displayName)}
-                                  title={canEdit ? "Click to edit speaker name" : undefined}
-                                >
-                                  {displayName}
-                                  {isUnknown && (
-                                    <span className="text-xs font-normal text-gray-500 ml-1" title={`Speaker ID: ${id}`}>
-                                      (ID: {id})
-                                    </span>
-                                  )}
-                                </span>
-                                {canEdit && (
+                                    }}
+                                    className="h-6 px-2 text-green-600 shrink-0"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleRemoveAssignment('speaker', id)}
-                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                    onClick={cancelEdit}
+                                    className="h-6 px-2 text-gray-600 shrink-0"
                                   >
                                     <X className="w-3 h-3" />
                                   </Button>
-                                )}
-                              </>
+                                </div>
+                              ) : (
+                                <>
+                                  <span
+                                    className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight cursor-pointer hover:underline"
+                                    onClick={() => canEdit && startEditing(editingFieldKey, displayName)}
+                                    title={canEdit ? "Click to edit speaker name" : undefined}
+                                  >
+                                    {displayName}
+                                    {isUnknown && (
+                                      <span className="text-xs font-normal text-gray-500 ml-1" title={`Speaker ID: ${id}`}>
+                                        (ID: {id})
+                                      </span>
+                                    )}
+                                  </span>
+                                  {canEdit && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleRemoveAssignment('speaker', id)}
+                                      className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            {!isEditing && (
+                              <PersonNotes
+                                notes={personNotes}
+                                canEdit={!!canEdit}
+                                isSaving={updateFieldsMutation.isPending}
+                                onSave={(newNotes) => {
+                                  const current = (request.speakerDetails as Record<string, any>) || {};
+                                  const existing = current[id] || {};
+                                  const updated = newNotes
+                                    ? { ...current, [id]: { ...existing, notes: newNotes } }
+                                    : (() => {
+                                        const { notes: _omit, ...rest } = existing;
+                                        return { ...current, [id]: rest };
+                                      })();
+                                  updateFieldsMutation.mutate({ speakerDetails: updated });
+                                }}
+                              />
                             )}
                           </div>
                         );
@@ -3100,23 +3252,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const displayName = isCustom
                           ? extractCustomName(id)
                           : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const personNotes = (request.speakerDetails as any)?.[id]?.notes as string | undefined;
                         return (
-                        <div key={`tentative-${id}`} className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
-                          <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
-                            <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                            {displayName}
-                            <span className="text-xs text-amber-500">(tentative)</span>
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('speaker', id)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
+                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
+                              <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                              {displayName}
+                              <span className="text-xs text-amber-500">(tentative)</span>
+                            </span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('speaker', id)}
+                                className="h-5 w-5 p-0 text-red-600 shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                          <PersonNotes
+                            notes={personNotes}
+                            canEdit={!!canEdit}
+                            isSaving={updateFieldsMutation.isPending}
+                            onSave={(newNotes) => {
+                              const current = (request.speakerDetails as Record<string, any>) || {};
+                              const existing = current[id] || {};
+                              const updated = newNotes
+                                ? { ...current, [id]: { ...existing, notes: newNotes } }
+                                : (() => {
+                                    const { notes: _omit, ...rest } = existing;
+                                    return { ...current, [id]: rest };
+                                  })();
+                              updateFieldsMutation.mutate({ speakerDetails: updated });
+                            }}
+                          />
                         </div>
                         );
                       })}
@@ -3248,26 +3419,45 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const displayName = isCustom
                           ? extractCustomName(id)
                           : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const personNotes = (request.volunteerDetails as any)?.[id]?.notes as string | undefined;
                         return (
-                        <div key={id} className="flex items-start gap-2 bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
-                          <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
-                          {canEdit && (
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('volunteer', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Remove volunteer assignment</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          )}
+                        <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
+                            {canEdit && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleRemoveAssignment('volunteer', id)}
+                                    className="h-5 w-5 p-0 text-red-600 shrink-0"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Remove volunteer assignment</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
+                          <PersonNotes
+                            notes={personNotes}
+                            canEdit={!!canEdit}
+                            isSaving={updateFieldsMutation.isPending}
+                            onSave={(newNotes) => {
+                              const current = (request.volunteerDetails as Record<string, any>) || {};
+                              const existing = current[id] || {};
+                              const updated = newNotes
+                                ? { ...current, [id]: { ...existing, notes: newNotes } }
+                                : (() => {
+                                    const { notes: _omit, ...rest } = existing;
+                                    return { ...current, [id]: rest };
+                                  })();
+                              updateFieldsMutation.mutate({ volunteerDetails: updated });
+                            }}
+                          />
                         </div>
                         );
                       })}
@@ -3288,23 +3478,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const displayName = isCustom
                           ? extractCustomName(id)
                           : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const personNotes = (request.volunteerDetails as any)?.[id]?.notes as string | undefined;
                         return (
-                        <div key={`tentative-${id}`} className="flex items-start gap-2 bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
-                          <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
-                            <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                            {displayName}
-                            <span className="text-xs text-amber-500">(tentative)</span>
-                          </span>
-                          {canEdit && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => handleRemoveAssignment('volunteer', id)}
-                              className="h-5 w-5 p-0 text-red-600 shrink-0"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          )}
+                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                          <div className="flex items-start gap-2 min-w-0">
+                            <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
+                              <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
+                              {displayName}
+                              <span className="text-xs text-amber-500">(tentative)</span>
+                            </span>
+                            {canEdit && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveAssignment('volunteer', id)}
+                                className="h-5 w-5 p-0 text-red-600 shrink-0"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                          <PersonNotes
+                            notes={personNotes}
+                            canEdit={!!canEdit}
+                            isSaving={updateFieldsMutation.isPending}
+                            onSave={(newNotes) => {
+                              const current = (request.volunteerDetails as Record<string, any>) || {};
+                              const existing = current[id] || {};
+                              const updated = newNotes
+                                ? { ...current, [id]: { ...existing, notes: newNotes } }
+                                : (() => {
+                                    const { notes: _omit, ...rest } = existing;
+                                    return { ...current, [id]: rest };
+                                  })();
+                              updateFieldsMutation.mutate({ volunteerDetails: updated });
+                            }}
+                          />
                         </div>
                         );
                       })}
