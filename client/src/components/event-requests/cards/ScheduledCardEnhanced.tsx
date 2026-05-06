@@ -2812,12 +2812,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const driverPersonNotes = (request.driverDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                             const notesFieldKey = `driver-notes-${id}`;
                             const isEditingNotes = isEditingThisCard && editingField === notesFieldKey;
+                            const nameFieldKey = `driver-name-${id}`;
+                            const isEditingName = isEditingThisCard && editingField === nameFieldKey;
                             return (
                             <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                               <div className="flex items-start gap-2">
                                 <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
                                 {canEdit && (
                                   <div className="flex items-center gap-0.5 shrink-0">
+                                    {isCustom && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => startEditing(nameFieldKey, displayName)}
+                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                        title="Edit name"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -2838,6 +2851,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   </div>
                                 )}
                               </div>
+                              {isEditingName && (
+                                <div className="mt-1.5 flex items-center gap-1">
+                                  <Input
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') cancelEdit();
+                                    }}
+                                    autoFocus
+                                    placeholder="Name"
+                                    className="h-7 text-sm flex-1"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const trimmed = editingValue.trim();
+                                      if (!trimmed || trimmed === displayName) {
+                                        cancelEdit();
+                                        return;
+                                      }
+                                      const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
+                                      const arr = parsePostgresArray(request.assignedDriverIds);
+                                      const newArr = arr.map((x) => (x === id ? newId : x));
+                                      const details = (request.driverDetails as Record<string, any>) || {};
+                                      const newDetails = { ...details };
+                                      if (newDetails[id] !== undefined) {
+                                        newDetails[newId] = newDetails[id];
+                                        delete newDetails[id];
+                                      }
+                                      updateFieldsMutation.mutate({ assignedDriverIds: newArr, driverDetails: newDetails });
+                                      cancelEdit();
+                                    }}
+                                    className="h-7 px-2 text-xs"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
+                                    Cancel
+                                  </Button>
+                                </div>
+                              )}
                               {isEditingNotes ? (
                                 <div className="mt-1.5 space-y-1">
                                   <Textarea
@@ -2919,6 +2973,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const tDriverPersonNotes = (request.driverDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                             const tDriverNotesFieldKey = `tdriver-notes-${id}`;
                             const isEditingTDriverNotes = isEditingThisCard && editingField === tDriverNotesFieldKey;
+                            const tDriverNameFieldKey = `tdriver-name-${id}`;
+                            const isEditingTDriverName = isEditingThisCard && editingField === tDriverNameFieldKey;
                             return (
                             <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
                               <div className="flex items-start gap-2">
@@ -2929,6 +2985,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 </span>
                                 {canEdit && (
                                   <div className="flex items-center gap-0.5 shrink-0">
+                                    {isCustom && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => startEditing(tDriverNameFieldKey, displayName)}
+                                        className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
+                                        title="Edit name"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -2949,6 +3016,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   </div>
                                 )}
                               </div>
+                              {isEditingTDriverName && (
+                                <div className="mt-1.5 flex items-center gap-1">
+                                  <Input
+                                    value={editingValue}
+                                    onChange={(e) => setEditingValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') cancelEdit();
+                                    }}
+                                    autoFocus
+                                    placeholder="Name"
+                                    className="h-7 text-sm flex-1"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      const trimmed = editingValue.trim();
+                                      if (!trimmed || trimmed === displayName) {
+                                        cancelEdit();
+                                        return;
+                                      }
+                                      const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
+                                      const arr = parsePostgresArray(request.tentativeDriverIds);
+                                      const newArr = arr.map((x) => (x === id ? newId : x));
+                                      const details = (request.driverDetails as Record<string, any>) || {};
+                                      const newDetails = { ...details };
+                                      if (newDetails[id] !== undefined) {
+                                        newDetails[newId] = newDetails[id];
+                                        delete newDetails[id];
+                                      }
+                                      updateFieldsMutation.mutate({ tentativeDriverIds: newArr, driverDetails: newDetails });
+                                      cancelEdit();
+                                    }}
+                                    className="h-7 px-2 text-xs"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
+                                    Cancel
+                                  </Button>
+                                </div>
+                              )}
                               {isEditingTDriverNotes ? (
                                 <div className="mt-1.5 space-y-1">
                                   <Textarea
@@ -3143,11 +3251,41 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                           ? detailName
                           : customName || recipientName || (userName !== id ? userName : (idLooksLikeName ? id : detailName || 'Unknown Speaker'));
                         const isUnknown = displayName === 'Unknown Speaker';
+                        const isCustom = id.startsWith('custom-');
                         const editingFieldKey = `speaker-name-${id}`;
                         const isEditing = isEditingThisCard && editingField === editingFieldKey;
                         const speakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const speakerNotesFieldKey = `speaker-notes-${id}`;
                         const isEditingSpeakerNotes = isEditingThisCard && editingField === speakerNotesFieldKey;
+
+                        const saveSpeakerName = () => {
+                          const trimmed = editingValue.trim();
+                          if (isCustom) {
+                            if (!trimmed || trimmed === displayName) {
+                              cancelEdit();
+                              return;
+                            }
+                            const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
+                            const details = (request.speakerDetails as Record<string, any>) || {};
+                            const newDetails = { ...details };
+                            if (newDetails[id] !== undefined) {
+                              newDetails[newId] = newDetails[id];
+                              delete newDetails[id];
+                            }
+                            updateFieldsMutation.mutate({ speakerDetails: newDetails });
+                            cancelEdit();
+                          } else {
+                            const updatedSpeakerDetails = {
+                              ...(request.speakerDetails || {}),
+                              [id]: {
+                                ...((request.speakerDetails as any)?.[id] || {}),
+                                name: trimmed || null,
+                              },
+                            };
+                            updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
+                            cancelEdit();
+                          }
+                        };
 
                         return (
                           <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
@@ -3159,15 +3297,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   onChange={(e) => setEditingValue(e.target.value)}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                      const updatedSpeakerDetails = {
-                                        ...(request.speakerDetails || {}),
-                                        [id]: {
-                                          ...((request.speakerDetails as any)?.[id] || {}),
-                                          name: editingValue.trim() || null,
-                                        },
-                                      };
-                                      updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
-                                      cancelEdit();
+                                      saveSpeakerName();
                                     } else if (e.key === 'Escape') {
                                       cancelEdit();
                                     }
@@ -3179,17 +3309,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => {
-                                    const updatedSpeakerDetails = {
-                                      ...(request.speakerDetails || {}),
-                                      [id]: {
-                                        ...((request.speakerDetails as any)?.[id] || {}),
-                                        name: editingValue.trim() || null,
-                                      },
-                                    };
-                                    updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
-                                    cancelEdit();
-                                  }}
+                                  onClick={saveSpeakerName}
                                   className="h-6 px-2 text-green-600 shrink-0"
                                 >
                                   <Check className="w-3 h-3" />
@@ -3219,6 +3339,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                 </span>
                                 {canEdit && (
                                   <div className="flex items-center gap-0.5 shrink-0">
+                                    {isCustom && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => startEditing(editingFieldKey, displayName)}
+                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                        title="Edit name"
+                                      >
+                                        <Edit2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -3317,6 +3448,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const tSpeakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const tSpeakerNotesFieldKey = `tspeaker-notes-${id}`;
                         const isEditingTSpeakerNotes = isEditingThisCard && editingField === tSpeakerNotesFieldKey;
+                        const tSpeakerNameFieldKey = `tspeaker-name-${id}`;
+                        const isEditingTSpeakerName = isEditingThisCard && editingField === tSpeakerNameFieldKey;
                         return (
                         <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
                           <div className="flex items-start gap-2">
@@ -3327,6 +3460,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </span>
                             {canEdit && (
                               <div className="flex items-center gap-0.5 shrink-0">
+                                {isCustom && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing(tSpeakerNameFieldKey, displayName)}
+                                    className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
+                                    title="Edit name"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -3347,6 +3491,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               </div>
                             )}
                           </div>
+                          {isEditingTSpeakerName && (
+                            <div className="mt-1.5 flex items-center gap-1">
+                              <Input
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                autoFocus
+                                placeholder="Name"
+                                className="h-7 text-sm flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const trimmed = editingValue.trim();
+                                  if (!trimmed || trimmed === displayName) {
+                                    cancelEdit();
+                                    return;
+                                  }
+                                  const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
+                                  const arr = parsePostgresArray(request.tentativeSpeakerIds);
+                                  const newArr = arr.map((x) => (x === id ? newId : x));
+                                  const details = (request.speakerDetails as Record<string, any>) || {};
+                                  const newDetails = { ...details };
+                                  if (newDetails[id] !== undefined) {
+                                    newDetails[newId] = newDetails[id];
+                                    delete newDetails[id];
+                                  }
+                                  updateFieldsMutation.mutate({ tentativeSpeakerIds: newArr, speakerDetails: newDetails });
+                                  cancelEdit();
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                           {isEditingTSpeakerNotes ? (
                             <div className="mt-1.5 space-y-1">
                               <Textarea
@@ -3536,12 +3721,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const volunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const volunteerNotesFieldKey = `volunteer-notes-${id}`;
                         const isEditingVolunteerNotes = isEditingThisCard && editingField === volunteerNotesFieldKey;
+                        const volunteerNameFieldKey = `volunteer-name-${id}`;
+                        const isEditingVolunteerName = isEditingThisCard && editingField === volunteerNameFieldKey;
                         return (
                         <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
                           <div className="flex items-start gap-2">
                             <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
                             {canEdit && (
                               <div className="flex items-center gap-0.5 shrink-0">
+                                {isCustom && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing(volunteerNameFieldKey, displayName)}
+                                    className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                    title="Edit name"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -3569,6 +3767,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               </div>
                             )}
                           </div>
+                          {isEditingVolunteerName && (
+                            <div className="mt-1.5 flex items-center gap-1">
+                              <Input
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                autoFocus
+                                placeholder="Name"
+                                className="h-7 text-sm flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const trimmed = editingValue.trim();
+                                  if (!trimmed || trimmed === displayName) {
+                                    cancelEdit();
+                                    return;
+                                  }
+                                  const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
+                                  const arr = parsePostgresArray(request.assignedVolunteerIds);
+                                  const newArr = arr.map((x) => (x === id ? newId : x));
+                                  const details = (request.volunteerDetails as Record<string, any>) || {};
+                                  const newDetails = { ...details };
+                                  if (newDetails[id] !== undefined) {
+                                    newDetails[newId] = newDetails[id];
+                                    delete newDetails[id];
+                                  }
+                                  updateFieldsMutation.mutate({ assignedVolunteerIds: newArr, volunteerDetails: newDetails });
+                                  cancelEdit();
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                           {isEditingVolunteerNotes ? (
                             <div className="mt-1.5 space-y-1">
                               <Textarea
@@ -3647,6 +3886,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const tVolunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const tVolunteerNotesFieldKey = `tvolunteer-notes-${id}`;
                         const isEditingTVolunteerNotes = isEditingThisCard && editingField === tVolunteerNotesFieldKey;
+                        const tVolunteerNameFieldKey = `tvolunteer-name-${id}`;
+                        const isEditingTVolunteerName = isEditingThisCard && editingField === tVolunteerNameFieldKey;
                         return (
                         <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
                           <div className="flex items-start gap-2">
@@ -3657,6 +3898,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             </span>
                             {canEdit && (
                               <div className="flex items-center gap-0.5 shrink-0">
+                                {isCustom && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => startEditing(tVolunteerNameFieldKey, displayName)}
+                                    className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
+                                    title="Edit name"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </Button>
+                                )}
                                 <Button
                                   size="sm"
                                   variant="ghost"
@@ -3677,6 +3929,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               </div>
                             )}
                           </div>
+                          {isEditingTVolunteerName && (
+                            <div className="mt-1.5 flex items-center gap-1">
+                              <Input
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') cancelEdit();
+                                }}
+                                autoFocus
+                                placeholder="Name"
+                                className="h-7 text-sm flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const trimmed = editingValue.trim();
+                                  if (!trimmed || trimmed === displayName) {
+                                    cancelEdit();
+                                    return;
+                                  }
+                                  const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
+                                  const arr = parsePostgresArray(request.tentativeVolunteerIds);
+                                  const newArr = arr.map((x) => (x === id ? newId : x));
+                                  const details = (request.volunteerDetails as Record<string, any>) || {};
+                                  const newDetails = { ...details };
+                                  if (newDetails[id] !== undefined) {
+                                    newDetails[newId] = newDetails[id];
+                                    delete newDetails[id];
+                                  }
+                                  updateFieldsMutation.mutate({ tentativeVolunteerIds: newArr, volunteerDetails: newDetails });
+                                  cancelEdit();
+                                }}
+                                className="h-7 px-2 text-xs"
+                              >
+                                Save
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
                           {isEditingTVolunteerNotes ? (
                             <div className="mt-1.5 space-y-1">
                               <Textarea
