@@ -101,6 +101,20 @@ const CONTACT_ROLES = [
   { value: 'alternate', label: 'Alternate Contact' },
 ] as const;
 
+// Get all contacts eligible to be selected as "alternate for" (exclude the contact itself and volunteers)
+function getAlternateForOptions(hostsWithContacts: HostWithContacts[], excludeContactId?: number): { id: number; name: string; hostName: string }[] {
+  const options: { id: number; name: string; hostName: string }[] = [];
+  for (const host of hostsWithContacts) {
+    if (host.status === 'hidden') continue;
+    for (const contact of host.contacts) {
+      if (contact.id === excludeContactId) continue;
+      if (contact.role?.toLowerCase() === 'volunteer') continue;
+      options.push({ id: contact.id, name: contact.name, hostName: host.name });
+    }
+  }
+  return options.sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // Normalize legacy freeform role values to standardized ones
 // Old data has: "Host", "Host Home", "Host Collection Site", "head of school", etc.
 function normalizeContactRole(raw: string | null | undefined): string {
@@ -250,6 +264,7 @@ export default function HostsManagementConsolidated() {
     driverAgreementSigned: false,
     vanApproved: false,
     notes: '',
+    alternateForContactId: null as number | null,
   });
 
   const { data: hostsWithContacts = [], isLoading } = useQuery<
@@ -595,7 +610,10 @@ export default function HostsManagementConsolidated() {
         address: '',
         hostLocation: '',
         isPrimary: false,
+        driverAgreementSigned: false,
+        vanApproved: false,
         notes: '',
+        alternateForContactId: null,
       });
       setIsAddingContact(false);
       toast({
@@ -930,6 +948,7 @@ export default function HostsManagementConsolidated() {
       driverAgreementSigned: editingContact.driverAgreementSigned || false,
       vanApproved: editingContact.vanApproved || false,
       isFormerHost: editingContact.isFormerHost || false,
+      alternateForContactId: editingContact.role === 'alternate' ? (editingContact.alternateForContactId || null) : null,
       notes: editingContact.notes?.trim() || '',
     };
 
@@ -1156,6 +1175,10 @@ export default function HostsManagementConsolidated() {
                           {contact.role && (
                             <div className="text-xs text-slate-600">
                               {roleLabel(contact.role)}
+                              {contact.role === 'alternate' && contact.alternateForContactId && (() => {
+                                const altFor = hostsWithContacts.flatMap(h => h.contacts).find(c => c.id === contact.alternateForContactId);
+                                return altFor ? <span className="text-slate-500 italic"> for {altFor.name}</span> : null;
+                              })()}
                             </div>
                           )}
                           <div className="flex items-center text-xs text-slate-600">
@@ -1350,6 +1373,27 @@ export default function HostsManagementConsolidated() {
                   </SelectContent>
                 </Select>
               </div>
+              {newContact.role === 'alternate' && (
+                <div>
+                  <Label htmlFor="main-alternate-for">Alternate For</Label>
+                  <Select
+                    value={newContact.alternateForContactId?.toString() || 'none'}
+                    onValueChange={(value) => setNewContact({ ...newContact, alternateForContactId: value === 'none' ? null : parseInt(value) })}
+                  >
+                    <SelectTrigger id="main-alternate-for">
+                      <SelectValue placeholder="Select who this person alternates for" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not specified</SelectItem>
+                      {getAlternateForOptions(hostsWithContacts).map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id.toString()}>
+                          {opt.name} ({opt.hostName})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <Label htmlFor="main-contact-phone">Phone</Label>
                 <Input
@@ -1936,6 +1980,27 @@ export default function HostsManagementConsolidated() {
                         </SelectContent>
                       </Select>
                     </div>
+                    {editingContact.role === 'alternate' && (
+                      <div>
+                        <Label htmlFor="edit-alternate-for">Alternate For</Label>
+                        <Select
+                          value={editingContact.alternateForContactId?.toString() || 'none'}
+                          onValueChange={(value) => setEditingContact({ ...editingContact, alternateForContactId: value === 'none' ? null : parseInt(value) })}
+                        >
+                          <SelectTrigger id="edit-alternate-for">
+                            <SelectValue placeholder="Select who this person alternates for" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Not specified</SelectItem>
+                            {getAlternateForOptions(hostsWithContacts, editingContact.id).map((opt) => (
+                              <SelectItem key={opt.id} value={opt.id.toString()}>
+                                {opt.name} ({opt.hostName})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div>
                       <Label htmlFor="edit-contact-phone">Phone *</Label>

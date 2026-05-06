@@ -349,7 +349,8 @@ export const PERMISSIONS = {
   NAV_QUICK_TOOLS: 'NAV_QUICK_TOOLS', // Access to Quick Tools
   NAV_DOCUMENTS: 'NAV_DOCUMENTS', // Access to Documents section
 
-  // DRIVER HUB - Driver signup management
+  // VOLUNTEER / DRIVER HUB - Signup approval
+  VOLUNTEER_SIGNUP_APPROVE: 'VOLUNTEER_SIGNUP_APPROVE', // Approve/decline volunteer signups from the Volunteer Event Hub
   DRIVER_SIGNUP_APPROVE: 'DRIVER_SIGNUP_APPROVE', // Approve/decline driver signups from the Driver Hub
 
   // ADMIN - Administrative access

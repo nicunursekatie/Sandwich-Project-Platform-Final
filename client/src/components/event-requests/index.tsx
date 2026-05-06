@@ -24,7 +24,8 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download } from 'lucide-react';
+import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 const EventMapView = React.lazy(() => import('./EventMapView'));
@@ -125,6 +126,8 @@ const EventRequestsManagementContent: React.FC = () => {
     isLoading,
     viewMode,
     setViewMode,
+    scheduledViewMode,
+    setScheduledViewMode,
     activeTab,
     setActiveTab,
     searchQuery,
@@ -586,45 +589,31 @@ const EventRequestsManagementContent: React.FC = () => {
   return (
     <TooltipProvider>
       <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4" data-event-requests-root>
-        {/* Header */}
+        {/* Header — title left, admin actions right */}
         <div className="premium-card p-4 sm:p-6">
-          <div className="space-y-4">
-            {/* Title row */}
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="premium-text-h1">Event Requests Management</h1>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="text-teal-600 hover:text-teal-800 transition-colors">
-                        <HelpCircle className="w-5 h-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs premium-tooltip">
-                      <p className="font-semibold mb-1">Event Requests Help</p>
-                      <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className="premium-text-body text-brand-primary">
-                  {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
-                </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="premium-text-h1">Event Requests Management</h1>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                      <HelpCircle className="w-5 h-5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs premium-tooltip">
+                    <p className="font-semibold mb-1">Event Requests Help</p>
+                    <p className="text-sm">Track and manage all event requests from organizations. Use tabs to filter by status, assign TSP contacts, schedule events, and plan sandwich deliveries.</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
-              
-              {/* Primary action - always visible */}
-              <button
-                onClick={() => setShowVolunteerOpportunities(true)}
-                className="premium-btn-primary flex-shrink-0"
-                style={{ backgroundColor: '#007E8C' }}
-              >
-                <Users className="w-4 h-4" />
-                {isMobile ? 'Volunteer' : 'Volunteer Opportunities'}
-              </button>
+              <p className="premium-text-body text-brand-primary">
+                {isMobile ? 'Manage event requests' : 'Manage and track event requests from organizations'}
+              </p>
             </div>
-            
-            {/* Action buttons row */}
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100">
-              {/* Admin actions */}
+
+            {/* Admin/utility actions — grouped right */}
+            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
               {canSyncEvents && (
                 <button
                   onClick={() => syncFromSheetsMutation.mutate()}
@@ -633,7 +622,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   title="Sync new event requests from Google Sheets (safe - won't create duplicates)"
                 >
                   <RefreshCw className={`w-4 h-4 ${syncFromSheetsMutation.isPending ? 'animate-spin' : ''}`} />
-                  {isMobile ? 'Sync' : 'Sync from Sheets'}
+                  {!isMobile && 'Sync'}
                 </button>
               )}
               <button
@@ -642,17 +631,24 @@ const EventRequestsManagementContent: React.FC = () => {
                 data-testid="button-add-manual-event"
               >
                 <Plus className="w-4 h-4" />
-                {isMobile ? 'Add' : 'Add Manual Event Request'}
+                {!isMobile && 'Add Event'}
               </button>
-              
-              {/* Separator */}
-              <div className="hidden sm:block w-px h-6 bg-gray-200 mx-1" />
-              
-              {/* Status alert buttons */}
-              <MissingInfoSummaryDialog />
-              <ToolkitSentPendingDialog />
+              <button
+                onClick={() => setShowVolunteerOpportunities(true)}
+                className="premium-btn-primary flex-shrink-0"
+                style={{ backgroundColor: '#007E8C' }}
+              >
+                <Users className="w-4 h-4" />
+                {!isMobile && 'Volunteer Opps'}
+              </button>
             </div>
           </div>
+        </div>
+
+        {/* Alert banners — outstanding work items (full-width notification strips) */}
+        <div className="space-y-2">
+          <MissingInfoSummaryDialog />
+          <ToolkitSentPendingDialog />
         </div>
 
         {/* Dashboard Summary Cards */}
@@ -677,31 +673,177 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
         )}
 
-        {/* View Mode Toggle - Separate Row */}
-        <div className="flex items-center justify-center">
-          <div className="premium-card-flat flex items-center gap-1 p-1">
-            <button
-              onClick={() => setViewMode('list')}
-              className={viewMode === 'list' ? 'premium-btn-primary premium-btn-sm' : 'premium-btn-ghost premium-btn-sm'}
+        {/* Controls toolbar — quick filters + view toggle + Status Definitions, all in one row */}
+        <div className="flex flex-wrap items-center gap-2 px-2 sm:px-0">
+          {/* Quick filter chips */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setActiveTab('scheduled');
+              setSearchQuery('');
+              setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver');
+            }}
+            className={`${
+              quickFilter === 'needsDriver'
+                ? 'bg-[#236383] text-white border-[#236383] hover:bg-[#236383]/90'
+                : ''
+            }`}
+          >
+            <Car className="w-4 h-4 mr-1.5" />
+            Needs Driver
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setActiveTab('scheduled');
+              setSearchQuery('');
+              setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan');
+            }}
+            className={`${
+              quickFilter === 'needsVan'
+                ? 'bg-[#D68319] text-white border-[#D68319] hover:bg-[#D68319]/90'
+                : ''
+            }`}
+          >
+            <Truck className="w-4 h-4 mr-1.5" />
+            Needs Van
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setActiveTab('scheduled');
+              setSearchQuery('');
+              setQuickFilter(quickFilter === 'week' ? null : 'week');
+            }}
+            className={`${
+              quickFilter === 'week'
+                ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
+                : ''
+            }`}
+          >
+            <Calendar className="w-4 h-4 mr-1.5" />
+            This Week
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setActiveTab('scheduled');
+              setSearchQuery('');
+              setQuickFilter(quickFilter === 'today' ? null : 'today');
+            }}
+            className={`${
+              quickFilter === 'today'
+                ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
+                : ''
+            }`}
+          >
+            <Calendar className="w-4 h-4 mr-1.5" />
+            Today
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearchQuery('');
+              setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority');
+            }}
+            className={`${
+              quickFilter === 'corporatePriority'
+                ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
+                : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+            }`}
+          >
+            <Shield className="w-4 h-4 mr-1.5" />
+            Corporate Priority
+          </Button>
+          <Link href="/driver-planning">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
             >
-              <List className="w-4 h-4" />
-              {!isMobile && 'List View'}
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={viewMode === 'calendar' ? 'premium-btn-primary premium-btn-sm' : 'premium-btn-ghost premium-btn-sm'}
-            >
-              <Calendar className="w-4 h-4" />
-              {!isMobile && 'Calendar View'}
-            </button>
-            <button
-              onClick={() => setViewMode('map')}
-              className={viewMode === 'map' ? 'premium-btn-primary premium-btn-sm' : 'premium-btn-ghost premium-btn-sm'}
-            >
-              <MapPin className="w-4 h-4" />
-              {!isMobile && 'Map View'}
-            </button>
+              <MapPin className="w-4 h-4 mr-1.5" />
+              Driver Planning Map
+            </Button>
+          </Link>
+
+          {/* Spacer pushes view toggles + status defs to the right */}
+          <div className="flex-1" />
+
+          {/* Unified view controls */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
+              {activeTab === 'scheduled' && viewMode === 'list' ? (
+                <>
+                  <button
+                    onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    {!isMobile && 'Cards'}
+                  </button>
+                  <button
+                    onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                  >
+                    <Table2 className="w-3.5 h-3.5" />
+                    {!isMobile && 'Spreadsheet'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  {!isMobile && 'List'}
+                </button>
+              )}
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                {!isMobile && 'Calendar'}
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                {!isMobile && 'Map'}
+              </button>
+            </div>
+            {/* Export button — separate from toggle, shown when on scheduled tab */}
+            {activeTab === 'scheduled' && viewMode === 'list' && (
+              <button
+                onClick={async () => {
+                  try {
+                    await exportEventRequestsToExcel(eventRequests, 'scheduled');
+                    toast({ title: 'Export complete' });
+                  } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
+                }}
+                disabled={eventRequests.length === 0}
+                className="px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {!isMobile && 'Export'}
+              </button>
+            )}
           </div>
+
+          {/* Status Definitions - inline reference */}
+          <OnboardingTooltip
+            step="status-definitions-review"
+            position="bottom"
+          >
+            <StatusDefinitionsPanel />
+          </OnboardingTooltip>
         </div>
 
         {/* View Content: Calendar, Map, or List */}
@@ -723,111 +865,6 @@ const EventRequestsManagementContent: React.FC = () => {
           </React.Suspense>
         ) : (
           <>
-            {/* Quick Filter Buttons */}
-            <div className="mb-4 flex flex-wrap gap-2 px-4 sm:px-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveTab('scheduled');
-                  setSearchQuery('');
-                  setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver');
-                }}
-                className={`${
-                  quickFilter === 'needsDriver'
-                    ? 'bg-[#236383] text-white border-[#236383] hover:bg-[#236383]/90'
-                    : ''
-                }`}
-              >
-                <Car className="w-4 h-4 mr-1.5" />
-                Needs Driver
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveTab('scheduled');
-                  setSearchQuery('');
-                  setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan');
-                }}
-                className={`${
-                  quickFilter === 'needsVan'
-                    ? 'bg-[#D68319] text-white border-[#D68319] hover:bg-[#D68319]/90'
-                    : ''
-                }`}
-              >
-                <Truck className="w-4 h-4 mr-1.5" />
-                Needs Van
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveTab('scheduled');
-                  setSearchQuery('');
-                  setQuickFilter(quickFilter === 'week' ? null : 'week');
-                }}
-                className={`${
-                  quickFilter === 'week'
-                    ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
-                    : ''
-                }`}
-              >
-                <Calendar className="w-4 h-4 mr-1.5" />
-                This Week
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setActiveTab('scheduled');
-                  setSearchQuery('');
-                  setQuickFilter(quickFilter === 'today' ? null : 'today');
-                }}
-                className={`${
-                  quickFilter === 'today'
-                    ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
-                    : ''
-                }`}
-              >
-                <Calendar className="w-4 h-4 mr-1.5" />
-                Today
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearchQuery('');
-                  setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority');
-                }}
-                className={`${
-                  quickFilter === 'corporatePriority'
-                    ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
-                    : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-                }`}
-              >
-                <Shield className="w-4 h-4 mr-1.5" />
-                Corporate Priority
-              </Button>
-              <Link href="/driver-planning">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-                >
-                  <MapPin className="w-4 h-4 mr-1.5" />
-                  Driver Planning Map
-                </Button>
-              </Link>
-            </div>
-            {/* Status Definitions Reference */}
-            <OnboardingTooltip
-              step="status-definitions-review"
-              position="bottom"
-            >
-              <StatusDefinitionsPanel />
-            </OnboardingTooltip>
-
             {/* Filters and Tabs */}
             <RequestFilters
             searchQuery={searchQuery}

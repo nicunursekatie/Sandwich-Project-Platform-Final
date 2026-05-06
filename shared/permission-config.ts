@@ -57,9 +57,10 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.DRIVERS_DELETE,
     ],
   },
-  DRIVER_HUB: {
-    label: 'Driver Hub',
+  SIGNUP_APPROVAL: {
+    label: 'Signup Approval',
     permissions: [
+      PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE,
       PERMISSIONS.DRIVER_SIGNUP_APPROVE,
     ],
   },
@@ -409,6 +410,7 @@ export function getPermissionLabel(permission: string): string {
     [PERMISSIONS.NAV_PROMOTION]: 'Nav Social Media Graphics',
     [PERMISSIONS.NAV_EVENT_SIGNUP_HUB]: 'Nav Event Sign-Up Hub',
     [PERMISSIONS.NAV_DRIVER_HUB]: 'Nav Driver Hub',
+    [PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE]: 'Approve Volunteer Signups',
     [PERMISSIONS.DRIVER_SIGNUP_APPROVE]: 'Approve Driver Signups',
     [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Event Check-In Alerts',
   };

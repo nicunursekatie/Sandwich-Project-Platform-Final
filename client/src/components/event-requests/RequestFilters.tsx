@@ -123,12 +123,11 @@ export default function RequestFilters({
     user?.permissions?.includes('view_admin_overview') ||
     user?.role === 'super_admin';
 
-  // Tab configuration with icons and labels
-  const tabConfig = [];
+  // Navigation tabs (non-status pages)
+  const navTabs: Array<{ value: string; label: string; shortLabel: string; icon: any; count?: number; hasNotification?: boolean }> = [];
 
-  // Add admin overview tab first if user has permission
   if (hasAdminOverviewPermission && children.admin_overview) {
-    tabConfig.push({
+    navTabs.push({
       value: 'admin_overview',
       label: 'Admin Overview',
       shortLabel: 'Admin',
@@ -136,9 +135,8 @@ export default function RequestFilters({
     });
   }
 
-  // Add planning tab if user has permission
   if (hasAdminOverviewPermission && children.planning) {
-    tabConfig.push({
+    navTabs.push({
       value: 'planning',
       label: 'Planning',
       shortLabel: 'Planning',
@@ -148,7 +146,7 @@ export default function RequestFilters({
 
   // Add sandwich destination overview tab if user has permission
   if (hasAdminOverviewPermission && children.sandwich_overview) {
-    tabConfig.push({
+    navTabs.push({
       value: 'sandwich_overview',
       label: 'Sandwich Destinations',
       shortLabel: 'Destinations',
@@ -156,15 +154,17 @@ export default function RequestFilters({
     });
   }
 
-  // Add remaining tabs
-  tabConfig.push(
-    {
-      value: 'my_assignments',
-      label: 'My Assignments',
-      shortLabel: 'Mine',
-      icon: UserCheck,
-      count: statusCounts.my_assignments,
-    },
+  navTabs.push({
+    value: 'my_assignments',
+    label: 'My Assignments',
+    shortLabel: 'Mine',
+    icon: UserCheck,
+    count: statusCounts.my_assignments,
+  });
+
+  // Status filter tabs
+  const tabConfig: Array<{ value: string; label: string; shortLabel: string; icon: any; count?: number; hasNotification?: boolean }> = [
+    ...navTabs,
     {
       value: 'all',
       label: 'All',
@@ -236,112 +236,41 @@ export default function RequestFilters({
       icon: Ban,
       count: statusCounts.non_event,
     }
-  );
+  ];
 
   // Get current tab info for mobile selector
   const currentTab = tabConfig.find(tab => tab.value === activeTab);
 
   return (
-    <div className="space-y-6">
-      {/* Search - Always visible */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
-        <Input
-          id="event-requests-search"
-          placeholder="Search by organization, name, email, date, location, TSP contact, or volunteer..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 w-full"
-          data-testid="input-search-requests"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => onSearchChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#007E8C] hover:text-[#004f57] font-semibold"
-            aria-label="Clear search"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Mobile: Compact filters in a single row with labels */}
-      <div className="md:hidden flex gap-2">
-        <div className="flex-1 min-w-0">
-          <label className="text-xs text-gray-500 mb-1 block">Status</label>
-          <Select value={activeTab} onValueChange={onActiveTabChange}>
-            <SelectTrigger className="h-9 text-sm">
-              <div className="flex items-center space-x-1.5 truncate">
-                {currentTab && (
-                  <>
-                    <currentTab.icon className="w-3.5 h-3.5 text-[#007E8C] flex-shrink-0" />
-                    <span className="truncate">{currentTab.shortLabel}</span>
-                    {currentTab.count !== undefined && <span className="text-gray-500 text-xs">({formatCount(currentTab.count)})</span>}
-                  </>
-                )}
-              </div>
-            </SelectTrigger>
-            <SelectContent className="mobile-select-content">
-              {tabConfig.map((tab) => (
-                <SelectItem key={tab.value} value={tab.value} className="mobile-select-item">
-                  <div className="flex items-center space-x-2">
-                    <tab.icon className="w-4 h-4 text-[#007E8C]" />
-                    <span>{tab.label}</span>
-                    {tab.count !== undefined && <span className="text-gray-500">({formatCount(tab.count)})</span>}
-                    {tab.hasNotification && !statusCountsLoading && (
-                      <div className="w-2 h-2 bg-red-500 rounded-full" />
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="space-y-4">
+      {/* Search + filter dropdowns — single row */}
+      <div className="flex flex-col md:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
+          <Input
+            id="event-requests-search"
+            placeholder="Search by organization, name, email, date, location, TSP contact, or volunteer..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 w-full"
+            data-testid="input-search-requests"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#007E8C] hover:text-[#004f57] font-semibold"
+              aria-label="Clear search"
+            >
+              Clear
+            </button>
+          )}
         </div>
-        <div className="w-28 flex-shrink-0">
-          <label className="text-xs text-gray-500 mb-1 block">Filter</label>
-          <Select
-            value={confirmationFilter}
-            onValueChange={(value: any) => onConfirmationFilterChange(value)}
-          >
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="requested">Requested</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-32 flex-shrink-0">
-          <label className="text-xs text-gray-500 mb-1 block">Sort</label>
-          <Select
-            value={sortBy}
-            onValueChange={(value: any) => onSortByChange(value)}
-          >
-            <SelectTrigger className="h-9 text-sm" data-testid="sort-select-trigger">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-              <SelectItem value="created_date_desc">Newest</SelectItem>
-              <SelectItem value="created_date_asc">Oldest</SelectItem>
-              <SelectItem value="event_date_desc">Recent Event</SelectItem>
-              <SelectItem value="event_date_asc">Oldest Event</SelectItem>
-              <SelectItem value="organization_asc">Org A-Z</SelectItem>
-              <SelectItem value="organization_desc">Org Z-A</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Desktop: Filters in a row */}
-      <div className="hidden md:flex gap-4">
         <Select
           value={confirmationFilter}
           onValueChange={(value: any) => onConfirmationFilterChange(value)}
         >
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="Filter by..." />
           </SelectTrigger>
           <SelectContent className="z-[100]" position="popper" sideOffset={5}>
@@ -354,13 +283,13 @@ export default function RequestFilters({
           value={sortBy}
           onValueChange={(value: any) => onSortByChange(value)}
         >
-          <SelectTrigger className="w-56" data-testid="sort-select-trigger-desktop">
+          <SelectTrigger className="w-full md:w-52" data-testid="sort-select-trigger-desktop">
             <SelectValue placeholder="Sort by..." />
           </SelectTrigger>
           <SelectContent className="z-[100]" position="popper" sideOffset={5}>
-            <SelectItem value="created_date_desc">Submission Date (Most Recent First)</SelectItem>
-            <SelectItem value="created_date_asc">Submission Date (Oldest First)</SelectItem>
-            <SelectItem value="event_date_desc">Event Date (Most Recent)</SelectItem>
+            <SelectItem value="created_date_desc">Newest First</SelectItem>
+            <SelectItem value="created_date_asc">Oldest First</SelectItem>
+            <SelectItem value="event_date_desc">Event Date (Recent)</SelectItem>
             <SelectItem value="event_date_asc">Event Date (Oldest)</SelectItem>
             <SelectItem value="organization_asc">Organization A-Z</SelectItem>
             <SelectItem value="organization_desc">Organization Z-A</SelectItem>
@@ -368,18 +297,75 @@ export default function RequestFilters({
         </Select>
       </div>
 
-      {/* Desktop: Traditional Tabs - Hidden on mobile */}
-      <div className="hidden md:block">
+      {/* Mobile: Tab selector dropdown */}
+      <div className="md:hidden">
+        <Select value={activeTab} onValueChange={onActiveTabChange}>
+          <SelectTrigger className="h-9 text-sm">
+            <div className="flex items-center space-x-1.5 truncate">
+              {currentTab && (
+                <>
+                  <currentTab.icon className="w-3.5 h-3.5 text-[#007E8C] flex-shrink-0" />
+                  <span className="truncate">{currentTab.shortLabel}</span>
+                  {currentTab.count !== undefined && <span className="text-gray-500 text-xs">({formatCount(currentTab.count)})</span>}
+                </>
+              )}
+            </div>
+          </SelectTrigger>
+          <SelectContent className="mobile-select-content">
+            {tabConfig.map((tab) => (
+              <SelectItem key={tab.value} value={tab.value} className="mobile-select-item">
+                <div className="flex items-center space-x-2">
+                  <tab.icon className="w-4 h-4 text-[#007E8C]" />
+                  <span>{tab.label}</span>
+                  {tab.count !== undefined && <span className="text-gray-500">({formatCount(tab.count)})</span>}
+                  {tab.hasNotification && !statusCountsLoading && (
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Desktop: Tab Bar - Hidden on mobile */}
+      <div className="hidden md:block space-y-3">
+        {/* Secondary navigation (pages/views) — visually distinct from status filters */}
+        {navTabs.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold mr-1">Views:</span>
+            {navTabs.map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => onActiveTabChange(tab.value)}
+                className={`text-xs lg:text-sm whitespace-nowrap px-3 py-1.5 rounded-md font-medium transition-colors border ${
+                  activeTab === tab.value
+                    ? 'bg-[#236383] text-white border-[#236383] shadow-sm'
+                    : 'text-[#236383] border-[#236383]/20 bg-[#236383]/5 hover:bg-[#236383]/10 hover:border-[#236383]/40'
+                }`}
+                data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
+                data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
+              >
+                <div className="flex items-center justify-center space-x-1.5">
+                  <tab.icon className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="hidden lg:inline">{tab.label}</span>
+                  <span className="lg:hidden">{tab.shortLabel}</span>
+                  {tab.count !== undefined && <span className="text-xs opacity-70">({formatCount(tab.count)})</span>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Status filter tabs — the primary filter mechanism */}
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
             <TabsList className="inline-flex w-auto min-w-full gap-1">
-              {tabConfig.map((tab) => (
+              {tabConfig.filter(tab => !navTabs.some(nt => nt.value === tab.value)).map((tab) => (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
                     className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4"
-                    data-testid={tab.value === 'my_assignments' ? 'tab-my-assignments' : undefined}
-                    data-tour={tab.value === 'my_assignments' ? 'my-assignments-tab' : undefined}
                   >
                     <div className="flex items-center justify-center space-x-1">
                       <tab.icon className="w-3 h-3 flex-shrink-0" />
