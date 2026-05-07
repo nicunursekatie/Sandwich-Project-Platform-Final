@@ -517,6 +517,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {/* Traffic conflict (e.g. World Cup matches) */}
+            <TrafficConflictBadge
+              dates={[request.scheduledEventDate, request.desiredEventDate]}
+            />
           </div>
           <div className="text-sm text-[#007E8C] mt-1 space-y-1">
             <div className="flex items-center gap-1">
@@ -605,10 +609,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       </TooltipContent>
                     </Tooltip>
                   )}
-                  {/* Traffic conflict (e.g. World Cup matches) */}
-                  <TrafficConflictBadge
-                    dates={[request.scheduledEventDate, request.desiredEventDate]}
-                  />
                   {/* Date Flexibility Indicator - only show when explicitly set */}
                   {displayDate && request.dateFlexible !== null && request.dateFlexible !== undefined && (
                     <Tooltip>
