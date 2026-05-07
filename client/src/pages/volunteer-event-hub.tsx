@@ -179,7 +179,7 @@ const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDr
 function MapCenterSetter({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 10);
+    map.setView(center, 11);
   }, [center, map]);
   return null;
 }
@@ -387,17 +387,19 @@ function EventCard({
   );
 }
 
-// Compact event preview shown when a calendar chip is clicked.
+// Compact event preview shown when a calendar chip or map pin is clicked.
 function CalendarEventPreview({
   event,
   onSignupClick,
   canAssignOthers,
   onAssignClick,
+  distanceMiles,
 }: {
   event: AvailableEvent;
   onSignupClick: (eventId: number) => void;
   canAssignOthers: boolean;
   onAssignClick: (eventId: number) => void;
+  distanceMiles?: number;
 }) {
   const isCompleted = event.status === 'completed';
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
@@ -460,6 +462,12 @@ function CalendarEventPreview({
             </span>
           </div>
         )}
+        {distanceMiles !== undefined && (
+          <div className="flex items-center gap-2 text-blue-600 font-medium">
+            <Navigation className="w-3.5 h-3.5 shrink-0" />
+            <span>{distanceMiles.toFixed(1)} miles from you</span>
+          </div>
+        )}
         {event.estimatedSandwichCount && (
           <div className="flex items-center gap-2">
             <Sandwich className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
@@ -514,6 +522,42 @@ function CalendarEventPreview({
         </div>
       )}
     </div>
+  );
+}
+
+// Wrapper used inside Leaflet Popup so we can close the popup
+// before opening the signup/assign modal (otherwise the popup hovers
+// behind the modal). Must be rendered inside MapContainer.
+function MapEventPopupContent({
+  event,
+  onSignupClick,
+  canAssignOthers,
+  onAssignClick,
+  userLocation,
+}: {
+  event: AvailableEvent;
+  onSignupClick: (eventId: number) => void;
+  canAssignOthers: boolean;
+  onAssignClick: (eventId: number) => void;
+  userLocation: { lat: number; lng: number } | null;
+}) {
+  const map = useMap();
+  const distanceMiles = userLocation && event.latitude && event.longitude
+    ? calculateDistanceMiles(
+        userLocation.lat,
+        userLocation.lng,
+        parseFloat(event.latitude),
+        parseFloat(event.longitude),
+      )
+    : undefined;
+  return (
+    <CalendarEventPreview
+      event={event}
+      onSignupClick={(id) => { map.closePopup(); onSignupClick(id); }}
+      canAssignOthers={canAssignOthers}
+      onAssignClick={(id) => { map.closePopup(); onAssignClick(id); }}
+      distanceMiles={distanceMiles}
+    />
   );
 }
 
@@ -1717,12 +1761,13 @@ export default function VolunteerEventHub() {
                 <div className="h-[600px] rounded-lg overflow-hidden">
                   <MapContainer
                     center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter}
-                    zoom={10}
+                    zoom={11}
                     style={{ height: '100%', width: '100%' }}
                   >
                     <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                      url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+                      subdomains="abcd"
                     />
                     <MapCenterSetter center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter} />
 
@@ -1753,83 +1798,14 @@ export default function VolunteerEventHub() {
                             event.vanDriverNeeded
                           )}
                         >
-                          <Popup>
-                            <div className="min-w-[200px] space-y-2">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{event.organizationName}</h3>
-                                {event.status === 'completed' && (
-                                  <Badge className="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0">Completed</Badge>
-                                )}
-                              </div>
-                              {event.scheduledEventDate && (
-                                <p className="text-sm text-muted-foreground">
-                                  {format(parseISO(event.scheduledEventDate), 'MMM d, yyyy')}
-                                  {' · '}{formatEventTime(event.eventStartTime)}
-                                </p>
-                              )}
-                              <p className="text-sm">{event.eventAddress}</p>
-                              {userLocation && event.latitude && event.longitude && (
-                                <p className="text-sm font-medium text-blue-600">
-                                  <Navigation className="w-3 h-3 inline mr-1" />
-                                  {calculateDistanceMiles(
-                                    userLocation.lat, userLocation.lng,
-                                    parseFloat(event.latitude), parseFloat(event.longitude)
-                                  ).toFixed(1)} miles from you
-                                </p>
-                              )}
-
-                              <div className="space-y-1">
-                                {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <Mic className="w-3 h-3 text-[#a31c41] shrink-0" />
-                                    <span className="font-medium">Speakers</span>
-                                    <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
-                                      {event.speakersAssigned}/{event.speakersNeeded}
-                                    </span>
-                                    {event.speakersUnfilled > 0 && (
-                                      <Badge className="bg-[#a31c41] text-white text-[10px] px-1 py-0">{event.speakersUnfilled} needed</Badge>
-                                    )}
-                                  </div>
-                                )}
-                                {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <UserCheck className="w-3 h-3 text-[#007e8c] shrink-0" />
-                                    <span className="font-medium">Volunteers</span>
-                                    <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
-                                      {event.volunteersAssigned}/{event.volunteersNeeded}
-                                    </span>
-                                    {event.volunteersUnfilled > 0 && (
-                                      <Badge className="bg-[#007e8c] text-white text-[10px] px-1 py-0">{event.volunteersUnfilled} needed</Badge>
-                                    )}
-                                  </div>
-                                )}
-                                {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <Car className="w-3 h-3 text-[#236383] shrink-0" />
-                                    <span className="font-medium">Drivers</span>
-                                    <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
-                                      {event.driversAssigned}/{event.driversNeeded}
-                                    </span>
-                                    {event.driversUnfilled > 0 && (
-                                      <Badge className="bg-[#236383] text-white text-[10px] px-1 py-0">{event.driversUnfilled} needed</Badge>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              {event.status !== 'completed' ? (
-                              <Button
-                                size="sm"
-                                className="w-full mt-2 bg-[#007e8c] hover:bg-[#236383]"
-                                onClick={() => handleSignupClick(event.id)}
-                              >
-                                <HandHeart className="w-3 h-3 mr-1" />
-                                Volunteer
-                              </Button>
-                              ) : (
-                              <p className="text-xs text-gray-500 mt-2 text-center italic">This event has been completed</p>
-                              )}
-                            </div>
+                          <Popup minWidth={280} maxWidth={320}>
+                            <MapEventPopupContent
+                              event={event}
+                              onSignupClick={handleSignupClick}
+                              canAssignOthers={canAssignOthers}
+                              onAssignClick={handleAssignClick}
+                              userLocation={userLocation}
+                            />
                           </Popup>
                         </Marker>
                       ))}
