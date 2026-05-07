@@ -83,6 +83,13 @@ function toEasternDateKey(input: Date | string | null | undefined): string | nul
   if (typeof input === 'string') {
     // Already a plain YYYY-MM-DD — use as-is to avoid timezone drift.
     if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input;
+
+    // ISO timestamp string (e.g. "2026-06-24T16:00:00.000Z" or "2026-06-24T00:00:00.000Z")
+    // Extract the date portion directly to avoid timezone conversion shifting the day.
+    // These dates are conceptually date-only values stored as timestamps.
+    const isoMatch = input.match(/^(\d{4}-\d{2}-\d{2})T/);
+    if (isoMatch) return isoMatch[1];
+
     const d = new Date(input);
     if (Number.isNaN(d.getTime())) return null;
     return new Intl.DateTimeFormat('en-CA', {
@@ -95,12 +102,12 @@ function toEasternDateKey(input: Date | string | null | undefined): string | nul
 
   if (input instanceof Date) {
     if (Number.isNaN(input.getTime())) return null;
-    return new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'America/New_York',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(input);
+    // For Date objects, use local date parts to avoid timezone shift
+    // (dates are stored via parseDateOnly at local noon)
+    const y = input.getFullYear();
+    const m = String(input.getMonth() + 1).padStart(2, '0');
+    const day = String(input.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   return null;

@@ -10,13 +10,23 @@ export interface DatePopulationInfo {
   isOpen: boolean;
 }
 
-// Normalize date to YYYY-MM-DD string for comparison
+// Normalize date to YYYY-MM-DD string for comparison.
+// Uses local date parts for Date objects (avoiding UTC shift) and
+// extracts the date portion directly from ISO strings.
 const normalizeDate = (dateInput: string | Date | null | undefined): string | null => {
   if (!dateInput) return null;
 
-  const dateStr = typeof dateInput === 'string' ? dateInput : dateInput.toISOString();
-  // Extract just the date part (YYYY-MM-DD)
-  const match = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateInput instanceof Date) {
+    if (isNaN(dateInput.getTime())) return null;
+    // Use local date parts to avoid UTC timezone shifting the day
+    const y = dateInput.getFullYear();
+    const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const d = String(dateInput.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  // For strings, extract the YYYY-MM-DD portion directly
+  const match = dateInput.match(/^(\d{4}-\d{2}-\d{2})/);
   return match ? match[1] : null;
 };
 
