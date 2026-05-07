@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
+import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
@@ -604,6 +605,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       </TooltipContent>
                     </Tooltip>
                   )}
+                  {/* Traffic conflict (e.g. World Cup matches) */}
+                  <TrafficConflictBadge
+                    dates={[request.scheduledEventDate, request.desiredEventDate]}
+                  />
                   {/* Date Flexibility Indicator - only show when explicitly set */}
                   {displayDate && request.dateFlexible !== null && request.dateFlexible !== undefined && (
                     <Tooltip>

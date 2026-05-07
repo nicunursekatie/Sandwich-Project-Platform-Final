@@ -17,6 +17,7 @@ import {
   Edit2,
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
+import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
@@ -125,7 +126,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </div>
             )}
             {displayDate && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-wrap">
                 <Calendar className="w-3 h-3" />
                 <span data-testid="text-date-label" className="text-[16px]">
                   Original Date: {' '}
@@ -133,6 +134,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     {dateInfo ? dateInfo.text : 'No date set'}
                   </strong>
                 </span>
+                <TrafficConflictBadge dates={[displayDate]} compact />
               </div>
             )}
           </div>

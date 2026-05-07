@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { CalendarIcon, RefreshCw } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 
 const rescheduleFormSchema = z.object({
   newScheduledDate: z.date({ required_error: 'A new date is required' }),
@@ -162,6 +163,9 @@ export const RescheduleDialog: React.FC<RescheduleDialogProps> = ({
                       />
                     </PopoverContent>
                   </Popover>
+                  {field.value && (
+                    <TrafficConflictBadge dates={[field.value]} className="mt-1" />
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

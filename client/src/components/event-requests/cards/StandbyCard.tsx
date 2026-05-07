@@ -19,6 +19,7 @@ import {
 
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
+import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 import { statusColors, statusIcons, statusOptions } from '@/components/event-requests/constants';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { Input } from '@/components/ui/input';
@@ -123,7 +124,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </span>
               </div>
             )}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <Calendar className="w-3 h-3" />
               <span data-testid="text-date-label" className="text-[16px]">
                 Requested Date: {' '}
@@ -131,6 +132,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                 </strong>
               </span>
+              <TrafficConflictBadge dates={[displayDate]} compact />
             </div>
           </div>
         </div>
@@ -227,9 +229,10 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
           <div className="bg-white/70 rounded-lg p-3 space-y-2">
             <div>
               <p className="text-sm text-gray-500">Originally Requested Date</p>
-              <p className="font-medium flex items-center gap-1">
+              <p className="font-medium flex items-center gap-1 flex-wrap">
                 <Calendar className="w-4 h-4" />
                 {dateInfo.text}
+                <TrafficConflictBadge dates={[request.desiredEventDate]} compact />
               </p>
             </div>
             {request.estimatedSandwichCount && (

@@ -76,6 +76,8 @@ import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesM
 import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
+import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
+import { getTrafficConflictForEvent } from '@shared/traffic-conflicts';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -1258,6 +1260,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <RefreshCw className="w-3 h-3 mr-1" />
                 Rescheduled from {new Date(request.originalScheduledDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </Badge>
+            </div>
+          )}
+
+          {/* Traffic conflict (e.g. World Cup matches) */}
+          {getTrafficConflictForEvent(request.scheduledEventDate, request.desiredEventDate) && (
+            <div className="mb-1">
+              <TrafficConflictBadge
+                dates={[request.scheduledEventDate, request.desiredEventDate]}
+              />
             </div>
           )}
 

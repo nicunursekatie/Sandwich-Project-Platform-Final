@@ -45,6 +45,7 @@ import {
   formatToolkitDate,
 } from '@/components/event-requests/utils';
 import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
+import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import {
   statusColors,
@@ -708,6 +709,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {/* Traffic conflict (e.g. World Cup matches) */}
+            <TrafficConflictBadge
+              dates={[request.scheduledEventDate, request.desiredEventDate]}
+            />
             {/* Date Flexibility Indicator - only show when explicitly set */}
             {displayDate && request.dateFlexible !== null && request.dateFlexible !== undefined && (
               <Tooltip>
