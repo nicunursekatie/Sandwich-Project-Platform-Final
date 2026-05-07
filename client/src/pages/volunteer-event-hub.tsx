@@ -153,12 +153,9 @@ interface MySignup {
 
 // Custom marker icons using brand colors
 const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
-  let color = '#22c55e'; // Green for fully staffed
-  if (isCompleted) color = '#9ca3af'; // Gray for completed
-  else if (needsVanDriver) color = '#F59E0B'; // Amber for van driver needed (distinct, limited pool)
-  else if (needsSpeaker) color = '#47B3CB'; // Light teal/cyan for speaker needed
-  else if (needsDriver) color = '#8B5CF6'; // Purple for driver needed
-  else if (needsVolunteer) color = '#007e8c'; // Primary teal for volunteer needed
+  // Two-state: needs help (teal) vs filled/completed (gray). Specific role detail lives in the popup.
+  const needsHelp = !isCompleted && (needsSpeaker || needsVolunteer || needsDriver || needsVanDriver);
+  const color = needsHelp ? '#007e8c' : '#9ca3af';
 
   const html = `
     <div style="position: relative; width: 30px; height: 42px;">
@@ -1550,6 +1547,18 @@ export default function VolunteerEventHub() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Legend (above the grid so it's always visible) */}
+                <div className="flex flex-wrap gap-4 mb-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded border border-[#007e8c]/30 bg-[#007e8c]/10" />
+                    <span>Needs help</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded border border-gray-200 bg-gray-100" />
+                    <span>Filled or completed</span>
+                  </div>
+                  <span className="text-muted-foreground/70">Click any event for details and to sign up.</span>
+                </div>
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 gap-px bg-muted rounded-lg overflow-hidden">
                   {/* Day headers */}
@@ -1586,22 +1595,19 @@ export default function VolunteerEventHub() {
                           {format(day, 'd')}
                         </div>
                         <div className="space-y-1">
-                          {dayEvents.slice(0, 3).map(event => (
+                          {dayEvents.slice(0, 3).map(event => {
+                            const needsHelp = event.status !== 'completed'
+                              && (event.speakersUnfilled > 0 || event.volunteersUnfilled > 0 || event.driversUnfilled > 0);
+                            return (
                             <Popover key={event.id}>
                               <PopoverTrigger asChild>
                                 <button
                                   type="button"
                                   className={cn(
                                     'w-full text-left text-xs px-1.5 py-1 rounded border truncate cursor-pointer transition-colors',
-                                    event.status === 'completed'
-                                      ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                                      : event.speakersUnfilled > 0
-                                        ? 'bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30 hover:bg-[#a31c41]/20'
-                                        : event.driversUnfilled > 0
-                                          ? 'bg-[#236383]/10 text-[#236383] border-[#236383]/30 hover:bg-[#236383]/20'
-                                          : event.volunteersUnfilled > 0
-                                            ? 'bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 hover:bg-[#007e8c]/20'
-                                            : 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
+                                    needsHelp
+                                      ? 'bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 hover:bg-[#007e8c]/20'
+                                      : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
                                   )}
                                 >
                                   {event.organizationName}
@@ -1616,7 +1622,8 @@ export default function VolunteerEventHub() {
                                 />
                               </PopoverContent>
                             </Popover>
-                          ))}
+                            );
+                          })}
                           {dayEvents.length > 3 && (
                             <button
                               className="text-xs text-[#007e8c] hover:text-[#236383] hover:underline text-center w-full cursor-pointer"
@@ -1631,33 +1638,6 @@ export default function VolunteerEventHub() {
                   })}
                 </div>
 
-                {/* Legend */}
-                <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#47B3CB]" />
-                    <span>Speaker Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#007e8c]" />
-                    <span>Volunteer Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#8B5CF6]" />
-                    <span>Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#F59E0B]" />
-                    <span className="font-semibold">Van Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-green-500" />
-                    <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gray-400" />
-                    <span>Completed</span>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1857,35 +1837,19 @@ export default function VolunteerEventHub() {
                 </div>
 
                 {/* Map Legend */}
-                <div className="p-4 border-t flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#47B3CB]" />
-                    <span>Speaker Needed</span>
-                  </div>
+                <div className="p-4 border-t flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-[#007e8c]" />
-                    <span>Volunteer Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#8B5CF6]" />
-                    <span>Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#F59E0B]" />
-                    <span className="font-semibold">Van Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-green-500" />
-                    <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
+                    <span>Needs help</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-gray-400" />
-                    <span>Completed</span>
+                    <span>Filled or completed</span>
                   </div>
                   {userLocation && (
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow" />
-                      <span>Your Location</span>
+                      <span>Your location</span>
                     </div>
                   )}
                 </div>
