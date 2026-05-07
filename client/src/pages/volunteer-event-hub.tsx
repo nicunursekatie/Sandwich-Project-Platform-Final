@@ -50,12 +50,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Icons
 import {
@@ -80,9 +75,10 @@ import {
   Map as MapIcon,
   CalendarDays,
   UserCheck,
-  Info,
   Search,
   Navigation,
+  CheckCircle2,
+  LocateFixed,
 } from 'lucide-react';
 
 // Fix Leaflet default marker icon
@@ -92,6 +88,13 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Render an event's time range, or "Time TBD" when start time is missing.
+function formatEventTime(start: string | null | undefined, end?: string | null | undefined): string {
+  if (!start) return 'Time TBD';
+  const formatted = formatTimeForDisplay(start);
+  return end ? `${formatted} – ${formatTimeForDisplay(end)}` : formatted;
+}
 
 // Types
 interface AvailableEvent {
@@ -150,12 +153,9 @@ interface MySignup {
 
 // Custom marker icons using brand colors
 const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
-  let color = '#22c55e'; // Green for fully staffed
-  if (isCompleted) color = '#9ca3af'; // Gray for completed
-  else if (needsVanDriver) color = '#F59E0B'; // Amber for van driver needed (distinct, limited pool)
-  else if (needsSpeaker) color = '#47B3CB'; // Light teal/cyan for speaker needed
-  else if (needsDriver) color = '#8B5CF6'; // Purple for driver needed
-  else if (needsVolunteer) color = '#007e8c'; // Primary teal for volunteer needed
+  // Two-state: needs help (teal) vs filled/completed (gray). Specific role detail lives in the popup.
+  const needsHelp = !isCompleted && (needsSpeaker || needsVolunteer || needsDriver || needsVanDriver);
+  const color = needsHelp ? '#007e8c' : '#9ca3af';
 
   const html = `
     <div style="position: relative; width: 30px; height: 42px;">
@@ -179,7 +179,7 @@ const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDr
 function MapCenterSetter({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 10);
+    map.setView(center, 11);
   }, [center, map]);
   return null;
 }
@@ -289,12 +289,9 @@ function EventCard({
           <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
           <span className="font-medium">
             {formattedDate}
-            {event.eventStartTime && (
-              <span className="font-normal text-muted-foreground">
-                {' '}at {formatTimeForDisplay(event.eventStartTime)}
-                {event.eventEndTime && ` – ${formatTimeForDisplay(event.eventEndTime)}`}
-              </span>
-            )}
+            <span className="font-normal text-muted-foreground">
+              {' · '}{formatEventTime(event.eventStartTime, event.eventEndTime)}
+            </span>
           </span>
         </div>
 
@@ -390,6 +387,180 @@ function EventCard({
   );
 }
 
+// Compact event preview shown when a calendar chip or map pin is clicked.
+function CalendarEventPreview({
+  event,
+  onSignupClick,
+  canAssignOthers,
+  onAssignClick,
+  distanceMiles,
+}: {
+  event: AvailableEvent;
+  onSignupClick: (eventId: number) => void;
+  canAssignOthers: boolean;
+  onAssignClick: (eventId: number) => void;
+  distanceMiles?: number;
+}) {
+  const isCompleted = event.status === 'completed';
+  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const formattedDate = eventDate
+    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    : 'Date TBD';
+
+  const roleRow = (
+    show: boolean,
+    Icon: typeof Mic,
+    label: string,
+    unfilled: number,
+    colorClass: string,
+  ) => {
+    if (!show) return null;
+    const hasOpen = unfilled > 0;
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <Icon className={cn('w-3.5 h-3.5 shrink-0', colorClass)} />
+        <span className={hasOpen ? `${colorClass} font-semibold` : 'text-green-700'}>
+          {label} — {hasOpen ? `${unfilled} ${unfilled === 1 ? 'spot' : 'spots'} open` : 'filled, extra help welcome'}
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="px-4 pt-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold text-sm leading-tight">{event.organizationName}</p>
+            {event.organizationCategory && (
+              <p className="text-xs text-muted-foreground mt-0.5">{event.organizationCategory}</p>
+            )}
+          </div>
+          {isCompleted && (
+            <Badge variant="secondary" className="bg-gray-200 text-gray-600 text-[10px] shrink-0">
+              Completed
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="px-4 space-y-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+          <span>{formattedDate}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+          <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
+        </div>
+        {event.eventAddress && (
+          <div className="flex items-start gap-2">
+            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#007e8c]" />
+            <span>
+              {event.eventAddress}
+              {event.city && `, ${event.city}`}
+            </span>
+          </div>
+        )}
+        {distanceMiles !== undefined && (
+          <div className="flex items-center gap-2 text-blue-600 font-medium">
+            <Navigation className="w-3.5 h-3.5 shrink-0" />
+            <span>{distanceMiles.toFixed(1)} miles from you</span>
+          </div>
+        )}
+        {event.estimatedSandwichCount && (
+          <div className="flex items-center gap-2">
+            <Sandwich className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+            <span>{event.estimatedSandwichCount.toLocaleString()} sandwiches</span>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 pt-2 border-t space-y-1.5">
+        {roleRow(
+          event.speakersNeeded > 0 || event.speakersAssigned > 0,
+          Mic,
+          'Speaker',
+          event.speakersUnfilled,
+          'text-[#a31c41]',
+        )}
+        {roleRow(
+          event.volunteersNeeded > 0 || event.volunteersAssigned > 0,
+          UserCheck,
+          'General Volunteer',
+          event.volunteersUnfilled,
+          'text-[#007e8c]',
+        )}
+        {roleRow(
+          event.driversNeeded > 0 || event.driversAssigned > 0,
+          Car,
+          'Driver',
+          event.driversUnfilled,
+          'text-[#236383]',
+        )}
+      </div>
+
+      {!isCompleted && (
+        <div className="px-4 pb-4 pt-1 space-y-2">
+          <Button
+            size="sm"
+            onClick={() => onSignupClick(event.id)}
+            className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
+          >
+            Sign Up to Volunteer
+          </Button>
+          {canAssignOthers && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onAssignClick(event.id)}
+              className="w-full text-xs text-muted-foreground hover:text-[#236383]"
+            >
+              Assign Someone Else
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Wrapper used inside Leaflet Popup so we can close the popup
+// before opening the signup/assign modal (otherwise the popup hovers
+// behind the modal). Must be rendered inside MapContainer.
+function MapEventPopupContent({
+  event,
+  onSignupClick,
+  canAssignOthers,
+  onAssignClick,
+  userLocation,
+}: {
+  event: AvailableEvent;
+  onSignupClick: (eventId: number) => void;
+  canAssignOthers: boolean;
+  onAssignClick: (eventId: number) => void;
+  userLocation: { lat: number; lng: number } | null;
+}) {
+  const map = useMap();
+  const distanceMiles = userLocation && event.latitude && event.longitude
+    ? calculateDistanceMiles(
+        userLocation.lat,
+        userLocation.lng,
+        parseFloat(event.latitude),
+        parseFloat(event.longitude),
+      )
+    : undefined;
+  return (
+    <CalendarEventPreview
+      event={event}
+      onSignupClick={(id) => { map.closePopup(); onSignupClick(id); }}
+      canAssignOthers={canAssignOthers}
+      onAssignClick={(id) => { map.closePopup(); onAssignClick(id); }}
+      distanceMiles={distanceMiles}
+    />
+  );
+}
+
 // Signup dialog component
 function SignupDialog({
   event,
@@ -419,13 +590,15 @@ function SignupDialog({
       bgClass: string;
     }> = [];
 
+    const spotsLabel = (count: number) => (count === 1 ? '1 spot open' : `${count} spots open`);
+
     // Always show speaker role if event has any speaker need or assigned speakers
     if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
       roles.push({
         value: 'speaker',
         label: event.speakersUnfilled > 0
-          ? `Speaker (${event.speakersUnfilled} needed)`
-          : `Speaker (${event.speakersAssigned}/${event.speakersNeeded} filled — extra help welcome)`,
+          ? `Speaker — ${spotsLabel(event.speakersUnfilled)}`
+          : 'Speaker — filled, extra help welcome',
         icon: Mic,
         colorClass: 'text-[#a31c41]',
         borderClass: 'border-[#a31c41]/30',
@@ -437,10 +610,10 @@ function SignupDialog({
     roles.push({
       value: 'general',
       label: event.volunteersUnfilled > 0
-        ? `General Volunteer (${event.volunteersUnfilled} needed)`
+        ? `General Volunteer — ${spotsLabel(event.volunteersUnfilled)}`
         : event.volunteersNeeded > 0
-          ? `General Volunteer (${event.volunteersAssigned}/${event.volunteersNeeded} filled — extra help welcome)`
-          : 'General Volunteer (extra help always welcome)',
+          ? 'General Volunteer — filled, extra help welcome'
+          : 'General Volunteer — extra help always welcome',
       icon: UserCheck,
       colorClass: 'text-[#007e8c]',
       borderClass: 'border-[#007e8c]/30',
@@ -452,8 +625,8 @@ function SignupDialog({
       roles.push({
         value: 'driver',
         label: event.driversUnfilled > 0
-          ? `Driver (${event.driversUnfilled} needed)`
-          : `Driver (${event.driversAssigned}/${event.driversNeeded} filled — extra help welcome)`,
+          ? `Driver — ${spotsLabel(event.driversUnfilled)}`
+          : 'Driver — filled, extra help welcome',
         icon: Car,
         colorClass: 'text-[#236383]',
         borderClass: 'border-[#236383]/30',
@@ -492,13 +665,18 @@ function SignupDialog({
         <div className="space-y-4 py-4">
           {/* Role selection */}
           <div className="space-y-2">
-            <Label>Select your role *</Label>
+            <Label>
+              Select your role <span className="text-muted-foreground font-normal">(required)</span>
+            </Label>
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No roles are currently available for this event.
               </div>
             ) : (
               <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Tip: you can choose more than one role.
+                </p>
                 {availableRoles.map((role) => {
                   const Icon = role.icon;
                   const isSelected = selectedRoles.includes(role.value);
@@ -529,9 +707,6 @@ function SignupDialog({
                     </Label>
                   );
                 })}
-                <p className="text-xs text-muted-foreground">
-                  You can choose more than one role.
-                </p>
               </div>
             )}
           </div>
@@ -541,22 +716,22 @@ function SignupDialog({
             <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea
               id="notes"
-              placeholder="Any special skills, availability notes, or questions..."
+              placeholder="Anything we should know?"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
             />
           </div>
 
-          {/* Info box */}
-          <div className="bg-[#47b3cb]/10 border border-[#47b3cb]/30 rounded-lg p-3 text-sm text-[#236383]">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          {/* Reassurance callout */}
+          <div className="bg-[#007e8c]/10 border-l-4 border-[#007e8c] rounded-md p-4 text-sm text-[#236383]">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0 text-[#007e8c]" />
               <div>
-                <p className="font-medium">What happens next?</p>
-                <p className="text-[#236383]/80 mt-1">
+                <p className="text-base font-semibold">What happens next?</p>
+                <p className="text-[#236383]/90 mt-1.5 leading-relaxed">
                   A coordinator will review your signup and confirm your participation.
-                  You'll receive an email notification once your signup is approved.
+                  You'll receive an email once your signup is approved.
                 </p>
               </div>
             </div>
@@ -701,7 +876,9 @@ function AssignOthersDialog({
         <div className="space-y-4 py-4">
           {/* User picker */}
           <div className="space-y-2">
-            <Label htmlFor="assignee-search">Who are you assigning? *</Label>
+            <Label htmlFor="assignee-search">
+              Who are you assigning? <span className="text-muted-foreground font-normal">(required)</span>
+            </Label>
             <Input
               id="assignee-search"
               placeholder="Search by name or email..."
@@ -744,7 +921,9 @@ function AssignOthersDialog({
 
           {/* Role selection */}
           <div className="space-y-2">
-            <Label>Role(s) *</Label>
+            <Label>
+              Role(s) <span className="text-muted-foreground font-normal">(required)</span>
+            </Label>
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No roles are currently available for this event.
@@ -856,6 +1035,7 @@ export default function VolunteerEventHub() {
   const [userAddress, setUserAddress] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geocodingLoading, setGeocodingLoading] = useState(false);
+  const [browserLocationLoading, setBrowserLocationLoading] = useState(false);
 
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
@@ -1131,6 +1311,34 @@ export default function VolunteerEventHub() {
     }
   };
 
+  const handleUseBrowserLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: 'Location not available',
+        description: "Your browser doesn't support location lookup. Type an address instead.",
+        variant: 'destructive',
+      });
+      return;
+    }
+    setBrowserLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setUserAddress('Current location');
+        setBrowserLocationLoading(false);
+        toast({ title: 'Location set', description: 'Showing distances from where you are.' });
+      },
+      (error) => {
+        setBrowserLocationLoading(false);
+        const description = error.code === error.PERMISSION_DENIED
+          ? 'Location permission was denied. Type an address instead.'
+          : 'Could not get your location. Type an address instead.';
+        toast({ title: 'Location unavailable', description, variant: 'destructive' });
+      },
+      { enableHighAccuracy: false, timeout: 10000 },
+    );
+  };
+
   const handleSignupClick = (eventId: number) => {
     const event = events.find(e => e.id === eventId);
     if (event) {
@@ -1203,8 +1411,7 @@ export default function VolunteerEventHub() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         {/* Header with gradient banner */}
         <div className="bg-gradient-to-r from-[#007e8c] to-[#47b3cb] rounded-xl p-6 text-white">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1384,6 +1591,18 @@ export default function VolunteerEventHub() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Legend (above the grid so it's always visible) */}
+                <div className="flex flex-wrap gap-4 mb-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded border border-[#007e8c]/30 bg-[#007e8c]/10" />
+                    <span>Needs help</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded border border-gray-200 bg-gray-100" />
+                    <span>Filled or completed</span>
+                  </div>
+                  <span className="text-muted-foreground/70">Click any event for details and to sign up.</span>
+                </div>
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 gap-px bg-muted rounded-lg overflow-hidden">
                   {/* Day headers */}
@@ -1420,63 +1639,35 @@ export default function VolunteerEventHub() {
                           {format(day, 'd')}
                         </div>
                         <div className="space-y-1">
-                          {dayEvents.slice(0, 3).map(event => (
-                            <Tooltip key={event.id}>
-                              <TooltipTrigger asChild>
+                          {dayEvents.slice(0, 3).map(event => {
+                            const needsHelp = event.status !== 'completed'
+                              && (event.speakersUnfilled > 0 || event.volunteersUnfilled > 0 || event.driversUnfilled > 0);
+                            return (
+                            <Popover key={event.id}>
+                              <PopoverTrigger asChild>
                                 <button
+                                  type="button"
                                   className={cn(
-                                    'w-full text-left text-xs p-1 rounded truncate',
-                                    event.status === 'completed'
-                                      ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                                      : event.speakersUnfilled > 0
-                                        ? 'bg-[#a31c41]/10 text-[#a31c41] hover:bg-[#a31c41]/20'
-                                        : event.driversUnfilled > 0
-                                          ? 'bg-[#236383]/10 text-[#236383] hover:bg-[#236383]/20'
-                                          : event.volunteersUnfilled > 0
-                                            ? 'bg-[#007e8c]/10 text-[#007e8c] hover:bg-[#007e8c]/20'
-                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                    'w-full text-left text-xs px-1.5 py-1 rounded border truncate cursor-pointer transition-colors',
+                                    needsHelp
+                                      ? 'bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 hover:bg-[#007e8c]/20'
+                                      : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
                                   )}
-                                  onClick={() => handleSignupClick(event.id)}
                                 >
                                   {event.organizationName}
                                 </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="max-w-xs">
-                                <p className="font-medium">{event.organizationName}</p>
-                                {event.status === 'completed' && <p className="text-xs text-green-600 font-medium">Completed</p>}
-                                {event.organizationCategory && <p className="text-xs text-muted-foreground">{event.organizationCategory}</p>}
-                                {event.eventStartTime && <p className="text-xs mt-1">{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</p>}
-                                {event.eventAddress && <p className="text-xs text-muted-foreground">{event.city || event.eventAddress}</p>}
-                                {event.estimatedSandwichCount && <p className="text-xs mt-1">{event.estimatedSandwichCount.toLocaleString()} sandwiches</p>}
-                                <div className="space-y-0.5 mt-1">
-                                  {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
-                                    <div className="flex items-center gap-1 text-[10px]">
-                                      <Mic className="w-2.5 h-2.5 text-[#a31c41]" />
-                                      <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
-                                        Speakers {event.speakersAssigned}/{event.speakersNeeded}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
-                                    <div className="flex items-center gap-1 text-[10px]">
-                                      <UserCheck className="w-2.5 h-2.5 text-[#007e8c]" />
-                                      <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
-                                        Volunteers {event.volunteersAssigned}/{event.volunteersNeeded}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
-                                    <div className="flex items-center gap-1 text-[10px]">
-                                      <Car className="w-2.5 h-2.5 text-[#236383]" />
-                                      <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
-                                        Drivers {event.driversAssigned}/{event.driversNeeded}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
+                              </PopoverTrigger>
+                              <PopoverContent side="right" align="start" className="w-80 p-0">
+                                <CalendarEventPreview
+                                  event={event}
+                                  onSignupClick={handleSignupClick}
+                                  canAssignOthers={canAssignOthers}
+                                  onAssignClick={handleAssignClick}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            );
+                          })}
                           {dayEvents.length > 3 && (
                             <button
                               className="text-xs text-[#007e8c] hover:text-[#236383] hover:underline text-center w-full cursor-pointer"
@@ -1491,33 +1682,6 @@ export default function VolunteerEventHub() {
                   })}
                 </div>
 
-                {/* Legend */}
-                <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#47B3CB]" />
-                    <span>Speaker Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#007e8c]" />
-                    <span>Volunteer Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#8B5CF6]" />
-                    <span>Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-[#F59E0B]" />
-                    <span className="font-semibold">Van Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-green-500" />
-                    <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gray-400" />
-                    <span>Completed</span>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1527,17 +1691,17 @@ export default function VolunteerEventHub() {
             <Card>
               <CardContent className="p-0">
                 {/* Address search for distance */}
-                <div className="p-4 border-b">
+                <div className="p-4 border-b space-y-2">
                   <div className="flex items-center gap-2">
                     <Navigation className="w-4 h-4 text-[#236383] shrink-0" />
                     <span className="text-sm font-medium text-gray-700 shrink-0">Your location:</span>
-                    <div className="flex-1 flex gap-2">
+                    <div className="flex-1 flex gap-2 flex-wrap">
                       <Input
                         placeholder="Enter your address to see distances..."
                         value={userAddress}
                         onChange={(e) => setUserAddress(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleGeocodeAddress()}
-                        className="text-sm"
+                        className="text-sm flex-1 min-w-[180px]"
                       />
                       <Button
                         size="sm"
@@ -1551,6 +1715,20 @@ export default function VolunteerEventHub() {
                           <Search className="w-4 h-4" />
                         )}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleUseBrowserLocation}
+                        disabled={browserLocationLoading}
+                        className="shrink-0 gap-1.5 text-xs border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
+                      >
+                        {browserLocationLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <LocateFixed className="w-3.5 h-3.5" />
+                        )}
+                        Use my current location
+                      </Button>
                       {userLocation && (
                         <Button
                           size="sm"
@@ -1563,8 +1741,11 @@ export default function VolunteerEventHub() {
                       )}
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground ml-6">
+                    Your browser will ask for permission before sharing your location.
+                  </p>
                   {userLocation && (
-                    <p className="text-xs text-green-600 mt-1 ml-6">
+                    <p className="text-xs text-green-600 ml-6">
                       <Check className="w-3 h-3 inline mr-1" />
                       Location set — distances shown in event popups
                     </p>
@@ -1580,12 +1761,12 @@ export default function VolunteerEventHub() {
                 <div className="h-[600px] rounded-lg overflow-hidden">
                   <MapContainer
                     center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter}
-                    zoom={10}
+                    zoom={11}
                     style={{ height: '100%', width: '100%' }}
                   >
                     <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     />
                     <MapCenterSetter center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter} />
 
@@ -1616,83 +1797,14 @@ export default function VolunteerEventHub() {
                             event.vanDriverNeeded
                           )}
                         >
-                          <Popup>
-                            <div className="min-w-[200px] space-y-2">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold">{event.organizationName}</h3>
-                                {event.status === 'completed' && (
-                                  <Badge className="bg-gray-200 text-gray-600 text-[10px] px-1.5 py-0">Completed</Badge>
-                                )}
-                              </div>
-                              {event.scheduledEventDate && (
-                                <p className="text-sm text-muted-foreground">
-                                  {format(parseISO(event.scheduledEventDate), 'MMM d, yyyy')}
-                                  {event.eventStartTime && ` at ${formatTimeForDisplay(event.eventStartTime)}`}
-                                </p>
-                              )}
-                              <p className="text-sm">{event.eventAddress}</p>
-                              {userLocation && event.latitude && event.longitude && (
-                                <p className="text-sm font-medium text-blue-600">
-                                  <Navigation className="w-3 h-3 inline mr-1" />
-                                  {calculateDistanceMiles(
-                                    userLocation.lat, userLocation.lng,
-                                    parseFloat(event.latitude), parseFloat(event.longitude)
-                                  ).toFixed(1)} miles from you
-                                </p>
-                              )}
-
-                              <div className="space-y-1">
-                                {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <Mic className="w-3 h-3 text-[#a31c41] shrink-0" />
-                                    <span className="font-medium">Speakers</span>
-                                    <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
-                                      {event.speakersAssigned}/{event.speakersNeeded}
-                                    </span>
-                                    {event.speakersUnfilled > 0 && (
-                                      <Badge className="bg-[#a31c41] text-white text-[10px] px-1 py-0">{event.speakersUnfilled} needed</Badge>
-                                    )}
-                                  </div>
-                                )}
-                                {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <UserCheck className="w-3 h-3 text-[#007e8c] shrink-0" />
-                                    <span className="font-medium">Volunteers</span>
-                                    <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
-                                      {event.volunteersAssigned}/{event.volunteersNeeded}
-                                    </span>
-                                    {event.volunteersUnfilled > 0 && (
-                                      <Badge className="bg-[#007e8c] text-white text-[10px] px-1 py-0">{event.volunteersUnfilled} needed</Badge>
-                                    )}
-                                  </div>
-                                )}
-                                {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
-                                  <div className="flex items-center gap-1.5 text-xs">
-                                    <Car className="w-3 h-3 text-[#236383] shrink-0" />
-                                    <span className="font-medium">Drivers</span>
-                                    <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
-                                      {event.driversAssigned}/{event.driversNeeded}
-                                    </span>
-                                    {event.driversUnfilled > 0 && (
-                                      <Badge className="bg-[#236383] text-white text-[10px] px-1 py-0">{event.driversUnfilled} needed</Badge>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              {event.status !== 'completed' ? (
-                              <Button
-                                size="sm"
-                                className="w-full mt-2 bg-[#007e8c] hover:bg-[#236383]"
-                                onClick={() => handleSignupClick(event.id)}
-                              >
-                                <HandHeart className="w-3 h-3 mr-1" />
-                                Volunteer
-                              </Button>
-                              ) : (
-                              <p className="text-xs text-gray-500 mt-2 text-center italic">This event has been completed</p>
-                              )}
-                            </div>
+                          <Popup minWidth={280} maxWidth={320}>
+                            <MapEventPopupContent
+                              event={event}
+                              onSignupClick={handleSignupClick}
+                              canAssignOthers={canAssignOthers}
+                              onAssignClick={handleAssignClick}
+                              userLocation={userLocation}
+                            />
                           </Popup>
                         </Marker>
                       ))}
@@ -1700,35 +1812,19 @@ export default function VolunteerEventHub() {
                 </div>
 
                 {/* Map Legend */}
-                <div className="p-4 border-t flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#47B3CB]" />
-                    <span>Speaker Needed</span>
-                  </div>
+                <div className="p-4 border-t flex flex-wrap gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-[#007e8c]" />
-                    <span>Volunteer Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#8B5CF6]" />
-                    <span>Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-[#F59E0B]" />
-                    <span className="font-semibold">Van Driver Needed</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 rounded-full bg-green-500" />
-                    <span>Fully Staffed <span className="text-muted-foreground">(extra help still welcome!)</span></span>
+                    <span>Needs help</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-4 h-4 rounded-full bg-gray-400" />
-                    <span>Completed</span>
+                    <span>Filled or completed</span>
                   </div>
                   {userLocation && (
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow" />
-                      <span>Your Location</span>
+                      <span>Your location</span>
                     </div>
                   )}
                 </div>
@@ -1771,10 +1867,10 @@ export default function VolunteerEventHub() {
             {mySignups.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <HandHeart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No Signups Yet</h3>
-                  <p className="text-muted-foreground mt-1">
-                    Browse upcoming events and sign up to volunteer!
+                  <HandHeart className="w-12 h-12 mx-auto text-[#007e8c] mb-4" />
+                  <h3 className="text-lg font-medium">You haven't signed up yet — that's okay!</h3>
+                  <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                    Every sandwich helps. Browse upcoming events to find one that fits your schedule.
                   </p>
                   <Button
                     className="mt-4 bg-[#007e8c] hover:bg-[#236383]"
@@ -1803,7 +1899,7 @@ export default function VolunteerEventHub() {
                                 <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
                                 <span>
                                   {formattedSignupDate}
-                                  {signup.event.eventStartTime && ` at ${formatTimeForDisplay(signup.event.eventStartTime)}`}
+                                  {' · '}{formatEventTime(signup.event.eventStartTime)}
                                 </span>
                               </div>
                               {signup.event.eventAddress && (
@@ -1892,9 +1988,7 @@ export default function VolunteerEventHub() {
                                   <span className="text-gray-400">|</span>
                                   <Calendar className="w-3.5 h-3.5 text-[#236383]" />
                                   <span>{format(parseISO(eventDate), 'MMM d, yyyy')}</span>
-                                  {signup.event?.eventStartTime && (
-                                    <span>at {formatTimeForDisplay(signup.event.eventStartTime)}</span>
-                                  )}
+                                  <span>· {formatEventTime(signup.event?.eventStartTime)}</span>
                                 </>
                               )}
                             </div>
@@ -1994,12 +2088,10 @@ export default function VolunteerEventHub() {
                     </div>
 
                     <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                      {event.eventStartTime && (
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
+                      </div>
                       {event.eventAddress && (
                         <div className="flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5" />
@@ -2063,7 +2155,6 @@ export default function VolunteerEventHub() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 }

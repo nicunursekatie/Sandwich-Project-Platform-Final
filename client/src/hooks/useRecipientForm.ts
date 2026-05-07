@@ -8,6 +8,7 @@ export const getDefaultRecipientForm = () => ({
   email: '',
   website: '',
   instagramHandle: '',
+  ein: '',
   address: '',
   region: '',
   preferences: '',

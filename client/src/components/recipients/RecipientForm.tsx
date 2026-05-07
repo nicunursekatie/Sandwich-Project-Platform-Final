@@ -299,6 +299,16 @@ export function RecipientForm({
                 />
               </div>
               <div>
+                <Label htmlFor={inputId('ein')}>EIN (Tax ID)</Label>
+                <Input
+                  id={inputId('ein')}
+                  type="text"
+                  value={formData.ein}
+                  onChange={(e) => onFieldChange('ein', e.target.value)}
+                  placeholder="XX-XXXXXXX"
+                />
+              </div>
+              <div>
                 <Label htmlFor={inputId('address')}>Street Address</Label>
                 <Input
                   id={inputId('address')}

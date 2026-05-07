@@ -176,6 +176,12 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
             </a>
           </div>
         )}
+        {(recipient as any).ein && (
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <span className="w-4 h-4 flex items-center justify-center text-xs font-bold text-slate-500">#</span>
+            <span>EIN: {(recipient as any).ein}</span>
+          </div>
+        )}
         {recipient.address && (
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <MapPin className="w-4 h-4" />
