@@ -1766,8 +1766,7 @@ export default function VolunteerEventHub() {
                   >
                     <TileLayer
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                      url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
-                      subdomains="abcd"
+                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                     />
                     <MapCenterSetter center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter} />
 
