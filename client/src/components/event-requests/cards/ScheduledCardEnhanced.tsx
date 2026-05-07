@@ -77,7 +77,6 @@ import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
 import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
-import { getTrafficConflictForEvent } from '@shared/traffic-conflicts';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -941,6 +940,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
+              {/* Traffic conflict (e.g. World Cup matches) */}
+              <TrafficConflictBadge
+                dates={[request.scheduledEventDate, request.desiredEventDate]}
+                className="mt-1 mr-1"
+              />
               {/* Returning Organization Indicator */}
               {returningOrgData?.isReturning && (() => {
                 const eventDate = returningOrgData.mostRecentEvent?.eventDate ? new Date(returningOrgData.mostRecentEvent.eventDate) : null;
@@ -1263,14 +1267,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           )}
 
-          {/* Traffic conflict (e.g. World Cup matches) */}
-          {getTrafficConflictForEvent(request.scheduledEventDate, request.desiredEventDate) && (
-            <div className="mb-1">
-              <TrafficConflictBadge
-                dates={[request.scheduledEventDate, request.desiredEventDate]}
-              />
-            </div>
-          )}
 
           {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
