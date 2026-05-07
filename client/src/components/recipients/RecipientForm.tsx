@@ -686,6 +686,55 @@ export function RecipientForm({
         </div>
       </Collapsible>
 
+      {/* Recipient Survey */}
+      <Collapsible
+        open={sections[sectionKey('recipientSurvey')]}
+        onOpenChange={(open) => onSectionChange(sectionKey('recipientSurvey'), open)}
+      >
+        <div className="border-t pt-4 mt-4">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full justify-between p-0 h-auto">
+              <h4 className="font-medium text-sm text-slate-700">Recipient Survey</h4>
+              {sections[sectionKey('recipientSurvey')] ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={inputId('surveySubmitted')}
+                  checked={formData.surveySubmitted}
+                  onCheckedChange={(checked) => onFieldChange('surveySubmitted', !!checked)}
+                  data-testid="checkbox-survey-submitted"
+                />
+                <Label
+                  htmlFor={inputId('surveySubmitted')}
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Recipient survey submitted
+                </Label>
+              </div>
+              {formData.surveySubmitted && (
+                <div>
+                  <Label htmlFor={inputId('surveySubmittedDate')}>Date submitted (optional)</Label>
+                  <Input
+                    id={inputId('surveySubmittedDate')}
+                    type="date"
+                    value={formData.surveySubmittedDate}
+                    onChange={(e) => onFieldChange('surveySubmittedDate', e.target.value)}
+                    data-testid="input-survey-submitted-date"
+                  />
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
+
       {/* People Served Section */}
       <Collapsible
         open={sections[sectionKey('peopleServed')]}

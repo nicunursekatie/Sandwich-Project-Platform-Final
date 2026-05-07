@@ -1147,6 +1147,10 @@ export const recipients = pgTable('recipients', {
   hasSharedPost: boolean('has_shared_post').notNull().default(false), // Whether recipient has shared a post about TSP on their social media
   sharedPostDate: timestamp('shared_post_date'), // When the post was shared (nullable)
 
+  // Recipient survey tracking
+  surveySubmitted: boolean('survey_submitted').notNull().default(false), // Whether recipient has submitted their survey
+  surveySubmittedDate: timestamp('survey_submitted_date'), // When the survey was submitted (nullable, optional even when surveySubmitted is true)
+
   // People served tracking
   averagePeopleServed: integer('average_people_served'), // Average number of people they serve
   peopleServedFrequency: text('people_served_frequency'), // 'daily', 'weekly', 'monthly'
@@ -1592,6 +1596,7 @@ export const insertRecipientSchema = createInsertSchema(recipients)
     sharedPostDate: nullableTimestampField,
     partnershipStartDate: nullableTimestampField,
     geocodedAt: nullableTimestampField,
+    surveySubmittedDate: nullableTimestampField,
   });
 export const insertRecipientTspContactSchema = createInsertSchema(
   recipientTspContacts

@@ -36,6 +36,8 @@ export const getDefaultRecipientForm = () => ({
   feedingSchedules: [] as Array<{ day: string; time: string; notes?: string }>,
   hasSharedPost: false,
   sharedPostDate: '',
+  surveySubmitted: false,
+  surveySubmittedDate: '',
   averagePeopleServed: '',
   peopleServedFrequency: '',
   partnershipStartDate: '',
@@ -65,6 +67,7 @@ export const getDefaultSectionState = (prefix: string = '') => ({
   [`${prefix}secondContact`]: false,
   [`${prefix}operational`]: false,
   [`${prefix}socialMedia`]: false,
+  [`${prefix}recipientSurvey`]: false,
   [`${prefix}peopleServed`]: false,
   [`${prefix}partnership`]: false,
   [`${prefix}fruitSnacks`]: false,
@@ -125,6 +128,9 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
         : '',
       sharedPostDate: (recipient as any).sharedPostDate
         ? new Date((recipient as any).sharedPostDate).toISOString().split('T')[0]
+        : '',
+      surveySubmittedDate: (recipient as any).surveySubmittedDate
+        ? new Date((recipient as any).surveySubmittedDate).toISOString().split('T')[0]
         : '',
       // Schedule arrays — normalize from DB JSONB
       collectionSchedules: Array.isArray((recipient as any).collectionSchedules)
@@ -190,6 +196,9 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
         : null,
       sharedPostDate: formData.sharedPostDate
         ? new Date(formData.sharedPostDate)
+        : null,
+      surveySubmittedDate: formData.surveySubmittedDate
+        ? new Date(formData.surveySubmittedDate)
         : null,
       averagePeopleServed: formData.averagePeopleServed
         ? parseInt(formData.averagePeopleServed, 10)
