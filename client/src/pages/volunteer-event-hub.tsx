@@ -80,9 +80,10 @@ import {
   Map as MapIcon,
   CalendarDays,
   UserCheck,
-  Info,
   Search,
   Navigation,
+  CheckCircle2,
+  LocateFixed,
 } from 'lucide-react';
 
 // Fix Leaflet default marker icon
@@ -92,6 +93,13 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+// Render an event's time range, or "Time TBD" when start time is missing.
+function formatEventTime(start: string | null | undefined, end?: string | null | undefined): string {
+  if (!start) return 'Time TBD';
+  const formatted = formatTimeForDisplay(start);
+  return end ? `${formatted} – ${formatTimeForDisplay(end)}` : formatted;
+}
 
 // Types
 interface AvailableEvent {
@@ -289,12 +297,9 @@ function EventCard({
           <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
           <span className="font-medium">
             {formattedDate}
-            {event.eventStartTime && (
-              <span className="font-normal text-muted-foreground">
-                {' '}at {formatTimeForDisplay(event.eventStartTime)}
-                {event.eventEndTime && ` – ${formatTimeForDisplay(event.eventEndTime)}`}
-              </span>
-            )}
+            <span className="font-normal text-muted-foreground">
+              {' · '}{formatEventTime(event.eventStartTime, event.eventEndTime)}
+            </span>
           </span>
         </div>
 
@@ -419,13 +424,15 @@ function SignupDialog({
       bgClass: string;
     }> = [];
 
+    const spotsLabel = (count: number) => (count === 1 ? '1 spot open' : `${count} spots open`);
+
     // Always show speaker role if event has any speaker need or assigned speakers
     if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
       roles.push({
         value: 'speaker',
         label: event.speakersUnfilled > 0
-          ? `Speaker (${event.speakersUnfilled} needed)`
-          : `Speaker (${event.speakersAssigned}/${event.speakersNeeded} filled — extra help welcome)`,
+          ? `Speaker — ${spotsLabel(event.speakersUnfilled)}`
+          : 'Speaker — filled, extra help welcome',
         icon: Mic,
         colorClass: 'text-[#a31c41]',
         borderClass: 'border-[#a31c41]/30',
@@ -437,10 +444,10 @@ function SignupDialog({
     roles.push({
       value: 'general',
       label: event.volunteersUnfilled > 0
-        ? `General Volunteer (${event.volunteersUnfilled} needed)`
+        ? `General Volunteer — ${spotsLabel(event.volunteersUnfilled)}`
         : event.volunteersNeeded > 0
-          ? `General Volunteer (${event.volunteersAssigned}/${event.volunteersNeeded} filled — extra help welcome)`
-          : 'General Volunteer (extra help always welcome)',
+          ? 'General Volunteer — filled, extra help welcome'
+          : 'General Volunteer — extra help always welcome',
       icon: UserCheck,
       colorClass: 'text-[#007e8c]',
       borderClass: 'border-[#007e8c]/30',
@@ -452,8 +459,8 @@ function SignupDialog({
       roles.push({
         value: 'driver',
         label: event.driversUnfilled > 0
-          ? `Driver (${event.driversUnfilled} needed)`
-          : `Driver (${event.driversAssigned}/${event.driversNeeded} filled — extra help welcome)`,
+          ? `Driver — ${spotsLabel(event.driversUnfilled)}`
+          : 'Driver — filled, extra help welcome',
         icon: Car,
         colorClass: 'text-[#236383]',
         borderClass: 'border-[#236383]/30',
@@ -492,13 +499,18 @@ function SignupDialog({
         <div className="space-y-4 py-4">
           {/* Role selection */}
           <div className="space-y-2">
-            <Label>Select your role *</Label>
+            <Label>
+              Select your role <span className="text-muted-foreground font-normal">(required)</span>
+            </Label>
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No roles are currently available for this event.
               </div>
             ) : (
               <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Tip: you can choose more than one role.
+                </p>
                 {availableRoles.map((role) => {
                   const Icon = role.icon;
                   const isSelected = selectedRoles.includes(role.value);
@@ -529,9 +541,6 @@ function SignupDialog({
                     </Label>
                   );
                 })}
-                <p className="text-xs text-muted-foreground">
-                  You can choose more than one role.
-                </p>
               </div>
             )}
           </div>
@@ -541,22 +550,22 @@ function SignupDialog({
             <Label htmlFor="notes">Notes (optional)</Label>
             <Textarea
               id="notes"
-              placeholder="Any special skills, availability notes, or questions..."
+              placeholder="Anything we should know?"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
             />
           </div>
 
-          {/* Info box */}
-          <div className="bg-[#47b3cb]/10 border border-[#47b3cb]/30 rounded-lg p-3 text-sm text-[#236383]">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 mt-0.5 shrink-0" />
+          {/* Reassurance callout */}
+          <div className="bg-[#007e8c]/10 border-l-4 border-[#007e8c] rounded-md p-4 text-sm text-[#236383]">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0 text-[#007e8c]" />
               <div>
-                <p className="font-medium">What happens next?</p>
-                <p className="text-[#236383]/80 mt-1">
+                <p className="text-base font-semibold">What happens next?</p>
+                <p className="text-[#236383]/90 mt-1.5 leading-relaxed">
                   A coordinator will review your signup and confirm your participation.
-                  You'll receive an email notification once your signup is approved.
+                  You'll receive an email once your signup is approved.
                 </p>
               </div>
             </div>
@@ -701,7 +710,9 @@ function AssignOthersDialog({
         <div className="space-y-4 py-4">
           {/* User picker */}
           <div className="space-y-2">
-            <Label htmlFor="assignee-search">Who are you assigning? *</Label>
+            <Label htmlFor="assignee-search">
+              Who are you assigning? <span className="text-muted-foreground font-normal">(required)</span>
+            </Label>
             <Input
               id="assignee-search"
               placeholder="Search by name or email..."
@@ -744,7 +755,9 @@ function AssignOthersDialog({
 
           {/* Role selection */}
           <div className="space-y-2">
-            <Label>Role(s) *</Label>
+            <Label>
+              Role(s) <span className="text-muted-foreground font-normal">(required)</span>
+            </Label>
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 No roles are currently available for this event.
@@ -856,6 +869,7 @@ export default function VolunteerEventHub() {
   const [userAddress, setUserAddress] = useState('');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geocodingLoading, setGeocodingLoading] = useState(false);
+  const [browserLocationLoading, setBrowserLocationLoading] = useState(false);
 
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
@@ -1129,6 +1143,34 @@ export default function VolunteerEventHub() {
     } finally {
       setGeocodingLoading(false);
     }
+  };
+
+  const handleUseBrowserLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        title: 'Location not available',
+        description: "Your browser doesn't support location lookup. Type an address instead.",
+        variant: 'destructive',
+      });
+      return;
+    }
+    setBrowserLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setUserAddress('Current location');
+        setBrowserLocationLoading(false);
+        toast({ title: 'Location set', description: 'Showing distances from where you are.' });
+      },
+      (error) => {
+        setBrowserLocationLoading(false);
+        const description = error.code === error.PERMISSION_DENIED
+          ? 'Location permission was denied. Type an address instead.'
+          : 'Could not get your location. Type an address instead.';
+        toast({ title: 'Location unavailable', description, variant: 'destructive' });
+      },
+      { enableHighAccuracy: false, timeout: 10000 },
+    );
   };
 
   const handleSignupClick = (eventId: number) => {
@@ -1445,7 +1487,7 @@ export default function VolunteerEventHub() {
                                 <p className="font-medium">{event.organizationName}</p>
                                 {event.status === 'completed' && <p className="text-xs text-green-600 font-medium">Completed</p>}
                                 {event.organizationCategory && <p className="text-xs text-muted-foreground">{event.organizationCategory}</p>}
-                                {event.eventStartTime && <p className="text-xs mt-1">{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</p>}
+                                <p className="text-xs mt-1">{formatEventTime(event.eventStartTime, event.eventEndTime)}</p>
                                 {event.eventAddress && <p className="text-xs text-muted-foreground">{event.city || event.eventAddress}</p>}
                                 {event.estimatedSandwichCount && <p className="text-xs mt-1">{event.estimatedSandwichCount.toLocaleString()} sandwiches</p>}
                                 <div className="space-y-0.5 mt-1">
@@ -1527,17 +1569,17 @@ export default function VolunteerEventHub() {
             <Card>
               <CardContent className="p-0">
                 {/* Address search for distance */}
-                <div className="p-4 border-b">
+                <div className="p-4 border-b space-y-2">
                   <div className="flex items-center gap-2">
                     <Navigation className="w-4 h-4 text-[#236383] shrink-0" />
                     <span className="text-sm font-medium text-gray-700 shrink-0">Your location:</span>
-                    <div className="flex-1 flex gap-2">
+                    <div className="flex-1 flex gap-2 flex-wrap">
                       <Input
                         placeholder="Enter your address to see distances..."
                         value={userAddress}
                         onChange={(e) => setUserAddress(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleGeocodeAddress()}
-                        className="text-sm"
+                        className="text-sm flex-1 min-w-[180px]"
                       />
                       <Button
                         size="sm"
@@ -1551,6 +1593,20 @@ export default function VolunteerEventHub() {
                           <Search className="w-4 h-4" />
                         )}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleUseBrowserLocation}
+                        disabled={browserLocationLoading}
+                        className="shrink-0 gap-1.5 text-xs border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
+                      >
+                        {browserLocationLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <LocateFixed className="w-3.5 h-3.5" />
+                        )}
+                        Use my current location
+                      </Button>
                       {userLocation && (
                         <Button
                           size="sm"
@@ -1563,8 +1619,11 @@ export default function VolunteerEventHub() {
                       )}
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground ml-6">
+                    Your browser will ask for permission before sharing your location.
+                  </p>
                   {userLocation && (
-                    <p className="text-xs text-green-600 mt-1 ml-6">
+                    <p className="text-xs text-green-600 ml-6">
                       <Check className="w-3 h-3 inline mr-1" />
                       Location set — distances shown in event popups
                     </p>
@@ -1627,7 +1686,7 @@ export default function VolunteerEventHub() {
                               {event.scheduledEventDate && (
                                 <p className="text-sm text-muted-foreground">
                                   {format(parseISO(event.scheduledEventDate), 'MMM d, yyyy')}
-                                  {event.eventStartTime && ` at ${formatTimeForDisplay(event.eventStartTime)}`}
+                                  {' · '}{formatEventTime(event.eventStartTime)}
                                 </p>
                               )}
                               <p className="text-sm">{event.eventAddress}</p>
@@ -1771,10 +1830,10 @@ export default function VolunteerEventHub() {
             {mySignups.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <HandHeart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No Signups Yet</h3>
-                  <p className="text-muted-foreground mt-1">
-                    Browse upcoming events and sign up to volunteer!
+                  <HandHeart className="w-12 h-12 mx-auto text-[#007e8c] mb-4" />
+                  <h3 className="text-lg font-medium">You haven't signed up yet — that's okay!</h3>
+                  <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                    Every sandwich helps. Browse upcoming events to find one that fits your schedule.
                   </p>
                   <Button
                     className="mt-4 bg-[#007e8c] hover:bg-[#236383]"
@@ -1803,7 +1862,7 @@ export default function VolunteerEventHub() {
                                 <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
                                 <span>
                                   {formattedSignupDate}
-                                  {signup.event.eventStartTime && ` at ${formatTimeForDisplay(signup.event.eventStartTime)}`}
+                                  {' · '}{formatEventTime(signup.event.eventStartTime)}
                                 </span>
                               </div>
                               {signup.event.eventAddress && (
@@ -1892,9 +1951,7 @@ export default function VolunteerEventHub() {
                                   <span className="text-gray-400">|</span>
                                   <Calendar className="w-3.5 h-3.5 text-[#236383]" />
                                   <span>{format(parseISO(eventDate), 'MMM d, yyyy')}</span>
-                                  {signup.event?.eventStartTime && (
-                                    <span>at {formatTimeForDisplay(signup.event.eventStartTime)}</span>
-                                  )}
+                                  <span>· {formatEventTime(signup.event?.eventStartTime)}</span>
                                 </>
                               )}
                             </div>
@@ -1994,12 +2051,10 @@ export default function VolunteerEventHub() {
                     </div>
 
                     <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                      {event.eventStartTime && (
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>{formatTimeForDisplay(event.eventStartTime)}{event.eventEndTime && ` - ${formatTimeForDisplay(event.eventEndTime)}`}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
+                      </div>
                       {event.eventAddress && (
                         <div className="flex items-center gap-1.5">
                           <MapPin className="w-3.5 h-3.5" />
