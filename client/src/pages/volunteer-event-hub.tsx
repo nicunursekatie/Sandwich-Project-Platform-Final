@@ -50,12 +50,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Icons
 import {
@@ -392,6 +387,136 @@ function EventCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// Compact event preview shown when a calendar chip is clicked.
+function CalendarEventPreview({
+  event,
+  onSignupClick,
+  canAssignOthers,
+  onAssignClick,
+}: {
+  event: AvailableEvent;
+  onSignupClick: (eventId: number) => void;
+  canAssignOthers: boolean;
+  onAssignClick: (eventId: number) => void;
+}) {
+  const isCompleted = event.status === 'completed';
+  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const formattedDate = eventDate
+    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    : 'Date TBD';
+
+  const roleRow = (
+    show: boolean,
+    Icon: typeof Mic,
+    label: string,
+    unfilled: number,
+    colorClass: string,
+  ) => {
+    if (!show) return null;
+    const hasOpen = unfilled > 0;
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <Icon className={cn('w-3.5 h-3.5 shrink-0', colorClass)} />
+        <span className={hasOpen ? `${colorClass} font-semibold` : 'text-green-700'}>
+          {label} — {hasOpen ? `${unfilled} ${unfilled === 1 ? 'spot' : 'spots'} open` : 'filled, extra help welcome'}
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="px-4 pt-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold text-sm leading-tight">{event.organizationName}</p>
+            {event.organizationCategory && (
+              <p className="text-xs text-muted-foreground mt-0.5">{event.organizationCategory}</p>
+            )}
+          </div>
+          {isCompleted && (
+            <Badge variant="secondary" className="bg-gray-200 text-gray-600 text-[10px] shrink-0">
+              Completed
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="px-4 space-y-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+          <span>{formattedDate}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+          <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
+        </div>
+        {event.eventAddress && (
+          <div className="flex items-start gap-2">
+            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#007e8c]" />
+            <span>
+              {event.eventAddress}
+              {event.city && `, ${event.city}`}
+            </span>
+          </div>
+        )}
+        {event.estimatedSandwichCount && (
+          <div className="flex items-center gap-2">
+            <Sandwich className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+            <span>{event.estimatedSandwichCount.toLocaleString()} sandwiches</span>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 pt-2 border-t space-y-1.5">
+        {roleRow(
+          event.speakersNeeded > 0 || event.speakersAssigned > 0,
+          Mic,
+          'Speaker',
+          event.speakersUnfilled,
+          'text-[#a31c41]',
+        )}
+        {roleRow(
+          event.volunteersNeeded > 0 || event.volunteersAssigned > 0,
+          UserCheck,
+          'General Volunteer',
+          event.volunteersUnfilled,
+          'text-[#007e8c]',
+        )}
+        {roleRow(
+          event.driversNeeded > 0 || event.driversAssigned > 0,
+          Car,
+          'Driver',
+          event.driversUnfilled,
+          'text-[#236383]',
+        )}
+      </div>
+
+      {!isCompleted && (
+        <div className="px-4 pb-4 pt-1 space-y-2">
+          <Button
+            size="sm"
+            onClick={() => onSignupClick(event.id)}
+            className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
+          >
+            Sign Up to Volunteer
+          </Button>
+          {canAssignOthers && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onAssignClick(event.id)}
+              className="w-full text-xs text-muted-foreground hover:text-[#236383]"
+            >
+              Assign Someone Else
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1245,8 +1370,7 @@ export default function VolunteerEventHub() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
         {/* Header with gradient banner */}
         <div className="bg-gradient-to-r from-[#007e8c] to-[#47b3cb] rounded-xl p-6 text-white">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1463,61 +1587,35 @@ export default function VolunteerEventHub() {
                         </div>
                         <div className="space-y-1">
                           {dayEvents.slice(0, 3).map(event => (
-                            <Tooltip key={event.id}>
-                              <TooltipTrigger asChild>
+                            <Popover key={event.id}>
+                              <PopoverTrigger asChild>
                                 <button
+                                  type="button"
                                   className={cn(
-                                    'w-full text-left text-xs p-1 rounded truncate',
+                                    'w-full text-left text-xs px-1.5 py-1 rounded border truncate cursor-pointer transition-colors',
                                     event.status === 'completed'
-                                      ? 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                      ? 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
                                       : event.speakersUnfilled > 0
-                                        ? 'bg-[#a31c41]/10 text-[#a31c41] hover:bg-[#a31c41]/20'
+                                        ? 'bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30 hover:bg-[#a31c41]/20'
                                         : event.driversUnfilled > 0
-                                          ? 'bg-[#236383]/10 text-[#236383] hover:bg-[#236383]/20'
+                                          ? 'bg-[#236383]/10 text-[#236383] border-[#236383]/30 hover:bg-[#236383]/20'
                                           : event.volunteersUnfilled > 0
-                                            ? 'bg-[#007e8c]/10 text-[#007e8c] hover:bg-[#007e8c]/20'
-                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                            ? 'bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 hover:bg-[#007e8c]/20'
+                                            : 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200'
                                   )}
-                                  onClick={() => handleSignupClick(event.id)}
                                 >
                                   {event.organizationName}
                                 </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="right" className="max-w-xs">
-                                <p className="font-medium">{event.organizationName}</p>
-                                {event.status === 'completed' && <p className="text-xs text-green-600 font-medium">Completed</p>}
-                                {event.organizationCategory && <p className="text-xs text-muted-foreground">{event.organizationCategory}</p>}
-                                <p className="text-xs mt-1">{formatEventTime(event.eventStartTime, event.eventEndTime)}</p>
-                                {event.eventAddress && <p className="text-xs text-muted-foreground">{event.city || event.eventAddress}</p>}
-                                {event.estimatedSandwichCount && <p className="text-xs mt-1">{event.estimatedSandwichCount.toLocaleString()} sandwiches</p>}
-                                <div className="space-y-0.5 mt-1">
-                                  {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
-                                    <div className="flex items-center gap-1 text-[10px]">
-                                      <Mic className="w-2.5 h-2.5 text-[#a31c41]" />
-                                      <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
-                                        Speakers {event.speakersAssigned}/{event.speakersNeeded}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
-                                    <div className="flex items-center gap-1 text-[10px]">
-                                      <UserCheck className="w-2.5 h-2.5 text-[#007e8c]" />
-                                      <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
-                                        Volunteers {event.volunteersAssigned}/{event.volunteersNeeded}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
-                                    <div className="flex items-center gap-1 text-[10px]">
-                                      <Car className="w-2.5 h-2.5 text-[#236383]" />
-                                      <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
-                                        Drivers {event.driversAssigned}/{event.driversNeeded}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
+                              </PopoverTrigger>
+                              <PopoverContent side="right" align="start" className="w-80 p-0">
+                                <CalendarEventPreview
+                                  event={event}
+                                  onSignupClick={handleSignupClick}
+                                  canAssignOthers={canAssignOthers}
+                                  onAssignClick={handleAssignClick}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           ))}
                           {dayEvents.length > 3 && (
                             <button
@@ -2118,7 +2216,6 @@ export default function VolunteerEventHub() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
-    </TooltipProvider>
+    </div>
   );
 }
