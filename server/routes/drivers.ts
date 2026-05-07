@@ -716,6 +716,19 @@ export function createDriversRouter(deps: RouterDependencies) {
 
   // === Driver Vehicles Routes ===
 
+  // Get all vehicles across all drivers (for card display)
+  router.get('/all-vehicles', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { db } = await import('../db');
+      const { driverVehicles } = await import('@shared/schema');
+      const vehicles = await db.select().from(driverVehicles).orderBy(driverVehicles.driverId);
+      res.json(vehicles);
+    } catch (error) {
+      logger.error('Failed to get all driver vehicles', error);
+      res.status(500).json({ message: 'Failed to get all driver vehicles' });
+    }
+  });
+
   // Get all vehicles for a driver
   router.get('/:driverId/vehicles', isAuthenticated, async (req: Request, res: Response) => {
     try {

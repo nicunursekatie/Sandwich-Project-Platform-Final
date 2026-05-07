@@ -24,8 +24,9 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { EventCalendarView } from '@/components/event-calendar-view';
 const EventMapView = React.lazy(() => import('./EventMapView'));
@@ -673,93 +674,71 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
         )}
 
-        {/* Controls toolbar — quick filters + view toggle + Status Definitions, all in one row */}
+        {/* Controls toolbar — view controls (primary, left) + filters & tools (right) */}
         <div className="flex flex-wrap items-center gap-2 px-2 sm:px-0">
-          {/* Quick filter chips */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setActiveTab('scheduled');
-              setSearchQuery('');
-              setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver');
-            }}
-            className={`${
-              quickFilter === 'needsDriver'
-                ? 'bg-[#236383] text-white border-[#236383] hover:bg-[#236383]/90'
-                : ''
-            }`}
-          >
-            <Car className="w-4 h-4 mr-1.5" />
-            Needs Driver
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setActiveTab('scheduled');
-              setSearchQuery('');
-              setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan');
-            }}
-            className={`${
-              quickFilter === 'needsVan'
-                ? 'bg-[#D68319] text-white border-[#D68319] hover:bg-[#D68319]/90'
-                : ''
-            }`}
-          >
-            <Truck className="w-4 h-4 mr-1.5" />
-            Needs Van
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setActiveTab('scheduled');
-              setSearchQuery('');
-              setQuickFilter(quickFilter === 'week' ? null : 'week');
-            }}
-            className={`${
-              quickFilter === 'week'
-                ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
-                : ''
-            }`}
-          >
-            <Calendar className="w-4 h-4 mr-1.5" />
-            This Week
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setActiveTab('scheduled');
-              setSearchQuery('');
-              setQuickFilter(quickFilter === 'today' ? null : 'today');
-            }}
-            className={`${
-              quickFilter === 'today'
-                ? 'bg-[#007E8C] text-white border-[#007E8C] hover:bg-[#007E8C]/90'
-                : ''
-            }`}
-          >
-            <Calendar className="w-4 h-4 mr-1.5" />
-            Today
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSearchQuery('');
-              setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority');
-            }}
-            className={`${
-              quickFilter === 'corporatePriority'
-                ? 'bg-amber-600 text-white border-amber-600 hover:bg-amber-700'
-                : 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
-            }`}
-          >
-            <Shield className="w-4 h-4 mr-1.5" />
-            Corporate Priority
-          </Button>
+          {/* Primary: View mode controls */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+            {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
+            {activeTab === 'scheduled' && viewMode === 'list' ? (
+              <>
+                <button
+                  onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  {!isMobile && 'Cards'}
+                </button>
+                <button
+                  onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  <Table2 className="w-4 h-4" />
+                  {!isMobile && 'Spreadsheet'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                <List className="w-4 h-4" />
+                {!isMobile && 'List'}
+              </button>
+            )}
+            <button
+              onClick={() => setViewMode('calendar')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              <Calendar className="w-4 h-4" />
+              {!isMobile && 'Calendar'}
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              <MapPin className="w-4 h-4" />
+              {!isMobile && 'Map'}
+            </button>
+          </div>
+
+          {/* Export — shown when on scheduled tab in list view */}
+          {activeTab === 'scheduled' && viewMode === 'list' && (
+            <button
+              onClick={async () => {
+                try {
+                  await exportEventRequestsToExcel(eventRequests, 'scheduled');
+                  toast({ title: 'Export complete' });
+                } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
+              }}
+              disabled={eventRequests.length === 0}
+              className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
+            >
+              <Download className="w-4 h-4" />
+              {!isMobile && 'Export'}
+            </button>
+          )}
+
+          {/* Driver Planning Map link */}
           <Link href="/driver-planning">
             <Button
               variant="outline"
@@ -767,75 +746,79 @@ const EventRequestsManagementContent: React.FC = () => {
               className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
             >
               <MapPin className="w-4 h-4 mr-1.5" />
-              Driver Planning Map
+              {!isMobile && 'Driver Planning Map'}
             </Button>
           </Link>
 
-          {/* Spacer pushes view toggles + status defs to the right */}
+          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Unified view controls */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-              {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
-              {activeTab === 'scheduled' && viewMode === 'list' ? (
-                <>
-                  <button
-                    onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
-                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    {!isMobile && 'Cards'}
-                  </button>
-                  <button
-                    onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
-                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                  >
-                    <Table2 className="w-3.5 h-3.5" />
-                    {!isMobile && 'Spreadsheet'}
-                  </button>
-                </>
-              ) : (
+          {/* Quick Filters dropdown */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={quickFilter ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
+              >
+                <Filter className="w-4 h-4 mr-1.5" />
+                {quickFilter
+                  ? quickFilter === 'needsDriver' ? 'Needs Driver'
+                  : quickFilter === 'needsVan' ? 'Needs Van'
+                  : quickFilter === 'week' ? 'This Week'
+                  : quickFilter === 'today' ? 'Today'
+                  : quickFilter === 'corporatePriority' ? 'Corporate'
+                  : 'Filters'
+                  : 'Filters'}
+                <ChevronDown className="w-3.5 h-3.5 ml-1" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-52 p-2" align="end">
+              <div className="space-y-1">
                 <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsDriver' ? 'bg-[#236383] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
-                  <List className="w-3.5 h-3.5" />
-                  {!isMobile && 'List'}
+                  <Car className="w-4 h-4" /> Needs Driver
                 </button>
-              )}
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                <Calendar className="w-3.5 h-3.5" />
-                {!isMobile && 'Calendar'}
-              </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                {!isMobile && 'Map'}
-              </button>
-            </div>
-            {/* Export button — separate from toggle, shown when on scheduled tab */}
-            {activeTab === 'scheduled' && viewMode === 'list' && (
-              <button
-                onClick={async () => {
-                  try {
-                    await exportEventRequestsToExcel(eventRequests, 'scheduled');
-                    toast({ title: 'Export complete' });
-                  } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
-                }}
-                disabled={eventRequests.length === 0}
-                className="px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {!isMobile && 'Export'}
-              </button>
-            )}
-          </div>
+                <button
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsVan' ? 'bg-[#D68319] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                >
+                  <Truck className="w-4 h-4" /> Needs Van
+                </button>
+                <button
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'week' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                >
+                  <Calendar className="w-4 h-4" /> This Week
+                </button>
+                <button
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'today' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
+                >
+                  <Calendar className="w-4 h-4" /> Today
+                </button>
+                <button
+                  onClick={() => { setSearchQuery(''); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'corporatePriority' ? 'bg-amber-600 text-white' : 'hover:bg-gray-100 text-amber-700'}`}
+                >
+                  <Shield className="w-4 h-4" /> Corporate Priority
+                </button>
+                {quickFilter && (
+                  <>
+                    <div className="border-t border-gray-200 my-1" />
+                    <button
+                      onClick={() => setQuickFilter(null)}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-500 hover:bg-gray-100"
+                    >
+                      <X className="w-4 h-4" /> Clear Filter
+                    </button>
+                  </>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Status Definitions - inline reference */}
           <OnboardingTooltip

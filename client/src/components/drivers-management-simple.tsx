@@ -212,6 +212,22 @@ export default function DriversManagement() {
     queryKey: ['/api/drivers'],
   });
 
+  // Fetch all vehicles for card display
+  const { data: allVehicles = [] } = useQuery<DriverVehicle[]>({
+    queryKey: ['/api/drivers/all-vehicles'],
+  });
+
+  // Group vehicles by driver ID for quick lookup
+  const vehiclesByDriver = useMemo(() => {
+    const map = new Map<number, DriverVehicle[]>();
+    for (const v of allVehicles) {
+      const list = map.get(v.driverId) || [];
+      list.push(v);
+      map.set(v.driverId, list);
+    }
+    return map;
+  }, [allVehicles]);
+
   // Fetch hosts for route assignments
   const { data: hosts = [] } = useQuery<Host[]>({
     queryKey: ['/api/hosts'],
@@ -2265,6 +2281,37 @@ export default function DriversManagement() {
                             </div>
                           )}
                         </div>
+
+                        {/* Vehicles */}
+                        {vehiclesByDriver.get(driver.id)?.length ? (
+                          <div className={`border rounded-lg px-3 py-2 ${driver.isActive ? 'bg-slate-50 border-slate-200' : 'bg-slate-100 border-slate-300'}`}>
+                            <div className="flex items-start gap-2">
+                              <Car className={`w-4 h-4 mt-0.5 flex-shrink-0 ${driver.isActive ? 'text-slate-600' : 'text-slate-500'}`} />
+                              <div className="min-w-0 flex-1">
+                                <div className={`text-xs font-medium ${driver.isActive ? 'text-slate-600' : 'text-slate-500'}`}>Vehicle{(vehiclesByDriver.get(driver.id)?.length ?? 0) > 1 ? 's' : ''}</div>
+                                <div className="space-y-1 mt-0.5">
+                                  {vehiclesByDriver.get(driver.id)!.map((v) => (
+                                    <div key={v.id} className="text-sm text-gray-900 flex items-center gap-2 flex-wrap">
+                                      <span className="font-medium">
+                                        {[v.year, v.make, v.model].filter(Boolean).join(' ')}
+                                      </span>
+                                      {v.color && <span className="text-gray-500">({v.color})</span>}
+                                      {v.coolerCapacity != null && v.coolerCapacity > 0 && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                          <Package className="w-2.5 h-2.5 mr-0.5" />
+                                          {v.coolerCapacity} cooler{v.coolerCapacity > 1 ? 's' : ''}
+                                        </Badge>
+                                      )}
+                                      {v.isPrimary && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-300 text-blue-700">Primary</Badge>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
 
                         {/* Availability */}
                         {driver.availability && (

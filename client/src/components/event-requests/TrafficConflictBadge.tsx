@@ -39,7 +39,7 @@ export function TrafficConflictBadge({
             variant="outline"
             className={`gap-1 border-[#A31C41] bg-[#A31C41]/10 text-[#A31C41] hover:bg-[#A31C41]/15 ${className}`}
           >
-            <AlertTriangle className="h-3 w-3" />
+            <span className="text-sm leading-none">⚽</span>
             {compact ? (
               <span>World Cup traffic</span>
             ) : (
