@@ -242,6 +242,17 @@ export function RecipientCard({ recipient, canEdit, onEdit, onDelete, onToggleSt
           </div>
         )}
 
+        {/* Recipient Survey */}
+        {(recipient as any).surveySubmitted && (
+          <div className="border-t pt-3 mt-3">
+            <div className="text-sm font-medium text-slate-700 mb-2">Recipient Survey</div>
+            <Badge variant="default" className="text-xs bg-[#47B3CB]/15 text-[#236383] border border-[#47B3CB]/40">
+              Survey submitted
+              {(recipient as any).surveySubmittedDate && ` (${new Date((recipient as any).surveySubmittedDate).toLocaleDateString()})`}
+            </Badge>
+          </div>
+        )}
+
         {/* Contact Person Information */}
         {(recipient.contactPersonName || recipient.contactPersonPhone || recipient.contactPersonEmail) && (
           <div className="border-t pt-3 mt-3">
