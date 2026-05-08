@@ -74,7 +74,10 @@
       "Bash(awk '/^function SMSSetupSection/,/^}/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/alert-preferences.tsx)",
       "Bash(awk 'NR>=44 && /^export const users = pgTable/,/^}\\\\\\);/ {print NR\": \"$0}' /Users/kathrynelong/Sandwich-Project-Platform-Final/shared/schema.ts)",
       "Bash(awk 'NR>=1185 && NR<=1240' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/hosts-management-consolidated.tsx)",
-      "Bash(awk '/<Button/,/<\\\\/Button>/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/hosts-management-consolidated.tsx)"
+      "Bash(awk '/<Button/,/<\\\\/Button>/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/hosts-management-consolidated.tsx)",
+      "Bash(git rm *)",
+      "Bash(npm run *)",
+      "Read(//private/tmp/**)"
     ],
     "deny": [],
     "ask": []

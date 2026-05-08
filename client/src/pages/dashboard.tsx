@@ -155,7 +155,6 @@ const TSPNetwork = lazyWithRetry(() => import('@/pages/tsp-network'));
 const EventImpactReports = lazyWithRetry(() => import('@/pages/event-impact-reports'));
 const DriverPlanningDashboard = lazyWithRetry(() => import('@/pages/driver-planning'));
 const VolunteerEventHub = lazyWithRetry(() => import('@/pages/volunteer-event-hub'));
-const DriverHub = lazyWithRetry(() => import('@/pages/driver-hub'));
 const HostResources = lazyWithRetry(() => import('@/pages/host-resources'));
 const YearlyCalendar = lazyWithRetry(() => import('@/pages/yearly-calendar'));
 const Directory = lazyWithRetry(() => import('@/pages/directory'));
@@ -350,7 +349,15 @@ export default function Dashboard({
     // Check for section in query parameters first
     if (urlParams.section) {
       logger.log('Setting activeSection from query parameter:', urlParams.section);
-      
+
+      // Driver Hub was decommissioned — fold its URL into the Volunteer Hub.
+      if (urlParams.section === 'driver-hub') {
+        const newSearch = window.location.search.replace(/section=driver-hub/, 'section=volunteer-hub');
+        window.history.replaceState({}, '', `${window.location.pathname}${newSearch}`);
+        setActiveSection('volunteer-hub');
+        return;
+      }
+
       // Handle special case for project detail view via query parameters
       if (urlParams.section === 'projects' && urlParams.view === 'detail' && urlParams.id) {
         const projectSection = `project-${urlParams.id}`;
@@ -358,7 +365,7 @@ export default function Dashboard({
         setActiveSection(projectSection);
         return;
       }
-      
+
       setActiveSection(urlParams.section);
       return;
     }
@@ -623,8 +630,6 @@ export default function Dashboard({
         return <DriverPlanningDashboard />;
       case 'volunteer-hub':
         return <VolunteerEventHub />;
-      case 'driver-hub':
-        return <DriverHub />;
       case 'host-resources':
         return <HostResources />;
       case 'recipients':
