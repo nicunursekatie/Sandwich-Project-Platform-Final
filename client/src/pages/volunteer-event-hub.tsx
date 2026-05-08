@@ -60,6 +60,7 @@ import {
   Users,
   Mic,
   Car,
+  Truck,
   ChevronLeft,
   ChevronRight,
   Building2,
@@ -295,6 +296,14 @@ function EventCard({
           </span>
         </div>
 
+        {/* Driver pickup time */}
+        {event.pickupTime && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Truck className="w-4 h-4 shrink-0 text-[#007e8c]" />
+            <span>Pickup: {formatTimeForDisplay(event.pickupTime)}</span>
+          </div>
+        )}
+
         {/* Location */}
         {event.eventAddress && (
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -453,6 +462,12 @@ function CalendarEventPreview({
           <Clock className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
           <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
         </div>
+        {event.pickupTime && (
+          <div className="flex items-center gap-2">
+            <Truck className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
+            <span>Pickup: {formatTimeForDisplay(event.pickupTime)}</span>
+          </div>
+        )}
         {event.eventAddress && (
           <div className="flex items-start gap-2">
             <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#007e8c]" />
@@ -1028,6 +1043,7 @@ export default function VolunteerEventHub() {
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [mySignupsRoleFilter, setMySignupsRoleFilter] = useState<string>('all');
   const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -1225,7 +1241,11 @@ export default function VolunteerEventHub() {
 
         if (roleFilter === 'speaker' && event.speakersUnfilled === 0) return false;
         if (roleFilter === 'volunteer' && event.volunteersUnfilled === 0) return false;
-        if (roleFilter === 'driver' && event.driversUnfilled === 0) return false;
+        if (roleFilter === 'driver') {
+          if (event.driversUnfilled === 0) return false;
+          // Group is providing their own transport — no driver opportunity here.
+          if (event.selfTransport) return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -1880,9 +1900,37 @@ export default function VolunteerEventHub() {
                   </Button>
                 </CardContent>
               </Card>
-            ) : (
+            ) : (() => {
+              const filteredSignups = mySignupsRoleFilter === 'all'
+                ? mySignups
+                : mySignups.filter(s => s.role === mySignupsRoleFilter);
+              return (
               <div className="space-y-3">
-                {mySignups.map(signup => {
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <Select value={mySignupsRoleFilter} onValueChange={setMySignupsRoleFilter}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Filter by role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      <SelectItem value="speaker">Speaker</SelectItem>
+                      <SelectItem value="general">General Volunteer</SelectItem>
+                      <SelectItem value="driver">Driver</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredSignups.length} of {mySignups.length}
+                  </span>
+                </div>
+                {filteredSignups.length === 0 ? (
+                  <Card>
+                    <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                      No signups in this role.
+                    </CardContent>
+                  </Card>
+                ) : (
+                filteredSignups.map(signup => {
                   const signupDate = signup.event.scheduledEventDate || signup.event.desiredEventDate;
                   const formattedSignupDate = signupDate
                     ? format(parseISO(signupDate), 'EEEE, MMMM d, yyyy')
@@ -1934,9 +1982,11 @@ export default function VolunteerEventHub() {
                       </CardContent>
                     </Card>
                   );
-                })}
+                })
+                )}
               </div>
-            )}
+              );
+            })()}
           </TabsContent>
 
           {/* Pending Approvals View */}
