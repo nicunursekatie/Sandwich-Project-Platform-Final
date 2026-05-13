@@ -221,13 +221,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   // Determine the date label and field to edit based on what date we're showing
   let dateLabel = 'Requested Date';
   let dateFieldToEdit = 'desiredEventDate';
-  if (request.scheduledEventDate) {
-    dateFieldToEdit = 'scheduledEventDate';
-    if (request.status === 'completed') {
-      dateLabel = 'Event Date';
-    } else {
-      dateLabel = 'Scheduled Date';
+  // Completed events show "Event Date" regardless of whether the date comes from
+  // scheduledEventDate or the original desiredEventDate — the event already happened on this date.
+  if (request.status === 'completed') {
+    dateLabel = 'Event Date';
+    if (request.scheduledEventDate) {
+      dateFieldToEdit = 'scheduledEventDate';
     }
+  } else if (request.scheduledEventDate) {
+    dateFieldToEdit = 'scheduledEventDate';
+    dateLabel = 'Scheduled Date';
   }
 
   // Parse date string safely without timezone issues
@@ -2531,6 +2534,34 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         {/* Event Summary */}
         <div className="space-y-2 mb-3">
           <div className="bg-white rounded-lg p-2 space-y-2">
+            {/* Date history — original request + backup dates (kept for reference, not prominent) */}
+            {(() => {
+              const eventDate = request.scheduledEventDate?.toString();
+              const requestedDate = request.desiredEventDate?.toString();
+              const backupDates = Array.isArray(request.backupDates) ? request.backupDates : [];
+              const requestedDiffers = requestedDate && requestedDate !== eventDate;
+              if (!requestedDiffers && backupDates.length === 0) return null;
+              return (
+                <div className="bg-gray-50 rounded-md px-3 py-2 text-xs text-gray-600 space-y-1">
+                  <div className="font-medium text-gray-700">Date history</div>
+                  {requestedDiffers && (
+                    <div>
+                      <span className="text-gray-500">Originally requested:</span>{' '}
+                      <span className="text-gray-800">{formatEventDate(requestedDate!).text}</span>
+                    </div>
+                  )}
+                  {backupDates.length > 0 && (
+                    <div>
+                      <span className="text-gray-500">Backup dates offered:</span>{' '}
+                      <span className="text-gray-800">
+                        {backupDates.map((d) => formatEventDate(String(d)).text).join('; ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Staffing Gap Alert */}
             {staffingGaps.length > 0 && (
               <div className="bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 flex items-start gap-2">

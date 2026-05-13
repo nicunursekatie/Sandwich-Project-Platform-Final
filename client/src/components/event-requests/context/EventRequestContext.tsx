@@ -552,7 +552,8 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
       // For scheduled and my_assignments, show upcoming events first
       setSortBy('event_date_asc');
     } else if (activeTab === 'completed') {
-      setSortBy('organization_asc');
+      // Completed events: most recent first — past events are what users want to see when they switch tabs.
+      setSortBy('event_date_desc');
     }
   }, [activeTab]);
 

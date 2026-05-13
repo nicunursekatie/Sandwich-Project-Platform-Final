@@ -81,7 +81,9 @@
       "Bash(git stash *)",
       "Bash(awk '/NEW: Top Info Grid - Event Time/{start=NR} /Sandwich Types Breakdown/{print \"GRID START:\", start; print \"GRID END \\(approx\\):\", NR; exit}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
       "Bash(awk 'NR<=631 && /^\\(function|const\\).*=.*=>.*{$|^function .* {$|^const .* React\\\\.FC|^const .* =.*=>.*\\\\\\($/ {print NR\": \"$0}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
-      "Bash(awk 'NR<=2310 && /getInstagramLinkFromNotes = \\\\\\(\\\\\\)/{lastLine=NR; lastDef=$0} END{print \"Last getInstagramLinkFromNotes definition before line 2310:\", lastLine}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)"
+      "Bash(awk 'NR<=2310 && /getInstagramLinkFromNotes = \\\\\\(\\\\\\)/{lastLine=NR; lastDef=$0} END{print \"Last getInstagramLinkFromNotes definition before line 2310:\", lastLine}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
+      "Bash(awk -F: '$1>=1380 && $1<=1500')",
+      "Bash(awk -F: 'BEGIN{FS=\":\"} $1>=1380 && $1<=1750 {print}')"
     ],
     "deny": [],
     "ask": [],
