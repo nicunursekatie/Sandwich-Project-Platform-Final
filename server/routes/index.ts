@@ -15,6 +15,7 @@ import instantMessagesRouter from './instant-messages';
 import eventRequestsRouter from './event-requests';
 import { createMigrateContactAttemptsRoutes } from './migrate-contact-attempts';
 import { createEventCollaborationRouter } from './event-collaboration';
+import { createEventPostEventNotesRouter } from './event-post-event-notes';
 import eventMapRouter from './event-map';
 import directionsRouter from './directions';
 import importCollectionsRouter from './import-collections';
@@ -650,6 +651,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     deps.isAuthenticated,
     ...createStandardMiddleware(),
     eventCollaborationRouter
+  );
+
+  // Post-event notes — retrospective notes on completed events
+  const eventPostEventNotesRouter = createEventPostEventNotesRouter();
+  router.use(
+    '/api/event-requests',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    eventPostEventNotesRouter
   );
   
   // Contact Attempts Migration routes - migrate legacy unresponsiveNotes to contactAttemptsLog

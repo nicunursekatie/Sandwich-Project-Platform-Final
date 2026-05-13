@@ -2837,6 +2837,27 @@ export const eventCollaborationComments = pgTable(
   })
 );
 
+// Post-event notes — retrospective notes attached to completed events.
+// Distinct from collaboration comments (which support replies/likes/intake collab).
+export const eventPostEventNotes = pgTable(
+  'event_post_event_notes',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull().references(() => eventRequests.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').notNull().references(() => users.id),
+    userName: varchar('user_name').notNull(),
+    content: text('content').notNull(),
+    editedAt: timestamp('edited_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index('idx_post_event_notes_event_id').on(table.eventRequestId),
+    userIdIdx: index('idx_post_event_notes_user_id').on(table.userId),
+    createdAtIdx: index('idx_post_event_notes_created_at').on(table.createdAt),
+  })
+);
+
 // Event collaboration comment likes table
 export const eventCollaborationCommentLikes = pgTable(
   'event_collaboration_comment_likes',
@@ -3148,6 +3169,17 @@ export const insertEventCollaborationCommentSchema = createInsertSchema(eventCol
 
 export type EventCollaborationComment = typeof eventCollaborationComments.$inferSelect;
 export type InsertEventCollaborationComment = z.infer<typeof insertEventCollaborationCommentSchema>;
+
+// Post-event note schema types
+export const insertEventPostEventNoteSchema = createInsertSchema(eventPostEventNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  editedAt: true,
+});
+
+export type EventPostEventNote = typeof eventPostEventNotes.$inferSelect;
+export type InsertEventPostEventNote = z.infer<typeof insertEventPostEventNoteSchema>;
 
 // Event collaboration comment like schema types
 export const insertEventCollaborationCommentLikeSchema = createInsertSchema(eventCollaborationCommentLikes).omit({

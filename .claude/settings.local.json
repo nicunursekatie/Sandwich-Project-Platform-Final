@@ -77,9 +77,16 @@
       "Bash(awk '/<Button/,/<\\\\/Button>/' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/hosts-management-consolidated.tsx)",
       "Bash(git rm *)",
       "Bash(npm run *)",
-      "Read(//private/tmp/**)"
+      "Read(//private/tmp/**)",
+      "Bash(git stash *)",
+      "Bash(awk '/NEW: Top Info Grid - Event Time/{start=NR} /Sandwich Types Breakdown/{print \"GRID START:\", start; print \"GRID END \\(approx\\):\", NR; exit}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
+      "Bash(awk 'NR<=631 && /^\\(function|const\\).*=.*=>.*{$|^function .* {$|^const .* React\\\\.FC|^const .* =.*=>.*\\\\\\($/ {print NR\": \"$0}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
+      "Bash(awk 'NR<=2310 && /getInstagramLinkFromNotes = \\\\\\(\\\\\\)/{lastLine=NR; lastDef=$0} END{print \"Last getInstagramLinkFromNotes definition before line 2310:\", lastLine}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "/tmp"
+    ]
   }
 }

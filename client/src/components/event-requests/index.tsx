@@ -72,8 +72,6 @@ import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 import { TspContactAssignmentDialog } from './dialogs/TspContactAssignmentDialog';
 import { AssignmentDialog } from './dialogs/AssignmentDialog';
 import { EventDetailsDialog } from './dialogs/EventDetailsDialog';
-import { MissingInfoSummaryDialog } from './MissingInfoSummaryDialog';
-import { ToolkitSentPendingDialog } from './ToolkitSentPendingDialog';
 import { AiDateSuggestionDialog } from './dialogs/AiDateSuggestionDialog';
 import { AiIntakeAssistantDialog } from './dialogs/AiIntakeAssistantDialog';
 import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
@@ -82,7 +80,6 @@ import { RescheduleDialog } from './dialogs/RescheduleDialog';
 import IntakeCallDialog from './IntakeCallDialog';
 import { CallNotesScratchpadDialog } from './CallNotesScratchpadDialog';
 import NextActionDialog from './NextActionDialog';
-import { DashboardSummaryCards } from './DashboardSummaryCards';
 import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { logger } from '@/lib/logger';
@@ -645,19 +642,6 @@ const EventRequestsManagementContent: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Alert banners — outstanding work items (full-width notification strips) */}
-        <div className="space-y-2">
-          <MissingInfoSummaryDialog />
-          <ToolkitSentPendingDialog />
-        </div>
-
-        {/* Dashboard Summary Cards */}
-        <DashboardSummaryCards
-          eventRequests={allActiveEvents}
-          statusCounts={statusCounts}
-          isLoading={isLoading || statusCountsLoading}
-        />
 
         {/* Role-customized view indicator */}
         {user?.role && user.role !== 'super_admin' && user.role !== 'admin' && (

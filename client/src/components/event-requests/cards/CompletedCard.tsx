@@ -40,6 +40,7 @@ import { formatSandwichTypesDisplay, parseSandwichTypes } from '@/lib/sandwich-u
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { statusIcons, statusOptions, statusBorderColors, SANDWICH_TYPES, statusTooltips, indicatorTooltips } from '@/components/event-requests/constants';
+import { PostEventNotes } from '@/components/event-requests/PostEventNotes';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -634,6 +635,12 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     <strong className="text-sm sm:text-base md:text-lg break-words" data-testid="text-date-value">
                       {displayDate && dateInfo ? dateInfo.text : 'No date set'}
                     </strong>
+                    {request.eventStartTime && (
+                      <span className="text-gray-600 ml-1.5" data-testid="text-event-time">
+                        · {formatTime12Hour(request.eventStartTime)}
+                        {request.eventEndTime && ` - ${formatTime12Hour(request.eventEndTime)}`}
+                      </span>
+                    )}
                     {displayDate && getRelativeTime(displayDate.toString()) && (
                       <span className="text-[#236383] ml-1">({getRelativeTime(displayDate.toString())})</span>
                     )}
@@ -1576,6 +1583,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [editingMode, setEditingMode] = useState<'simple' | 'detailed'>('simple');
   const [editingTypes, setEditingTypes] = useState<Record<string, number>>({});
 
+  // Compact social media details — expand to reveal full editor
+  const [showSocialDetails, setShowSocialDetails] = useState(false);
+
   // Inline editing state for TSP contact
   const [isEditingTspContact, setIsEditingTspContact] = useState(false);
   const [editingTspContactId, setEditingTspContactId] = useState<number | null>(null);
@@ -2298,237 +2308,169 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           canEditTspContact={canEditTspContact}
         />
 
-        {/* NEW: Top Info Grid - Event Time, Sandwiches Delivered, Social Media */}
-        <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200">
-          <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
-            {/* Event Time Section */}
-            <div className="text-center">
-              <Clock className="w-5 h-5 text-[#236383] mx-auto mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Event Time</p>
-              <p className="font-semibold text-[#236383] mt-1">{eventDateDisplay}</p>
-              <p className="text-sm text-[#236383]">{eventTimeDisplay}</p>
-            </div>
-
-            {/* Sandwiches Section - Planned vs Delivered */}
-            <div className="text-center group relative">
-              <Package className="w-5 h-5 text-[#FBAD3F] mx-auto mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Sandwiches</p>
-              {isEditingSandwichCount ? (
-                <div className="flex flex-col items-center gap-2 mt-1 min-w-0 sm:min-w-[200px]">
-                  {editingMode === 'simple' ? (
-                    // Simple mode - just a single total input
-                    <>
-                      <Input
-                        type="number"
-                        value={editingSandwichCount}
-                        onChange={(e) => setEditingSandwichCount(e.target.value)}
-                        className="h-10 w-32 text-center text-xl font-semibold"
-                        placeholder="Total"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveSandwichCount();
-                          if (e.key === 'Escape') cancelSandwichCountEdit();
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={toggleEditingMode}
-                        className="text-xs h-6"
-                      >
-                        Add breakdown by type
-                      </Button>
-                    </>
-                  ) : (
-                    // Detailed mode - inputs for each type using SANDWICH_TYPES
-                    <div className="space-y-2 w-full">
-                      <div className="grid grid-cols-2 gap-2 text-left">
-                        {SANDWICH_TYPES.map((typeConfig) => {
-                          const typeValue = typeConfig.value;
-                          return (
-                            <div key={typeValue} className={typeValue === 'unknown' ? 'col-span-2' : ''}>
-                              <label className="text-xs text-gray-600">{typeConfig.label}</label>
-                              <Input
-                                type="number"
-                                value={editingTypes[typeValue] || ''}
-                                onChange={(e) => setEditingTypes({ ...editingTypes, [typeValue]: parseInt(e.target.value) || 0 })}
-                                className="h-8 text-sm"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="text-xs text-gray-600 text-center bg-gray-50 rounded p-1">
-                        Total: <span className="font-semibold">{Object.values(editingTypes).reduce((sum, count) => sum + (count || 0), 0)}</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={toggleEditingMode}
-                        className="text-xs h-6 w-full"
-                      >
-                        Switch to simple total
-                      </Button>
-                    </div>
-                  )}
-                  <div className="flex gap-1">
-                    <Button size="sm" onClick={saveSandwichCount} disabled={updateSandwichCountMutation.isPending}>
-                      <Save className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={cancelSandwichCountEdit}>
-                      <X className="w-3 h-3 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="relative space-y-2">
-                  {/* Planned count */}
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Planned</p>
-                    <p className="font-medium text-gray-600 text-lg">
-                      {(() => {
-                        const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
-                        if (hasRange) {
-                          const rangeType = (request as any).estimatedSandwichRangeType;
-                          const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;
-                          return `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax}${typeLabel ? ` ${typeLabel}` : ''}`;
-                        }
-                        if (request.estimatedSandwichCount) {
-                          return formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined);
-                        }
-                        // Check if sandwich types have quantities even without a total count
-                        const parsedTypes = parseSandwichTypes(request.sandwichTypes);
-                        const totalFromTypes = parsedTypes?.reduce((sum, t) => sum + (typeof t.quantity === 'number' ? t.quantity : 0), 0) ?? 0;
-                        if (totalFromTypes > 0) {
-                          return formatSandwichTypesDisplay(request.sandwichTypes, undefined);
-                        }
-                        return <span className="text-gray-400 italic text-sm">Not set</span>;
-                      })()}
-                    </p>
-                  </div>
-                  {/* Actual delivered count */}
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wide">Delivered</p>
-                    <div className="font-semibold text-[#FBAD3F] text-xl sm:text-2xl break-words">
-                      {(() => {
-                        const count = request.actualSandwichCount;
-                        const typesRaw = request.actualSandwichTypes;
-                        const typesParsed = parseSandwichTypes(typesRaw);
-
-                        const hasCount = count != null && count > 0;
-                        const hasTypes = typesParsed && typesParsed.length > 0;
-
-                        if (!hasCount && !hasTypes) {
-                          return <span className="text-gray-400 italic text-base">Not recorded</span>;
-                        }
-
-                        // formatSandwichTypesDisplay handles string/array/object from DB and shows type names
-                        const typeDisplay = formatSandwichTypesDisplay(typesRaw, count ?? undefined);
-                        return <div>{typeDisplay}</div>;
-                      })()}
-                    </div>
-                  </div>
-                  <div className="flex justify-center mt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={startEditingSandwichCount}
-                      className="h-7 px-3 text-xs opacity-60 group-hover:opacity-100 transition-opacity bg-white/80 hover:bg-white border-[#FBAD3F]/30 hover:border-[#FBAD3F]"
-                      title="Edit delivered count"
-                    >
-                      <Edit2 className="w-3 h-3 mr-1" />
-                      Edit Delivered
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Social Media Status Section */}
-            <div className="text-center">
-              <Share2 className="w-5 h-5 text-[#47b3cb] mx-auto mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Social Media</p>
-              <p className="font-semibold text-[#47b3cb] mt-1">
-                {request.socialMediaPostCompleted ? (
-                  <span className="flex items-center justify-center gap-1">
-                    <CheckCircle className="w-4 h-4 text-teal-600" />
-                    Posted
-                  </span>
-                ) : request.socialMediaPostRequested ? (
-                  <span className="flex items-center justify-center gap-1">
-                    <Clock className="w-4 h-4 text-[#47b3cb]" />
-                    Requested
-                  </span>
-                ) : (
-                  <span className="text-gray-400 italic">Not tracked</span>
-                )}
-              </p>
-              {/* Display Instagram link if posted and link exists, or show "Add Link" button */}
-              {request.socialMediaPostCompleted && (() => {
-                const instagramLink = getInstagramLinkFromNotes();
-                if (instagramLink) {
-                  return (
-                    <a
-                      href={instagramLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1 mt-2 text-xs text-[#236383] hover:text-[#007e8c] hover:underline"
-                    >
-                      <Instagram className="w-3 h-3" />
-                      View Post
-                    </a>
-                  );
-                } else {
-                  // No link yet - show Add Link button
-                  return (
-                    <Button
-                      size="sm"
-                      onClick={() => setShowInstagramDialog(true)}
-                      className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs h-7 px-2 mt-2"
-                      disabled={updateSocialMediaMutation.isPending}
-                    >
-                      <Instagram className="w-3 h-3 mr-1" />
-                      Add Link
-                    </Button>
-                  );
-                }
-              })()}
-              {/* Quick action buttons */}
-              {!request.socialMediaPostCompleted && (
-                <div className="flex flex-col gap-1 mt-2">
-                  {!request.socialMediaPostRequested && (
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const todayDate = new Date().toISOString();
-                        updateSocialMediaMutation.mutate({
-                          socialMediaPostRequested: true,
-                          socialMediaPostRequestedDate: todayDate,
-                        });
-                      }}
-                      className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs h-7 px-2"
-                      disabled={updateSocialMediaMutation.isPending}
-                    >
-                      Mark Requested
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={() => setShowInstagramDialog(true)}
-                    className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs h-7 px-2"
-                    disabled={updateSocialMediaMutation.isPending}
-                  >
-                    Mark Posted
-                  </Button>
-                </div>
-              )}
-            </div>
+        {/* At-a-glance: sandwiches + social — minimal, expand only when needed */}
+        <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200 space-y-2">
+          {/* Sandwiches row */}
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <Package className="w-4 h-4 text-[#FBAD3F] shrink-0" />
+            <span className="text-gray-600 font-medium">Sandwiches:</span>
+            {isEditingSandwichCount ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Input
+                  type="number"
+                  value={editingSandwichCount}
+                  onChange={(e) => setEditingSandwichCount(e.target.value)}
+                  className="h-8 w-28 text-center"
+                  placeholder="Delivered"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveSandwichCount();
+                    if (e.key === 'Escape') cancelSandwichCountEdit();
+                  }}
+                />
+                <Button size="sm" onClick={saveSandwichCount} disabled={updateSandwichCountMutation.isPending} className="h-7">
+                  <Save className="w-3 h-3 mr-1" />
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" onClick={cancelSandwichCountEdit} className="h-7">
+                  <X className="w-3 h-3 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <>
+                <span className="text-gray-700">
+                  Planned <strong className="font-semibold">
+                    {(() => {
+                      const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+                      if (hasRange) {
+                        const rangeType = (request as any).estimatedSandwichRangeType;
+                        const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;
+                        return `${request.estimatedSandwichCountMin}-${request.estimatedSandwichCountMax}${typeLabel ? ` ${typeLabel}` : ''}`;
+                      }
+                      if (request.estimatedSandwichCount) {
+                        return formatSandwichTypesDisplay(request.sandwichTypes, request.estimatedSandwichCount ?? undefined);
+                      }
+                      const parsedTypes = parseSandwichTypes(request.sandwichTypes);
+                      const totalFromTypes = parsedTypes?.reduce((sum, t) => sum + (typeof t.quantity === 'number' ? t.quantity : 0), 0) ?? 0;
+                      if (totalFromTypes > 0) {
+                        return formatSandwichTypesDisplay(request.sandwichTypes, undefined);
+                      }
+                      return <span className="text-gray-400 italic">not set</span>;
+                    })()}
+                  </strong>
+                </span>
+                <span className="text-gray-400">·</span>
+                <span className="text-gray-700">
+                  Delivered <strong className="font-semibold text-[#FBAD3F]">
+                    {(() => {
+                      const count = request.actualSandwichCount;
+                      const typesRaw = request.actualSandwichTypes;
+                      const typesParsed = parseSandwichTypes(typesRaw);
+                      const hasCount = count != null && count > 0;
+                      const hasTypes = typesParsed && typesParsed.length > 0;
+                      if (!hasCount && !hasTypes) {
+                        return <span className="text-gray-400 italic font-normal">not recorded</span>;
+                      }
+                      return formatSandwichTypesDisplay(typesRaw, count ?? undefined);
+                    })()}
+                  </strong>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={startEditingSandwichCount}
+                  className="h-6 px-1.5 text-xs text-gray-500 hover:text-gray-800"
+                  title="Edit delivered count"
+                >
+                  <Edit2 className="w-3 h-3 mr-1" />
+                  Edit
+                </Button>
+              </>
+            )}
           </div>
+
+          {/* Social media row */}
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <Share2 className="w-4 h-4 text-[#47b3cb] shrink-0" />
+            <span className="text-gray-600 font-medium">Social:</span>
+            <span className="text-gray-700">
+              {request.socialMediaPostCompleted
+                ? '✓ Posted'
+                : request.socialMediaPostRequested
+                  ? '✓ Requested'
+                  : <span className="text-gray-400 italic">not tracked</span>}
+            </span>
+            {request.socialMediaPostCompleted && (() => {
+              const instagramLink = getInstagramLinkFromNotes();
+              return instagramLink ? (
+                <a
+                  href={instagramLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-[#236383] hover:underline"
+                >
+                  <Instagram className="w-3 h-3" />
+                  View
+                </a>
+              ) : null;
+            })()}
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowSocialDetails((s) => !s)}
+              className="h-6 px-1.5 text-xs text-gray-500 hover:text-gray-800 ml-auto"
+            >
+              {showSocialDetails ? 'Hide' : 'Manage'}
+            </Button>
+          </div>
+
+          {/* Expanded social media actions */}
+          {showSocialDetails && (
+            <div className="border-t pt-2 mt-1 flex flex-wrap gap-2">
+              {!request.socialMediaPostCompleted && !request.socialMediaPostRequested && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const todayDate = new Date().toISOString();
+                    updateSocialMediaMutation.mutate({
+                      socialMediaPostRequested: true,
+                      socialMediaPostRequestedDate: todayDate,
+                    });
+                  }}
+                  className="bg-[#007e8c] hover:bg-[#236383] text-white text-xs h-7 px-2"
+                  disabled={updateSocialMediaMutation.isPending}
+                >
+                  Mark Requested
+                </Button>
+              )}
+              {!request.socialMediaPostCompleted && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowInstagramDialog(true)}
+                  className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs h-7 px-2"
+                  disabled={updateSocialMediaMutation.isPending}
+                >
+                  Mark Posted
+                </Button>
+              )}
+              {request.socialMediaPostCompleted && !getInstagramLinkFromNotes() && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowInstagramDialog(true)}
+                  className="bg-[#fbad3f] hover:bg-[#a31c41] text-white text-xs h-7 px-2"
+                  disabled={updateSocialMediaMutation.isPending}
+                >
+                  <Instagram className="w-3 h-3 mr-1" />
+                  Add Instagram Link
+                </Button>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Post-event Notes */}
+        <PostEventNotes eventId={request.id} />
 
         {/* Event Summary */}
         <div className="space-y-2 mb-3">
