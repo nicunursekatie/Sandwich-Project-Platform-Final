@@ -755,7 +755,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     formatDateForInput(displayDate?.toString() || '')
                   )
                 }
-                className="h-6 px-2 text-white hover:bg-white/20 transition-colors"
+                className="h-6 px-2 text-white hover:bg-white/20 transition-colors opacity-0 group-hover:opacity-100"
                 title={`Edit ${dateLabel}`}
                 data-testid="button-edit-date"
               >
@@ -1275,7 +1275,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-5 w-5 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                    className="h-5 w-5 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onEditContactAttempt(attempt.attemptNumber);
@@ -1371,7 +1371,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                           return (
                             <div
                               key={`expanded-${attempt.attemptNumber || attempt.timestamp}`}
-                              className="bg-white rounded p-2 border border-amber-200 text-sm"
+                              className="bg-white rounded p-2 border border-amber-200 text-sm group"
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -1417,7 +1417,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                                      className="h-6 w-6 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100 opacity-0 group-hover:opacity-100 transition-opacity"
                                       onClick={() => onEditContactAttempt(attempt.attemptNumber)}
                                       title="Edit contact attempt"
                                     >
@@ -1558,7 +1558,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             {/* TSP Contact Section - Prominent display */}
             {(request.tspContact || request.customTspContact) && (
               <div className="p-4 bg-gradient-to-r from-[#FBAD3F]/10 to-[#D68319]/10 border-2 border-[#FBAD3F]/30 rounded-lg">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 group">
                   <div className="bg-[#FBAD3F] p-2 rounded-full">
                     <Building className="w-6 h-6 text-white" />
                   </div>
@@ -1582,7 +1582,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                           size="sm"
                           variant="ghost"
                           onClick={onEditTspContact}
-                          className="h-8 w-8 p-0 text-[#D68319] hover:bg-[#FBAD3F]/20"
+                          className="h-8 w-8 p-0 text-[#D68319] hover:bg-[#FBAD3F]/20 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>

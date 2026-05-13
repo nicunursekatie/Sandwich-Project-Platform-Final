@@ -571,7 +571,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                           size="sm"
                           variant="ghost"
                           onClick={startEditingTspContact}
-                          className="ml-2 h-6 w-6 p-0 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                          className="ml-2 h-6 w-6 p-0 text-[#236383] hover:bg-[#236383]/10 transition-opacity opacity-0 group-hover:opacity-100"
                           title="Edit TSP contact"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -2577,7 +2577,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
             <div className="bg-[#e6f2f5] rounded-lg p-3">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                 {/* Recipients with Allocations */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 group">
                   <Building className="w-4 h-4 text-[#236383]" />
                   <span className="font-medium text-[#236383]">Recipients:</span>
                   {/* Show allocations if available with actual sandwich counts, otherwise show recipient badges */}
