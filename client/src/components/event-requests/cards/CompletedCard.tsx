@@ -289,7 +289,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={() => startEditing('organizationName', request.organizationName || '')}
-                    className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                    className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Edit organization name"
                     data-testid="button-edit-org-name"
                   >
@@ -332,7 +332,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                         size="sm"
                         variant="ghost"
                         onClick={() => startEditing('department', request.department || '')}
-                        className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                        className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                         title={request.department ? "Edit department" : "Add department"}
                         data-testid="button-edit-department"
                       >
@@ -372,25 +372,25 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 <p>{statusTooltips[request.status] || 'Event status'}</p>
               </TooltipContent>
             </Tooltip>
-            {/* Confirmation Status Badge - Completed events are always confirmed */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  onClick={() => request.status !== 'completed' && startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
-                  className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center ${
-                    request.status === 'completed' || request.isConfirmed
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-400 text-white'
-                  } ${request.status !== 'completed' ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-help'}`}
-                >
-                  {request.status === 'completed' || request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{request.status === 'completed' ? 'Completed events are always confirmed' : (request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending)}</p>
-                {request.status !== 'completed' && <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>}
-              </TooltipContent>
-            </Tooltip>
+            {/* Confirmation Status Badge — hidden for completed events (obviously already confirmed) */}
+            {request.status !== 'completed' && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    onClick={() => startEditing?.('isConfirmed', (!request.isConfirmed).toString())}
+                    className={`px-3 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity ${
+                      request.isConfirmed ? 'bg-green-600 text-white' : 'bg-gray-400 text-white'
+                    }`}
+                  >
+                    {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {isInProcessStale && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -650,7 +650,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                      className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                       title={`Edit ${dateLabel}`}
                       data-testid="button-edit-date"
                     >
@@ -2521,7 +2521,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => setShowRecipientAllocationDialog(true)}
-                      className="h-5 w-5 p-0 opacity-50 hover:opacity-100"
+                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       title={assignedRecipientInfo.length > 0 ? "Edit recipients" : "Add recipients"}
                     >
                       <Edit2 className="w-3 h-3" />
@@ -2697,7 +2697,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                             size="sm"
                             variant="ghost"
                             onClick={() => startEditing('eventAddress', request.eventAddress || '')}
-                            className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                            className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                             title={request.eventAddress ? "Edit address" : "Add address"}
                             data-testid="button-edit-event-address"
                           >

@@ -1180,7 +1180,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </Button>
                 </div>
               ) : request.eventAddress ? (
-                <div className="flex items-start gap-2 mt-2">
+                <div className="flex items-start gap-2 mt-2 group">
                   <MapPin className="w-5 h-5 shrink-0 mt-0.5 text-[#007E8C]" />
                   <a
                     href={`https://maps.google.com/maps?q=${encodeURIComponent(request.eventAddress)}`}
@@ -1195,7 +1195,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('eventAddress', request.eventAddress || '')}
-                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2"
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label="Edit address"
                     >
                       <Edit2 className="w-4 h-4" aria-hidden="true" />
@@ -1219,7 +1219,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* Date Display */}
-            <div className="flex items-center shrink-0">
+            <div className="flex items-center shrink-0 group">
               {isEditingThisCard && editingField === dateFieldToEdit ? (
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Input
@@ -1246,7 +1246,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors"
+                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors opacity-0 group-hover:opacity-100"
                       aria-label="Edit date"
                     >
                       <Edit2 className="w-3 h-3" aria-hidden="true" />
@@ -2107,7 +2107,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {/* Recipients */}
                   {(request.assignedRecipientIds && request.assignedRecipientIds.length > 0) || (isEditingThisCard && editingField === 'assignedRecipientIds') ? (
                     <div>
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-2 group">
                         <span className="text-xs uppercase text-gray-600 font-medium">Recipients</span>
                         {canEdit && !isEditingThisCard && (
                           <Button
@@ -2117,7 +2117,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                               setTempOvernightHolding(request.overnightHoldingLocation || '');
                               startEditing('assignedRecipientIds', JSON.stringify(request.assignedRecipientIds || []));
                             }}
-                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
                           </Button>
@@ -2231,14 +2231,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {/* Overnight Holding */}
                   {request.overnightHoldingLocation && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 group">
                         <span className="text-xs uppercase text-gray-600 font-medium">Overnight Holding</span>
                         {canEdit && !isEditingThisCard && editingField !== 'overnightHoldingLocation' && (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => startEditing('overnightHoldingLocation', request.overnightHoldingLocation || '')}
-                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
                           </Button>
@@ -2273,14 +2273,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {/* Next-Day Pickup Time */}
                   {request.overnightHoldingLocation && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 group">
                         <span className="text-xs uppercase text-gray-600 font-medium">Next-Day Pickup Time</span>
                         {canEdit && !(isEditingThisCard && editingField === 'overnightPickupTime') && (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => startEditing('overnightPickupTime', formatTimeForInput(request.overnightPickupTime || ''))}
-                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10"
+                            className="h-5 px-1.5 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <Edit2 className="w-3 h-3" />
                           </Button>
@@ -2478,7 +2478,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('sandwichTypes', '')}
-                      className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors"
+                      className="text-[#236383] hover:bg-[#236383]/10 h-6 px-2 transition-colors opacity-0 group-hover:opacity-100"
                       aria-label="Edit sandwich types"
                     >
                       <Edit2 className="w-3 h-3" aria-hidden="true" />
@@ -2596,7 +2596,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* TSP Contact - show below sandwiches (matches internal terminology + layout) */}
             {tspContactDisplay && (
-              <div className="flex items-center gap-2 pt-3">
+              <div className="flex items-center gap-2 pt-3 group">
                 <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
@@ -2609,7 +2609,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     size="sm"
                     variant="ghost"
                     onClick={onEditTspContact}
-                    className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10"
+                    className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
                     aria-label="Edit TSP contact"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -2822,7 +2822,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const nameFieldKey = `driver-name-${id}`;
                             const isEditingName = isEditingThisCard && editingField === nameFieldKey;
                             return (
-                            <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                            <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0 group">
                               <div className="flex items-start gap-2">
                                 <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
                                 {canEdit && (
@@ -2832,7 +2832,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => startEditing(nameFieldKey, displayName)}
-                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="Edit name"
                                       >
                                         <Edit2 className="w-3 h-3" />
@@ -2842,7 +2842,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => startEditing(notesFieldKey, driverPersonNotes)}
-                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
                                       title="Add/edit note"
                                     >
                                       <MessageSquare className="w-3 h-3" />
@@ -2983,7 +2983,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             const tDriverNameFieldKey = `tdriver-name-${id}`;
                             const isEditingTDriverName = isEditingThisCard && editingField === tDriverNameFieldKey;
                             return (
-                            <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                            <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0 group">
                               <div className="flex items-start gap-2">
                                 <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
                                   <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -3295,7 +3295,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         };
 
                         return (
-                          <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                          <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0 group">
                             <div className="flex items-start gap-2">
                             {isEditing ? (
                               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -3351,7 +3351,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => startEditing(editingFieldKey, displayName)}
-                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
                                         title="Edit name"
                                       >
                                         <Edit2 className="w-3 h-3" />
@@ -3361,7 +3361,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                       size="sm"
                                       variant="ghost"
                                       onClick={() => startEditing(speakerNotesFieldKey, speakerPersonNotes)}
-                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
                                       title="Add/edit note"
                                     >
                                       <MessageSquare className="w-3 h-3" />
@@ -3458,7 +3458,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const tSpeakerNameFieldKey = `tspeaker-name-${id}`;
                         const isEditingTSpeakerName = isEditingThisCard && editingField === tSpeakerNameFieldKey;
                         return (
-                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0 group">
                           <div className="flex items-start gap-2">
                             <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
                               <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -3731,7 +3731,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const volunteerNameFieldKey = `volunteer-name-${id}`;
                         const isEditingVolunteerName = isEditingThisCard && editingField === volunteerNameFieldKey;
                         return (
-                        <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0">
+                        <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0 group">
                           <div className="flex items-start gap-2">
                             <span className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight">{displayName}</span>
                             {canEdit && (
@@ -3741,7 +3741,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => startEditing(volunteerNameFieldKey, displayName)}
-                                    className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                    className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
                                     title="Edit name"
                                   >
                                     <Edit2 className="w-3 h-3" />
@@ -3751,7 +3751,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => startEditing(volunteerNotesFieldKey, volunteerPersonNotes)}
-                                  className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383]"
+                                  className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
                                   title="Add/edit note"
                                 >
                                   <MessageSquare className="w-3 h-3" />
@@ -3896,7 +3896,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         const tVolunteerNameFieldKey = `tvolunteer-name-${id}`;
                         const isEditingTVolunteerName = isEditingThisCard && editingField === tVolunteerNameFieldKey;
                         return (
-                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0">
+                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0 group">
                           <div className="flex items-start gap-2">
                             <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
                               <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />

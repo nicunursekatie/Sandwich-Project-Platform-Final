@@ -283,7 +283,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={() => startEditing('organizationName', request.organizationName || '')}
-                  className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                  className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Edit organization name"
                   data-testid="button-edit-org-name"
                 >
@@ -486,7 +486,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       size="sm"
                       variant="ghost"
                       onClick={() => startEditing('department', request.department || '')}
-                      className="h-6 px-2 opacity-30 group-hover:opacity-70 hover:opacity-100 transition-opacity"
+                      className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
                       title={request.department ? "Edit department" : "Add department"}
                       data-testid="button-edit-department"
                     >
