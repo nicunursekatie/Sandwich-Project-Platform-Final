@@ -85,7 +85,8 @@
       "Bash(awk -F: '$1>=1380 && $1<=1500')",
       "Bash(awk -F: 'BEGIN{FS=\":\"} $1>=1380 && $1<=1750 {print}')",
       "Bash(awk '/<Button/{btnLine=NR; btnText=$0} /Edit2 className=\"w-3 h-3\"/{if \\(NR-btnLine<10\\) {print \"L\"btnLine\": \"btnText}}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
-      "Bash(awk '/<Button/{btnStart=NR; cls=\"\"} /className=\"/{if \\(NR>=btnStart && NR-btnStart<=8\\) cls=$0} /Edit2 className=\"w-3 h-3\"/{if \\(NR-btnStart<10\\) print \"L\"btnStart\": \"cls}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)"
+      "Bash(awk '/<Button/{btnStart=NR; cls=\"\"} /className=\"/{if \\(NR>=btnStart && NR-btnStart<=8\\) cls=$0} /Edit2 className=\"w-3 h-3\"/{if \\(NR-btnStart<10\\) print \"L\"btnStart\": \"cls}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
+      "Bash(awk '/case USER_ROLES\\\\./{role=$0} /EVENT_REQUESTS_EDIT/{print role\" -> EVENT_REQUESTS_EDIT at line\", NR}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/shared/auth-utils.ts)"
     ],
     "deny": [],
     "ask": [],

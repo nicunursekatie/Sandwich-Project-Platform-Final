@@ -117,36 +117,48 @@ export const useEventMutations = () => {
     onError: (error: any) => {
       logger.error('Update event request error:', error);
 
-      // Check for network/timeout errors
+      const status = error?.status;
       const isNetworkError = error?.message?.includes('Failed to fetch') ||
                             error?.message?.includes('Request timeout') ||
                             error?.code?.includes('NETWORK_ERROR');
+      const isConflict = status === 409 || error?.code?.includes('CONFLICT');
+      const isPermissionDenied = status === 403;
+      const isUnauthenticated = status === 401;
 
-      // Check for optimistic locking conflict (409)
-      const isConflict = error?.status === 409 || error?.code?.includes('CONFLICT');
-
-      let errorTitle = 'Save Failed';
-
-      // Extract detailed error message from server response (ApiError.data)
       const serverMessage = error?.data?.message ||
                            error?.message ||
                            error?.details;
-
-      // Check for missing fields info from server
       const missingFields = error?.data?.missingFields;
 
+      let errorTitle = 'Save Failed';
       let errorDescription = serverMessage || 'Failed to update event request. Please check your data and try again.';
 
-      // If server provided missing fields, include them in the message
       if (missingFields && Array.isArray(missingFields) && missingFields.length > 0) {
         errorDescription = `${serverMessage || 'Missing required fields:'} ${missingFields.join(', ')}`;
       }
 
       if (isConflict) {
         errorTitle = 'Edit Conflict';
-        errorDescription = 'This event was modified by another user. The page will refresh with the latest data.';
-        // Refresh the data so the user sees the latest version
+        errorDescription = 'This event was modified by another user or process. The latest data has been loaded — please reapply your changes and save again.';
+        // Refresh the data so the user sees the latest version. Selected event is also re-fetched
+        // so the next save attempt carries the fresh _expectedVersion.
         invalidateEventRequestQueries(queryClient);
+        if (selectedEventRequest?.id) {
+          (async () => {
+            try {
+              const fresh = await apiRequest('GET', `/api/event-requests/${selectedEventRequest.id}`);
+              setSelectedEventRequest(fresh);
+            } catch {
+              // best-effort — invalidation above will repopulate next time the dialog is opened
+            }
+          })();
+        }
+      } else if (isPermissionDenied) {
+        errorTitle = 'Permission Denied';
+        errorDescription = "Your account doesn't have permission to edit events. Ask an admin to grant you the EVENT_REQUESTS_EDIT permission.";
+      } else if (isUnauthenticated) {
+        errorTitle = 'Session Expired';
+        errorDescription = 'Your session has expired. Please refresh the page and sign in again.';
       } else if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not save changes. Please check your internet connection and try again.';
@@ -156,7 +168,9 @@ export const useEventMutations = () => {
         title: errorTitle,
         description: errorDescription,
         variant: 'destructive',
-        duration: 10000,
+        // Save failures are sticky — they don't auto-dismiss. User must click ✕ to acknowledge,
+        // so silent failures stop slipping past busy operators.
+        duration: Number.POSITIVE_INFINITY,
       });
     },
   });
@@ -357,7 +371,7 @@ export const useEventMutations = () => {
       setEditingField(null);
       setEditingValue('');
     },
-    onError: (_error, _vars, context) => {
+    onError: (error: any, _vars, context) => {
       // Roll back optimistic update
       if (context?.previousV1) {
         queryClient.setQueryData(['/api/event-requests'], context.previousV1);
@@ -365,10 +379,29 @@ export const useEventMutations = () => {
       if (context?.previousV2) {
         queryClient.setQueryData(['/api/event-requests', 'v2'], context.previousV2);
       }
+      logger.error('Inline field update error:', error);
+
+      const status = error?.status;
+      let errorTitle = 'Save Failed';
+      let errorDescription = error?.data?.message || error?.message || 'Failed to update field.';
+
+      if (status === 403) {
+        errorTitle = 'Permission Denied';
+        errorDescription = "Your account doesn't have permission to edit events. Ask an admin to grant you the EVENT_REQUESTS_EDIT permission.";
+      } else if (status === 401) {
+        errorTitle = 'Session Expired';
+        errorDescription = 'Your session has expired. Please refresh the page and sign in again.';
+      } else if (status === 409) {
+        errorTitle = 'Edit Conflict';
+        errorDescription = 'This event was modified by another user or process. The latest data has been loaded — please try your edit again.';
+      }
+
       toast({
-        title: 'Error',
-        description: 'Failed to update field.',
+        title: errorTitle,
+        description: errorDescription,
         variant: 'destructive',
+        // Sticky toast so a quick destructive error isn't missed during busy editing sessions.
+        duration: Number.POSITIVE_INFINITY,
       });
     },
     // Refetch once in onSettled (covers both success and error paths).
