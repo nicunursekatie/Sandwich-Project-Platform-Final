@@ -705,12 +705,12 @@ const EventRequestsManagementContent: React.FC = () => {
             </button>
           </div>
 
-          {/* Export — shown when on scheduled tab in list view */}
-          {activeTab === 'scheduled' && viewMode === 'list' && (
+          {/* Export — shown on scheduled and completed tabs in list view */}
+          {(activeTab === 'scheduled' || activeTab === 'completed') && viewMode === 'list' && (
             <button
               onClick={async () => {
                 try {
-                  await exportEventRequestsToExcel(eventRequests, 'scheduled');
+                  await exportEventRequestsToExcel(eventRequests, activeTab);
                   toast({ title: 'Export complete' });
                 } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
               }}
