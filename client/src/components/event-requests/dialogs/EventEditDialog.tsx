@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -44,6 +44,12 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import {
+  useDraftPersistence,
+  loadDraft,
+  clearDraft,
+  formatDraftTimestamp,
+} from '@/hooks/useDraftPersistence';
 import { logger } from '@/lib/logger';
 import { getDriverIds, getSpeakerIds, getVolunteerIds } from '@/lib/assignment-utils';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
@@ -55,6 +61,25 @@ interface EventEditDialogProps {
   onClose: () => void;
   event: EventRequest | null;
   onSaved?: () => void;
+}
+
+interface EventEditDraftData {
+  driversNeeded: string;
+  speakersNeeded: string;
+  volunteersNeeded: string;
+  pickupTime: string;
+  eventStartTime: string;
+  eventEndTime: string;
+  pickupTimeWindow: string;
+  tspContact: string;
+  customTspContact: string;
+  vanDriverNeeded: boolean;
+  isCorporatePriority: boolean;
+  assignedDriverIds: string[];
+  assignedSpeakerIds: string[];
+  assignedVolunteerIds: string[];
+  assignedVanDriverId: string | null;
+  assignedRecipientIds: string[];
 }
 
 // Helper function to format time for input (converts to 24-hour HH:mm format)
@@ -375,28 +400,194 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     queryKey: ['/api/recipients'],
   });
 
-  // Populate form when event changes
+  // Draft persistence — autosaves form state to localStorage. Suspended until
+  // the form diverges from the initial event-populated state so we don't
+  // overwrite a saved draft with the dialog's load values.
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [pendingRestoreDraft, setPendingRestoreDraft] = useState<
+    | { savedAt: string; data: EventEditDraftData; version: string | null }
+    | null
+  >(null);
+  // Snapshot of the initial data (from event or from a restored draft) used to
+  // detect the first divergence — when current data differs from this baseline,
+  // the user has interacted and autosave engages. The baseline is set directly
+  // from the values we queue (not from current render state) to avoid a race
+  // where the divergence detector reads pre-populate state and falsely flags
+  // a populate as user interaction.
+  const baselineRef = useRef<string | null>(null);
+  // Tracks whether React has applied the populated/restored state to the
+  // current render — only then does divergence detection become active.
+  const baselineSettledRef = useRef(false);
+
+  const draftKey = event ? `event-edit:${event.id}` : null;
+
+  const computeEventValues = useCallback((evt: EventRequest): EventEditDraftData => ({
+    driversNeeded: (evt.driversNeeded ?? 0).toString(),
+    speakersNeeded: (evt.speakersNeeded ?? 0).toString(),
+    volunteersNeeded: (evt.volunteersNeeded ?? 0).toString(),
+    pickupTime: formatTimeForInput(evt.pickupTime),
+    eventStartTime: formatTimeForInput(evt.eventStartTime),
+    eventEndTime: formatTimeForInput(evt.eventEndTime),
+    pickupTimeWindow: evt.pickupTimeWindow || '',
+    tspContact: evt.tspContact || '',
+    customTspContact: evt.customTspContact || '',
+    vanDriverNeeded: evt.vanDriverNeeded || false,
+    isCorporatePriority: (evt as any).isCorporatePriority || false,
+    assignedDriverIds: getDriverIds(evt),
+    assignedSpeakerIds: getSpeakerIds(evt),
+    assignedVolunteerIds: getVolunteerIds(evt),
+    assignedVanDriverId: evt.assignedVanDriverId || null,
+    assignedRecipientIds: parsePostgresArray((evt as any).assignedRecipientIds),
+  }), []);
+
+  const applyDraftValues = useCallback((d: EventEditDraftData) => {
+    setDriversNeeded(d.driversNeeded);
+    setSpeakersNeeded(d.speakersNeeded);
+    setVolunteersNeeded(d.volunteersNeeded);
+    setPickupTime(d.pickupTime);
+    setEventStartTime(d.eventStartTime);
+    setEventEndTime(d.eventEndTime);
+    setPickupTimeWindow(d.pickupTimeWindow);
+    setTspContact(d.tspContact);
+    setCustomTspContact(d.customTspContact);
+    setVanDriverNeeded(d.vanDriverNeeded);
+    setIsCorporatePriority(d.isCorporatePriority);
+    setAssignedDriverIds(d.assignedDriverIds);
+    setAssignedSpeakerIds(d.assignedSpeakerIds);
+    setAssignedVolunteerIds(d.assignedVolunteerIds);
+    setAssignedVanDriverId(d.assignedVanDriverId);
+    setAssignedRecipientIds(d.assignedRecipientIds);
+  }, []);
+
+  const populateFromEvent = useCallback((evt: EventRequest) => {
+    const values = computeEventValues(evt);
+    applyDraftValues(values);
+    // Baseline is set synchronously to the values we just queued, so when
+    // the divergence detector runs in the same commit it compares against
+    // the correct target — not the pre-populate render state.
+    baselineRef.current = JSON.stringify(values);
+    baselineSettledRef.current = false;
+  }, [computeEventValues, applyDraftValues]);
+
+  // Populate form when the event changes. If a draft exists for this event,
+  // show a restore banner and let the user decide before mutating state.
   useEffect(() => {
-    if (event) {
-      // Use '0' as display for null/undefined count fields (consistent with save behavior)
-      setDriversNeeded((event.driversNeeded ?? 0).toString());
-      setSpeakersNeeded((event.speakersNeeded ?? 0).toString());
-      setVolunteersNeeded((event.volunteersNeeded ?? 0).toString());
-      setPickupTime(formatTimeForInput(event.pickupTime));
-      setEventStartTime(formatTimeForInput(event.eventStartTime));
-      setEventEndTime(formatTimeForInput(event.eventEndTime));
-      setPickupTimeWindow(event.pickupTimeWindow || '');
-      setTspContact(event.tspContact || '');
-      setCustomTspContact(event.customTspContact || '');
-      setVanDriverNeeded(event.vanDriverNeeded || false);
-      setIsCorporatePriority((event as any).isCorporatePriority || false);
-      setAssignedDriverIds(getDriverIds(event));
-      setAssignedSpeakerIds(getSpeakerIds(event));
-      setAssignedVolunteerIds(getVolunteerIds(event));
-      setAssignedVanDriverId(event.assignedVanDriverId || null);
-      setAssignedRecipientIds(parsePostgresArray((event as any).assignedRecipientIds));
+    if (!event) return;
+
+    const existingDraft = loadDraft<EventEditDraftData>(`event-edit:${event.id}`);
+    if (existingDraft) {
+      setPendingRestoreDraft({
+        savedAt: existingDraft.savedAt,
+        data: existingDraft.data,
+        version: existingDraft.version ?? null,
+      });
+      // Still pre-fill from the event so the dialog isn't blank while the
+      // banner is up — if the user restores, those values get overwritten.
+      populateFromEvent(event);
+      setHasUserInteracted(false);
+      return;
     }
-  }, [event]);
+
+    populateFromEvent(event);
+    setHasUserInteracted(false);
+  }, [event, populateFromEvent]);
+
+  const draftData: EventEditDraftData = {
+    driversNeeded,
+    speakersNeeded,
+    volunteersNeeded,
+    pickupTime,
+    eventStartTime,
+    eventEndTime,
+    pickupTimeWindow,
+    tspContact,
+    customTspContact,
+    vanDriverNeeded,
+    isCorporatePriority,
+    assignedDriverIds,
+    assignedSpeakerIds,
+    assignedVolunteerIds,
+    assignedVanDriverId,
+    assignedRecipientIds,
+  };
+  const { savedAt: draftSavedAt } = useDraftPersistence<EventEditDraftData>({
+    key: draftKey,
+    data: draftData,
+    enabled: isOpen && hasUserInteracted && !pendingRestoreDraft,
+    version: event?.updatedAt ?? null,
+    debounceMs: 500,
+  });
+
+  // Watch for divergence between current form data and the baseline set
+  // synchronously inside populateFromEvent / restorePendingDraft. Divergence
+  // means the user has interacted; that's what enables autosave.
+  //
+  // The baselineSettledRef gate prevents a false positive: when populate
+  // queues state setters, the next render's draftSerialized hasn't caught up
+  // to the baseline yet. We wait for the first render where they match
+  // (state has landed) before treating any further divergence as interaction.
+  const draftSerialized = JSON.stringify(draftData);
+  useEffect(() => {
+    if (!isOpen || !event || baselineRef.current === null) return;
+    if (!baselineSettledRef.current) {
+      if (draftSerialized === baselineRef.current) {
+        baselineSettledRef.current = true;
+      }
+      return;
+    }
+    if (!hasUserInteracted && draftSerialized !== baselineRef.current) {
+      setHasUserInteracted(true);
+    }
+  }, [draftSerialized, isOpen, event, hasUserInteracted]);
+
+  const restorePendingDraft = () => {
+    if (!pendingRestoreDraft) return;
+    const d = pendingRestoreDraft.data;
+    // Normalize incoming draft (defensive against older shapes) before
+    // applying — keeps state shapes consistent.
+    const safe: EventEditDraftData = {
+      driversNeeded: d.driversNeeded ?? '',
+      speakersNeeded: d.speakersNeeded ?? '',
+      volunteersNeeded: d.volunteersNeeded ?? '',
+      pickupTime: d.pickupTime ?? '',
+      eventStartTime: d.eventStartTime ?? '',
+      eventEndTime: d.eventEndTime ?? '',
+      pickupTimeWindow: d.pickupTimeWindow ?? '',
+      tspContact: d.tspContact ?? '',
+      customTspContact: d.customTspContact ?? '',
+      vanDriverNeeded: Boolean(d.vanDriverNeeded),
+      isCorporatePriority: Boolean(d.isCorporatePriority),
+      assignedDriverIds: Array.isArray(d.assignedDriverIds) ? d.assignedDriverIds : [],
+      assignedSpeakerIds: Array.isArray(d.assignedSpeakerIds) ? d.assignedSpeakerIds : [],
+      assignedVolunteerIds: Array.isArray(d.assignedVolunteerIds) ? d.assignedVolunteerIds : [],
+      assignedVanDriverId: d.assignedVanDriverId ?? null,
+      assignedRecipientIds: Array.isArray(d.assignedRecipientIds) ? d.assignedRecipientIds : [],
+    };
+    applyDraftValues(safe);
+    baselineRef.current = JSON.stringify(safe);
+    baselineSettledRef.current = false;
+    setPendingRestoreDraft(null);
+    setHasUserInteracted(true);
+  };
+
+  const discardPendingDraft = () => {
+    if (!event) return;
+    clearDraft(`event-edit:${event.id}`);
+    setPendingRestoreDraft(null);
+    populateFromEvent(event);
+    setHasUserInteracted(false);
+  };
+
+  // Detect whether the draft was based on a now-stale version of the event.
+  // If the server's updatedAt has advanced since the draft was saved, the
+  // user's draft may overwrite someone else's changes — warn them.
+  const draftIsStale = Boolean(
+    pendingRestoreDraft &&
+      event?.updatedAt &&
+      pendingRestoreDraft.version &&
+      new Date(event.updatedAt).getTime() !==
+        new Date(pendingRestoreDraft.version).getTime()
+  );
 
   // Update mutation with retry for transient failures
   const updateMutation = useMutation({
@@ -406,6 +597,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       return apiRequest('PATCH', `/api/event-requests/${event.id}`, data);
     },
     onSuccess: async () => {
+      // Save succeeded — clear the autosaved draft for this event.
+      if (event) clearDraft(`event-edit:${event.id}`);
       // Invalidate all event request queries and wait for them to complete
       // before closing the dialog, so the list reflects the saved changes
       await invalidateEventRequestQueries(queryClient);
@@ -616,6 +809,60 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
+          {pendingRestoreDraft && (
+            <div
+              className={`mt-2 mb-4 border-l-4 rounded-md p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
+                draftIsStale
+                  ? 'border-red-500 bg-red-50'
+                  : 'border-amber-500 bg-amber-50'
+              }`}
+              role="alert"
+            >
+              <div className="text-sm">
+                <div
+                  className={`font-semibold ${
+                    draftIsStale ? 'text-red-900' : 'text-amber-900'
+                  }`}
+                >
+                  Unsaved edits found
+                </div>
+                <div
+                  className={`mt-1 ${
+                    draftIsStale ? 'text-red-800' : 'text-amber-800'
+                  }`}
+                >
+                  A draft from{' '}
+                  <span className="font-medium">
+                    {formatDraftTimestamp(pendingRestoreDraft.savedAt)}
+                  </span>{' '}
+                  was autosaved for this event.{' '}
+                  {draftIsStale
+                    ? 'Note: the event has been updated by someone else since the draft was saved. Restoring may overwrite their changes.'
+                    : 'Restore it, or discard and start fresh?'}
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={discardPendingDraft}
+                >
+                  Discard
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={restorePendingDraft}
+                  className={
+                    draftIsStale
+                      ? 'bg-red-600 hover:bg-red-700 text-white'
+                      : 'bg-amber-600 hover:bg-amber-700 text-white'
+                  }
+                >
+                  Restore draft
+                </Button>
+              </div>
+            </div>
+          )}
           <Tabs defaultValue="logistics" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="logistics">
@@ -1020,7 +1267,13 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
           </Tabs>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 pb-6 px-6 border-t flex-shrink-0">
+        <div className="flex items-center justify-between gap-2 pt-4 pb-6 px-6 border-t flex-shrink-0">
+          <div className="text-xs text-gray-500 italic min-h-[1rem]">
+            {draftSavedAt
+              ? `Draft autosaved ${formatDraftTimestamp(draftSavedAt)}`
+              : ''}
+          </div>
+          <div className="flex gap-2">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
@@ -1037,6 +1290,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
               </>
             )}
           </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

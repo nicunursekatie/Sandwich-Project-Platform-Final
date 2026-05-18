@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -32,6 +32,21 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import {
+  useDraftPersistence,
+  loadDraft,
+  clearDraft,
+  formatDraftTimestamp,
+} from '@/hooks/useDraftPersistence';
+
+interface IntakeDraftData {
+  checkedItems: string[];
+  itemAnswers: Record<string, string>;
+  callNotes: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+}
 
 interface IntakeCallDialogProps {
   isOpen: boolean;
@@ -73,37 +88,125 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   const [itemAnswers, setItemAnswers] = useState<Record<string, string>>({});
   const [callNotes, setCallNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Contact person info - auto-filled from event request, editable during call
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
-  
-  // Initialize contact info from event request when dialog opens
-  useEffect(() => {
-    if (isOpen && eventRequest) {
-      const fullName = `${eventRequest.firstName || ''} ${eventRequest.lastName || ''}`.trim();
-      setContactName(fullName);
-      setContactPhone(eventRequest.phone || '');
-      setContactEmail(eventRequest.email || '');
-      
-      // Pre-fill answers for contact info items
-      if (fullName) {
-        setItemAnswers(prev => ({ ...prev, contact_name: fullName }));
-        setCheckedItems(prev => new Set(prev).add('contact_name'));
-      }
-      if (eventRequest.phone) {
-        setItemAnswers(prev => ({ ...prev, contact_phone: eventRequest.phone || '' }));
-        setCheckedItems(prev => new Set(prev).add('contact_phone'));
-      }
-      if (eventRequest.email) {
-        setItemAnswers(prev => ({ ...prev, contact_email: eventRequest.email || '' }));
-        setCheckedItems(prev => new Set(prev).add('contact_email'));
-      }
+
+  // Draft persistence: per-event key, autosave to localStorage with debounce.
+  // Suspended until the user actually interacts so we don't overwrite a saved
+  // draft with the initial form state when the dialog mounts.
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [pendingRestoreDraft, setPendingRestoreDraft] = useState<
+    | { savedAt: string; data: IntakeDraftData }
+    | null
+  >(null);
+
+  const draftKey = eventRequest ? `intake:${eventRequest.id}` : null;
+  const draftData: IntakeDraftData = {
+    checkedItems: Array.from(checkedItems),
+    itemAnswers,
+    callNotes,
+    contactName,
+    contactPhone,
+    contactEmail,
+  };
+  const { savedAt: draftSavedAt } = useDraftPersistence<IntakeDraftData>({
+    key: draftKey,
+    data: draftData,
+    // Suspend autosave while the restore banner is up so typing into the
+    // pre-populated form doesn't overwrite the existing localStorage draft
+    // before the user has a chance to click Restore.
+    enabled: isOpen && hasUserInteracted && !pendingRestoreDraft,
+    version: eventRequest?.updatedAt ?? null,
+    debounceMs: 500,
+  });
+
+  // Wrap the state setters so any user action flips hasUserInteracted on,
+  // which is what gates the autosave effect above.
+  const markInteracted = () => {
+    if (!hasUserInteracted) setHasUserInteracted(true);
+  };
+
+  // Shared "load the event's current values into form state" routine, used
+  // by the open-dialog effect and by discardPendingDraft.
+  const populateFromEventRequest = useCallback((req: EventRequest) => {
+    const fullName = `${req.firstName || ''} ${req.lastName || ''}`.trim();
+    setContactName(fullName);
+    setContactPhone(req.phone || '');
+    setContactEmail(req.email || '');
+
+    const initialAnswers: Record<string, string> = {};
+    const initialChecked = new Set<string>();
+    if (fullName) {
+      initialAnswers.contact_name = fullName;
+      initialChecked.add('contact_name');
     }
-  }, [isOpen, eventRequest]);
+    if (req.phone) {
+      initialAnswers.contact_phone = req.phone;
+      initialChecked.add('contact_phone');
+    }
+    if (req.email) {
+      initialAnswers.contact_email = req.email;
+      initialChecked.add('contact_email');
+    }
+    setItemAnswers(initialAnswers);
+    setCheckedItems(initialChecked);
+    setCallNotes('');
+  }, []);
+
+  // Initialize contact info from event request when dialog opens.
+  // If a draft exists for this event, surface a restore banner. Autosave
+  // is gated by hasUserInteracted, so a draft only exists when the user
+  // actually changed something — including contact-field corrections,
+  // which are part of the saved payload and must not be silently dropped.
+  useEffect(() => {
+    if (!isOpen || !eventRequest) return;
+
+    const existingDraft = loadDraft<IntakeDraftData>(`intake:${eventRequest.id}`);
+    if (existingDraft) {
+      setPendingRestoreDraft({
+        savedAt: existingDraft.savedAt,
+        data: existingDraft.data,
+      });
+      // Pre-populate from the event so the dialog body has content while
+      // the user decides. If they restore, those values get overwritten;
+      // if they discard, the pre-fill stays.
+      populateFromEventRequest(eventRequest);
+      setHasUserInteracted(false);
+      return;
+    }
+
+    populateFromEventRequest(eventRequest);
+    setHasUserInteracted(false);
+  }, [isOpen, eventRequest, populateFromEventRequest]);
+
+  const restorePendingDraft = () => {
+    if (!pendingRestoreDraft) return;
+    const d = pendingRestoreDraft.data;
+    setCheckedItems(new Set(d.checkedItems || []));
+    setItemAnswers(d.itemAnswers || {});
+    setCallNotes(d.callNotes || '');
+    setContactName(d.contactName || '');
+    setContactPhone(d.contactPhone || '');
+    setContactEmail(d.contactEmail || '');
+    setPendingRestoreDraft(null);
+    // Treat the restored content as already-interacted so autosave resumes
+    // immediately and keeps the draft fresh.
+    setHasUserInteracted(true);
+  };
+
+  const discardPendingDraft = () => {
+    if (!eventRequest) return;
+    clearDraft(`intake:${eventRequest.id}`);
+    setPendingRestoreDraft(null);
+    populateFromEventRequest(eventRequest);
+    setHasUserInteracted(false);
+  };
 
   const toggleItem = (itemId: string) => {
+    markInteracted();
     setCheckedItems((prev) => {
       const next = new Set(prev);
       if (next.has(itemId)) {
@@ -128,6 +231,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   };
 
   const handleAnswerChange = (itemId: string, answer: string) => {
+    markInteracted();
     setItemAnswers((prev) => ({
       ...prev,
       [itemId]: answer,
@@ -209,6 +313,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         description: 'Notes and contact updates have been saved.',
       });
 
+      // Save succeeded — clear the autosaved draft for this event.
+      clearDraft(`intake:${eventRequest?.id}`);
+
       onCallComplete?.();
       setCheckedItems(new Set());
       setItemAnswers({});
@@ -216,6 +323,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       setContactName('');
       setContactPhone('');
       setContactEmail('');
+      setHasUserInteracted(false);
       onClose();
     } catch (error: any) {
       toast({
@@ -462,13 +570,17 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
   const handleClose = (open: boolean) => {
     if (!open) {
-      // Reset all state when dialog closes
+      // Reset visible state when dialog closes. Note: we deliberately do NOT
+      // call clearDraft here — closing without saving should preserve the
+      // autosaved draft so the user can resume on the next open.
       setCheckedItems(new Set());
       setItemAnswers({});
       setCallNotes('');
       setContactName('');
       setContactPhone('');
       setContactEmail('');
+      setHasUserInteracted(false);
+      setPendingRestoreDraft(null);
       onClose();
     }
   };
@@ -511,6 +623,43 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
         <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
           <div className="space-y-6">
+            {pendingRestoreDraft && (
+              <div
+                className="border-l-4 border-amber-500 bg-amber-50 rounded-md p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                role="alert"
+              >
+                <div className="text-sm">
+                  <div className="font-semibold text-amber-900">
+                    Unsaved intake notes found
+                  </div>
+                  <div className="text-amber-800 mt-1">
+                    A draft from{' '}
+                    <span className="font-medium">
+                      {formatDraftTimestamp(pendingRestoreDraft.savedAt)}
+                    </span>{' '}
+                    was autosaved for this event. Restore it, or discard and
+                    start fresh?
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={discardPendingDraft}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={restorePendingDraft}
+                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    Restore draft
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Quick Info Summary */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="font-semibold text-[#236383] mb-3 flex items-center gap-2">
@@ -621,6 +770,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               value={contactName}
                               onChange={(e) => {
                                 const value = e.target.value;
+                                markInteracted();
                                 setContactName(value);
                                 handleAnswerChange(item.id, value);
                               }}
@@ -634,6 +784,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               value={contactPhone}
                               onChange={(e) => {
                                 const value = e.target.value;
+                                markInteracted();
                                 setContactPhone(value);
                                 handleAnswerChange(item.id, value);
                               }}
@@ -647,6 +798,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               value={contactEmail}
                               onChange={(e) => {
                                 const value = e.target.value;
+                                markInteracted();
                                 setContactEmail(value);
                                 handleAnswerChange(item.id, value);
                               }}
@@ -703,7 +855,10 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               <Textarea
                 id="call-notes"
                 value={callNotes}
-                onChange={(e) => setCallNotes(e.target.value)}
+                onChange={(e) => {
+                  markInteracted();
+                  setCallNotes(e.target.value);
+                }}
                 placeholder="Record information collected during the call: contact details, event specifics, logistics, etc..."
                 className="min-h-[150px] mt-2"
               />
@@ -716,7 +871,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
         {/* Footer Actions */}
         <div className="px-6 py-4 border-t flex items-center justify-between flex-shrink-0 bg-gray-50">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600 flex items-center gap-3">
             {checkedRequiredCount === requiredCount ? (
               <span className="text-green-600 font-medium">
                 ✓ All required items completed
@@ -725,6 +880,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               <span>
                 Complete {requiredCount - checkedRequiredCount} more required item
                 {requiredCount - checkedRequiredCount !== 1 ? 's' : ''}
+              </span>
+            )}
+            {draftSavedAt && (
+              <span className="text-xs text-gray-500 italic">
+                Draft autosaved {formatDraftTimestamp(draftSavedAt)}
               </span>
             )}
           </div>
