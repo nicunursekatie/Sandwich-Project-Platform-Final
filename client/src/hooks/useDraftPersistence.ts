@@ -91,6 +91,13 @@ export function useDraftPersistence<T>({
       : String(version)
     : null;
 
+  // Reset the "last saved at" indicator whenever the draft context (key)
+  // changes. Without this, switching to a different record would briefly
+  // show a stale timestamp from the previous record's last autosave.
+  useEffect(() => {
+    setSavedAt(null);
+  }, [key]);
+
   useEffect(() => {
     if (!enabled || !key) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
