@@ -127,53 +127,53 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   };
 
   // Initialize contact info from event request when dialog opens.
-  // If a draft exists with meaningful content, surface a restore banner first
-  // and let the user decide whether to keep the draft or start fresh.
+  // If a draft exists for this event, surface a restore banner. Autosave
+  // is gated by hasUserInteracted, so a draft only exists when the user
+  // actually changed something — including contact-field corrections,
+  // which are part of the saved payload and must not be silently dropped.
   useEffect(() => {
     if (!isOpen || !eventRequest) return;
 
-    const existingDraft = loadDraft<IntakeDraftData>(`intake:${eventRequest.id}`);
-    const hasMeaningfulDraftContent = (d: IntakeDraftData) =>
-      Boolean(
-        d.callNotes?.trim() ||
-          // Any checklist answer the user filled in (beyond the auto-populated
-          // contact fields) counts as meaningful.
-          Object.entries(d.itemAnswers || {}).some(
-            ([k, v]) =>
-              !['contact_name', 'contact_phone', 'contact_email'].includes(k) &&
-              typeof v === 'string' &&
-              v.trim().length > 0
-          )
-      );
+    const populateFromEvent = () => {
+      const fullName = `${eventRequest.firstName || ''} ${eventRequest.lastName || ''}`.trim();
+      setContactName(fullName);
+      setContactPhone(eventRequest.phone || '');
+      setContactEmail(eventRequest.email || '');
 
-    if (existingDraft && hasMeaningfulDraftContent(existingDraft.data)) {
-      // Show the banner; do NOT auto-populate from the event request yet.
-      // The user picks: restore draft, or discard and start from the event.
+      const initialAnswers: Record<string, string> = {};
+      const initialChecked = new Set<string>();
+      if (fullName) {
+        initialAnswers.contact_name = fullName;
+        initialChecked.add('contact_name');
+      }
+      if (eventRequest.phone) {
+        initialAnswers.contact_phone = eventRequest.phone;
+        initialChecked.add('contact_phone');
+      }
+      if (eventRequest.email) {
+        initialAnswers.contact_email = eventRequest.email;
+        initialChecked.add('contact_email');
+      }
+      setItemAnswers(initialAnswers);
+      setCheckedItems(initialChecked);
+      setCallNotes('');
+    };
+
+    const existingDraft = loadDraft<IntakeDraftData>(`intake:${eventRequest.id}`);
+    if (existingDraft) {
       setPendingRestoreDraft({
         savedAt: existingDraft.savedAt,
         data: existingDraft.data,
       });
+      // Pre-populate from the event so the dialog body has content while
+      // the user decides. If they restore, those values get overwritten;
+      // if they discard, the pre-fill stays.
+      populateFromEvent();
+      setHasUserInteracted(false);
       return;
     }
 
-    // No usable draft — initialize from the event request as before.
-    const fullName = `${eventRequest.firstName || ''} ${eventRequest.lastName || ''}`.trim();
-    setContactName(fullName);
-    setContactPhone(eventRequest.phone || '');
-    setContactEmail(eventRequest.email || '');
-
-    if (fullName) {
-      setItemAnswers(prev => ({ ...prev, contact_name: fullName }));
-      setCheckedItems(prev => new Set(prev).add('contact_name'));
-    }
-    if (eventRequest.phone) {
-      setItemAnswers(prev => ({ ...prev, contact_phone: eventRequest.phone || '' }));
-      setCheckedItems(prev => new Set(prev).add('contact_phone'));
-    }
-    if (eventRequest.email) {
-      setItemAnswers(prev => ({ ...prev, contact_email: eventRequest.email || '' }));
-      setCheckedItems(prev => new Set(prev).add('contact_email'));
-    }
+    populateFromEvent();
     setHasUserInteracted(false);
   }, [isOpen, eventRequest]);
 
