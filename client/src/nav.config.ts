@@ -174,8 +174,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'volunteer-hub',
     permission: PERMISSIONS.NAV_VOLUNTEER_HUB,
     group: 'events',
-    parentId: 'event-signup-hub',
-    isSubItem: true,
+    accentColor: '#007E8C',
   },
   {
     id: 'host-resources',
