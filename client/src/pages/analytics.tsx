@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import SimpleNav from '@/components/simple-nav';
 import AnalyticsDashboard from '@/components/analytics-dashboard';
+import LowHighWeeksTab from '@/components/low-high-weeks-tab';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { usePageSession } from '@/hooks/usePageSession';
 import { NAV_ITEMS } from '@/nav.config';
 import { useLocation } from 'wouter';
@@ -70,7 +72,18 @@ export default function AnalyticsPage() {
                 ]}
               />
             </div>
-            <AnalyticsDashboard />
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="low-high-weeks">Low / High Weeks</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview">
+                <AnalyticsDashboard />
+              </TabsContent>
+              <TabsContent value="low-high-weeks">
+                <LowHighWeeksTab />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
