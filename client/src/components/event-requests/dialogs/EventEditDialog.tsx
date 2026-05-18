@@ -410,29 +410,64 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
   >(null);
   // Snapshot of the initial data (from event or from a restored draft) used to
   // detect the first divergence — when current data differs from this baseline,
-  // the user has interacted and autosave engages.
+  // the user has interacted and autosave engages. The baseline is set directly
+  // from the values we queue (not from current render state) to avoid a race
+  // where the divergence detector reads pre-populate state and falsely flags
+  // a populate as user interaction.
   const baselineRef = useRef<string | null>(null);
+  // Tracks whether React has applied the populated/restored state to the
+  // current render — only then does divergence detection become active.
+  const baselineSettledRef = useRef(false);
 
   const draftKey = event ? `event-edit:${event.id}` : null;
 
-  const populateFromEvent = useCallback((evt: EventRequest) => {
-    setDriversNeeded((evt.driversNeeded ?? 0).toString());
-    setSpeakersNeeded((evt.speakersNeeded ?? 0).toString());
-    setVolunteersNeeded((evt.volunteersNeeded ?? 0).toString());
-    setPickupTime(formatTimeForInput(evt.pickupTime));
-    setEventStartTime(formatTimeForInput(evt.eventStartTime));
-    setEventEndTime(formatTimeForInput(evt.eventEndTime));
-    setPickupTimeWindow(evt.pickupTimeWindow || '');
-    setTspContact(evt.tspContact || '');
-    setCustomTspContact(evt.customTspContact || '');
-    setVanDriverNeeded(evt.vanDriverNeeded || false);
-    setIsCorporatePriority((evt as any).isCorporatePriority || false);
-    setAssignedDriverIds(getDriverIds(evt));
-    setAssignedSpeakerIds(getSpeakerIds(evt));
-    setAssignedVolunteerIds(getVolunteerIds(evt));
-    setAssignedVanDriverId(evt.assignedVanDriverId || null);
-    setAssignedRecipientIds(parsePostgresArray((evt as any).assignedRecipientIds));
+  const computeEventValues = useCallback((evt: EventRequest): EventEditDraftData => ({
+    driversNeeded: (evt.driversNeeded ?? 0).toString(),
+    speakersNeeded: (evt.speakersNeeded ?? 0).toString(),
+    volunteersNeeded: (evt.volunteersNeeded ?? 0).toString(),
+    pickupTime: formatTimeForInput(evt.pickupTime),
+    eventStartTime: formatTimeForInput(evt.eventStartTime),
+    eventEndTime: formatTimeForInput(evt.eventEndTime),
+    pickupTimeWindow: evt.pickupTimeWindow || '',
+    tspContact: evt.tspContact || '',
+    customTspContact: evt.customTspContact || '',
+    vanDriverNeeded: evt.vanDriverNeeded || false,
+    isCorporatePriority: (evt as any).isCorporatePriority || false,
+    assignedDriverIds: getDriverIds(evt),
+    assignedSpeakerIds: getSpeakerIds(evt),
+    assignedVolunteerIds: getVolunteerIds(evt),
+    assignedVanDriverId: evt.assignedVanDriverId || null,
+    assignedRecipientIds: parsePostgresArray((evt as any).assignedRecipientIds),
+  }), []);
+
+  const applyDraftValues = useCallback((d: EventEditDraftData) => {
+    setDriversNeeded(d.driversNeeded);
+    setSpeakersNeeded(d.speakersNeeded);
+    setVolunteersNeeded(d.volunteersNeeded);
+    setPickupTime(d.pickupTime);
+    setEventStartTime(d.eventStartTime);
+    setEventEndTime(d.eventEndTime);
+    setPickupTimeWindow(d.pickupTimeWindow);
+    setTspContact(d.tspContact);
+    setCustomTspContact(d.customTspContact);
+    setVanDriverNeeded(d.vanDriverNeeded);
+    setIsCorporatePriority(d.isCorporatePriority);
+    setAssignedDriverIds(d.assignedDriverIds);
+    setAssignedSpeakerIds(d.assignedSpeakerIds);
+    setAssignedVolunteerIds(d.assignedVolunteerIds);
+    setAssignedVanDriverId(d.assignedVanDriverId);
+    setAssignedRecipientIds(d.assignedRecipientIds);
   }, []);
+
+  const populateFromEvent = useCallback((evt: EventRequest) => {
+    const values = computeEventValues(evt);
+    applyDraftValues(values);
+    // Baseline is set synchronously to the values we just queued, so when
+    // the divergence detector runs in the same commit it compares against
+    // the correct target — not the pre-populate render state.
+    baselineRef.current = JSON.stringify(values);
+    baselineSettledRef.current = false;
+  }, [computeEventValues, applyDraftValues]);
 
   // Populate form when the event changes. If a draft exists for this event,
   // show a restore banner and let the user decide before mutating state.
@@ -450,15 +485,11 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       // banner is up — if the user restores, those values get overwritten.
       populateFromEvent(event);
       setHasUserInteracted(false);
-      // Baseline tracks the pre-fill; if the user types before deciding on
-      // the banner, we still detect interaction.
-      baselineRef.current = null;
       return;
     }
 
     populateFromEvent(event);
     setHasUserInteracted(false);
-    baselineRef.current = null;
   }, [event, populateFromEvent]);
 
   const draftData: EventEditDraftData = {
@@ -487,14 +518,21 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     debounceMs: 500,
   });
 
-  // Capture a baseline of the populated form data once on mount/event-change,
-  // then watch for divergence to flip hasUserInteracted. This means the dialog
-  // body doesn't need to thread an onChange tracker through every input.
+  // Watch for divergence between current form data and the baseline set
+  // synchronously inside populateFromEvent / restorePendingDraft. Divergence
+  // means the user has interacted; that's what enables autosave.
+  //
+  // The baselineSettledRef gate prevents a false positive: when populate
+  // queues state setters, the next render's draftSerialized hasn't caught up
+  // to the baseline yet. We wait for the first render where they match
+  // (state has landed) before treating any further divergence as interaction.
   const draftSerialized = JSON.stringify(draftData);
   useEffect(() => {
-    if (!isOpen || !event) return;
-    if (baselineRef.current === null) {
-      baselineRef.current = draftSerialized;
+    if (!isOpen || !event || baselineRef.current === null) return;
+    if (!baselineSettledRef.current) {
+      if (draftSerialized === baselineRef.current) {
+        baselineSettledRef.current = true;
+      }
       return;
     }
     if (!hasUserInteracted && draftSerialized !== baselineRef.current) {
@@ -505,27 +543,31 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
   const restorePendingDraft = () => {
     if (!pendingRestoreDraft) return;
     const d = pendingRestoreDraft.data;
-    setDriversNeeded(d.driversNeeded ?? '');
-    setSpeakersNeeded(d.speakersNeeded ?? '');
-    setVolunteersNeeded(d.volunteersNeeded ?? '');
-    setPickupTime(d.pickupTime ?? '');
-    setEventStartTime(d.eventStartTime ?? '');
-    setEventEndTime(d.eventEndTime ?? '');
-    setPickupTimeWindow(d.pickupTimeWindow ?? '');
-    setTspContact(d.tspContact ?? '');
-    setCustomTspContact(d.customTspContact ?? '');
-    setVanDriverNeeded(Boolean(d.vanDriverNeeded));
-    setIsCorporatePriority(Boolean(d.isCorporatePriority));
-    setAssignedDriverIds(Array.isArray(d.assignedDriverIds) ? d.assignedDriverIds : []);
-    setAssignedSpeakerIds(Array.isArray(d.assignedSpeakerIds) ? d.assignedSpeakerIds : []);
-    setAssignedVolunteerIds(Array.isArray(d.assignedVolunteerIds) ? d.assignedVolunteerIds : []);
-    setAssignedVanDriverId(d.assignedVanDriverId ?? null);
-    setAssignedRecipientIds(Array.isArray(d.assignedRecipientIds) ? d.assignedRecipientIds : []);
+    // Normalize incoming draft (defensive against older shapes) before
+    // applying — keeps state shapes consistent.
+    const safe: EventEditDraftData = {
+      driversNeeded: d.driversNeeded ?? '',
+      speakersNeeded: d.speakersNeeded ?? '',
+      volunteersNeeded: d.volunteersNeeded ?? '',
+      pickupTime: d.pickupTime ?? '',
+      eventStartTime: d.eventStartTime ?? '',
+      eventEndTime: d.eventEndTime ?? '',
+      pickupTimeWindow: d.pickupTimeWindow ?? '',
+      tspContact: d.tspContact ?? '',
+      customTspContact: d.customTspContact ?? '',
+      vanDriverNeeded: Boolean(d.vanDriverNeeded),
+      isCorporatePriority: Boolean(d.isCorporatePriority),
+      assignedDriverIds: Array.isArray(d.assignedDriverIds) ? d.assignedDriverIds : [],
+      assignedSpeakerIds: Array.isArray(d.assignedSpeakerIds) ? d.assignedSpeakerIds : [],
+      assignedVolunteerIds: Array.isArray(d.assignedVolunteerIds) ? d.assignedVolunteerIds : [],
+      assignedVanDriverId: d.assignedVanDriverId ?? null,
+      assignedRecipientIds: Array.isArray(d.assignedRecipientIds) ? d.assignedRecipientIds : [],
+    };
+    applyDraftValues(safe);
+    baselineRef.current = JSON.stringify(safe);
+    baselineSettledRef.current = false;
     setPendingRestoreDraft(null);
     setHasUserInteracted(true);
-    // Restore overrides the baseline; subsequent edits should also re-arm the
-    // divergence detector.
-    baselineRef.current = JSON.stringify(d);
   };
 
   const discardPendingDraft = () => {
@@ -534,7 +576,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     setPendingRestoreDraft(null);
     populateFromEvent(event);
     setHasUserInteracted(false);
-    baselineRef.current = null;
   };
 
   // Detect whether the draft was based on a now-stale version of the event.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -115,7 +115,10 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   const { savedAt: draftSavedAt } = useDraftPersistence<IntakeDraftData>({
     key: draftKey,
     data: draftData,
-    enabled: isOpen && hasUserInteracted,
+    // Suspend autosave while the restore banner is up so typing into the
+    // pre-populated form doesn't overwrite the existing localStorage draft
+    // before the user has a chance to click Restore.
+    enabled: isOpen && hasUserInteracted && !pendingRestoreDraft,
     version: eventRequest?.updatedAt ?? null,
     debounceMs: 500,
   });
@@ -126,6 +129,33 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if (!hasUserInteracted) setHasUserInteracted(true);
   };
 
+  // Shared "load the event's current values into form state" routine, used
+  // by the open-dialog effect and by discardPendingDraft.
+  const populateFromEventRequest = useCallback((req: EventRequest) => {
+    const fullName = `${req.firstName || ''} ${req.lastName || ''}`.trim();
+    setContactName(fullName);
+    setContactPhone(req.phone || '');
+    setContactEmail(req.email || '');
+
+    const initialAnswers: Record<string, string> = {};
+    const initialChecked = new Set<string>();
+    if (fullName) {
+      initialAnswers.contact_name = fullName;
+      initialChecked.add('contact_name');
+    }
+    if (req.phone) {
+      initialAnswers.contact_phone = req.phone;
+      initialChecked.add('contact_phone');
+    }
+    if (req.email) {
+      initialAnswers.contact_email = req.email;
+      initialChecked.add('contact_email');
+    }
+    setItemAnswers(initialAnswers);
+    setCheckedItems(initialChecked);
+    setCallNotes('');
+  }, []);
+
   // Initialize contact info from event request when dialog opens.
   // If a draft exists for this event, surface a restore banner. Autosave
   // is gated by hasUserInteracted, so a draft only exists when the user
@@ -133,31 +163,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   // which are part of the saved payload and must not be silently dropped.
   useEffect(() => {
     if (!isOpen || !eventRequest) return;
-
-    const populateFromEvent = () => {
-      const fullName = `${eventRequest.firstName || ''} ${eventRequest.lastName || ''}`.trim();
-      setContactName(fullName);
-      setContactPhone(eventRequest.phone || '');
-      setContactEmail(eventRequest.email || '');
-
-      const initialAnswers: Record<string, string> = {};
-      const initialChecked = new Set<string>();
-      if (fullName) {
-        initialAnswers.contact_name = fullName;
-        initialChecked.add('contact_name');
-      }
-      if (eventRequest.phone) {
-        initialAnswers.contact_phone = eventRequest.phone;
-        initialChecked.add('contact_phone');
-      }
-      if (eventRequest.email) {
-        initialAnswers.contact_email = eventRequest.email;
-        initialChecked.add('contact_email');
-      }
-      setItemAnswers(initialAnswers);
-      setCheckedItems(initialChecked);
-      setCallNotes('');
-    };
 
     const existingDraft = loadDraft<IntakeDraftData>(`intake:${eventRequest.id}`);
     if (existingDraft) {
@@ -168,14 +173,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       // Pre-populate from the event so the dialog body has content while
       // the user decides. If they restore, those values get overwritten;
       // if they discard, the pre-fill stays.
-      populateFromEvent();
+      populateFromEventRequest(eventRequest);
       setHasUserInteracted(false);
       return;
     }
 
-    populateFromEvent();
+    populateFromEventRequest(eventRequest);
     setHasUserInteracted(false);
-  }, [isOpen, eventRequest]);
+  }, [isOpen, eventRequest, populateFromEventRequest]);
 
   const restorePendingDraft = () => {
     if (!pendingRestoreDraft) return;
@@ -196,28 +201,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if (!eventRequest) return;
     clearDraft(`intake:${eventRequest.id}`);
     setPendingRestoreDraft(null);
-    // Fall through to the initial-from-event-request path by re-running the effect.
-    const fullName = `${eventRequest.firstName || ''} ${eventRequest.lastName || ''}`.trim();
-    setContactName(fullName);
-    setContactPhone(eventRequest.phone || '');
-    setContactEmail(eventRequest.email || '');
-    const initialAnswers: Record<string, string> = {};
-    const initialChecked = new Set<string>();
-    if (fullName) {
-      initialAnswers.contact_name = fullName;
-      initialChecked.add('contact_name');
-    }
-    if (eventRequest.phone) {
-      initialAnswers.contact_phone = eventRequest.phone;
-      initialChecked.add('contact_phone');
-    }
-    if (eventRequest.email) {
-      initialAnswers.contact_email = eventRequest.email;
-      initialChecked.add('contact_email');
-    }
-    setItemAnswers(initialAnswers);
-    setCheckedItems(initialChecked);
-    setCallNotes('');
+    populateFromEventRequest(eventRequest);
     setHasUserInteracted(false);
   };
 
