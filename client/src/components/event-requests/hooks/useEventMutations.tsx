@@ -96,11 +96,29 @@ export const useEventMutations = () => {
       logger.log('Variables:', variables);
 
       const orgName = updatedEvent?.organizationName || 'Event';
-      toast({
-        title: '✓ Changes Saved Successfully',
-        description: `Your changes to "${orgName}" have been saved to the database.`,
-        duration: 8000,
-      });
+
+      // Server attaches _droppedFields when it silently skipped any fields during processing
+      // (invalid dates, missing columns, permission-gated fields, etc.). Surface that to the user
+      // so silent drops never go unnoticed again.
+      const droppedFields: Array<{ field: string; reason: string }> | undefined = updatedEvent?._droppedFields;
+      if (Array.isArray(droppedFields) && droppedFields.length > 0) {
+        logger.warn('Save succeeded but some fields were dropped:', droppedFields);
+        const summary = droppedFields
+          .map((d) => `• ${d.field}: ${d.reason}`)
+          .join('\n');
+        toast({
+          title: '⚠️ Partial Save',
+          description: `Saved "${orgName}" — but the following fields were not saved:\n${summary}`,
+          variant: 'destructive',
+          duration: Number.POSITIVE_INFINITY,
+        });
+      } else {
+        toast({
+          title: '✓ Changes Saved Successfully',
+          description: `Your changes to "${orgName}" have been saved to the database.`,
+          duration: 8000,
+        });
+      }
 
       // Await query invalidation so the UI has fresh data before we close the dialog
       await invalidateEventRequestQueries(queryClient);

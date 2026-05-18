@@ -2592,6 +2592,10 @@ router.patch(
 
       logger.info(`[PATCH /:id] Request received for event ${id}, path: ${req.path}, originalUrl: ${req.originalUrl}`);
       logger.info(`[PATCH /:id] Updates:`, JSON.stringify(updates, null, 2));
+
+      // Track fields the server silently dropped during processing so the client can warn the user.
+      // Each entry: { field: 'fieldName', reason: 'human-readable explanation' }
+      const droppedFields: Array<{ field: string; reason: string }> = [];
       
       // DEBUG: Log department field specifically
       logger.info(`[PATCH /:id] DEPARTMENT DEBUG: department in updates = "${updates.department}", type = ${typeof updates.department}`);
@@ -2620,6 +2624,7 @@ router.patch(
         } catch (error) {
           // Invalid date format — skip this field rather than blocking the entire save
           logger.warn('⚠️ Invalid scheduledCallDate format, ignoring field:', updates.scheduledCallDate);
+          droppedFields.push({ field: 'scheduledCallDate', reason: 'Invalid date format' });
           delete updates.scheduledCallDate;
         }
       }
@@ -2722,6 +2727,7 @@ router.patch(
             // Check if the date is valid
             if (!dateValue) {
               logger.error(`[PATCH] Invalid date value for field ${field}:`, dateString);
+              droppedFields.push({ field, reason: 'Invalid date format' });
               delete processedUpdates[field]; // Remove invalid date fields
             } else {
               processedUpdates[field] = dateValue;
@@ -2729,6 +2735,7 @@ router.patch(
             }
           } catch (error) {
             logger.error(`[PATCH] Error parsing date for field ${field}:`, error);
+            droppedFields.push({ field, reason: 'Could not parse date' });
             delete processedUpdates[field]; // Remove invalid date fields
           }
         } else if (processedUpdates[field] === null || processedUpdates[field] === '') {
@@ -2940,6 +2947,7 @@ router.patch(
             // Silently ignore the change rather than blocking the entire save
             // The corporate priority flag stays as-is; other edits proceed normally
             logger.warn(`[PATCH /:id] User ${userEmail} attempted to remove corporate priority without permission - ignoring field, not blocking save`);
+            droppedFields.push({ field: 'isCorporatePriority', reason: 'Only specific admins can remove corporate priority flag' });
             delete processedUpdates.isCorporatePriority;
           } else {
             processedUpdates.corporatePriorityMarkedAt = null;
@@ -2960,6 +2968,7 @@ router.patch(
         // (the column may not exist yet if migration 0043 hasn't run)
         if (processedUpdates.addedToOfficialSheetAt !== undefined) {
           logger.warn(`[PATCH /:id] Update failed with addedToOfficialSheetAt, retrying without it: ${updateError?.message}`);
+          droppedFields.push({ field: 'addedToOfficialSheetAt', reason: 'Database column not available on this branch (migration pending)' });
           const { addedToOfficialSheetAt, ...updatesWithoutTimestamp } = processedUpdates;
           updatedEventRequest = await storage.updateEventRequest(id, {
             ...updatesWithoutTimestamp,
@@ -3075,7 +3084,14 @@ router.patch(
         logger.info(`[PATCH /:id] ✅ Status update confirmed in response: ${updatedEventRequest.status}`);
       }
 
-      res.json(updatedEventRequest);
+      // Attach _droppedFields metadata so the client can warn the user about silent drops.
+      // Falsy when empty so it doesn't appear in successful saves.
+      const responsePayload: any = { ...updatedEventRequest };
+      if (droppedFields.length > 0) {
+        responsePayload._droppedFields = droppedFields;
+        logger.warn(`[PATCH /:id] Event ${id} saved with ${droppedFields.length} field(s) dropped: ${droppedFields.map((d) => d.field).join(', ')}`);
+      }
+      res.json(responsePayload);
     } catch (error: unknown) {
       const err = error as Error;
       logger.error('Error updating event request:', error);

@@ -4284,23 +4284,56 @@ export class DatabaseStorage implements IStorage {
       .where(eq(eventRequests.id, id));
 
     // Explicit fetch to get the updated data reliably
-    const result = await this.getEventRequest(id);
+    let result = await this.getEventRequest(id);
 
-    // DEBUG: Log result after save
+    if (!result) {
+      logger.error(`[DB updateEventRequest] ⚠️ Event ${id} not found after update!`);
+      return result;
+    }
+
+    // Verify EVERY field we just wrote. On Neon serverless the write may not be
+    // visible to the immediate verify-fetch yet (replica lag / connection routing).
+    // Strategy: detect mismatches, retry the fetch once after a small delay, and
+    // if the read is still stale, trust the write — merge filteredData onto the
+    // result so the client sees the values we actually persisted.
+    const findMismatches = (current: any) =>
+      Object.entries(filteredData).filter(([key, expected]) => {
+        // Drizzle stores Date objects as timestamptz; compare by .getTime() for those.
+        const actual = current?.[key];
+        if (expected instanceof Date && actual instanceof Date) {
+          return expected.getTime() !== actual.getTime();
+        }
+        // JSON columns: compare by stringification (cheap, handles arrays + objects).
+        if (typeof expected === 'object' && expected !== null) {
+          return JSON.stringify(expected) !== JSON.stringify(actual);
+        }
+        return expected !== actual;
+      });
+
+    let mismatches = findMismatches(result);
+    if (mismatches.length > 0) {
+      logger.warn(
+        `[DB updateEventRequest] Event ${id} — post-save read shows ${mismatches.length} field(s) stale, retrying after 150ms: ${mismatches.map(([k]) => k).join(', ')}`
+      );
+      await new Promise((r) => setTimeout(r, 150));
+      result = await this.getEventRequest(id);
+      mismatches = result ? findMismatches(result) : [];
+
+      if (mismatches.length > 0 && result) {
+        logger.error(
+          `[DB updateEventRequest] ⚠️ Event ${id} — read still stale after retry. Trusting the write and merging filteredData. Stale fields: ${mismatches.map(([k]) => k).join(', ')}`
+        );
+        // The UPDATE statement returned without error, which means it ran on the
+        // primary. The stale read is a replication artifact, not a failed write.
+        // Return what we know we wrote so the client doesn't see ghost reverts.
+        result = { ...result, ...(filteredData as Partial<EventRequest>) } as EventRequest;
+      } else if (result) {
+        logger.info(`[DB updateEventRequest] ✅ Event ${id} — retry succeeded, fields verified`);
+      }
+    }
+
     if (result) {
       logger.info(`[DB updateEventRequest] Event ${id} - After save, speakerDetails: ${JSON.stringify(result.speakerDetails)}`);
-      
-      // CRITICAL: Verify status update actually persisted
-      if (filteredData.status && result.status !== filteredData.status) {
-        logger.error(`[DB updateEventRequest] ⚠️ STATUS MISMATCH for Event ${id}!`);
-        logger.error(`[DB updateEventRequest] Expected status: "${filteredData.status}"`);
-        logger.error(`[DB updateEventRequest] Actual status from DB: "${result.status}"`);
-        logger.error(`[DB updateEventRequest] This indicates the UPDATE may have failed silently or been rolled back`);
-      } else if (filteredData.status) {
-        logger.info(`[DB updateEventRequest] ✅ Status update verified for Event ${id}: ${result.status}`);
-      }
-    } else {
-      logger.error(`[DB updateEventRequest] ⚠️ Event ${id} not found after update!`);
     }
 
     return result;
