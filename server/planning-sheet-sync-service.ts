@@ -23,19 +23,20 @@ export const PLANNING_SHEET_COLUMNS = {
   ESTIMATE_SANDWICHES: 10,    // K - Estimate # sandwiches
   DELI_OR_PBJ: 11,            // L - Deli or PBJ?
   FINAL_SANDWICHES: 12,       // M - Final # sandwiches made
-  SOCIAL_POST: 13,            // N - Social Post
-  SENT_TOOLKIT: 14,           // O - Sent toolkit?
-  CONTACT_NAME: 15,           // P - Contact Name
-  EMAIL: 16,                  // Q - Email Address
-  PHONE: 17,                  // R - Contact Cell Number
-  TSP_CONTACT: 18,            // S - TSP Contact
-  ADDRESS: 19,                // T - Address
-  RECIPIENT_HOST: 20,         // U - Planned Recipient/Host Home
-  AFTER_EVENT_NOTES: 21,      // V - After Event Notes
-  CANCELLED: 22,              // W - Cancelled
-  NOTES: 23,                  // X - Notes
-  ADDL_NOTES: 24,             // Y - Add'l Notes
-  WAITING_ON: 25,             // Z - Waiting On
+  TOTAL_IN_APP: 13,           // N - Total in app? (manually maintained in the sheet; app leaves blank on new rows)
+  SOCIAL_POST: 14,            // O - Social Post
+  SENT_TOOLKIT: 15,           // P - Sent toolkit?
+  CONTACT_NAME: 16,           // Q - Contact Name
+  EMAIL: 17,                  // R - Email Address
+  PHONE: 18,                  // S - Contact Cell Number
+  TSP_CONTACT: 19,            // T - TSP Contact
+  ADDRESS: 20,                // U - Address
+  RECIPIENT_HOST: 21,         // V - Planned Recipient/Host Home
+  AFTER_EVENT_NOTES: 22,      // W - After Event Notes
+  CANCELLED: 23,              // X - Cancelled
+  NOTES: 24,                  // Y - Notes
+  ADDL_NOTES: 25,             // Z - Add'l Notes
+  WAITING_ON: 26,             // AA - Waiting On
 } as const;
 
 /**
@@ -207,6 +208,7 @@ export interface PlanningSheetRow {
   estimateSandwiches: string;
   deliOrPbj: string;
   finalSandwiches: string;
+  totalInApp: string;
   socialPost: string;
   sentToolkit: string;
   contactName: string;
@@ -313,7 +315,7 @@ export class PlanningSheetSyncService {
 
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range: this.getSheetRange('A2:Z'), // Skip header row
+      range: this.getSheetRange('A2:AA'), // Skip header row
     });
 
     const rows = response.data.values || [];
@@ -337,6 +339,7 @@ export class PlanningSheetSyncService {
         estimateSandwiches: row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] || '',
         deliOrPbj: row[PLANNING_SHEET_COLUMNS.DELI_OR_PBJ] || '',
         finalSandwiches: row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] || '',
+        totalInApp: row[PLANNING_SHEET_COLUMNS.TOTAL_IN_APP] || '',
         socialPost: row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] || '',
         sentToolkit: row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] || '',
         contactName: row[PLANNING_SHEET_COLUMNS.CONTACT_NAME] || '',
@@ -446,7 +449,7 @@ export class PlanningSheetSyncService {
     const deliOrPbj = sandwichTypes?.map(st => formatSandwichType(st.type)).join(', ') || '';
 
     // Build the row array matching column order
-    const row: string[] = new Array(26).fill('');
+    const row: string[] = new Array(27).fill('');
     row[PLANNING_SHEET_COLUMNS.DATE] = dateStr;
     row[PLANNING_SHEET_COLUMNS.DAY_OF_WEEK] = dayOfWeek;
     row[PLANNING_SHEET_COLUMNS.GROUP_NAME] = e.organizationName || '';
@@ -698,7 +701,7 @@ export class PlanningSheetSyncService {
     // Append the row to the sheet
     await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.spreadsheetId,
-      range: this.getSheetRange('A:Z'),
+      range: this.getSheetRange('A:AA'),
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: { values: [rowData] },
@@ -722,7 +725,18 @@ export class PlanningSheetSyncService {
       return { success: false, message: `Unknown field: ${proposal.fieldName}` };
     }
 
-    const columnLetter = String.fromCharCode(65 + columnIndex); // A=0, B=1, etc.
+    // Convert 0-based column index → spreadsheet letter (A, B, ..., Z, AA, AB, ...).
+    // String.fromCharCode(65 + index) only works for single letters (0–25); we now have
+    // columns past Z (WAITING_ON is at index 26 = AA) so a small loop is required.
+    const columnLetter = (() => {
+      let n = columnIndex;
+      let s = '';
+      do {
+        s = String.fromCharCode(65 + (n % 26)) + s;
+        n = Math.floor(n / 26) - 1;
+      } while (n >= 0);
+      return s;
+    })();
     const range = this.getSheetRange(`${columnLetter}${proposal.targetRowIndex}`);
 
     await this.sheets.spreadsheets.values.update({
@@ -909,37 +923,42 @@ export class PlanningSheetSyncService {
   }
 
   /**
-   * Convert a PlanningSheetRow object back to a 26-element raw string array
-   * Used for per-column merge comparisons
+   * Convert a PlanningSheetRow object back to a raw string array sized to match
+   * PLANNING_SHEET_COLUMNS. Used for per-column merge comparisons.
+   * Indices are read from PLANNING_SHEET_COLUMNS so a future column insertion
+   * only requires updating the column map.
    */
   planningSheetRowToRawArray(row: PlanningSheetRow): string[] {
-    const raw = new Array(26).fill('');
-    raw[0] = row.date;
-    raw[1] = row.dayOfWeek;
-    raw[2] = row.groupName;
-    raw[3] = row.eventStartTime;
-    raw[4] = row.eventEndTime;
-    raw[5] = row.pickUpTime;
-    raw[6] = row.pickUpNextDay;
-    raw[7] = row.allDetails;
-    raw[8] = row.vanBooked;
-    raw[9] = row.staffing;
-    raw[10] = row.estimateSandwiches;
-    raw[11] = row.deliOrPbj;
-    raw[12] = row.finalSandwiches;
-    raw[13] = row.socialPost;
-    raw[14] = row.sentToolkit;
-    raw[15] = row.contactName;
-    raw[16] = row.email;
-    raw[17] = row.phone;
-    raw[18] = row.tspContact;
-    raw[19] = row.address;
-    raw[20] = row.recipientHost;
-    raw[21] = row.afterEventNotes;
-    raw[22] = row.cancelled;
-    raw[23] = row.notes;
-    raw[24] = row.addlNotes;
-    raw[25] = row.waitingOn;
+    const C = PLANNING_SHEET_COLUMNS;
+    const size = Math.max(...Object.values(C)) + 1;
+    const raw = new Array(size).fill('');
+    raw[C.DATE] = row.date;
+    raw[C.DAY_OF_WEEK] = row.dayOfWeek;
+    raw[C.GROUP_NAME] = row.groupName;
+    raw[C.EVENT_START_TIME] = row.eventStartTime;
+    raw[C.EVENT_END_TIME] = row.eventEndTime;
+    raw[C.PICK_UP_TIME] = row.pickUpTime;
+    raw[C.PICK_UP_NEXT_DAY] = row.pickUpNextDay;
+    raw[C.ALL_DETAILS] = row.allDetails;
+    raw[C.VAN_BOOKED] = row.vanBooked;
+    raw[C.STAFFING] = row.staffing;
+    raw[C.ESTIMATE_SANDWICHES] = row.estimateSandwiches;
+    raw[C.DELI_OR_PBJ] = row.deliOrPbj;
+    raw[C.FINAL_SANDWICHES] = row.finalSandwiches;
+    raw[C.TOTAL_IN_APP] = row.totalInApp;
+    raw[C.SOCIAL_POST] = row.socialPost;
+    raw[C.SENT_TOOLKIT] = row.sentToolkit;
+    raw[C.CONTACT_NAME] = row.contactName;
+    raw[C.EMAIL] = row.email;
+    raw[C.PHONE] = row.phone;
+    raw[C.TSP_CONTACT] = row.tspContact;
+    raw[C.ADDRESS] = row.address;
+    raw[C.RECIPIENT_HOST] = row.recipientHost;
+    raw[C.AFTER_EVENT_NOTES] = row.afterEventNotes;
+    raw[C.CANCELLED] = row.cancelled;
+    raw[C.NOTES] = row.notes;
+    raw[C.ADDL_NOTES] = row.addlNotes;
+    raw[C.WAITING_ON] = row.waitingOn;
     return raw;
   }
 
@@ -1002,7 +1021,7 @@ export class PlanningSheetSyncService {
         }
 
         // Update existing row
-        const range = this.getSheetRange(`A${existingRow.rowIndex}:Z${existingRow.rowIndex}`);
+        const range = this.getSheetRange(`A${existingRow.rowIndex}:AA${existingRow.rowIndex}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
           range,
@@ -1070,7 +1089,7 @@ export class PlanningSheetSyncService {
             });
 
             // Now write the data to the newly inserted row
-            const range = this.getSheetRange(`A${insertBeforeRow}:Z${insertBeforeRow}`);
+            const range = this.getSheetRange(`A${insertBeforeRow}:AA${insertBeforeRow}`);
             await this.sheets.spreadsheets.values.update({
               spreadsheetId: this.spreadsheetId,
               range,
@@ -1091,7 +1110,7 @@ export class PlanningSheetSyncService {
         // Fallback: Append to end if no insertion point found or worksheet ID unavailable
         const response = await this.sheets.spreadsheets.values.append({
           spreadsheetId: this.spreadsheetId,
-          range: this.getSheetRange('A:Z'),
+          range: this.getSheetRange('A:AA'),
           valueInputOption: 'USER_ENTERED',
           insertDataOption: 'INSERT_ROWS',
           resource: { values: [rowData] },
