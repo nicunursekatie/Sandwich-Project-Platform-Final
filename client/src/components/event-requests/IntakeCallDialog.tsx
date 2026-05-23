@@ -84,13 +84,24 @@ const OPERATING_AREAS = [
 ];
 
 // Extract the first integer from an operator's free-text answer.
-// Handles "750", "around 200", "750ish", "approximately 1000".
-// For ranges like "200-300" returns the first number (200) — operator can
-// adjust on the event after intake if needed.
+// Handles common formats: "750", "around 200", "750ish", "1,200" (US-style
+// thousands), "approximately 1000", "200-300" (first number only).
+//
+// Space-separated thousands ("1 200") are deliberately not handled — doing so
+// would also turn two distinct space-separated numbers ("200 300") into
+// 200300, which would silently corrupt counts. With the comma-only rule, the
+// rare "1 200" input parses as 1, which is obviously wrong on the toast.
 function parseNumberFromText(text: string): number | null {
-  const match = text.match(/\d+/);
-  if (!match) return null;
-  const n = parseInt(match[0], 10);
+  // Try thousands-formatted number first (e.g. "1,200" or "1,200,000").
+  const formatted = text.match(/\d{1,3}(?:,\d{3})+/);
+  if (formatted) {
+    const n = parseInt(formatted[0].replace(/,/g, ''), 10);
+    if (Number.isFinite(n)) return n;
+  }
+  // Fall back to a plain run of digits.
+  const plain = text.match(/\d+/);
+  if (!plain) return null;
+  const n = parseInt(plain[0], 10);
   return Number.isFinite(n) ? n : null;
 }
 
@@ -187,8 +198,9 @@ function buildStructuredUpdates(
     }
   }
 
-  // refrigeration — Select with 'yes' / 'no' / 'unsure'. 'unsure' deliberately
-  // does NOT write the boolean column (leaves it null = unknown).
+  // refrigeration — Select with 'yes' / 'no' / 'unsure'. Picking Unsure
+  // explicitly clears the column back to null (unknown), so operators can
+  // walk back a previously-recorded value when something changes.
   const refrigValue = itemAnswers.refrigeration?.trim().toLowerCase();
   if (refrigValue === 'yes' || refrigValue === 'no') {
     const bool = refrigValue === 'yes';
@@ -197,6 +209,13 @@ function buildStructuredUpdates(
       itemId: 'refrigeration',
       column: 'has refrigeration',
       display: bool ? 'Yes' : 'No',
+    });
+  } else if (refrigValue === 'unsure') {
+    updates.hasRefrigeration = null;
+    mapped.push({
+      itemId: 'refrigeration',
+      column: 'has refrigeration',
+      display: 'Unsure (cleared)',
     });
   }
 
