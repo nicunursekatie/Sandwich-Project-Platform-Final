@@ -150,16 +150,16 @@ function buildStructuredUpdates(
   // event_date — native date input gives YYYY-MM-DD.
   // Always writes to desiredEventDate; the audit log preserves any prior
   // value so the original requested date is recoverable from history.
-  // Uses shared parseDateOnly so the timestamp matches every other date
-  // handler in the app (local noon, not local midnight). This is critical
-  // both for timezone safety AND so that re-saving an unchanged date is a
-  // true no-op rather than a noon→midnight shift that would generate a
-  // spurious audit entry.
+  //
+  // We send the bare YYYY-MM-DD string (not a full ISO timestamp) so the
+  // server's parseDateOnly does the timezone-safe conversion in one place
+  // — that matches how the rest of the codebase serializes date-only
+  // fields and avoids a client→ISO→server round-trip that could reintroduce
+  // drift. parseDateOnly is still called client-side just to validate.
   const dateValue = itemAnswers.event_date?.trim();
   if (dateValue) {
-    const parsed = parseDateOnly(dateValue);
-    if (parsed) {
-      updates.desiredEventDate = parsed.toISOString();
+    if (parseDateOnly(dateValue)) {
+      updates.desiredEventDate = dateValue;
       mapped.push({
         itemId: 'event_date',
         column: 'desired event date',
