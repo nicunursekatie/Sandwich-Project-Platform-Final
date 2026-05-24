@@ -30,8 +30,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import {
+  parseDateOnly,
+  toDateOnlyString,
+  formatDateShort,
+} from '@shared/date-utils';
 import {
   useDraftPersistence,
   loadDraft,
@@ -75,6 +87,147 @@ const OPERATING_AREAS = [
   'Marietta',
   'Roswell',
 ];
+
+// Extract the first integer from an operator's free-text answer.
+// Handles common formats: "750", "around 200", "750ish", "1,200" (US-style
+// thousands), "approximately 1000", "200-300" (first number only).
+//
+// Space-separated thousands ("1 200") are deliberately not handled — doing so
+// would also turn two distinct space-separated numbers ("200 300") into
+// 200300, which would silently corrupt counts. With the comma-only rule, the
+// rare "1 200" input parses as 1, which is obviously wrong on the toast.
+function parseNumberFromText(text: string): number | null {
+  // Try thousands-formatted number first (e.g. "1,200" or "1,200,000").
+  const formatted = text.match(/\d{1,3}(?:,\d{3})+/);
+  if (formatted) {
+    const n = parseInt(formatted[0].replace(/,/g, ''), 10);
+    if (Number.isFinite(n)) return n;
+  }
+  // Fall back to a plain run of digits.
+  const plain = text.match(/\d+/);
+  if (!plain) return null;
+  const n = parseInt(plain[0], 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+// Convert a native date-input value (YYYY-MM-DD) into a friendlier display
+// string for the planningNotes summary block. Uses the shared date utility
+// so we render consistently with the rest of the app (Eastern Time).
+function formatIsoDateForNotes(dateStr: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  return formatDateShort(dateStr);
+}
+
+// Friendlier display for itemAnswers values when summarizing into planningNotes.
+function formatItemAnswerForNotes(itemId: string, value: string): string {
+  if (itemId === 'event_date') return formatIsoDateForNotes(value);
+  if (itemId === 'refrigeration') {
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  }
+  return value;
+}
+
+interface StructuredIntakeResult {
+  updates: Record<string, unknown>;
+  // Per-field mapping result for surfacing in the success toast.
+  mapped: Array<{ itemId: string; column: string; display: string }>;
+  // Items the operator filled in but we couldn't parse — fall back to
+  // planningNotes; warn the user so they know structured data was missed.
+  unparseable: Array<{ itemId: string; rawValue: string }>;
+}
+
+// Parse the structured intake fields out of itemAnswers and build a partial
+// update payload of typed column values. Items that don't parse cleanly are
+// surfaced separately so the user can be warned in the toast rather than
+// having the data silently dropped.
+function buildStructuredUpdates(
+  itemAnswers: Record<string, string>
+): StructuredIntakeResult {
+  const updates: Record<string, unknown> = {};
+  const mapped: StructuredIntakeResult['mapped'] = [];
+  const unparseable: StructuredIntakeResult['unparseable'] = [];
+
+  // event_date — native date input gives YYYY-MM-DD.
+  // Always writes to desiredEventDate; the audit log preserves any prior
+  // value so the original requested date is recoverable from history.
+  //
+  // We send the bare YYYY-MM-DD string (not a full ISO timestamp) so the
+  // server's parseDateOnly does the timezone-safe conversion in one place
+  // — that matches how the rest of the codebase serializes date-only
+  // fields and avoids a client→ISO→server round-trip that could reintroduce
+  // drift. parseDateOnly is still called client-side just to validate.
+  const dateValue = itemAnswers.event_date?.trim();
+  if (dateValue) {
+    if (parseDateOnly(dateValue)) {
+      updates.desiredEventDate = dateValue;
+      mapped.push({
+        itemId: 'event_date',
+        column: 'desired event date',
+        display: formatIsoDateForNotes(dateValue),
+      });
+    } else {
+      unparseable.push({ itemId: 'event_date', rawValue: dateValue });
+    }
+  }
+
+  // sandwich_count — free text → integer.
+  const sandwichValue = itemAnswers.sandwich_count?.trim();
+  if (sandwichValue) {
+    const n = parseNumberFromText(sandwichValue);
+    if (n !== null) {
+      updates.estimatedSandwichCount = n;
+      mapped.push({
+        itemId: 'sandwich_count',
+        column: 'estimated sandwich count',
+        display: String(n),
+      });
+    } else {
+      unparseable.push({ itemId: 'sandwich_count', rawValue: sandwichValue });
+    }
+  }
+
+  // participant_count — free text → integer.
+  const participantValue = itemAnswers.participant_count?.trim();
+  if (participantValue) {
+    const n = parseNumberFromText(participantValue);
+    if (n !== null) {
+      updates.estimatedAttendance = n;
+      mapped.push({
+        itemId: 'participant_count',
+        column: 'estimated attendance',
+        display: String(n),
+      });
+    } else {
+      unparseable.push({
+        itemId: 'participant_count',
+        rawValue: participantValue,
+      });
+    }
+  }
+
+  // refrigeration — Select with 'yes' / 'no' / 'unsure'. Picking Unsure
+  // explicitly clears the column back to null (unknown), so operators can
+  // walk back a previously-recorded value when something changes.
+  const refrigValue = itemAnswers.refrigeration?.trim().toLowerCase();
+  if (refrigValue === 'yes' || refrigValue === 'no') {
+    const bool = refrigValue === 'yes';
+    updates.hasRefrigeration = bool;
+    mapped.push({
+      itemId: 'refrigeration',
+      column: 'has refrigeration',
+      display: bool ? 'Yes' : 'No',
+    });
+  } else if (refrigValue === 'unsure') {
+    updates.hasRefrigeration = null;
+    mapped.push({
+      itemId: 'refrigeration',
+      column: 'has refrigeration',
+      display: 'Unsure (cleared)',
+    });
+  }
+
+  return { updates, mapped, unparseable };
+}
 
 const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   isOpen,
@@ -151,6 +304,39 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       initialAnswers.contact_email = req.email;
       initialChecked.add('contact_email');
     }
+
+    // Pre-fill the structured checklist items from existing event data so
+    // the operator sees what we already know and only re-types if it changed.
+    // Uses shared toDateOnlyString so the pre-fill matches the convention
+    // used everywhere else in the app (and any future fixes to timezone
+    // handling apply automatically rather than needing patches here too).
+    if (req.desiredEventDate) {
+      const dateStr = toDateOnlyString(req.desiredEventDate);
+      if (dateStr) {
+        initialAnswers.event_date = dateStr;
+        initialChecked.add('event_date');
+      }
+    }
+    if (req.estimatedSandwichCount != null) {
+      initialAnswers.sandwich_count = String(req.estimatedSandwichCount);
+      initialChecked.add('sandwich_count');
+    }
+    if (req.estimatedAttendance != null) {
+      initialAnswers.participant_count = String(req.estimatedAttendance);
+      initialChecked.add('participant_count');
+    }
+    if (req.hasRefrigeration === true) {
+      initialAnswers.refrigeration = 'yes';
+      initialChecked.add('refrigeration');
+    } else if (req.hasRefrigeration === false) {
+      initialAnswers.refrigeration = 'no';
+      initialChecked.add('refrigeration');
+    }
+    if (req.eventAddress) {
+      initialAnswers.event_address = req.eventAddress;
+      initialChecked.add('event_address');
+    }
+
     setItemAnswers(initialAnswers);
     setCheckedItems(initialChecked);
     setCallNotes('');
@@ -269,7 +455,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         `Intake call completed: ${nowLabel}`,
         `Contact: ${contactName || 'N/A'} | ${contactPhone || 'N/A'} | ${contactEmail || 'N/A'}`,
         ...answeredItems.map(
-          (item) => `- ${item.label}: ${itemAnswers[item.id].trim()}`
+          (item) =>
+            `- ${item.label}: ${formatItemAnswerForNotes(item.id, itemAnswers[item.id].trim())}`
         ),
       ];
 
@@ -283,7 +470,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         ? `${existingNotes}\n\n${summaryBlock}`
         : summaryBlock;
 
+      // Build structured updates first so they don't get overwritten by
+      // the explicit contact/address mappings below if there's any overlap.
+      const structured = buildStructuredUpdates(itemAnswers);
       const updates: Record<string, unknown> = {
+        ...structured.updates,
         planningNotes: updatedPlanningNotes,
       };
 
@@ -308,9 +499,38 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
       await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
 
+      // Build a toast that tells the operator exactly which structured fields
+      // got mapped to columns and which inputs couldn't be parsed (those still
+      // live in planningNotes, but the operator should know they're not
+      // searchable/reportable as structured data).
+      const toastParts: string[] = ['Notes and contact updates saved.'];
+      if (structured.mapped.length > 0) {
+        toastParts.push(
+          'Saved to event: ' +
+            structured.mapped.map((m) => `${m.column} (${m.display})`).join(', ')
+        );
+      }
+      const hasUnparseable = structured.unparseable.length > 0;
+      if (hasUnparseable) {
+        // Translate internal item ids back to the checklist labels the
+        // operator actually sees on screen — "sandwich_count" reads as
+        // jargon, "Number of sandwiches" is what they typed under.
+        const labelById = new Map(
+          checklistItems.map((item) => [item.id, item.label])
+        );
+        toastParts.push(
+          "Couldn't parse: " +
+            structured.unparseable
+              .map((u) => labelById.get(u.itemId) ?? u.itemId)
+              .join(', ') +
+            ' — kept in notes only.'
+        );
+      }
       toast({
-        title: 'Intake call saved',
-        description: 'Notes and contact updates have been saved.',
+        title: hasUnparseable ? 'Intake call saved (with warnings)' : 'Intake call saved',
+        description: toastParts.join(' '),
+        variant: hasUnparseable ? 'destructive' : 'default',
+        duration: hasUnparseable ? 12000 : 5000,
       });
 
       // Save succeeded — clear the autosaved draft for this event.
@@ -805,6 +1025,33 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               className="text-sm h-8"
                               onClick={(e) => e.stopPropagation()}
                             />
+                          ) : item.id === 'event_date' ? (
+                            <Input
+                              type="date"
+                              value={itemAnswers[item.id] || ''}
+                              onChange={(e) =>
+                                handleAnswerChange(item.id, e.target.value)
+                              }
+                              className="text-sm h-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : item.id === 'refrigeration' ? (
+                            <Select
+                              value={itemAnswers[item.id] || ''}
+                              onValueChange={(v) => handleAnswerChange(item.id, v)}
+                            >
+                              <SelectTrigger
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <SelectValue placeholder="Yes / No / Unsure" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="yes">Yes</SelectItem>
+                                <SelectItem value="no">No</SelectItem>
+                                <SelectItem value="unsure">Unsure</SelectItem>
+                              </SelectContent>
+                            </Select>
                           ) : (
                             <Input
                               type="text"
