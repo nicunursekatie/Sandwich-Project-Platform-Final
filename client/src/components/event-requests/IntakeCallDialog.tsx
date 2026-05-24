@@ -40,6 +40,11 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import {
+  parseDateOnly,
+  toDateOnlyString,
+  formatDateShort,
+} from '@shared/date-utils';
+import {
   useDraftPersistence,
   loadDraft,
   clearDraft,
@@ -106,11 +111,11 @@ function parseNumberFromText(text: string): number | null {
 }
 
 // Convert a native date-input value (YYYY-MM-DD) into a friendlier display
-// string for the planningNotes summary block.
+// string for the planningNotes summary block. Uses the shared date utility
+// so we render consistently with the rest of the app (Eastern Time).
 function formatIsoDateForNotes(dateStr: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
-  const [y, m, d] = dateStr.split('-');
-  return `${m}/${d}/${y}`;
+  return formatDateShort(dateStr);
 }
 
 // Friendlier display for itemAnswers values when summarizing into planningNotes.
@@ -145,14 +150,16 @@ function buildStructuredUpdates(
   // event_date — native date input gives YYYY-MM-DD.
   // Always writes to desiredEventDate; the audit log preserves any prior
   // value so the original requested date is recoverable from history.
+  // Uses shared parseDateOnly so the timestamp matches every other date
+  // handler in the app (local noon, not local midnight). This is critical
+  // both for timezone safety AND so that re-saving an unchanged date is a
+  // true no-op rather than a noon→midnight shift that would generate a
+  // spurious audit entry.
   const dateValue = itemAnswers.event_date?.trim();
   if (dateValue) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-      // Parse as local midnight to avoid a one-day UTC drift when the
-      // server converts the timestamp.
-      const [y, m, d] = dateValue.split('-').map(Number);
-      const dt = new Date(y, m - 1, d);
-      updates.desiredEventDate = dt.toISOString();
+    const parsed = parseDateOnly(dateValue);
+    if (parsed) {
+      updates.desiredEventDate = parsed.toISOString();
       mapped.push({
         itemId: 'event_date',
         column: 'desired event date',
@@ -300,13 +307,13 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
     // Pre-fill the structured checklist items from existing event data so
     // the operator sees what we already know and only re-types if it changed.
+    // Uses shared toDateOnlyString so the pre-fill matches the convention
+    // used everywhere else in the app (and any future fixes to timezone
+    // handling apply automatically rather than needing patches here too).
     if (req.desiredEventDate) {
-      const d = new Date(req.desiredEventDate);
-      if (!Number.isNaN(d.getTime())) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        initialAnswers.event_date = `${y}-${m}-${day}`;
+      const dateStr = toDateOnlyString(req.desiredEventDate);
+      if (dateStr) {
+        initialAnswers.event_date = dateStr;
         initialChecked.add('event_date');
       }
     }
@@ -505,9 +512,17 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       }
       const hasUnparseable = structured.unparseable.length > 0;
       if (hasUnparseable) {
+        // Translate internal item ids back to the checklist labels the
+        // operator actually sees on screen — "sandwich_count" reads as
+        // jargon, "Number of sandwiches" is what they typed under.
+        const labelById = new Map(
+          checklistItems.map((item) => [item.id, item.label])
+        );
         toastParts.push(
           "Couldn't parse: " +
-            structured.unparseable.map((u) => u.itemId).join(', ') +
+            structured.unparseable
+              .map((u) => labelById.get(u.itemId) ?? u.itemId)
+              .join(', ') +
             ' — kept in notes only.'
         );
       }
