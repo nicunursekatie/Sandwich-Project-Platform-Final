@@ -3,8 +3,10 @@
  *
  * States:
  *  - Confirmed (`vanDriverNeeded` true): solid teal "Van Needed" badge.
- *  - Likely (`vanNeededLikely` true, `vanDriverNeeded` false): amber-outline
- *    "Van Likely Needed" badge; click to upgrade to confirmed.
+ *  - Possibly (`vanNeededLikely` true, `vanDriverNeeded` false): amber-outline
+ *    "Van Possibly Needed" badge; click to upgrade to confirmed.
+ *    (Schema column is still `van_needed_likely` for historical reasons —
+ *    only the UI label changed.)
  *  - Unknown (both false): small "Needs Van?" button. Clicking opens a dialog
  *    with [Possibly / For sure / Cancel].
  *
@@ -39,6 +41,13 @@ interface VanNeededBadgeAndButtonProps {
   vanDriverNeeded: boolean | null | undefined;
   vanNeededLikely: boolean | null | undefined;
   canEdit?: boolean;
+  /**
+   * When true, skip the Possibly/For sure dialog and the "likely" state entirely.
+   * The button becomes a one-click toggle: click to set vanDriverNeeded=true,
+   * click the resulting badge to clear it. Intended for the scheduled card where
+   * the team already knows whether a van is needed.
+   */
+  simpleToggle?: boolean;
 }
 
 type VanChoice = 'likely' | 'confirmed';
@@ -48,6 +57,7 @@ export function VanNeededBadgeAndButton({
   vanDriverNeeded,
   vanNeededLikely,
   canEdit = true,
+  simpleToggle = false,
 }: VanNeededBadgeAndButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -80,6 +90,46 @@ export function VanNeededBadgeAndButton({
   const clearVan = () => {
     updateMutation.mutate({ vanDriverNeeded: false, vanNeededLikely: false });
   };
+
+  // ── Simple toggle mode (scheduled cards): no dialog, no "likely" tier.
+  // One click sets vanDriverNeeded=true; clicking the badge clears it.
+  if (simpleToggle) {
+    if (vanDriverNeeded) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                onClick={() => canEdit && clearVan()}
+                className={`inline-flex items-center gap-1 whitespace-nowrap bg-[#007E8C] text-white border-transparent ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+                data-testid="badge-van-needed"
+              >
+                <Truck className="w-3 h-3" />
+                Van Needed
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              {canEdit ? <p>A van is needed for this event. Click to clear.</p> : <p>A van is needed for this event.</p>}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    if (!canEdit) return null;
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => updateMutation.mutate({ vanDriverNeeded: true, vanNeededLikely: false })}
+        disabled={updateMutation.isPending}
+        className="h-6 px-2 text-xs border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+        data-testid="button-mark-van-needed"
+      >
+        <Truck className="w-3 h-3 mr-1" />
+        Mark Van Needed
+      </Button>
+    );
+  }
 
   // CONFIRMED — solid teal badge
   if (vanDriverNeeded) {
@@ -126,11 +176,11 @@ export function VanNeededBadgeAndButton({
               data-testid="badge-van-likely-needed"
             >
               <Truck className="w-3 h-3" />
-              Van Likely Needed
+              Van Possibly Needed
             </Badge>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Flagged as likely needing a van. You'll be prompted to confirm when scheduling.</p>
+            <p>Flagged as possibly needing a van. You'll be asked about it when scheduling, but you can leave it unresolved if you're still not sure.</p>
             {canEdit && <p className="text-xs text-muted-foreground mt-1">Click to change.</p>}
           </TooltipContent>
         </Tooltip>
@@ -201,7 +251,7 @@ function VanChoiceDialog({
             {current === 'none'
               ? "Flag this now so the team is reminded to confirm before scheduling."
               : current === 'likely'
-                ? "Currently flagged as likely. You can confirm it now or change the flag."
+                ? "Currently flagged as possibly needed. You can confirm it now or change the flag."
                 : "Currently confirmed as needing a van. You can downgrade or clear the flag."}
           </DialogDescription>
         </DialogHeader>
@@ -228,7 +278,7 @@ function VanChoiceDialog({
             data-testid="button-van-likely"
           >
             <Truck className="w-4 h-4 mr-2" />
-            Possibly — flag as likely
+            Possibly — flag for follow-up
           </Button>
 
           {current !== 'none' && (

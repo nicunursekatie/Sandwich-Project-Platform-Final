@@ -333,6 +333,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [pendingDateChange, setPendingDateChange] = useState('');
   const [isMessageEditable, setIsMessageEditable] = useState(false);
   const [showVanConflictDialog, setShowVanConflictDialog] = useState(false);
+  // Local session dismissal for the "Van Possibly Needed" panel. Lets the user
+  // hide the reminder without taking a definitive action — the DB flag stays
+  // set so the panel reappears next time the form opens (in case new info has
+  // come in). Resets automatically when the dialog closes/reopens.
+  const [vanPossiblyPanelDismissed, setVanPossiblyPanelDismissed] = useState(false);
   const [vanConflictDetails, setVanConflictDetails] = useState<{
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
     acknowledged: boolean;
@@ -704,6 +709,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // Dialog closed
       setFormInitialized(false);
       formInitSessionRef.current = null;
+      // Reset session-only dismissals so reopening the form shows the panel again.
+      setVanPossiblyPanelDismissed(false);
 
       if (originalFormDataRef.current) {
         if (JSON.stringify(formData) === JSON.stringify(originalFormDataRef.current)) {
@@ -1104,21 +1111,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </p>
           </div>
 
-          {/* Van-likely confirmation panel.
-              Surfaces when the event was previously flagged "likely needs a van" from
-              the in-process card. The user picks Yes/No before saving; both choices
-              just mutate local form state, so the panel disappears via derived
-              visibility (no separate dismiss flag) and saves go through normally. */}
-          {(formData as any).vanNeededLikely && !(formData as any).vanDriverNeeded && (
+          {/* Van-possibly confirmation panel.
+              Surfaces when the event was previously flagged "possibly needs a van"
+              from the in-process card. All three choices just mutate local form
+              state, so the panel disappears via derived visibility (no separate
+              dismiss flag) and saves go through normally. The "still not sure"
+              option preserves the existing flag so a decision can be revisited
+              later. */}
+          {(formData as any).vanNeededLikely && !(formData as any).vanDriverNeeded && !vanPossiblyPanelDismissed && (
             <div className="mx-4 sm:mx-6 mb-3 rounded-lg border-2 border-amber-300 bg-amber-50 p-3 sm:p-4">
               <div className="flex items-start gap-2">
-                <span className="text-amber-700 mt-0.5" aria-hidden="true">⚠️</span>
+                <span className="text-amber-700 mt-0.5" aria-hidden="true">🚐</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-amber-900">
-                    This event was flagged as likely needing a van.
+                    This event was flagged as possibly needing a van.
                   </p>
                   <p className="text-xs text-amber-800 mt-1">
-                    Please confirm or clear this before scheduling.
+                    Do you have an answer yet? You can leave it unresolved if you're still figuring it out.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -1147,6 +1156,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                       data-testid="button-van-clear-flag"
                     >
                       No, clear the flag
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVanPossiblyPanelDismissed(true)}
+                      className="px-3 py-1.5 text-sm rounded-md bg-transparent border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium"
+                      data-testid="button-van-still-not-sure"
+                    >
+                      Still not sure — leave for now
                     </button>
                   </div>
                 </div>

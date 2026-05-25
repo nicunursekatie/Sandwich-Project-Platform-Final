@@ -77,6 +77,7 @@ import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
 import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
 import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
+import { VanNeededBadgeAndButton } from '@/components/event-requests/VanNeededBadgeAndButton';
 import { SendEventDetailsSMSDialog } from '../dialogs/SendEventDetailsSMSDialog';
 import { SendCorrectionSMSDialog } from '../dialogs/SendCorrectionSMSDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -1501,6 +1502,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           )}
         </div>
+
+        {/* Van status — dedicated prominent row so the badge doesn't get lost in the
+            pills wrap. Hidden once a van driver is actually assigned (or DHL is set);
+            those cases are already surfaced loud-and-clear in the Drivers section
+            further down the card. */}
+        {!request.assignedVanDriverId && !request.isDhlVan && (
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
+              Van:
+            </span>
+            <VanNeededBadgeAndButton
+              eventRequestId={request.id}
+              vanDriverNeeded={request.vanDriverNeeded}
+              vanNeededLikely={(request as any).vanNeededLikely}
+              canEdit={!!canEdit}
+              simpleToggle
+            />
+          </div>
+        )}
 
         {/* Partner/Department editing modals */}
         {isEditingThisCard && editingField === 'department' && (
