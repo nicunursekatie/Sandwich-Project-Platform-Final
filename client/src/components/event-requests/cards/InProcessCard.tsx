@@ -76,7 +76,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { QuickScheduleButton } from '@/components/event-requests/QuickScheduleButton';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw } from 'lucide-react';
@@ -1863,16 +1862,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-
-            {/* Propose to Planning Sheet */}
-            <ProposeToSheetButton
-              eventId={request.id}
-              organizationName={request.organizationName || 'Unknown'}
-              eventDate={request.scheduledEventDate || request.desiredEventDate || undefined}
-              variant="outline"
-              size="sm"
-              showLabel
-            />
 
             <div className="flex-1" />
 
