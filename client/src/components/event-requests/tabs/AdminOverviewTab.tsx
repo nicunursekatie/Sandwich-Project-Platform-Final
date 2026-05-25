@@ -5,6 +5,7 @@ import { User, Calendar, ArrowUpDown, ChevronDown, ChevronRight, ExternalLink, M
 import type { EventRequest } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
 import { formatDateShort } from '@/lib/date-utils';
+import { LastContactAgeBadge } from '@/components/event-requests/LastContactAgeBadge';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { ActivityFeed } from '@/components/activity-feed';
 
@@ -496,6 +497,10 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                                   >
                                     {event.status?.replace('_', ' ') || '(no status)'}
                                   </Badge>
+                                  {/* Last-contact-age signal — only meaningful for active workflow states */}
+                                  {(event.status === 'in_process' || event.status === 'new' || event.status === 'standby' || event.status === 'stalled') && (
+                                    <LastContactAgeBadge request={event} />
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="sm"

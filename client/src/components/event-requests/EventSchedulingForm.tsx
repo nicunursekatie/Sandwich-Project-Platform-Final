@@ -171,6 +171,7 @@ function buildFormDataFromEventRequest(
     driversNeeded: eventRequest?.driversNeeded || 0,
     selfTransport: eventRequest?.selfTransport || false,
     vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+    vanNeededLikely: (eventRequest as any)?.vanNeededLikely || false,
     speakersNeeded: eventRequest?.speakersNeeded || 0,
     volunteersNeeded: eventRequest?.volunteersNeeded || 0,
     tspContact: eventRequest?.tspContact || '',
@@ -292,7 +293,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventAddress: '', deliveryDestination: '', holdingOvernight: false,
     overnightHoldingLocation: '', overnightPickupTime: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
-    hasRefrigeration: '', driversNeeded: 0, selfTransport: false, vanDriverNeeded: false,
+    hasRefrigeration: '', driversNeeded: 0, selfTransport: false, vanDriverNeeded: false, vanNeededLikely: false,
     assignedVanDriverId: '', isDhlVan: false, speakersNeeded: 0, volunteersNeeded: 0,
     tspContact: '', customTspContact: '', message: '', schedulingNotes: '',
     planningNotes: '', nextAction: '', driverInstructions: '', volunteerInstructions: '',
@@ -1102,6 +1103,56 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               All other details can be completed later.
             </p>
           </div>
+
+          {/* Van-likely confirmation panel.
+              Surfaces when the event was previously flagged "likely needs a van" from
+              the in-process card. The user picks Yes/No before saving; both choices
+              just mutate local form state, so the panel disappears via derived
+              visibility (no separate dismiss flag) and saves go through normally. */}
+          {(formData as any).vanNeededLikely && !(formData as any).vanDriverNeeded && (
+            <div className="mx-4 sm:mx-6 mb-3 rounded-lg border-2 border-amber-300 bg-amber-50 p-3 sm:p-4">
+              <div className="flex items-start gap-2">
+                <span className="text-amber-700 mt-0.5" aria-hidden="true">⚠️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-amber-900">
+                    This event was flagged as likely needing a van.
+                  </p>
+                  <p className="text-xs text-amber-800 mt-1">
+                    Please confirm or clear this before scheduling.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          vanDriverNeeded: true,
+                          vanNeededLikely: false,
+                        }))
+                      }
+                      className="px-3 py-1.5 text-sm rounded-md bg-[#007E8C] text-white hover:bg-[#006873] font-medium"
+                      data-testid="button-van-confirm-needed"
+                    >
+                      Yes, van is needed
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          vanNeededLikely: false,
+                        }))
+                      }
+                      className="px-3 py-1.5 text-sm rounded-md bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 font-medium"
+                      data-testid="button-van-clear-flag"
+                    >
+                      No, clear the flag
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
 

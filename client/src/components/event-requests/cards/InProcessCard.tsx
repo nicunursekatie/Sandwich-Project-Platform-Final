@@ -47,6 +47,8 @@ import {
 } from '@/components/event-requests/utils';
 import { useDatePopulation, type DatePopulationInfo } from '@/components/event-requests/hooks/useDatePopulation';
 import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
+import { LastContactAgeBadge } from '@/components/event-requests/LastContactAgeBadge';
+import { VanNeededBadgeAndButton } from '@/components/event-requests/VanNeededBadgeAndButton';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 import {
   statusColors,
@@ -606,6 +608,15 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           {/* Traffic conflict (e.g. World Cup matches) */}
           <TrafficConflictBadge
             dates={[request.scheduledEventDate, request.desiredEventDate]}
+          />
+          {/* Last-contact-age — escalates by week since last contact attempt; skipped when a future call is scheduled */}
+          <LastContactAgeBadge request={request} />
+          {/* Van needed flag — three-state: button when unknown, badge when likely or confirmed */}
+          <VanNeededBadgeAndButton
+            eventRequestId={request.id}
+            vanDriverNeeded={request.vanDriverNeeded}
+            vanNeededLikely={(request as any).vanNeededLikely}
+            canEdit={!!canEdit}
           />
           {/* Add Action — freeform escape hatch; only when no nextAction exists */}
           {onAddNextAction && !request.nextAction && (

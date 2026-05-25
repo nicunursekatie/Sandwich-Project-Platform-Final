@@ -2412,7 +2412,8 @@ export const eventRequests = pgTable(
     }>>(), // Detailed tracking of sandwich distribution to each recipient
 
     // Van driver assignment
-    vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required
+    vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required (confirmed)
+    vanNeededLikely: boolean('van_needed_likely').notNull().default(false), // Soft flag set during in-process; user is told to confirm or clear when scheduling. When vanDriverNeeded becomes true, this is cleared.
     assignedVanDriverId: text('assigned_van_driver_id'), // Van driver ID from database
     customVanDriverName: text('custom_van_driver_name'), // Custom van driver name (text entry)
     vanDriverNotes: text('van_driver_notes'), // Special notes for van driver
