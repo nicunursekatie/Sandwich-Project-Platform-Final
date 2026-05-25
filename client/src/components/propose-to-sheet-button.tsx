@@ -25,6 +25,8 @@ interface PushToSheetButtonProps {
   variant?: 'default' | 'ghost' | 'outline';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
+  /** When true, render an inline "Push to Sheet" text label next to the icon. Defaults to icon-only. */
+  showLabel?: boolean;
 }
 
 type MergeDecision = 'use_app' | 'keep_sheet' | 'append';
@@ -74,6 +76,7 @@ export function PushToSheetButton({
   variant = 'ghost',
   size = 'sm',
   className = '',
+  showLabel = false,
 }: PushToSheetButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
@@ -215,7 +218,8 @@ export function PushToSheetButton({
             className={`text-blue-600 hover:text-blue-700 hover:bg-blue-50 ${className}`}
             data-testid="button-push-to-sheet"
           >
-            <FileSpreadsheet className="w-4 h-4" />
+            <FileSpreadsheet className={`w-4 h-4 ${showLabel ? 'mr-1' : ''}`} />
+            {showLabel && <span>Push to Sheet</span>}
           </Button>
         </TooltipTrigger>
         <TooltipContent>

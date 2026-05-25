@@ -1814,6 +1814,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </Tooltip>
             )}
 
+            {/* AI Tools group — visually separated from manual workflow actions above */}
+            {(((request.desiredEventDate || request.backupDates?.length) && onAiSuggest) || onAiIntakeAssist) && (
+              <div
+                className="self-stretch border-l border-slate-200 mx-1"
+                aria-hidden="true"
+              />
+            )}
+
             {/* AI Date Suggestion - show if there are dates to analyze */}
             {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
               <Tooltip>
@@ -1863,9 +1871,16 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               eventDate={request.scheduledEventDate || request.desiredEventDate || undefined}
               variant="outline"
               size="sm"
+              showLabel
             />
 
             <div className="flex-1" />
+
+            {/* Card management cluster — visually separated from workflow actions */}
+            <div
+              className="self-stretch border-l border-slate-200 mx-1"
+              aria-hidden="true"
+            />
 
             {/* Edit/Schedule Button - Always show */}
             {(() => {
