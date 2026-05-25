@@ -679,9 +679,13 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 ({getRelativeTime(displayDate.toString())})
               </span>
             )}
-            {/* Inline "Confirm date" affordance — replaces the heavy "Date Pending"
+            {/* Inline "Confirm" affordance — replaces the heavy "Date Pending"
                 badge for the default unconfirmed state. Shown only when a date is
-                set, the user has edit rights, and it isn't already confirmed. */}
+                set, the user has edit rights, and it isn't already confirmed.
+                Styling: sits on the dark teal "Event Date" box, so we need a
+                light-on-translucent treatment (the previous teal-on-teal was
+                effectively invisible). Compact label so it doesn't push the
+                Edit button to a second row on narrow cards. */}
             {displayDate && !request.isConfirmed && startEditing && saveEdit && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -692,10 +696,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                       startEditing('isConfirmed', 'true');
                       setTimeout(() => saveEdit(), 0);
                     }}
-                    className="h-6 px-2 text-xs text-[#007E8C] hover:bg-[#007E8C]/10 font-medium"
+                    className="h-6 px-2 text-xs whitespace-nowrap text-white bg-white/15 hover:bg-white/25 border border-white/30 font-medium"
                     data-testid="button-confirm-date"
                   >
-                    ✓ Confirm date
+                    ✓ Confirm
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

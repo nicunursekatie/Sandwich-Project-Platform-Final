@@ -1136,17 +1136,11 @@ export class EventRequestsGoogleSheetsService {
         logger.warn(`⚠️ Row ${actualRowNumber}: org/email present but desiredEventDate is empty. Raw cell value: "${rawDateCell}", column index: ${columnMapping.desiredEventDate}`);
       }
 
-      // Combine message with event location if event location exists
-      const combinedMessage = (() => {
-        const parts = [];
-        if (messageValue && messageValue.trim()) {
-          parts.push(messageValue.trim());
-        }
-        if (eventLocationValue && eventLocationValue.trim()) {
-          parts.push(`Event Location: ${eventLocationValue.trim()}`);
-        }
-        return parts.join('\n\n');
-      })();
+      // Message comes through verbatim from the sheet. Event location is stored
+      // separately (mapped to `eventAddress` in sheetRowToEventRequest) and rendered
+      // on the card under the date, so appending it to the message produced a
+      // visible duplicate in the "Initial Request Notes" block.
+      const messageOnly = messageValue ? messageValue.trim() : '';
 
       const result = {
         externalId: getFieldValue(columnMapping.externalId),
@@ -1155,7 +1149,7 @@ export class EventRequestsGoogleSheetsService {
         email: getFieldValue(columnMapping.email),
         organizationName: getFieldValue(columnMapping.organizationName),
         eventLocation: eventLocationValue,
-        message: combinedMessage,
+        message: messageOnly,
         phone: phoneValue || '', // Will default to '' if not found
         desiredEventDate: dateValue,
         department: getFieldValue(columnMapping.department),
