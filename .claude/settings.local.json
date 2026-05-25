@@ -88,7 +88,8 @@
       "Bash(awk '/<Button/{btnStart=NR; cls=\"\"} /className=\"/{if \\(NR>=btnStart && NR-btnStart<=8\\) cls=$0} /Edit2 className=\"w-3 h-3\"/{if \\(NR-btnStart<10\\) print \"L\"btnStart\": \"cls}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/client/src/components/event-requests/cards/CompletedCard.tsx)",
       "Bash(awk '/case USER_ROLES\\\\./{role=$0} /EVENT_REQUESTS_EDIT/{print role\" -> EVENT_REQUESTS_EDIT at line\", NR}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/shared/auth-utils.ts)",
       "Bash(awk '/router.patch.*\\\\/:id/,/^\\);$/' /Users/katielong/Documents/Sandwich-Project-Platform-Final/server/routes/event-requests-legacy.ts)",
-      "Bash(awk 'NR<3200 && NR>2950 && /res.json\\\\\\(updatedEventRequest\\\\\\)/{print NR\": \"$0}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/server/routes/event-requests-legacy.ts)"
+      "Bash(awk 'NR<3200 && NR>2950 && /res.json\\\\\\(updatedEventRequest\\\\\\)/{print NR\": \"$0}' /Users/katielong/Documents/Sandwich-Project-Platform-Final/server/routes/event-requests-legacy.ts)",
+      "Bash(awk '/Column 3:/{found=1} found')"
     ],
     "deny": [],
     "ask": [],

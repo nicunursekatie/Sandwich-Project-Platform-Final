@@ -1504,10 +1504,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Van status — dedicated prominent row so the badge doesn't get lost in the
-            pills wrap. Hidden once a van driver is actually assigned (or DHL is set);
-            those cases are already surfaced loud-and-clear in the Drivers section
-            further down the card. */}
-        {!request.assignedVanDriverId && !request.isDhlVan && (
+            pills wrap. Hidden once a van driver is actually assigned (or DHL is set),
+            and also hidden when no van flag is set at all (the "Mark Van Needed"
+            call-to-action moved to the bottom action row, where the user looks
+            for actions to take). Only renders when there's an actual badge state
+            to show. */}
+        {!request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely) && (
           <div className="mb-3 flex items-center gap-2">
             <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
               Van:
@@ -1518,6 +1520,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               vanNeededLikely={(request as any).vanNeededLikely}
               canEdit={!!canEdit}
               simpleToggle
+              mode="badge"
             />
           </div>
         )}
@@ -1718,6 +1721,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </>
             )}
 
+            {/* Van needed — button slot. Only renders when no van flag is set
+                AND no van driver is yet assigned. Sits with the workflow actions
+                so the call-to-action lives where the user looks for actions to take. */}
+            {!request.assignedVanDriverId && !request.isDhlVan && (
+              <VanNeededBadgeAndButton
+                eventRequestId={request.id}
+                vanDriverNeeded={request.vanDriverNeeded}
+                vanNeededLikely={(request as any).vanNeededLikely}
+                canEdit={!!canEdit}
+                simpleToggle
+                mode="button"
+              />
+            )}
+
             {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}
             {canEdit && (
               <>
@@ -1818,19 +1835,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Main Info Section - 3 Column Grid.
-            Breakpoint is 2xl (≥1536px viewport) rather than lg (≥1024px).
-            Reason: in multi-view a 50%-width panel at 1280px viewport is only
-            ~640px wide. Tailwind's screen breakpoints respond to the viewport,
-            not the panel — so `lg:grid-cols-3` was forcing a 3-column layout
-            into a 640px panel and overflowing the contents on top of each
-            other. Bumping to 2xl means the 3-column layout only kicks in
-            when the viewport is wide enough that a half-panel is roomy. */}
-        <div className="grid grid-cols-1 2xl:grid-cols-3 gap-3 sm:gap-4 mb-4 2xl:items-start">
+        {/* Main Info Section - 2 Column Grid.
+            Matches InProcessCard density: Event Details + Event Organizer in
+            the left column, Team Assignments in the right column. Activates at
+            `lg` (≥1024px viewport) which is the same breakpoint InProcessCard
+            uses. At narrower widths (mobile, half-panel multi-view) it collapses
+            to a single column gracefully. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 lg:items-start">
           {/* Column 1: Event Details */}
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col gap-4 h-full">
             {/* Event Details Card */}
-            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
+            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] flex items-center gap-2 mb-4">
                 <Calendar className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
                 Event Details
@@ -2670,10 +2685,46 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             )}
               </div>
             </div>
+
+            {/* Event Organizer — sibling of Event Details inside Column 1.
+                Previously lived in its own Column 3; folded in here when the body
+                collapsed from 3 columns to 2 to match InProcessCard density. */}
+            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
+              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
+                Event Organizer
+              </h3>
+              <div className="space-y-2 text-sm text-gray-900">
+                {(request.firstName || request.lastName) && (
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 shrink-0" />
+                    <span className="text-base font-semibold">
+                      {request.firstName} {request.lastName}
+                    </span>
+                  </div>
+                )}
+                {request.email && (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Mail className="w-4 h-4 shrink-0" />
+                    <a href={`mailto:${request.email}`} className="hover:underline break-all min-w-0">
+                      {request.email}
+                    </a>
+                  </div>
+                )}
+                {request.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 shrink-0" />
+                    <a href={`tel:${request.phone}`} className="hover:underline">
+                      {request.phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Column 2: Team Assignments */}
-          <div className="flex flex-col h-full 2xl:order-2">
+          <div className="flex flex-col h-full">
             <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
@@ -4206,43 +4257,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
           </div>
 
-          {/* Column 3: Event Organizer & Recipient Logistics */}
-          <div className="flex flex-col gap-4 h-full 2xl:order-3">
-            {/* Event Organizer */}
-            <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
-              <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
-                Event Organizer
-              </h3>
-              <div className="space-y-2 text-sm text-gray-900">
-                {(request.firstName || request.lastName) && (
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 shrink-0" />
-                    <span className="text-base font-semibold">
-                      {request.firstName} {request.lastName}
-                    </span>
-                  </div>
-                )}
-                {request.email && (
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Mail className="w-4 h-4 shrink-0" />
-                    <a href={`mailto:${request.email}`} className="hover:underline break-all min-w-0">
-                      {request.email}
-                    </a>
-                  </div>
-                )}
-                {request.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 shrink-0" />
-                    <a href={`tel:${request.phone}`} className="hover:underline">
-                      {request.phone}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Recipient Logistics moved to Column 1, right after times row */}
-          </div>
         </div>
 
         {/* Scheduling Notes - Collapsed by Default */}

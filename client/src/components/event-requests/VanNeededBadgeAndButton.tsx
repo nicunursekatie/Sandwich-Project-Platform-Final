@@ -48,6 +48,16 @@ interface VanNeededBadgeAndButtonProps {
    * the team already knows whether a van is needed.
    */
   simpleToggle?: boolean;
+  /**
+   * Controls which parts of the control render:
+   *  - 'full'   (default) — renders whichever state applies: badge, possibly-badge, or button
+   *  - 'badge'  — only renders the badge for "Van Needed" / "Van Possibly Needed";
+   *               renders nothing when neither is set. Use at the top of a card.
+   *  - 'button' — only renders the "Needs Van?" / "Mark Van Needed" call-to-action
+   *               button (the un-set state); renders nothing when a badge would
+   *               otherwise show. Use in the bottom action row.
+   */
+  mode?: 'full' | 'badge' | 'button';
 }
 
 type VanChoice = 'likely' | 'confirmed';
@@ -58,6 +68,7 @@ export function VanNeededBadgeAndButton({
   vanNeededLikely,
   canEdit = true,
   simpleToggle = false,
+  mode = 'full',
 }: VanNeededBadgeAndButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -95,6 +106,8 @@ export function VanNeededBadgeAndButton({
   // One click sets vanDriverNeeded=true; clicking the badge clears it.
   if (simpleToggle) {
     if (vanDriverNeeded) {
+      // Badge slot: render the "Van Needed" pill (or nothing in button mode).
+      if (mode === 'button') return null;
       return (
         <TooltipProvider>
           <Tooltip>
@@ -115,6 +128,8 @@ export function VanNeededBadgeAndButton({
         </TooltipProvider>
       );
     }
+    // Button slot: the un-set state. Skip in badge-only mode.
+    if (mode === 'badge') return null;
     if (!canEdit) return null;
     return (
       <Button
@@ -131,8 +146,9 @@ export function VanNeededBadgeAndButton({
     );
   }
 
-  // CONFIRMED — solid teal badge
+  // CONFIRMED — solid teal badge (badge slot)
   if (vanDriverNeeded) {
+    if (mode === 'button') return null;
     return (
       <TooltipProvider>
         <Tooltip>
@@ -163,8 +179,9 @@ export function VanNeededBadgeAndButton({
     );
   }
 
-  // LIKELY — amber outline badge
+  // POSSIBLY — amber outline badge (badge slot)
   if (vanNeededLikely) {
+    if (mode === 'button') return null;
     return (
       <TooltipProvider>
         <Tooltip>
@@ -197,7 +214,8 @@ export function VanNeededBadgeAndButton({
     );
   }
 
-  // UNKNOWN — show the "Needs Van?" button (only when editable)
+  // UNKNOWN — show the "Needs Van?" button (button slot)
+  if (mode === 'badge') return null;
   if (!canEdit) return null;
   return (
     <>

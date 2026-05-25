@@ -580,45 +580,44 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </Badge>
             ));
           })()}
-          {/* Confirmation Status Badge - Click to toggle.
-              Positioned alongside the Missing-info badges so it groups with the alert cluster
-              rather than floating alone on a long first row.
-              Confirmed = solid teal (active/positive). Pending = outlined (neutral, low-urgency). */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                onClick={() => {
-                  startEditing?.('isConfirmed', (!request.isConfirmed).toString());
-                  // Immediately save the toggle
-                  setTimeout(() => saveEdit?.(), 0);
-                }}
-                variant={request.isConfirmed ? 'default' : 'outline'}
-                className={`px-2.5 py-1 text-sm font-medium inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
-                  request.isConfirmed
-                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-transparent shadow-sm'
-                    : 'bg-transparent text-slate-600 border-slate-300'
-                }`}
-              >
-                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
-              <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
-            </TooltipContent>
-          </Tooltip>
+          {/* Date Confirmed badge — only renders when isConfirmed is true.
+              "Pending" is the default state on in-process events and showing a
+              "Date Pending" pill on every card was just noise. The affordance
+              to confirm the date now lives as a small inline button next to
+              the date itself (see the date display section below). */}
+          {request.isConfirmed && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  onClick={() => {
+                    startEditing?.('isConfirmed', 'false');
+                    setTimeout(() => saveEdit?.(), 0);
+                  }}
+                  className="px-2.5 py-1 text-sm font-medium inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-transparent shadow-sm"
+                >
+                  ✓ Date Confirmed
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{indicatorTooltips.dateConfirmed}</p>
+                <p className="text-xs text-muted-foreground mt-1">Click to unmark</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           {/* Traffic conflict (e.g. World Cup matches) */}
           <TrafficConflictBadge
             dates={[request.scheduledEventDate, request.desiredEventDate]}
           />
           {/* Last-contact-age — escalates by week since last contact attempt; skipped when a future call is scheduled */}
           <LastContactAgeBadge request={request} />
-          {/* Van needed flag — three-state: button when unknown, badge when likely or confirmed */}
+          {/* Van needed — badges only here. The "Needs Van?" call-to-action button
+              lives in the bottom action row alongside other workflow buttons. */}
           <VanNeededBadgeAndButton
             eventRequestId={request.id}
             vanDriverNeeded={request.vanDriverNeeded}
             vanNeededLikely={(request as any).vanNeededLikely}
             canEdit={!!canEdit}
+            mode="badge"
           />
           {/* Add Action — freeform escape hatch; only when no nextAction exists */}
           {onAddNextAction && !request.nextAction && (
@@ -679,6 +678,30 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <span className="text-sm opacity-80">
                 ({getRelativeTime(displayDate.toString())})
               </span>
+            )}
+            {/* Inline "Confirm date" affordance — replaces the heavy "Date Pending"
+                badge for the default unconfirmed state. Shown only when a date is
+                set, the user has edit rights, and it isn't already confirmed. */}
+            {displayDate && !request.isConfirmed && startEditing && saveEdit && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      startEditing('isConfirmed', 'true');
+                      setTimeout(() => saveEdit(), 0);
+                    }}
+                    className="h-6 px-2 text-xs text-[#007E8C] hover:bg-[#007E8C]/10 font-medium"
+                    data-testid="button-confirm-date"
+                  >
+                    ✓ Confirm date
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark this date as confirmed</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             {/* Date Population Badges */}
             {datePopulationInfo && datePopulationInfo.isOpen && (
@@ -1819,6 +1842,18 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+
+            {/* Van needed — button slot. Only renders when neither vanDriverNeeded
+                nor vanNeededLikely is set. Sits with the workflow actions, not the
+                pills, so the call-to-action lives where the user is already looking
+                for actions to take. */}
+            <VanNeededBadgeAndButton
+              eventRequestId={request.id}
+              vanDriverNeeded={request.vanDriverNeeded}
+              vanNeededLikely={(request as any).vanNeededLikely}
+              canEdit={!!canEdit}
+              mode="button"
+            />
 
             {/* AI Tools group — visually separated from manual workflow actions above */}
             {(((request.desiredEventDate || request.backupDates?.length) && onAiSuggest) || onAiIntakeAssist) && (
