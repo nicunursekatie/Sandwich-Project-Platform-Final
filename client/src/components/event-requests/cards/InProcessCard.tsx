@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   CalendarCheck,
   CheckCircle,
+  Plus,
   MessageSquare,
   Building,
   Edit2,
@@ -145,6 +146,7 @@ interface CardHeaderProps {
     contactPastOrgs?: string[];
     orgSimilarityScore?: number;
   };
+  onAddNextAction?: () => void;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -164,6 +166,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   currentUserId = '',
   datePopulationInfo,
   returningOrgData,
+  onAddNextAction,
 }) => {
   const isMobile = useIsMobile();
   const StatusIcon =
@@ -320,17 +323,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   Returning Org
                   {lastDateLabel && (
                     <span className="ml-1 text-xs opacity-80">&middot; Last: {lastDateLabel}</span>
-                  )}
-                  {returningOrgData.isReturningContact
-                    ? <span className="ml-1 text-xs opacity-80">&middot; Same Contact</span>
-                    : (request.email || request.firstName || request.lastName || request.phone)
-                      ? <span className="ml-1 text-xs opacity-80">&middot; New Contact</span>
-                      : null
-                  }
-                  {returningOrgData.pastEventCount > 0 && (
-                    <span className="ml-1 text-xs opacity-80">
-                      ({returningOrgData.pastEventCount} past event{returningOrgData.pastEventCount !== 1 ? 's' : ''})
-                    </span>
                   )}
                 </Badge>
               </TooltipTrigger>
@@ -514,7 +506,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             </div>
           )}
-          {/* Confirmation Status Badge - Click to toggle */}
+          {/* Confirmation Status Badge - Click to toggle.
+              Confirmed = solid teal (active/positive). Pending = outlined (neutral, low-urgency). */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge
@@ -523,10 +516,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   // Immediately save the toggle
                   setTimeout(() => saveEdit?.(), 0);
                 }}
-                className={`px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
+                variant={request.isConfirmed ? 'default' : 'outline'}
+                className={`px-2.5 py-1 text-sm font-medium inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
                   request.isConfirmed
-                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white'
-                    : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white'
+                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-transparent shadow-sm'
+                    : 'bg-transparent text-slate-600 border-slate-300'
                 }`}
               >
                 {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
@@ -570,12 +564,13 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </Tooltip>
           )}
 
-          {/* Corporate Priority Badge */}
+          {/* Corporate Priority Badge — outlined; lower visual weight than alert pills */}
           {(request as any).isCorporatePriority && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Badge
-                  className="px-2.5 py-1 text-sm font-medium shadow-sm inline-flex items-center whitespace-nowrap bg-gradient-to-br from-[#B8860B] to-[#DAA520] text-white"
+                  variant="outline"
+                  className="px-2.5 py-0.5 text-sm font-medium inline-flex items-center whitespace-nowrap bg-amber-50 text-amber-700 border-amber-300"
                 >
                   <Building className="w-3 h-3 mr-1" />
                   Corporate
@@ -611,14 +606,27 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           <TrafficConflictBadge
             dates={[request.scheduledEventDate, request.desiredEventDate]}
           />
+          {/* Add Action — freeform escape hatch; only when no nextAction exists */}
+          {onAddNextAction && !request.nextAction && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAddNextAction}
+              className="h-7 text-xs border-slate-300 text-slate-600 hover:bg-slate-100 ml-auto"
+              data-testid="button-add-action"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Action
+            </Button>
+          )}
         </div>
       </div>
     ),
     eventDate: (
-      <div className="bg-[#236383] text-white rounded-lg p-4 shadow-md">
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar className="w-5 h-5" />
-          <span className="text-sm uppercase font-bold tracking-wide">Event Date</span>
+      <div className="bg-[#236383] text-white rounded-lg p-3 shadow-md">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Calendar className="w-4 h-4 opacity-80" />
+          <span className="text-xs font-semibold opacity-80">Event Date</span>
         </div>
         {isEditingDate ? (
           <div className="flex items-center gap-2">
@@ -765,16 +773,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           </div>
         )}
         {request.eventAddress && (
-          <div className="mt-3 pt-3 border-t border-white/20">
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin className="w-4 h-4" />
-              <span className="text-sm uppercase font-bold tracking-wide">Event Location</span>
+          <div className="mt-2 pt-2 border-t border-white/20">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <MapPin className="w-4 h-4 opacity-80" />
+              <span className="text-xs font-semibold opacity-80">Event Location</span>
             </div>
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-base font-bold break-words hover:underline"
+              className="text-sm font-medium break-words hover:underline"
             >
               {request.eventAddress}
             </a>
@@ -947,6 +955,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [showContactAttempts, setShowContactAttempts] = useState(false);
+  // Whether to expand the condensed contact-log list past the most-recent entry
+  const [showAllAttempts, setShowAllAttempts] = useState(false);
   const { user } = useAuth();
   const canEditTspContact = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_EDIT_TSP_CONTACT);
 
@@ -996,6 +1006,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
     currentUserId: user?.id,
     datePopulationInfo,
     returningOrgData,
+    onAddNextAction,
   });
 
   return (
@@ -1059,8 +1070,9 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
           );
         })()}
 
-        {/* Next Action - Prominent display for intake tracking */}
-        {request.nextAction ? (
+        {/* Next Action - Prominent display when one exists.
+            (When no next action, the "Add Action" affordance lives in the header pills row.) */}
+        {request.nextAction && (
           <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
               <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -1096,42 +1108,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </div>
             </div>
           </div>
-        ) : (
-          onAddNextAction && (
-            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onAddNextAction}
-                className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
-              >
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                Add Action
-              </Button>
-            </div>
-          )
         )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-4">
           {/* Left Column - Event Details */}
           <div className="space-y-3">
-            {/* Event Date - First in left column */}
+            {/* Event Date + Location (location lives inside the teal date box) */}
             {headerContent.eventDate}
-            {/* Event Location */}
-            {request.eventAddress && (
-              <div className="flex items-start gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-[#007E8C] flex-shrink-0 mt-0.5" />
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#236383] font-medium hover:underline break-words"
-                >
-                  {request.eventAddress}
-                </a>
-              </div>
-            )}
             {/* Contact Attempts Info */}
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
@@ -1183,7 +1167,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </div>
               </div>
 
-              {/* Contact Attempts Details - Condensed by default */}
+              {/* Contact Attempts Details - Condensed by default.
+                  Shows only the most recent attempt unless the user expands. */}
               {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
                 <div className="mt-3 border-t border-amber-300 pt-3">
                   <div className="space-y-1.5">
@@ -1193,6 +1178,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                         // Sort by attemptNumber descending (most recent first)
                         return (b.attemptNumber || 0) - (a.attemptNumber || 0);
                       })
+                      .slice(0, showAllAttempts ? undefined : 1)
                       .map((attempt: any) => {
                         if (!attempt || typeof attempt !== 'object') return null;
 
@@ -1310,7 +1296,29 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                         );
                       })}
                   </div>
-                  
+
+                  {/* Show all condensed entries (collapsed to most recent by default) */}
+                  {request.contactAttemptsLog.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllAttempts((v) => !v)}
+                      className="mt-2 text-xs text-amber-800 hover:text-amber-900 hover:underline flex items-center gap-1"
+                      data-testid="button-toggle-all-attempts"
+                    >
+                      {showAllAttempts ? (
+                        <>
+                          <ChevronUp className="w-3 h-3" />
+                          Show only most recent
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3 h-3" />
+                          Show all {request.contactAttemptsLog.length} attempts
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   {/* Expanded view toggle - show full details if needed */}
                   {showContactAttempts && (
                     <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
