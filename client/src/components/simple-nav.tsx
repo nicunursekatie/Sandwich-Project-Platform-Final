@@ -140,17 +140,42 @@ export default function SimpleNav({
     const isActive = (href: string | undefined) => {
       // Guard against undefined href
       if (!href) return false;
-      // Extract base section from href (remove query params)
-      const baseHref = href.split('?')[0];
-      
+      // Base section (everything before the query string) and the query portion.
+      // Sub-items that target a specific tab carry a query string in their href
+      // (e.g. "event-requests?tab=admin_overview"). Previously we stripped query
+      // params and only compared bases — which made the parent ("event-requests")
+      // and any same-page sub-item both light up when on the parent page. Now we
+      // compare the full href whenever a query is present so a sub-item only
+      // activates when the URL actually carries the matching tab.
+      const [baseHref, hrefQuery] = (() => {
+        const idx = href.indexOf('?');
+        if (idx === -1) return [href, ''];
+        return [href.slice(0, idx), href.slice(idx + 1)];
+      })();
+      const hrefHasQuery = hrefQuery.length > 0;
+
       if (activeSection) {
         if (baseHref === 'dashboard')
           return activeSection === 'dashboard' || activeSection === '';
+        // When the sub-item targets a specific tab, require an exact match
+        // against the full activeSection (which carries the query when set).
+        if (hrefHasQuery) return activeSection === href;
+        // For tab-less items, only match when activeSection has no tab either —
+        // otherwise the parent would steal the highlight from its own sub-items.
         return activeSection === baseHref;
       }
 
       if (baseHref === 'dashboard')
         return location === '/' || location === '/dashboard';
+      // URL-fallback path: read the actual query string off window.location so
+      // tab-specific sub-items only match when the URL has the same tab param.
+      if (hrefHasQuery) {
+        if (typeof window === 'undefined') return false;
+        const currentSearch = window.location.search.startsWith('?')
+          ? window.location.search.slice(1)
+          : window.location.search;
+        return location === `/${baseHref}` && currentSearch === hrefQuery;
+      }
       return location === `/${baseHref}`;
     };
 

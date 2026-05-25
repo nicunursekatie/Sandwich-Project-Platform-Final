@@ -18,7 +18,7 @@ export type ContactAgeTier =
 
 export interface ContactAgeBadge {
   tier: ContactAgeTier;
-  /** Short label like "No contact 3+ wks" or "No contact 2+ mo" */
+  /** Short label like "Last contact 3 wks ago" or "Last contact 2 mo ago" */
   label: string;
   /** Full integer number of weeks since the reference date */
   weeks: number;
@@ -58,18 +58,18 @@ export function getContactAgeBadge(
   else if (weeks < 8) tier = 'wk6';
   else tier = 'mo2plus';
 
-  // Label rule: under 4 wks → "X+ wks". 4-7 wks → "1+ mo" or "6+ wks" tier-specific.
-  // 8+ wks → "X+ mo" (round down months).
+  // Label rule: under 4 wks → "X wks ago". 4–7 wks → "1 mo ago" or "X wks ago".
+  // 8+ wks → "X mo ago" (round down months). No plus signs anywhere.
   let label: string;
   if (weeks < 4) {
-    label = `No contact ${weeks}+ wk${weeks === 1 ? '' : 's'}`;
+    label = `Last contact ${weeks} wk${weeks === 1 ? '' : 's'} ago`;
   } else if (weeks < 6) {
-    label = 'No contact 1+ mo';
+    label = 'Last contact 1 mo ago';
   } else if (weeks < 8) {
-    label = `No contact ${weeks}+ wks`;
+    label = `Last contact ${weeks} wks ago`;
   } else {
     const months = Math.floor(weeks / 4);
-    label = `No contact ${months}+ mo`;
+    label = `Last contact ${months} mo ago`;
   }
 
   return { tier, label, weeks };
