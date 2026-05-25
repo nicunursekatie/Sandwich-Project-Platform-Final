@@ -133,6 +133,16 @@ export default function EditContactAttemptDialog({
       return;
     }
 
+    // When outcome is "Other", require a note explaining what "Other" means.
+    if (contactOutcome === 'other' && !notes.trim()) {
+      toast({
+        title: 'Notes required',
+        description: 'When the outcome is "Other", please describe what happened in the notes field.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!eventRequest || !contactAttempt) return;
 
     setIsSubmitting(true);
@@ -356,18 +366,35 @@ export default function EditContactAttemptDialog({
             </Select>
           </div>
 
-          {/* Notes */}
+          {/* Notes — required when outcome is "Other", otherwise optional */}
           <div className="space-y-2">
             <Label htmlFor="contact-notes" className="text-[#1A2332] font-medium">
-              Notes (Optional)
+              {contactOutcome === 'other' ? (
+                <>
+                  Notes <span className="text-red-600">*</span>{' '}
+                  <span className="text-xs font-normal text-red-600">
+                    (required — please describe what "Other" means)
+                  </span>
+                </>
+              ) : (
+                <>Notes (Optional)</>
+              )}
             </Label>
             <Textarea
               id="contact-notes"
-              placeholder="Add any additional details about this contact attempt..."
+              placeholder={
+                contactOutcome === 'other'
+                  ? 'Required: describe what happened on this contact attempt…'
+                  : 'Add any additional details about this contact attempt...'
+              }
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
-              className="resize-none"
+              className={`resize-none ${
+                contactOutcome === 'other' && !notes.trim()
+                  ? 'border-red-300 focus-visible:ring-red-300'
+                  : ''
+              }`}
             />
           </div>
 

@@ -505,31 +505,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             </div>
           )}
-          {/* Confirmation Status Badge - Click to toggle.
-              Confirmed = solid teal (active/positive). Pending = outlined (neutral, low-urgency). */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge
-                onClick={() => {
-                  startEditing?.('isConfirmed', (!request.isConfirmed).toString());
-                  // Immediately save the toggle
-                  setTimeout(() => saveEdit?.(), 0);
-                }}
-                variant={request.isConfirmed ? 'default' : 'outline'}
-                className={`px-2.5 py-1 text-sm font-medium inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
-                  request.isConfirmed
-                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-transparent shadow-sm'
-                    : 'bg-transparent text-slate-600 border-slate-300'
-                }`}
-              >
-                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
-              <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
-            </TooltipContent>
-          </Tooltip>
           {isInProcessStale && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -601,6 +576,33 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </Badge>
             ));
           })()}
+          {/* Confirmation Status Badge - Click to toggle.
+              Positioned alongside the Missing-info badges so it groups with the alert cluster
+              rather than floating alone on a long first row.
+              Confirmed = solid teal (active/positive). Pending = outlined (neutral, low-urgency). */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                onClick={() => {
+                  startEditing?.('isConfirmed', (!request.isConfirmed).toString());
+                  // Immediately save the toggle
+                  setTimeout(() => saveEdit?.(), 0);
+                }}
+                variant={request.isConfirmed ? 'default' : 'outline'}
+                className={`px-2.5 py-1 text-sm font-medium inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity whitespace-nowrap ${
+                  request.isConfirmed
+                    ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border-transparent shadow-sm'
+                    : 'bg-transparent text-slate-600 border-slate-300'
+                }`}
+              >
+                {request.isConfirmed ? '✓ Date Confirmed' : 'Date Pending'}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{request.isConfirmed ? indicatorTooltips.dateConfirmed : indicatorTooltips.datePending}</p>
+              <p className="text-xs text-muted-foreground mt-1">Click to toggle</p>
+            </TooltipContent>
+          </Tooltip>
           {/* Traffic conflict (e.g. World Cup matches) */}
           <TrafficConflictBadge
             dates={[request.scheduledEventDate, request.desiredEventDate]}
@@ -1166,9 +1168,14 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </div>
               </div>
 
-              {/* Contact Attempts Details - Condensed by default.
-                  Shows only the most recent attempt unless the user expands. */}
-              {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && (
+              {/* Contact Attempts Details — two mutually-exclusive views:
+                  - Compact (default): single-line rows, most-recent only by default with a
+                    "Show all N attempts" toggle.
+                  - Full details (when showContactAttempts is true): labeled cards with Outcome,
+                    timestamp, logged-by attribution.
+                  Only one is rendered at a time so toggling Show/Hide Full Details actually
+                  swaps the views instead of stacking them. */}
+              {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && !showContactAttempts && (
                 <div className="mt-3 border-t border-amber-300 pt-3">
                   <div className="space-y-1.5">
                     {request.contactAttemptsLog
@@ -1317,10 +1324,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       )}
                     </button>
                   )}
+                </div>
+              )}
 
-                  {/* Expanded view toggle - show full details if needed */}
-                  {showContactAttempts && (
-                    <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
+              {/* Full-details view — replaces the compact list when "Show Full Details" is on */}
+              {Array.isArray(request.contactAttemptsLog) && request.contactAttemptsLog.length > 0 && showContactAttempts && (
+                <div className="mt-3 space-y-2 border-t border-amber-300 pt-3">
                       {request.contactAttemptsLog
                         .slice()
                         .sort((a, b) => {
@@ -1447,8 +1456,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                             </div>
                           );
                         })}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
