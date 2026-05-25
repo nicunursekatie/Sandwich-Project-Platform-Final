@@ -83,6 +83,7 @@ import { impactReportsRouter } from './impact-reports';
 import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
+import { createAppSettingsRouter } from './app-settings';
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
@@ -1042,6 +1043,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     alertRequestsRouter
   );
   router.use('/api/alert-requests', createErrorHandler('alert-requests'));
+
+  // App settings - key/value config (e.g. annual sandwich goal)
+  const appSettingsRouter = createAppSettingsRouter(deps);
+  router.use(
+    '/api/app-settings',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    appSettingsRouter
+  );
+  router.use('/api/app-settings', createErrorHandler('app-settings'));
 
   // AI alert generation
   const aiAlertRouter = createAIAlertRouter(deps);

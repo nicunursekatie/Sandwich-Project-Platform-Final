@@ -5022,3 +5022,20 @@ export interface EventContactEvent {
 export interface EventContactDetail extends EventContact {
   events: EventContactEvent[];
 }
+
+export const appSettings = pgTable('app_settings', {
+  key: varchar('key', { length: 100 }).primaryKey(),
+  value: text('value').notNull(),
+  description: text('description'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedBy: varchar('updated_by'),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+export const insertAppSettingSchema = createInsertSchema(appSettings).omit({
+  updatedAt: true,
+});
+export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
+
+export const ANNUAL_SANDWICH_GOAL_KEY = 'annual_sandwich_goal';
+export const DEFAULT_ANNUAL_SANDWICH_GOAL = 500000;

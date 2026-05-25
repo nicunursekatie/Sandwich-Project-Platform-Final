@@ -12,7 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Calendar, Pencil, Check, X } from 'lucide-react';
+import { useAnnualSandwichGoal, useUpdateAppSetting } from '@/hooks/useAppSettings';
+import { useAuth } from '@/hooks/useAuth';
+import { ANNUAL_SANDWICH_GOAL_KEY } from '@shared/schema';
+import { useToast } from '@/hooks/use-toast';
 import {
   BarChart,
   Bar,
@@ -30,7 +34,6 @@ import {
   parseCollectionDate,
 } from '@/lib/analytics-utils';
 
-const ANNUAL_GOAL = 500_000;
 
 type PresetKey = 'ytd' | 'mtd' | 'qtd' | 'last7' | 'last30' | 'last90' | 'custom';
 
@@ -206,6 +209,13 @@ export default function PaceComparisonAnalytics() {
     toISODate(new Date(new Date().getFullYear(), 0, 1))
   );
   const [customEnd, setCustomEnd] = useState<string>(toISODate(new Date()));
+  const ANNUAL_GOAL = useAnnualSandwichGoal();
+  const { user } = useAuth();
+  const canEditGoal = !!user && ['admin', 'super_admin', 'admin_coordinator'].includes((user as any).role);
+  const updateSetting = useUpdateAppSetting();
+  const { toast } = useToast();
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalDraft, setGoalDraft] = useState('');
 
   const { data, isLoading } = useQuery<{ collections: SandwichCollection[] }>({
     queryKey: ['/api/sandwich-collections', { all: true, limit: 10000 }],
