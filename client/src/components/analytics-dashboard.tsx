@@ -27,6 +27,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
+import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import {
   calculateGroupSandwiches,
   calculateTotalSandwiches,
@@ -59,6 +60,7 @@ export default function AnalyticsDashboard() {
   } = useCollectionsData();
 
   const isLoading = authLoading || dataLoading;
+  const annualGoal = useAnnualSandwichGoal();
 
   const analyticsData = useMemo(() => {
     logger.log('\n📊 ANALYTICS v4 - COMPUTING DATA:', {
@@ -377,14 +379,14 @@ export default function AnalyticsDashboard() {
           <div className="flex items-center justify-between mb-4">
             <Trophy className="h-8 w-8 text-brand-primary" />
             <Badge className="bg-brand-primary/10 text-brand-primary text-sm">
-              500K Goal
+              {annualGoal >= 1000 ? `${Math.round(annualGoal / 1000)}K` : annualGoal} Goal
             </Badge>
           </div>
           <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
             {(analyticsData.totalSandwiches / 1000000).toFixed(2)}M
           </div>
           <p className="text-[#646464] font-medium">Total Impact</p>
-          <p className="text-sm text-brand-primary mt-2">2025 Goal: 15K of 500K</p>
+          <p className="text-sm text-brand-primary mt-2">Annual goal: {annualGoal.toLocaleString()}</p>
         </div>
 
         <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">

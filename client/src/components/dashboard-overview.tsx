@@ -33,6 +33,7 @@ import {
 
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/useResourcePermissions';
+import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useToast } from '@/hooks/use-toast';
 import { calculateActualWeeklyAverage } from '@/lib/analytics-utils';
@@ -80,6 +81,7 @@ export default function DashboardOverview({
   ]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const annualSandwichGoal = useAnnualSandwichGoal();
 
   // Form state
   const [showCollectionForm, setShowCollectionForm] = useState(false);
@@ -361,8 +363,8 @@ export default function DashboardOverview({
       : 2020;
     const operationalYears = currentYear - earliestYear;
 
-    // Annual goal - organizational target
-    const annualGoal = 500000; // The Sandwich Project's annual target
+    // Annual goal - organizational target (configurable via app settings)
+    const annualGoal = annualSandwichGoal;
 
     // Calculate weekly average using proper method that excludes holiday weeks
     // This accounts for Thanksgiving, Christmas, New Year's, July 4th, and Memorial Day weeks
@@ -397,7 +399,7 @@ export default function DashboardOverview({
       groupSandwiches: group.toLocaleString(),
       totalEntries: (statsData.totalEntries || 0).toLocaleString(),
     };
-  }, [statsData, allCollectionsData]);
+  }, [statsData, allCollectionsData, annualSandwichGoal]);
 
   // Remove fake mini chart data - only use real data
 

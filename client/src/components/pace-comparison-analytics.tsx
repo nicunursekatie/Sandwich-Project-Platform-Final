@@ -327,13 +327,11 @@ export default function PaceComparisonAnalytics() {
     if (projection) {
       const pctOfGoal = (projection.projected / ANNUAL_GOAL) * 100;
       lines.push(
-        projection.projected >= ANNUAL_GOAL
-          ? `At current pace you'll finish around ${fmtNum(projection.projected)} — about ${pctOfGoal.toFixed(0)}% of the 500K goal.`
-          : `At current pace you'll finish around ${fmtNum(projection.projected)} — about ${pctOfGoal.toFixed(0)}% of the 500K goal.`
+        `At current pace you'll finish around ${fmtNum(projection.projected)} — about ${pctOfGoal.toFixed(0)}% of the ${fmtNum(ANNUAL_GOAL)} goal.`
       );
     }
     return lines;
-  }, [curr, ly, projection, isLoading]);
+  }, [curr, ly, projection, isLoading, ANNUAL_GOAL]);
 
   if (isLoading) {
     return (
@@ -470,7 +468,77 @@ export default function PaceComparisonAnalytics() {
                 <div className="text-2xl font-semibold text-slate-700">
                   {((projection.projected / ANNUAL_GOAL) * 100).toFixed(0)}%
                 </div>
-                <div className="text-xs text-slate-500">of {fmtNum(ANNUAL_GOAL)} goal</div>
+                <div className="text-xs text-slate-500 flex items-center gap-1">
+                  of {fmtNum(ANNUAL_GOAL)} goal
+                  {canEditGoal && !editingGoal && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGoalDraft(String(ANNUAL_GOAL));
+                        setEditingGoal(true);
+                      }}
+                      className="text-slate-400 hover:text-slate-700"
+                      title="Edit annual goal"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {editingGoal && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      value={goalDraft}
+                      onChange={(e) => setGoalDraft(e.target.value)}
+                      className="w-32 h-8 text-sm"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      disabled={updateSetting.isPending}
+                      onClick={() => {
+                        const n = parseInt(goalDraft, 10);
+                        if (!Number.isFinite(n) || n <= 0) {
+                          toast({
+                            title: 'Invalid goal',
+                            description: 'Enter a positive whole number.',
+                            variant: 'destructive',
+                          });
+                          return;
+                        }
+                        updateSetting.mutate(
+                          { key: ANNUAL_SANDWICH_GOAL_KEY, value: String(n) },
+                          {
+                            onSuccess: () => {
+                              setEditingGoal(false);
+                              toast({ title: 'Annual goal updated' });
+                            },
+                            onError: (err: any) => {
+                              toast({
+                                title: 'Could not update goal',
+                                description: err?.message || 'Please try again.',
+                                variant: 'destructive',
+                              });
+                            },
+                          }
+                        );
+                      }}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setEditingGoal(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-[200px]">
                 <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
