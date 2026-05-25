@@ -4,16 +4,22 @@ import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useAuth } from '@/hooks/useAuth';
 
-// Helper to parse time string (HH:MM or H:MM AM/PM) to minutes since midnight
+// Helper to parse a time string to minutes since midnight.
+//
+// Accepts:
+//   - 24-hour with optional seconds: "08:30", "08:30:00", "16:00:00"
+//     (Postgres `time` serialises with seconds — without the optional :SS
+//     match, every value was returning 0, breaking same-date time sorting.)
+//   - 12-hour: "8:30 AM", "4:00 PM"
 function parseTimeToMinutes(timeStr: string | null | undefined): number {
   if (!timeStr) return 0;
   const str = timeStr.trim().toUpperCase();
-  // Try 24-hour format first (HH:MM)
-  const match24 = str.match(/^(\d{1,2}):(\d{2})$/);
+  // 24-hour format with optional :SS suffix
+  const match24 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (match24) {
     return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
   }
-  // Try 12-hour format (H:MM AM/PM)
+  // 12-hour format
   const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
   if (match12) {
     let hours = parseInt(match12[1], 10);

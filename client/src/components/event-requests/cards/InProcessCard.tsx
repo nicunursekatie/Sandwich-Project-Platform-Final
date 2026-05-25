@@ -287,7 +287,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={() => startEditing('organizationName', request.organizationName || '')}
-                  className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-6 px-2 hidden group-hover:inline-flex"
                   title="Edit organization name"
                   data-testid="button-edit-org-name"
                 >
@@ -297,7 +297,65 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </div>
           )}
 
-          {/* Returning Organization Indicator */}
+          {/* New Department Indicator - shows when returning org has a department not seen in past events */}
+          {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
+            d => d === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
+          ) && (
+            <Badge
+              variant="outline"
+              className="whitespace-nowrap bg-blue-50 text-blue-700 border-blue-300"
+            >
+              New Department
+            </Badge>
+          )}
+
+          {/* Department - with inline editing */}
+          {(request.department || isEditingDepartment || canEditOrgDetails) && (
+            <>
+              <span className="text-gray-500 text-lg">&bull;</span>
+              {isEditingDepartment ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editingValue}
+                    onChange={(e) => setEditingValue?.(e.target.value)}
+                    className="h-8 text-base sm:text-lg font-medium text-[#236383]"
+                    placeholder="Department"
+                    autoFocus
+                    data-testid="input-department"
+                  />
+                  <Button size="sm" onClick={saveEdit} data-testid="button-save-department">
+                    <Save className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-department">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  {request.department ? (
+                    <span className="text-base sm:text-lg font-medium text-[#236383] break-words">{request.department}</span>
+                  ) : canEditOrgDetails ? (
+                    <span className="text-base sm:text-lg font-normal text-gray-400 italic">No department</span>
+                  ) : null}
+                  {canEditOrgDetails && startEditing && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => startEditing('department', request.department || '')}
+                      className="h-6 px-2 hidden group-hover:inline-flex"
+                      title={request.department ? "Edit department" : "Add department"}
+                      data-testid="button-edit-department"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Returning Organization Indicator — placed after org + department so the
+              org name sits adjacent to its department without a badge wedged between. */}
           {returningOrgData?.isReturning && (() => {
             const eventDate = returningOrgData.mostRecentEvent?.eventDate ? new Date(returningOrgData.mostRecentEvent.eventDate) : null;
             const collectionDate = returningOrgData.mostRecentCollection?.dateCollected ? new Date(returningOrgData.mostRecentCollection.dateCollected) : null;
@@ -434,62 +492,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             </Tooltip>
             );
           })()}
-          {/* New Department Indicator - shows when returning org has a department not seen in past events */}
-          {returningOrgData?.isReturning && request.department && returningOrgData.pastDepartments && returningOrgData.pastDepartments.length > 0 && !returningOrgData.pastDepartments.some(
-            d => d === (request.department || '').trim().replace(/\s+/g, ' ').toLowerCase()
-          ) && (
-            <Badge
-              variant="outline"
-              className="whitespace-nowrap bg-blue-50 text-blue-700 border-blue-300"
-            >
-              New Department
-            </Badge>
-          )}
-
-          {/* Department - with inline editing */}
-          {(request.department || isEditingDepartment || canEditOrgDetails) && (
-            <>
-              <span className="text-gray-500 text-lg">&bull;</span>
-              {isEditingDepartment ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={editingValue}
-                    onChange={(e) => setEditingValue?.(e.target.value)}
-                    className="h-8 text-base sm:text-lg font-medium text-[#236383]"
-                    placeholder="Department"
-                    autoFocus
-                    data-testid="input-department"
-                  />
-                  <Button size="sm" onClick={saveEdit} data-testid="button-save-department">
-                    <Save className="w-3 h-3" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} data-testid="button-cancel-department">
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 group">
-                  {request.department ? (
-                    <span className="text-base sm:text-lg font-medium text-[#236383] break-words">{request.department}</span>
-                  ) : canEditOrgDetails ? (
-                    <span className="text-base sm:text-lg font-normal text-gray-400 italic">No department</span>
-                  ) : null}
-                  {canEditOrgDetails && startEditing && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing('department', request.department || '')}
-                      className="h-6 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title={request.department ? "Edit department" : "Add department"}
-                      data-testid="button-edit-department"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </>
-          )}
 
           {/* Partner Organizations */}
           {request.partnerOrganizations && Array.isArray(request.partnerOrganizations) && request.partnerOrganizations.length > 0 && (

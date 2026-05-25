@@ -905,8 +905,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           />
         )}
         
-        {/* Header Row - Organization & Status */}
-        <div className="flex flex-col gap-2 mb-3 pb-3 border-b-2 border-[#236383]/40">
+        {/* Header Row - Organization & Status.
+            Tightened to mirror InProcessCard density: removed the thick teal
+            divider and heavy pb-3 in favor of a single mb-3 bottom margin. */}
+        <div className="flex flex-col gap-2 mb-3">
           {/* Top: Date + Organization Name */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             {/* Organization Name */}
@@ -1440,6 +1442,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {/* Add Action — freeform escape hatch; only when no nextAction exists.
+                Right-aligned in the badges row (mirrors InProcessCard) so it doesn't
+                consume an entire extra row below. */}
+            {onAddNextAction && !request.nextAction && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAddNextAction}
+                className="h-7 text-xs border-slate-300 text-slate-600 hover:bg-slate-100 ml-auto"
+                data-testid="button-add-action"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add Action
+              </Button>
+            )}
           </div>
 
           {/* Add department/partner buttons - hidden on mobile, shown on hover on desktop */}
@@ -1609,113 +1626,139 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Action Buttons Section */}
+        {/* Action Buttons Section — labeled outline buttons to match InProcessCard density.
+            Workflow/communication actions on the left, card-management cluster (Edit + Delete)
+            pushed to the right with a vertical divider separator. */}
         <TooltipProvider>
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-2">
-              {/* Message - always visible */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    onClick={() => setShowMessageDialog(true)}
-                    variant="ghost"
-                    className="text-[#007E8C] hover:text-[#007E8C] hover:bg-[#007E8C]/10"
-                    aria-label="Message about this event"
-                  >
-                    <MessageSquare className="w-4 h-4" aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Message about this event</p>
-                </TooltipContent>
-              </Tooltip>
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+            {/* Message — always visible */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowMessageDialog(true)}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+                  data-testid="button-message-event"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Message
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Message about this event</p>
+              </TooltipContent>
+            </Tooltip>
 
-              {/* Propose to Planning Sheet */}
-              <ProposeToSheetButton
-                eventId={request.id}
-                organizationName={request.organizationName || 'Unknown'}
-              />
+            {/* Push to Planning Sheet — labeled variant for visual consistency */}
+            <ProposeToSheetButton
+              eventId={request.id}
+              organizationName={request.organizationName || 'Unknown'}
+              variant="outline"
+              size="sm"
+              showLabel
+            />
 
-              {canEdit && (
-                <>
-                  {canSendSMS && (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
+            {canEdit && canSendSMS && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendSmsDialog(true)}
+                      className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+                      data-testid="button-send-sms-card"
+                    >
+                      <Phone className="w-4 h-4 mr-1" />
+                      Send SMS
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send event details via SMS</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendCorrectionDialog(true)}
+                      className="border-orange-400 text-orange-700 hover:bg-orange-100"
+                      data-testid="button-send-correction-card"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Send Correction
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send correction SMS</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+
+            {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}
+            {canEdit && (
+              <>
+                <div className="flex-1" />
+                <div
+                  className="self-stretch border-l border-slate-200 mx-1"
+                  aria-hidden="true"
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onEdit}
+                      data-testid="button-edit-event"
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit event</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <ConfirmationDialog
+                        trigger={
                           <Button
                             size="sm"
-                            onClick={() => setShowSendSmsDialog(true)}
                             variant="ghost"
-                            className="text-[#236383] hover:text-[#236383] hover:bg-[#236383]/10"
-                            aria-label="Send event details via SMS"
-                            data-testid="button-send-sms-card"
+                            className="text-red-600 hover:text-red-700 h-8"
+                            aria-label="Delete event"
+                            data-testid="button-delete-event"
                           >
-                            <Phone className="w-4 h-4" aria-hidden="true" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Send event details via SMS</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            onClick={() => setShowSendCorrectionDialog(true)}
-                            variant="ghost"
-                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-100"
-                            aria-label="Send correction SMS"
-                            data-testid="button-send-correction-card"
-                          >
-                            <AlertTriangle className="w-4 h-4" aria-hidden="true" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Send correction SMS</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </>
-                  )}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="sm" onClick={onEdit} variant="ghost" aria-label="Edit event">
-                        <Edit2 className="w-4 h-4" aria-hidden="true" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Edit event</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <ConfirmationDialog
-                          trigger={
-                            <Button size="sm" variant="ghost" className="text-[#A31C41] hover:text-[#A31C41] hover:bg-[#A31C41]/10" aria-label="Delete event">
-                              <Trash2 className="w-4 h-4" aria-hidden="true" />
-                            </Button>
-                          }
-                          title="Delete Event"
-                          description={`Delete ${request.organizationName}?`}
-                          confirmText="Delete"
-                          onConfirm={onDelete}
-                          variant="destructive"
-                        />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete event</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </>
-              )}
-            </div>
+                        }
+                        title="Delete Event"
+                        description={`Delete ${request.organizationName}?`}
+                        confirmText="Delete"
+                        onConfirm={onDelete}
+                        variant="destructive"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Delete event</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
           </div>
         </TooltipProvider>
 
-        {/* Next Action - Prominent display for intake tracking */}
-        {request.nextAction ? (
+        {/* Next Action — only the "has-an-action" prominent display.
+            The "Add Action" affordance lives in the header pills row when no
+            nextAction exists, so we no longer render an entire extra row here
+            just to host that button. */}
+        {request.nextAction && (
           <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg min-w-0">
             <div className="flex flex-wrap items-start justify-between gap-2 min-w-0">
               <div className="flex items-start gap-2 flex-1 min-w-0">
@@ -1752,18 +1795,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
               </div>
             </div>
-          </div>
-        ) : onAddNextAction && (
-          <div className="mb-4 flex justify-end">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onAddNextAction}
-              className="h-7 text-xs text-amber-700 hover:bg-amber-50"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Add Action
-            </Button>
           </div>
         )}
 
