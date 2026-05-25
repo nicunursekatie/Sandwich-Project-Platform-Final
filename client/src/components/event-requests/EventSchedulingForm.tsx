@@ -628,6 +628,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 savedData.formData, savedData.originalServerData, currentServerData
               );
 
+              // Same status-override rule as the no-recovery branch: when the dialog
+              // was opened via "Mark Scheduled", reflect that intent in the dropdown.
+              // Only override if the user hadn't already explicitly set a different
+              // status in their saved draft (so we don't trample a manual choice).
+              if (
+                mode === 'schedule' &&
+                mergedData.status !== 'scheduled' &&
+                (savedData.formData?.status === savedData.originalServerData?.status)
+              ) {
+                mergedData.status = 'scheduled';
+              }
+
               setFormData(mergedData as any);
               if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
               if (savedData.actualSandwichMode) setActualSandwichMode(savedData.actualSandwichMode);
@@ -659,6 +671,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         const serverFormData = buildFormDataFromEventRequest(
           effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
         );
+        // When the user opens this dialog via "Mark Scheduled" (mode === 'schedule')
+        // and the event isn't already scheduled, pre-set the form's status to
+        // 'scheduled' so the dropdown reflects the user's intent. The baseline
+        // (originalFormDataRef.current below) keeps the true server status, so
+        // change detection still sees the in_process → scheduled transition.
+        if (mode === 'schedule' && serverFormData.status !== 'scheduled') {
+          serverFormData.status = 'scheduled';
+        }
         setFormData(serverFormData as any);
         setSandwichMode(determineSandwichMode(
           effectiveEventRequest?.sandwichTypes,

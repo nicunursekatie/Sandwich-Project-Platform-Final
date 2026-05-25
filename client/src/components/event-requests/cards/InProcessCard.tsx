@@ -783,7 +783,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium break-words hover:underline"
+              className="text-base font-bold break-words hover:underline"
             >
               {request.eventAddress}
             </a>
@@ -830,19 +830,6 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span className="text-base break-words">{request.phone}</span>
-            </div>
-          )}
-          {request.eventAddress && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
-              <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.eventAddress)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-brand-primary-muted hover:text-brand-primary-dark text-base break-words min-w-0"
-              >
-                {request.eventAddress}
-              </a>
             </div>
           )}
         </div>
