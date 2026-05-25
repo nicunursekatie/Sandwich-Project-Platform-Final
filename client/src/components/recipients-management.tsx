@@ -60,6 +60,71 @@ import { usePageSession } from '@/hooks/usePageSession';
 import type { Recipient } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
+// Week order used for day filtering + sorting (Mon → Sun)
+const WEEK_DAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+] as const;
+
+/**
+ * Extract all day-name fragments from a single schedule entry's `day` field.
+ * The field may be a single day, a comma list ("Monday, Wednesday"), or free
+ * text ("Every other Tuesday", "1st & 3rd Sunday"). We do a case-insensitive
+ * substring match for each weekday name and return the canonical day names
+ * found. Returns an empty array when nothing matches a known day.
+ */
+function extractDaysFromText(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const lower = text.toLowerCase();
+  return WEEK_DAYS.filter((d) => lower.includes(d.toLowerCase()));
+}
+
+/** Collect all collection days for a recipient (legacy + array schedules). */
+function getRecipientCollectionDays(recipient: any): string[] {
+  const days = new Set<string>();
+  const schedules: Array<{ day?: string }> = Array.isArray(recipient?.collectionSchedules)
+    ? recipient.collectionSchedules
+    : [];
+  for (const s of schedules) {
+    for (const d of extractDaysFromText(s?.day)) days.add(d);
+  }
+  for (const d of extractDaysFromText(recipient?.collectionDay)) days.add(d);
+  return Array.from(days);
+}
+
+/** Collect all feeding days for a recipient (legacy + array schedules). */
+function getRecipientFeedingDays(recipient: any): string[] {
+  const days = new Set<string>();
+  const schedules: Array<{ day?: string }> = Array.isArray(recipient?.feedingSchedules)
+    ? recipient.feedingSchedules
+    : [];
+  for (const s of schedules) {
+    for (const d of extractDaysFromText(s?.day)) days.add(d);
+  }
+  for (const d of extractDaysFromText(recipient?.feedingDay)) days.add(d);
+  return Array.from(days);
+}
+
+/**
+ * Earliest weekday in the supplied list, returned as the index into WEEK_DAYS.
+ * Returns Infinity if there are no recognized days, so recipients with only
+ * free-text or empty schedules sort to the end.
+ */
+function earliestDayIndex(days: string[]): number {
+  if (!days.length) return Infinity;
+  let min = Infinity;
+  for (const d of days) {
+    const i = WEEK_DAYS.indexOf(d as (typeof WEEK_DAYS)[number]);
+    if (i !== -1 && i < min) min = i;
+  }
+  return min;
+}
+
 export default function RecipientsManagement({ highlightRecipientId }: { highlightRecipientId?: number } = {}) {
   const { toast } = useToast();
   const { canEdit } = useResourcePermissions('RECIPIENTS');
@@ -83,6 +148,9 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const [tspContactFilter, setTspContactFilter] = useState<string>('all');
   const [sandwichTypeFilter, setSandwichTypeFilter] = useState<string>('all');
   const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
+  const [collectionDayFilter, setCollectionDayFilter] = useState<string>('all');
+  const [feedingDayFilter, setFeedingDayFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('name');
   const [showFilters, setShowFilters] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{
@@ -105,6 +173,8 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       setTspContactFilter('all');
       setSandwichTypeFilter('all');
       setFocusAreaFilter('all');
+      setCollectionDayFilter('all');
+      setFeedingDayFilter('all');
     }
   }, [highlightRecipientId]);
 
@@ -192,8 +262,41 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       });
     }
 
-    return filtered;
-  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter]);
+    if (collectionDayFilter !== 'all') {
+      filtered = filtered.filter((recipient) =>
+        getRecipientCollectionDays(recipient).includes(collectionDayFilter)
+      );
+    }
+
+    if (feedingDayFilter !== 'all') {
+      filtered = filtered.filter((recipient) =>
+        getRecipientFeedingDays(recipient).includes(feedingDayFilter)
+      );
+    }
+
+    // Sort (creates a new array so we don't mutate state-derived data)
+    const sorted = [...filtered];
+    if (sortBy === 'collectionDay') {
+      sorted.sort((a, b) => {
+        const da = earliestDayIndex(getRecipientCollectionDays(a));
+        const db = earliestDayIndex(getRecipientCollectionDays(b));
+        if (da !== db) return da - db;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } else if (sortBy === 'feedingDay') {
+      sorted.sort((a, b) => {
+        const da = earliestDayIndex(getRecipientFeedingDays(a));
+        const db = earliestDayIndex(getRecipientFeedingDays(b));
+        if (da !== db) return da - db;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } else {
+      // Default: by name
+      sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    return sorted;
+  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter, collectionDayFilter, feedingDayFilter, sortBy]);
 
   // Scroll to highlighted card once data is loaded and rendered
   useEffect(() => {
@@ -529,9 +632,9 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
             <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="flex items-center gap-2">
               <Filter className="w-4 h-4" />
               Filters
-              {(statusFilter !== 'all' || contractFilter !== 'all' || regionFilter !== 'all' || tspContactFilter !== 'all' || sandwichTypeFilter !== 'all') && (
+              {(statusFilter !== 'all' || contractFilter !== 'all' || regionFilter !== 'all' || tspContactFilter !== 'all' || sandwichTypeFilter !== 'all' || focusAreaFilter !== 'all' || collectionDayFilter !== 'all' || feedingDayFilter !== 'all') && (
                 <Badge variant="secondary" className="ml-1">
-                  {[statusFilter !== 'all', contractFilter !== 'all', regionFilter !== 'all', tspContactFilter !== 'all', sandwichTypeFilter !== 'all'].filter(Boolean).length}
+                  {[statusFilter !== 'all', contractFilter !== 'all', regionFilter !== 'all', tspContactFilter !== 'all', sandwichTypeFilter !== 'all', focusAreaFilter !== 'all', collectionDayFilter !== 'all', feedingDayFilter !== 'all'].filter(Boolean).length}
                 </Badge>
               )}
             </Button>
@@ -607,6 +710,41 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
                       {uniqueFocusAreas.map((area) => (
                         <SelectItem key={area} value={area as string}>{area}</SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-collection-day" className="text-xs font-medium text-slate-600">Collection Day</Label>
+                  <Select value={collectionDayFilter} onValueChange={setCollectionDayFilter}>
+                    <SelectTrigger id="filter-collection-day" className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Day</SelectItem>
+                      {WEEK_DAYS.map((day) => (
+                        <SelectItem key={day} value={day}>{day}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-feeding-day" className="text-xs font-medium text-slate-600">Feeding Day</Label>
+                  <Select value={feedingDayFilter} onValueChange={setFeedingDayFilter}>
+                    <SelectTrigger id="filter-feeding-day" className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any Day</SelectItem>
+                      {WEEK_DAYS.map((day) => (
+                        <SelectItem key={day} value={day}>{day}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="sort-by" className="text-xs font-medium text-slate-600">Sort By</Label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger id="sort-by" className="w-[180px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name">Name (A–Z)</SelectItem>
+                      <SelectItem value="collectionDay">Collection day (Mon–Sun)</SelectItem>
+                      <SelectItem value="feedingDay">Feeding day (Mon–Sun)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
