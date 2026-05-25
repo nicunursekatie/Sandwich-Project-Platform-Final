@@ -72,6 +72,27 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_COLLECTIONS_LOG,
     group: 'quick-links',
     highlighted: true,
+    navigateAndExpand: true,
+  },
+  {
+    id: 'weekly-collections-report',
+    label: 'Weekly Collections Report',
+    icon: FileSpreadsheet,
+    href: 'weekly-collections-report',
+    permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
+    group: 'quick-links',
+    parentId: 'collections',
+    isSubItem: true,
+  },
+  {
+    id: 'group-collections',
+    label: 'Group Collections Viewer',
+    icon: Users,
+    href: 'group-collections',
+    permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
+    group: 'quick-links',
+    parentId: 'collections',
+    isSubItem: true,
   },
 
   // ========================================
@@ -439,34 +460,6 @@ export const NAV_ITEMS: NavItem[] = [
   // ========================================
   // DATA & REPORTS
   // ========================================
-  {
-    id: 'collections-reporting',
-    label: 'Collections Analysis',
-    icon: FileSpreadsheet,
-    href: 'weekly-collections-report',
-    permission: PERMISSIONS.NAV_COLLECTIONS_REPORTING,
-    group: 'data',
-  },
-  {
-    id: 'weekly-collections-report',
-    label: 'Weekly Collections Report',
-    icon: FileSpreadsheet,
-    href: 'weekly-collections-report',
-    permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
-    group: 'data',
-    parentId: 'collections-reporting',
-    isSubItem: true,
-  },
-  {
-    id: 'group-collections',
-    label: 'Group Collections Viewer',
-    icon: Users,
-    href: 'group-collections',
-    permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
-    group: 'data',
-    parentId: 'collections-reporting',
-    isSubItem: true,
-  },
   {
     id: 'analytics-section',
     label: 'Analytics & Reports',
