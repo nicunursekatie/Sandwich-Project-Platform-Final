@@ -1,11 +1,16 @@
 /**
- * Tiered badge showing how long it's been since the most recent contact attempt
- * on an event request. Renders nothing when:
- *  - There's no contact attempt history at all (shouldn't happen for in-process events)
- *  - The most recent attempt was less than 1 week ago
- *  - There's a future scheduled call (so a follow-up is already planned)
+ * Single contact-state badge for an event request. Renders whichever state
+ * applies, with precedence:
  *
- * Severity escalates by week, capped only by reality.
+ *   1. "Call scheduled"     — a future scheduledCallDate exists
+ *   2. "Recently contacted" — last contact was less than 1 week ago
+ *   3. "Last contact N ago" — last contact is stale (>= 1 week), tiered by age
+ *
+ * Renders nothing when there's no contact history and no scheduled call —
+ * which shouldn't happen for in-process events but is handled defensively.
+ *
+ * The name "LastContactAgeBadge" is historical; the component now owns all
+ * contact-state signaling for cards/admin views.
  */
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,8 +19,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Clock } from 'lucide-react';
-import { getContactAgeBadge, getLastContactTimestamp, type ContactAgeTier } from '@shared/contact-age';
+import { CalendarClock, Check, Clock } from 'lucide-react';
+import {
+  getContactAgeBadge,
+  getLastContactTimestamp,
+  type ContactAgeTier,
+} from '@shared/contact-age';
 
 interface LastContactAgeBadgeProps {
   request: {
@@ -36,18 +45,73 @@ const TIER_STYLES: Record<ContactAgeTier, { className: string; variant: 'outline
   mo2plus: { variant: 'default', className: 'bg-[#A31C41] text-white border-[#A31C41]' },
 };
 
+// Positive-state palette for "Call scheduled" and "Recently contacted".
+// Both use the sky-blue accent (#47B3CB) so they read as friendly, on-top-of-it
+// signals — the visual opposite of the escalating stale tiers above.
+const POSITIVE_BADGE_CLASS =
+  'bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]';
+
+function parseDate(input: Date | string | null | undefined): Date | null {
+  if (!input) return null;
+  const d = typeof input === 'string' ? new Date(input) : input;
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export function LastContactAgeBadge({ request, className = '' }: LastContactAgeBadgeProps) {
-  // Skip if a scheduled call is already in the future — we're not stale, we're queued.
-  if (request.scheduledCallDate) {
-    const scheduled = typeof request.scheduledCallDate === 'string'
-      ? new Date(request.scheduledCallDate)
-      : request.scheduledCallDate;
-    if (!Number.isNaN(scheduled.getTime()) && scheduled.getTime() > Date.now()) {
-      return null;
-    }
+  // ── 1. Call scheduled (highest precedence) ─────────────────────────────
+  const scheduledCall = parseDate(request.scheduledCallDate);
+  if (scheduledCall && scheduledCall.getTime() > Date.now()) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge
+              variant="outline"
+              className={`whitespace-nowrap cursor-help inline-flex items-center gap-1 ${POSITIVE_BADGE_CLASS} ${className}`}
+              data-testid="badge-call-scheduled"
+            >
+              <CalendarClock className="w-3 h-3" />
+              Call scheduled
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Follow-up call scheduled for {scheduledCall.toLocaleString()}.</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   }
 
   const lastTs = getLastContactTimestamp(request);
+
+  // ── 2. Recently contacted (< 1 week since last attempt) ────────────────
+  if (lastTs) {
+    const msSinceLast = Date.now() - lastTs.getTime();
+    const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
+    if (msSinceLast >= 0 && msSinceLast < oneWeekMs) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className={`whitespace-nowrap cursor-help inline-flex items-center gap-1 ${POSITIVE_BADGE_CLASS} ${className}`}
+                data-testid="badge-recently-contacted"
+              >
+                <Check className="w-3 h-3" />
+                Recently contacted
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Last contact attempt: {lastTs.toLocaleDateString()}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+  }
+
+  // ── 3. Stale: "Last contact N ago" (>= 1 week) ─────────────────────────
   const ageBadge = getContactAgeBadge(lastTs);
   if (!ageBadge) return null;
 

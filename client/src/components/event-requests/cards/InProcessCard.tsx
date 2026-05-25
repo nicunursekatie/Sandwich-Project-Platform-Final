@@ -582,9 +582,10 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           })()}
           {/* Date Confirmed badge — only renders when isConfirmed is true.
               "Pending" is the default state on in-process events and showing a
-              "Date Pending" pill on every card was just noise. The affordance
-              to confirm the date now lives as a small inline button next to
-              the date itself (see the date display section below). */}
+              "Date Pending" pill on every card was just noise. Confirming a date
+              is now done via the edit form only (an inline confirm button on
+              the card was too easy to misinterpret/misuse). Clicking the badge
+              still un-marks confirmation as a quick undo. */}
           {request.isConfirmed && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -678,34 +679,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <span className="text-sm opacity-80">
                 ({getRelativeTime(displayDate.toString())})
               </span>
-            )}
-            {/* Inline "Confirm" affordance — replaces the heavy "Date Pending"
-                badge for the default unconfirmed state. Shown only when a date is
-                set, the user has edit rights, and it isn't already confirmed.
-                Styling: sits on the dark teal "Event Date" box, so we need a
-                light-on-translucent treatment (the previous teal-on-teal was
-                effectively invisible). Compact label so it doesn't push the
-                Edit button to a second row on narrow cards. */}
-            {displayDate && !request.isConfirmed && startEditing && saveEdit && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      startEditing('isConfirmed', 'true');
-                      setTimeout(() => saveEdit(), 0);
-                    }}
-                    className="h-6 px-2 text-xs whitespace-nowrap text-white bg-white/15 hover:bg-white/25 border border-white/30 font-medium"
-                    data-testid="button-confirm-date"
-                  >
-                    ✓ Confirm
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Mark this date as confirmed</p>
-                </TooltipContent>
-              </Tooltip>
             )}
             {/* Date Population Badges */}
             {datePopulationInfo && datePopulationInfo.isOpen && (
