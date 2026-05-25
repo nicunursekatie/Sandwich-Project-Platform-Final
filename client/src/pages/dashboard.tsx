@@ -96,6 +96,8 @@ const ProjectsManagement = lazyWithRetry(() => import('@/components/projects'));
 const ProjectDetailClean = lazyWithRetry(() => import('@/pages/project-detail-clean'));
 const Analytics = lazyWithRetry(() => import('@/pages/analytics'));
 const ImpactDashboard = lazyWithRetry(() => import('@/pages/impact-dashboard'));
+const PaceComparisonAnalytics = lazyWithRetry(() => import('@/components/pace-comparison-analytics'));
+const LowHighWeeksTab = lazyWithRetry(() => import('@/components/low-high-weeks-tab'));
 const DataManagement = lazyWithRetry(() => import('@/pages/data-management'));
 const PerformanceDashboard = lazyWithRetry(() => import('@/pages/performance-dashboard'));
 const GrantMetrics = lazyWithRetry(() => import('@/pages/grant-metrics'));
@@ -725,14 +727,28 @@ export default function Dashboard({
                 Track community impact, collection trends, and host performance
               </p>
             </div>
-            <Tabs defaultValue="impact" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+            <Tabs defaultValue="pace" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+                <TabsTrigger
+                  value="pace"
+                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Pace &amp; Comparison
+                </TabsTrigger>
                 <TabsTrigger
                   value="impact"
                   className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Impact Dashboard
+                </TabsTrigger>
+                <TabsTrigger
+                  value="low-high-weeks"
+                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Low / High Weeks
                 </TabsTrigger>
                 <TabsTrigger
                   value="hosts"
@@ -742,8 +758,14 @@ export default function Dashboard({
                   Host Analytics
                 </TabsTrigger>
               </TabsList>
+              <TabsContent value="pace" className="mt-6">
+                <PaceComparisonAnalytics />
+              </TabsContent>
               <TabsContent value="impact" className="mt-6">
                 <ImpactDashboard />
+              </TabsContent>
+              <TabsContent value="low-high-weeks" className="mt-6">
+                <LowHighWeeksTab />
               </TabsContent>
               <TabsContent value="hosts" className="mt-6">
                 <HostAnalytics
