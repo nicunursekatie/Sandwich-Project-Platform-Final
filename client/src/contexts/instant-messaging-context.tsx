@@ -122,42 +122,62 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     }
     lastMessageIdRef.current = Math.max(lastMessageIdRef.current, message.id);
 
-    const senderId = message.senderId;
-    const currentWindows = openWindowsRef.current;
-    const existingWindow = currentWindows.find(w => w.user.id === senderId);
+    // Identify the "other party" for the conversation window. The server echoes
+    // outgoing messages back to the sender (so a second device stays in sync),
+    // which means when the current user sent the message, the other party is the
+    // RECIPIENT, not the sender. Previously we keyed the window lookup purely by
+    // senderId, which on a self-echo opened a brand-new window under the current
+    // user's own name with unreadCount=1 — looked like you DM'd yourself.
+    const isOwnEcho = user?.id != null && message.senderId === user.id;
+    const otherUserId = isOwnEcho ? message.recipientId : message.senderId;
+    const otherUserName = isOwnEcho
+      ? null // we don't have the recipient's display name on the message; load from history
+      : message.senderName;
 
-    // Play notification sound for new messages
-    playNotificationSound();
+    const currentWindows = openWindowsRef.current;
+    const existingWindow = currentWindows.find(w => w.user.id === otherUserId);
+
+    // Play notification sound only for *incoming* messages; own echoes shouldn't ding.
+    if (!isOwnEcho) {
+      playNotificationSound();
+    }
 
     if (existingWindow) {
-      // Window is open - add message to it and maximize if minimized
+      // Window is open - add message to it.
+      // - Incoming: maximize (auto-open) and reset unread.
+      // - Own echo: just append to history; don't change minimized state or unread.
       setOpenWindows(prev => {
         return prev.map(w => {
-          if (w.user.id === senderId) {
+          if (w.user.id === otherUserId) {
             const messageExists = w.messages.some(m => m.id === message.id);
             if (messageExists) return w;
+            if (isOwnEcho) {
+              return {
+                ...w,
+                messages: [...w.messages, message],
+              };
+            }
             return {
               ...w,
               messages: [...w.messages, message],
-              minimized: false, // Auto-maximize on new message
+              minimized: false, // Auto-maximize on new incoming message
               unreadCount: 0, // Reset unread since we're showing it
             };
           }
           return w;
         });
       });
-    } else {
-      // No window open - open chat window minimized with unread badge
+    } else if (!isOwnEcho) {
+      // Incoming message with no window open — pop a new minimized window with an unread badge.
       const senderUser: ChatUser = {
-        id: message.senderId,
+        id: otherUserId,
         firstName: null,
         lastName: null,
-        displayName: message.senderName,
+        displayName: otherUserName,
         email: null,
         profileImageUrl: null,
       };
 
-      // Create a new minimized window with the message and unread count
       setOpenWindows(prev => {
         // Double check it wasn't opened in the meantime
         if (prev.some(w => w.user.id === senderUser.id)) {
@@ -183,6 +203,10 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
       // Load full message history in background
       loadMessageHistoryForUser(senderUser.id);
     }
+    // If isOwnEcho && no window exists, do nothing: the user sent a message from
+    // another device for someone whose window isn't open here, and we shouldn't
+    // surface that as a notification on this device. The next time they open the
+    // conversation, the full history will load from the server.
   }, [user?.id]);
 
   // Polling fallback: Check for new messages when socket is disconnected

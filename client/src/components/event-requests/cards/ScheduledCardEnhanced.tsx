@@ -40,6 +40,7 @@ import {
   Phone,
   Mail,
   AlertTriangle,
+  AlertCircle,
   ChevronDown,
   ChevronUp,
   History,
@@ -1522,6 +1523,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               simpleToggle
               mode="badge"
             />
+          </div>
+        )}
+
+        {/* Auto-flag: this event flipped to "van needed" but still has assigned regular drivers.
+            The regular driver slot won't satisfy the van requirement — coordinator should
+            review (likely reassign as van driver or remove). */}
+        {request.vanDriverNeeded && driverAssigned > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+          <div className="mb-3 flex items-start gap-2 rounded-md border border-[#A31C41]/40 bg-[#A31C41]/5 px-3 py-2 text-xs text-[#A31C41]">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+            <div>
+              <div className="font-semibold">Driver conflict — van is needed</div>
+              <div className="text-[#A31C41]/80 mt-0.5">
+                {driverAssigned} regular driver{driverAssigned !== 1 ? 's are' : ' is'} assigned, but this event now needs a van driver.
+                Review the volunteer hub and reassign or remove them.
+              </div>
+            </div>
           </div>
         )}
 

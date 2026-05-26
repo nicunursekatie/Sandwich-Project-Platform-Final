@@ -284,17 +284,180 @@ The Sandwich Project - Fighting food insecurity one sandwich at a time
   }
 }
 
+// ============================================================================
+// Calendar link helpers
+// ============================================================================
+
+const ROLE_DISPLAY: Record<string, string> = {
+  driver: 'Driver',
+  speaker: 'Speaker',
+  general: 'General Volunteer',
+};
+
+function displayRole(role: string | null | undefined): string {
+  if (!role) return 'Volunteer';
+  return ROLE_DISPLAY[role] || role;
+}
+
 /**
- * Send confirmation email to volunteer when their signup is approved
+ * Parse "HH:MM" or "H:MM AM/PM" into a Date on the given dateOnly day (UTC).
+ * If parsing fails, returns null so caller can fall back to all-day.
+ */
+function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Date | null {
+  if (!time) return null;
+  const t = time.trim();
+  // Match "H:MM", "HH:MM", optionally followed by AM/PM
+  const m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)?$/);
+  if (!m) return null;
+  let hours = parseInt(m[1], 10);
+  const minutes = parseInt(m[2], 10);
+  const ampm = m[3]?.toUpperCase();
+  if (ampm === 'PM' && hours < 12) hours += 12;
+  if (ampm === 'AM' && hours === 12) hours = 0;
+  if (hours > 23 || minutes > 59) return null;
+  const out = new Date(dateOnly);
+  out.setUTCHours(hours, minutes, 0, 0);
+  return out;
+}
+
+function formatICalDate(d: Date, allDay: boolean): string {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  if (allDay) return `${yyyy}${mm}${dd}`;
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mi = String(d.getUTCMinutes()).padStart(2, '0');
+  const ss = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}T${hh}${mi}${ss}Z`;
+}
+
+function escapeICS(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/\n/g, '\\n')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;');
+}
+
+function googleCalendarLink(
+  title: string,
+  start: Date,
+  end: Date,
+  allDay: boolean,
+  location: string | null,
+  details: string | null
+): string {
+  const dates = allDay
+    ? `${formatICalDate(start, true)}/${formatICalDate(end, true)}`
+    : `${formatICalDate(start, false)}/${formatICalDate(end, false)}`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates,
+  });
+  if (location) params.set('location', location);
+  if (details) params.set('details', details);
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function icsDataUri(
+  uid: string,
+  title: string,
+  start: Date,
+  end: Date,
+  allDay: boolean,
+  location: string | null,
+  details: string | null
+): string {
+  const dtstart = allDay ? `DTSTART;VALUE=DATE:${formatICalDate(start, true)}` : `DTSTART:${formatICalDate(start, false)}`;
+  const dtend = allDay ? `DTEND;VALUE=DATE:${formatICalDate(end, true)}` : `DTEND:${formatICalDate(end, false)}`;
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//The Sandwich Project//Volunteer Hub//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${formatICalDate(new Date(), false)}`,
+    dtstart,
+    dtend,
+    `SUMMARY:${escapeICS(title)}`,
+    location ? `LOCATION:${escapeICS(location)}` : '',
+    details ? `DESCRIPTION:${escapeICS(details)}` : '',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean);
+  const ics = lines.join('\r\n');
+  return `data:text/calendar;charset=utf-8;base64,${Buffer.from(ics, 'utf-8').toString('base64')}`;
+}
+
+/**
+ * Build start/end Dates from an event's date + start/end times.
+ * If a time is missing, the event is treated as all-day.
+ */
+function buildEventTimes(
+  eventDate: string | Date | null | undefined,
+  startTime: string | null | undefined,
+  endTime: string | null | undefined
+): { start: Date; end: Date; allDay: boolean } | null {
+  if (!eventDate) return null;
+  const dayDate = new Date(eventDate);
+  if (isNaN(dayDate.getTime())) return null;
+  // Normalize to UTC midnight for that calendar day
+  const day = new Date(Date.UTC(dayDate.getUTCFullYear(), dayDate.getUTCMonth(), dayDate.getUTCDate()));
+  const start = combineDateAndTime(day, startTime);
+  const end = combineDateAndTime(day, endTime);
+  if (start && end) return { start, end, allDay: false };
+  if (start && !end) {
+    const fallbackEnd = new Date(start.getTime() + 2 * 60 * 60 * 1000); // 2hr default
+    return { start, end: fallbackEnd, allDay: false };
+  }
+  // All-day fallback (start = day, end = next day in DATE form)
+  const nextDay = new Date(day.getTime() + 24 * 60 * 60 * 1000);
+  return { start: day, end: nextDay, allDay: true };
+}
+
+// ============================================================================
+// Approval / change / removal emails (brand-colored)
+// ============================================================================
+
+interface EventForEmail {
+  id: number;
+  organizationName: string | null;
+  scheduledEventDate: string | Date | null;
+  desiredEventDate: string | Date | null;
+  eventStartTime: string | null;
+  eventEndTime: string | null;
+  eventAddress: string | null;
+  notes?: string | null;
+  message?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  tspContact?: string | null;
+}
+
+function eventDisplayDate(event: EventForEmail): { iso: string | null; formatted: string } {
+  const date = event.scheduledEventDate || event.desiredEventDate;
+  if (!date) return { iso: null, formatted: 'Date TBD' };
+  const d = new Date(date);
+  const formatted = d.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'America/New_York',
+  });
+  return { iso: typeof date === 'string' ? date : d.toISOString(), formatted };
+}
+
+/**
+ * Send confirmation email to volunteer when their signup is approved.
+ * Uses TSP brand colors and includes calendar links + contact info.
  */
 async function sendVolunteerApprovalEmail(
   volunteerName: string,
   volunteerEmail: string,
-  organizationName: string,
-  eventDate: string | Date | null,
-  eventStartTime: string | null,
-  eventEndTime: string | null,
-  eventAddress: string | null,
+  event: EventForEmail,
   role: string | null
 ): Promise<void> {
   if (!process.env.SENDGRID_API_KEY || !volunteerEmail) {
@@ -302,60 +465,106 @@ async function sendVolunteerApprovalEmail(
   }
 
   try {
-    const formattedDate = eventDate
-      ? new Date(eventDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      : 'Date TBD';
-
-    const timeDisplay = eventStartTime
-      ? `${eventStartTime}${eventEndTime ? ` – ${eventEndTime}` : ''}`
+    const { formatted: formattedDate } = eventDisplayDate(event);
+    const orgName = event.organizationName || 'The Sandwich Project Event';
+    const timeDisplay = event.eventStartTime
+      ? `${event.eventStartTime}${event.eventEndTime ? ` – ${event.eventEndTime}` : ''}`
+      : null;
+    const roleDisplay = displayRole(role);
+    const mapsLink = event.eventAddress
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`
       : null;
 
-    const roleDisplay = role === 'driver' ? 'Driver'
-      : role === 'speaker' ? 'Speaker'
-      : role === 'general' ? 'General Volunteer'
-      : role || 'Volunteer';
+    // Calendar
+    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+    const times = buildEventTimes(eventDate, event.eventStartTime, event.eventEndTime);
+    const calTitle = `TSP: ${orgName} — ${roleDisplay}`;
+    const calDetails = [
+      `Role: ${roleDisplay}`,
+      event.notes ? `Event notes: ${event.notes}` : null,
+      event.tspContact ? `TSP contact: ${event.tspContact}` : null,
+    ].filter(Boolean).join('\n');
+    const googleLink = times ? googleCalendarLink(calTitle, times.start, times.end, times.allDay, event.eventAddress, calDetails) : null;
+    const icsLink = times ? icsDataUri(`tsp-volunteer-${event.id}@thesandwichproject.org`, calTitle, times.start, times.end, times.allDay, event.eventAddress, calDetails) : null;
+
+    // Contact section
+    const eventContactName = [event.firstName, event.lastName].filter(Boolean).join(' ').trim();
+    const contactBlock = (eventContactName || event.email || event.phone) ? `
+      <div class="section">
+        <h3 style="color: #236383; margin: 0 0 8px;">Event Contact</h3>
+        ${eventContactName ? `<div><strong>${eventContactName}</strong></div>` : ''}
+        ${event.email ? `<div><a href="mailto:${event.email}" style="color: #007E8C;">${event.email}</a></div>` : ''}
+        ${event.phone ? `<div><a href="tel:${event.phone}" style="color: #007E8C;">${event.phone}</a></div>` : ''}
+        ${event.tspContact ? `<div style="margin-top: 6px; color: #555;"><em>TSP contact:</em> ${event.tspContact}</div>` : ''}
+      </div>` : '';
+
+    const notesText = event.notes || event.message || null;
+    const notesBlock = notesText ? `
+      <div class="section">
+        <h3 style="color: #236383; margin: 0 0 8px;">Event Notes</h3>
+        <div style="white-space: pre-wrap; color: #444;">${notesText.replace(/</g, '&lt;')}</div>
+      </div>` : '';
+
+    const calendarButtons = (googleLink || icsLink) ? `
+      <div style="text-align: center; margin: 24px 0 8px;">
+        <p style="margin: 0 0 12px; color: #236383; font-weight: 600;">Add this to your calendar</p>
+        ${googleLink ? `<a href="${googleLink}" style="display: inline-block; background: #007E8C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; margin: 4px 6px; font-weight: 600;">Google Calendar</a>` : ''}
+        ${icsLink ? `<a href="${icsLink}" style="display: inline-block; background: #FBAD3F; color: #1a1a1a; padding: 10px 20px; text-decoration: none; border-radius: 6px; margin: 4px 6px; font-weight: 600;">Apple / Outlook (.ics)</a>` : ''}
+      </div>` : '';
 
     const msg = {
       to: volunteerEmail,
       from: 'katie@thesandwichproject.org',
-      subject: `You're Confirmed — ${organizationName} on ${formattedDate}`,
+      subject: `You're Confirmed — ${orgName} on ${formattedDate}`,
       html: `
         <!DOCTYPE html>
         <html>
         <head>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #22c55e; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
-            .event-details { background: #e6f7f9; padding: 15px; border-left: 4px solid #22c55e; margin: 15px 0; }
-            .footer { text-align: center; color: #666; font-size: 12px; margin-top: 20px; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f4f6f8; }
+            .container { max-width: 620px; margin: 0 auto; padding: 0; background: white; }
+            .header { background: #236383; color: white; padding: 28px 24px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .header .sub { margin-top: 6px; color: #cfe3eb; font-size: 14px; }
+            .content { padding: 24px; }
+            .event-card { background: #f1f8fb; border-left: 4px solid #47B3CB; padding: 16px 18px; border-radius: 6px; margin: 16px 0; }
+            .event-card strong { color: #236383; }
+            .role-pill { display: inline-block; background: #FBAD3F; color: #1a1a1a; padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: 13px; }
+            .section { margin: 18px 0; padding: 14px 16px; background: #fafafa; border-radius: 6px; border: 1px solid #eee; }
+            .section h3 { font-size: 15px; }
+            .footer { text-align: center; color: #666; font-size: 12px; padding: 16px; }
+            a { color: #007E8C; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
               <h1>You're Confirmed!</h1>
+              <div class="sub">Thanks for stepping up, ${volunteerName}.</div>
             </div>
             <div class="content">
-              <p>Great news, ${volunteerName}! Your volunteer signup has been confirmed. Here are the details:</p>
+              <p style="font-size: 16px;">Your volunteer signup has been approved. Here's what you need to know:</p>
 
-              <div class="event-details">
-                <strong>Event:</strong> ${organizationName}<br>
-                <strong>Date:</strong> ${formattedDate}<br>
-                ${timeDisplay ? `<strong>Time:</strong> ${timeDisplay}<br>` : ''}
-                ${eventAddress ? `<strong>Location:</strong> ${eventAddress}<br>` : ''}
-                <strong>Your Role:</strong> ${roleDisplay}
+              <div class="event-card">
+                <div style="font-size: 17px;"><strong>${orgName}</strong></div>
+                <div style="margin: 6px 0;">
+                  <strong>Date:</strong> ${formattedDate}<br>
+                  ${timeDisplay ? `<strong>Time:</strong> ${timeDisplay}<br>` : ''}
+                  ${event.eventAddress ? `<strong>Location:</strong> ${event.eventAddress}${mapsLink ? ` &nbsp;<a href="${mapsLink}" style="color: #007E8C; font-weight: 600;">View on Google Maps →</a>` : ''}<br>` : ''}
+                </div>
+                <div style="margin-top: 10px;">
+                  <strong>Your role:</strong> <span class="role-pill">${roleDisplay}</span>
+                </div>
               </div>
 
-              <p>We'll send you a reminder before the event. If your plans change and you can no longer make it, please let us know as soon as possible so we can find a replacement.</p>
+              ${calendarButtons}
 
-              <p>Thank you for making a difference with The Sandwich Project!</p>
+              ${contactBlock}
+
+              ${notesBlock}
+
+              <p>If your plans change and you can no longer make it, please let us know as soon as possible so we can find a replacement.</p>
+              <p style="color: #236383; font-weight: 600;">Thank you for making a difference with The Sandwich Project!</p>
 
               ${EMAIL_FOOTER_HTML}
             </div>
@@ -366,27 +575,201 @@ async function sendVolunteerApprovalEmail(
       text: `
 You're Confirmed!
 
-Great news, ${volunteerName}! Your volunteer signup has been confirmed.
+Great news, ${volunteerName}! Your volunteer signup has been approved.
 
-Event: ${organizationName}
+Event: ${orgName}
 Date: ${formattedDate}
 ${timeDisplay ? `Time: ${timeDisplay}` : ''}
-${eventAddress ? `Location: ${eventAddress}` : ''}
+${event.eventAddress ? `Location: ${event.eventAddress}` : ''}
+${mapsLink ? `Map: ${mapsLink}` : ''}
 Your Role: ${roleDisplay}
 
-We'll send you a reminder before the event. If your plans change, please let us know so we can find a replacement.
+${googleLink ? `Add to Google Calendar: ${googleLink}` : ''}
+
+${eventContactName ? `Event contact: ${eventContactName}` : ''}
+${event.email ? `Email: ${event.email}` : ''}
+${event.phone ? `Phone: ${event.phone}` : ''}
+${event.tspContact ? `TSP contact: ${event.tspContact}` : ''}
+
+${notesText ? `Notes: ${notesText}` : ''}
+
+If your plans change, please let us know so we can find a replacement.
 
 Thank you for making a difference with The Sandwich Project!
-
----
-The Sandwich Project - Fighting food insecurity one sandwich at a time
       `.trim(),
     };
 
     await sgMail.send(msg);
-    logger.info(`Volunteer approval confirmation email sent to ${volunteerEmail}`);
+    logger.info(`Volunteer approval email sent to ${volunteerEmail}`);
   } catch (error) {
-    logger.error('Error sending volunteer approval confirmation email:', error);
+    logger.error('Error sending volunteer approval email:', error);
+  }
+}
+
+/**
+ * Notify volunteer that their role on an event has been changed.
+ */
+async function sendVolunteerRoleChangeEmail(
+  volunteerName: string,
+  volunteerEmail: string,
+  event: EventForEmail,
+  oldRole: string | null,
+  newRole: string | null,
+  reason: string | null
+): Promise<void> {
+  if (!process.env.SENDGRID_API_KEY || !volunteerEmail) return;
+  try {
+    const { formatted: formattedDate } = eventDisplayDate(event);
+    const orgName = event.organizationName || 'The Sandwich Project Event';
+    const oldDisplay = displayRole(oldRole);
+    const newDisplay = displayRole(newRole);
+    const timeDisplay = event.eventStartTime
+      ? `${event.eventStartTime}${event.eventEndTime ? ` – ${event.eventEndTime}` : ''}`
+      : null;
+    const mapsLink = event.eventAddress
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.eventAddress)}`
+      : null;
+
+    const msg = {
+      to: volunteerEmail,
+      from: 'katie@thesandwichproject.org',
+      subject: `Your role has changed — ${orgName} on ${formattedDate}`,
+      html: `
+        <!DOCTYPE html>
+        <html><head><style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f4f6f8; }
+          .container { max-width: 620px; margin: 0 auto; background: white; }
+          .header { background: #FBAD3F; color: #1a1a1a; padding: 24px; text-align: center; }
+          .content { padding: 24px; }
+          .event-card { background: #f1f8fb; border-left: 4px solid #47B3CB; padding: 16px 18px; border-radius: 6px; margin: 16px 0; }
+          .change-card { background: #FFF7EC; border: 1px solid #FBAD3F; padding: 14px 16px; border-radius: 6px; margin: 16px 0; }
+          .reason-card { background: #fafafa; border: 1px solid #eee; padding: 12px 16px; border-radius: 6px; margin: 12px 0; color: #444; }
+        </style></head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin:0;">Your Volunteer Role Has Changed</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${volunteerName},</p>
+              <p>A coordinator has updated your role for the following event:</p>
+
+              <div class="event-card">
+                <div style="font-size: 17px;"><strong>${orgName}</strong></div>
+                <strong>Date:</strong> ${formattedDate}<br>
+                ${timeDisplay ? `<strong>Time:</strong> ${timeDisplay}<br>` : ''}
+                ${event.eventAddress ? `<strong>Location:</strong> ${event.eventAddress}${mapsLink ? ` &nbsp;<a href="${mapsLink}" style="color: #007E8C; font-weight:600;">View on Google Maps →</a>` : ''}` : ''}
+              </div>
+
+              <div class="change-card">
+                <strong>Role change:</strong> ${oldDisplay} → <span style="background:#FBAD3F;color:#1a1a1a;padding:2px 10px;border-radius:999px;font-weight:600;">${newDisplay}</span>
+              </div>
+
+              ${reason ? `<div class="reason-card"><strong style="color:#236383;">A note from your coordinator:</strong><div style="margin-top:6px;white-space:pre-wrap;">${reason.replace(/</g, '&lt;')}</div></div>` : ''}
+
+              <p>If you have questions or this change doesn't work for you, please reply to this email.</p>
+              <p style="color:#236383; font-weight:600;">Thank you for your flexibility!</p>
+
+              ${EMAIL_FOOTER_HTML}
+            </div>
+          </div>
+        </body></html>
+      `,
+      text: `
+Your volunteer role has changed.
+
+Event: ${orgName}
+Date: ${formattedDate}
+${timeDisplay ? `Time: ${timeDisplay}` : ''}
+${event.eventAddress ? `Location: ${event.eventAddress}` : ''}
+
+Role change: ${oldDisplay} → ${newDisplay}
+
+${reason ? `Coordinator note: ${reason}` : ''}
+
+If this change doesn't work for you, please reply to this email.
+Thank you!
+      `.trim(),
+    };
+    await sgMail.send(msg);
+    logger.info(`Role-change email sent to ${volunteerEmail}`);
+  } catch (error) {
+    logger.error('Error sending role change email:', error);
+  }
+}
+
+/**
+ * Notify volunteer their signup has been cancelled / removed by coordinator.
+ */
+async function sendVolunteerRemovalEmail(
+  volunteerName: string,
+  volunteerEmail: string,
+  event: EventForEmail,
+  role: string | null,
+  reason: string | null
+): Promise<void> {
+  if (!process.env.SENDGRID_API_KEY || !volunteerEmail) return;
+  try {
+    const { formatted: formattedDate } = eventDisplayDate(event);
+    const orgName = event.organizationName || 'The Sandwich Project Event';
+    const roleDisplay = displayRole(role);
+
+    const msg = {
+      to: volunteerEmail,
+      from: 'katie@thesandwichproject.org',
+      subject: `Your signup has been cancelled — ${orgName} on ${formattedDate}`,
+      html: `
+        <!DOCTYPE html>
+        <html><head><style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background: #f4f6f8; }
+          .container { max-width: 620px; margin: 0 auto; background: white; }
+          .header { background: #A31C41; color: white; padding: 24px; text-align: center; }
+          .content { padding: 24px; }
+          .event-card { background: #f1f8fb; border-left: 4px solid #47B3CB; padding: 16px 18px; border-radius: 6px; margin: 16px 0; }
+          .reason-card { background: #fafafa; border: 1px solid #eee; padding: 12px 16px; border-radius: 6px; margin: 12px 0; color: #444; }
+        </style></head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1 style="margin:0;">Your Volunteer Signup Has Been Cancelled</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${volunteerName},</p>
+              <p>Your ${roleDisplay} signup for the following event has been cancelled:</p>
+
+              <div class="event-card">
+                <div style="font-size:17px;"><strong>${orgName}</strong></div>
+                <strong>Date:</strong> ${formattedDate}
+              </div>
+
+              ${reason ? `<div class="reason-card"><strong style="color:#236383;">A note from your coordinator:</strong><div style="margin-top:6px;white-space:pre-wrap;">${reason.replace(/</g, '&lt;')}</div></div>` : ''}
+
+              <p>You're welcome to sign up again any time — visit the Volunteer Hub to browse upcoming opportunities.</p>
+              <p>If you have questions, please reply to this email.</p>
+              <p style="color:#236383; font-weight:600;">Thanks for everything you do for The Sandwich Project.</p>
+
+              ${EMAIL_FOOTER_HTML}
+            </div>
+          </div>
+        </body></html>
+      `,
+      text: `
+Your volunteer signup has been cancelled.
+
+Event: ${orgName}
+Date: ${formattedDate}
+Role: ${roleDisplay}
+
+${reason ? `Coordinator note: ${reason}` : ''}
+
+You're welcome to sign up again any time. If you have questions, please reply to this email.
+Thanks!
+      `.trim(),
+    };
+    await sgMail.send(msg);
+    logger.info(`Removal email sent to ${volunteerEmail}`);
+  } catch (error) {
+    logger.error('Error sending removal email:', error);
   }
 }
 
@@ -952,7 +1335,10 @@ router.get('/pending-signups', isAuthenticated, async (req: AuthenticatedRequest
         scheduledEventDate: event.scheduledEventDate,
         desiredEventDate: event.desiredEventDate,
         eventStartTime: event.eventStartTime,
+        eventEndTime: event.eventEndTime,
+        eventAddress: event.eventAddress,
         status: event.status,
+        vanDriverNeeded: event.vanDriverNeeded,
       },
     }));
 
@@ -1069,8 +1455,8 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
 
     updatedSignup = signupRow;
 
-    // Send confirmation email to volunteer when approved
-    if (isConfirmedOrAssigned && signup.volunteerEmail) {
+    // Send confirmation email to volunteer when approved (or send removal email when declined)
+    if (signup.volunteerEmail) {
       try {
         const [event] = await db
           .select()
@@ -1079,19 +1465,42 @@ router.patch('/signup/:signupId/status', isAuthenticated, async (req: Authentica
           .limit(1);
 
         if (event) {
-          await sendVolunteerApprovalEmail(
-            signup.volunteerName || 'Volunteer',
-            signup.volunteerEmail,
-            event.organizationName || 'Unknown Organization',
-            event.scheduledEventDate || event.desiredEventDate,
-            event.eventStartTime,
-            event.eventEndTime,
-            event.eventAddress,
-            signup.role
-          );
+          const emailEvent: EventForEmail = {
+            id: event.id,
+            organizationName: event.organizationName,
+            scheduledEventDate: event.scheduledEventDate,
+            desiredEventDate: event.desiredEventDate,
+            eventStartTime: event.eventStartTime,
+            eventEndTime: event.eventEndTime,
+            eventAddress: event.eventAddress,
+            notes: event.message ?? null,
+            message: event.message ?? null,
+            firstName: event.firstName,
+            lastName: event.lastName,
+            email: event.email,
+            phone: event.phone,
+            tspContact: event.tspContact,
+          };
+
+          if (isConfirmedOrAssigned) {
+            await sendVolunteerApprovalEmail(
+              signup.volunteerName || 'Volunteer',
+              signup.volunteerEmail,
+              emailEvent,
+              signup.role
+            );
+          } else if (effectiveStatus === 'declined') {
+            await sendVolunteerRemovalEmail(
+              signup.volunteerName || 'Volunteer',
+              signup.volunteerEmail,
+              emailEvent,
+              signup.role,
+              typeof notes === 'string' ? notes : null
+            );
+          }
         }
       } catch (emailError) {
-        logger.error('Failed to send volunteer approval email, but signup was still approved:', emailError);
+        logger.error('Failed to send volunteer status email, but signup was still updated:', emailError);
       }
     }
 
@@ -1132,6 +1541,248 @@ router.get('/event/:eventId/signups', isAuthenticated, async (req: Authenticated
   } catch (error) {
     logger.error('Error fetching event signups:', error);
     res.status(500).json({ error: 'Failed to fetch event signups' });
+  }
+});
+
+// ============================================================================
+// Coordinator management of approved signups
+// ============================================================================
+
+/**
+ * Coordinator: change a volunteer's role on an event.
+ * Body: { role: 'driver' | 'speaker' | 'general', reason?: string }
+ * - Updates the role on the signup
+ * - Moves the volunteer between assignedDriverIds / assignedSpeakerIds / assignedVolunteerIds
+ *   on the event request (if they were already approved/assigned).
+ * - Emails the volunteer with the change (and optional reason).
+ */
+router.patch('/signup/:signupId/role', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const signupId = parseInt(req.params.signupId);
+    const { role: newRole, reason } = req.body || {};
+    const coordinatorId = req.user?.id;
+
+    if (!signupId || isNaN(signupId)) {
+      return res.status(400).json({ error: 'Valid signup ID required' });
+    }
+    if (!newRole || !['driver', 'speaker', 'general'].includes(newRole)) {
+      return res.status(400).json({ error: 'Valid role required (driver, speaker, or general)' });
+    }
+    if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
+      return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required' });
+    }
+
+    const [signup] = await db
+      .select()
+      .from(eventVolunteers)
+      .where(eq(eventVolunteers.id, signupId))
+      .limit(1);
+
+    if (!signup) {
+      return res.status(404).json({ error: 'Signup not found' });
+    }
+
+    if (newRole === signup.role) {
+      return res.json({ success: true, message: 'Role unchanged', signup });
+    }
+
+    // Moving INTO driver requires DRIVER_SIGNUP_APPROVE
+    if (newRole === 'driver' && !hasPermission(req.user, PERMISSIONS.DRIVER_SIGNUP_APPROVE)) {
+      return res.status(403).json({ error: 'DRIVER_SIGNUP_APPROVE permission required to assign drivers' });
+    }
+
+    // If the signup is approved/assigned and we have a user id, move them between event arrays
+    const wasApproved = signup.status === 'confirmed' || signup.status === 'assigned';
+    if (wasApproved && signup.volunteerUserId) {
+      const [event] = await db
+        .select({
+          id: eventRequests.id,
+          assignedDriverIds: eventRequests.assignedDriverIds,
+          assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+          assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+        })
+        .from(eventRequests)
+        .where(eq(eventRequests.id, signup.eventRequestId))
+        .limit(1);
+
+      if (event) {
+        const uid = signup.volunteerUserId as string;
+        const without = (ids?: string[] | null) => (ids || []).filter((id) => id !== uid);
+        const withUid = (ids?: string[] | null) => Array.from(new Set([...(ids || []), uid]));
+
+        const updates: {
+          assignedDriverIds: string[];
+          assignedSpeakerIds: string[];
+          assignedVolunteerIds: string[];
+        } = {
+          assignedDriverIds: without(event.assignedDriverIds),
+          assignedSpeakerIds: without(event.assignedSpeakerIds),
+          assignedVolunteerIds: without(event.assignedVolunteerIds),
+        };
+        if (newRole === 'driver') updates.assignedDriverIds = withUid(updates.assignedDriverIds);
+        else if (newRole === 'speaker') updates.assignedSpeakerIds = withUid(updates.assignedSpeakerIds);
+        else updates.assignedVolunteerIds = withUid(updates.assignedVolunteerIds);
+
+        await db.update(eventRequests).set(updates).where(eq(eventRequests.id, signup.eventRequestId));
+      }
+    }
+
+    const [updated] = await db
+      .update(eventVolunteers)
+      .set({
+        role: newRole,
+        assignedBy: coordinatorId,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventVolunteers.id, signupId))
+      .returning();
+
+    // Send role-change email
+    if (signup.volunteerEmail) {
+      try {
+        const [event] = await db.select().from(eventRequests).where(eq(eventRequests.id, signup.eventRequestId)).limit(1);
+        if (event) {
+          await sendVolunteerRoleChangeEmail(
+            signup.volunteerName || 'Volunteer',
+            signup.volunteerEmail,
+            {
+              id: event.id,
+              organizationName: event.organizationName,
+              scheduledEventDate: event.scheduledEventDate,
+              desiredEventDate: event.desiredEventDate,
+              eventStartTime: event.eventStartTime,
+              eventEndTime: event.eventEndTime,
+              eventAddress: event.eventAddress,
+              notes: event.message ?? null,
+              message: event.message ?? null,
+              firstName: event.firstName,
+              lastName: event.lastName,
+              email: event.email,
+              phone: event.phone,
+              tspContact: event.tspContact,
+            },
+            signup.role,
+            newRole,
+            typeof reason === 'string' && reason.trim() ? reason.trim() : null
+          );
+        }
+      } catch (emailError) {
+        logger.error('Failed to send role-change email:', emailError);
+      }
+    }
+
+    logger.info(`Volunteer signup ${signupId} role changed from ${signup.role} to ${newRole} by ${coordinatorId}`);
+
+    res.json({ success: true, signup: updated });
+  } catch (error) {
+    logger.error('Error changing signup role:', error);
+    res.status(500).json({ error: 'Failed to change role' });
+  }
+});
+
+/**
+ * Coordinator: remove a volunteer from an event.
+ * Body (optional): { reason?: string }
+ * - Sets signup status to 'declined' (preserves history; coordinators can re-approve later)
+ * - Removes them from assigned*Ids arrays on the event request
+ * - Emails the volunteer with the optional reason
+ */
+router.post('/signup/:signupId/remove', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const signupId = parseInt(req.params.signupId);
+    const { reason } = req.body || {};
+    const coordinatorId = req.user?.id;
+
+    if (!signupId || isNaN(signupId)) {
+      return res.status(400).json({ error: 'Valid signup ID required' });
+    }
+    if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
+      return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required' });
+    }
+
+    const [signup] = await db
+      .select()
+      .from(eventVolunteers)
+      .where(eq(eventVolunteers.id, signupId))
+      .limit(1);
+
+    if (!signup) {
+      return res.status(404).json({ error: 'Signup not found' });
+    }
+
+    // De-mirror from event assignment arrays if they were approved
+    if ((signup.status === 'confirmed' || signup.status === 'assigned') && signup.volunteerUserId) {
+      const [event] = await db
+        .select({
+          id: eventRequests.id,
+          assignedDriverIds: eventRequests.assignedDriverIds,
+          assignedSpeakerIds: eventRequests.assignedSpeakerIds,
+          assignedVolunteerIds: eventRequests.assignedVolunteerIds,
+        })
+        .from(eventRequests)
+        .where(eq(eventRequests.id, signup.eventRequestId))
+        .limit(1);
+
+      if (event) {
+        const uid = signup.volunteerUserId as string;
+        const without = (ids?: string[] | null) => (ids || []).filter((id) => id !== uid);
+        await db.update(eventRequests).set({
+          assignedDriverIds: without(event.assignedDriverIds),
+          assignedSpeakerIds: without(event.assignedSpeakerIds),
+          assignedVolunteerIds: without(event.assignedVolunteerIds),
+        }).where(eq(eventRequests.id, signup.eventRequestId));
+      }
+    }
+
+    const trimmedReason = typeof reason === 'string' && reason.trim() ? reason.trim() : null;
+    const noteSuffix = trimmedReason ? `\n[Removed by coordinator: ${trimmedReason}]` : `\n[Removed by coordinator]`;
+    const newNotes = (signup.notes ? signup.notes : '') + noteSuffix;
+
+    const [updated] = await db
+      .update(eventVolunteers)
+      .set({
+        status: 'declined',
+        notes: newNotes.trim(),
+        assignedBy: coordinatorId,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventVolunteers.id, signupId))
+      .returning();
+
+    // Email volunteer with reason
+    if (signup.volunteerEmail) {
+      try {
+        const [event] = await db.select().from(eventRequests).where(eq(eventRequests.id, signup.eventRequestId)).limit(1);
+        if (event) {
+          await sendVolunteerRemovalEmail(
+            signup.volunteerName || 'Volunteer',
+            signup.volunteerEmail,
+            {
+              id: event.id,
+              organizationName: event.organizationName,
+              scheduledEventDate: event.scheduledEventDate,
+              desiredEventDate: event.desiredEventDate,
+              eventStartTime: event.eventStartTime,
+              eventEndTime: event.eventEndTime,
+              eventAddress: event.eventAddress,
+              notes: event.message ?? null,
+              message: event.message ?? null,
+            },
+            signup.role,
+            trimmedReason
+          );
+        }
+      } catch (emailError) {
+        logger.error('Failed to send removal email:', emailError);
+      }
+    }
+
+    logger.info(`Volunteer signup ${signupId} removed by ${coordinatorId}${trimmedReason ? ` (reason: ${trimmedReason})` : ''}`);
+
+    res.json({ success: true, signup: updated });
+  } catch (error) {
+    logger.error('Error removing signup:', error);
+    res.status(500).json({ error: 'Failed to remove signup' });
   }
 });
 

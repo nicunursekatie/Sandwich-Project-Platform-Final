@@ -635,8 +635,9 @@ function SignupDialog({
       bgClass: 'bg-[#007e8c]/5',
     });
 
-    // Show driver role if event needs drivers
-    if (event.driversNeeded > 0 || event.driversAssigned > 0) {
+    // Show driver role if event needs drivers AND it's NOT a van-required event.
+    // Van-needed events use a separate van-driver signup flow (handled elsewhere).
+    if (!event.vanDriverNeeded && (event.driversNeeded > 0 || event.driversAssigned > 0)) {
       roles.push({
         value: 'driver',
         label: event.driversUnfilled > 0
@@ -847,7 +848,7 @@ function AssignOthersDialog({
       borderClass: 'border-[#007e8c]/30',
       bgClass: 'bg-[#007e8c]/5',
     });
-    if (event.driversNeeded > 0 || event.driversAssigned > 0) {
+    if (!event.vanDriverNeeded && (event.driversNeeded > 0 || event.driversAssigned > 0)) {
       roles.push({
         value: 'driver',
         label: event.driversUnfilled > 0
@@ -1016,6 +1017,134 @@ function AssignOthersDialog({
   );
 }
 
+/**
+ * Coordinator dialog for changing a volunteer's role OR removing them
+ * from an event. The same dialog handles both flows so we don't nest dialogs.
+ * Mode is set when the dialog is opened.
+ */
+function ManageSignupDialog({
+  signup,
+  mode,
+  open,
+  onOpenChange,
+  onChangeRole,
+  onRemove,
+  isSubmitting,
+}: {
+  signup: any | null;
+  mode: 'change_role' | 'remove' | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChangeRole: (signupId: number, role: string, reason?: string) => void;
+  onRemove: (signupId: number, reason?: string) => void;
+  isSubmitting: boolean;
+}) {
+  const [newRole, setNewRole] = useState<string>('general');
+  const [reason, setReason] = useState('');
+
+  useEffect(() => {
+    if (open && signup) {
+      // Default new role to anything other than current role
+      const fallback = signup.role === 'general' ? 'speaker' : 'general';
+      setNewRole(fallback);
+      setReason('');
+    }
+  }, [open, signup?.id, signup?.role, signup]);
+
+  if (!signup || !mode) return null;
+
+  const orgName = signup.event?.organizationName || 'this event';
+  const vanNeeded = !!signup.event?.vanDriverNeeded;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {mode === 'change_role' ? 'Change Volunteer Role' : 'Remove Volunteer'}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === 'change_role'
+              ? `Update ${signup.volunteerName || 'this volunteer'}'s role on ${orgName}.`
+              : `Remove ${signup.volunteerName || 'this volunteer'} from ${orgName}. They'll be notified by email.`}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-3">
+          {mode === 'change_role' && (
+            <div className="space-y-2">
+              <Label>New role</Label>
+              <Select value={newRole} onValueChange={setNewRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {signup.role !== 'general' && (
+                    <SelectItem value="general">General Volunteer</SelectItem>
+                  )}
+                  {signup.role !== 'speaker' && (
+                    <SelectItem value="speaker">Speaker</SelectItem>
+                  )}
+                  {signup.role !== 'driver' && !vanNeeded && (
+                    <SelectItem value="driver">Driver</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {vanNeeded && signup.role !== 'driver' && (
+                <p className="text-xs text-[#A31C41]">
+                  Driver role is hidden because this event needs a van driver. Use the van driver flow instead.
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="reason">
+              {mode === 'change_role' ? 'Reason (optional)' : 'Explanation (optional)'}
+            </Label>
+            <Textarea
+              id="reason"
+              placeholder={
+                mode === 'change_role'
+                  ? "What's prompting this change? (will be included in the email)"
+                  : "Why are you removing them? (will be included in the email)"
+              }
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              rows={4}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          {mode === 'change_role' ? (
+            <Button
+              onClick={() => onChangeRole(signup.id, newRole, reason.trim() || undefined)}
+              disabled={isSubmitting || !newRole || newRole === signup.role}
+              className="bg-[#FBAD3F] hover:bg-[#FBAD3F]/90 text-[#1a1a1a]"
+            >
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Save Change
+            </Button>
+          ) : (
+            <Button
+              onClick={() => onRemove(signup.id, reason.trim() || undefined)}
+              disabled={isSubmitting}
+              className="bg-[#A31C41] hover:bg-[#A31C41]/90 text-white"
+            >
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Remove Volunteer
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // Main component
 export default function VolunteerEventHub() {
   const { user } = useAuth();
@@ -1029,6 +1158,9 @@ export default function VolunteerEventHub() {
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedDayEvents, setSelectedDayEvents] = useState<{ date: string; events: AvailableEvent[] } | null>(null);
+  const [manageSignup, setManageSignup] = useState<any | null>(null);
+  const [manageMode, setManageMode] = useState<'change_role' | 'remove' | null>(null);
+  const [manageDialogOpen, setManageDialogOpen] = useState(false);
 
   // Can this user assign OTHERS to events (not just self-signup)?
   const canAssignOthers =
@@ -1103,11 +1235,76 @@ export default function VolunteerEventHub() {
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
       toast({ title: status === 'assigned' ? 'Signup approved' : 'Signup declined' });
     },
     onError: () => {
       toast({ title: 'Failed to update signup', variant: 'destructive' });
+    },
+  });
+
+  // Fetch all signups (approved + declined) for management list
+  const { data: allSignups = [] } = useQuery<any[]>({
+    queryKey: ['/api/volunteer-hub/all-signups'],
+    queryFn: async () => {
+      const response = await fetch('/api/volunteer-hub/pending-signups?all=true', { credentials: 'include' });
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: canApproveSignups,
+    refetchInterval: 30000,
+  });
+
+  // Change role mutation
+  const changeRoleMutation = useMutation({
+    mutationFn: async ({ signupId, role, reason }: { signupId: number; role: string; reason?: string }) => {
+      const response = await fetch(`/api/volunteer-hub/signup/${signupId}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, reason }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to change role');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      toast({ title: 'Role updated', description: 'Volunteer has been notified by email.' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to change role', description: err.message, variant: 'destructive' });
+    },
+  });
+
+  // Remove from event mutation
+  const removeSignupMutation = useMutation({
+    mutationFn: async ({ signupId, reason }: { signupId: number; reason?: string }) => {
+      const response = await fetch(`/api/volunteer-hub/signup/${signupId}/remove`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to remove signup');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      toast({ title: 'Volunteer removed', description: 'They have been notified by email.' });
+    },
+    onError: (err: Error) => {
+      toast({ title: 'Failed to remove', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -2077,6 +2274,132 @@ export default function VolunteerEventHub() {
                 })}
               </div>
             )}
+
+            {/* Approved / Declined signups management list */}
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-[#236383]">Approved &amp; Declined Signups</h3>
+                <p className="text-xs text-gray-500">{allSignups.filter((s: any) => s.status !== 'pending').length} total</p>
+              </div>
+              {(() => {
+                const managed = allSignups.filter((s: any) => s.status !== 'pending');
+                if (managed.length === 0) {
+                  return (
+                    <Card className="border-dashed">
+                      <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                        <p className="text-sm text-gray-500">No approved or declined signups yet.</p>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+                return (
+                  <div className="space-y-2">
+                    {managed.map((signup: any) => {
+                      const eventDate = signup.event?.scheduledEventDate || signup.event?.desiredEventDate;
+                      const isApproved = signup.status === 'confirmed' || signup.status === 'assigned';
+                      const isDeclined = signup.status === 'declined';
+                      const vanNeeded = !!signup.event?.vanDriverNeeded;
+                      const driverConflict = isApproved && signup.role === 'driver' && vanNeeded;
+                      return (
+                        <Card
+                          key={signup.id}
+                          className={cn(
+                            'border transition-shadow hover:shadow-sm',
+                            isApproved ? 'border-[#47B3CB]/40' : 'border-gray-200',
+                            driverConflict && 'border-[#A31C41]/60 bg-[#A31C41]/5'
+                          )}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0 space-y-1.5">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold text-gray-900 truncate">{signup.volunteerName || 'Unknown'}</span>
+                                  <RoleBadge role={signup.role} />
+                                  {isApproved && (
+                                    <Badge className="bg-[#47B3CB] text-white border-transparent">
+                                      <Check className="w-3 h-3 mr-1" />Approved
+                                    </Badge>
+                                  )}
+                                  {isDeclined && (
+                                    <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
+                                      Declined
+                                    </Badge>
+                                  )}
+                                  {driverConflict && (
+                                    <Badge className="bg-[#A31C41] text-white border-transparent">
+                                      <AlertCircle className="w-3 h-3 mr-1" />Van Needed — Driver Conflict
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 px-2.5 py-1 rounded">
+                                  <Building2 className="w-3.5 h-3.5 text-[#236383] shrink-0" />
+                                  <span className="font-medium truncate">{signup.event?.organizationName || 'Unknown Event'}</span>
+                                  {eventDate && (
+                                    <>
+                                      <span className="text-gray-400">|</span>
+                                      <Calendar className="w-3.5 h-3.5 text-[#236383]" />
+                                      <span>{format(parseISO(eventDate), 'MMM d, yyyy')}</span>
+                                      {signup.event?.eventStartTime && (
+                                        <span className="text-gray-500">· {formatEventTime(signup.event.eventStartTime)}</span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                                  {signup.volunteerEmail && <span>{signup.volunteerEmail}</span>}
+                                  {signup.volunteerPhone && <span>{signup.volunteerPhone}</span>}
+                                </div>
+                              </div>
+                              {isApproved && (
+                                <div className="flex flex-col gap-1.5 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-[#FBAD3F] text-[#a07227] hover:bg-[#FBAD3F]/10 h-7 px-2 text-xs"
+                                    onClick={() => {
+                                      setManageSignup(signup);
+                                      setManageMode('change_role');
+                                      setManageDialogOpen(true);
+                                    }}
+                                  >
+                                    Change Role
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41]/10 h-7 px-2 text-xs"
+                                    onClick={() => {
+                                      setManageSignup(signup);
+                                      setManageMode('remove');
+                                      setManageDialogOpen(true);
+                                    }}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
+                              )}
+                              {isDeclined && (
+                                <div className="flex flex-col gap-1.5 shrink-0">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-green-500 text-green-700 hover:bg-green-50 h-7 px-2 text-xs"
+                                    onClick={() => updateSignupStatusMutation.mutate({ signupId: signup.id, status: 'assigned' })}
+                                    disabled={updateSignupStatusMutation.isPending}
+                                  >
+                                    Re-approve
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
           </TabsContent>
         </Tabs>
 
@@ -2087,6 +2410,45 @@ export default function VolunteerEventHub() {
           onOpenChange={setSignupDialogOpen}
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
+        />
+
+        {/* Manage signup dialog (change role / remove) */}
+        <ManageSignupDialog
+          signup={manageSignup}
+          mode={manageMode}
+          open={manageDialogOpen}
+          onOpenChange={(open) => {
+            setManageDialogOpen(open);
+            if (!open) {
+              setManageSignup(null);
+              setManageMode(null);
+            }
+          }}
+          onChangeRole={(signupId, role, reason) => {
+            changeRoleMutation.mutate(
+              { signupId, role, reason },
+              {
+                onSuccess: () => {
+                  setManageDialogOpen(false);
+                  setManageSignup(null);
+                  setManageMode(null);
+                },
+              }
+            );
+          }}
+          onRemove={(signupId, reason) => {
+            removeSignupMutation.mutate(
+              { signupId, reason },
+              {
+                onSuccess: () => {
+                  setManageDialogOpen(false);
+                  setManageSignup(null);
+                  setManageMode(null);
+                },
+              }
+            );
+          }}
+          isSubmitting={changeRoleMutation.isPending || removeSignupMutation.isPending}
         />
 
         {/* Assign Others Dialog - only opened when a coordinator clicks "Assign Someone" */}
