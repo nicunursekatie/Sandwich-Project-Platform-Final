@@ -93,7 +93,8 @@
       "Bash(ls /Users/kathrynelong/.claude/projects/ 2>&1 | head -20)",
       "Read(//Users/kathrynelong/.claude/projects/**)",
       "Bash(wait)",
-      "Bash(awk -F':' '$1 >= 1400 && $1 <= 1680 {print}')"
+      "Bash(awk -F':' '$1 >= 1400 && $1 <= 1680 {print}')",
+      "Bash(awk 'NR>=1150 && NR<=1425' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/event-requests/IntakeCallDialog.tsx)"
     ],
     "deny": [],
     "ask": [],

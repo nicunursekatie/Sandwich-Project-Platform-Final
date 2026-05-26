@@ -85,7 +85,6 @@ const OPERATING_AREAS = [
   'Peachtree Corners',
   'Alpharetta',
   'Milton',
-  'Dacula',
   'Marietta',
   'Roswell',
 ];
@@ -275,6 +274,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   const [contactPhone, setContactPhone] = useState('');
   const [contactEmail, setContactEmail] = useState('');
 
+  // Whether the operator is currently editing/replacing the address. When the
+  // dialog opens with an existing address we show it as a confirm-or-change
+  // card; clicking "Change" flips this to true and exposes the input. If
+  // there's no address on file, we start in editing mode.
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+
   // Draft persistence: per-event key, autosave to localStorage with debounce.
   // Suspended until the user actually interacts so we don't overwrite a saved
   // draft with the initial form state when the dialog mounts.
@@ -343,6 +348,28 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     });
   }, [conflictDate]);
 
+  // Auto-check the "Event Times" required item whenever any of the three
+  // sub-fields has a value. The sub-fields are stored under their own keys
+  // (event_start_time / event_end_time / event_pickup_time) so handleAnswerChange's
+  // auto-toggle doesn't see the parent — we drive it from this effect instead.
+  const anyEventTimeFilled =
+    !!itemAnswers.event_start_time?.trim() ||
+    !!itemAnswers.event_end_time?.trim() ||
+    !!itemAnswers.event_pickup_time?.trim();
+  useEffect(() => {
+    setCheckedItems((prev) => {
+      const next = new Set(prev);
+      if (anyEventTimeFilled) {
+        if (next.has('event_times')) return prev;
+        next.add('event_times');
+      } else {
+        if (!next.has('event_times')) return prev;
+        next.delete('event_times');
+      }
+      return next;
+    });
+  }, [anyEventTimeFilled]);
+
   // Consult-Christine-&-Marcy flag: World Cup match, or any high-volume
   // day/week warning from the conflict endpoint. Anything else (regular van
   // / driver / speaker conflicts) is shown as a warning but doesn't trigger
@@ -405,6 +432,25 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if (req.eventAddress) {
       initialAnswers.event_address = req.eventAddress;
       initialChecked.add('event_address');
+      setIsEditingAddress(false);
+    } else {
+      setIsEditingAddress(true);
+    }
+    // Event Times — three sub-fields stored under a single "event_times"
+    // logical row in the checklist. We mark the parent checked as soon as
+    // any of the three has a value (mirrors the auto-check rule used for
+    // other items via handleAnswerChange).
+    if (req.eventStartTime) {
+      initialAnswers.event_start_time = req.eventStartTime;
+      initialChecked.add('event_times');
+    }
+    if (req.eventEndTime) {
+      initialAnswers.event_end_time = req.eventEndTime;
+      initialChecked.add('event_times');
+    }
+    if (req.pickupTime) {
+      initialAnswers.event_pickup_time = req.pickupTime;
+      initialChecked.add('event_times');
     }
     if ((req as any).howHeardAboutUs) {
       initialAnswers.how_heard = (req as any).howHeardAboutUs;
@@ -525,17 +571,42 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     try {
       const nowLabel = new Date().toLocaleString();
       const answeredItems = checklistItems.filter((item) => {
+        // event_times is a virtual parent — show it in the summary when any
+        // of the three sub-fields is filled.
+        if (item.id === 'event_times') {
+          return (
+            !!itemAnswers.event_start_time?.trim() ||
+            !!itemAnswers.event_end_time?.trim() ||
+            !!itemAnswers.event_pickup_time?.trim()
+          );
+        }
+        // outside_operating_area is a checkbox-only item — include it in
+        // the summary when the operator ticked the box.
+        if (item.id === 'outside_operating_area') {
+          return checkedItems.has('outside_operating_area');
+        }
         const value = itemAnswers[item.id];
         return value && value.trim().length > 0;
       });
 
+      const renderItemForNotes = (item: ChecklistItem): string => {
+        if (item.id === 'event_times') {
+          const parts: string[] = [];
+          if (itemAnswers.event_start_time?.trim()) parts.push(`start ${itemAnswers.event_start_time.trim()}`);
+          if (itemAnswers.event_end_time?.trim()) parts.push(`end ${itemAnswers.event_end_time.trim()}`);
+          if (itemAnswers.event_pickup_time?.trim()) parts.push(`pickup ${itemAnswers.event_pickup_time.trim()}`);
+          return `- ${item.label}: ${parts.join(', ')}`;
+        }
+        if (item.id === 'outside_operating_area') {
+          return `- ${item.label}: YES (flagged for leadership review)`;
+        }
+        return `- ${item.label}: ${formatItemAnswerForNotes(item.id, itemAnswers[item.id].trim())}`;
+      };
+
       const summaryLines = [
         `Intake call completed: ${nowLabel}`,
         `Contact: ${contactName || 'N/A'} | ${contactPhone || 'N/A'} | ${contactEmail || 'N/A'}`,
-        ...answeredItems.map(
-          (item) =>
-            `- ${item.label}: ${formatItemAnswerForNotes(item.id, itemAnswers[item.id].trim())}`
-        ),
+        ...answeredItems.map(renderItemForNotes),
       ];
 
       if (callNotes.trim()) {
@@ -575,11 +646,25 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         updates.eventAddress = itemAnswers.event_address.trim();
       }
 
-      // If the live conflict check surfaced a World Cup match or any
-      // high-volume day/week warning, seed the event's Next Action so the
-      // operator's coordinators see a follow-up on the card. We don't
-      // overwrite an existing next action — append to it instead so any
-      // prior follow-up isn't lost.
+      // Event Times — three free-text fields; save each non-empty one to its
+      // own column. We don't write null/empty to avoid blowing away an
+      // existing value when the operator leaves a field blank during a follow-up.
+      if (itemAnswers.event_start_time?.trim()) {
+        updates.eventStartTime = itemAnswers.event_start_time.trim();
+      }
+      if (itemAnswers.event_end_time?.trim()) {
+        updates.eventEndTime = itemAnswers.event_end_time.trim();
+      }
+      if (itemAnswers.event_pickup_time?.trim()) {
+        updates.pickupTime = itemAnswers.event_pickup_time.trim();
+      }
+
+      // Build any Next Action follow-ups raised by the intake call. Each
+      // follow-up is its own block; multiple can be appended in one save.
+      // We always append (never overwrite) so any prior next action is kept.
+      const followUpBlocks: string[] = [];
+
+      // (a) Scheduling conflicts — World Cup match or high-volume day/week.
       if (shouldConsultTeam) {
         const conflictLines: string[] = [];
         if (trafficConflict) {
@@ -590,10 +675,21 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         for (const w of highVolumeWarnings) {
           conflictLines.push(`• ${w.message}`);
         }
-        const newActionBlock = [
-          'Consult with Christine & Marcy about scheduling conflicts:',
-          ...conflictLines,
-        ].join('\n');
+        followUpBlocks.push(
+          ['Consult with Christine & Marcy about scheduling conflicts:', ...conflictLines].join('\n')
+        );
+      }
+
+      // (b) Outside our typical operating areas — operator ticked the box.
+      const isOutsideOperatingArea = checkedItems.has('outside_operating_area');
+      if (isOutsideOperatingArea) {
+        followUpBlocks.push(
+          'Consult with Christine & Marcy about coordinating this event — outside our typical operating areas. Let the group know we will try to make it work but need leadership confirmation first.'
+        );
+      }
+
+      if (followUpBlocks.length > 0) {
+        const newActionBlock = followUpBlocks.join('\n\n');
         const existingNextAction = eventRequest?.nextAction?.trim() || '';
         updates.nextAction = existingNextAction
           ? `${existingNextAction}\n\n${newActionBlock}`
@@ -613,9 +709,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             structured.mapped.map((m) => `${m.column} (${m.display})`).join(', ')
         );
       }
-      if (shouldConsultTeam) {
+      if (followUpBlocks.length > 0) {
+        const reasons: string[] = [];
+        if (shouldConsultTeam) reasons.push('scheduling conflicts');
+        if (isOutsideOperatingArea) reasons.push('event outside operating areas');
         toastParts.push(
-          'Next Action added: consult with Christine & Marcy about scheduling conflicts.'
+          `Next Action added: consult with Christine & Marcy about ${reasons.join(' and ')}.`
         );
       }
       const hasUnparseable = structured.unparseable.length > 0;
@@ -689,40 +788,22 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       required: true,
       notes: 'Once an event date is entered below, conflicts on that day appear automatically.',
     },
-    {
-      id: 'get_event_time',
-      label: 'Get event time: Start/end times if >500 sandwiches or speaker/volunteers needed, pickup time if <500 without speaker',
-      category: 'Initial Questions',
-      required: true,
-      notes: '<500 sandwiches + no speaker: need pickup time. >500 sandwiches OR speaker/volunteers: need start and end times. Drivers are volunteers - need heads up to plan',
-    },
+    // (Event Times moved into the Event Details category as a single
+    // multi-field row — see `event_times` below.)
 
     // Location & Area Check
     {
-      id: 'get_address',
-      label: 'Get/confirm event address',
+      id: 'event_address',
+      label: 'Event address',
       category: 'Location & Area',
       required: true,
     },
     {
-      id: 'check_area',
-      label: 'Check if in operating area',
+      id: 'outside_operating_area',
+      label: 'Event is outside our typical operating areas',
       category: 'Location & Area',
-      required: true,
-      notes: `Typical areas: ${OPERATING_AREAS.join(', ')}`,
-    },
-    {
-      id: 'confirm_transport',
-      label: 'Confirm transport feasibility to typical recipients',
-      category: 'Location & Area',
-      required: true,
-      notes: 'Only if in typical vicinity',
-    },
-    {
-      id: 'outside_area',
-      label: 'If outside area: collect info, check with team',
-      category: 'Location & Area',
-      notes: 'Let them know we need to check with team',
+      notes:
+        'If checked, a follow-up will be added to consult with Christine & Marcy. Let the group know we will try to make it work but need leadership confirmation first.',
     },
 
     // Refrigeration & Sandwich Type
@@ -765,22 +846,17 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       required: true,
     },
     {
-      id: 'event_address',
-      label: 'Event address',
-      category: 'Event Details',
-      required: true,
-    },
-    {
       id: 'event_date',
       label: 'Event date',
       category: 'Event Details',
       required: true,
     },
     {
-      id: 'event_time',
-      label: 'Event time',
+      id: 'event_times',
+      label: 'Event Times',
       category: 'Event Details',
       required: true,
+      notes: 'Start and End Times Are Ideal (Required if Speakers/Volunteers are desired), Pickup Time required if they need a driver',
     },
     {
       id: 'participant_count',
@@ -1095,8 +1171,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                 </h3>
                 <div className="space-y-2">
                   {items.map((item) => (
+                    <React.Fragment key={item.id}>
                     <div
-                      key={item.id}
                       className={`flex items-start gap-3 p-2 rounded-md transition-colors ${
                         checkedItems.has(item.id)
                           ? 'bg-green-50 border border-green-200'
@@ -1235,6 +1311,13 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               className="text-sm min-h-[60px]"
                               onClick={(e) => e.stopPropagation()}
                             />
+                          ) : item.id === 'outside_operating_area' ? (
+                            // Checkbox-only item — no input field. Just a
+                            // hint reminding the operator what ticking the
+                            // box will do on save.
+                            <p className="text-xs text-gray-500 italic">
+                              Tick the box if the event location falls outside the areas listed above.
+                            </p>
                           ) : item.id === 'check_date_conflicts' ? (
                             // Conflicts surface live above the checklist via
                             // EventConflictWarnings — no input field needed
@@ -1245,6 +1328,112 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 ? 'See conflict warnings at the top of this dialog.'
                                 : 'Enter the event date below to see conflicts.'}
                             </p>
+                          ) : item.id === 'event_address' ? (
+                            // Address: show existing as a confirm-or-change card
+                            // when we already have one; otherwise show a plain
+                            // input. Always show a "View in Google Maps" button
+                            // when there is a value to view, so the operator can
+                            // eyeball whether it falls in our operating areas.
+                            (() => {
+                              const currentAddress = (itemAnswers.event_address || '').trim();
+                              const mapsHref = currentAddress
+                                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentAddress)}`
+                                : null;
+                              const showCard = !isEditingAddress && !!currentAddress;
+                              return (
+                                <div className="space-y-2">
+                                  {showCard ? (
+                                    <div className="bg-white border border-[#47B3CB]/40 rounded-md p-3">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-start gap-2 min-w-0">
+                                          <MapPin className="w-4 h-4 text-[#236383] flex-shrink-0 mt-0.5" />
+                                          <div className="text-sm text-gray-900 break-words min-w-0">
+                                            {currentAddress}
+                                          </div>
+                                        </div>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 text-xs flex-shrink-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            markInteracted();
+                                            setIsEditingAddress(true);
+                                          }}
+                                        >
+                                          Change
+                                        </Button>
+                                      </div>
+                                      <p className="text-xs text-gray-500 mt-2">
+                                        Confirm this address with the organizer, or click Change to enter a different one.
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <Input
+                                      type="text"
+                                      placeholder="Enter event address"
+                                      value={itemAnswers.event_address || ''}
+                                      onChange={(e) => handleAnswerChange('event_address', e.target.value)}
+                                      className="text-sm h-8"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  )}
+                                  {mapsHref && (
+                                    <a
+                                      href={mapsHref}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs font-medium text-[#007E8C] hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <MapPin className="w-3.5 h-3.5" />
+                                      View in Google Maps
+                                    </a>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          ) : item.id === 'event_times' ? (
+                            // Three free-text fields in one row. Auto-checks
+                            // the parent `event_times` row when any field has
+                            // a value. Saves to eventStartTime / eventEndTime
+                            // / pickupTime columns on submit.
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Start time</Label>
+                                <Input
+                                  type="text"
+                                  placeholder="e.g. 10:00 AM"
+                                  value={itemAnswers.event_start_time || ''}
+                                  onChange={(e) => handleAnswerChange('event_start_time', e.target.value)}
+                                  className="text-sm h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">End time</Label>
+                                <Input
+                                  type="text"
+                                  placeholder="e.g. 12:30 PM"
+                                  value={itemAnswers.event_end_time || ''}
+                                  onChange={(e) => handleAnswerChange('event_end_time', e.target.value)}
+                                  className="text-sm h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-xs text-gray-600 mb-1 block">Pickup time</Label>
+                                <Input
+                                  type="text"
+                                  placeholder="e.g. anytime after 3pm"
+                                  value={itemAnswers.event_pickup_time || ''}
+                                  onChange={(e) => handleAnswerChange('event_pickup_time', e.target.value)}
+                                  className="text-sm h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
                           ) : (
                             <Input
                               type="text"
@@ -1258,33 +1447,40 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                         </div>
                       </div>
                     </div>
+                    {/* Operating-areas reference box: rendered immediately
+                        after the event_address row so the operator can
+                        eyeball the address against our typical service area
+                        before deciding whether to tick "outside operating
+                        areas" below. */}
+                    {item.id === 'event_address' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-[#236383] mb-2 flex items-center gap-2 text-sm">
+                          <MapPin className="w-4 h-4" />
+                          Typical Operating Areas
+                        </h4>
+                        <p className="text-xs text-gray-700 mb-2">
+                          If the event location is outside these areas, check "Event is outside our typical operating areas" below.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {OPERATING_AREAS.map((area) => (
+                            <Badge
+                              key={area}
+                              variant="outline"
+                              className="text-xs"
+                              style={{ borderColor: '#FBAD3F', color: '#D68319' }}
+                            >
+                              {area}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    </React.Fragment>
                   ))}
                 </div>
               </div>
             ))}
 
-            {/* Operating Areas Reference */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <h3 className="font-semibold text-[#236383] mb-2 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Typical Operating Areas
-              </h3>
-              <p className="text-sm text-gray-700 mb-2">
-                If event is in these areas, confirm transport feasibility:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {OPERATING_AREAS.map((area) => (
-                  <Badge
-                    key={area}
-                    variant="outline"
-                    className="text-xs"
-                    style={{ borderColor: '#FBAD3F', color: '#D68319' }}
-                  >
-                    {area}
-                  </Badge>
-                ))}
-              </div>
-            </div>
 
             {/* Call Notes Section */}
             <div className="bg-white border border-gray-300 rounded-lg p-4">
