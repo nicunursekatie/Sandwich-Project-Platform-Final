@@ -162,7 +162,19 @@ function buildStructuredUpdates(
   // fields and avoids a client→ISO→server round-trip that could reintroduce
   // drift. parseDateOnly is still called client-side just to validate.
   const dateValue = itemAnswers.event_date?.trim();
-  if (dateValue) {
+  const dateUndecided = itemAnswers.event_date_undecided === 'true';
+  if (dateUndecided) {
+    // Operator marked the date as not decided yet. Clear the existing
+    // desiredEventDate column so downstream views don't keep showing a
+    // stale date the group has walked back from. The potential-dates
+    // note rides along in planningNotes via the summary block below.
+    updates.desiredEventDate = null;
+    mapped.push({
+      itemId: 'event_date',
+      column: 'desired event date',
+      display: 'Not decided yet (cleared)',
+    });
+  } else if (dateValue) {
     if (parseDateOnly(dateValue)) {
       updates.desiredEventDate = dateValue;
       mapped.push({
@@ -344,24 +356,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   // Atlanta World Cup match conflict on the requested date.
   const trafficConflict = conflictDate ? getTrafficConflict(conflictDate) : null;
 
-  // Auto-check the "Check calendar for conflicts" required item once we have
-  // a date to check against — the operator can't enter text into it (the
-  // warnings appear inline above), so we satisfy the required-flag for them.
-  // Clears itself if the date is removed.
-  useEffect(() => {
-    setCheckedItems((prev) => {
-      const next = new Set(prev);
-      if (conflictDate) {
-        if (next.has('check_date_conflicts')) return prev;
-        next.add('check_date_conflicts');
-      } else {
-        if (!next.has('check_date_conflicts')) return prev;
-        next.delete('check_date_conflicts');
-      }
-      return next;
-    });
-  }, [conflictDate]);
-
   // Auto-check the "Event Times" required item whenever any of the three
   // sub-fields has a value. The sub-fields are stored under their own keys
   // (event_start_time / event_end_time / event_pickup_time) so handleAnswerChange's
@@ -383,6 +377,20 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       return next;
     });
   }, [anyEventTimeFilled]);
+
+  // Mark event_date as complete when the operator selects "Not decided yet"
+  // — the field is required but has no value in that mode. The handleAnswerChange
+  // auto-mark on event_date covers the specific-date case; this covers undecided.
+  const eventDateUndecided = itemAnswers.event_date_undecided === 'true';
+  useEffect(() => {
+    if (!eventDateUndecided) return;
+    setCheckedItems((prev) => {
+      if (prev.has('event_date')) return prev;
+      const next = new Set(prev);
+      next.add('event_date');
+      return next;
+    });
+  }, [eventDateUndecided]);
 
   // Sandwich-count gating: the form's later sections behave differently
   // depending on the count entered in the Sandwich Estimates section.
@@ -524,7 +532,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     }
     if ((req as any).howHeardAboutUsNotes) {
       initialAnswers.how_heard_notes = (req as any).howHeardAboutUsNotes;
-      initialChecked.add('how_heard_notes');
     }
 
     setItemAnswers(initialAnswers);
@@ -692,6 +699,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         if (item.id === 'sandwich_types') {
           return (itemAnswers.sandwich_types || '').trim().length > 0;
         }
+        // event_date — also show when operator chose "not decided yet"
+        // (so the potential-dates note isn't dropped).
+        if (item.id === 'event_date') {
+          return (
+            !!itemAnswers.event_date?.trim() ||
+            itemAnswers.event_date_undecided === 'true'
+          );
+        }
         const value = itemAnswers[item.id];
         return value && value.trim().length > 0;
       });
@@ -731,6 +746,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             .map((t) => LABELS[t] || t)
             .join(', ');
           return `- ${item.label}: ${list}`;
+        }
+        if (item.id === 'event_date' && itemAnswers.event_date_undecided === 'true') {
+          const note = itemAnswers.event_date_undecided_note?.trim();
+          return note
+            ? `- ${item.label}: NOT DECIDED YET — ${note}`
+            : `- ${item.label}: NOT DECIDED YET`;
         }
         return `- ${item.label}: ${formatItemAnswerForNotes(item.id, itemAnswers[item.id].trim())}`;
       };
@@ -964,17 +985,18 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       required: true,
     },
     {
-      id: 'how_heard_notes',
-      label: 'How did they hear about us — notes',
+      id: 'event_date',
+      label: 'Event date',
       category: 'Initial Questions',
-      notes: 'Optional. Use when "Other" is selected, or to add details.',
+      required: true,
+      notes:
+        "Pre-filled from the interest form. Change here if the group is going with a different date, or pick 'Not decided yet' if they're still figuring it out.",
     },
     {
       id: 'check_date_conflicts',
       label: 'Check calendar for conflicts',
       category: 'Initial Questions',
       required: true,
-      notes: 'Once an event date is entered below, conflicts on that day appear automatically.',
     },
     // (Event Times moved into the Event Details category as a single
     // multi-field row — see `event_times` below.)
@@ -1062,12 +1084,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       required: true,
     },
     {
-      id: 'event_date',
-      label: 'Event date',
-      category: 'Event Details',
-      required: true,
-    },
-    {
       id: 'event_times',
       label: 'Event Times',
       category: 'Event Details',
@@ -1078,7 +1094,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       id: 'participant_count',
       label: 'Approximate number of people',
       category: 'Event Details',
-      required: true,
     },
     {
       id: 'speaker_needed',
@@ -1397,36 +1412,73 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                       item.id !== 'sandwich_count' &&
                       item.id !== 'under_200_override_note';
 
+                    // Items that are pure "I told/confirmed this verbally"
+                    // prompts get the checkbox UI — the tick IS the answer.
+                    // Every other item is a regular form row (label + input
+                    // only). Confirmation items have no input branch in the
+                    // render switch below; non-confirmation items do.
+                    const CONFIRMATION_ITEM_IDS = new Set<string>([
+                      'check_date_conflicts',
+                      'outside_operating_area',
+                      'young_children_pbj',
+                      'pbj_spatulas_mentioned',
+                      'assembly_reviewed',
+                      // Food Safety & Logistics + Process Discussion items
+                      // are all verbal confirmations.
+                      'review_toolkit',
+                      'food_safe_gloves',
+                      'meat_cheese_refrigeration',
+                      'discuss_shopping',
+                      'transport_meat_cheese',
+                      'buying_supplies',
+                      'cooling_sandwiches',
+                      'parking_access',
+                      'backup_contact',
+                      'discuss_process',
+                      'assembly_line',
+                      'runner_role',
+                      'typical_rules',
+                    ]);
+                    const isConfirmationItem = CONFIRMATION_ITEM_IDS.has(item.id);
+
                     return (
                     <React.Fragment key={item.id}>
                     <div
-                      className={`flex items-start gap-3 p-2 rounded-md transition-colors ${
+                      className={`${
+                        isConfirmationItem ? 'flex items-start gap-3' : ''
+                      } p-2 rounded-md transition-colors ${
                         checkedItems.has(item.id)
                           ? 'bg-green-50 border border-green-200'
                           : 'hover:bg-gray-50'
                       } ${isUnderGated ? 'opacity-40 pointer-events-none' : ''}`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleItem(item.id)}
-                        className="mt-0.5 flex-shrink-0"
-                        aria-label={`Toggle ${item.label}`}
-                      >
-                        {checkedItems.has(item.id) ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <Circle className="w-5 h-5 text-gray-400" />
-                        )}
-                      </button>
+                      {isConfirmationItem && (
+                        <button
+                          type="button"
+                          onClick={() => toggleItem(item.id)}
+                          className="mt-0.5 flex-shrink-0"
+                          aria-label={`Toggle ${item.label}`}
+                        >
+                          {checkedItems.has(item.id) ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-gray-400" />
+                          )}
+                        </button>
+                      )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start gap-2">
                           <label
-                            className={`text-sm cursor-pointer flex-1 ${
-                              checkedItems.has(item.id)
-                                ? 'text-gray-600 line-through'
+                            className={`text-sm flex-1 font-medium ${
+                              isConfirmationItem
+                                ? `cursor-pointer ${
+                                    checkedItems.has(item.id)
+                                      ? 'text-gray-600 line-through'
+                                      : 'text-gray-900'
+                                  }`
                                 : 'text-gray-900'
                             }`}
-                            onClick={() => toggleItem(item.id)}
+                            onClick={isConfirmationItem ? () => toggleItem(item.id) : undefined}
                           >
                             {item.label}
                             {item.required && (
@@ -1435,14 +1487,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                           </label>
                         </div>
                         {item.notes && (
-                          <div className="text-xs text-gray-500 mt-1 ml-7 italic">
+                          <div className={`text-xs text-gray-500 mt-1 italic ${isConfirmationItem ? 'ml-7' : ''}`}>
                             {item.notes.split('\n').map((line, idx) => (
                               <div key={idx}>{line}</div>
                             ))}
                           </div>
                         )}
                         {/* Answer input field - special handling for contact info */}
-                        <div className="mt-2 ml-7">
+                        <div className={`mt-2 ${isConfirmationItem ? 'ml-7' : ''}`}>
                           {item.id === 'contact_name' ? (
                             <Input
                               type="text"
@@ -1486,15 +1538,62 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : item.id === 'event_date' ? (
-                            <Input
-                              type="date"
-                              value={itemAnswers[item.id] || ''}
-                              onChange={(e) =>
-                                handleAnswerChange(item.id, e.target.value)
-                              }
-                              className="text-sm h-8"
-                              onClick={(e) => e.stopPropagation()}
-                            />
+                            // Specific-date OR "not decided yet" toggle.
+                            // When undecided, the conflict checker turns off
+                            // (it keys on itemAnswers.event_date) and the
+                            // potential-dates textarea surfaces below.
+                            (() => {
+                              const isUndecided = itemAnswers.event_date_undecided === 'true';
+                              const setMode = (mode: 'specific' | 'undecided') => {
+                                if (mode === 'undecided') {
+                                  // Clear the date so the conflict checker
+                                  // disables and the date doesn't accidentally
+                                  // get saved back to desiredEventDate.
+                                  handleAnswerChange('event_date', '');
+                                  handleAnswerChange('event_date_undecided', 'true');
+                                } else {
+                                  handleAnswerChange('event_date_undecided', '');
+                                }
+                              };
+                              return (
+                                <div className="space-y-2">
+                                  <Select
+                                    value={isUndecided ? 'undecided' : 'specific'}
+                                    onValueChange={(v) => setMode(v as 'specific' | 'undecided')}
+                                  >
+                                    <SelectTrigger
+                                      className="text-sm h-8"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="specific">Specific date</SelectItem>
+                                      <SelectItem value="undecided">Not decided yet</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {isUndecided ? (
+                                    <Textarea
+                                      placeholder="Explain why it's not decided yet and any potential dates or windows (e.g. 'sometime in July', 'Saturday morning in late June')."
+                                      value={itemAnswers.event_date_undecided_note || ''}
+                                      onChange={(e) => handleAnswerChange('event_date_undecided_note', e.target.value)}
+                                      className="text-sm min-h-[80px]"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  ) : (
+                                    <Input
+                                      type="date"
+                                      value={itemAnswers[item.id] || ''}
+                                      onChange={(e) =>
+                                        handleAnswerChange(item.id, e.target.value)
+                                      }
+                                      className="text-sm h-8"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  )}
+                                </div>
+                              );
+                            })()
                           ) : item.id === 'sandwich_count' ? (
                             <div className="space-y-2">
                               <Input
@@ -1616,31 +1715,35 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               </SelectContent>
                             </Select>
                           ) : item.id === 'how_heard' ? (
-                            <Select
-                              value={itemAnswers[item.id] || ''}
-                              onValueChange={(v) => handleAnswerChange(item.id, v)}
-                            >
-                              <SelectTrigger
-                                className="text-sm h-8"
-                                onClick={(e) => e.stopPropagation()}
+                            // Dropdown + free-text notes as one logical
+                            // question. The notes textarea is inline, not
+                            // its own checklist row.
+                            <div className="space-y-2">
+                              <Select
+                                value={itemAnswers[item.id] || ''}
+                                onValueChange={(v) => handleAnswerChange(item.id, v)}
                               >
-                                <SelectValue placeholder="Select how they heard about us" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="previous_event">Previous event</SelectItem>
-                                <SelectItem value="friend_family">Friend or family</SelectItem>
-                                <SelectItem value="internet_search">Internet search</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : item.id === 'how_heard_notes' ? (
-                            <Textarea
-                              placeholder="Optional notes (e.g. event name, specific search term, friend's name)"
-                              value={itemAnswers[item.id] || ''}
-                              onChange={(e) => handleAnswerChange(item.id, e.target.value)}
-                              className="text-sm min-h-[60px]"
-                              onClick={(e) => e.stopPropagation()}
-                            />
+                                <SelectTrigger
+                                  className="text-sm h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <SelectValue placeholder="Select how they heard about us" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="previous_event">Previous event</SelectItem>
+                                  <SelectItem value="friend_family">Friend or family</SelectItem>
+                                  <SelectItem value="internet_search">Internet search</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Textarea
+                                placeholder="Notes — e.g. event name, specific search term, friend's name (optional)"
+                                value={itemAnswers.how_heard_notes || ''}
+                                onChange={(e) => handleAnswerChange('how_heard_notes', e.target.value)}
+                                className="text-sm min-h-[60px]"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
                           ) : item.id === 'outside_operating_area' ? (
                             <p className="text-xs text-gray-500 italic">
                               Tick the box if the event location falls outside the areas listed above.
@@ -1672,14 +1775,16 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               </p>
                             </div>
                           ) : item.id === 'check_date_conflicts' ? (
-                            // Conflicts surface live above the checklist via
-                            // EventConflictWarnings — no input field needed
-                            // here. Just a small hint so the operator knows
-                            // where to look.
+                            // Dynamic hint — wording depends on whether a
+                            // specific date is set or the operator marked
+                            // the date as undecided. No input field; the
+                            // checkbox above is the answer.
                             <p className="text-xs text-gray-500 italic">
-                              {conflictDate
-                                ? 'See conflict warnings at the top of this dialog.'
-                                : 'Enter the event date below to see conflicts.'}
+                              {itemAnswers.event_date_undecided === 'true'
+                                ? 'No date set yet — conflict check will run once a date is finalized.'
+                                : conflictDate
+                                ? "Conflicts for this date appear at the top of this dialog. Check the box once you've reviewed them."
+                                : 'Set the event date above to see conflicts.'}
                             </p>
                           ) : item.id === 'event_address' ? (
                             // Address: show existing as a confirm-or-change card

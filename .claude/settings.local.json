@@ -95,7 +95,8 @@
       "Bash(wait)",
       "Bash(awk -F':' '$1 >= 1400 && $1 <= 1680 {print}')",
       "Bash(awk 'NR>=1150 && NR<=1425' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/event-requests/IntakeCallDialog.tsx)",
-      "Bash(wait bkvt4x95r *)"
+      "Bash(wait bkvt4x95r *)",
+      "Bash(awk 'NR>=1044 && NR<=1100' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/event-requests/IntakeCallDialog.tsx)"
     ],
     "deny": [],
     "ask": [],
