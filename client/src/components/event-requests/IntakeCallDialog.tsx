@@ -1811,11 +1811,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 <p className="text-xs text-[#A31C41] italic">
                                   Corporate event — a speaker or volunteer is required.
                                 </p>
-                              ) : isUnder500 && sandwichCountNum !== null ? (
-                                <p className="text-xs text-gray-500 italic">
-                                  We prefer not to send speakers for groups making under 500 sandwiches, but can offer if helpful.
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  Our speaker roster is limited, so we generally prioritize larger and corporate events. Only offer a speaker if it really fits the event.
                                 </p>
-                              ) : null}
+                              )}
                             </div>
                           ) : item.id === 'additional_volunteers' ? (
                             <div className="space-y-2">
@@ -1831,11 +1831,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 <p className="text-xs text-[#A31C41] italic">
                                   Corporate event — a speaker or volunteer is required.
                                 </p>
-                              ) : isUnder500 && sandwichCountNum !== null ? (
-                                <p className="text-xs text-gray-500 italic">
-                                  We prefer not to send volunteers for groups making under 500 sandwiches, but can offer if helpful.
+                              ) : (
+                                <p className="text-xs text-gray-600 italic">
+                                  Our volunteer roster is limited, so we generally prioritize larger and corporate events. Only offer volunteers if it really fits the event.
                                 </p>
-                              ) : null}
+                              )}
                             </div>
                           ) : item.id === 'outside_operating_area' ? (
                             <p className="text-xs text-gray-500 italic">
