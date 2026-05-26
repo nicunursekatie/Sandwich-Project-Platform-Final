@@ -224,6 +224,43 @@ export function formatDateShort(dateValue: string | Date | null | undefined): st
   }
 }
 
+/**
+ * Parse a server-supplied event-date value into a Date that represents the
+ * intended calendar day in *local* time — never one day off.
+ *
+ * The bug this fixes: the DB stores event dates as `timestamp` (no tz), which
+ * Drizzle serializes as e.g. "2026-05-26T00:00:00.000Z". Passing that to
+ * `new Date()` / `parseISO()` and then formatting in Eastern shifts the day
+ * to May 25. We pull out the YYYY-MM-DD portion and rebuild at noon local.
+ *
+ * Use this anywhere you would otherwise do `parseISO(eventDate)` or
+ * `new Date(eventDate)` for a date-only field (scheduledEventDate,
+ * desiredEventDate, etc.).
+ */
+export function parseEventDate(value: string | Date | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null;
+    // If this Date was built from a UTC-midnight ISO string, its UTC parts
+    // hold the intended calendar day. Rebuild as local noon.
+    const y = value.getUTCFullYear();
+    const m = value.getUTCMonth();
+    const d = value.getUTCDate();
+    return new Date(y, m, d, 12, 0, 0, 0);
+  }
+  if (typeof value !== 'string') return null;
+  const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const year = Number(m[1]);
+    const month = Number(m[2]) - 1;
+    const day = Number(m[3]);
+    const out = new Date(year, month, day, 12, 0, 0, 0);
+    return isNaN(out.getTime()) ? null : out;
+  }
+  const fallback = new Date(value);
+  return isNaN(fallback.getTime()) ? null : fallback;
+}
+
 export type DateLike = string | Date | null | undefined;
 
 /**

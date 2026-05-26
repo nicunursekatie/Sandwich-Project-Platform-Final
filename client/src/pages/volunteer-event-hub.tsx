@@ -22,7 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { formatTimeForDisplay } from '@/lib/date-utils';
+import { formatTimeForDisplay, parseEventDate } from '@/lib/date-utils';
 
 // UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -264,7 +264,7 @@ function EventCard({
 }) {
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
   const formattedDate = eventDate
-    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
 
   // Build a simple list of roles needed
@@ -413,7 +413,7 @@ function CalendarEventPreview({
   const isCompleted = event.status === 'completed';
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
   const formattedDate = eventDate
-    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
 
   const roleRow = (
@@ -665,7 +665,7 @@ function SignupDialog({
 
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
   const formattedDate = eventDate
-    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
 
   return (
@@ -876,7 +876,7 @@ function AssignOthersDialog({
 
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
   const formattedDate = eventDate
-    ? format(parseISO(eventDate), 'EEEE, MMMM d, yyyy')
+    ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
 
   return (
@@ -2130,7 +2130,7 @@ export default function VolunteerEventHub() {
                 filteredSignups.map(signup => {
                   const signupDate = signup.event.scheduledEventDate || signup.event.desiredEventDate;
                   const formattedSignupDate = signupDate
-                    ? format(parseISO(signupDate), 'EEEE, MMMM d, yyyy')
+                    ? format(parseEventDate(signupDate)!, 'EEEE, MMMM d, yyyy')
                     : 'Date TBD';
 
                   return (
@@ -2234,7 +2234,7 @@ export default function VolunteerEventHub() {
                                 <>
                                   <span className="text-gray-400">|</span>
                                   <Calendar className="w-3.5 h-3.5 text-[#236383]" />
-                                  <span>{format(parseISO(eventDate), 'MMM d, yyyy')}</span>
+                                  <span>{format(parseEventDate(eventDate)!, 'MMM d, yyyy')}</span>
                                   <span>· {formatEventTime(signup.event?.eventStartTime)}</span>
                                 </>
                               )}
@@ -2338,7 +2338,7 @@ export default function VolunteerEventHub() {
                                     <>
                                       <span className="text-gray-400">|</span>
                                       <Calendar className="w-3.5 h-3.5 text-[#236383]" />
-                                      <span>{format(parseISO(eventDate), 'MMM d, yyyy')}</span>
+                                      <span>{format(parseEventDate(eventDate)!, 'MMM d, yyyy')}</span>
                                       {signup.event?.eventStartTime && (
                                         <span className="text-gray-500">· {formatEventTime(signup.event.eventStartTime)}</span>
                                       )}
@@ -2468,7 +2468,7 @@ export default function VolunteerEventHub() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                Events on {selectedDayEvents?.date ? format(parseISO(selectedDayEvents.date), 'EEEE, MMMM d, yyyy') : ''}
+                Events on {selectedDayEvents?.date ? format(parseEventDate(selectedDayEvents.date)!, 'EEEE, MMMM d, yyyy') : ''}
               </DialogTitle>
               <DialogDescription>
                 {selectedDayEvents?.events.length} event{selectedDayEvents?.events.length !== 1 ? 's' : ''} scheduled
