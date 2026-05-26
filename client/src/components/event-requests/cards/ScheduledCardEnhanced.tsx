@@ -53,6 +53,7 @@ import {
   Check,
   HelpCircle,
   User,
+  MessageCircle,
 } from 'lucide-react';
 import {
   formatTime12Hour,
@@ -236,6 +237,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showAllocationEditor, setShowAllocationEditor] = useState(false);
   const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
   const [showFlagsDialog, setShowFlagsDialog] = useState(false);
+  const [showContactLog, setShowContactLog] = useState(false);
 
   const { user } = useAuth();
   const canSendSMS = user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SEND_SMS);
@@ -2535,35 +2537,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               )}
             </div>
 
-            {/* TSP Contact - show below sandwiches (matches internal terminology + layout) */}
-            {tspContactDisplay && (
-              <div className="flex items-center gap-2 pt-3 group">
-                <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
-                  <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
-                    {tspContactDisplay}
-                  </div>
-                </div>
-                {canEditTspContact && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={onEditTspContact}
-                    className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Edit TSP contact"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </Button>
-                )}
-              </div>
-            )}
               </div>
             </div>
+          </div>
 
-            {/* Event Organizer — sibling of Event Details inside Column 1.
-                Previously lived in its own Column 3; folded in here when the body
-                collapsed from 3 columns to 2 to match InProcessCard density. */}
+          {/* Column 2: Event Organizer (top) + Team Assignments (bottom).
+              Event Organizer was previously in Column 1; moved here so the right
+              column carries the people-oriented info (organizer + TSP contact + team)
+              and the left column is purely Event Details. */}
+          <div className="flex flex-col gap-4 h-full">
             <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] pb-2 mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#47B3CB]" aria-hidden="true" />
@@ -2596,15 +2578,36 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Column 2: Team Assignments */}
-          <div className="flex flex-col h-full">
             <div className="bg-white rounded-lg p-4 border-l-4 border-[#47B3CB] border-t border-r border-b border-[#47B3CB]/20 shadow-md flex-1">
               <h3 className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-3 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
+              {/* TSP Contact — moved from Event Details so all people-on-our-side info
+                  sits next to the volunteer Team Assignments. */}
+              {tspContactDisplay && (
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group">
+                  <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
+                    <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
+                      {tspContactDisplay}
+                    </div>
+                  </div>
+                  {canEditTspContact && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onEditTspContact}
+                      className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Edit TSP contact"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+              )}
               <div className="space-y-3">
                 {/* Drivers */}
                 {request.selfTransport ? (
@@ -4444,7 +4447,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {onDuplicate && (
               <Button size="sm" variant="outline" onClick={onDuplicate}>
                 <Copy className="w-4 h-4 mr-1" />
-                New Event
+                Duplicate Event
               </Button>
             )}
 
@@ -4605,6 +4608,140 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </div>
             </Button>
           </div>
+        </div>
+
+        {/* Contact Log Toggle — shows the full history of Log Contact entries for
+            this scheduled event. Read-only here; use the "Log Contact" button in the
+            action row above to add a new entry. */}
+        <div className="border-t-2 border-[#007E8C]/10 pt-4 mt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowContactLog((v) => !v);
+            }}
+            className="w-full justify-between text-[#236383] hover:text-[#236383] hover:bg-[#007E8C]/5 font-medium"
+            type="button"
+            data-testid="button-toggle-contact-log"
+          >
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4" aria-hidden="true" />
+              <span>Contact Log</span>
+              {hasContactAttempts && (
+                <Badge variant="secondary" className="ml-1">
+                  {(request.contactAttemptsLog as any[]).length}
+                </Badge>
+              )}
+              {request.lastContactAttempt && (
+                <span className="text-xs font-normal text-slate-500">
+                  Last: {new Date(request.lastContactAttempt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+            {showContactLog ? <ChevronUp className="w-4 h-4" aria-hidden="true" /> : <ChevronDown className="w-4 h-4" aria-hidden="true" />}
+          </Button>
+
+          {showContactLog && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              {!hasContactAttempts ? (
+                <div className="text-sm text-slate-600 italic">
+                  No contact attempts logged yet. Use the <span className="font-medium">Log Contact</span> button above to add one.
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {(request.contactAttemptsLog as any[])
+                    .slice()
+                    .sort((a, b) => (b.attemptNumber || 0) - (a.attemptNumber || 0))
+                    .map((attempt: any) => {
+                      if (!attempt || typeof attempt !== 'object') return null;
+
+                      const methodIcons: Record<string, React.ReactNode> = {
+                        phone: <Phone className="w-3 h-3" />,
+                        email: <Mail className="w-3 h-3" />,
+                        text: <MessageCircle className="w-3 h-3" />,
+                        both: <MessageSquare className="w-3 h-3" />,
+                        phone_and_toolkit: <MessageSquare className="w-3 h-3" />,
+                        email_and_toolkit: <Mail className="w-3 h-3" />,
+                      };
+
+                      const methodLabels: Record<string, string> = {
+                        phone: 'Phone',
+                        email: 'Email',
+                        text: 'Text',
+                        both: 'Phone & Email',
+                        phone_and_toolkit: 'Phone + Toolkit',
+                        email_and_toolkit: 'Email + Toolkit',
+                      };
+
+                      const outcomeLabels: Record<string, string> = {
+                        successful: 'Success',
+                        toolkit_sent: 'Toolkit Sent',
+                        toolkit_sent_left_message: 'Toolkit + Voicemail',
+                        no_answer: 'No answer',
+                        left_message: 'Left message',
+                        wrong_number: 'Wrong number',
+                        email_bounced: 'Bounced',
+                        requested_callback: 'Callback requested',
+                        other: 'Other',
+                      };
+
+                      let parsedDate: Date | undefined;
+                      if (attempt.timestamp) {
+                        try {
+                          parsedDate = new Date(attempt.timestamp);
+                          if (isNaN(parsedDate.getTime())) parsedDate = undefined;
+                        } catch (e) {
+                          parsedDate = undefined;
+                        }
+                      }
+
+                      const userName = attempt.createdByName || attempt.createdBy || 'Unknown';
+                      const hasNotes = attempt.notes && String(attempt.notes).trim().length > 0;
+
+                      return (
+                        <div
+                          key={attempt.attemptNumber || attempt.timestamp}
+                          className="bg-white rounded px-2.5 py-1.5 border border-amber-200 text-xs"
+                        >
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="font-semibold text-amber-900 flex-shrink-0">
+                              #{attempt.attemptNumber || '?'}
+                            </span>
+                            {attempt.method && (
+                              <div className="flex items-center gap-1 text-amber-700 flex-shrink-0">
+                                {methodIcons[attempt.method as string] || <Phone className="w-3 h-3" />}
+                                <span>{methodLabels[attempt.method as string] || attempt.method}</span>
+                              </div>
+                            )}
+                            {attempt.outcome && (
+                              <span className="text-gray-700 flex-shrink-0">
+                                • {outcomeLabels[attempt.outcome as string] || attempt.outcome}
+                              </span>
+                            )}
+                            {parsedDate && (
+                              <span className="text-gray-500 flex-shrink-0">
+                                • {parsedDate.toLocaleDateString()} {parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                            {userName && userName !== 'unknown' && userName !== 'system' && (
+                              <span className="text-gray-500 flex-shrink-0">
+                                • by {userName}
+                              </span>
+                            )}
+                          </div>
+                          {hasNotes && (
+                            <div className="mt-1 text-gray-600 italic whitespace-pre-wrap">
+                              {attempt.notes}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Activity History Toggle */}
