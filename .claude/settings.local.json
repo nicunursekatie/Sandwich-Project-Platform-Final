@@ -92,7 +92,8 @@
       "Bash(awk '/Column 3:/{found=1} found')",
       "Bash(ls /Users/kathrynelong/.claude/projects/ 2>&1 | head -20)",
       "Read(//Users/kathrynelong/.claude/projects/**)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(awk -F':' '$1 >= 1400 && $1 <= 1680 {print}')"
     ],
     "deny": [],
     "ask": [],
