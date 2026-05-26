@@ -2377,6 +2377,8 @@ export const eventRequests = pgTable(
     additionalRequirements: text('additional_requirements'), // Special requirements or notes
     planningNotes: text('planning_notes'), // General planning notes
     schedulingNotes: text('scheduling_notes'), // Scheduling notes and instructions
+    howHeardAboutUs: varchar('how_heard_about_us'), // 'previous_event' | 'friend_family' | 'internet_search' | 'other' | null
+    howHeardAboutUsNotes: text('how_heard_about_us_notes'), // Free-text notes for how-heard, esp. when 'other' is selected
 
     // Additional event details
     sandwichTypes: jsonb('sandwich_types'), // Array of {type: string, quantity: number} objects

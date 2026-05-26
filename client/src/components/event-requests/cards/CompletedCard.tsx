@@ -33,6 +33,7 @@ import {
   Home,
   MessageSquare,
   Copy,
+  Plus,
 } from 'lucide-react';
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';
@@ -98,6 +99,9 @@ interface CompletedCardProps {
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
+  onAddNextAction?: () => void;
+  onEditNextAction?: () => void;
+  onCompleteNextAction?: () => void;
   resolveUserName: (id: string) => string;
   canDelete?: boolean;
   openAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer') => void;
@@ -1606,6 +1610,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
+  onAddNextAction,
+  onEditNextAction,
+  onCompleteNextAction,
   resolveUserName,
   canDelete = true,
   openAssignmentDialog,
@@ -2366,6 +2373,60 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           currentUserId={user?.id}
           canEditTspContact={canEditTspContact}
         />
+
+        {/* Next Action - shown when one exists; otherwise an "Add Action" affordance
+            is offered below. Mirrors the InProcessCard pattern so behavior is
+            consistent across statuses. */}
+        {request.nextAction ? (
+          <div className="mb-4 p-3 bg-amber-50 border-2 border-amber-300 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">Next Action:</span>
+                  <p className="mt-1 text-amber-900 font-medium break-words whitespace-pre-wrap">{request.nextAction}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-shrink-0 self-end sm:self-auto">
+                {onEditNextAction && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onEditNextAction}
+                    className="h-7 text-xs border-amber-400 text-amber-700 hover:bg-amber-100"
+                  >
+                    <Edit2 className="w-3 h-3 mr-1" />
+                    Edit
+                  </Button>
+                )}
+                {onCompleteNextAction && (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={onCompleteNextAction}
+                    className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Complete
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : onAddNextAction ? (
+          <div className="mb-3 flex justify-end">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAddNextAction}
+              className="h-7 text-xs border-slate-300 text-slate-600 hover:bg-slate-100"
+              data-testid="button-add-action-completed"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Action
+            </Button>
+          </div>
+        ) : null}
 
         {/* At-a-glance: sandwiches + social — minimal, expand only when needed */}
         <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200 space-y-2">

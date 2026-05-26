@@ -50,6 +50,8 @@ import {
   clearDraft,
   formatDraftTimestamp,
 } from '@/hooks/useDraftPersistence';
+import { EventConflictWarnings, useEventConflicts } from './EventConflictWarnings';
+import { getTrafficConflict } from '@shared/traffic-conflicts';
 
 interface IntakeDraftData {
   checkedItems: string[];
@@ -205,6 +207,32 @@ function buildStructuredUpdates(
     }
   }
 
+  // how_heard — Select with one of the predefined values (or null).
+  // Notes field is captured separately and always mapped if non-empty.
+  const howHeardValue = itemAnswers.how_heard?.trim();
+  if (howHeardValue) {
+    const HOW_HEARD_LABELS: Record<string, string> = {
+      previous_event: 'Previous event',
+      friend_family: 'Friend or family',
+      internet_search: 'Internet search',
+      other: 'Other',
+    };
+    if (HOW_HEARD_LABELS[howHeardValue]) {
+      updates.howHeardAboutUs = howHeardValue;
+      mapped.push({
+        itemId: 'how_heard',
+        column: 'how heard about us',
+        display: HOW_HEARD_LABELS[howHeardValue],
+      });
+    }
+  }
+  const howHeardNotesValue = itemAnswers.how_heard_notes?.trim();
+  if (howHeardNotesValue) {
+    updates.howHeardAboutUsNotes = howHeardNotesValue;
+    // No `mapped` entry — notes ride along quietly; the dropdown is the
+    // searchable/reportable column.
+  }
+
   // refrigeration — Select with 'yes' / 'no' / 'unsure'. Picking Unsure
   // explicitly clears the column back to null (unknown), so operators can
   // walk back a previously-recorded value when something changes.
@@ -282,6 +310,48 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if (!hasUserInteracted) setHasUserInteracted(true);
   };
 
+  // Live conflict check on whatever event_date is currently in the form.
+  // We pass the bare YYYY-MM-DD string; the conflict endpoint accepts ISO or
+  // date-only. We exclude the current event id so it doesn't conflict with
+  // itself if its own date hasn't changed.
+  const conflictDate = itemAnswers.event_date?.trim() || null;
+  const { data: conflicts } = useEventConflicts({
+    eventId: eventRequest?.id,
+    scheduledEventDate: conflictDate,
+    organizationName: eventRequest?.organizationName ?? null,
+    enabled: !!conflictDate,
+  });
+
+  // Atlanta World Cup match conflict on the requested date.
+  const trafficConflict = conflictDate ? getTrafficConflict(conflictDate) : null;
+
+  // Auto-check the "Check calendar for conflicts" required item once we have
+  // a date to check against — the operator can't enter text into it (the
+  // warnings appear inline above), so we satisfy the required-flag for them.
+  // Clears itself if the date is removed.
+  useEffect(() => {
+    setCheckedItems((prev) => {
+      const next = new Set(prev);
+      if (conflictDate) {
+        if (next.has('check_date_conflicts')) return prev;
+        next.add('check_date_conflicts');
+      } else {
+        if (!next.has('check_date_conflicts')) return prev;
+        next.delete('check_date_conflicts');
+      }
+      return next;
+    });
+  }, [conflictDate]);
+
+  // Consult-Christine-&-Marcy flag: World Cup match, or any high-volume
+  // day/week warning from the conflict endpoint. Anything else (regular van
+  // / driver / speaker conflicts) is shown as a warning but doesn't trigger
+  // the consult prompt — that's reserved for capacity/scheduling sanity.
+  const highVolumeWarnings = (conflicts?.warnings || []).filter(
+    (w) => w.type === 'high_volume_day' || w.type === 'high_volume_week'
+  );
+  const shouldConsultTeam = !!trafficConflict || highVolumeWarnings.length > 0;
+
   // Shared "load the event's current values into form state" routine, used
   // by the open-dialog effect and by discardPendingDraft.
   const populateFromEventRequest = useCallback((req: EventRequest) => {
@@ -335,6 +405,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if (req.eventAddress) {
       initialAnswers.event_address = req.eventAddress;
       initialChecked.add('event_address');
+    }
+    if ((req as any).howHeardAboutUs) {
+      initialAnswers.how_heard = (req as any).howHeardAboutUs;
+      initialChecked.add('how_heard');
+    }
+    if ((req as any).howHeardAboutUsNotes) {
+      initialAnswers.how_heard_notes = (req as any).howHeardAboutUsNotes;
+      initialChecked.add('how_heard_notes');
     }
 
     setItemAnswers(initialAnswers);
@@ -497,6 +575,31 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         updates.eventAddress = itemAnswers.event_address.trim();
       }
 
+      // If the live conflict check surfaced a World Cup match or any
+      // high-volume day/week warning, seed the event's Next Action so the
+      // operator's coordinators see a follow-up on the card. We don't
+      // overwrite an existing next action — append to it instead so any
+      // prior follow-up isn't lost.
+      if (shouldConsultTeam) {
+        const conflictLines: string[] = [];
+        if (trafficConflict) {
+          conflictLines.push(
+            `• ${trafficConflict.label}${trafficConflict.detail ? ` — ${trafficConflict.detail}` : ''}${trafficConflict.kickoffEt ? ` (kickoff ${trafficConflict.kickoffEt})` : ''}`
+          );
+        }
+        for (const w of highVolumeWarnings) {
+          conflictLines.push(`• ${w.message}`);
+        }
+        const newActionBlock = [
+          'Consult with Christine & Marcy about scheduling conflicts:',
+          ...conflictLines,
+        ].join('\n');
+        const existingNextAction = eventRequest?.nextAction?.trim() || '';
+        updates.nextAction = existingNextAction
+          ? `${existingNextAction}\n\n${newActionBlock}`
+          : newActionBlock;
+      }
+
       await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
 
       // Build a toast that tells the operator exactly which structured fields
@@ -508,6 +611,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         toastParts.push(
           'Saved to event: ' +
             structured.mapped.map((m) => `${m.column} (${m.display})`).join(', ')
+        );
+      }
+      if (shouldConsultTeam) {
+        toastParts.push(
+          'Next Action added: consult with Christine & Marcy about scheduling conflicts.'
         );
       }
       const hasUnparseable = structured.unparseable.length > 0;
@@ -569,11 +677,17 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       required: true,
     },
     {
+      id: 'how_heard_notes',
+      label: 'How did they hear about us — notes',
+      category: 'Initial Questions',
+      notes: 'Optional. Use when "Other" is selected, or to add details.',
+    },
+    {
       id: 'check_date_conflicts',
-      label: 'Check calendar for conflicts - do we have too many events that day?',
+      label: 'Check calendar for conflicts',
       category: 'Initial Questions',
       required: true,
-      notes: 'Check if requested date works / ask about flexibility (look for low weeks with fewer events)',
+      notes: 'Once an event date is entered below, conflicts on that day appear automatically.',
     },
     {
       id: 'get_event_time',
@@ -924,6 +1038,49 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               </div>
             </div>
 
+            {/* Live calendar conflict check + consult prompt.
+                Renders as soon as the operator enters/has an event_date.
+                Driven by the existing /check-conflicts + traffic-conflicts
+                infrastructure (no new endpoints). The consult banner is the
+                only thing that decides whether a follow-up todo gets seeded
+                on save. */}
+            {conflictDate && (
+              <div className="space-y-3">
+                {shouldConsultTeam && (
+                  <div className="border-l-4 border-[#A31C41] bg-[#A31C41]/5 rounded-md p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 text-[#A31C41] flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-semibold text-[#A31C41]">
+                          Consult with Christine &amp; Marcy before scheduling
+                        </div>
+                        <ul className="mt-2 list-disc list-inside text-[#7a1632] space-y-1">
+                          {trafficConflict && (
+                            <li>
+                              <span className="font-medium">{trafficConflict.label}</span>
+                              {trafficConflict.detail ? ` — ${trafficConflict.detail}` : ''}
+                              {trafficConflict.kickoffEt ? ` (kickoff ${trafficConflict.kickoffEt})` : ''}
+                            </li>
+                          )}
+                          {highVolumeWarnings.map((w, i) => (
+                            <li key={i}>{w.message}</li>
+                          ))}
+                        </ul>
+                        <p className="mt-2 text-xs text-[#7a1632]/80">
+                          You can still complete this form. A reminder will be added to the event's Next Action when you save.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <EventConflictWarnings
+                  eventId={eventRequest?.id}
+                  scheduledEventDate={conflictDate}
+                  organizationName={eventRequest?.organizationName ?? null}
+                />
+              </div>
+            )}
+
             {/* Checklist by Category */}
             {Object.entries(itemsByCategory).map(([category, items]) => (
               <div key={category} className="border border-gray-200 rounded-lg p-4">
@@ -1052,6 +1209,42 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 <SelectItem value="unsure">Unsure</SelectItem>
                               </SelectContent>
                             </Select>
+                          ) : item.id === 'how_heard' ? (
+                            <Select
+                              value={itemAnswers[item.id] || ''}
+                              onValueChange={(v) => handleAnswerChange(item.id, v)}
+                            >
+                              <SelectTrigger
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <SelectValue placeholder="Select how they heard about us" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="previous_event">Previous event</SelectItem>
+                                <SelectItem value="friend_family">Friend or family</SelectItem>
+                                <SelectItem value="internet_search">Internet search</SelectItem>
+                                <SelectItem value="other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : item.id === 'how_heard_notes' ? (
+                            <Textarea
+                              placeholder="Optional notes (e.g. event name, specific search term, friend's name)"
+                              value={itemAnswers[item.id] || ''}
+                              onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                              className="text-sm min-h-[60px]"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : item.id === 'check_date_conflicts' ? (
+                            // Conflicts surface live above the checklist via
+                            // EventConflictWarnings — no input field needed
+                            // here. Just a small hint so the operator knows
+                            // where to look.
+                            <p className="text-xs text-gray-500 italic">
+                              {conflictDate
+                                ? 'See conflict warnings at the top of this dialog.'
+                                : 'Enter the event date below to see conflicts.'}
+                            </p>
                           ) : (
                             <Input
                               type="text"

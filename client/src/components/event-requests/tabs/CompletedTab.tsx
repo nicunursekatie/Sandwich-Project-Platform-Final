@@ -44,6 +44,9 @@ export const CompletedTab: React.FC = () => {
     setShowTspContactAssignmentDialog,
     setShowLogContactDialog,
     setLogContactEventRequest,
+    setShowNextActionDialog,
+    setNextActionEventRequest,
+    setNextActionMode,
   } = useEventRequestContext();
 
   const completedRequests = filterRequestsByStatus('completed') || [];
@@ -178,6 +181,21 @@ export const CompletedTab: React.FC = () => {
             onLogContact={() => {
               setLogContactEventRequest(request);
               setShowLogContactDialog(true);
+            }}
+            onAddNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('add');
+              setShowNextActionDialog(true);
+            }}
+            onEditNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('edit');
+              setShowNextActionDialog(true);
+            }}
+            onCompleteNextAction={() => {
+              setNextActionEventRequest(request);
+              setNextActionMode('complete');
+              setShowNextActionDialog(true);
             }}
             openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}

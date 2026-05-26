@@ -92,6 +92,7 @@ interface InProcessCardProps {
   onDelete: () => void;
   onSchedule: () => void;
   onCall: () => void;
+  onIntakeCall?: () => void;
   onContact: () => void;
   onScheduleCall: () => void;
   onResendToolkit?: () => void;
@@ -811,12 +812,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 interface CardContactInfoProps {
   request: EventRequest;
   onCall?: () => void;
+  onIntakeCall?: () => void;
   onContact?: () => void;
 }
 
 const CardContactInfo: React.FC<CardContactInfoProps> = ({
   request,
   onCall,
+  onIntakeCall,
   onContact,
 }) => {
   const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
@@ -847,6 +850,17 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
           )}
         </div>
         <div className="flex flex-col gap-2 flex-shrink-0">
+          {request.phone && onIntakeCall && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onIntakeCall}
+              className="text-sm h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
+            >
+              <Phone className="w-4 h-4 mr-1" />
+              Intake Call
+            </Button>
+          )}
           {request.phone && onCall && (
             <Button
               size="sm"
@@ -926,6 +940,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onDelete,
   onSchedule,
   onCall,
+  onIntakeCall,
   onContact,
   onScheduleCall,
   onResendToolkit,
@@ -1566,6 +1581,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
             <CardContactInfo
               request={request}
               onCall={onCall}
+              onIntakeCall={onIntakeCall}
               onContact={onContact}
             />
 

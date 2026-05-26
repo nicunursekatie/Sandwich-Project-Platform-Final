@@ -56,6 +56,8 @@ export const InProcessTab: React.FC = () => {
     setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
+    setShowIntakeCallDialog,
+    setIntakeCallEventRequest,
   } = useEventRequestContext();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
@@ -399,6 +401,10 @@ export const InProcessTab: React.FC = () => {
                 setShowSchedulingDialog(true);
               }}
               onCall={() => handleCall(request)}
+              onIntakeCall={() => {
+                setIntakeCallEventRequest(request);
+                setShowIntakeCallDialog(true);
+              }}
               onContact={() => {
                 setContactEventRequest(request);
                 setShowContactOrganizerDialog(true);
