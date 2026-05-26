@@ -946,6 +946,39 @@ export default function DriverPlanningDashboard() {
   const [showTeamMembers, setShowTeamMembers] = useState(false);
   const [tripPlanningCollapsed, setTripPlanningCollapsed] = useState(false);
 
+  // Map-layer visibility toggles. Lets the user hide entire categories of pins
+  // when the map gets crowded. Persisted in localStorage so the preference
+  // sticks across page reloads.
+  type MapLayerKey = 'events' | 'hosts' | 'recipients' | 'drivers';
+  const MAP_LAYER_STORAGE_KEY = 'driver-planning:map-layer-visibility';
+  const DEFAULT_LAYER_VISIBILITY: Record<MapLayerKey, boolean> = {
+    events: true,
+    hosts: true,
+    recipients: true,
+    drivers: true,
+  };
+  const [layerVisibility, setLayerVisibility] = useState<Record<MapLayerKey, boolean>>(() => {
+    if (typeof window === 'undefined') return DEFAULT_LAYER_VISIBILITY;
+    try {
+      const raw = window.localStorage.getItem(MAP_LAYER_STORAGE_KEY);
+      if (!raw) return DEFAULT_LAYER_VISIBILITY;
+      const parsed = JSON.parse(raw) as Partial<Record<MapLayerKey, boolean>>;
+      return { ...DEFAULT_LAYER_VISIBILITY, ...parsed };
+    } catch {
+      return DEFAULT_LAYER_VISIBILITY;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(MAP_LAYER_STORAGE_KEY, JSON.stringify(layerVisibility));
+    } catch {
+      // localStorage write failures are non-critical (private mode / quota)
+    }
+  }, [layerVisibility]);
+  const toggleLayer = (key: MapLayerKey) =>
+    setLayerVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+
   // Quick Location Lookup state
   const [customLocation, setCustomLocation] = useState<{
     address: string;
@@ -3096,7 +3129,9 @@ export default function DriverPlanningDashboard() {
 
             {/* Event markers - when an event is selected, only show events on the same date */}
             {/* Only show permanent labels for selected event; others show labels on hover */}
-            {eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
+            {/* zIndexOffset keeps event pins on top of host/driver/recipient pins so they
+                stay visible when locations overlap; selected event gets an even higher offset */}
+            {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
@@ -3105,6 +3140,7 @@ export default function DriverPlanningDashboard() {
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={isSelected ? selectedEventIcon : eventIcon}
+                  zIndexOffset={isSelected ? 2000 : 1000}
                   eventHandlers={{
                     click: () => handleSelectEvent(event)
                   }}
@@ -3172,7 +3208,7 @@ export default function DriverPlanningDashboard() {
             )}
 
             {/* Nearby host markers when event or custom location selected */}
-            {effectiveSelectedEvent && nearbyHosts.map((host) => (
+            {layerVisibility.hosts && effectiveSelectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
@@ -3206,7 +3242,7 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Assigned recipient markers when event selected */}
-            {effectiveSelectedEvent && designatedRecipients.map((recipient) => (
+            {layerVisibility.recipients && effectiveSelectedEvent && designatedRecipients.map((recipient) => (
               <Marker
                 key={`designated-recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -3242,7 +3278,7 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* All recipient markers on map when event or custom location selected */}
-            {effectiveSelectedEvent && allNonDesignatedRecipients.map((recipient) => (
+            {layerVisibility.recipients && effectiveSelectedEvent && allNonDesignatedRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -3281,7 +3317,7 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Selected driver marker - show on map when a driver is selected for trip planning */}
-            {selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+            {layerVisibility.drivers && selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
               <Marker
                 key={`selected-driver-${selectedDriver.id}`}
                 position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
@@ -3309,7 +3345,7 @@ export default function DriverPlanningDashboard() {
 
             {/* Nearby driver markers (triangles) when event or custom location selected */}
             {/* Show drivers and volunteers (who are flagged as drivers), not hosts - hosts show as green circles */}
-            {effectiveSelectedEvent && nearbyDriversAll
+            {layerVisibility.drivers && effectiveSelectedEvent && nearbyDriversAll
               .filter(({ driver }) => driver.latitude && driver.longitude && driver.id !== selectedDriver?.id && (driver.source === 'driver' || driver.source === 'volunteer'))
               .slice(0, 15)
               .map(({ driver, distance }) => (
@@ -3821,12 +3857,21 @@ export default function DriverPlanningDashboard() {
                 </button>
                 {!desktopLegendCollapsed && (
                   <div className="space-y-1.5 text-xs px-2 pb-2">
-                    <div className="flex items-center gap-2">
+                    {/* Each legend row is also a layer-visibility toggle.
+                        Click the row → hide/show that category on the map.
+                        Hidden state is shown by reduced opacity + a (hidden) suffix. */}
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('events')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.events ? '' : 'opacity-40'}`}
+                      title={layerVisibility.events ? 'Click to hide Event pins' : 'Click to show Event pins'}
+                      data-testid="toggle-layer-events"
+                    >
                       <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
                       </svg>
-                      <span>Event</span>
-                    </div>
+                      <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
+                    </button>
                     <div className="flex items-center gap-2">
                       <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
@@ -3835,18 +3880,36 @@ export default function DriverPlanningDashboard() {
                     </div>
                     {effectiveSelectedEvent && (
                       <>
-                        <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleLayer('hosts')}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.hosts ? '' : 'opacity-40'}`}
+                          title={layerVisibility.hosts ? 'Click to hide Host pins' : 'Click to show Host pins'}
+                          data-testid="toggle-layer-hosts"
+                        >
                           <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
-                          <span>Host (circle)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
+                          <span>Host (circle){layerVisibility.hosts ? '' : ' (hidden)'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleLayer('recipients')}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.recipients ? '' : 'opacity-40'}`}
+                          title={layerVisibility.recipients ? 'Click to hide Recipient pins' : 'Click to show Recipient pins'}
+                          data-testid="toggle-layer-recipients"
+                        >
                           <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                          <span>Recipient (diamond)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
+                          <span>Recipient (diamond){layerVisibility.recipients ? '' : ' (hidden)'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleLayer('drivers')}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.drivers ? '' : 'opacity-40'}`}
+                          title={layerVisibility.drivers ? 'Click to hide Driver pins' : 'Click to show Driver pins'}
+                          data-testid="toggle-layer-drivers"
+                        >
                           <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
-                          <span>Driver (triangle)</span>
-                        </div>
+                          <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
+                        </button>
                         <div className="flex items-center gap-2">
                           <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
@@ -5377,7 +5440,7 @@ export default function DriverPlanningDashboard() {
             />
             <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
-            {eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
+            {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
@@ -5386,6 +5449,7 @@ export default function DriverPlanningDashboard() {
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={isSelected ? selectedEventIcon : eventIcon}
+                  zIndexOffset={isSelected ? 2000 : 1000}
                   eventHandlers={{
                     click: () => handleSelectEvent(event)
                   }}
@@ -5429,7 +5493,7 @@ export default function DriverPlanningDashboard() {
                 </Tooltip>
               </Marker>
             )}
-            {effectiveSelectedEvent && nearbyHosts.map((host) => (
+            {layerVisibility.hosts && effectiveSelectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
@@ -5451,7 +5515,7 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {effectiveSelectedEvent && designatedRecipients.map((recipient) => (
+            {layerVisibility.recipients && effectiveSelectedEvent && designatedRecipients.map((recipient) => (
               <Marker
                 key={`designated-recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -5474,7 +5538,7 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {selectedEvent && allNonDesignatedRecipients.map((recipient) => (
+            {layerVisibility.recipients && selectedEvent && allNonDesignatedRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -5497,7 +5561,7 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
             {/* Selected driver marker - show on map when a driver is selected for trip planning */}
-            {selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+            {layerVisibility.drivers && selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
               <Marker
                 key={`selected-driver-${selectedDriver.id}`}
                 position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
@@ -5524,7 +5588,7 @@ export default function DriverPlanningDashboard() {
             )}
             {/* Show driver candidates with geocoded coordinates (drivers + volunteers, not hosts) */}
             {/* Hosts show as green circles via nearbyHosts */}
-            {driverCandidates
+            {layerVisibility.drivers && driverCandidates
               .filter((driver) => driver.latitude && driver.longitude && (driver.source === 'driver' || driver.source === 'volunteer'))
               .map((driver) => (
               <Marker
@@ -5765,7 +5829,7 @@ export default function DriverPlanningDashboard() {
             />
             <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
-            {eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
+            {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = event.scheduledEventDate || event.desiredEventDate;
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
@@ -5774,6 +5838,7 @@ export default function DriverPlanningDashboard() {
                   key={event.id}
                   position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                   icon={isSelected ? selectedEventIcon : eventIcon}
+                  zIndexOffset={isSelected ? 2000 : 1000}
                   eventHandlers={{
                     click: () => {
                       handleSelectEvent(event);
@@ -5822,7 +5887,7 @@ export default function DriverPlanningDashboard() {
                 </Tooltip>
               </Marker>
             )}
-            {effectiveSelectedEvent && nearbyHosts.map((host) => (
+            {layerVisibility.hosts && effectiveSelectedEvent && nearbyHosts.map((host) => (
               <Marker
                 key={`host-${host.id}`}
                 position={[parseFloat(host.latitude), parseFloat(host.longitude)]}
@@ -5844,7 +5909,7 @@ export default function DriverPlanningDashboard() {
                 </Popup>
               </Marker>
             ))}
-            {effectiveSelectedEvent && designatedRecipients.map((recipient) => (
+            {layerVisibility.recipients && effectiveSelectedEvent && designatedRecipients.map((recipient) => (
               <Marker
                 key={`designated-recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -5867,7 +5932,7 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
 
-            {selectedEvent && allNonDesignatedRecipients.map((recipient) => (
+            {layerVisibility.recipients && selectedEvent && allNonDesignatedRecipients.map((recipient) => (
               <Marker
                 key={`recipient-${recipient.id}`}
                 position={[parseFloat(recipient.latitude), parseFloat(recipient.longitude)]}
@@ -5891,7 +5956,7 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Selected driver marker - show on mobile map when a driver is selected */}
-            {selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+            {layerVisibility.drivers && selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
               <Marker
                 key={`selected-driver-${selectedDriver.id}`}
                 position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
@@ -6032,12 +6097,18 @@ export default function DriverPlanningDashboard() {
             </button>
             {!mobileLegendCollapsed && (
               <div className="space-y-0.5 text-[10px] px-2 pb-2">
-                <div className="flex items-center gap-1">
+                {/* Each row also toggles its layer's visibility on the map. */}
+                <button
+                  type="button"
+                  onClick={() => toggleLayer('events')}
+                  className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.events ? '' : 'opacity-40'}`}
+                  data-testid="toggle-layer-events-mobile"
+                >
                   <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
                   </svg>
-                  <span>Event (pin)</span>
-                </div>
+                  <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
+                </button>
                 <div className="flex items-center gap-1">
                   <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
@@ -6046,18 +6117,33 @@ export default function DriverPlanningDashboard() {
                 </div>
                 {selectedEvent && (
                   <>
-                    <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('hosts')}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.hosts ? '' : 'opacity-40'}`}
+                      data-testid="toggle-layer-hosts-mobile"
+                    >
                       <div className="w-2 h-2 rounded-full bg-green-500 border border-white" />
-                      <span>Host (circle)</span>
-                    </div>
-                    <div className="flex items-center gap-1">
+                      <span>Host{layerVisibility.hosts ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('recipients')}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.recipients ? '' : 'opacity-40'}`}
+                      data-testid="toggle-layer-recipients-mobile"
+                    >
                       <div className="w-2 h-2 bg-purple-500 border border-white rotate-45" style={{ borderRadius: '1px' }} />
-                      <span>Recipient (diamond)</span>
-                    </div>
-                    <div className="flex items-center gap-1">
+                      <span>Recipient{layerVisibility.recipients ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('drivers')}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.drivers ? '' : 'opacity-40'}`}
+                      data-testid="toggle-layer-drivers-mobile"
+                    >
                       <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
-                      <span>Driver (triangle)</span>
-                    </div>
+                      <span>Driver{layerVisibility.drivers ? '' : ' (hidden)'}</span>
+                    </button>
                     <div className="flex items-center gap-1 pt-0.5 border-t border-gray-200 mt-0.5">
                       <div className="w-2 h-2 rounded-full bg-orange-500 border border-white" />
                       <span>Selected = orange</span>

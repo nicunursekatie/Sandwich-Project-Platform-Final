@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
 import { getUnfilledCounts } from '@/lib/assignment-utils';
+import { getTrafficConflict } from '@shared/traffic-conflicts';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -861,6 +862,36 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                       {date.getDate()}
                     </div>
                   </div>
+                  {/* World Cup match day indicator (Atlanta-area games this summer).
+                      Purely visual context — no click handler. Tooltip shows match details.
+                      Source: shared/traffic-conflicts.ts. */}
+                  {(() => {
+                    const wcMatch = getTrafficConflict(date);
+                    if (!wcMatch) return null;
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className="text-base leading-none cursor-default"
+                            aria-label={`Atlanta World Cup match: ${wcMatch.detail}`}
+                            data-testid="calendar-world-cup-indicator"
+                          >
+                            ⚽
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <div className="space-y-1 text-xs">
+                            <div className="font-semibold">{wcMatch.label}</div>
+                            <div>{wcMatch.detail}</div>
+                            <div className="opacity-80">Kickoff: {wcMatch.kickoffEt}</div>
+                            <div className="pt-1 opacity-80">
+                              Expect heavy Atlanta-area traffic before and after the match.
+                            </div>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })()}
                   {/* Conflict indicator with tooltip */}
                   {dayConflicts.hasConflicts && (
                     <Tooltip>

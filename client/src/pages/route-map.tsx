@@ -86,6 +86,31 @@ const searchIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+// Yellow triangle marker for drivers (matches the driver-planning page style).
+// Rendered as an inline SVG via L.divIcon so it visually distinguishes drivers
+// from the host/recipient pin shapes.
+const driverIcon = L.divIcon({
+  html: `
+    <svg viewBox="0 0 20 20" width="22" height="22" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));">
+      <polygon points="10,2 18,18 2,18" fill="#f1c40f" stroke="white" stroke-width="1.5" />
+    </svg>
+  `,
+  className: 'driver-marker-locations-map',
+  iconSize: [22, 22],
+  iconAnchor: [11, 18],
+  popupAnchor: [0, -16],
+});
+
+// Gold pin marker for volunteers — warm/distinct from hosts (blue) and recipients (violet).
+const volunteerIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 // Haversine formula for distance calculation (returns miles)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3959; // Earth's radius in miles
@@ -197,6 +222,37 @@ interface HostContactMapData {
   phone: string | null;
 }
 
+// Shape returned by /api/drivers — only the fields used on this map.
+interface DriverMapData {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  homeAddress: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  isActive: boolean;
+  vehicleType?: string | null;
+  vanApproved?: boolean;
+  isSpeaker?: boolean;
+}
+
+// Shape returned by /api/volunteers — only the fields used on this map.
+interface VolunteerMapData {
+  id: number;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  homeAddress: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  isActive: boolean;
+  isDriver?: boolean;
+  isSpeaker?: boolean;
+}
+
 interface SearchedLocation {
   address: string;
   latitude: number;
@@ -215,6 +271,8 @@ export default function LocationsMapView() {
   const [mapZoom, setMapZoom] = useState(10);
   const [showHosts, setShowHosts] = useState(true);
   const [showRecipients, setShowRecipients] = useState(true);
+  const [showDrivers, setShowDrivers] = useState(true);
+  const [showVolunteers, setShowVolunteers] = useState(true);
   const [searchedLocation, setSearchedLocation] = useState<SearchedLocation | null>(null);
   const [flyKey, setFlyKey] = useState(0);
 
@@ -233,6 +291,8 @@ export default function LocationsMapView() {
   // Check permissions
   const { canView: canViewHosts } = useResourcePermissions('HOSTS');
   const { canView: canViewRecipients } = useResourcePermissions('RECIPIENTS');
+  const { canView: canViewDrivers } = useResourcePermissions('DRIVERS');
+  const { canView: canViewVolunteers } = useResourcePermissions('VOLUNTEERS');
 
   // Fetch host contacts with coordinates
   const { data: hosts = [], isLoading: hostsLoading } = useQuery<HostContactMapData[]>({
@@ -244,6 +304,18 @@ export default function LocationsMapView() {
   const { data: recipients = [], isLoading: recipientsLoading } = useQuery<Recipient[]>({
     queryKey: ['/api/recipients'],
     enabled: canViewRecipients,
+  });
+
+  // Fetch drivers (we'll filter client-side to those with coordinates)
+  const { data: drivers = [], isLoading: driversLoading } = useQuery<DriverMapData[]>({
+    queryKey: ['/api/drivers'],
+    enabled: canViewDrivers,
+  });
+
+  // Fetch volunteers (filter client-side to those with a homeAddress + coords)
+  const { data: volunteers = [], isLoading: volunteersLoading } = useQuery<VolunteerMapData[]>({
+    queryKey: ['/api/volunteers'],
+    enabled: canViewVolunteers,
   });
 
   // Geocode address mutation
@@ -363,6 +435,74 @@ export default function LocationsMapView() {
     return result.map(r => ({ ...r, distance: undefined as number | undefined }));
   }, [recipientsWithCoords, searchTerm, searchedLocation]);
 
+  // Drivers with coordinates (active only). The driver table holds an isActive flag —
+  // we only show currently-active drivers on the map (matches the driver-planning view).
+  const driversWithCoords = useMemo(() => {
+    return drivers.filter(d => d.isActive && d.latitude && d.longitude);
+  }, [drivers]);
+
+  const filteredDrivers = useMemo(() => {
+    let result = driversWithCoords;
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter(d =>
+        d.name.toLowerCase().includes(search) ||
+        d.email?.toLowerCase().includes(search) ||
+        d.phone?.toLowerCase().includes(search) ||
+        d.address?.toLowerCase().includes(search) ||
+        d.homeAddress?.toLowerCase().includes(search)
+      );
+    }
+    if (searchedLocation) {
+      return result
+        .map(d => ({
+          ...d,
+          distance: calculateDistance(
+            searchedLocation.latitude,
+            searchedLocation.longitude,
+            parseFloat(d.latitude as string),
+            parseFloat(d.longitude as string)
+          )
+        }))
+        .sort((a, b) => a.distance - b.distance);
+    }
+    return result.map(d => ({ ...d, distance: undefined as number | undefined }));
+  }, [driversWithCoords, searchTerm, searchedLocation]);
+
+  // Volunteers with coordinates — user asked specifically for "volunteers with a homeAddress
+  // on their user profile" set, so we only include geocoded volunteer rows.
+  const volunteersWithCoords = useMemo(() => {
+    return volunteers.filter(v => v.isActive && v.latitude && v.longitude);
+  }, [volunteers]);
+
+  const filteredVolunteers = useMemo(() => {
+    let result = volunteersWithCoords;
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      result = result.filter(v =>
+        v.name.toLowerCase().includes(search) ||
+        v.email?.toLowerCase().includes(search) ||
+        v.phone?.toLowerCase().includes(search) ||
+        v.address?.toLowerCase().includes(search) ||
+        v.homeAddress?.toLowerCase().includes(search)
+      );
+    }
+    if (searchedLocation) {
+      return result
+        .map(v => ({
+          ...v,
+          distance: calculateDistance(
+            searchedLocation.latitude,
+            searchedLocation.longitude,
+            parseFloat(v.latitude as string),
+            parseFloat(v.longitude as string)
+          )
+        }))
+        .sort((a, b) => a.distance - b.distance);
+    }
+    return result.map(v => ({ ...v, distance: undefined as number | undefined }));
+  }, [volunteersWithCoords, searchTerm, searchedLocation]);
+
   // Atlanta metro center — all our hosts are in the greater Atlanta area
   const initialMapCenter: [number, number] = [33.88, -84.35];
 
@@ -387,6 +527,23 @@ export default function LocationsMapView() {
     setFlyKey(k => k + 1);
   };
 
+  // Handle driver / volunteer click — same fly + open popup pattern
+  const handleDriverClick = (driver: DriverMapData) => {
+    if (!driver.latitude || !driver.longitude) return;
+    setSelectedId(`driver-${driver.id}`);
+    setMapCenter([parseFloat(driver.latitude), parseFloat(driver.longitude)]);
+    setMapZoom(15);
+    setFlyKey(k => k + 1);
+  };
+
+  const handleVolunteerClick = (volunteer: VolunteerMapData) => {
+    if (!volunteer.latitude || !volunteer.longitude) return;
+    setSelectedId(`volunteer-${volunteer.id}`);
+    setMapCenter([parseFloat(volunteer.latitude), parseFloat(volunteer.longitude)]);
+    setMapZoom(15);
+    setFlyKey(k => k + 1);
+  };
+
   // Handle address search
   const handleAddressSearch = () => {
     if (!addressSearchTerm.trim()) return;
@@ -399,11 +556,15 @@ export default function LocationsMapView() {
     setAddressSearchTerm('');
   };
 
-  const isLoading = hostsLoading || recipientsLoading;
-  const hasNoData = hosts.length === 0 && recipientsWithCoords.length === 0;
+  const isLoading = hostsLoading || recipientsLoading || driversLoading || volunteersLoading;
+  const hasNoData =
+    hosts.length === 0 &&
+    recipientsWithCoords.length === 0 &&
+    driversWithCoords.length === 0 &&
+    volunteersWithCoords.length === 0;
 
   // Permission check - need at least one
-  if (!canViewHosts && !canViewRecipients) {
+  if (!canViewHosts && !canViewRecipients && !canViewDrivers && !canViewVolunteers) {
     return (
       <div className="h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
         <div className="max-w-md mx-4">
@@ -455,7 +616,7 @@ export default function LocationsMapView() {
               <div>
                 <h1 className="text-lg font-bold text-gray-900 leading-tight">Locations Map</h1>
                 <p className="text-xs text-gray-600">
-                  {showHosts ? hosts.length : 0} hosts, {showRecipients ? recipientsWithCoords.length : 0} recipients shown
+                  {showHosts ? hosts.length : 0} hosts, {showRecipients ? recipientsWithCoords.length : 0} recipients, {showDrivers ? driversWithCoords.length : 0} drivers, {showVolunteers ? volunteersWithCoords.length : 0} volunteers shown
                 </p>
               </div>
             </div>
@@ -494,7 +655,7 @@ export default function LocationsMapView() {
             </div>
 
             {/* Visibility toggles */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="show-hosts"
@@ -517,6 +678,33 @@ export default function LocationsMapView() {
                   Recipients
                 </Label>
               </div>
+              {canViewDrivers && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-drivers"
+                    checked={showDrivers}
+                    onCheckedChange={(checked) => setShowDrivers(checked === true)}
+                  />
+                  <Label htmlFor="show-drivers" className="text-sm flex items-center gap-1 cursor-pointer">
+                    {/* Mini yellow triangle to match the marker shape */}
+                    <span className="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
+                    Drivers
+                  </Label>
+                </div>
+              )}
+              {canViewVolunteers && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="show-volunteers"
+                    checked={showVolunteers}
+                    onCheckedChange={(checked) => setShowVolunteers(checked === true)}
+                  />
+                  <Label htmlFor="show-volunteers" className="text-sm flex items-center gap-1 cursor-pointer">
+                    <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+                    Volunteers
+                  </Label>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -551,7 +739,7 @@ export default function LocationsMapView() {
                 </div>
               )}
 
-              <TabsList className="grid w-full grid-cols-2 m-2 mr-4 flex-shrink-0">
+              <TabsList className="grid w-full grid-cols-4 m-2 mr-4 flex-shrink-0">
                 <TabsTrigger value="hosts" className="text-xs">
                   <Building2 className="w-3 h-3 mr-1" />
                   Hosts ({filteredHosts.length})
@@ -559,6 +747,14 @@ export default function LocationsMapView() {
                 <TabsTrigger value="recipients" className="text-xs">
                   <Users className="w-3 h-3 mr-1" />
                   Recipients ({filteredRecipients.length})
+                </TabsTrigger>
+                <TabsTrigger value="drivers" className="text-xs" disabled={!canViewDrivers}>
+                  <Navigation className="w-3 h-3 mr-1" />
+                  Drivers ({filteredDrivers.length})
+                </TabsTrigger>
+                <TabsTrigger value="volunteers" className="text-xs" disabled={!canViewVolunteers}>
+                  <Users className="w-3 h-3 mr-1" />
+                  Volunteers ({filteredVolunteers.length})
                 </TabsTrigger>
               </TabsList>
 
@@ -663,6 +859,104 @@ export default function LocationsMapView() {
                     ))}
                     {filteredRecipients.length === 0 && (
                       <p className="text-sm text-gray-500 text-center py-4">No recipients found</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              {/* Drivers Tab */}
+              <TabsContent value="drivers" forceMount className={`flex-1 flex flex-col overflow-hidden m-0 min-h-0 ${activeTab !== 'drivers' ? 'hidden' : ''}`}>
+                <div className="p-3 border-b flex-shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search drivers..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9"
+                    />
+                  </div>
+                </div>
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="p-1.5 space-y-0.5">
+                    {filteredDrivers.map(driver => (
+                      <div
+                        key={driver.id}
+                        className={`cursor-pointer hover:bg-gray-50 transition-all px-2 py-1.5 rounded-md border ${
+                          selectedId === `driver-${driver.id}` ? 'ring-2 ring-yellow-500 bg-yellow-50 border-yellow-200' : 'border-gray-100'
+                        }`}
+                        onClick={() => handleDriverClick(driver)}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm truncate leading-tight">{driver.name}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1">
+                              {driver.vehicleType && <span className="truncate">{driver.vehicleType}</span>}
+                              {driver.vanApproved && <Badge variant="outline" className="text-[10px] py-0 px-1 border-green-400 text-green-700">Van</Badge>}
+                            </div>
+                          </div>
+                          {driver.distance !== undefined && (
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {driver.distance.toFixed(1)} mi
+                            </Badge>
+                          )}
+                        </div>
+                        {(driver.address || driver.homeAddress) && (
+                          <div className="text-xs text-gray-400 truncate leading-tight">📍 {driver.address || driver.homeAddress}</div>
+                        )}
+                      </div>
+                    ))}
+                    {filteredDrivers.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">No drivers found</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              {/* Volunteers Tab */}
+              <TabsContent value="volunteers" forceMount className={`flex-1 flex flex-col overflow-hidden m-0 min-h-0 ${activeTab !== 'volunteers' ? 'hidden' : ''}`}>
+                <div className="p-3 border-b flex-shrink-0">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                      placeholder="Search volunteers..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-9"
+                    />
+                  </div>
+                </div>
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="p-1.5 space-y-0.5">
+                    {filteredVolunteers.map(volunteer => (
+                      <div
+                        key={volunteer.id}
+                        className={`cursor-pointer hover:bg-gray-50 transition-all px-2 py-1.5 rounded-md border ${
+                          selectedId === `volunteer-${volunteer.id}` ? 'ring-2 ring-amber-500 bg-amber-50 border-amber-200' : 'border-gray-100'
+                        }`}
+                        onClick={() => handleVolunteerClick(volunteer)}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 text-sm truncate leading-tight">{volunteer.name}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
+                              {volunteer.isDriver && <Badge variant="outline" className="text-[10px] py-0 px-1 border-yellow-400 text-yellow-700">Driver</Badge>}
+                              {volunteer.isSpeaker && <Badge variant="outline" className="text-[10px] py-0 px-1 border-purple-400 text-purple-700">Speaker</Badge>}
+                            </div>
+                          </div>
+                          {volunteer.distance !== undefined && (
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {volunteer.distance.toFixed(1)} mi
+                            </Badge>
+                          )}
+                        </div>
+                        {(volunteer.address || volunteer.homeAddress) && (
+                          <div className="text-xs text-gray-400 truncate leading-tight">📍 {volunteer.address || volunteer.homeAddress}</div>
+                        )}
+                      </div>
+                    ))}
+                    {filteredVolunteers.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">No volunteers found</p>
                     )}
                   </div>
                 </ScrollArea>
@@ -809,6 +1103,96 @@ export default function LocationsMapView() {
               </Marker>
             ))}
 
+            {/* Driver Markers (yellow triangles) */}
+            {showDrivers && filteredDrivers.map(driver => (
+              <Marker
+                key={`driver-${driver.id}`}
+                position={[parseFloat(driver.latitude as string), parseFloat(driver.longitude as string)]}
+                icon={driverIcon}
+                ref={(ref) => {
+                  if (ref) {
+                    markerRefs.current.set(`driver-${driver.id}`, ref);
+                  }
+                }}
+                eventHandlers={{
+                  click: () => setSelectedId(`driver-${driver.id}`),
+                }}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <div className="font-semibold text-yellow-700 mb-1">{driver.name}</div>
+                    {driver.vehicleType && (
+                      <div className="text-xs text-gray-600 mb-1">{driver.vehicleType}</div>
+                    )}
+                    {driver.vanApproved && (
+                      <Badge variant="outline" className="mb-2 text-[10px] border-green-400 text-green-700">Van approved</Badge>
+                    )}
+                    {(driver.address || driver.homeAddress) && (
+                      <div className="text-xs text-gray-600 mb-2">{driver.address || driver.homeAddress}</div>
+                    )}
+                    {driver.phone && (
+                      <div className="flex items-center gap-1 text-xs text-gray-600 pt-2 border-t border-gray-200">
+                        <Phone className="w-3 h-3" />
+                        <a href={`tel:${driver.phone}`} className="hover:text-yellow-700">{driver.phone}</a>
+                      </div>
+                    )}
+                    {driver.email && (
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <Mail className="w-3 h-3" />
+                        <a href={`mailto:${driver.email}`} className="hover:text-yellow-700 truncate">{driver.email}</a>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Volunteer Markers (gold pins) */}
+            {showVolunteers && filteredVolunteers.map(volunteer => (
+              <Marker
+                key={`volunteer-${volunteer.id}`}
+                position={[parseFloat(volunteer.latitude as string), parseFloat(volunteer.longitude as string)]}
+                icon={volunteerIcon}
+                ref={(ref) => {
+                  if (ref) {
+                    markerRefs.current.set(`volunteer-${volunteer.id}`, ref);
+                  }
+                }}
+                eventHandlers={{
+                  click: () => setSelectedId(`volunteer-${volunteer.id}`),
+                }}
+              >
+                <Popup>
+                  <div className="p-2 min-w-[180px]">
+                    <div className="font-semibold text-amber-700 mb-1">{volunteer.name}</div>
+                    <div className="flex items-center gap-1 flex-wrap mb-2">
+                      {volunteer.isDriver && (
+                        <Badge variant="outline" className="text-[10px] border-yellow-400 text-yellow-700">Driver</Badge>
+                      )}
+                      {volunteer.isSpeaker && (
+                        <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700">Speaker</Badge>
+                      )}
+                    </div>
+                    {(volunteer.address || volunteer.homeAddress) && (
+                      <div className="text-xs text-gray-600 mb-2">{volunteer.address || volunteer.homeAddress}</div>
+                    )}
+                    {volunteer.phone && (
+                      <div className="flex items-center gap-1 text-xs text-gray-600 pt-2 border-t border-gray-200">
+                        <Phone className="w-3 h-3" />
+                        <a href={`tel:${volunteer.phone}`} className="hover:text-amber-700">{volunteer.phone}</a>
+                      </div>
+                    )}
+                    {volunteer.email && (
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <Mail className="w-3 h-3" />
+                        <a href={`mailto:${volunteer.email}`} className="hover:text-amber-700 truncate">{volunteer.email}</a>
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
             {/* Searched Location Marker */}
             {searchedLocation && (
               <Marker
@@ -837,6 +1221,18 @@ export default function LocationsMapView() {
                 <span className="w-3 h-3 rounded-full bg-purple-500"></span>
                 <span>Recipients ({recipientsWithCoords.length})</span>
               </div>
+              {canViewDrivers && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="inline-block w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
+                  <span>Drivers ({driversWithCoords.length})</span>
+                </div>
+              )}
+              {canViewVolunteers && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-full bg-amber-400"></span>
+                  <span>Volunteers ({volunteersWithCoords.length})</span>
+                </div>
+              )}
               {searchedLocation && (
                 <div className="flex items-center gap-2 text-xs">
                   <span className="w-3 h-3 rounded-full bg-green-500"></span>
