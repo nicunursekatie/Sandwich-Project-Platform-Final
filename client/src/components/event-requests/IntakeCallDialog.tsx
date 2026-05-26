@@ -24,6 +24,7 @@ import {
   Clock,
   ExternalLink,
   AlertTriangle,
+  Check,
 } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -129,6 +130,9 @@ function formatItemAnswerForNotes(itemId: string, value: string): string {
   if (itemId === 'refrigeration') {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
+  if (itemId === 'is_corporate_event') {
+    return value === 'yes' ? 'Yes' : value === 'no' ? 'No' : value;
+  }
   return value;
 }
 
@@ -146,7 +150,8 @@ interface StructuredIntakeResult {
 // surfaced separately so the user can be warned in the toast rather than
 // having the data silently dropped.
 function buildStructuredUpdates(
-  itemAnswers: Record<string, string>
+  itemAnswers: Record<string, string>,
+  existingOrgCategory: string | null
 ): StructuredIntakeResult {
   const updates: Record<string, unknown> = {};
   const mapped: StructuredIntakeResult['mapped'] = [];
@@ -279,6 +284,43 @@ function buildStructuredUpdates(
     });
   }
 
+  // is_corporate_event — only writes to organizationCategory when the
+  // column is currently null/empty (fills in unknowns; never overwrites
+  // a specific category the team has already set). A clear "Yes" against
+  // an existing non-corp category is flagged as unparseable so the
+  // operator knows the column wasn't touched.
+  const existing = (existingOrgCategory || '').toLowerCase();
+  const isExistingCorp =
+    existing === 'corp' ||
+    existing === 'small_medium_corp' ||
+    existing === 'large_corp';
+  const corpAnswer = itemAnswers.is_corporate_event?.trim().toLowerCase();
+  if (corpAnswer === 'yes') {
+    if (!existing) {
+      updates.organizationCategory = 'corp';
+      mapped.push({
+        itemId: 'is_corporate_event',
+        column: 'organization category',
+        display: 'Corporate',
+      });
+    } else if (!isExistingCorp) {
+      // Operator says Yes but column already says school/church/nonprofit/etc.
+      // Don't silently overwrite — flag it so the team can review.
+      unparseable.push({
+        itemId: 'is_corporate_event',
+        rawValue: `Yes (existing category "${existingOrgCategory}" preserved)`,
+      });
+    }
+  } else if (corpAnswer === 'no' && isExistingCorp) {
+    // Clear a corp category when the operator says it's not corporate.
+    updates.organizationCategory = null;
+    mapped.push({
+      itemId: 'is_corporate_event',
+      column: 'organization category',
+      display: 'No (cleared corp category)',
+    });
+  }
+
   return { updates, mapped, unparseable };
 }
 
@@ -391,6 +433,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       return next;
     });
   }, [eventDateUndecided]);
+
+  // Corporate-event answer. Drives whether speaker/volunteer questions are
+  // required (corporate events must have one of them) and the dynamic
+  // guidance text shown next to each.
+  const isCorporateEvent = itemAnswers.is_corporate_event === 'yes';
 
   // Sandwich-count gating: the form's later sections behave differently
   // depending on the count entered in the Sandwich Estimates section.
@@ -533,6 +580,18 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     if ((req as any).howHeardAboutUsNotes) {
       initialAnswers.how_heard_notes = (req as any).howHeardAboutUsNotes;
     }
+    // Pre-fill the corporate-event answer from organizationCategory. Any
+    // of the corp-flavored categories (corp / small_medium_corp / large_corp)
+    // counts as Yes. Other known categories (school, church, nonprofit, etc.)
+    // count as No. Null/unknown stays blank so the operator picks fresh.
+    const orgCat = (req.organizationCategory || '').toLowerCase();
+    if (orgCat === 'corp' || orgCat === 'small_medium_corp' || orgCat === 'large_corp') {
+      initialAnswers.is_corporate_event = 'yes';
+      initialChecked.add('is_corporate_event');
+    } else if (orgCat) {
+      initialAnswers.is_corporate_event = 'no';
+      initialChecked.add('is_corporate_event');
+    }
 
     setItemAnswers(initialAnswers);
     setCheckedItems(initialChecked);
@@ -668,6 +727,23 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       return;
     }
 
+    // Corporate-event requirement: at least one of speaker / volunteer must
+    // be filled in. Block save with a toast rather than silently letting
+    // the operator submit an invalid intake for a corporate event.
+    if (isCorporateEvent) {
+      const speakerAnswered = !!itemAnswers.speaker_needed?.trim();
+      const volunteersAnswered = !!itemAnswers.additional_volunteers?.trim();
+      if (!speakerAnswered && !volunteersAnswered) {
+        toast({
+          title: 'Speaker or volunteer required',
+          description:
+            'Corporate events require either a speaker or volunteers from TSP. Fill in one of those before completing the call.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setIsSaving(true);
 
     try {
@@ -774,7 +850,10 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
       // Build structured updates first so they don't get overwritten by
       // the explicit contact/address mappings below if there's any overlap.
-      const structured = buildStructuredUpdates(itemAnswers);
+      const structured = buildStructuredUpdates(
+        itemAnswers,
+        eventRequest?.organizationCategory ?? null
+      );
       const updates: Record<string, unknown> = {
         ...structured.updates,
         planningNotes: updatedPlanningNotes,
@@ -992,12 +1071,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       notes:
         "Pre-filled from the interest form. Change here if the group is going with a different date, or pick 'Not decided yet' if they're still figuring it out.",
     },
-    {
-      id: 'check_date_conflicts',
-      label: 'Check calendar for conflicts',
-      category: 'Initial Questions',
-      required: true,
-    },
+    // (Conflict warnings render inline below the event_date row — not a
+    // separate checklist item.)
     // (Event Times moved into the Event Details category as a single
     // multi-field row — see `event_times` below.)
 
@@ -1091,6 +1166,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       notes: 'Start and End Times Are Ideal (Required if Speakers/Volunteers are desired), Pickup Time required if they need a driver',
     },
     {
+      id: 'is_corporate_event',
+      label: 'Is this a corporate event?',
+      category: 'Event Details',
+      required: true,
+      notes:
+        'A corporate event is one hosted by or at a company. Corporate events require a speaker or volunteer from TSP.',
+    },
+    {
       id: 'participant_count',
       label: 'Approximate number of people',
       category: 'Event Details',
@@ -1099,13 +1182,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       id: 'speaker_needed',
       label: 'Do they want a speaker?',
       category: 'Event Details',
-      notes: 'Prefer to send for >500 sandwiches, but will send for others when possible, especially corporate',
     },
     {
       id: 'additional_volunteers',
       label: 'Additional volunteers needed?',
       category: 'Event Details',
-      notes: 'For larger events',
     },
 
     // Food Safety & Logistics
@@ -1332,49 +1413,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               </div>
             </div>
 
-            {/* Live calendar conflict check + consult prompt.
-                Renders as soon as the operator enters/has an event_date.
-                Driven by the existing /check-conflicts + traffic-conflicts
-                infrastructure (no new endpoints). The consult banner is the
-                only thing that decides whether a follow-up todo gets seeded
-                on save. */}
-            {conflictDate && (
-              <div className="space-y-3">
-                {shouldConsultTeam && (
-                  <div className="border-l-4 border-[#A31C41] bg-[#A31C41]/5 rounded-md p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                      <div className="text-sm">
-                        <div className="font-semibold text-[#A31C41]">
-                          Consult with Christine &amp; Marcy before scheduling
-                        </div>
-                        <ul className="mt-2 list-disc list-inside text-[#7a1632] space-y-1">
-                          {trafficConflict && (
-                            <li>
-                              <span className="font-medium">{trafficConflict.label}</span>
-                              {trafficConflict.detail ? ` — ${trafficConflict.detail}` : ''}
-                              {trafficConflict.kickoffEt ? ` (kickoff ${trafficConflict.kickoffEt})` : ''}
-                            </li>
-                          )}
-                          {highVolumeWarnings.map((w, i) => (
-                            <li key={i}>{w.message}</li>
-                          ))}
-                        </ul>
-                        <p className="mt-2 text-xs text-[#7a1632]/80">
-                          You can still complete this form. A reminder will be added to the event's Next Action when you save.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <EventConflictWarnings
-                  eventId={eventRequest?.id}
-                  scheduledEventDate={conflictDate}
-                  organizationName={eventRequest?.organizationName ?? null}
-                />
-              </div>
-            )}
-
             {/* Checklist by Category */}
             {Object.entries(itemsByCategory).map(([category, items]) => (
               <div key={category} className="border border-gray-200 rounded-lg p-4">
@@ -1418,7 +1456,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                     // only). Confirmation items have no input branch in the
                     // render switch below; non-confirmation items do.
                     const CONFIRMATION_ITEM_IDS = new Set<string>([
-                      'check_date_conflicts',
                       'outside_operating_area',
                       'young_children_pbj',
                       'pbj_spatulas_mentioned',
@@ -1744,6 +1781,62 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 onClick={(e) => e.stopPropagation()}
                               />
                             </div>
+                          ) : item.id === 'is_corporate_event' ? (
+                            <Select
+                              value={itemAnswers[item.id] || ''}
+                              onValueChange={(v) => handleAnswerChange(item.id, v)}
+                            >
+                              <SelectTrigger
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <SelectValue placeholder="Yes / No" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="yes">Yes</SelectItem>
+                                <SelectItem value="no">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : item.id === 'speaker_needed' ? (
+                            <div className="space-y-2">
+                              <Input
+                                type="text"
+                                placeholder="Record notes here"
+                                value={itemAnswers[item.id] || ''}
+                                onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              {isCorporateEvent ? (
+                                <p className="text-xs text-[#A31C41] italic">
+                                  Corporate event — a speaker or volunteer is required.
+                                </p>
+                              ) : isUnder500 && sandwichCountNum !== null ? (
+                                <p className="text-xs text-gray-500 italic">
+                                  We prefer not to send speakers for groups making under 500 sandwiches, but can offer if helpful.
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : item.id === 'additional_volunteers' ? (
+                            <div className="space-y-2">
+                              <Input
+                                type="text"
+                                placeholder="Record notes here"
+                                value={itemAnswers[item.id] || ''}
+                                onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              {isCorporateEvent ? (
+                                <p className="text-xs text-[#A31C41] italic">
+                                  Corporate event — a speaker or volunteer is required.
+                                </p>
+                              ) : isUnder500 && sandwichCountNum !== null ? (
+                                <p className="text-xs text-gray-500 italic">
+                                  We prefer not to send volunteers for groups making under 500 sandwiches, but can offer if helpful.
+                                </p>
+                              ) : null}
+                            </div>
                           ) : item.id === 'outside_operating_area' ? (
                             <p className="text-xs text-gray-500 italic">
                               Tick the box if the event location falls outside the areas listed above.
@@ -1774,18 +1867,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 Check the box above once you've walked the group through these.
                               </p>
                             </div>
-                          ) : item.id === 'check_date_conflicts' ? (
-                            // Dynamic hint — wording depends on whether a
-                            // specific date is set or the operator marked
-                            // the date as undecided. No input field; the
-                            // checkbox above is the answer.
-                            <p className="text-xs text-gray-500 italic">
-                              {itemAnswers.event_date_undecided === 'true'
-                                ? 'No date set yet — conflict check will run once a date is finalized.'
-                                : conflictDate
-                                ? "Conflicts for this date appear at the top of this dialog. Check the box once you've reviewed them."
-                                : 'Set the event date above to see conflicts.'}
-                            </p>
                           ) : item.id === 'event_address' ? (
                             // Address: show existing as a confirm-or-change card
                             // when we already have one; otherwise show a plain
@@ -1797,7 +1878,13 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               const mapsHref = currentAddress
                                 ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(currentAddress)}`
                                 : null;
+                              // Keep the snapshot we'd revert to on Cancel —
+                              // the address on the event when the dialog
+                              // opened. If there was none, Cancel just clears.
+                              const originalAddress = (eventRequest?.eventAddress || '').trim();
                               const showCard = !isEditingAddress && !!currentAddress;
+                              const trimmedTyped = currentAddress;
+                              const canSave = trimmedTyped.length > 0;
                               return (
                                 <div className="space-y-2">
                                   {showCard ? (
@@ -1828,14 +1915,43 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                       </p>
                                     </div>
                                   ) : (
-                                    <Input
-                                      type="text"
-                                      placeholder="Enter event address"
-                                      value={itemAnswers.event_address || ''}
-                                      onChange={(e) => handleAnswerChange('event_address', e.target.value)}
-                                      className="text-sm h-8"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
+                                    <div className="flex items-start gap-2">
+                                      <Input
+                                        type="text"
+                                        placeholder="Enter event address"
+                                        value={itemAnswers.event_address || ''}
+                                        onChange={(e) => handleAnswerChange('event_address', e.target.value)}
+                                        className="text-sm h-8 flex-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        className="h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
+                                        disabled={!canSave}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setIsEditingAddress(false);
+                                        }}
+                                      >
+                                        <Check className="w-4 h-4" />
+                                      </Button>
+                                      {originalAddress && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-8"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAnswerChange('event_address', originalAddress);
+                                            setIsEditingAddress(false);
+                                          }}
+                                        >
+                                          Cancel
+                                        </Button>
+                                      )}
+                                    </div>
                                   )}
                                   {mapsHref && (
                                     <a
@@ -1905,6 +2021,55 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                         </div>
                       </div>
                     </div>
+                    {/* Live calendar conflicts: rendered immediately after
+                        the event_date row so the operator can see what the
+                        app already knows about this day without leaving the
+                        section. Driven by the existing /check-conflicts and
+                        traffic-conflicts infrastructure. */}
+                    {item.id === 'event_date' && conflictDate && (
+                      <div className="space-y-3">
+                        {shouldConsultTeam && (
+                          <div className="border-l-4 border-[#A31C41] bg-[#A31C41]/5 rounded-md p-4">
+                            <div className="flex items-start gap-3">
+                              <AlertCircle className="w-5 h-5 text-[#A31C41] flex-shrink-0 mt-0.5" />
+                              <div className="text-sm">
+                                <div className="font-semibold text-[#A31C41]">
+                                  Consult with Christine &amp; Marcy before scheduling
+                                </div>
+                                <ul className="mt-2 list-disc list-inside text-[#7a1632] space-y-1">
+                                  {trafficConflict && (
+                                    <li>
+                                      <span className="font-medium">{trafficConflict.label}</span>
+                                      {trafficConflict.detail ? ` — ${trafficConflict.detail}` : ''}
+                                      {trafficConflict.kickoffEt ? ` (kickoff ${trafficConflict.kickoffEt})` : ''}
+                                    </li>
+                                  )}
+                                  {highVolumeWarnings.map((w, i) => (
+                                    <li key={i}>{w.message}</li>
+                                  ))}
+                                </ul>
+                                <p className="mt-2 text-xs text-[#7a1632]/80">
+                                  You can still complete this form. A reminder will be added to the event's Next Action when you save.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <EventConflictWarnings
+                          eventId={eventRequest?.id}
+                          scheduledEventDate={conflictDate}
+                          organizationName={eventRequest?.organizationName ?? null}
+                        />
+                      </div>
+                    )}
+                    {/* When the operator picked "Not decided yet" we
+                        explicitly tell them the conflict check is off. */}
+                    {item.id === 'event_date' && !conflictDate && itemAnswers.event_date_undecided === 'true' && (
+                      <div className="text-xs text-gray-500 italic px-2">
+                        No conflict check while the date is undecided — it will run as soon as a date is finalized.
+                      </div>
+                    )}
+
                     {/* Operating-areas reference box: rendered immediately
                         after the event_address row so the operator can
                         eyeball the address against our typical service area
@@ -1917,7 +2082,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                           Typical Operating Areas
                         </h4>
                         <p className="text-xs text-gray-700 mb-2">
-                          If the event location is outside these areas, check "Event is outside our typical operating areas" below.
+                          If you're not sure whether the event address falls in our service area, use the <span className="font-semibold">View in Google Maps</span> link above to check. If the location is outside the areas listed below, tick the <span className="font-semibold">Event is outside our typical operating areas</span> box that appears next — saving the form will add a Next Action to clear the farther location with Christine &amp; Marcy.
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {OPERATING_AREAS.map((area) => (
@@ -1941,11 +2106,15 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             ))}
 
 
-            {/* Call Notes Section */}
+            {/* Other Notes — catch-all bucket for anything that didn't
+                fit a structured question above. Each section already has
+                its own notes fields (how-heard notes, undecided-date notes,
+                under-200 override, food-safety divergences, etc.), so this
+                is explicitly for miscellaneous context. */}
             <div className="bg-white border border-gray-300 rounded-lg p-4">
               <Label htmlFor="call-notes" className="text-base font-semibold text-[#236383] mb-2 flex items-center gap-2">
                 <FileText className="w-5 h-5" />
-                Call Notes & Information Collected
+                Other Notes
               </Label>
               <Textarea
                 id="call-notes"
@@ -1954,11 +2123,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                   markInteracted();
                   setCallNotes(e.target.value);
                 }}
-                placeholder="Record information collected during the call: contact details, event specifics, logistics, etc..."
+                placeholder="Anything that came up during the call that didn't fit a question above — questions they asked, side context, things to remember next time."
                 className="min-h-[150px] mt-2"
               />
               <p className="text-xs text-gray-500 mt-2">
-                Use this space to record all the information you collect during the call. This will help ensure nothing is missed.
+                Catch-all for anything that doesn't belong in a specific question above. Don't repeat what you already entered in the structured fields.
               </p>
             </div>
           </div>
