@@ -22,6 +22,8 @@ import {
   UserCheck,
   FileText,
   Clock,
+  ExternalLink,
+  AlertTriangle,
 } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -30,6 +32,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import {
   Select,
   SelectContent,
@@ -232,24 +236,34 @@ function buildStructuredUpdates(
     // searchable/reportable column.
   }
 
-  // refrigeration — Select with 'yes' / 'no' / 'unsure'. Picking Unsure
-  // explicitly clears the column back to null (unknown), so operators can
-  // walk back a previously-recorded value when something changes.
-  const refrigValue = itemAnswers.refrigeration?.trim().toLowerCase();
-  if (refrigValue === 'yes' || refrigValue === 'no') {
-    const bool = refrigValue === 'yes';
-    updates.hasRefrigeration = bool;
+  // refrigeration_status — multi-option Select. Maps to the boolean
+  // hasRefrigeration column; the specific "why" (van needed / exemption /
+  // must make more) is captured in planningNotes + Next Action by the
+  // save handler, not here.
+  const refrigValue = itemAnswers.refrigeration_status?.trim();
+  if (refrigValue === 'yes') {
+    updates.hasRefrigeration = true;
     mapped.push({
-      itemId: 'refrigeration',
+      itemId: 'refrigeration_status',
       column: 'has refrigeration',
-      display: bool ? 'Yes' : 'No',
+      display: 'Yes',
     });
-  } else if (refrigValue === 'unsure') {
-    updates.hasRefrigeration = null;
+  } else if (
+    refrigValue === 'no_make_more_or_pbj' ||
+    refrigValue === 'no_van_needed' ||
+    refrigValue === 'special_exemption'
+  ) {
+    updates.hasRefrigeration = false;
+    const label =
+      refrigValue === 'no_van_needed'
+        ? 'No — van needed'
+        : refrigValue === 'special_exemption'
+        ? 'No — special exemption requested'
+        : 'No — must make more or switch to PBJ';
     mapped.push({
-      itemId: 'refrigeration',
+      itemId: 'refrigeration_status',
       column: 'has refrigeration',
-      display: 'Unsure (cleared)',
+      display: label,
     });
   }
 
@@ -370,6 +384,59 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     });
   }, [anyEventTimeFilled]);
 
+  // Sandwich-count gating: the form's later sections behave differently
+  // depending on the count entered in the Sandwich Estimates section.
+  //
+  // - under 200: not eligible as a group event. The remainder of the form
+  //   is grayed out unless the operator types a free-text override note
+  //   explaining why they're proceeding (and confirming they cleared it
+  //   with Marcy/Christine). The override note also seeds a follow-up
+  //   to-do on save.
+  // - 200–499: normal flow, no van offer.
+  // - 500+: van offer becomes available in the refrigeration question.
+  const sandwichCountNum = (() => {
+    const raw = itemAnswers.sandwich_count?.trim();
+    if (!raw) return null;
+    const n = parseNumberFromText(raw);
+    return n;
+  })();
+  const isUnder200 = sandwichCountNum !== null && sandwichCountNum < 200;
+  const isUnder500 = sandwichCountNum !== null && sandwichCountNum < 500;
+  const has200OverrideNote =
+    !!itemAnswers.under_200_override_note?.trim();
+  const formGatedByLowCount = isUnder200 && !has200OverrideNote;
+
+  // Sandwich types are stored comma-separated in itemAnswers.sandwich_types
+  // for round-tripping through the rest of the form's plain-text answers
+  // model. Parse to a Set for easy membership checks.
+  const selectedTypes = new Set(
+    (itemAnswers.sandwich_types || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+  );
+  const hasNonPbjType =
+    selectedTypes.has('turkey') ||
+    selectedTypes.has('chicken') ||
+    selectedTypes.has('ham') ||
+    selectedTypes.has('deli_tbd');
+  const isPbjOnly = selectedTypes.has('pbj') && !hasNonPbjType;
+
+  // Auto-check the parent sandwich_types row when any type is selected.
+  useEffect(() => {
+    setCheckedItems((prev) => {
+      const next = new Set(prev);
+      if (selectedTypes.size > 0) {
+        if (next.has('sandwich_types')) return prev;
+        next.add('sandwich_types');
+      } else {
+        if (!next.has('sandwich_types')) return prev;
+        next.delete('sandwich_types');
+      }
+      return next;
+    });
+  }, [selectedTypes.size]);
+
   // Consult-Christine-&-Marcy flag: World Cup match, or any high-volume
   // day/week warning from the conflict endpoint. Anything else (regular van
   // / driver / speaker conflicts) is shown as a warning but doesn't trigger
@@ -423,12 +490,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       initialChecked.add('participant_count');
     }
     if (req.hasRefrigeration === true) {
-      initialAnswers.refrigeration = 'yes';
-      initialChecked.add('refrigeration');
-    } else if (req.hasRefrigeration === false) {
-      initialAnswers.refrigeration = 'no';
-      initialChecked.add('refrigeration');
+      initialAnswers.refrigeration_status = 'yes';
+      initialChecked.add('refrigeration_status');
     }
+    // Don't pre-fill a specific "no" sub-option — the operator picks the
+    // correct one based on the count + type combination on this call.
     if (req.eventAddress) {
       initialAnswers.event_address = req.eventAddress;
       initialChecked.add('event_address');
@@ -561,6 +627,35 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     }
   };
 
+  // Move-to-Non-Event exit path for under-200 requests. Patches the event's
+  // status, clears any autosaved intake draft, and closes the dialog. Does
+  // NOT save the partial intake notes — the operator already has the host
+  // finder in their hand and we don't want to mix a partial draft into
+  // planningNotes for a non-event.
+  const handleMoveToNonEvent = async () => {
+    if (!eventRequest) return;
+    try {
+      await apiRequest('PATCH', `/api/event-requests/${eventRequest.id}`, {
+        status: 'non_event',
+        nonEventReason: 'Sandwich count under 200 — directed to host finder.',
+        nonEventAt: new Date().toISOString(),
+      });
+      clearDraft(`intake:${eventRequest.id}`);
+      toast({
+        title: 'Moved to Non-Event',
+        description: 'The request was marked as Non-Event. Directed the organizer to the host finder.',
+      });
+      onCallComplete?.();
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: 'Failed to move to Non-Event',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleComplete = async () => {
     if (!eventRequest || isSaving) {
       return;
@@ -585,6 +680,18 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         if (item.id === 'outside_operating_area') {
           return checkedItems.has('outside_operating_area');
         }
+        // Other checkbox-only items: same pattern.
+        if (
+          item.id === 'young_children_pbj' ||
+          item.id === 'pbj_spatulas_mentioned' ||
+          item.id === 'assembly_reviewed'
+        ) {
+          return checkedItems.has(item.id);
+        }
+        // Sandwich types — show when at least one type is selected.
+        if (item.id === 'sandwich_types') {
+          return (itemAnswers.sandwich_types || '').trim().length > 0;
+        }
         const value = itemAnswers[item.id];
         return value && value.trim().length > 0;
       });
@@ -599,6 +706,31 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         }
         if (item.id === 'outside_operating_area') {
           return `- ${item.label}: YES (flagged for leadership review)`;
+        }
+        if (item.id === 'young_children_pbj') {
+          return `- ${item.label}: YES (flagged for leadership exception)`;
+        }
+        if (item.id === 'pbj_spatulas_mentioned') {
+          return `- ${item.label}: Yes (mentioned toolkit link)`;
+        }
+        if (item.id === 'assembly_reviewed') {
+          return `- ${item.label}: Yes (assembly + food-safety walked through)`;
+        }
+        if (item.id === 'sandwich_types') {
+          const LABELS: Record<string, string> = {
+            turkey: 'Turkey',
+            chicken: 'Chicken',
+            ham: 'Ham',
+            pbj: 'PBJ',
+            deli_tbd: 'Deli (TBD)',
+          };
+          const list = (itemAnswers.sandwich_types || '')
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+            .map((t) => LABELS[t] || t)
+            .join(', ');
+          return `- ${item.label}: ${list}`;
         }
         return `- ${item.label}: ${formatItemAnswerForNotes(item.id, itemAnswers[item.id].trim())}`;
       };
@@ -688,6 +820,58 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         );
       }
 
+      // (c) Under-200 sandwich count — operator chose to proceed past the
+      //     low-count gate by filling in an override note.
+      const proceededWithUnder200 = isUnder200 && has200OverrideNote;
+      if (proceededWithUnder200) {
+        const overrideNote = itemAnswers.under_200_override_note?.trim() || '';
+        followUpBlocks.push(
+          `Run this under-200 event by Christine/Marcy.\nOperator override note: ${overrideNote}`
+        );
+      }
+
+      // (d) Refrigeration status decisions — by tier.
+      const refrigChoice = itemAnswers.refrigeration_status?.trim();
+      const eventLocation = (itemAnswers.event_address?.trim() || eventRequest?.eventAddress || 'no address yet');
+      const eventDateStr = itemAnswers.event_date?.trim() || (eventRequest?.scheduledEventDate ? new Date(eventRequest.scheduledEventDate).toLocaleDateString() : 'no date yet');
+      const startTimeStr = itemAnswers.event_start_time?.trim() || eventRequest?.eventStartTime || 'time TBD';
+      const sandwichCountStr = sandwichCountNum !== null ? String(sandwichCountNum) : 'count TBD';
+
+      if (refrigChoice === 'no_van_needed') {
+        // ≥500 + insufficient refrigeration → van offered. Flip the flag
+        // and queue the team-consult to-do.
+        updates.vanDriverNeeded = true;
+        followUpBlocks.push(
+          [
+            'Van needed for this event — confirm with Christine/Marcy before promising it to the group.',
+            `• Location: ${eventLocation}`,
+            `• Date: ${eventDateStr}`,
+            `• Start time: ${startTimeStr}`,
+            `• Sandwich count: ${sandwichCountStr}`,
+            'Also check the calendar for other van-needed events on this date.',
+          ].join('\n')
+        );
+      } else if (refrigChoice === 'special_exemption') {
+        followUpBlocks.push(
+          `Refrigeration special-exemption request — confirm with Christine/Marcy. Event ${eventLocation} on ${eventDateStr}, ${sandwichCountStr} sandwiches.`
+        );
+      }
+
+      // (e) Young children + PBJ — exception request.
+      const isYoungChildrenPbj = checkedItems.has('young_children_pbj');
+      if (isYoungChildrenPbj) {
+        followUpBlocks.push(
+          'PBJ + young children (school or under 13): confirm with Christine/Marcy whether we can grant an exception. Higher adult-to-child ratio improves the odds.'
+        );
+      }
+
+      // Save the operator's sandwich-type selection in planningNotes
+      // (not the structured sandwichTypes jsonb column — that one holds
+      // {type, quantity} pairs and uses different canonical strings; the
+      // detailed structured value is set later in the scheduling flow).
+      // The summary block built above already includes this row, so no
+      // extra work is needed here.
+
       if (followUpBlocks.length > 0) {
         const newActionBlock = followUpBlocks.join('\n\n');
         const existingNextAction = eventRequest?.nextAction?.trim() || '';
@@ -713,8 +897,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         const reasons: string[] = [];
         if (shouldConsultTeam) reasons.push('scheduling conflicts');
         if (isOutsideOperatingArea) reasons.push('event outside operating areas');
+        if (proceededWithUnder200) reasons.push('under-200 sandwich count');
+        if (refrigChoice === 'no_van_needed') reasons.push('van needed');
+        if (refrigChoice === 'special_exemption') reasons.push('refrigeration exemption');
+        if (isYoungChildrenPbj) reasons.push('young children + PBJ');
         toastParts.push(
-          `Next Action added: consult with Christine & Marcy about ${reasons.join(' and ')}.`
+          `Next Action added: consult with Christine & Marcy about ${reasons.join('; ')}.`
         );
       }
       const hasUnparseable = structured.unparseable.length > 0;
@@ -806,24 +994,52 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         'If checked, a follow-up will be added to consult with Christine & Marcy. Let the group know we will try to make it work but need leadership confirmation first.',
     },
 
-    // Refrigeration & Sandwich Type
+    // Sandwich Estimates & Refrigeration
     {
-      id: 'refrigeration',
-      label: 'Do they have refrigeration available?',
-      category: 'Refrigeration & Type',
+      id: 'sandwich_count',
+      label: 'How many sandwiches do they plan to make?',
+      category: 'Sandwich Estimates & Refrigeration',
       required: true,
+      notes:
+        '500+ opens the door to sending the van. Under 500: no van (generally). Under 200: not a group event — direct them to drop sandwiches at a host home on a Wednesday.',
     },
     {
-      id: 'confirm_deli',
-      label: 'If no fridge: only PBJ option (mention only if they want PBJ or no fridge)',
-      category: 'Refrigeration & Type',
-      notes: "Don't mention PBJ unless they want it or have no fridge",
+      id: 'under_200_override_note',
+      label: 'Reason for proceeding under 200',
+      category: 'Sandwich Estimates & Refrigeration',
+      notes:
+        'Required to continue when under 200. Explain why this is being approved (e.g. discussed with Marcy/Christine).',
     },
     {
-      id: 'school_pbj',
-      label: 'If school: confirm making deli (no PBJ for schools due to allergy risk)',
-      category: 'Refrigeration & Type',
-      notes: 'Students making PBJ often make messy sandwiches',
+      id: 'sandwich_types',
+      label: 'Type of sandwiches',
+      category: 'Sandwich Estimates & Refrigeration',
+      required: true,
+      notes: 'Multi-select. Refrigeration questions depend on whether non-PBJ is involved.',
+    },
+    {
+      id: 'refrigeration_status',
+      label: 'Sufficient refrigeration available?',
+      category: 'Sandwich Estimates & Refrigeration',
+      notes: 'Only relevant when a refrigerated sandwich (turkey / chicken / deli) is selected.',
+    },
+    {
+      id: 'young_children_pbj',
+      label: 'School or group of children under 13?',
+      category: 'Sandwich Estimates & Refrigeration',
+      notes:
+        'PBJ-only: we generally do not let children under 13 make PBJ for safety/hygiene reasons. High adult-to-child ratio improves the odds of an exception.',
+    },
+    {
+      id: 'pbj_spatulas_mentioned',
+      label: 'Mentioned recommended PBJ spatulas (link in toolkit)',
+      category: 'Sandwich Estimates & Refrigeration',
+    },
+    {
+      id: 'assembly_reviewed',
+      label: 'Reviewed assembly + food-safety instructions with the group',
+      category: 'Sandwich Estimates & Refrigeration',
+      required: true,
     },
 
     // Event Details Collection
@@ -861,19 +1077,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     {
       id: 'participant_count',
       label: 'Approximate number of people',
-      category: 'Event Details',
-      required: true,
-    },
-    {
-      id: 'sandwich_count',
-      label: 'Number of sandwiches',
-      category: 'Event Details',
-      required: true,
-      notes: 'If they say 200, ask how many people and time available - see if they can make more',
-    },
-    {
-      id: 'sandwich_type',
-      label: 'Type of sandwiches',
       category: 'Event Details',
       required: true,
     },
@@ -1163,21 +1366,45 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                 <h3 className="font-semibold text-[#236383] mb-3 text-lg flex items-center gap-2">
                   {category === 'Initial Questions' && <Clock className="w-5 h-5" />}
                   {category === 'Location & Area' && <MapPin className="w-5 h-5" />}
-                  {category === 'Refrigeration & Type' && <Refrigerator className="w-5 h-5" />}
+                  {category === 'Sandwich Estimates & Refrigeration' && <Refrigerator className="w-5 h-5" />}
                   {category === 'Event Details' && <FileText className="w-5 h-5" />}
                   {category === 'Food Safety & Logistics' && <UtensilsCrossed className="w-5 h-5" />}
                   {category === 'Process Discussion' && <Users className="w-5 h-5" />}
                   {category}
                 </h3>
                 <div className="space-y-2">
-                  {items.map((item) => (
+                  {items.map((item) => {
+                    // Conditional visibility for Sandwich Estimates branches.
+                    // The override-note input only appears when the count is
+                    // under 200. Refrigeration only when at least one
+                    // non-PBJ type is selected. PBJ-only-specific items
+                    // (young children, spatulas) only when PBJ is the only
+                    // selection.
+                    if (item.id === 'under_200_override_note' && !isUnder200) return null;
+                    if (item.id === 'refrigeration_status' && !hasNonPbjType) return null;
+                    if (item.id === 'young_children_pbj' && !isPbjOnly) return null;
+                    if (item.id === 'pbj_spatulas_mentioned' && !selectedTypes.has('pbj')) return null;
+
+                    // Gate everything past Sandwich Estimates when the
+                    // count is under 200 and the override note isn't
+                    // filled. The two un-grayed items are sandwich_count
+                    // itself (so the operator can change it) and the
+                    // override-note field (so they can fill it in). The
+                    // section header still renders normally.
+                    const isUnderGated =
+                      formGatedByLowCount &&
+                      item.category !== 'Sandwich Estimates & Refrigeration' &&
+                      item.id !== 'sandwich_count' &&
+                      item.id !== 'under_200_override_note';
+
+                    return (
                     <React.Fragment key={item.id}>
                     <div
                       className={`flex items-start gap-3 p-2 rounded-md transition-colors ${
                         checkedItems.has(item.id)
                           ? 'bg-green-50 border border-green-200'
                           : 'hover:bg-gray-50'
-                      }`}
+                      } ${isUnderGated ? 'opacity-40 pointer-events-none' : ''}`}
                     >
                       <button
                         type="button"
@@ -1268,7 +1495,98 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               className="text-sm h-8"
                               onClick={(e) => e.stopPropagation()}
                             />
-                          ) : item.id === 'refrigeration' ? (
+                          ) : item.id === 'sandwich_count' ? (
+                            <div className="space-y-2">
+                              <Input
+                                type="text"
+                                placeholder="e.g. 750"
+                                value={itemAnswers[item.id] || ''}
+                                onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              {isUnder200 && (
+                                <div className="border-l-4 border-[#A31C41] bg-[#A31C41]/5 rounded-md p-3">
+                                  <div className="flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
+                                    <div className="text-xs text-[#7a1632] space-y-2">
+                                      <p>
+                                        Under 200 sandwiches is not a group event. Let the group know they can make this quantity and drop them at a host home on a Wednesday — share our host finder:
+                                      </p>
+                                      <a
+                                        href="https://tsp-host-finder-tool.web.app/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 font-medium text-[#A31C41] underline hover:no-underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                        Open TSP Host Finder
+                                      </a>
+                                      <p>
+                                        To proceed anyway, fill in the override note below. To mark this as a non-event instead, use the button at the bottom of the dialog.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : item.id === 'under_200_override_note' ? (
+                            <Textarea
+                              placeholder="Why are we proceeding with under 200? Confirm you've talked to Marcy and/or Christine."
+                              value={itemAnswers[item.id] || ''}
+                              onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                              className="text-sm min-h-[80px]"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : item.id === 'sandwich_types' ? (
+                            // Multi-select; values comma-joined into the
+                            // single string answer so the rest of the form's
+                            // plain-text answers model still works.
+                            (() => {
+                              const TYPE_OPTIONS: Array<{ value: string; label: string; sublabel?: string }> = [
+                                { value: 'turkey', label: 'Turkey' },
+                                { value: 'chicken', label: 'Chicken' },
+                                { value: 'ham', label: 'Ham', sublabel: 'allowed but not preferred' },
+                                { value: 'pbj', label: 'Peanut butter & jelly' },
+                                { value: 'deli_tbd', label: 'Deli (type to be determined)' },
+                              ];
+                              const toggleType = (value: string, checked: boolean) => {
+                                const current = new Set(selectedTypes);
+                                if (checked) current.add(value);
+                                else current.delete(value);
+                                handleAnswerChange(
+                                  'sandwich_types',
+                                  Array.from(current).join(',')
+                                );
+                              };
+                              return (
+                                <div className="flex flex-wrap gap-3">
+                                  {TYPE_OPTIONS.map((opt) => (
+                                    <label
+                                      key={opt.value}
+                                      className="flex items-center gap-2 text-sm cursor-pointer"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Checkbox
+                                        checked={selectedTypes.has(opt.value)}
+                                        onCheckedChange={(c) => toggleType(opt.value, c === true)}
+                                      />
+                                      <span>
+                                        {opt.label}
+                                        {opt.sublabel && (
+                                          <span className="text-xs text-gray-500 italic ml-1">({opt.sublabel})</span>
+                                        )}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              );
+                            })()
+                          ) : item.id === 'refrigeration_status' ? (
+                            // Options depend on count tier.
+                            // <500: Yes / No (must make more or PBJ) / Special exemption
+                            // ≥500: Yes / No (van needed)
                             <Select
                               value={itemAnswers[item.id] || ''}
                               onValueChange={(v) => handleAnswerChange(item.id, v)}
@@ -1277,12 +1595,24 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 className="text-sm h-8"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <SelectValue placeholder="Yes / No / Unsure" />
+                                <SelectValue placeholder="Sufficient refrigeration?" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="yes">Yes</SelectItem>
-                                <SelectItem value="no">No</SelectItem>
-                                <SelectItem value="unsure">Unsure</SelectItem>
+                                <SelectItem value="yes">Yes — sufficient refrigeration</SelectItem>
+                                {isUnder500 ? (
+                                  <>
+                                    <SelectItem value="no_make_more_or_pbj">
+                                      No — group must make more or switch to PBJ
+                                    </SelectItem>
+                                    <SelectItem value="special_exemption">
+                                      Request special exemption
+                                    </SelectItem>
+                                  </>
+                                ) : (
+                                  <SelectItem value="no_van_needed">
+                                    No — van needed
+                                  </SelectItem>
+                                )}
                               </SelectContent>
                             </Select>
                           ) : item.id === 'how_heard' ? (
@@ -1312,12 +1642,35 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : item.id === 'outside_operating_area' ? (
-                            // Checkbox-only item — no input field. Just a
-                            // hint reminding the operator what ticking the
-                            // box will do on save.
                             <p className="text-xs text-gray-500 italic">
                               Tick the box if the event location falls outside the areas listed above.
                             </p>
+                          ) : item.id === 'young_children_pbj' ? (
+                            <p className="text-xs text-gray-500 italic">
+                              Check the box if this applies. A follow-up will be added on save to clear an exception with Christine/Marcy.
+                            </p>
+                          ) : item.id === 'pbj_spatulas_mentioned' ? (
+                            <p className="text-xs text-gray-500 italic">
+                              Check once you've mentioned the recommended PBJ spatulas. Link is in the toolkit.
+                            </p>
+                          ) : item.id === 'assembly_reviewed' ? (
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-xs text-gray-800 space-y-2">
+                              <div>
+                                <span className="font-semibold text-[#236383]">Deli:</span>{' '}
+                                bread → cheese → meat → cheese → bread. Check the serving size on the meat package and use that many slices per sandwich (= 2 oz, our required amount). Two pieces of cheese per sandwich, with the meat in between. Each sandwich goes in its own sandwich-sized ziploc, stacked 10–12 per stack, returned to the bag the loaf of bread came out of.
+                              </div>
+                              <div>
+                                <span className="font-semibold text-[#236383]">PBJ:</span>{' '}
+                                peanut butter spread on BOTH sides of the bread. Jelly on one side neatly, kept away from the edges to prevent leakage.
+                              </div>
+                              <div>
+                                <span className="font-semibold text-[#236383]">All events:</span>{' '}
+                                food-safe gloves, hairnets (beardnets where relevant), access to sinks for handwashing — hand sanitizer is NOT sufficient. Disposable tablecloths are incredibly helpful for keeping the prep area clean.
+                              </div>
+                              <p className="italic text-gray-600 pt-1">
+                                Check the box above once you've walked the group through these.
+                              </p>
+                            </div>
                           ) : item.id === 'check_date_conflicts' ? (
                             // Conflicts surface live above the checklist via
                             // EventConflictWarnings — no input field needed
@@ -1476,7 +1829,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                       </div>
                     )}
                     </React.Fragment>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -1528,6 +1882,28 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             <Button variant="outline" onClick={onClose} disabled={isSaving}>
               Close
             </Button>
+            {/* Move to Non-Event — shown when under-200 and the operator
+                hasn't filled in an override note. Direct exit path for
+                requests too small to be a group event. */}
+            {isUnder200 && !has200OverrideNote && (
+              <ConfirmationDialog
+                trigger={
+                  <Button
+                    variant="outline"
+                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41]/10"
+                    disabled={isSaving}
+                  >
+                    Move to Non-Event
+                  </Button>
+                }
+                title="Move this request to Non-Event?"
+                description="This will change the request status to Non-Event and close the intake dialog without saving call notes. Use this when the sandwich count is too small for a group event and the organizer has been directed to the host finder instead."
+                confirmText="Move to Non-Event"
+                cancelText="Cancel"
+                variant="destructive"
+                onConfirm={handleMoveToNonEvent}
+              />
+            )}
             <Button
               onClick={handleComplete}
               className="bg-[#007E8C] hover:bg-[#236383] text-white"

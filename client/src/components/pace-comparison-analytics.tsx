@@ -70,6 +70,22 @@ function fmtDate(d: Date): string {
     day: 'numeric',
   });
 }
+function fmtDateRange(start: Date, end: Date): string {
+  const sameYear = start.getFullYear() === end.getFullYear();
+  const startStr = sameYear
+    ? start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const endStr = end.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `${startStr} – ${endStr}`;
+}
+function daysBetween(start: Date, end: Date): number {
+  const ms = endOfDay(end).getTime() - startOfDay(start).getTime();
+  return Math.max(1, Math.round(ms / (86400 * 1000)));
+}
 function fmtNum(n: number): string {
   return Math.round(n).toLocaleString();
 }
@@ -350,6 +366,13 @@ export default function PaceComparisonAnalytics() {
   const yoyPctTotal = pct(curr.total, ly.total);
   const ppPctTotal = pct(curr.total, pp.total);
 
+  const currentRangeLabel = fmtDateRange(currentPeriod.start, currentPeriod.end);
+  const lyRangeLabel = fmtDateRange(priorYearPeriod.start, priorYearPeriod.end);
+  const ppDayCount = daysBetween(priorPeriod.start, priorPeriod.end);
+  const ppRangeLabel = fmtDateRange(priorPeriod.start, priorPeriod.end);
+  const sameDatesLastYearLabel = `vs same dates last year (${lyRangeLabel})`;
+  const precedingPeriodLabel = `vs preceding ${ppDayCount} day${ppDayCount === 1 ? '' : 's'} (${ppRangeLabel})`;
+
   return (
     <div className="space-y-4">
       {/* Period picker */}
@@ -359,7 +382,7 @@ export default function PaceComparisonAnalytics() {
             <Calendar className="h-4 w-4" /> Compare period
           </CardTitle>
           <CardDescription>
-            Showing <strong>{currentPeriod.label}</strong> ({fmtDate(currentPeriod.start)} – {fmtDate(currentPeriod.end)}) vs the same period last year and the prior equal-length period.
+            Showing <strong>{currentPeriod.label}</strong> ({fmtDate(currentPeriod.start)} – {fmtDate(currentPeriod.end)}). Each card compares against the <em>same dates last year</em> and the <em>equal-length window immediately before</em> this one.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -415,18 +438,20 @@ export default function PaceComparisonAnalytics() {
         <ComparisonCard
           title="Total sandwiches"
           current={curr.total}
+          periodRange={currentRangeLabel}
           comparisons={[
-            { label: 'vs same period last year', value: ly.total, pct: yoyPctTotal },
-            { label: 'vs prior period', value: pp.total, pct: ppPctTotal },
+            { label: sameDatesLastYearLabel, value: ly.total, pct: yoyPctTotal },
+            { label: precedingPeriodLabel, value: pp.total, pct: ppPctTotal },
           ]}
           entries={curr.entries}
         />
         <ComparisonCard
           title="Individual sandwiches"
           current={curr.individual}
+          periodRange={currentRangeLabel}
           comparisons={[
             {
-              label: 'vs same period last year',
+              label: sameDatesLastYearLabel,
               value: ly.individual,
               pct: pct(curr.individual, ly.individual),
             },
@@ -435,9 +460,10 @@ export default function PaceComparisonAnalytics() {
         <ComparisonCard
           title="Group sandwiches"
           current={curr.group}
+          periodRange={currentRangeLabel}
           comparisons={[
             {
-              label: 'vs same period last year',
+              label: sameDatesLastYearLabel,
               value: ly.group,
               pct: pct(curr.group, ly.group),
             },
@@ -621,11 +647,13 @@ function ComparisonCard({
   current,
   comparisons,
   entries,
+  periodRange,
 }: {
   title: string;
   current: number;
   comparisons: { label: string; value: number; pct: number | null }[];
   entries?: number;
+  periodRange?: string;
 }) {
   return (
     <Card>
@@ -634,18 +662,24 @@ function ComparisonCard({
       </CardHeader>
       <CardContent>
         <div className="text-3xl font-bold text-slate-900">{fmtNum(current)}</div>
-        {entries !== undefined && (
+        {(periodRange || entries !== undefined) && (
           <div className="text-xs text-slate-500 mt-0.5">
-            {entries.toLocaleString()} collection {entries === 1 ? 'entry' : 'entries'}
+            {periodRange}
+            {periodRange && entries !== undefined && ' · '}
+            {entries !== undefined && (
+              <>
+                {entries.toLocaleString()} collection {entries === 1 ? 'entry' : 'entries'}
+              </>
+            )}
           </div>
         )}
         <div className="mt-3 space-y-1.5">
           {comparisons.map((c, i) => {
             const isUp = c.pct !== null && c.pct >= 0;
             return (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">{c.label}</span>
-                <div className="flex items-center gap-2">
+              <div key={i} className="flex items-start justify-between gap-2 text-sm">
+                <span className="text-slate-600 leading-snug">{c.label}</span>
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-slate-500 text-xs">{fmtNum(c.value)}</span>
                   <Badge
                     variant="outline"

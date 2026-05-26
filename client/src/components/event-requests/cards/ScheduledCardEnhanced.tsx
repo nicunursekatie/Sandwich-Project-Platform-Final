@@ -4346,75 +4346,199 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         )}
 
 
-        {/* Action Buttons Row */}
-        <div className="flex flex-wrap gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
-          <Button
-            onClick={onContact}
-           
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Contact Organizer
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onLogContact}
-           
-          >
-            <MessageSquare className="w-4 h-4 mr-1" />
-            Log Contact
-          </Button>
-          <ReminderRulesManager
-            eventRequestId={request.id}
-            tspContactUserId={request.tspContact || request.tspContactAssigned}
-            eventStatus={request.status}
-          />
-          {onAiIntakeAssist && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAiIntakeAssist}
-              className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
-              data-testid="button-ai-intake-check"
-            >
-              <Sparkles className="w-4 h-4 mr-1" />
-              AI Intake Check
+        {/* Action Buttons Row — single consolidated row of every action available on a
+            scheduled event. Workflow/communication actions on the left, card-management
+            cluster (Edit + Delete) pushed to the right with a vertical divider. */}
+        <TooltipProvider>
+          <div className="flex flex-wrap items-center gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
+            <Button onClick={onContact}>
+              <Mail className="w-4 h-4 mr-2" />
+              Contact Organizer
             </Button>
-          )}
-          <Button size="sm" variant="outline" onClick={onReschedule}>
-            Reschedule
-          </Button>
-          {onDuplicate && (
-            <Button size="sm" variant="outline" onClick={onDuplicate}>
-              <Copy className="w-4 h-4 mr-1" />
-              New Event
+            <Button size="sm" variant="outline" onClick={onLogContact}>
+              <MessageSquare className="w-4 h-4 mr-1" />
+              Log Contact
             </Button>
-          )}
-          <Button size="sm" onClick={onFollowUp}>
-            Follow Up
-          </Button>
 
-          {!(request.tspContact || request.customTspContact) && canEditTspContact && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAssignTspContact}
-              className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Assign TSP Contact
-            </Button>
-          )}
+            {/* Message — always visible */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowMessageDialog(true)}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+                  data-testid="button-message-event"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Message
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Message about this event</p>
+              </TooltipContent>
+            </Tooltip>
 
-          {/* Propose to Planning Sheet button */}
-          <ProposeToSheetButton
-            eventId={request.id}
-            organizationName={request.organizationName || 'Unknown'}
-            variant="outline"
-            size="sm"
-            className="border-blue-500/30"
-          />
-        </div>
+            {canEdit && canSendSMS && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendSmsDialog(true)}
+                      className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
+                      data-testid="button-send-sms-card"
+                    >
+                      <Phone className="w-4 h-4 mr-1" />
+                      Send SMS
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send event details via SMS</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowSendCorrectionDialog(true)}
+                      className="border-orange-400 text-orange-700 hover:bg-orange-100"
+                      data-testid="button-send-correction-card"
+                    >
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Send Correction
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Send correction SMS</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+
+            <ReminderRulesManager
+              eventRequestId={request.id}
+              tspContactUserId={request.tspContact || request.tspContactAssigned}
+              eventStatus={request.status}
+            />
+
+            {onAiIntakeAssist && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAiIntakeAssist}
+                className="border-purple-500/30 text-purple-600 hover:bg-purple-50"
+                data-testid="button-ai-intake-check"
+              >
+                <Sparkles className="w-4 h-4 mr-1" />
+                AI Intake Check
+              </Button>
+            )}
+
+            <Button size="sm" variant="outline" onClick={onReschedule}>
+              Reschedule
+            </Button>
+
+            {onDuplicate && (
+              <Button size="sm" variant="outline" onClick={onDuplicate}>
+                <Copy className="w-4 h-4 mr-1" />
+                New Event
+              </Button>
+            )}
+
+            <Button size="sm" onClick={onFollowUp}>
+              Follow Up
+            </Button>
+
+            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAssignTspContact}
+                className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
+              >
+                <UserPlus className="w-4 h-4 mr-1" />
+                Assign TSP Contact
+              </Button>
+            )}
+
+            <ProposeToSheetButton
+              eventId={request.id}
+              organizationName={request.organizationName || 'Unknown'}
+              variant="outline"
+              size="sm"
+              showLabel
+            />
+
+            {/* Van needed — only renders when no van flag is set AND no van driver assigned. */}
+            {!request.assignedVanDriverId && !request.isDhlVan && (
+              <VanNeededBadgeAndButton
+                eventRequestId={request.id}
+                vanDriverNeeded={request.vanDriverNeeded}
+                vanNeededLikely={(request as any).vanNeededLikely}
+                canEdit={!!canEdit}
+                simpleToggle
+                mode="button"
+              />
+            )}
+
+            {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}
+            {canEdit && (
+              <>
+                <div className="flex-1" />
+                <div
+                  className="self-stretch border-l border-slate-200 mx-1"
+                  aria-hidden="true"
+                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onEdit}
+                      data-testid="button-edit-event"
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit event</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <ConfirmationDialog
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 h-8"
+                            aria-label="Delete event"
+                            data-testid="button-delete-event"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        }
+                        title="Delete Event"
+                        description={`Delete ${request.organizationName}?`}
+                        confirmText="Delete"
+                        onConfirm={onDelete}
+                        variant="destructive"
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Delete event</p>
+                  </TooltipContent>
+                </Tooltip>
+              </>
+            )}
+          </div>
+        </TooltipProvider>
 
         {/* Team Comments Section */}
         {request.id && (
@@ -4482,150 +4606,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </Button>
           </div>
         </div>
-
-        {/* Action Buttons Section — labeled outline buttons to match InProcessCard density.
-            Workflow/communication actions on the left, card-management cluster (Edit + Delete)
-            pushed to the right with a vertical divider separator.
-            Positioned at the bottom of the card body (above Activity History) so it
-            mirrors InProcessCard's structure — content first, then actions. */}
-        <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-            {/* Message — always visible */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowMessageDialog(true)}
-                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
-                  data-testid="button-message-event"
-                >
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Message
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Message about this event</p>
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Push to Planning Sheet — labeled variant for visual consistency */}
-            <ProposeToSheetButton
-              eventId={request.id}
-              organizationName={request.organizationName || 'Unknown'}
-              variant="outline"
-              size="sm"
-              showLabel
-            />
-
-            {canEdit && canSendSMS && (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowSendSmsDialog(true)}
-                      className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
-                      data-testid="button-send-sms-card"
-                    >
-                      <Phone className="w-4 h-4 mr-1" />
-                      Send SMS
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Send event details via SMS</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setShowSendCorrectionDialog(true)}
-                      className="border-orange-400 text-orange-700 hover:bg-orange-100"
-                      data-testid="button-send-correction-card"
-                    >
-                      <AlertTriangle className="w-4 h-4 mr-1" />
-                      Send Correction
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Send correction SMS</p>
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            )}
-
-            {/* Van needed — button slot. Only renders when no van flag is set
-                AND no van driver is yet assigned. Sits with the workflow actions
-                so the call-to-action lives where the user looks for actions to take. */}
-            {!request.assignedVanDriverId && !request.isDhlVan && (
-              <VanNeededBadgeAndButton
-                eventRequestId={request.id}
-                vanDriverNeeded={request.vanDriverNeeded}
-                vanNeededLikely={(request as any).vanNeededLikely}
-                canEdit={!!canEdit}
-                simpleToggle
-                mode="button"
-              />
-            )}
-
-            {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}
-            {canEdit && (
-              <>
-                <div className="flex-1" />
-                <div
-                  className="self-stretch border-l border-slate-200 mx-1"
-                  aria-hidden="true"
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onEdit}
-                      data-testid="button-edit-event"
-                    >
-                      <Edit2 className="w-4 h-4 mr-1" />
-                      Edit
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Edit event</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <ConfirmationDialog
-                        trigger={
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-600 hover:text-red-700 h-8"
-                            aria-label="Delete event"
-                            data-testid="button-delete-event"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        }
-                        title="Delete Event"
-                        description={`Delete ${request.organizationName}?`}
-                        confirmText="Delete"
-                        onConfirm={onDelete}
-                        variant="destructive"
-                      />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Delete event</p>
-                  </TooltipContent>
-                </Tooltip>
-              </>
-            )}
-          </div>
-        </TooltipProvider>
 
         {/* Activity History Toggle */}
         <div className="border-t-2 border-[#007E8C]/10 pt-4 mt-4">
