@@ -1795,19 +1795,19 @@ export default function VolunteerEventHub() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
             <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalEvents}</div>
-              <div className="text-sm font-semibold leading-tight text-white">Upcoming Events</div>
+              <div className="text-base font-semibold leading-snug text-white">Upcoming Events</div>
             </div>
             <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalDriverOpenings}</div>
-              <div className="text-sm font-semibold leading-tight text-white">Drivers Needed</div>
+              <div className="text-base font-semibold leading-snug text-white">Drivers Needed</div>
             </div>
             <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalSpeakerOpenings}</div>
-              <div className="text-sm font-semibold leading-tight text-white">Speakers Needed</div>
+              <div className="text-base font-semibold leading-snug text-white">Speakers Needed</div>
             </div>
             <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalOpenings}</div>
-              <div className="text-sm font-semibold leading-tight text-white">Total Openings</div>
+              <div className="text-base font-semibold leading-snug text-white">Total Openings</div>
             </div>
           </div>
         </div>
@@ -1925,6 +1925,14 @@ export default function VolunteerEventHub() {
               </Button>
             )}
           </div>
+        </div>
+
+        {/* Guidance note: shown above the active view so volunteers see it
+            before scanning the calendar / list for events to sign up for. */}
+        <div className="rounded-lg border border-[#FBAD3F]/40 bg-[#FFF7E6] px-4 py-3 text-sm text-[#236383] leading-relaxed">
+          Extra help is usually welcome at events, but subject to approval. Please
+          prioritize signing up for unfilled needs whenever possible. Thank you so
+          much for being part of this team!
         </div>
 
         {/* Main Content */}

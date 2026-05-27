@@ -37,17 +37,15 @@ import {
   Building2,
   Shield,
   DollarSign,
-  UserCheck,
   Rocket,
   AlertTriangle,
-  Mail,
   Download,
   FileText,
   HandHeart,
   PieChartIcon,
-  TrendingDown,
   Activity,
   Briefcase,
+  Sandwich,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -127,7 +125,7 @@ export default function GrantMetrics() {
   // Scott's Excel was a reference that stopped being updated in August 2025
 
   // Fetch stats — short staleTime so hero totals stay fresh (see comment above).
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<{ uniqueGroups?: number }>({
     queryKey: ['/api/sandwich-collections/stats'],
     staleTime: 30_000,
     refetchOnWindowFocus: true,
@@ -250,10 +248,6 @@ export default function GrantMetrics() {
     }
 
     const totalEvents = eventsToAnalyze.length;
-    const totalActualAttendance = eventsToAnalyze.reduce(
-      (sum: number, e: any) => sum + (e.actualAttendance || e.estimatedAttendance || 0),
-      0
-    );
     const eventRequestSandwiches = eventsToAnalyze.reduce(
       (sum: number, e: any) => sum + (e.actualSandwichCount || e.estimatedSandwichCount || 0),
       0
@@ -323,18 +317,10 @@ export default function GrantMetrics() {
     logger.log('Unique organizations count:', uniqueOrgs.size);
     logger.log('First 10 orgs:', Array.from(uniqueOrgs).slice(0, 10));
 
-    // Calculate events with social media posts
-    const socialMediaPosts = eventsToAnalyze.filter(
-      (e: any) => e.socialMediaPostCompleted
-    ).length;
-
     return {
       totalEvents,
-      totalActualAttendance,
       totalActualSandwiches,
       uniqueOrganizations: uniqueOrgs.size,
-      socialMediaPostsCompleted: socialMediaPosts,
-      avgAttendeesPerEvent: totalEvents > 0 ? Math.round(totalActualAttendance / totalEvents) : 0,
       avgSandwichesPerEvent: totalEvents > 0 ? Math.round(totalActualSandwiches / totalEvents) : 0,
     };
   };
@@ -425,7 +411,7 @@ export default function GrantMetrics() {
     // - Individual sandwich makers: 20 min (0.33 hours) per person
     // - Group builds: 1.5 hours average per participant
     // - Hosts: 2.5 hours per collection event
-    // - Administrative/coordination: 3 hours per event
+    // - Administrative/coordination: 1.5 hours per event
 
     const individualEvents = collectionsToAnalyze.filter((c: any) => c.individualSandwiches > 0).length;
     const groupEvents = collectionsToAnalyze.filter((c: any) => {
@@ -435,15 +421,15 @@ export default function GrantMetrics() {
 
     const totalEvents = collectionsToAnalyze.length;
 
-    // Estimate participants based on sandwiches made
-    // Avg person makes ~8-12 sandwiches, use 10 as conservative estimate
+    // Estimate participants from sandwich volume. Avg person makes ~8-12
+    // sandwiches, so use 10 sandwiches/person as a conservative proxy.
     const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
     const estimatedParticipants = Math.round(totalSandwiches / 10);
 
     // Calculate hours
     const makingHours = estimatedParticipants * 0.33; // 20 min per person
     const hostHours = totalEvents * 2.5; // Host coordination
-    const adminHours = totalEvents * 3; // Administrative overhead
+    const adminHours = totalEvents * 1.5; // Administrative overhead
     const driverHours = totalEvents * 1.5; // Driver/logistics
 
     const totalVolunteerHours = Math.round(makingHours + hostHours + adminHours + driverHours);
@@ -463,15 +449,15 @@ export default function GrantMetrics() {
   const calculateCostMetrics = (collectionsToAnalyze: any[]) => {
     const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
 
-    // Per-sandwich ingredient cost estimate (current grocery prices, basic
-    // turkey-and-cheese build — TSP sandwiches do not use condiments).
-    // Representative sandwich:
-    //   - 2 slices bread (Nature's Own Honey Wheat, 22-slice loaf ~$5)   ≈ $0.45
-    //   - 2 slices cheddar (Kirkland 48-ct sliced ~$12)                  ≈ $0.50
-    //   - 2 oz sliced turkey (Kirkland deli ~$15 / 2 lb)                 ≈ $0.95
-    //   - Ziplock baggie                                                 ≈ $0.05
-    // Total ≈ $2.00 per sandwich. This is the cost volunteers/groups bear —
-    // TSP does not pay for sandwich ingredients.
+    // Per-sandwich ingredient cost estimate using a representative deli
+    // baseline. Volunteers choose the exact brands they buy, but a reasonable
+    // deli reference is Nature's Own Honey Wheat bread, Kirkland pre-sliced
+    // cheddar, and Kirkland pre-sliced deli turkey.
+    //
+    // PB&J is lower cost, but the collection log does not yet provide a
+    // complete deli/PB&J mix for all historical sandwich totals. Until that
+    // mix is reliable, grant-facing food value uses the conservative deli
+    // baseline rather than pretending the app knows the exact ingredient mix.
     //
     // A meal = 2 sandwiches, so the per-meal cost is 2x.
     const costPerSandwich = 2.00;
@@ -543,7 +529,6 @@ export default function GrantMetrics() {
         longestStreak: 0,
         avgPerCollection: 0,
         topHost: { name: '', total: 0 },
-        growthRate: 0,
         weeklyAverage: 0,
         overallGrowthMultiplier: 0,
         monthlyData: {} as Record<string, number>,
@@ -614,11 +599,6 @@ export default function GrantMetrics() {
       .filter(([name]) => name !== 'Groups' && name !== 'Unknown')
       .reduce((max, [name, total]) => total > max.total ? { name, total } : max, { name: '', total: 0 });
 
-    // Calculate growth rate (2023 to 2024)
-    const growthRate = yearTotals[2023] > 0
-      ? ((yearTotals[2024] - yearTotals[2023]) / yearTotals[2023]) * 100
-      : 0;
-
     // Calculate weekly average from last 4 complete weeks (more representative of current production)
     // Excluding no-collection weeks like Thanksgiving, Christmas, etc.
     const now = new Date();
@@ -674,7 +654,6 @@ export default function GrantMetrics() {
       peakMonth,
       avgPerCollection,
       topHost: topHostEntry,
-      growthRate,
       weeklyAverage,
       overallGrowthMultiplier,
       monthlyData,
@@ -688,10 +667,7 @@ export default function GrantMetrics() {
   const filteredQuarterlyBreakdown = getQuarterlyBreakdown(filteredCollections);
 
   // Calculate ALL-TIME metrics for the hero stats and growth charts (always show full history)
-  const allTimeCollections = collections;
   const metrics = calculateGrantMetrics();
-  const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
-  const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
 
   // Derive live week-level metrics from the same weekly aggregates that
   // calculateGrantMetrics already builds (metrics.weeklyData). Reusing the
@@ -843,6 +819,12 @@ export default function GrantMetrics() {
     if (year === currentYear && currentMonth === 11) return true; // Current year in December
     return false; // Don't include incomplete current year
   });
+  const latestCompleteYear = completeYears[completeYears.length - 1] || 0;
+  const isCurrentYearIncomplete = Boolean(
+    latestCompleteYear > 0 &&
+    currentYear > latestCompleteYear &&
+    metrics.yearTotals[currentYear]
+  );
 
   // Peak year over *completed* years only. metrics.peakYear treats all
   // yearTotals equally and will pick the in-progress year if its YTD total
@@ -873,6 +855,17 @@ export default function GrantMetrics() {
       : 0;
     return { ...data, growth };
   });
+  const completedGrowthPoints = yearGrowthData.filter(
+    (data) => data.growth !== null
+  ) as Array<(typeof yearGrowthData)[number] & { growth: number }>;
+  const latestGrowthPoint = completedGrowthPoints[completedGrowthPoints.length - 1];
+  const averageYoYGrowth = completedGrowthPoints.length > 0
+    ? Math.round(
+        completedGrowthPoints.reduce((sum, data) => sum + data.growth, 0) / completedGrowthPoints.length
+      )
+    : null;
+  const positiveGrowthYears = completedGrowthPoints.filter(data => data.growth > 0).length;
+  const firstCompleteYear = completeYears[0] || 0;
 
   return (
     <div className="bg-gradient-to-br from-[#E8F4F8] to-[#F0F9FB] p-6 rounded-lg">
@@ -1054,192 +1047,6 @@ export default function GrantMetrics() {
           </Card>
         </div>
 
-        {/* Hero Stats - The Big Numbers */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-[#236383] to-[#1a4d63] text-white border-0 shadow-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl font-bold flex items-center">
-                <Trophy className="w-6 h-6 mr-3" />
-                Total Impact
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-5xl font-black mb-2">
-                {metrics.totalSandwiches.toLocaleString()}
-              </div>
-              <p className="text-white/90 text-base font-medium">
-                Sandwiches distributed to community members in need
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-[#007E8C] to-[#006170] text-white border-0 shadow-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl font-bold flex items-center">
-                <Award className="w-6 h-6 mr-3" />
-                Peak Year
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-5xl font-black mb-2">
-                {completeYearPeak.total > 0 ? completeYearPeak.total.toLocaleString() : '—'}
-              </div>
-              <p className="text-white/90 text-base font-medium">
-                {completeYearPeak.year > 0
-                  ? `Sandwiches in ${completeYearPeak.year} — our best complete year`
-                  : 'Awaiting first complete year of data'}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-[#FBAD3F] to-[#e89a2c] text-white border-0 shadow-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xl font-bold flex items-center">
-                <Building2 className="w-6 h-6 mr-3" />
-                Host Locations
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-5xl font-black mb-2">
-                {totalHosts}
-              </div>
-              <p className="text-white/90 text-base font-medium">
-                Active collection sites across Metro Atlanta
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Achievement Highlights */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card className="border-2 border-[#FBAD3F] shadow-lg">
-            <CardHeader className="bg-[#FEF4E0]">
-              <CardTitle className="flex items-center text-[#A31C41]">
-                <Star className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                Record-Breaking Achievements
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#236383]">
-                <Calendar className="w-8 h-8 text-[#236383] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">Peak Month</h3>
-                  <p className="text-2xl font-black text-[#236383] my-1">
-                    {metrics.peakMonth.total.toLocaleString()} sandwiches
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {metrics.peakMonth.month} - our highest monthly total
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#47B3CB]">
-                <Target className="w-8 h-8 text-[#47B3CB] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">Average Per Collection</h3>
-                  <p className="text-2xl font-black text-[#47B3CB] my-1">
-                    {metrics.avgPerCollection} sandwiches
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Consistent high-quality output per event
-                  </p>
-                </div>
-              </div>
-
-              {metrics.growthRate > 0 && (
-                <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#007E8C]">
-                  <TrendingUp className="w-8 h-8 text-[#007E8C] flex-shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-lg text-gray-900">Year-Over-Year Growth</h3>
-                    <p className="text-2xl font-black text-[#007E8C] my-1">
-                      +{metrics.growthRate.toFixed(1)}%
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      2023 to 2024 - demonstrating sustained impact
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-start gap-4 p-4 bg-white rounded-lg border-l-4 border-[#A31C41]">
-                <Shield className="w-8 h-8 text-[#A31C41] flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">Crisis Response</h3>
-                  <p className="text-2xl font-black text-[#A31C41] my-1">
-                    14,023 sandwiches
-                  </p>
-                  <p className="text-sm text-gray-600 mb-2">
-                    Mobilized during Hurricane Helene (October 2024)
-                  </p>
-                  <p className="text-sm font-semibold text-[#007E8C]">
-                    Significant surge above typical weekly output
-                  </p>
-                  <p className="text-xs text-gray-500 italic mt-1">
-                    Demonstrating disaster-response capacity beyond routine distribution
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* How We Do It: The Volunteer Network */}
-          <Card className="border-2 border-[#A31C41] shadow-lg">
-            <CardHeader className="bg-[#FCE4E6]">
-              <CardTitle className="flex items-center text-[#A31C41]">
-                <Users className="w-5 h-5 mr-2 text-[#A31C41]" />
-                How We Do It: The Volunteer Network
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 pt-6">
-              <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
-                <div className="font-black mb-1 text-[28px]">
-                  {liveWeeksOfService.toLocaleString()} Weeks of Collections
-                </div>
-                <p className="text-white/90 text-sm mb-4">since April 2020 — weekly cadence, pausing only for major holidays</p>
-
-                {/* Visual separator line */}
-                <div className="w-16 h-0.5 bg-white/30 mx-auto mb-4"></div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="font-black text-[24px]">4,000+</div>
-                    <p className="text-white/90 text-xs">in volunteer community*</p>
-                  </div>
-                  <div>
-                    <div className="font-black text-[24px]">{metrics.avgPerCollection}</div>
-                    <p className="text-white/90 text-xs">per collection</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg border border-[#A31C41]/30">
-                <h3 className="font-semibold text-gray-900 mb-3">Why This Model Works</h3>
-                <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Sandwich making and ingredients are 100% volunteer-driven — TSP pays nothing for sandwich supplies</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Distributed network of host sites enables broad geographic coverage</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Distribution is volunteer-led, with one contract driver for the refrigerated van</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Crisis-ready: surged response during Hurricane Helene (October 2024)</span>
-                  </li>
-                </ul>
-                <p className="text-xs text-gray-500 italic mt-3">
-                  *Volunteer community size is tracked outside this database.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Year-over-Year Growth Chart - COMPLETE YEARS ONLY */}
         <Card className="mb-8 shadow-lg">
           <CardHeader>
@@ -1248,7 +1055,7 @@ export default function GrantMetrics() {
               Year-Over-Year Impact Growth (Complete Years)
             </CardTitle>
             <CardDescription>
-              Demonstrating sustained and growing community impact {currentYear === 2025 && currentMonth < 11 && '(2025 excluded - year in progress)'}
+              Demonstrating sustained community impact across completed years {isCurrentYearIncomplete && `(${currentYear} excluded - year in progress)`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1306,8 +1113,38 @@ export default function GrantMetrics() {
               </div>
             </div>
 
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 rounded-lg border border-[#236383]/20 bg-white">
+                <div className="text-sm font-semibold text-gray-600">Peak Month</div>
+                <div className="text-2xl font-black text-[#236383]">
+                  {metrics.peakMonth.total.toLocaleString()}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {metrics.peakMonth.month || 'No monthly data yet'}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg border border-[#007E8C]/20 bg-white">
+                <div className="text-sm font-semibold text-gray-600">Latest Completed YoY</div>
+                <div className="text-2xl font-black text-[#007E8C]">
+                  {latestGrowthPoint ? `${latestGrowthPoint.growth > 0 ? '+' : ''}${latestGrowthPoint.growth}%` : '—'}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {latestGrowthPoint
+                    ? `${Number(latestGrowthPoint.year) - 1} to ${latestGrowthPoint.year}`
+                    : 'Needs at least two complete years'}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg border border-[#A31C41]/20 bg-white">
+                <div className="text-sm font-semibold text-gray-600">Crisis Response</div>
+                <div className="text-2xl font-black text-[#A31C41]">14,023</div>
+                <p className="text-xs text-gray-500">
+                  Hurricane Helene surge, October 2024
+                </p>
+              </div>
+            </div>
+
             {/* Current Year Status (if incomplete) */}
-            {currentYear > Math.max(...completeYears) && metrics.yearTotals[currentYear] && (
+            {isCurrentYearIncomplete && (
               <div className="mt-4 p-4 bg-gradient-to-r from-[#FEF4E0] to-white rounded-lg border border-[#FBAD3F]/30">
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-[#FBAD3F] shrink-0 mt-1" />
@@ -1326,79 +1163,6 @@ export default function GrantMetrics() {
             )}
           </CardContent>
         </Card>
-
-        {/* Strategic Milestones & Infrastructure */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Distributed Network */}
-          <Card className="border-2 border-[#007E8C] shadow-lg">
-            <CardHeader className="bg-[#E0F2F1]">
-              <CardTitle className="flex items-center text-[#007E8C]">
-                <Building2 className="w-5 h-5 mr-2" />
-                Distributed Network
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-3xl font-black text-[#007E8C] mb-1">
-                    {totalHosts} sites
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Active collection locations across Metro Atlanta
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="text-2xl font-bold text-[#236383] mb-1">
-                    {recipientMetrics.total > 0 ? recipientMetrics.total : '—'} partners
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Active recipient organizations in our database
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 italic">
-                    Built-in redundancy: if one area struggles, others compensate
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Volunteer Power */}
-          <Card className="border-2 border-[#FBAD3F] shadow-lg">
-            <CardHeader className="bg-[#FEF4E0]">
-              <CardTitle className="flex items-center text-[#FBAD3F]">
-                <UserCheck className="w-5 h-5 mr-2" />
-                Volunteer Network
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-3xl font-black text-[#FBAD3F] mb-1">
-                    4,000+
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Members in our private volunteer community*
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="text-2xl font-bold text-[#47B3CB] mb-1">
-                    5,350+
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    Newsletter recipients staying informed*
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 italic">
-                    *Tracked outside this database (private community + mailing list). Many volunteers have been engaged for several years.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Remarkable Growth Story */}
         <Card className="mb-8 bg-gradient-to-r from-[#47B3CB]/10 to-[#236383]/10 border-2 border-[#47B3CB]">
@@ -1550,81 +1314,6 @@ export default function GrantMetrics() {
           </CardContent>
         </Card>
 
-        {/* Financial & Economic Impact */}
-        <Card className="mb-8 border-2 border-[#007E8C] shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-[#007E8C] to-[#236383] text-white">
-            <CardTitle className="flex items-center text-xl">
-              <DollarSign className="w-6 h-6 mr-2" />
-              Economic & Financial Impact
-            </CardTitle>
-            <CardDescription className="text-white/90">
-              The hidden value behind the sandwiches
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
-                {(() => {
-                  // Use the peak *complete* year so we never label a YTD
-                  // partial-year total as the year's food value. Band the
-                  // per-sandwich cost by ±10% off costPerSandwich so this
-                  // card can't drift when that estimate is updated.
-                  const peakYearTotal = completeYearPeak.total;
-                  const cost = allTimeCostMetrics.costPerSandwich;
-                  const costLow = cost * 0.9;
-                  const costHigh = cost * 1.1;
-                  const annualLow = Math.round((peakYearTotal * costLow) / 1000);
-                  const annualHigh = Math.round((peakYearTotal * costHigh) / 1000);
-                  const display = peakYearTotal > 0
-                    ? annualHigh >= 1000
-                      ? `$${(annualLow / 1000).toFixed(2)}-${(annualHigh / 1000).toFixed(2)}M`
-                      : `$${annualLow}K-${annualHigh}K`
-                    : '—';
-                  return (
-                    <>
-                      <div className="text-4xl font-black text-[#007E8C] mb-2">
-                        {display}
-                      </div>
-                      <p className="text-sm text-gray-700 font-medium">
-                        {completeYearPeak.year > 0
-                          ? `Food value delivered in ${completeYearPeak.year}`
-                          : 'Food value (peak complete year)'}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-2">
-                        At ~${costLow.toFixed(2)}–${costHigh.toFixed(2)} per sandwich (volunteer-supplied ingredients)
-                      </p>
-                    </>
-                  );
-                })()}
-              </div>
-
-              <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
-                <div className="text-4xl font-black text-[#236383] mb-2">
-                  $500-2K
-                </div>
-                <p className="text-sm text-gray-700 font-medium">
-                  Typical corporate team-building event value
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Companies typically make 2,000-5,000 sandwiches per event
-                </p>
-              </div>
-
-              <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
-                <div className="text-4xl font-black text-[#FBAD3F] mb-2">
-                  ServSafe
-                </div>
-                <p className="text-sm text-gray-700 font-medium">
-                  Certified team members ensuring safety
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Professional food safety standards
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* GRANT-SPECIFIC SECTIONS */}
 
         {/* Volunteer Engagement & Economic Value - INTERACTIVE */}
@@ -1649,7 +1338,7 @@ export default function GrantMetrics() {
                   Est. volunteer participants
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Based on collection data
+                  Sandwiches ÷ 10
                 </p>
               </div>
 
@@ -1707,7 +1396,7 @@ export default function GrantMetrics() {
                   <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
                     Making
                   </Badge>
-                  <span>20 min per participant (0.33 hrs × ~10 sandwiches/person)</span>
+                  <span>Estimated participants = total sandwiches ÷ 10; making time = 20 min per estimated participant</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
@@ -1725,7 +1414,7 @@ export default function GrantMetrics() {
                   <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
                     Admin
                   </Badge>
-                  <span>3 hours per event (coordination, communication, tracking)</span>
+                  <span>1.5 hours per event (coordination, communication, tracking)</span>
                 </div>
               </div>
               <p className="text-xs text-gray-600 mt-3 italic">
@@ -1798,6 +1487,43 @@ export default function GrantMetrics() {
                 <p className="text-xs text-gray-500 mt-1">
                   Food + volunteer hours
                 </p>
+              </div>
+            </div>
+
+            <div className="mb-6 bg-white p-5 rounded-lg border border-[#007E8C]/20">
+              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-[#007E8C]" />
+                Ingredient Cost Baselines
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Volunteers buy different brands, so these are representative grocery baselines used to explain the food-value estimate. The current grant value uses the deli baseline because historical collection data does not yet have a complete deli vs. PB&J split.
+              </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="rounded-lg border border-[#236383]/20 bg-[#E8F4F8]/60 p-4">
+                  <h4 className="font-semibold text-[#236383] mb-2">Deli Sandwich Baseline</h4>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>Nature's Own Honey Wheat bread, 2 slices</li>
+                    <li>Kirkland prepackaged sliced cheddar cheese</li>
+                    <li>Kirkland prepackaged sliced deli turkey meat</li>
+                    <li>Individual sandwich bag</li>
+                  </ul>
+                  <p className="text-sm font-semibold text-gray-900 mt-3">
+                    Reporting baseline: about ${filteredCostMetrics.costPerSandwich.toFixed(2)} per sandwich
+                  </p>
+                </div>
+                <div className="rounded-lg border border-[#FBAD3F]/30 bg-[#FEF4E0]/70 p-4">
+                  <h4 className="font-semibold text-[#B45309] mb-2">PB&J Sandwich Baseline</h4>
+                  <ul className="space-y-1 text-sm text-gray-700">
+                    <li>Nature's Own Honey Wheat bread, 2 slices</li>
+                    <li>Jif peanut butter, about 2-3 tablespoons</li>
+                    <li>Strawberry or grape jelly, about 2 teaspoons</li>
+                    <li>Jelly only, not jam or preserves</li>
+                    <li>Individual sandwich bag</li>
+                  </ul>
+                  <p className="text-sm font-semibold text-gray-900 mt-3">
+                    Lower-cost reference, shown for transparency when explaining mixed sandwich production.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -2096,14 +1822,17 @@ export default function GrantMetrics() {
             </div>
 
             <div className="bg-gradient-to-r from-[#E0F2F1] to-white p-5 rounded-lg border border-[#007E8C]/30">
-              <h3 className="font-bold text-gray-900 mb-3">Estimated Weekly Need</h3>
+              <h3 className="font-bold text-gray-900 mb-3">Estimated Weekly Bare Minimum Need</h3>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-3xl font-black text-[#007E8C]">
                     {recipientMetrics.totalWeeklyCapacity.toLocaleString()}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Estimated weekly sandwich need across all {recipientMetrics.total} recipient partners
+                    Baseline weekly amount we try to meet for core recipient partners in the app.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2 max-w-3xl">
+                    This is likely an undercount of true community need. Many recipient partners can take extra sandwiches, which is why TSP can place all sandwiches even during 10,000+ sandwich weeks. This number is best understood as the bare-minimum weekly baseline, not the ceiling of demand.
                   </p>
                 </div>
                 <BarChart3 className="w-16 h-16 text-[#007E8C]/30" />
@@ -2168,7 +1897,7 @@ export default function GrantMetrics() {
                         Sandwiches made at group events
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        Avg {eventMetrics.avgSandwichesPerEvent} per event
+                        From completed event requests plus historical group collections
                       </p>
                     </div>
                     <Award className="w-16 h-16 text-[#236383]/20" />
@@ -2177,24 +1906,24 @@ export default function GrantMetrics() {
 
                 <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
                   <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                    <Star className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                    Social Media Engagement
+                    <BarChart3 className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                    Average Event Output
                   </h3>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-4xl font-black text-[#FBAD3F]">
-                        {eventMetrics.totalEvents > 0
-                          ? `${Math.round((eventMetrics.socialMediaPostsCompleted / eventMetrics.totalEvents) * 100)}%`
+                        {eventMetrics.avgSandwichesPerEvent > 0
+                          ? eventMetrics.avgSandwichesPerEvent.toLocaleString()
                           : '—'}
                       </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        of completed group events have a tracked social media post
+                        sandwiches per completed group event
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        {eventMetrics.socialMediaPostsCompleted.toLocaleString()} of {eventMetrics.totalEvents.toLocaleString()} events. Partners frequently tag @TheSandwichProject in their posts.
+                        Based on sandwich counts we actually track, not attendance or social-media reporting.
                       </p>
                     </div>
-                    <Mail className="w-16 h-16 text-[#FBAD3F]/20" />
+                    <Sandwich className="w-16 h-16 text-[#FBAD3F]/20" />
                   </div>
                 </div>
               </div>
@@ -2240,39 +1969,19 @@ export default function GrantMetrics() {
           </CardHeader>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              <div className="bg-gradient-to-r from-[#FEF4E0] to-white p-5 rounded-lg border-l-4 border-[#FBAD3F]">
-                <div className="flex items-start gap-4">
-                  <UserCheck className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Executive Leadership (Achieved)</h3>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Status:</strong> First paid Executive Director hired September 2025 (full-time) to manage operations, fundraising, and strategic partnerships
-                    </p>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Impact:</strong> Professional leadership now in place after scaling{' '}
-                      {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : 'significantly'}{' '}
-                      from our founding output — enabling structured growth, grant pursuit, and operational efficiency
-                    </p>
-                    <Badge className="bg-green-100 text-green-700 border-green-300">
-                      Hired Sept 2025
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
               <div className="bg-gradient-to-r from-white to-[#E0F2F1] p-5 rounded-lg border-l-4 border-[#47B3CB]">
                 <div className="flex items-start gap-4">
                   <Users className="w-8 h-8 text-[#47B3CB] shrink-0 mt-1" />
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Our Staffing Picture, in Full</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">Low-Overhead Mission Model</h3>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Paid:</strong> One full-time Executive Director (since Sept 2025), one contract driver who operates the refrigerated van for weekly distribution and larger events, and a small number of part-time contractors who together account for roughly 10–15 hours of work each on an as-needed basis.
+                      <strong>What volunteers cover:</strong> All sandwich making and all sandwich ingredients. TSP does not need grant dollars for food materials, an office, or staff to do the hands-on work that fuels the mission.
                     </p>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Volunteer:</strong> All sandwich making and all sandwich ingredients (TSP pays $0 for sandwich supplies). 20+ regular volunteer drivers handle the bulk of transportation alongside the contract driver. Operations leadership — including team members putting in 10s of hours per week — are unpaid volunteers.
+                      <strong>What paid support protects:</strong> The coordination backbone behind that volunteer power — recipient communication, group-event scheduling, transportation logistics, reporting, systems maintenance, and operational follow-up.
                     </p>
                     <Badge className="bg-[#47B3CB]/20 text-[#47B3CB] border-[#47B3CB]/30">
-                      Mostly volunteer-driven, with a small paid core
+                      Mission delivery remains volunteer-powered and materials-light
                     </Badge>
                   </div>
                 </div>
@@ -2296,37 +2005,40 @@ export default function GrantMetrics() {
                 </div>
               </div>
 
+              <div className="bg-gradient-to-r from-[#FEF4E0] to-white p-5 rounded-lg border-l-4 border-[#FBAD3F]">
+                <div className="flex items-start gap-4">
+                  <Briefcase className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Paid Coordination Capacity</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Need:</strong> TSP now has a large and growing amount of operational work to run weekly collections, coordinate group events, manage recipient needs, and keep sandwich transportation moving. We have some paid/contract help, but the workload has outgrown what volunteers can sustainably absorb.
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Grant argument:</strong> Staffing and operations may look less exciting than direct materials, but for TSP they are the leverage point. Because volunteers provide the food and hands-on service, paid coordination lets thousands of volunteer hours and donated ingredients continue turning into meals with very little traditional overhead.
+                    </p>
+                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
+                      Funding needed for paid operations and events coordination
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-gradient-to-r from-[#E8F4F8] to-white p-5 rounded-lg border-l-4 border-[#236383]">
                 <div className="flex items-start gap-4">
                   <Shield className="w-8 h-8 text-[#236383] shrink-0 mt-1" />
                   <div>
                     <h3 className="font-bold text-gray-900 mb-2">Technology & Systems</h3>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Current:</strong> Full-featured custom platform including collection tracking, event request intake and scheduling, recipient and host management, driver planning with route optimization, volunteer coordination, grant metrics and impact analytics, real-time messaging, email/SMS notifications, Google Sheets sync, and meeting management. Built to scale with our operations.
+                      <strong>Current:</strong> Custom internal platform including collection tracking, event request intake and scheduling, recipient and host management, driver planning with route optimization, volunteer coordination, grant metrics and impact analytics, real-time messaging, email/SMS notifications, Google Sheets sync, and meeting management.
                     </p>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Cost context:</strong> A traditional development firm would typically charge $75K–150K+ to build a platform of this scope. This app was built at no cost by a volunteer developer, with minimal spend on AI-assisted development tools.
+                      <strong>Cost context:</strong> TSP avoided a substantial custom software expense because this operational system was built internally with AI-assisted development and volunteer labor.
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Ongoing need:</strong> The platform reduces manual work, but it still requires maintenance, hosting, security updates, integrations, and continued improvements so TSP's internal operations can keep running smoothly as volume grows.
                     </p>
                     <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30">
-                      Equivalent value: $75K–150K+ (built free by volunteer)
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-[#FEF4E0] to-white p-5 rounded-lg border-l-4 border-[#FBAD3F]">
-                <div className="flex items-start gap-4">
-                  <Briefcase className="w-8 h-8 text-[#FBAD3F] shrink-0 mt-1" />
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Paid Administrative Staff</h3>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Need:</strong> Full-time paid staff to handle the volume of administrative work. We have enough admin tasks — recipient coordination, data entry, scheduling support, reporting, and operational follow-up — to fill a full-time role.
-                    </p>
-                    <p className="text-sm text-gray-700 mb-2">
-                      <strong>Impact:</strong> This is the last major capacity gap. With an Executive Director in place and technology built, operational admin support would free volunteer leaders to focus on growth, partnerships, and community engagement.
-                    </p>
-                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30">
-                      Funding needed: full-time salary + benefits
+                      Ongoing technology maintenance and operations support needed
                     </Badge>
                   </div>
                 </div>
@@ -2341,26 +2053,25 @@ export default function GrantMetrics() {
               <p className="text-sm text-gray-700 mb-3">
                 The Sandwich Project has grown{' '}
                 {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : 'substantially'}{' '}
-                in annual output from its earliest year on record to its peak year, while remaining
-                largely volunteer-led. These strategic investments will:
+                in annual output from its earliest year on record to its peak year while avoiding the large material, facility, and direct-service staffing costs common to traditional food distribution models. These investments fund the coordination backbone that keeps that model possible:
               </p>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
                   <span>
-                    <strong>Sustainability:</strong> Reduce burnout risk and ensure continuity beyond founding volunteers
+                    <strong>Sustainability:</strong> Reduce burnout risk by moving essential coordination work into paid roles
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
                   <span>
-                    <strong>Scale:</strong> Current infrastructure at capacity - investments enable 2-3x growth
+                    <strong>Scale:</strong> Help coordinate more group events, recipient relationships, and transportation logistics without adding major material overhead
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Zap className="w-4 h-4 text-[#FBAD3F] shrink-0 mt-0.5" />
                   <span>
-                    <strong>Impact:</strong> Professional leadership unlocks corporate partnerships, larger grants, and strategic expansion
+                    <strong>Impact:</strong> Preserve the volunteer-powered model so donated food, donated time, and community goodwill continue producing unusually high impact per grant dollar
                   </span>
                 </li>
               </ul>
