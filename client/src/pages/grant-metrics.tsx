@@ -896,7 +896,7 @@ export default function GrantMetrics() {
               <div className="text-sm md:text-base text-white/90 mt-1">Volunteers in our broader community*</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{recipientMetrics.total > 0 ? `${recipientMetrics.total}+` : '50+'}</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{recipientMetrics.total > 0 ? recipientMetrics.total : '—'}</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Active recipient partner organizations</div>
             </div>
           </div>
@@ -1333,7 +1333,7 @@ export default function GrantMetrics() {
                 </div>
                 <div className="pt-3 border-t border-gray-200">
                   <div className="text-2xl font-bold text-[#236383] mb-1">
-                    {recipientMetrics.total > 0 ? recipientMetrics.total : '50+'} partners
+                    {recipientMetrics.total > 0 ? recipientMetrics.total : '—'} partners
                   </div>
                   <p className="text-sm text-gray-600">
                     Active recipient organizations in our database
@@ -1447,7 +1447,6 @@ export default function GrantMetrics() {
           const realGrowthPct = baseYearTotal > 0
             ? Math.round(((peakYearTotal - baseYearTotal) / baseYearTotal) * 100)
             : 0;
-          const formatHero = (n: number) => n >= 1000 ? `${Math.round(n / 1000)}K` : n.toLocaleString();
           if (baseYearTotal === 0 || peakYearTotal === 0) return null;
           return (
             <Card className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] text-white shadow-xl border-0">
@@ -1471,7 +1470,7 @@ export default function GrantMetrics() {
                     </p>
                   </div>
                   <div className="flex-shrink-0 text-center md:text-right">
-                    <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">{formatHero(peakYearTotal)}</div>
+                    <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">{formatHeroSandwiches(peakYearTotal)}</div>
                     <div className="text-sm text-white/80">sandwiches in {peakYear}<br />(peak year)</div>
                   </div>
                 </div>
@@ -1548,13 +1547,17 @@ export default function GrantMetrics() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
                 {(() => {
-                  // Estimate annual food value from the peak year, since that's the
-                  // year most representative of current scale. Use a $1.80-$2.20
-                  // band around our $2.00 per-sandwich estimate (basic turkey/cheese
-                  // recipe at current grocery prices).
+                  // Estimate annual food value from the peak year (most
+                  // representative of current scale). Band the per-sandwich
+                  // cost by ±10% off the same costPerSandwich constant used
+                  // elsewhere, so this card can't drift when that estimate
+                  // is updated.
                   const peakYearTotal = metrics.peakYear.total || 0;
-                  const annualLow = Math.round((peakYearTotal * 1.80) / 1000);
-                  const annualHigh = Math.round((peakYearTotal * 2.20) / 1000);
+                  const cost = allTimeCostMetrics.costPerSandwich;
+                  const costLow = cost * 0.9;
+                  const costHigh = cost * 1.1;
+                  const annualLow = Math.round((peakYearTotal * costLow) / 1000);
+                  const annualHigh = Math.round((peakYearTotal * costHigh) / 1000);
                   const display = peakYearTotal > 0
                     ? annualLow >= 1000
                       ? `$${(annualLow / 1000).toFixed(1)}-${(annualHigh / 1000).toFixed(1)}M`
@@ -1569,7 +1572,7 @@ export default function GrantMetrics() {
                         Food value delivered in {metrics.peakYear.year}
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        At ~$1.80-$2.20 per sandwich (volunteer-supplied ingredients)
+                        At ~${costLow.toFixed(2)}–${costHigh.toFixed(2)} per sandwich (volunteer-supplied ingredients)
                       </p>
                     </>
                   );
