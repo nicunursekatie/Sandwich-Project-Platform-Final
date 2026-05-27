@@ -23,6 +23,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { formatTimeForDisplay, parseEventDate } from '@/lib/date-utils';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 // UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,6 +96,63 @@ function formatEventTime(start: string | null | undefined, end?: string | null |
   if (!start) return 'Time TBD';
   const formatted = formatTimeForDisplay(start);
   return end ? `${formatted} – ${formatTimeForDisplay(end)}` : formatted;
+}
+
+function getAddressText(location: {
+  eventAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+}): string {
+  return [
+    location.eventAddress,
+    location.city,
+    location.state,
+    location.zipCode,
+  ].filter(Boolean).join(', ');
+}
+
+function getGoogleMapsUrl(location: {
+  eventAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zipCode?: string | null;
+}): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getAddressText(location))}`;
+}
+
+function AddressLink({
+  location,
+  className,
+  iconClassName = 'w-4 h-4 shrink-0 mt-0.5 text-[#007e8c]',
+}: {
+  location: {
+    eventAddress?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zipCode?: string | null;
+  };
+  className?: string;
+  iconClassName?: string;
+}) {
+  const addressText = getAddressText(location);
+  if (!addressText) return null;
+
+  return (
+    <a
+      href={getGoogleMapsUrl(location)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={cn(
+        'flex items-start gap-2 text-sm text-muted-foreground hover:text-[#007e8c] hover:underline underline-offset-2',
+        className,
+      )}
+      aria-label={`Open ${addressText} in Google Maps`}
+    >
+      <MapPin className={iconClassName} />
+      <span>{addressText}</span>
+    </a>
+  );
 }
 
 // Types
@@ -252,12 +311,14 @@ function EventCard({
   event,
   onSignup,
   onAssign,
+  canSelfSignup,
   canAssignOthers,
   existingSignup,
 }: {
   event: AvailableEvent;
   onSignup: (eventId: number) => void;
   onAssign?: (eventId: number) => void;
+  canSelfSignup: boolean;
   canAssignOthers?: boolean;
   existingSignup?: MySignup;
 }) {
@@ -305,14 +366,7 @@ function EventCard({
 
         {/* Location */}
         {event.eventAddress && (
-          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-[#007e8c]" />
-            <span>
-              {event.eventAddress}
-              {event.city && `, ${event.city}`}
-              {event.state && `, ${event.state}`}
-            </span>
-          </div>
+          <AddressLink location={event} />
         )}
 
         {/* Roles needed — simple badges */}
@@ -370,13 +424,19 @@ function EventCard({
             </div>
           ) : (
             <div className="space-y-2">
-              <Button
-                className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
-                onClick={() => onSignup(event.id)}
-              >
-                <HandHeart className="w-4 h-4 mr-2" />
-                Sign Up to Volunteer
-              </Button>
+              {canSelfSignup ? (
+                <Button
+                  className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
+                  onClick={() => onSignup(event.id)}
+                >
+                  <HandHeart className="w-4 h-4 mr-2" />
+                  Sign Up to Volunteer
+                </Button>
+              ) : (
+                <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 text-center">
+                  Ask a coordinator to sign you up.
+                </div>
+              )}
               {canAssignOthers && onAssign && (
                 <Button
                   variant="outline"
@@ -399,12 +459,14 @@ function EventCard({
 function CalendarEventPreview({
   event,
   onSignupClick,
+  canSelfSignup,
   canAssignOthers,
   onAssignClick,
   distanceMiles,
 }: {
   event: AvailableEvent;
   onSignupClick: (eventId: number) => void;
+  canSelfSignup: boolean;
   canAssignOthers: boolean;
   onAssignClick: (eventId: number) => void;
   distanceMiles?: number;
@@ -468,13 +530,11 @@ function CalendarEventPreview({
           </div>
         )}
         {event.eventAddress && (
-          <div className="flex items-start gap-2">
-            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#007e8c]" />
-            <span>
-              {event.eventAddress}
-              {event.city && `, ${event.city}`}
-            </span>
-          </div>
+          <AddressLink
+            location={event}
+            className="text-xs"
+            iconClassName="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#007e8c]"
+          />
         )}
         {distanceMiles !== undefined && (
           <div className="flex items-center gap-2 text-blue-600 font-medium">
@@ -516,13 +576,19 @@ function CalendarEventPreview({
 
       {!isCompleted && (
         <div className="px-4 pb-4 pt-1 space-y-2">
-          <Button
-            size="sm"
-            onClick={() => onSignupClick(event.id)}
-            className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
-          >
-            Sign Up to Volunteer
-          </Button>
+          {canSelfSignup ? (
+            <Button
+              size="sm"
+              onClick={() => onSignupClick(event.id)}
+              className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
+            >
+              Sign Up to Volunteer
+            </Button>
+          ) : (
+            <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 text-center">
+              Ask a coordinator to sign you up.
+            </div>
+          )}
           {canAssignOthers && (
             <Button
               size="sm"
@@ -545,12 +611,14 @@ function CalendarEventPreview({
 function MapEventPopupContent({
   event,
   onSignupClick,
+  canSelfSignup,
   canAssignOthers,
   onAssignClick,
   userLocation,
 }: {
   event: AvailableEvent;
   onSignupClick: (eventId: number) => void;
+  canSelfSignup: boolean;
   canAssignOthers: boolean;
   onAssignClick: (eventId: number) => void;
   userLocation: { lat: number; lng: number } | null;
@@ -568,6 +636,7 @@ function MapEventPopupContent({
     <CalendarEventPreview
       event={event}
       onSignupClick={(id) => { map.closePopup(); onSignupClick(id); }}
+      canSelfSignup={canSelfSignup}
       canAssignOthers={canAssignOthers}
       onAssignClick={(id) => { map.closePopup(); onAssignClick(id); }}
       distanceMiles={distanceMiles}
@@ -1151,7 +1220,7 @@ export default function VolunteerEventHub() {
   const queryClient = useQueryClient();
 
   // View state
-  const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals'>('list');
+  const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
@@ -1172,11 +1241,14 @@ export default function VolunteerEventHub() {
     (Array.isArray(user?.permissions) &&
       (user.permissions as string[]).includes('VOLUNTEER_SIGNUP_APPROVE'));
 
+  const canSelfSignup = !!user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP);
+
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [mySignupsRoleFilter, setMySignupsRoleFilter] = useState<string>('all');
   const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const needsOnlyForEventQuery = view === 'calendar' ? false : showOnlyNeeds;
 
   // User location for distance calculation on map
   const [userAddress, setUserAddress] = useState('');
@@ -1186,9 +1258,9 @@ export default function VolunteerEventHub() {
 
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
-    queryKey: ['/api/volunteer-hub/available-events', showOnlyNeeds],
+    queryKey: ['/api/volunteer-hub/available-events', needsOnlyForEventQuery],
     queryFn: async () => {
-      const response = await fetch(`/api/volunteer-hub/available-events?needsOnly=${showOnlyNeeds}`, {
+      const response = await fetch(`/api/volunteer-hub/available-events?needsOnly=${needsOnlyForEventQuery}`, {
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to fetch events');
@@ -1492,22 +1564,27 @@ export default function VolunteerEventHub() {
   }, [filteredEvents]);
 
   const getRoleOpenings = (event: AvailableEvent) => {
-    const roles: Array<{ label: string; count: number; color: string; bg: string; Icon: typeof Mic }> = [];
+    const roles: Array<{ singular: string; plural: string; count: number; color: string; bg: string; Icon: typeof Mic }> = [];
 
     if (event.speakersUnfilled > 0) {
-      roles.push({ label: 'Speaker', count: event.speakersUnfilled, color: '#A31C41', bg: '#A31C4114', Icon: Mic });
+      roles.push({ singular: 'speaker', plural: 'speakers', count: event.speakersUnfilled, color: '#A31C41', bg: '#A31C4114', Icon: Mic });
     }
     if (event.volunteersUnfilled > 0) {
-      roles.push({ label: 'Volunteer', count: event.volunteersUnfilled, color: '#007E8C', bg: '#007E8C14', Icon: UserCheck });
+      roles.push({ singular: 'volunteer', plural: 'volunteers', count: event.volunteersUnfilled, color: '#007E8C', bg: '#007E8C14', Icon: UserCheck });
     }
     if (event.driversUnfilled > 0) {
-      roles.push({ label: 'Driver', count: event.driversUnfilled, color: '#236383', bg: '#23638314', Icon: Car });
+      roles.push({ singular: 'driver', plural: 'drivers', count: event.driversUnfilled, color: '#236383', bg: '#23638314', Icon: Car });
     }
     if (event.vanDriverNeeded) {
-      roles.push({ label: 'Van Driver', count: 1, color: '#B45309', bg: '#FBAD3F22', Icon: Truck });
+      roles.push({ singular: 'van driver', plural: 'van drivers', count: 1, color: '#B45309', bg: '#FBAD3F22', Icon: Truck });
     }
 
     return roles;
+  };
+
+  const formatNeededRole = (role: ReturnType<typeof getRoleOpenings>[number]) => {
+    const label = role.count === 1 ? role.singular : role.plural;
+    return `${role.count} ${label} needed`;
   };
 
   const getTotalOpeningsForEvents = (dayEvents: AvailableEvent[]) => (
@@ -1716,21 +1793,21 @@ export default function VolunteerEventHub() {
 
           {/* Summary stats inline */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-            <div className="bg-white/15 rounded-lg p-3 text-center">
+            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalEvents}</div>
-              <div className="text-xs text-white/70">Upcoming Events</div>
+              <div className="text-sm font-semibold leading-tight text-white">Upcoming Events</div>
             </div>
-            <div className="bg-white/15 rounded-lg p-3 text-center">
+            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalDriverOpenings}</div>
-              <div className="text-xs text-white/70">Drivers Needed</div>
+              <div className="text-sm font-semibold leading-tight text-white">Drivers Needed</div>
             </div>
-            <div className="bg-white/15 rounded-lg p-3 text-center">
+            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalSpeakerOpenings}</div>
-              <div className="text-xs text-white/70">Speakers Needed</div>
+              <div className="text-sm font-semibold leading-tight text-white">Speakers Needed</div>
             </div>
-            <div className="bg-white/15 rounded-lg p-3 text-center">
+            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
               <div className="text-2xl font-bold">{summaryMetrics.totalOpenings}</div>
-              <div className="text-xs text-white/70">Total Openings</div>
+              <div className="text-sm font-semibold leading-tight text-white">Total Openings</div>
             </div>
           </div>
         </div>
@@ -1764,16 +1841,22 @@ export default function VolunteerEventHub() {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="showOnlyNeeds"
-                  checked={showOnlyNeeds}
-                  onCheckedChange={(checked) => setShowOnlyNeeds(checked === true)}
-                />
-                <Label htmlFor="showOnlyNeeds" className="text-sm cursor-pointer">
-                  Only show events that need help
-                </Label>
-              </div>
+              {view === 'calendar' ? (
+                <div className="rounded-lg border border-[#FBAD3F]/30 bg-[#FAF8F4] px-3 py-2 text-sm text-[#236383]">
+                  Calendar shows all upcoming events. Open spots are highlighted first.
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="showOnlyNeeds"
+                    checked={showOnlyNeeds}
+                    onCheckedChange={(checked) => setShowOnlyNeeds(checked === true)}
+                  />
+                  <Label htmlFor="showOnlyNeeds" className="text-sm cursor-pointer">
+                    Only show events that need help
+                  </Label>
+                </div>
+              )}
             </>
           )}
 
@@ -1783,20 +1866,20 @@ export default function VolunteerEventHub() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setView('list')}
-              className={`gap-1.5 ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
-            >
-              <List className="w-4 h-4" />
-              Events
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
               onClick={() => setView('calendar')}
               className={`gap-1.5 ${view === 'calendar' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <CalendarDays className="w-4 h-4" />
               Calendar
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setView('list')}
+              className={`gap-1.5 ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+            >
+              <List className="w-4 h-4" />
+              List
             </Button>
             <Button
               variant="ghost"
@@ -1856,9 +1939,17 @@ export default function VolunteerEventHub() {
                       <CalendarDays className="w-6 h-6" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl sm:text-2xl text-[#236383]">
-                        {format(currentMonth, 'MMMM yyyy')}
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={prevMonth} className="h-8 w-8 border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10" aria-label="Previous month">
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <CardTitle className="min-w-[180px] text-center text-xl sm:text-2xl text-[#236383]">
+                          {format(currentMonth, 'MMMM yyyy')}
+                        </CardTitle>
+                        <Button variant="outline" size="icon" onClick={nextMonth} className="h-8 w-8 border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10" aria-label="Next month">
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
                       <CardDescription className="mt-1 text-sm text-gray-700">
                         Pick a day to see the full event details and sign up.
                       </CardDescription>
@@ -1873,12 +1964,6 @@ export default function VolunteerEventHub() {
                     </div>
                     <Button variant="outline" size="sm" onClick={goToToday} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10">
                       Today
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={prevMonth} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10" aria-label="Previous month">
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={nextMonth} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10" aria-label="Next month">
-                      <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -1968,9 +2053,10 @@ export default function VolunteerEventHub() {
                                 <div className="hidden sm:flex flex-wrap gap-1 pt-1">
                                   {topRoles.map((role, roleIdx) => (
                                     <span
-                                      key={`${role.label}-${roleIdx}`}
+                                      key={`${role.singular}-${roleIdx}`}
                                       className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
                                       style={{ backgroundColor: role.bg, color: role.color }}
+                                      title={formatNeededRole(role)}
                                     >
                                       <role.Icon className="w-3 h-3" />
                                       {role.count > 1 && <span className="ml-0.5">{role.count}</span>}
@@ -2031,11 +2117,6 @@ export default function VolunteerEventHub() {
                                       <p className="text-sm text-gray-500 mt-0.5">{event.department}</p>
                                     )}
                                   </div>
-                                  {event.organizationCategory && (
-                                    <Badge variant="outline" className="text-[11px] bg-[#FBAD3F]/10 text-[#92400E] border-[#FBAD3F]/30 shrink-0">
-                                      {event.organizationCategory}
-                                    </Badge>
-                                  )}
                                 </div>
 
                                 <div className="grid gap-2 text-sm text-gray-700">
@@ -2044,10 +2125,11 @@ export default function VolunteerEventHub() {
                                     <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
                                   </div>
                                   {event.eventAddress && (
-                                    <div className="flex items-start gap-2">
-                                      <MapPin className="w-4 h-4 text-[#007E8C] shrink-0 mt-0.5" />
-                                      <span>{event.eventAddress}{event.city && `, ${event.city}`}</span>
-                                    </div>
+                                    <AddressLink
+                                      location={event}
+                                      className="text-gray-700"
+                                      iconClassName="w-4 h-4 text-[#007E8C] shrink-0 mt-0.5"
+                                    />
                                   )}
                                   {event.estimatedSandwichCount && (
                                     <div className="flex items-center gap-2">
@@ -2060,12 +2142,12 @@ export default function VolunteerEventHub() {
                                 <div className="flex flex-wrap gap-2">
                                   {roles.length > 0 ? roles.map((role) => (
                                     <span
-                                      key={role.label}
+                                      key={role.singular}
                                       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
                                       style={{ backgroundColor: role.bg, color: role.color }}
                                     >
                                       <role.Icon className="w-3.5 h-3.5" />
-                                      {role.count} {role.label}
+                                      {formatNeededRole(role)}
                                     </span>
                                   )) : (
                                     <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 text-green-700 px-3 py-1.5 text-xs font-bold">
@@ -2085,13 +2167,19 @@ export default function VolunteerEventHub() {
                                   </div>
                                 ) : (
                                   <div className="grid gap-2 sm:grid-cols-2">
-                                    <Button
-                                      className="bg-[#007E8C] hover:bg-[#236383] text-white"
-                                      onClick={() => handleSignupClick(event.id)}
-                                    >
-                                      <HandHeart className="w-4 h-4 mr-2" />
-                                      Sign Up
-                                    </Button>
+                                    {canSelfSignup ? (
+                                      <Button
+                                        className="bg-[#007E8C] hover:bg-[#236383] text-white"
+                                        onClick={() => handleSignupClick(event.id)}
+                                      >
+                                        <HandHeart className="w-4 h-4 mr-2" />
+                                        Sign Up
+                                      </Button>
+                                    ) : (
+                                      <div className="rounded-md bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 text-center">
+                                        Ask a coordinator to sign you up.
+                                      </div>
+                                    )}
                                     {canAssignOthers && (
                                       <Button
                                         variant="outline"
@@ -2231,6 +2319,7 @@ export default function VolunteerEventHub() {
                             <MapEventPopupContent
                               event={event}
                               onSignupClick={handleSignupClick}
+                              canSelfSignup={canSelfSignup}
                               canAssignOthers={canAssignOthers}
                               onAssignClick={handleAssignClick}
                               userLocation={userLocation}
@@ -2284,6 +2373,7 @@ export default function VolunteerEventHub() {
                     event={event}
                     onSignup={handleSignupClick}
                     onAssign={canAssignOthers ? handleAssignClick : undefined}
+                    canSelfSignup={canSelfSignup}
                     canAssignOthers={canAssignOthers}
                     existingSignup={getExistingSignup(event.id)}
                   />
@@ -2361,10 +2451,11 @@ export default function VolunteerEventHub() {
                                 </span>
                               </div>
                               {signup.event.eventAddress && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                                  <MapPin className="w-4 h-4 shrink-0 text-[#007e8c]" />
-                                  <span>{signup.event.eventAddress}{signup.event.city && `, ${signup.event.city}`}</span>
-                                </div>
+                                <AddressLink
+                                  location={signup.event}
+                                  className="mt-1"
+                                  iconClassName="w-4 h-4 shrink-0 mt-0.5 text-[#007e8c]"
+                                />
                               )}
                             </div>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">

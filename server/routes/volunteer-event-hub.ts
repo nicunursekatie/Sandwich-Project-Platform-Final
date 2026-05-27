@@ -1013,6 +1013,13 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
           error: 'You do not have permission to assign other users to events.',
         });
       }
+    } else {
+      const canSelfSignup = hasPermission(req.user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP);
+      if (!canSelfSignup) {
+        return res.status(403).json({
+          error: 'You do not have permission to sign yourself up for Volunteer Hub events.',
+        });
+      }
     }
 
     // Get target user details (the person being assigned / signing up)

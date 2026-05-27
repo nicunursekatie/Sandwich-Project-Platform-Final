@@ -45,11 +45,15 @@ interface CleanPermissionsEditorProps {
 // Commonly adjusted permissions (show these prominently)
 const COMMON_PERMISSIONS = new Set([
   'USERS_EDIT',
+  'NAV_VOLUNTEER_HUB',
+  'EVENT_REQUESTS_SELF_SIGNUP',
   'HOSTS_EDIT',
   'RECIPIENTS_EDIT',
   'DRIVERS_EDIT',
   'EVENT_REQUESTS_EDIT',
   'EVENT_REQUESTS_ASSIGN_OTHERS',
+  'VOLUNTEER_SIGNUP_APPROVE',
+  'DRIVER_SIGNUP_APPROVE',
   'COLLECTIONS_EDIT_ALL',
   'PROJECTS_EDIT_ALL',
 ]);
