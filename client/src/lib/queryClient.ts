@@ -182,21 +182,37 @@ export const getQueryFn: <T>(options: {
  * - /api/event-requests (legacy)
  * - /api/event-requests/list (optimized list endpoint)
  * - /api/event-requests/status-counts (tab badge counts)
+ * - /api/volunteer-hub/* (volunteer-facing event needs)
  */
 export async function invalidateEventRequestQueries(qc: QueryClient) {
-  // Use refetchQueries to force immediate refresh, not just mark as stale.
-  // Await both promises so callers can wait for data to be fresh before
-  // closing dialogs or clearing selected state.
+  const eventDataPrefixes = [
+    '/api/event-requests',
+    '/api/volunteer-hub',
+  ];
+
+  // Mark all cached event-derived screens stale, including inactive tabs.
+  // Without this, moving from Event Management to Volunteer Hub can show
+  // stale volunteer needs for up to the default staleTime window.
+  await qc.invalidateQueries({
+    predicate: (query) => {
+      const key = query.queryKey;
+      if (!Array.isArray(key) || typeof key[0] !== 'string') return false;
+      return eventDataPrefixes.some((prefix) => key[0].startsWith(prefix));
+    },
+  });
+
+  // Force immediate refresh for event-management screens that are already
+  // mounted so saves are reflected before dialogs/tabs settle.
   await Promise.all([
     qc.refetchQueries({
       predicate: (query) => {
         const key = query.queryKey;
         if (!Array.isArray(key) || typeof key[0] !== 'string') return false;
-        return key[0].startsWith('/api/event-requests');
+        return eventDataPrefixes.some((prefix) => key[0].startsWith(prefix));
       },
     }),
     // Also refetch event map since it depends on event data
-    qc.refetchQueries({ queryKey: ['/api/event-map'] }),
+    qc.invalidateQueries({ queryKey: ['/api/event-map'] }),
   ]);
 }
 

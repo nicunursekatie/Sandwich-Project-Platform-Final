@@ -825,6 +825,7 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
     // Calculate unfilled needs for each event using centralized utils
     const eventsWithNeeds = upcomingEvents.map(event => {
       const counts = getUnfilledCounts(event);
+      const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 
       return {
         id: event.id,
@@ -845,8 +846,9 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
         status: event.status,
         // Unfilled needs from centralized utils
         ...counts,
+        hasUnfilledNeeds: counts.hasUnfilledNeeds || vanDriverNeeded,
         // Additional info for volunteers
-        vanDriverNeeded: event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan,
+        vanDriverNeeded,
         selfTransport: event.selfTransport,
         pickupTime: event.pickupTime,
         eventNotes: event.notes, // Public notes about the event
@@ -903,6 +905,7 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
 
     // Calculate needs using centralized utils
     const counts = getUnfilledCounts(event);
+    const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 
     res.json({
       id: event.id,
@@ -926,7 +929,7 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
       volunteersUnfilled: counts.volunteersUnfilled,
       driversNeeded: counts.driversNeeded,
       driversUnfilled: counts.driversUnfilled,
-      vanDriverNeeded: event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan,
+      vanDriverNeeded,
       selfTransport: event.selfTransport,
       pickupTime: event.pickupTime,
       eventNotes: event.notes,
