@@ -302,6 +302,66 @@ export function detectChangedFields(
 }
 
 /**
+ * Compare a PATCH payload against the event object returned by the server.
+ *
+ * The event edit form uses this after a successful response so a partial or
+ * stale round-trip cannot look like a clean save to the user.
+ */
+export function findMismatchedSavedFields(
+  expectedUpdates: Record<string, any>,
+  savedEvent: Record<string, any> | null | undefined
+): string[] {
+  if (!savedEvent) return Object.keys(expectedUpdates);
+
+  const normalizeForCompare = (value: any): any => {
+    if (value === '' || value === undefined) return null;
+    if (value instanceof Date) return normalizeDateForCompare(value.toISOString());
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+        return normalizeDateForCompare(trimmed);
+      }
+      if (
+        (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}'))
+      ) {
+        try {
+          return normalizeForCompare(JSON.parse(trimmed));
+        } catch {
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            return trimmed
+              .slice(1, -1)
+              .split(',')
+              .map((item) => item.replace(/^"|"$/g, '').trim())
+              .filter(Boolean);
+          }
+          return trimmed;
+        }
+      }
+      return trimmed;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => normalizeForCompare(item));
+    }
+    if (value && typeof value === 'object') {
+      return Object.keys(value)
+        .sort()
+        .reduce<Record<string, any>>((acc, key) => {
+          acc[key] = normalizeForCompare(value[key]);
+          return acc;
+        }, {});
+    }
+    return value ?? null;
+  };
+
+  return Object.keys(expectedUpdates).filter((field) => {
+    if (field.startsWith('_')) return false;
+    return JSON.stringify(normalizeForCompare(expectedUpdates[field])) !==
+      JSON.stringify(normalizeForCompare(savedEvent[field]));
+  });
+}
+
+/**
  * Determine sandwich mode from existing event data.
  */
 export function determineSandwichMode(

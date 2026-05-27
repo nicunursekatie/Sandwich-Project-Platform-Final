@@ -57,6 +57,7 @@ import {
 import {
   buildEventDataForServer,
   detectChangedFields,
+  findMismatchedSavedFields,
   determineSandwichMode,
   determineActualSandwichMode,
   calculateRelevantSandwichCount,
@@ -762,11 +763,40 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },
     networkMode: 'always',
-    onSuccess: async (updatedEvent: any) => {
+    onSuccess: async (updatedEvent: any, variables) => {
       setIsSubmitting(false);
+      const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
+
+      const droppedFields: Array<{ field: string; reason: string }> | undefined = updatedEvent?._droppedFields;
+      const mismatchedFields = findMismatchedSavedFields(variables.data || {}, updatedEvent);
+      if (
+        (Array.isArray(droppedFields) && droppedFields.length > 0) ||
+        mismatchedFields.length > 0
+      ) {
+        saveToLocalStorage();
+        await invalidateEventRequestQueries(queryClient);
+
+        const droppedSummary = Array.isArray(droppedFields) && droppedFields.length > 0
+          ? `Not saved: ${droppedFields.map((d) => `${d.field} (${d.reason})`).join(', ')}`
+          : '';
+        const mismatchSummary = mismatchedFields.length > 0
+          ? `Needs review: ${mismatchedFields.join(', ')} did not match the saved response.`
+          : '';
+
+        toast({
+          title: 'Partial Save - Please Review',
+          description: [droppedSummary, mismatchSummary].filter(Boolean).join(' '),
+          variant: 'destructive',
+          duration: Number.POSITIVE_INFINITY,
+        });
+        return;
+      }
+
       clearAutoSave();
       setHasRecoveredData(false);
-      const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
+      if (eventRequest?.id) {
+        queryClient.setQueryData(['/api/event-requests', eventRequest.id, 'full'], updatedEvent);
+      }
       toast({
         title: mode === 'edit' ? 'Changes Saved Successfully' : 'Event Scheduled Successfully',
         description: mode === 'edit'
