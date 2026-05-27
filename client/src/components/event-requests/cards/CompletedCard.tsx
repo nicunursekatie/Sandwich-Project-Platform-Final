@@ -62,6 +62,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   Dialog,
   DialogContent,
@@ -1706,7 +1707,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   // Organization details mutation
   const updateOrgDetailsMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
-      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+      patchEventRequestVerified(request.id, data),
     onSuccess: () => {
       toast({
         title: 'Event details updated',
@@ -1717,22 +1718,20 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       setEditingField('');
       setEditingValue('');
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to update organization details.',
+        description: error?.message || 'Failed to update organization details.',
         variant: 'destructive',
+        duration: Number.POSITIVE_INFINITY,
       });
-      setIsEditingField(false);
-      setEditingField('');
-      setEditingValue('');
     },
   });
 
   // Sandwich count mutation
   const updateSandwichCountMutation = useMutation({
     mutationFn: (data: { actualSandwichCount: number; actualSandwichTypes?: unknown }) =>
-      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+      patchEventRequestVerified(request.id, data),
     onSuccess: () => {
       toast({
         title: 'Sandwich count updated',
@@ -1743,22 +1742,20 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       setEditingSandwichCount('');
       setEditingTypes({});
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to update sandwich count.',
+        description: error?.message || 'Failed to update sandwich count.',
         variant: 'destructive',
+        duration: Number.POSITIVE_INFINITY,
       });
-      setIsEditingSandwichCount(false);
-      setEditingSandwichCount('');
-      setEditingTypes({});
     },
   });
 
   // TSP contact mutation
   const updateTspContactMutation = useMutation({
     mutationFn: (data: { tspContact?: number | null; customTspContact?: string | null; tspContactAssignedDate: string }) =>
-      apiRequest('PATCH', `/api/event-requests/${request.id}`, data),
+      patchEventRequestVerified(request.id, data),
     onSuccess: () => {
       toast({
         title: 'TSP Contact updated',
@@ -1769,15 +1766,13 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
       setEditingTspContactId(null);
       setEditingCustomTspContact('');
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to update TSP contact.',
+        description: error?.message || 'Failed to update TSP contact.',
         variant: 'destructive',
+        duration: Number.POSITIVE_INFINITY,
       });
-      setIsEditingTspContact(false);
-      setEditingTspContactId(null);
-      setEditingCustomTspContact('');
     },
   });
 

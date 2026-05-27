@@ -91,6 +91,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
 import { Sheet } from 'lucide-react';
 import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   Tooltip,
   TooltipContent,
@@ -291,26 +292,22 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   // Mutation for updating event request fields
   const updateFieldsMutation = useMutation({
-    mutationFn: async (updates: Record<string, unknown>) => {
-      const response = await fetch(`/api/event-requests/${request.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update event request');
-      }
-
-      return response.json();
-    },
+    mutationFn: async (updates: Record<string, unknown>) =>
+      patchEventRequestVerified(request.id, updates),
     onSuccess: () => {
       invalidateEventRequestQueries(queryClient);
       setAddingAllTimes(false);
       setTempStartTime('');
       setTempEndTime('');
       setTempPickupTime('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Save failed',
+        description: error?.message || 'Could not save this event update.',
+        variant: 'destructive',
+        duration: Number.POSITIVE_INFINITY,
+      });
     },
   });
 

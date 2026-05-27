@@ -58,9 +58,11 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesManager';
 import { MessageComposer } from '@/components/message-composer';
+import { useToast } from '@/hooks/use-toast';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
 import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   Tooltip,
   TooltipContent,
@@ -855,6 +857,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   const [pendingConfirmValue, setPendingConfirmValue] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { user } = useAuth();
 
   // Collaboration hook for comments
@@ -880,19 +883,19 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
   // Mutation for toggling date confirmation
   const toggleConfirmMutation = useMutation({
-    mutationFn: async (newValue: boolean) => {
-      const response = await fetch(`/api/event-requests/${request.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isConfirmed: newValue }),
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to update confirmation status');
-      return response.json();
-    },
+    mutationFn: async (newValue: boolean) =>
+      patchEventRequestVerified(request.id, { isConfirmed: newValue }),
     onSuccess: () => {
       invalidateEventRequestQueries(queryClient);
       setShowConfirmToggle(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Save failed',
+        description: error?.message || 'Could not update confirmation status.',
+        variant: 'destructive',
+        duration: Number.POSITIVE_INFINITY,
+      });
     },
   });
 

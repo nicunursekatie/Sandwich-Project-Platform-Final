@@ -140,6 +140,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { patchEventRequestVerified } from '@/lib/event-save-verification';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -902,7 +903,7 @@ export default function EventMapView() {
   // Update address mutation
   const updateAddressMutation = useMutation({
     mutationFn: async ({ eventId, address }: { eventId: number; address: string }) => {
-      return await apiRequest('PATCH', `/api/event-requests/${eventId}`, {
+      return await patchEventRequestVerified(eventId, {
         eventAddress: address,
       });
     },

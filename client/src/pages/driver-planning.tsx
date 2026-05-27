@@ -49,6 +49,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { EventEditDialog } from '@/components/event-requests/dialogs/EventEditDialog';
+import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -1334,23 +1335,15 @@ export default function DriverPlanningDashboard() {
 
   // Update event mutation
   const updateEventMutation = useMutation({
-    mutationFn: async (data: { id: number; updates: Record<string, any> }) => {
-      const response = await fetch(`/api/event-requests/${data.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data.updates),
-      });
-      if (!response.ok) throw new Error('Failed to update event');
-      return response.json();
-    },
+    mutationFn: async (data: { id: number; updates: Record<string, any> }) =>
+      patchEventRequestVerified(data.id, data.updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
       toast({ title: 'Event updated', description: 'Changes saved successfully' });
       setEditDialogOpen(false);
     },
-    onError: () => {
-      toast({ title: 'Update failed', description: 'Could not save changes', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ title: 'Update failed', description: error?.message || 'Could not save changes', variant: 'destructive' });
     },
   });
 
