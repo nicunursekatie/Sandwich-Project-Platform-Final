@@ -1576,8 +1576,8 @@ export default function GrantMetrics() {
                   const annualLow = Math.round((peakYearTotal * costLow) / 1000);
                   const annualHigh = Math.round((peakYearTotal * costHigh) / 1000);
                   const display = peakYearTotal > 0
-                    ? annualLow >= 1000
-                      ? `$${(annualLow / 1000).toFixed(1)}-${(annualHigh / 1000).toFixed(1)}M`
+                    ? annualHigh >= 1000
+                      ? `$${(annualLow / 1000).toFixed(2)}-${(annualHigh / 1000).toFixed(2)}M`
                       : `$${annualLow}K-${annualHigh}K`
                     : '—';
                   return (
