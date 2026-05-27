@@ -11,6 +11,7 @@ import {
 import { and, eq, gte, lt } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
+import { getReportableSandwichCount } from '../../../shared/sandwich-count-utils';
 
 // Lazy-initialize OpenAI client to avoid crashing app if API key is not configured
 let openai: OpenAI | null = null;
@@ -38,6 +39,10 @@ export interface ImpactReportGenerationResult {
   metrics: {
     eventsCompleted: number;
     sandwichesDistributed: number;
+    /** Subset of sandwichesDistributed attributable to group-event collections. */
+    groupEventSandwiches?: number;
+    /** groupEventSandwiches as a percentage of sandwichesDistributed. */
+    groupEventPercentage?: number;
     peopleServed: number;
     volunteersEngaged: number;
     organizationsServed: number;
@@ -109,31 +114,38 @@ export async function generateImpactReport(
 }
 
 /**
- * Calculate GROUP sandwich count from a collection record
- * This only counts group sandwiches (from organizations/schools/churches), NOT individual sandwiches
- * The Event Impact Report measures the impact of group participation specifically
+ * Calculate GROUP sandwich count from a collection record (groups only,
+ * excluding individualSandwiches). Used to surface the group-event subset
+ * of the period total — i.e., sandwiches contributed by organized group
+ * collections (schools, churches, corporate, etc.) as distinct from host
+ * weekly drop-offs / individual contributions.
  */
 function getCollectionSandwichCount(collection: any): number {
   let total = 0;
 
-  // Group collections ONLY: use JSONB column if available, otherwise fall back to legacy columns
   const hasGroupCollections = collection.groupCollections &&
     Array.isArray(collection.groupCollections) &&
     collection.groupCollections.length > 0;
 
   if (hasGroupCollections) {
-    // Use new groupCollections JSONB column
-    // Handle both 'count' and legacy 'sandwichCount' field names for backward compatibility
     total += collection.groupCollections.reduce(
       (sum: number, group: any) => sum + (Number(group.count) || Number(group.sandwichCount) || 0), 0
     );
   } else {
-    // Fall back to legacy group columns (for older data)
     total += collection.group1Count || 0;
     total += collection.group2Count || 0;
   }
 
   return total;
+}
+
+/**
+ * Calculate TOTAL sandwich count from a collection record — the project-wide
+ * single-source-of-truth formula: individualSandwiches + sum(groupCollections).
+ * This is what we mean by "sandwiches distributed" at the headline level.
+ */
+function getCollectionTotalSandwichCount(collection: any): number {
+  return (collection.individualSandwiches || 0) + getCollectionSandwichCount(collection);
 }
 
 /**
@@ -211,39 +223,45 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     }
   });
 
-  // Calculate totals - ONLY count sandwiches from actual collection records
-  // This ensures consistency with Group Collections Viewer and measures actual impact,
-  // not estimated/planned impact from event requests
+  // Two distinct period totals, both computed from actual collection records
+  // (consistent with the Group Collections Viewer and the project-wide single
+  // source of truth in `sandwich_collections`):
+  //
+  //   totalSandwiches       — ALL sandwiches collected during the period
+  //                           (individualSandwiches + groupCollections, across
+  //                           every collection record in the date window).
+  //                           This is the headline "Sandwiches Distributed".
+  //
+  //   groupEventSandwiches  — Subset attributable to group events: sandwiches
+  //                           from the `groupCollections` JSONB array only.
+  //                           Surfaced so the AI can report group % of total.
   let totalSandwiches = 0;
+  let groupEventSandwiches = 0;
   let eventsWithCollections = 0;
 
-  // Count from events ONLY when they have linked collection data
-  // Events without actual collection records are not counted - we measure actual, not estimated impact
+  // Headline total: every collection in the period contributes its full count.
+  collections.forEach(c => {
+    totalSandwiches += getCollectionTotalSandwichCount(c);
+    groupEventSandwiches += getCollectionSandwichCount(c);
+  });
+
+  // Bookkeeping for `totalEvents` (events that actually happened — measured by
+  // having a linked collection record). Mirrors the prior logic so the
+  // eventsCompleted metric does not change.
   events.forEach(e => {
-    const linkedCollection = collectionsByEventId.get(e.id);
-    if (linkedCollection) {
-      totalSandwiches += getCollectionSandwichCount(linkedCollection);
-      eventsWithCollections++;
-    }
-    // Do NOT fall back to event estimates - only actual collections count toward sandwiches
+    if (collectionsByEventId.has(e.id)) eventsWithCollections++;
   });
-
-  // Add unlinked collections (those with no eventRequestId but still have data)
-  unlinkedCollections.forEach(c => {
-    totalSandwiches += getCollectionSandwichCount(c);
-  });
-
-  // Add orphaned collections (eventRequestId points to event not in our filtered set)
   let orphanedCollectionCount = 0;
-  collectionsByEventId.forEach((collection, eventRequestId) => {
-    if (!validEventIds.has(eventRequestId)) {
-      totalSandwiches += getCollectionSandwichCount(collection);
-      orphanedCollectionCount++;
-    }
+  collectionsByEventId.forEach((_collection, eventRequestId) => {
+    if (!validEventIds.has(eventRequestId)) orphanedCollectionCount++;
   });
 
   // Total events with actual collection data = events with collections + unlinked + orphaned
   const totalEvents = eventsWithCollections + unlinkedCollections.length + orphanedCollectionCount;
+
+  const groupEventPercentage = totalSandwiches > 0
+    ? (groupEventSandwiches / totalSandwiches) * 100
+    : 0;
 
   const totalExpenses = expensesList.reduce((sum, e) => {
     if (typeof e.amount === 'number' && !isNaN(e.amount)) {
@@ -266,7 +284,13 @@ async function gatherReportData(startDate: Date, endDate: Date) {
   ].filter(Boolean));
 
   // Aggregate sandwich type data
-  const sandwichTypeBreakdown: Record<string, number> = {
+  const sandwichTypeBreakdown: {
+    deli: number;
+    turkey: number;
+    ham: number;
+    pbj: number;
+    generic: number;
+  } = {
     deli: 0,
     turkey: 0,
     ham: 0,
@@ -319,6 +343,8 @@ async function gatherReportData(startDate: Date, endDate: Date) {
     metrics: {
       eventsCompleted: totalEvents, // Use totalEvents which includes unlinked + orphaned collections
       sandwichesDistributed: totalSandwiches,
+      groupEventSandwiches,
+      groupEventPercentage,
       organizationsServed: uniqueOrganizations.size,
       volunteersEngaged: uniqueVolunteers.size,
       expensesTotal: totalExpenses,
@@ -334,7 +360,15 @@ function buildDataContext(data: any): string {
 
   context.push(`# Overall Metrics`);
   context.push(`- Events Completed: ${data.metrics.eventsCompleted}`);
-  context.push(`- Sandwiches Distributed: ${data.metrics.sandwichesDistributed}`);
+  context.push(
+    `- Total Sandwiches Distributed (period total, all collections — individual + group): ${data.metrics.sandwichesDistributed.toLocaleString()}`
+  );
+  context.push(
+    `- Group-Event Sandwiches (subset of the total above, contributed by organized group collections such as schools, churches, and corporate groups): ${data.metrics.groupEventSandwiches.toLocaleString()} (${data.metrics.groupEventPercentage.toFixed(1)}% of total distributed)`
+  );
+  context.push(
+    `  NOTE: When referencing "sandwiches distributed" in the narrative, always use the Total. Use the Group-Event number and percentage when specifically discussing group participation; do not present it as the overall distribution figure.`
+  );
   context.push(`- Organizations Served: ${data.metrics.organizationsServed}`);
   context.push(`- Volunteers Engaged: ${data.metrics.volunteersEngaged}`);
   context.push(`- Total Expenses: $${data.metrics.expensesTotal.toFixed(2)}`);
@@ -359,13 +393,13 @@ function buildDataContext(data: any): string {
 
     // Notable events (top 5 by sandwich count)
     const topEvents = [...data.events]
-      .sort((a, b) => (b.actualSandwichCount || b.estimatedSandwichCount || 0) -
-                       (a.actualSandwichCount || a.estimatedSandwichCount || 0))
+      .sort((a, b) => getReportableSandwichCount(b, { ignoreSuspiciousEstimatedCounts: true }) -
+                       getReportableSandwichCount(a, { ignoreSuspiciousEstimatedCounts: true }))
       .slice(0, 5);
 
     context.push(`## Notable Events:`);
     topEvents.forEach((e: EventRequest) => {
-      const sandwiches = e.actualSandwichCount || e.estimatedSandwichCount || 0;
+      const sandwiches = getReportableSandwichCount(e, { ignoreSuspiciousEstimatedCounts: true });
       context.push(`- ${e.organizationName || 'Unknown'}: ${sandwiches} sandwiches`);
     });
     context.push('');
@@ -422,6 +456,8 @@ async function generateReportWithAI(
   metrics: {
     eventsCompleted: number;
     sandwichesDistributed: number;
+    groupEventSandwiches: number;
+    groupEventPercentage: number;
     organizationsServed: number;
     volunteersEngaged: number;
     expensesTotal: number;
@@ -477,6 +513,9 @@ WRITING GUIDELINES:
 - Acknowledge challenges if relevant
 - Be concise yet comprehensive
 - Use markdown formatting for content section
+- Do not use emoji, icon characters, decorative bullets, or non-standard symbols. Plain text only.
+- The "Total Sandwiches Distributed" figure is the period-wide total across ALL collection records (individual + group). Use this as the headline number whenever you say "sandwiches distributed".
+- The "Group-Event Sandwiches" figure is a SUBSET of that total — sandwiches from organized group collections. When you mention it, always frame it as a portion of the total (e.g., "X group-event sandwiches, representing Y% of the period total") and never present it as the overall distribution figure.
 
 Return JSON with this structure:
 {
@@ -512,6 +551,8 @@ Return JSON with this structure:
     metrics: {
       eventsCompleted: metrics.eventsCompleted,
       sandwichesDistributed: metrics.sandwichesDistributed,
+      groupEventSandwiches: metrics.groupEventSandwiches,
+      groupEventPercentage: metrics.groupEventPercentage,
       // Note: peopleServed is estimated as 1:1 with sandwichesDistributed
       // This is an approximation since actual people served data is not tracked
       // In reality, some people may receive multiple sandwiches, and some sandwiches may go unused

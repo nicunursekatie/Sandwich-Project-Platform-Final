@@ -88,6 +88,7 @@ import {
   Area,
 } from 'recharts';
 import { AIInsightsChat } from '@/components/ai-insights-chat';
+import { getReportableSandwichCount } from '@shared/sandwich-count-utils';
 
 // Helper to parse date strings in local timezone (avoids UTC midnight timezone shift)
 function parseLocalDate(dateInput: string | Date | null | undefined): Date | null {
@@ -110,9 +111,7 @@ function parseLocalDate(dateInput: string | Date | null | undefined): Date | nul
 
 // Organization category labels for display
 const CATEGORY_LABELS: Record<string, string> = {
-  corp: 'Corporate',
-  small_medium_corp: 'Small/Medium Business',
-  large_corp: 'Large Corporation',
+  corporate: 'Corporate',
   school: 'School',
   nonprofit: 'Non-Profit',
   church_faith: 'Church/Faith',
@@ -126,6 +125,52 @@ const CATEGORY_LABELS: Record<string, string> = {
   government: 'Government',
   other: 'Other',
 };
+
+const CORPORATE_CATEGORY_VALUES = new Set([
+  'business',
+  'company',
+  'corp',
+  'corporate',
+  'large_company',
+  'large_corp',
+  'large_corporation',
+  'medium_business',
+  'small_business',
+  'small_company',
+  'small_medium_business',
+  'small_medium_corp',
+  'small_medium_company',
+]);
+
+function normalizeOrganizationCategory(category?: string | null): string {
+  if (!category) return 'other';
+
+  const normalized = category
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  if (CORPORATE_CATEGORY_VALUES.has(normalized)) {
+    return 'corporate';
+  }
+
+  return normalized || 'other';
+}
+
+function getCategoryLabel(category?: string | null): string {
+  const normalized = normalizeOrganizationCategory(category);
+  return CATEGORY_LABELS[normalized] || normalized;
+}
+
+function isScheduledStatus(status?: string | null): boolean {
+  return status === 'scheduled' || status === 'rescheduled';
+}
+
+function getEventSandwichCount(event: any): number {
+  return getReportableSandwichCount(event, { ignoreSuspiciousEstimatedCounts: true });
+}
 
 // Time period presets
 const TIME_PRESETS = [
@@ -152,6 +197,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
       const day = now.getDay();
       start.setDate(now.getDate() - day);
       start.setHours(0, 0, 0, 0);
+      end.setDate(start.getDate() + 6);
       end.setHours(23, 59, 59, 999);
       break;
     }
@@ -166,6 +212,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
     case 'this-month':
       start.setDate(1);
       start.setHours(0, 0, 0, 0);
+      end.setMonth(now.getMonth() + 1, 0);
       end.setHours(23, 59, 59, 999);
       break;
     case 'last-month':
@@ -178,6 +225,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
       const quarter = Math.floor(now.getMonth() / 3);
       start.setMonth(quarter * 3, 1);
       start.setHours(0, 0, 0, 0);
+      end.setMonth(quarter * 3 + 3, 0);
       end.setHours(23, 59, 59, 999);
       break;
     }
@@ -194,6 +242,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
     case 'this-year':
       start.setMonth(0, 1);
       start.setHours(0, 0, 0, 0);
+      end.setMonth(11, 31);
       end.setHours(23, 59, 59, 999);
       break;
     case 'last-year':
@@ -205,6 +254,7 @@ function getDateRange(preset: string): { start: Date; end: Date } {
     case 'all-time':
       start.setFullYear(2000, 0, 1);
       start.setHours(0, 0, 0, 0);
+      end.setFullYear(2100, 11, 31);
       end.setHours(23, 59, 59, 999);
       break;
     default:
@@ -222,7 +272,7 @@ const COLORS = ['#236383', '#FBAD3F', '#47B3CB', '#007E8C', '#A31C41', '#6B7280'
 // Uses fixed buckets optimized for typical event sizes (most under 1000, few over 3000)
 function createSandwichBuckets(events: any[]): { range: string; count: number; minVal: number }[] {
   const sandwichCounts = events
-    .map((e: any) => e.actualSandwichCount || e.estimatedSandwichCount || 0)
+    .map((e: any) => getEventSandwichCount(e))
     .filter((c: number) => c > 0);
 
   if (sandwichCounts.length === 0) return [];
@@ -341,6 +391,7 @@ export default function EventImpactReports() {
       organizationCategory: string;
       scheduledEventDate: string;
       actualSandwichCount: number;
+      department?: string | null;
       hasOrgPattern: boolean;
     }>;
     totalMissing: number;
@@ -652,6 +703,7 @@ export default function EventImpactReports() {
             desiredEventDate: c.collectionDate,
             // organizationCategory is unknown for collections
             organizationCategory: 'other',
+            status: 'completed',
             isFromCollection: true, // Flag to identify collection-originated entries
           });
         }
@@ -705,7 +757,7 @@ export default function EventImpactReports() {
     const allEvents = [...mergedEventRequests, ...trulyUnlinkedCollections, ...orphanedAsStandalone];
 
     // Statuses that should be excluded from statistics (events that didn't/won't happen)
-    const EXCLUDED_STATUSES = ['cancelled', 'declined'];
+    const EXCLUDED_STATUSES = ['cancelled', 'declined', 'non_event'];
 
     // Filter events in the date range
     let filteredEvents = allEvents.filter((event: any) => {
@@ -723,11 +775,14 @@ export default function EventImpactReports() {
         matchesStatus = !EXCLUDED_STATUSES.includes(event.status);
       } else {
         // User explicitly selected a status (including cancelled/declined)
-        matchesStatus = event.status === statusFilter;
+        matchesStatus = statusFilter === 'scheduled'
+          ? isScheduledStatus(event.status)
+          : event.status === statusFilter;
       }
 
       // Category filter
-      const matchesCategory = categoryFilter === 'all' || event.organizationCategory === categoryFilter;
+      const eventCategory = normalizeOrganizationCategory(event.organizationCategory);
+      const matchesCategory = categoryFilter === 'all' || eventCategory === categoryFilter;
 
       return inRange && matchesStatus && matchesCategory;
     });
@@ -745,12 +800,14 @@ export default function EventImpactReports() {
           comparison = (a.organizationName || '').localeCompare(b.organizationName || '');
           break;
         case 'sandwiches':
-          const sandwichesA = a.actualSandwichCount || a.estimatedSandwichCount || 0;
-          const sandwichesB = b.actualSandwichCount || b.estimatedSandwichCount || 0;
+          const sandwichesA = getEventSandwichCount(a);
+          const sandwichesB = getEventSandwichCount(b);
           comparison = sandwichesA - sandwichesB;
           break;
         case 'category':
-          comparison = (a.organizationCategory || '').localeCompare(b.organizationCategory || '');
+          comparison = normalizeOrganizationCategory(a.organizationCategory).localeCompare(
+            normalizeOrganizationCategory(b.organizationCategory),
+          );
           break;
         default:
           comparison = 0;
@@ -759,7 +816,7 @@ export default function EventImpactReports() {
     });
 
     const completedEvents = filteredEvents.filter((e: any) => e.status === 'completed');
-    const scheduledEvents = filteredEvents.filter((e: any) => e.status === 'scheduled');
+    const scheduledEvents = filteredEvents.filter((e: any) => isScheduledStatus(e.status));
 
     // Calculate totals
     let totalSandwiches = 0;
@@ -794,7 +851,11 @@ export default function EventImpactReports() {
     filteredEvents.forEach((event: any) => {
       // Sandwiches
       const actualSandwiches = event.actualSandwichCount || 0;
-      const estimatedSandwiches = event.estimatedSandwichCount || 0;
+      const estimatedSandwiches = getReportableSandwichCount({
+        estimatedSandwichCount: event.estimatedSandwichCount,
+        estimatedSandwichCountMin: event.estimatedSandwichCountMin,
+        estimatedSandwichCountMax: event.estimatedSandwichCountMax,
+      }, { ignoreSuspiciousEstimatedCounts: true });
       const sandwichCount = actualSandwiches || estimatedSandwiches;
 
       totalSandwiches += sandwichCount;
@@ -836,7 +897,7 @@ export default function EventImpactReports() {
       }
 
       // Category breakdown
-      const category = event.organizationCategory || 'other';
+      const category = normalizeOrganizationCategory(event.organizationCategory);
       const existing = categoryBreakdown.get(category) || { count: 0, sandwiches: 0 };
       categoryBreakdown.set(category, {
         count: existing.count + 1,
@@ -855,7 +916,7 @@ export default function EventImpactReports() {
       monthlyData[monthKey].sandwiches += sandwichCount;
       if (event.status === 'completed') {
         monthlyData[monthKey].completed += 1;
-      } else if (event.status === 'scheduled') {
+      } else if (isScheduledStatus(event.status)) {
         monthlyData[monthKey].scheduled += 1;
       }
 
@@ -871,7 +932,7 @@ export default function EventImpactReports() {
 
     const categoryChartData = Array.from(categoryBreakdown.entries())
       .map(([category, data]) => ({
-        name: CATEGORY_LABELS[category] || category,
+        name: getCategoryLabel(category),
         rawCategory: category,
         events: data.count,
         sandwiches: data.sandwiches,
@@ -886,7 +947,7 @@ export default function EventImpactReports() {
     filteredEvents.forEach((event: any) => {
       const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
       const weekday = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
-      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      const sandwichCount = getEventSandwichCount(event);
       weekdaySandwichData[weekday] = (weekdaySandwichData[weekday] || 0) + sandwichCount;
     });
 
@@ -903,8 +964,8 @@ export default function EventImpactReports() {
     // NEW: Average sandwiches by org type with min/max/event count
     const categoryStats = new Map<string, { counts: number[]; total: number; eventCount: number }>();
     filteredEvents.forEach((event: any) => {
-      const category = event.organizationCategory || 'other';
-      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      const category = normalizeOrganizationCategory(event.organizationCategory);
+      const sandwichCount = getEventSandwichCount(event);
       if (sandwichCount > 0) {
         const existing = categoryStats.get(category) || { counts: [], total: 0, eventCount: 0 };
         existing.counts.push(sandwichCount);
@@ -917,7 +978,7 @@ export default function EventImpactReports() {
     const avgSandwichesByCategory = Array.from(categoryStats.entries())
       .filter(([category]) => category !== 'other') // Exclude "other" category
       .map(([category, stats]) => ({
-        category: CATEGORY_LABELS[category] || category,
+        category: getCategoryLabel(category),
         rawCategory: category,
         avgSandwiches: stats.eventCount > 0 ? Math.round(stats.total / stats.eventCount) : 0,
         minSandwiches: stats.counts.length > 0 ? Math.min(...stats.counts) : 0,
@@ -930,10 +991,10 @@ export default function EventImpactReports() {
     // NEW: Category trends over time (monthly breakdown by category)
     const categoryTrendsMap = new Map<string, Map<string, { events: number; sandwiches: number }>>();
     filteredEvents.forEach((event: any) => {
-      const category = event.organizationCategory || 'other';
+      const category = normalizeOrganizationCategory(event.organizationCategory);
       const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
       const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
-      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      const sandwichCount = getEventSandwichCount(event);
 
       if (!categoryTrendsMap.has(monthKey)) {
         categoryTrendsMap.set(monthKey, new Map());
@@ -947,7 +1008,7 @@ export default function EventImpactReports() {
     });
 
     // Get all unique categories for trend chart
-    const allCategories = Array.from(new Set(filteredEvents.map((e: any) => e.organizationCategory || 'other')));
+    const allCategories = Array.from(new Set(filteredEvents.map((e: any) => normalizeOrganizationCategory(e.organizationCategory))));
 
     const categoryTrendsData = Array.from(categoryTrendsMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
@@ -969,7 +1030,7 @@ export default function EventImpactReports() {
     const regionData = new Map<string, { events: number; sandwiches: number }>();
     filteredEvents.forEach((event: any) => {
       const region = extractRegion(event.eventAddress);
-      const sandwichCount = event.actualSandwichCount || event.estimatedSandwichCount || 0;
+      const sandwichCount = getEventSandwichCount(event);
       const existing = regionData.get(region) || { events: 0, sandwiches: 0 };
       regionData.set(region, {
         events: existing.events + 1,
@@ -1005,14 +1066,14 @@ export default function EventImpactReports() {
         const existing = orgEventCounts.get(event.organizationName) || {
           count: 0,
           sandwiches: 0,
-          category: event.organizationCategory,
+          category: normalizeOrganizationCategory(event.organizationCategory),
           lastEventDate: null,
           firstEventDate: null,
         };
         orgEventCounts.set(event.organizationName, {
           count: existing.count + 1,
-          sandwiches: existing.sandwiches + (event.actualSandwichCount || event.estimatedSandwichCount || 0),
-          category: event.organizationCategory,
+          sandwiches: existing.sandwiches + getEventSandwichCount(event),
+          category: normalizeOrganizationCategory(event.organizationCategory),
           lastEventDate: !existing.lastEventDate || eventDate > existing.lastEventDate ? eventDate : existing.lastEventDate,
           firstEventDate: !existing.firstEventDate || eventDate < existing.firstEventDate ? eventDate : existing.firstEventDate,
         });
@@ -1038,7 +1099,7 @@ export default function EventImpactReports() {
 
     // Group organizations by category and count repeats
     orgEventCounts.forEach((data) => {
-      const category = data.category || 'other';
+      const category = normalizeOrganizationCategory(data.category);
       const existing = categoryRetentionMap.get(category) || {
         totalOrgs: 0,
         repeatOrgs: 0,
@@ -1060,7 +1121,7 @@ export default function EventImpactReports() {
       .filter(([category]) => category !== 'other') // Exclude "other" category
       .map(([category, data]) => ({
         category,
-        categoryLabel: CATEGORY_LABELS[category] || category,
+        categoryLabel: getCategoryLabel(category),
         totalOrgs: data.totalOrgs,
         repeatOrgs: data.repeatOrgs,
         repeatRate: data.totalOrgs > 0 ? Math.round((data.repeatOrgs / data.totalOrgs) * 100) : 0,
@@ -1079,7 +1140,7 @@ export default function EventImpactReports() {
         eventCount: data.count,
         sandwiches: data.sandwiches,
         category: data.category,
-        categoryLabel: CATEGORY_LABELS[data.category] || data.category || 'Other',
+        categoryLabel: getCategoryLabel(data.category),
         avgPerEvent: data.count > 0 ? Math.round(data.sandwiches / data.count) : 0,
       }))
       .sort((a, b) => b.eventCount - a.eventCount);
@@ -1096,6 +1157,9 @@ export default function EventImpactReports() {
       missingCategory: filteredEvents.filter((e: any) => !e.organizationCategory).length,
       missingAddress: filteredEvents.filter((e: any) => !e.eventAddress).length,
       missingOrgName: filteredEvents.filter((e: any) => !e.organizationName).length,
+      missingSandwichPct: 0,
+      missingCategoryPct: 0,
+      missingAddressPct: 0,
     };
 
     dataQuality.missingSandwichPct = filteredEvents.length > 0 ? Math.round((dataQuality.missingSandwichCount / filteredEvents.length) * 100) : 0;
@@ -1145,10 +1209,10 @@ export default function EventImpactReports() {
     const categories = new Set<string>();
     eventRequests.forEach((event: any) => {
       if (event.organizationCategory) {
-        categories.add(event.organizationCategory);
+        categories.add(normalizeOrganizationCategory(event.organizationCategory));
       }
     });
-    return Array.from(categories).sort();
+    return Array.from(categories).sort((a, b) => getCategoryLabel(a).localeCompare(getCategoryLabel(b)));
   }, [eventRequests]);
 
   // Export to CSV
@@ -1176,14 +1240,14 @@ export default function EventImpactReports() {
       [''],
       ['TOP ORGANIZATIONS'],
       ['Organization', 'Events', 'Sandwiches', 'Category'],
-      ...processedData.topOrganizations.map(o => [o.name, o.count, o.sandwiches, CATEGORY_LABELS[o.category] || o.category]),
+      ...processedData.topOrganizations.map(o => [o.name, o.count, o.sandwiches, getCategoryLabel(o.category)]),
       [''],
       ['EVENT DETAILS'],
       ['Date', 'Organization', 'Category', 'Status', 'Sandwiches (Est)', 'Sandwiches (Actual)', 'Event Time', 'Address'],
       ...processedData.filteredEvents.map((e: any) => [
         (parseLocalDate(e.scheduledEventDate || e.desiredEventDate) || new Date()).toLocaleDateString(),
         e.organizationName || 'N/A',
-        CATEGORY_LABELS[e.organizationCategory] || e.organizationCategory || 'N/A',
+        getCategoryLabel(e.organizationCategory),
         e.status || 'N/A',
         e.estimatedSandwichCount || '',
         e.actualSandwichCount || '',
@@ -1471,7 +1535,7 @@ export default function EventImpactReports() {
                     <SelectContent>
                       <SelectItem value="all">All Active Statuses</SelectItem>
                       <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                      <SelectItem value="scheduled">Scheduled / Rescheduled</SelectItem>
                       <SelectItem value="in_process">In Process</SelectItem>
                       <SelectItem value="new">New</SelectItem>
                       <SelectItem value="rescheduled">Rescheduled</SelectItem>
@@ -1494,7 +1558,7 @@ export default function EventImpactReports() {
                       <SelectItem value="all">All Types</SelectItem>
                       {availableCategories.map(cat => (
                         <SelectItem key={cat} value={cat}>
-                          {CATEGORY_LABELS[cat] || cat}
+                          {getCategoryLabel(cat)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1867,7 +1931,7 @@ export default function EventImpactReports() {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-xs">
-                                  {CATEGORY_LABELS[event.organizationCategory] || event.organizationCategory || 'N/A'}
+                                  {getCategoryLabel(event.organizationCategory)}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -2732,7 +2796,7 @@ export default function EventImpactReports() {
                             stackId="1"
                             stroke={COLORS[index % COLORS.length]}
                             fill={COLORS[index % COLORS.length]}
-                            name={CATEGORY_LABELS[cat] || cat}
+                            name={getCategoryLabel(cat)}
                           />
                         ))}
                       </AreaChart>
@@ -2810,7 +2874,7 @@ export default function EventImpactReports() {
                                     <TableCell>
                                       {formatEventDateSimple(event.scheduledEventDate || event.desiredEventDate)}
                                     </TableCell>
-                                    <TableCell>{event.actualSandwichCount || event.estimatedSandwichCount || '-'}</TableCell>
+                                    <TableCell>{getEventSandwichCount(event) || '-'}</TableCell>
                                     <TableCell>
                                       <Input
                                         placeholder="Enter address..."
@@ -3273,7 +3337,7 @@ export default function EventImpactReports() {
                                 </TableCell>
                                 <TableCell>
                                   <Badge variant="outline" className="text-xs">
-                                    {CATEGORY_LABELS[org.category] || org.category || 'Other'}
+                                    {getCategoryLabel(org.category)}
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right font-bold text-[#FBAD3F]">

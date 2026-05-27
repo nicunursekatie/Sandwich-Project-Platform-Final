@@ -16,6 +16,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
 import { isValidTransition, getTransitionError, type EventStatus } from '@shared/event-status-workflow';
+import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
@@ -540,11 +541,8 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
 
     // Parse sandwich count
     const sandwichCountRaw = data['Estimate # sandwiches'];
-    const estimatedSandwichCount = sandwichCountRaw
-      ? typeof sandwichCountRaw === 'number'
-        ? sandwichCountRaw
-        : parseInt(String(sandwichCountRaw).replace(/[^\d]/g, ''), 10) || null
-      : null;
+    const parsedSandwichCount = parseSandwichCountInput(sandwichCountRaw);
+    const estimatedSandwichCount = parsedSandwichCount.count;
 
     // Parse sandwich types
     const sandwichTypes = parseSandwichTypes(data['Deli or PBJ?'], estimatedSandwichCount || undefined);
@@ -611,6 +609,8 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
 
       // Sandwich info
       estimatedSandwichCount,
+      estimatedSandwichCountMin: parsedSandwichCount.min,
+      estimatedSandwichCountMax: parsedSandwichCount.max,
       sandwichTypes: sandwichTypes ? JSON.stringify(sandwichTypes) : null,
 
       // Staffing needs

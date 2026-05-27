@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { isValid, parseISO } from 'date-fns';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
+import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 
 export function createImportEventsRouter(deps: RouterDependencies) {
   const router = Router();
@@ -391,10 +392,7 @@ const __dirname = path.dirname(__filename);
       // Parse estimated sandwich count
       let parsedSandwichCount = null;
       if (sandwichCount) {
-        const countStr = sandwichCount.toString().replace(/[^\d]/g, ''); // Remove non-digits
-        if (countStr && !isNaN(parseInt(countStr))) {
-          parsedSandwichCount = parseInt(countStr);
-        }
+        parsedSandwichCount = parseSandwichCountInput(sandwichCount).count;
       }
 
       // Debug the mapping for first few rows
@@ -677,11 +675,8 @@ const __dirname = path.dirname(__filename);
 
       // Parse estimated sandwich count
       let parsedSandwichCount = null;
-      if (
-        estimatedSandwichCount &&
-        !isNaN(parseInt(estimatedSandwichCount.toString()))
-      ) {
-        parsedSandwichCount = parseInt(estimatedSandwichCount.toString());
+      if (estimatedSandwichCount) {
+        parsedSandwichCount = parseSandwichCountInput(estimatedSandwichCount).count;
       }
 
       // Only add if we have required fields
@@ -982,8 +977,8 @@ const __dirname = path.dirname(__filename);
 
       // Parse estimated sandwich count
       let parsedSandwichCount = null;
-      if (estimatedSandwichCount && !isNaN(parseInt(estimatedSandwichCount.toString()))) {
-        parsedSandwichCount = parseInt(estimatedSandwichCount.toString());
+      if (estimatedSandwichCount) {
+        parsedSandwichCount = parseSandwichCountInput(estimatedSandwichCount).count;
       }
 
       // Clean up email address
@@ -1156,4 +1151,3 @@ const __dirname = path.dirname(__filename);
 
   return router;
 }
-

@@ -3,6 +3,7 @@ import { db } from '../db';
 import { logger } from '../middleware/logger';
 import OpenAI from 'openai';
 import { userActivityLogs } from '@shared/schema';
+import { getReportableSandwichCount } from '@shared/sandwich-count-utils';
 import { sql, desc, and, gte } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../types/express';
 
@@ -250,7 +251,7 @@ function formatDataItem(item: any, contextType: string, index: number): string {
     const status = item.status || '';
     const dateInput = item.scheduledEventDate || item.desiredEventDate;
     const date = formatEventDate(dateInput);
-    const sandwiches = item.estimatedSandwichCount || item.actualSandwichCount || 0;
+    const sandwiches = getReportableSandwichCount(item, { ignoreSuspiciousEstimatedCounts: true });
 
     return `${index + 1}. **${org}** - Date: ${date}, Status: ${status}, Sandwiches: ${sandwiches}\n`;
   }
@@ -726,7 +727,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       componentContext += `- Organization: ${event.organizationName || 'Unknown'}\n`;
       componentContext += `- Status: ${event.status || 'Unknown'}\n`;
       componentContext += `- Date: ${event.scheduledEventDate || event.desiredEventDate || 'TBD'}\n`;
-      componentContext += `- Sandwiches: ${event.estimatedSandwichCount || event.actualSandwichCount || 'Not specified'}\n`;
+      componentContext += `- Sandwiches: ${getReportableSandwichCount(event, { ignoreSuspiciousEstimatedCounts: true }) || 'Not specified'}\n`;
       if (event.notes) componentContext += `- Notes: ${event.notes}\n`;
     }
 
@@ -783,7 +784,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
   let latestEventDate: Date | null = null;
 
   allEvents.forEach(e => {
-    const sandwichCount = e.actualSandwichCount || e.estimatedSandwichCount || 0;
+    const sandwichCount = getReportableSandwichCount(e, { ignoreSuspiciousEstimatedCounts: true });
     totalSandwiches += sandwichCount;
 
     // Track date range
@@ -1466,7 +1467,7 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
 
       const org = orgDataMap.get(orgName)!;
       org.eventCount += 1;
-      org.sandwichCount += (e.actualSandwichCount || e.estimatedSandwichCount || 0);
+      org.sandwichCount += getReportableSandwichCount(e, { ignoreSuspiciousEstimatedCounts: true });
 
       if (e.status) {
         org.statuses.add(e.status);
