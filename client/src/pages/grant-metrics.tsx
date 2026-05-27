@@ -547,6 +547,7 @@ export default function GrantMetrics() {
         weeklyAverage: 0,
         overallGrowthMultiplier: 0,
         monthlyData: {} as Record<string, number>,
+        weeklyData: {} as Record<string, number>,
       };
     }
 
@@ -677,6 +678,7 @@ export default function GrantMetrics() {
       weeklyAverage,
       overallGrowthMultiplier,
       monthlyData,
+      weeklyData,
     };
   };
 
@@ -691,11 +693,10 @@ export default function GrantMetrics() {
   const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
   const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
 
-  // Derive live week-level metrics directly from the collection log rather
-  // than hardcoding values that go stale. Everything here is computed from
-  // the source-of-truth collection data, including the peak-week date, the
-  // earliest collection-week baseline (used for the "growth since inception"
-  // story), and an honest count of weeks-with-collections.
+  // Derive live week-level metrics from the same weekly aggregates that
+  // calculateGrantMetrics already builds (metrics.weeklyData). Reusing the
+  // single source keeps the hero numbers in lock-step with the rest of the
+  // page — there's no second pass over `collections` that could drift.
   const {
     liveWeeksOfService,
     livePeakWeekTotal,
@@ -703,23 +704,11 @@ export default function GrantMetrics() {
     liveFirstWeekTotal,
     liveFirstWeekDate,
   } = (() => {
-    const weekTotals = new Map<string, number>();
-    for (const c of collections) {
-      if (!c?.collectionDate) continue;
-      const date = parseCollectionDate(c.collectionDate);
-      if (Number.isNaN(date.getTime())) continue;
-      const monday = new Date(date);
-      const day = monday.getDay();
-      const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
-      monday.setDate(diff);
-      monday.setHours(0, 0, 0, 0);
-      const key = monday.toISOString().split('T')[0];
-      weekTotals.set(key, (weekTotals.get(key) || 0) + calculateTotalSandwiches(c));
-    }
+    const weekEntries = Object.entries(metrics.weeklyData);
     let peakKey = '';
     let peakTotal = 0;
     let earliestKey = '';
-    for (const [key, total] of weekTotals.entries()) {
+    for (const [key, total] of weekEntries) {
       if (total > peakTotal) {
         peakTotal = total;
         peakKey = key;
@@ -729,10 +718,10 @@ export default function GrantMetrics() {
       }
     }
     return {
-      liveWeeksOfService: weekTotals.size,
+      liveWeeksOfService: weekEntries.length,
       livePeakWeekTotal: peakTotal,
       livePeakWeekDate: peakKey,
-      liveFirstWeekTotal: earliestKey ? (weekTotals.get(earliestKey) || 0) : 0,
+      liveFirstWeekTotal: earliestKey ? (metrics.weeklyData[earliestKey] || 0) : 0,
       liveFirstWeekDate: earliestKey,
     };
   })();
