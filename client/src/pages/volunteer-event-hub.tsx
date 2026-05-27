@@ -17,7 +17,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isAfter, startOfDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isAfter, startOfDay } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +50,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Icons
 import {
@@ -1154,10 +1153,10 @@ export default function VolunteerEventHub() {
   // View state
   const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals'>('list');
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedDayEvents, setSelectedDayEvents] = useState<{ date: string; events: AvailableEvent[] } | null>(null);
   const [manageSignup, setManageSignup] = useState<any | null>(null);
   const [manageMode, setManageMode] = useState<'change_role' | 'remove' | null>(null);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
@@ -1492,6 +1491,55 @@ export default function VolunteerEventHub() {
     return grouped;
   }, [filteredEvents]);
 
+  const getRoleOpenings = (event: AvailableEvent) => {
+    const roles: Array<{ label: string; count: number; color: string; bg: string; Icon: typeof Mic }> = [];
+
+    if (event.speakersUnfilled > 0) {
+      roles.push({ label: 'Speaker', count: event.speakersUnfilled, color: '#A31C41', bg: '#A31C4114', Icon: Mic });
+    }
+    if (event.volunteersUnfilled > 0) {
+      roles.push({ label: 'Volunteer', count: event.volunteersUnfilled, color: '#007E8C', bg: '#007E8C14', Icon: UserCheck });
+    }
+    if (event.driversUnfilled > 0) {
+      roles.push({ label: 'Driver', count: event.driversUnfilled, color: '#236383', bg: '#23638314', Icon: Car });
+    }
+    if (event.vanDriverNeeded) {
+      roles.push({ label: 'Van Driver', count: 1, color: '#B45309', bg: '#FBAD3F22', Icon: Truck });
+    }
+
+    return roles;
+  };
+
+  const getTotalOpeningsForEvents = (dayEvents: AvailableEvent[]) => (
+    dayEvents.reduce((sum, event) => (
+      sum +
+      Math.max(0, event.speakersUnfilled) +
+      Math.max(0, event.volunteersUnfilled) +
+      Math.max(0, event.driversUnfilled) +
+      (event.vanDriverNeeded ? 1 : 0)
+    ), 0)
+  );
+
+  const monthCalendarSummary = useMemo(() => {
+    const monthEvents = filteredEvents.filter((event) => {
+      const dateStr = event.scheduledEventDate || event.desiredEventDate;
+      if (!dateStr) return false;
+      const date = parseEventDate(dateStr);
+      return !!date && date.getMonth() === currentMonth.getMonth() && date.getFullYear() === currentMonth.getFullYear();
+    });
+
+    return {
+      events: monthEvents.length,
+      openings: getTotalOpeningsForEvents(monthEvents),
+      days: new Set(monthEvents.map((event) => (event.scheduledEventDate || event.desiredEventDate || '').split('T')[0])).size,
+    };
+  }, [filteredEvents, currentMonth]);
+
+  const selectedDateEvents = selectedCalendarDate ? eventsByDate[selectedCalendarDate] || [] : [];
+  const selectedDateLabel = selectedCalendarDate
+    ? format(parseEventDate(selectedCalendarDate)!, 'EEEE, MMMM d')
+    : 'Choose a day';
+
   // Get existing signup for an event
   const getExistingSignup = (eventId: number) => {
     return mySignups.find(s => s.eventRequestId === eventId);
@@ -1587,9 +1635,19 @@ export default function VolunteerEventHub() {
   };
 
   // Calendar navigation
-  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-  const goToToday = () => setCurrentMonth(new Date());
+  const prevMonth = () => {
+    setCurrentMonth(subMonths(currentMonth, 1));
+    setSelectedCalendarDate(null);
+  };
+  const nextMonth = () => {
+    setCurrentMonth(addMonths(currentMonth, 1));
+    setSelectedCalendarDate(null);
+  };
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(today);
+    setSelectedCalendarDate(format(today, 'yyyy-MM-dd'));
+  };
 
   // Calendar days
   const monthStart = startOfMonth(currentMonth);
@@ -1598,9 +1656,11 @@ export default function VolunteerEventHub() {
 
   // Add padding days for calendar grid
   const startPadding = monthStart.getDay();
+  const endPadding = (7 - ((startPadding + calendarDays.length) % 7)) % 7;
   const paddedDays = [
     ...Array(startPadding).fill(null),
     ...calendarDays,
+    ...Array(endPadding).fill(null),
   ];
 
   // Map center (default to NYC area)
@@ -1788,117 +1848,270 @@ export default function VolunteerEventHub() {
         <Tabs value={view} className="space-y-4">
           {/* Calendar View */}
           <TabsContent value="calendar" className="mt-0">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
-                    {format(currentMonth, 'MMMM yyyy')}
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={goToToday}>
+            <Card className="overflow-hidden border-[#FBAD3F]/30 shadow-sm">
+              <div className="bg-[#FAF8F4] border-b border-[#FBAD3F]/30 px-4 sm:px-6 py-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-[#FBAD3F] text-[#1A2332] flex items-center justify-center shadow-sm">
+                      <CalendarDays className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl sm:text-2xl text-[#236383]">
+                        {format(currentMonth, 'MMMM yyyy')}
+                      </CardTitle>
+                      <CardDescription className="mt-1 text-sm text-gray-700">
+                        Pick a day to see the full event details and sign up.
+                      </CardDescription>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="hidden sm:flex items-center gap-2 rounded-lg bg-white border border-[#007E8C]/20 px-3 py-2 text-sm text-[#236383]">
+                      <HandHeart className="w-4 h-4 text-[#007E8C]" />
+                      <span className="font-semibold">{monthCalendarSummary.openings}</span>
+                      <span>open spots</span>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={goToToday} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10">
                       Today
                     </Button>
-                    <Button variant="outline" size="icon" onClick={prevMonth}>
+                    <Button variant="outline" size="icon" onClick={prevMonth} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10" aria-label="Previous month">
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={nextMonth}>
+                    <Button variant="outline" size="icon" onClick={nextMonth} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10" aria-label="Next month">
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {/* Legend (above the grid so it's always visible) */}
-                <div className="flex flex-wrap gap-4 mb-3 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded border border-[#007e8c]/30 bg-[#007e8c]/10" />
-                    <span>Needs help</span>
+
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  <div className="rounded-lg bg-white border border-[#007E8C]/15 p-3">
+                    <div className="text-2xl font-bold text-[#236383]">{monthCalendarSummary.events}</div>
+                    <div className="text-xs font-medium text-gray-600">events shown</div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded border border-gray-200 bg-gray-100" />
-                    <span>Filled or completed</span>
+                  <div className="rounded-lg bg-white border border-[#007E8C]/15 p-3">
+                    <div className="text-2xl font-bold text-[#007E8C]">{monthCalendarSummary.days}</div>
+                    <div className="text-xs font-medium text-gray-600">days with events</div>
                   </div>
-                  <span className="text-muted-foreground/70">Click any event for details and to sign up.</span>
+                  <div className="rounded-lg bg-white border border-[#FBAD3F]/30 p-3">
+                    <div className="text-2xl font-bold text-[#B45309]">{monthCalendarSummary.openings}</div>
+                    <div className="text-xs font-medium text-gray-600">spots open</div>
+                  </div>
                 </div>
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-px bg-muted rounded-lg overflow-hidden">
-                  {/* Day headers */}
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="bg-muted-foreground/10 p-2 text-center text-sm font-medium">
-                      {day}
+              </div>
+
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-5">
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                        <div key={day} className="text-center text-[11px] sm:text-sm font-bold text-[#236383] py-2">
+                          {day}
+                        </div>
+                      ))}
+
+                      {paddedDays.map((day, idx) => {
+                        if (!day) {
+                          return <div key={`empty-${idx}`} className="min-h-[76px] sm:min-h-[120px]" />;
+                        }
+
+                        const dateKey = format(day, 'yyyy-MM-dd');
+                        const dayEvents = eventsByDate[dateKey] || [];
+                        const roleOpenings = getTotalOpeningsForEvents(dayEvents);
+                        const isToday = isSameDay(day, new Date());
+                        const isPast = !isAfter(day, startOfDay(new Date())) && !isToday;
+                        const isSelected = selectedCalendarDate === dateKey;
+                        const hasEvents = dayEvents.length > 0;
+                        const topRoles = dayEvents.flatMap(getRoleOpenings).slice(0, 3);
+
+                        return (
+                          <button
+                            key={dateKey}
+                            type="button"
+                            onClick={() => hasEvents && setSelectedCalendarDate(dateKey)}
+                            disabled={!hasEvents}
+                            className={cn(
+                              'relative min-h-[76px] sm:min-h-[120px] rounded-xl border p-2 text-left transition-all',
+                              hasEvents
+                                ? 'bg-white border-[#47B3CB]/35 hover:border-[#007E8C] hover:shadow-md cursor-pointer'
+                                : 'bg-gray-50 border-gray-100 cursor-default',
+                              isPast && hasEvents && 'opacity-75',
+                              isSelected && 'ring-2 ring-[#FBAD3F] border-[#007E8C] shadow-md bg-[#FAF8F4]',
+                              isToday && !isSelected && 'ring-2 ring-[#47B3CB]/60',
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-1">
+                              <span
+                                className={cn(
+                                  'inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold',
+                                  isToday ? 'bg-[#007E8C] text-white' : hasEvents ? 'text-[#236383]' : 'text-gray-400',
+                                )}
+                              >
+                                {format(day, 'd')}
+                              </span>
+                              {hasEvents && (
+                                <span className="rounded-full bg-[#FBAD3F]/20 px-2 py-0.5 text-[10px] font-bold text-[#92400E]">
+                                  {dayEvents.length}
+                                </span>
+                              )}
+                            </div>
+
+                            {hasEvents ? (
+                              <div className="mt-2 space-y-1">
+                                <div className="text-[11px] sm:text-sm font-bold text-[#236383] leading-tight">
+                                  {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
+                                </div>
+                                <div className="text-[10px] sm:text-xs text-gray-600">
+                                  {roleOpenings > 0
+                                    ? `${roleOpenings} ${roleOpenings === 1 ? 'spot' : 'spots'} open`
+                                    : 'Extra help welcome'}
+                                </div>
+                                <div className="hidden sm:flex flex-wrap gap-1 pt-1">
+                                  {topRoles.map((role, roleIdx) => (
+                                    <span
+                                      key={`${role.label}-${roleIdx}`}
+                                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+                                      style={{ backgroundColor: role.bg, color: role.color }}
+                                    >
+                                      <role.Icon className="w-3 h-3" />
+                                      {role.count > 1 && <span className="ml-0.5">{role.count}</span>}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mt-2 text-[10px] sm:text-xs text-gray-400">No events</div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  ))}
+                  </div>
 
-                  {/* Calendar cells */}
-                  {paddedDays.map((day, idx) => {
-                    if (!day) {
-                      return <div key={`empty-${idx}`} className="bg-background p-2 min-h-[100px]" />;
-                    }
-
-                    const dateKey = format(day, 'yyyy-MM-dd');
-                    const dayEvents = eventsByDate[dateKey] || [];
-                    const isToday = isSameDay(day, new Date());
-                    const isPast = !isAfter(day, startOfDay(new Date())) && !isToday;
-
-                    return (
-                      <div
-                        key={dateKey}
-                        className={cn(
-                          'bg-background p-2 min-h-[100px] border-t',
-                          isPast && 'opacity-50',
-                          isToday && 'ring-2 ring-inset ring-blue-500'
-                        )}
-                      >
-                        <div className={cn(
-                          'text-sm font-medium mb-1',
-                          isToday && 'bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center'
-                        )}>
-                          {format(day, 'd')}
-                        </div>
-                        <div className="space-y-1">
-                          {dayEvents.slice(0, 3).map(event => {
-                            const needsHelp = event.status !== 'completed'
-                              && (event.speakersUnfilled > 0 || event.volunteersUnfilled > 0 || event.driversUnfilled > 0);
-                            return (
-                            <Popover key={event.id}>
-                              <PopoverTrigger asChild>
-                                <button
-                                  type="button"
-                                  className={cn(
-                                    'w-full text-left text-xs px-1.5 py-1 rounded border truncate cursor-pointer transition-colors',
-                                    needsHelp
-                                      ? 'bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 hover:bg-[#007e8c]/20'
-                                      : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
-                                  )}
-                                >
-                                  {event.organizationName}
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent side="right" align="start" className="w-80 p-0">
-                                <CalendarEventPreview
-                                  event={event}
-                                  onSignupClick={handleSignupClick}
-                                  canAssignOthers={canAssignOthers}
-                                  onAssignClick={handleAssignClick}
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            );
-                          })}
-                          {dayEvents.length > 3 && (
-                            <button
-                              className="text-xs text-[#007e8c] hover:text-[#236383] hover:underline text-center w-full cursor-pointer"
-                              onClick={() => setSelectedDayEvents({ date: dateKey, events: dayEvents })}
-                            >
-                              +{dayEvents.length - 3} more
-                            </button>
-                          )}
-                        </div>
+                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 min-h-[360px]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-[#236383]">{selectedDateLabel}</h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {selectedCalendarDate
+                            ? selectedDateEvents.length > 0
+                              ? `${selectedDateEvents.length} ${selectedDateEvents.length === 1 ? 'event' : 'events'} available`
+                              : 'No events on this day'
+                            : 'Select a day with a gold number.'}
+                        </p>
                       </div>
-                    );
-                  })}
-                </div>
+                      {selectedDateEvents.length > 0 && (
+                        <Badge className="bg-[#007E8C] text-white border-transparent">
+                          {getTotalOpeningsForEvents(selectedDateEvents)} open
+                        </Badge>
+                      )}
+                    </div>
 
+                    <div className="mt-4 space-y-3">
+                      {selectedDateEvents.length === 0 ? (
+                        <div className="rounded-xl bg-white border border-dashed border-[#47B3CB]/40 p-6 text-center">
+                          <Calendar className="w-9 h-9 mx-auto text-[#47B3CB]" />
+                          <p className="font-semibold text-[#236383] mt-3">Choose a day with events</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Days with opportunities show a gold count in the corner.
+                          </p>
+                        </div>
+                      ) : (
+                        selectedDateEvents.map((event) => {
+                          const roles = getRoleOpenings(event);
+                          const existingSignup = getExistingSignup(event.id);
+
+                          return (
+                            <div key={event.id} className="rounded-xl bg-white border border-[#47B3CB]/25 shadow-sm overflow-hidden">
+                              <div className="h-1 bg-gradient-to-r from-[#FBAD3F] via-[#47B3CB] to-[#007E8C]" />
+                              <div className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h4 className="font-bold text-[#236383] leading-tight">{event.organizationName}</h4>
+                                    {event.department && (
+                                      <p className="text-sm text-gray-500 mt-0.5">{event.department}</p>
+                                    )}
+                                  </div>
+                                  {event.organizationCategory && (
+                                    <Badge variant="outline" className="text-[11px] bg-[#FBAD3F]/10 text-[#92400E] border-[#FBAD3F]/30 shrink-0">
+                                      {event.organizationCategory}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                <div className="grid gap-2 text-sm text-gray-700">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-[#007E8C] shrink-0" />
+                                    <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
+                                  </div>
+                                  {event.eventAddress && (
+                                    <div className="flex items-start gap-2">
+                                      <MapPin className="w-4 h-4 text-[#007E8C] shrink-0 mt-0.5" />
+                                      <span>{event.eventAddress}{event.city && `, ${event.city}`}</span>
+                                    </div>
+                                  )}
+                                  {event.estimatedSandwichCount && (
+                                    <div className="flex items-center gap-2">
+                                      <Sandwich className="w-4 h-4 text-[#B45309] shrink-0" />
+                                      <span>{event.estimatedSandwichCount.toLocaleString()} sandwiches</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                  {roles.length > 0 ? roles.map((role) => (
+                                    <span
+                                      key={role.label}
+                                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
+                                      style={{ backgroundColor: role.bg, color: role.color }}
+                                    >
+                                      <role.Icon className="w-3.5 h-3.5" />
+                                      {role.count} {role.label}
+                                    </span>
+                                  )) : (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 text-green-700 px-3 py-1.5 text-xs font-bold">
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      Extra help welcome
+                                    </span>
+                                  )}
+                                </div>
+
+                                {existingSignup ? (
+                                  <div className="rounded-lg bg-[#47B3CB]/10 border border-[#47B3CB]/30 px-3 py-2 text-sm font-semibold text-[#236383] flex items-center justify-between gap-2">
+                                    <span className="inline-flex items-center gap-2">
+                                      <Check className="w-4 h-4" />
+                                      You signed up
+                                    </span>
+                                    <StatusBadge status={existingSignup.status} />
+                                  </div>
+                                ) : (
+                                  <div className="grid gap-2 sm:grid-cols-2">
+                                    <Button
+                                      className="bg-[#007E8C] hover:bg-[#236383] text-white"
+                                      onClick={() => handleSignupClick(event.id)}
+                                    >
+                                      <HandHeart className="w-4 h-4 mr-2" />
+                                      Sign Up
+                                    </Button>
+                                    {canAssignOthers && (
+                                      <Button
+                                        variant="outline"
+                                        className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5"
+                                        onClick={() => handleAssignClick(event.id)}
+                                      >
+                                        <Users className="w-4 h-4 mr-2" />
+                                        Assign Someone
+                                      </Button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -2462,111 +2675,6 @@ export default function VolunteerEventHub() {
           />
         )}
 
-        {/* Day Events Dialog - shows all events for a selected day */}
-        <Dialog open={!!selectedDayEvents} onOpenChange={(open) => !open && setSelectedDayEvents(null)}>
-          <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Events on {selectedDayEvents?.date ? format(parseEventDate(selectedDayEvents.date)!, 'EEEE, MMMM d, yyyy') : ''}
-              </DialogTitle>
-              <DialogDescription>
-                {selectedDayEvents?.events.length} event{selectedDayEvents?.events.length !== 1 ? 's' : ''} scheduled
-              </DialogDescription>
-            </DialogHeader>
-            <ScrollArea className="flex-1 -mx-6 px-6">
-              <div className="space-y-3 py-2">
-                {selectedDayEvents?.events.map(event => (
-                  <div
-                    key={event.id}
-                    className="p-3 rounded-lg border hover:border-[#007e8c] hover:bg-[#007e8c]/5 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setSelectedDayEvents(null);
-                      handleSignupClick(event.id);
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{event.organizationName}</p>
-                        {event.department && (
-                          <p className="text-xs text-muted-foreground truncate">{event.department}</p>
-                        )}
-                      </div>
-                      {event.organizationCategory && (
-                        <Badge variant="secondary" className="text-xs shrink-0">
-                          {event.organizationCategory}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="mt-2 space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
-                      </div>
-                      {event.eventAddress && (
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5" />
-                          <span className="truncate">{event.eventAddress}{event.city && `, ${event.city}`}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 mt-2">
-                      {(event.speakersNeeded > 0 || event.speakersAssigned > 0) && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Mic className="w-3 h-3 text-[#a31c41]" />
-                          <span className="font-medium text-[#a31c41]">Speakers</span>
-                          <span className={event.speakersUnfilled > 0 ? 'text-[#a31c41] font-semibold' : 'text-green-600'}>
-                            {event.speakersAssigned}/{event.speakersNeeded}
-                          </span>
-                          {event.speakersUnfilled > 0 && (
-                            <Badge className="bg-[#a31c41] text-white text-[10px] px-1 py-0 h-4">{event.speakersUnfilled} needed</Badge>
-                          )}
-                        </div>
-                      )}
-                      {(event.volunteersNeeded > 0 || event.volunteersAssigned > 0) && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <UserCheck className="w-3 h-3 text-[#007e8c]" />
-                          <span className="font-medium text-[#007e8c]">Volunteers</span>
-                          <span className={event.volunteersUnfilled > 0 ? 'text-[#007e8c] font-semibold' : 'text-green-600'}>
-                            {event.volunteersAssigned}/{event.volunteersNeeded}
-                          </span>
-                          {event.volunteersUnfilled > 0 && (
-                            <Badge className="bg-[#007e8c] text-white text-[10px] px-1 py-0 h-4">{event.volunteersUnfilled} needed</Badge>
-                          )}
-                        </div>
-                      )}
-                      {(event.driversNeeded > 0 || event.driversAssigned > 0) && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Car className="w-3 h-3 text-[#236383]" />
-                          <span className="font-medium text-[#236383]">Drivers</span>
-                          <span className={event.driversUnfilled > 0 ? 'text-[#236383] font-semibold' : 'text-green-600'}>
-                            {event.driversAssigned}/{event.driversNeeded}
-                          </span>
-                          {event.driversUnfilled > 0 && (
-                            <Badge className="bg-[#236383] text-white text-[10px] px-1 py-0 h-4">{event.driversUnfilled} needed</Badge>
-                          )}
-                        </div>
-                      )}
-                      {event.vanDriverNeeded && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Car className="w-3 h-3 text-[#fbad3f]" />
-                          <span className="font-medium text-[#fbad3f]">Van Driver Needed</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-            <DialogFooter className="mt-4">
-              <Button variant="outline" onClick={() => setSelectedDayEvents(null)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
     </div>
   );
 }
