@@ -464,21 +464,31 @@ export default function GrantMetrics() {
     const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
 
     // Per-sandwich ingredient cost estimate (current grocery prices, basic
-    // turkey-and-cheese recipe). Build from a representative sandwich:
+    // turkey-and-cheese build — TSP sandwiches do not use condiments).
+    // Representative sandwich:
     //   - 2 slices bread (Nature's Own Honey Wheat, 22-slice loaf ~$5)   ≈ $0.45
     //   - 2 slices cheddar (Kirkland 48-ct sliced ~$12)                  ≈ $0.50
     //   - 2 oz sliced turkey (Kirkland deli ~$15 / 2 lb)                 ≈ $0.95
-    //   - Condiments + baggie/wrap                                       ≈ $0.10
+    //   - Ziplock baggie                                                 ≈ $0.05
     // Total ≈ $2.00 per sandwich. This is the cost volunteers/groups bear —
     // TSP does not pay for sandwich ingredients.
+    //
+    // A meal = 2 sandwiches, so the per-meal cost is 2x.
     const costPerSandwich = 2.00;
+    const sandwichesPerMeal = 2;
+    const costPerMeal = costPerSandwich * sandwichesPerMeal;
     const totalFoodValue = Math.round(totalSandwiches * costPerSandwich);
+    const totalMeals = Math.floor(totalSandwiches / sandwichesPerMeal);
 
     return {
       totalSandwiches,
       costPerSandwich,
+      costPerMeal,
+      sandwichesPerMeal,
+      totalMeals,
       totalFoodValue,
-      costPerPerson: costPerSandwich, // 1 sandwich per person served
+      // Kept for legacy callers; equals cost per meal (1 person = 1 meal = 2 sandwiches)
+      costPerPerson: costPerMeal,
     };
   };
 
@@ -1737,13 +1747,13 @@ export default function GrantMetrics() {
 
               <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
                 <div className="text-4xl font-black text-[#236383] mb-2">
-                  ${filteredCostMetrics.costPerPerson.toFixed(2)}
+                  ${filteredCostMetrics.costPerMeal.toFixed(2)}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Cost per person served
+                  Cost per meal
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Direct food cost
+                  Ingredients only (2 sandwiches = 1 meal)
                 </p>
               </div>
 
@@ -1786,7 +1796,7 @@ export default function GrantMetrics() {
                   <div>
                     <p className="font-semibold text-gray-900">Exceptional Cost Efficiency</p>
                     <p className="text-sm text-gray-600">
-                      At ${filteredCostMetrics.costPerPerson.toFixed(2)}/person, we deliver dignified food assistance at a fraction of traditional meal program costs ($8-15/meal)
+                      At ${filteredCostMetrics.costPerMeal.toFixed(2)} per meal (2 sandwiches), we deliver dignified food assistance at a fraction of traditional meal program costs ($8-15/meal)
                     </p>
                   </div>
                 </div>
