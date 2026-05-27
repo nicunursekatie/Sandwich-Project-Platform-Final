@@ -1522,6 +1522,11 @@ router.get(
         distributionNotes: event.distributionNotes,
         duplicateNotes: event.duplicateNotes,
         socialMediaPostNotes: event.socialMediaPostNotes,
+        socialMediaPostRequested: event.socialMediaPostRequested,
+        socialMediaPostRequestedDate: event.socialMediaPostRequestedDate,
+        socialMediaPostCompleted: event.socialMediaPostCompleted,
+        socialMediaPostCompletedDate: event.socialMediaPostCompletedDate,
+        socialMediaPostLink: event.socialMediaPostLink,
 
         // ========== RECIPIENT ALLOCATION (ScheduledCard, SpreadsheetView) ==========
         assignedRecipientIds: event.assignedRecipientIds,
