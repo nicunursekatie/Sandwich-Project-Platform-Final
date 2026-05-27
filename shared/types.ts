@@ -169,14 +169,14 @@ export interface User extends Omit<DrizzleUser, 'metadata' | 'permissions'> {
  * SECURITY WARNING:
  * - unified-auth-utils.ts REJECTS numeric permissions (secure)
  * - auth-utils.ts accepts numeric permissions but unsafely grants all access (insecure)
- * - Numeric format is included in type only to prevent TypeScript errors
+ * - Numeric and unknown formats are included in type only to prevent TypeScript errors
  * - All users with numeric permissions MUST be migrated to string[] format
  */
 export interface UserForPermissions {
   id: string;
   email?: string | null;
   role: string;
-  permissions: string[] | number | null | undefined;
+  permissions: unknown;
   isActive?: boolean | null;
 }
 

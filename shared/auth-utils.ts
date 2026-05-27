@@ -914,6 +914,12 @@ export const CHAT_PERMISSIONS = {
   groups: PERMISSIONS.CHAT_GROUP,
 } as const;
 
+const getPermissionList = (
+  user: UserForPermissions | null | undefined
+): string[] => {
+  return Array.isArray(user?.permissions) ? user.permissions : [];
+};
+
 // Function to check if user has access to a specific chat room
 export function hasAccessToChat(
   user: UserForPermissions | null | undefined,
@@ -925,13 +931,6 @@ export function hasAccessToChat(
     CHAT_PERMISSIONS[chatRoom as keyof typeof CHAT_PERMISSIONS];
   if (!requiredPermission) return false;
 
-  // Simple permission check without the unified utils
-  if (!user.permissions) return false;
-
-  if (Array.isArray(user.permissions)) {
-    return user.permissions.includes(requiredPermission);
-  }
-
   if (typeof user.permissions === 'number') {
     // SECURITY FIX: Numeric permissions are not supported - deny access
     // Users with numeric format must be migrated to string array format
@@ -941,7 +940,7 @@ export function hasAccessToChat(
     return false;
   }
 
-  return false;
+  return getPermissionList(user).includes(requiredPermission);
 }
 
 // NOTE: hasPermission has been removed from auth-utils.ts
@@ -1190,18 +1189,19 @@ export function canDeleteProject(
   user: UserForPermissions | null | undefined,
   project: ProjectResource | null | undefined
 ): boolean {
-  if (!user || !user.permissions) return false;
+  const userPermissions = getPermissionList(user);
+  if (!user || userPermissions.length === 0) return false;
 
   // Super admins and users with DELETE_ALL_PROJECTS can delete all projects
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.PROJECTS_DELETE_ALL)
+    userPermissions.includes(PERMISSIONS.PROJECTS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_PROJECTS can only delete projects they created (not assigned ones)
   if (
-    user.permissions.includes(PERMISSIONS.PROJECTS_ADD) &&
+    userPermissions.includes(PERMISSIONS.PROJECTS_ADD) &&
     (project?.createdBy === user.id || project?.created_by === user.id)
   )
     return true;
@@ -1214,18 +1214,19 @@ export function canEditSuggestion(
   user: UserForPermissions | null | undefined,
   suggestion: SuggestionResource | null | undefined
 ): boolean {
-  if (!user || !user.permissions) return false;
+  const userPermissions = getPermissionList(user);
+  if (!user || userPermissions.length === 0) return false;
 
   // Super admins and users with EDIT_ALL_SUGGESTIONS can edit all suggestions
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.SUGGESTIONS_EDIT_ALL)
+    userPermissions.includes(PERMISSIONS.SUGGESTIONS_EDIT_ALL)
   )
     return true;
 
   // Users with CREATE_SUGGESTIONS can edit suggestions they created
   if (
-    user.permissions.includes(PERMISSIONS.SUGGESTIONS_ADD) &&
+    userPermissions.includes(PERMISSIONS.SUGGESTIONS_ADD) &&
     (suggestion?.createdBy === user.id ||
       suggestion?.created_by === user.id ||
       suggestion?.submittedBy === user.id)
@@ -1240,18 +1241,19 @@ export function canDeleteSuggestion(
   user: UserForPermissions | null | undefined,
   suggestion: SuggestionResource | null | undefined
 ): boolean {
-  if (!user || !user.permissions) return false;
+  const userPermissions = getPermissionList(user);
+  if (!user || userPermissions.length === 0) return false;
 
   // Super admins and users with DELETE_ALL_SUGGESTIONS can delete all suggestions
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.SUGGESTIONS_DELETE_ALL)
+    userPermissions.includes(PERMISSIONS.SUGGESTIONS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_SUGGESTIONS can delete suggestions they created
   if (
-    user.permissions.includes(PERMISSIONS.SUGGESTIONS_ADD) &&
+    userPermissions.includes(PERMISSIONS.SUGGESTIONS_ADD) &&
     (suggestion?.createdBy === user.id ||
       suggestion?.created_by === user.id ||
       suggestion?.submittedBy === user.id)
@@ -1266,18 +1268,19 @@ export function canEditWorkLog(
   user: UserForPermissions | null | undefined,
   workLog: WorkLogResource | null | undefined
 ): boolean {
-  if (!user || !user.permissions) return false;
+  const userPermissions = getPermissionList(user);
+  if (!user || userPermissions.length === 0) return false;
 
   // Super admins and users with EDIT_ALL_WORK_LOGS can edit all work logs
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.WORK_LOGS_EDIT_ALL)
+    userPermissions.includes(PERMISSIONS.WORK_LOGS_EDIT_ALL)
   )
     return true;
 
   // Users with CREATE_WORK_LOGS can edit work logs they created
   if (
-    user.permissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
+    userPermissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
     (workLog?.createdBy === user.id ||
       workLog?.created_by === user.id ||
       workLog?.userId === user.id)
@@ -1292,18 +1295,19 @@ export function canDeleteWorkLog(
   user: UserForPermissions | null | undefined,
   workLog: WorkLogResource | null | undefined
 ): boolean {
-  if (!user || !user.permissions) return false;
+  const userPermissions = getPermissionList(user);
+  if (!user || userPermissions.length === 0) return false;
 
   // Super admins and users with DELETE_ALL_WORK_LOGS can delete all work logs
   if (
     user.role === 'super_admin' ||
-    user.permissions.includes(PERMISSIONS.WORK_LOGS_DELETE_ALL)
+    userPermissions.includes(PERMISSIONS.WORK_LOGS_DELETE_ALL)
   )
     return true;
 
   // Users with CREATE_WORK_LOGS can delete work logs they created
   if (
-    user.permissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
+    userPermissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
     (workLog?.createdBy === user.id ||
       workLog?.created_by === user.id ||
       workLog?.userId === user.id)

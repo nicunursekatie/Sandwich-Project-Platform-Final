@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { trackEvent as gaTrackEvent } from '../../lib/analytics';
+import { trackEvent as gaTrackEvent } from '@/lib/analytics';
 
 /**
  * Hook for tracking Google Analytics events

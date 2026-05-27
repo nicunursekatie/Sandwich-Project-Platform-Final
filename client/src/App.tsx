@@ -5,8 +5,8 @@ import { lazyWithRetry } from '@/lib/lazy-with-retry';
 
 import { queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
-import { initGA } from '../lib/analytics';
-import { useAnalytics } from '../hooks/use-analytics';
+import { initGA } from '@/lib/analytics';
+import { usePageAnalytics } from '@/hooks/usePageAnalytics';
 
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -71,7 +71,7 @@ function Router() {
   const { isAuthenticated, isLoading, error, user } = useAuth();
 
   // Track page views when routes change
-  useAnalytics();
+  usePageAnalytics();
 
   if (isLoading) {
     return (

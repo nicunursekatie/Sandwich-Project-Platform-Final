@@ -261,7 +261,7 @@ export function validatePermissionFormat(permission: string): boolean {
   }
 
   // Check if it's a known permission
-  const allPermissions = Object.values(PERMISSIONS);
+  const allPermissions: string[] = Object.values(PERMISSIONS);
   return allPermissions.includes(permission);
 }
 
