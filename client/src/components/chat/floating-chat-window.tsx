@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { getDisplayName } from '@/lib/userHelpers';
 import { useChatWindows, type ChatWindow } from '@/context/chat-windows-context';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
@@ -45,7 +46,10 @@ export function FloatingChatWindow({ window, index, totalWindows }: FloatingChat
       id: `msg-${Date.now()}`,
       content: message,
       senderId: user.id,
-      senderName: user.fullName || user.email || 'You',
+      senderName:
+        user.displayName ||
+        getDisplayName(user.firstName ?? undefined, user.lastName ?? undefined, user.email ?? undefined) ||
+        'You',
       timestamp: new Date(),
     };
 

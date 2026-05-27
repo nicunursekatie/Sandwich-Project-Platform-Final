@@ -38,6 +38,7 @@ import {
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { formatSandwichTypesDisplay, parseSandwichTypes } from '@/lib/sandwich-utils';
+import { getDisplayName } from '@/lib/userHelpers';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { statusIcons, statusOptions, statusBorderColors, SANDWICH_TYPES, statusTooltips, indicatorTooltips } from '@/components/event-requests/constants';
@@ -2857,7 +2858,10 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <CommentThread
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
-                  currentUserName={user?.fullName || user?.email || ''}
+                  currentUserName={
+                    user?.displayName ||
+                    getDisplayName(user?.firstName ?? undefined, user?.lastName ?? undefined, user?.email ?? undefined)
+                  }
                   eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}

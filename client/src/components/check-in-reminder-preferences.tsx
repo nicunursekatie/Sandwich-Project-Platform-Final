@@ -36,6 +36,9 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import type { DefaultReminderRule, CheckInReminderPreferences as Prefs } from '@shared/types';
 
+type ReminderChannel = Prefs['defaultChannel'];
+type ReminderFrequency = DefaultReminderRule['frequency'];
+
 // ---------------------------------------------------------------------------
 // Rule type definitions (mirrors the server-side RULE_TYPE_CONFIG)
 // ---------------------------------------------------------------------------
@@ -121,14 +124,14 @@ const CHANNEL_OPTIONS = [
   { value: 'email', label: 'Email' },
   { value: 'sms', label: 'SMS' },
   { value: 'both', label: 'Email & SMS' },
-];
+] as const;
 
 const FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Daily' },
   { value: 'every_3_days', label: 'Every 3 days' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'biweekly', label: 'Every 2 weeks' },
-];
+] as const;
 
 // ---------------------------------------------------------------------------
 // Component
@@ -174,7 +177,9 @@ export default function CheckInReminderPreferencesEditor() {
 
   const [rules, setRules] = useState<DefaultReminderRule[]>(defaultRules);
   const [corpRules, setCorpRules] = useState<DefaultReminderRule[]>(defaultCorpRules);
-  const [channel, setChannel] = useState(serverPrefs?.defaultChannel ?? 'email');
+  const [channel, setChannel] = useState<ReminderChannel>(
+    serverPrefs?.defaultChannel ?? 'email'
+  );
 
   // Reset local state when server data changes (e.g. after a reload or cache update).
   // `defaultRules` and `defaultCorpRules` are useMemo values derived solely from
@@ -220,7 +225,7 @@ export default function CheckInReminderPreferencesEditor() {
       prev.map((r) => (r.ruleType === ruleType ? { ...r, thresholdDays } : r)),
     );
   };
-  const handleFrequency = (ruleType: string, frequency: string) => {
+  const handleFrequency = (ruleType: string, frequency: ReminderFrequency) => {
     setRules((prev) =>
       prev.map((r) => (r.ruleType === ruleType ? { ...r, frequency } : r)),
     );
@@ -237,7 +242,7 @@ export default function CheckInReminderPreferencesEditor() {
       prev.map((r) => (r.ruleType === ruleType ? { ...r, thresholdDays } : r)),
     );
   };
-  const handleCorpFrequency = (ruleType: string, frequency: string) => {
+  const handleCorpFrequency = (ruleType: string, frequency: ReminderFrequency) => {
     setCorpRules((prev) =>
       prev.map((r) => (r.ruleType === ruleType ? { ...r, frequency } : r)),
     );
@@ -246,7 +251,7 @@ export default function CheckInReminderPreferencesEditor() {
   const handleSave = () => {
     saveMutation.mutate({
       configured: true,
-      defaultChannel: channel as 'email' | 'sms' | 'both',
+      defaultChannel: channel,
       rules,
       corporateRules: corpRules,
     });
@@ -283,7 +288,10 @@ export default function CheckInReminderPreferencesEditor() {
           <Label className="text-sm font-medium text-gray-700">
             Default notification channel
           </Label>
-          <Select value={channel} onValueChange={setChannel}>
+          <Select
+            value={channel}
+            onValueChange={(value) => setChannel(value as ReminderChannel)}
+          >
             <SelectTrigger className="w-40 h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
@@ -432,7 +440,7 @@ function RuleSection({
   rules: DefaultReminderRule[];
   onToggle: (ruleType: string, enabled: boolean) => void;
   onThreshold: (ruleType: string, days: number) => void;
-  onFrequency: (ruleType: string, freq: string) => void;
+  onFrequency: (ruleType: string, freq: ReminderFrequency) => void;
   accentColor?: 'teal' | 'purple';
 }) {
   const enabledBorder = accentColor === 'purple' ? 'border-purple-300/30 bg-purple-50/50' : 'border-[#007E8C]/30 bg-[#007E8C]/5';
@@ -481,7 +489,7 @@ function RuleSection({
                     <span className="text-xs text-gray-500">Remind me</span>
                     <Select
                       value={rule.frequency}
-                      onValueChange={(val) => onFrequency(rt.ruleType, val)}
+                      onValueChange={(val) => onFrequency(rt.ruleType, val as ReminderFrequency)}
                     >
                       <SelectTrigger className="w-32 h-7 text-xs">
                         <SelectValue />

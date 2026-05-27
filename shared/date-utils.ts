@@ -44,7 +44,7 @@ export const APP_TIMEZONE = 'America/New_York';
  * // WRONG - never do this:
  * const date = new Date("2025-09-03T12:00:00.000Z"); // Causes timezone shift!
  */
-export function parseDateOnly(dateString: string | null | undefined): Date | null {
+export function parseDateOnly(dateString: Date | string | null | undefined): Date | null {
   if (!dateString || dateString === '') {
     return null;
   }

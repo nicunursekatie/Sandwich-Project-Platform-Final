@@ -96,7 +96,13 @@
       "Bash(awk -F':' '$1 >= 1400 && $1 <= 1680 {print}')",
       "Bash(awk 'NR>=1150 && NR<=1425' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/event-requests/IntakeCallDialog.tsx)",
       "Bash(wait bkvt4x95r *)",
-      "Bash(awk 'NR>=1044 && NR<=1100' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/event-requests/IntakeCallDialog.tsx)"
+      "Bash(awk 'NR>=1044 && NR<=1100' /Users/kathrynelong/Sandwich-Project-Platform-Final/client/src/components/event-requests/IntakeCallDialog.tsx)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline cd7ba2cf1 -5)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show --stat 0c93d903b)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final ls-files -u replit.md)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final status --short)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -5)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -1 -- client/src/components/compact-collection-form.tsx)"
     ],
     "deny": [],
     "ask": [],

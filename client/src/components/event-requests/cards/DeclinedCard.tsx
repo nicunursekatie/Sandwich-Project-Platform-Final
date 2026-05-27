@@ -31,6 +31,7 @@ import {
 import { MessageComposer } from '@/components/message-composer';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
+import { getDisplayName } from '@/lib/userHelpers';
 import { useAuth } from '@/hooks/useAuth';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -403,7 +404,10 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                 <CommentThread
                   comments={collaboration.comments || []}
                   currentUserId={user?.id || ''}
-                  currentUserName={user?.fullName || user?.email || ''}
+                  currentUserName={
+                    user?.displayName ||
+                    getDisplayName(user?.firstName ?? undefined, user?.lastName ?? undefined, user?.email ?? undefined)
+                  }
                   eventId={request.id}
                   onAddComment={collaboration.addComment}
                   onEditComment={collaboration.updateComment}

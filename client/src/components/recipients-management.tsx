@@ -17,6 +17,9 @@ import {
   HelpCircle,
   ToggleLeft,
   ToggleRight,
+  CalendarDays,
+  List,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -152,6 +155,8 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const [feedingDayFilter, setFeedingDayFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [calendarMode, setCalendarMode] = useState<'collection' | 'feeding'>('collection');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{
     imported: number;
@@ -325,6 +330,28 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const inactiveRecipients = useMemo(() => {
     return recipients.filter((r) => r.status === 'inactive');
   }, [recipients]);
+
+  // Bucket filtered recipients by weekday for the calendar view.
+  // Recipients with multiple days appear in every matching column.
+  // Recipients with no recognized weekday land in `unscheduled`.
+  const weeklyBuckets = useMemo(() => {
+    const buckets: Record<string, Recipient[]> = {
+      Monday: [], Tuesday: [], Wednesday: [], Thursday: [],
+      Friday: [], Saturday: [], Sunday: [],
+    };
+    const unscheduled: Recipient[] = [];
+    for (const r of filteredRecipients) {
+      const days = calendarMode === 'collection'
+        ? getRecipientCollectionDays(r)
+        : getRecipientFeedingDays(r);
+      if (days.length === 0) {
+        unscheduled.push(r);
+        continue;
+      }
+      for (const d of days) buckets[d]?.push(r);
+    }
+    return { buckets, unscheduled };
+  }, [filteredRecipients, calendarMode]);
 
   // Get unique values for filter dropdowns (derived from geocoded coords only; no manual region)
   const uniqueRegions = useMemo(() => {
@@ -753,38 +780,155 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
           )}
         </div>
 
-        {/* Results Count */}
-        <div className="text-sm text-slate-600">
-          Showing {filteredRecipients.length} of {recipients.length} recipients
+        {/* Results Count + View Switcher */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-sm text-slate-600">
+            Showing {filteredRecipients.length} of {recipients.length} recipients
+          </div>
+          <div className="flex items-center gap-2">
+            {viewMode === 'calendar' && (
+              <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setCalendarMode('collection')}
+                  className={`px-3 py-1 rounded ${calendarMode === 'collection' ? 'bg-[#007E8C] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Collection
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarMode('feeding')}
+                  className={`px-3 py-1 rounded ${calendarMode === 'feeding' ? 'bg-[#007E8C] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  Feeding
+                </button>
+              </div>
+            )}
+            <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                aria-label="List view"
+                className={`px-2 py-1 rounded ${viewMode === 'list' ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('calendar')}
+                aria-pressed={viewMode === 'calendar'}
+                aria-label="Calendar view"
+                className={`px-2 py-1 rounded ${viewMode === 'calendar' ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                <CalendarDays className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Recipients Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredRecipients.map((recipient) => (
-            <RecipientCard
-              key={recipient.id}
-              recipient={recipient}
-              canEdit={canEdit}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onToggleStatus={handleToggleStatus}
-              highlighted={highlightedId === recipient.id}
-              highlightRef={highlightedId === recipient.id ? highlightCardRef : undefined}
-            />
-          ))}
+        {viewMode === 'list' ? (
+          /* Recipients Grid */
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredRecipients.map((recipient) => (
+              <RecipientCard
+                key={recipient.id}
+                recipient={recipient}
+                canEdit={canEdit}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onToggleStatus={handleToggleStatus}
+                highlighted={highlightedId === recipient.id}
+                highlightRef={highlightedId === recipient.id ? highlightCardRef : undefined}
+              />
+            ))}
 
-          {filteredRecipients.length === 0 && recipients.length > 0 && (
-            <div className="col-span-full text-center py-12 text-slate-500">
-              No recipients match your current filters. Try adjusting your search or filter criteria.
-            </div>
-          )}
+            {filteredRecipients.length === 0 && recipients.length > 0 && (
+              <div className="col-span-full text-center py-12 text-slate-500">
+                No recipients match your current filters. Try adjusting your search or filter criteria.
+              </div>
+            )}
 
-          {recipients.length === 0 && (
-            <div className="col-span-full text-center py-12 text-slate-500">
-              No recipients found. Add a new recipient to get started.
+            {recipients.length === 0 && (
+              <div className="col-span-full text-center py-12 text-slate-500">
+                No recipients found. Add a new recipient to get started.
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Weekly Calendar View */
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+              {WEEK_DAYS.map((day) => {
+                const list = weeklyBuckets.buckets[day] || [];
+                return (
+                  <div
+                    key={day}
+                    className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col"
+                  >
+                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-700">{day}</span>
+                      <Badge variant="secondary" className="text-xs">{list.length}</Badge>
+                    </div>
+                    <div className="p-2 space-y-1.5 min-h-[60px]">
+                      {list.length === 0 ? (
+                        <div className="text-xs text-slate-400 italic px-1 py-2">No recipients</div>
+                      ) : (
+                        list.map((r) => {
+                          const time = calendarMode === 'collection' ? r.collectionTime : r.feedingTime;
+                          return (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => canEdit && handleEdit(r)}
+                              disabled={!canEdit}
+                              className="w-full text-left px-2 py-1.5 rounded border border-slate-200 hover:border-[#007E8C] hover:bg-[#007E8C]/5 disabled:cursor-default disabled:hover:border-slate-200 disabled:hover:bg-transparent transition-colors"
+                            >
+                              <div className="text-xs font-medium text-slate-800 truncate">{r.name}</div>
+                              {time && (
+                                <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                  <Clock className="w-3 h-3" />
+                                  {time}
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
-        </div>
+
+            {weeklyBuckets.unscheduled.length > 0 && (
+              <div className="border border-dashed border-slate-300 rounded-lg p-3 bg-slate-50">
+                <div className="text-xs font-medium text-slate-600 mb-2">
+                  No {calendarMode} day set ({weeklyBuckets.unscheduled.length})
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {weeklyBuckets.unscheduled.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => canEdit && handleEdit(r)}
+                      disabled={!canEdit}
+                      className="text-xs px-2 py-1 rounded bg-white border border-slate-200 hover:border-[#007E8C] disabled:hover:border-slate-200 transition-colors"
+                    >
+                      {r.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {filteredRecipients.length === 0 && (
+              <div className="text-center py-12 text-slate-500">
+                No recipients match your current filters.
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Inactive Recipients Section */}
         {inactiveRecipients.length > 0 && (

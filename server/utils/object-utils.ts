@@ -49,7 +49,7 @@ export function safeAssign<T extends Record<string, any>>(
     // Only copy own properties (not inherited ones)
     // This prevents copying inherited properties from prototypes
     if (Object.prototype.hasOwnProperty.call(source, key) && source[key] !== undefined) {
-      target[key] = source[key];
+      (target as Record<string, any>)[key] = source[key];
     }
   }
 
