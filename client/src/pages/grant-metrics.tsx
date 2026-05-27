@@ -463,19 +463,32 @@ export default function GrantMetrics() {
   const calculateCostMetrics = (collectionsToAnalyze: any[]) => {
     const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
 
-    // Industry estimates:
-    // - Cost per sandwich (ingredients): $1.40-$1.48
-    // - Cost per person served (1 sandwich): same
-    // - With volunteer labor valued: add ~$3.35 per sandwich (20 min @ $33.49/hr / 10 sandwiches)
-
-    const costPerSandwich = 1.44; // Average ingredient cost
+    // Per-sandwich ingredient cost estimate (current grocery prices, basic
+    // turkey-and-cheese build — TSP sandwiches do not use condiments).
+    // Representative sandwich:
+    //   - 2 slices bread (Nature's Own Honey Wheat, 22-slice loaf ~$5)   ≈ $0.45
+    //   - 2 slices cheddar (Kirkland 48-ct sliced ~$12)                  ≈ $0.50
+    //   - 2 oz sliced turkey (Kirkland deli ~$15 / 2 lb)                 ≈ $0.95
+    //   - Ziplock baggie                                                 ≈ $0.05
+    // Total ≈ $2.00 per sandwich. This is the cost volunteers/groups bear —
+    // TSP does not pay for sandwich ingredients.
+    //
+    // A meal = 2 sandwiches, so the per-meal cost is 2x.
+    const costPerSandwich = 2.00;
+    const sandwichesPerMeal = 2;
+    const costPerMeal = costPerSandwich * sandwichesPerMeal;
     const totalFoodValue = Math.round(totalSandwiches * costPerSandwich);
+    const totalMeals = Math.floor(totalSandwiches / sandwichesPerMeal);
 
     return {
       totalSandwiches,
       costPerSandwich,
+      costPerMeal,
+      sandwichesPerMeal,
+      totalMeals,
       totalFoodValue,
-      costPerPerson: costPerSandwich, // 1 sandwich per person served
+      // Kept for legacy callers; equals cost per meal (1 person = 1 meal = 2 sandwiches)
+      costPerPerson: costPerMeal,
     };
   };
 
@@ -534,6 +547,7 @@ export default function GrantMetrics() {
         weeklyAverage: 0,
         overallGrowthMultiplier: 0,
         monthlyData: {} as Record<string, number>,
+        weeklyData: {} as Record<string, number>,
       };
     }
 
@@ -664,6 +678,7 @@ export default function GrantMetrics() {
       weeklyAverage,
       overallGrowthMultiplier,
       monthlyData,
+      weeklyData,
     };
   };
 
@@ -678,32 +693,48 @@ export default function GrantMetrics() {
   const allTimeVolunteerMetrics = calculateVolunteerMetrics(allTimeCollections);
   const allTimeCostMetrics = calculateCostMetrics(allTimeCollections);
 
-  // Derive live "weeks of service" and the peak single-week total directly
-  // from the collection log rather than hardcoding values that go stale.
-  //
-  // - weeksOfService: distinct Monday-keyed weeks with at least one collection.
-  //   For a program that's collected every week since April 2020, this equals
-  //   the consecutive-weeks streak claimed in the hero copy.
-  // - peakWeekTotal: the single highest weekly total (sum of sandwiches across
-  //   all hosts for that week). Grant copy has historically said "10,000+" as
-  //   the peak baseline — this surfaces the real current peak.
-  const { liveWeeksOfService, livePeakWeekTotal } = (() => {
-    const weekTotals = new Map<string, number>();
-    for (const c of collections) {
-      if (!c?.collectionDate) continue;
-      const date = parseCollectionDate(c.collectionDate);
-      if (Number.isNaN(date.getTime())) continue;
-      const monday = new Date(date);
-      const day = monday.getDay();
-      const diff = monday.getDate() - day + (day === 0 ? -6 : 1);
-      monday.setDate(diff);
-      monday.setHours(0, 0, 0, 0);
-      const key = monday.toISOString().split('T')[0];
-      weekTotals.set(key, (weekTotals.get(key) || 0) + calculateTotalSandwiches(c));
+  // Derive live week-level metrics from the same weekly aggregates that
+  // calculateGrantMetrics already builds (metrics.weeklyData). Reusing the
+  // single source keeps the hero numbers in lock-step with the rest of the
+  // page — there's no second pass over `collections` that could drift.
+  const {
+    liveWeeksOfService,
+    livePeakWeekTotal,
+    livePeakWeekDate,
+    liveFirstWeekTotal,
+    liveFirstWeekDate,
+  } = (() => {
+    const weekEntries = Object.entries(metrics.weeklyData);
+    let peakKey = '';
+    let peakTotal = 0;
+    let earliestKey = '';
+    for (const [key, total] of weekEntries) {
+      if (total > peakTotal) {
+        peakTotal = total;
+        peakKey = key;
+      }
+      if (earliestKey === '' || key < earliestKey) {
+        earliestKey = key;
+      }
     }
-    const peak = weekTotals.size > 0 ? Math.max(...Array.from(weekTotals.values())) : 0;
-    return { liveWeeksOfService: weekTotals.size, livePeakWeekTotal: peak };
+    return {
+      liveWeeksOfService: weekEntries.length,
+      livePeakWeekTotal: peakTotal,
+      livePeakWeekDate: peakKey,
+      liveFirstWeekTotal: earliestKey ? (metrics.weeklyData[earliestKey] || 0) : 0,
+      liveFirstWeekDate: earliestKey,
+    };
   })();
+
+  // Format a Monday-keyed week as a human-readable label like "Nov 2023".
+  const formatWeekLabel = (mondayKey: string): string => {
+    if (!mondayKey) return '';
+    const [y, m] = mondayKey.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthIdx = parseInt(m, 10) - 1;
+    if (Number.isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return '';
+    return `${monthNames[monthIdx]} ${y}`;
+  };
 
   // Format the peak number for the hero the way grant copy reads it:
   // "10,000+", "12,500+", etc. Round DOWN to the nearest 500 so we never
@@ -813,6 +844,20 @@ export default function GrantMetrics() {
     return false; // Don't include incomplete current year
   });
 
+  // Peak year over *completed* years only. metrics.peakYear treats all
+  // yearTotals equally and will pick the in-progress year if its YTD total
+  // already exceeds prior years — which would make annual callouts
+  // ("Food value delivered in 2026", "Sandwiches in 2026 - our best year")
+  // compare a partial year against full years. Anywhere we want a year-level
+  // peak to *mean* a full year, use this instead.
+  const completeYearPeak = completeYears.reduce(
+    (max, year) => {
+      const total = metrics.yearTotals[year] || 0;
+      return total > max.total ? { year, total } : max;
+    },
+    { year: 0, total: 0 }
+  );
+
   // Prepare chart data from complete years only
   const yearChartData = completeYears.map(year => ({
     year: year.toString(),
@@ -843,10 +888,10 @@ export default function GrantMetrics() {
           <div className="text-center mb-8">
             <div className="text-5xl md:text-7xl font-black text-[#fbad3f] mb-2">{liveHeroSandwiches}</div>
             <div className="text-xl md:text-2xl font-semibold text-white/90 mb-2">
-              sandwiches delivered over <span className="text-[#fbad3f] font-bold">{liveWeeksOfService.toLocaleString()} consecutive weeks</span>
+              sandwiches delivered across <span className="text-[#fbad3f] font-bold">{liveWeeksOfService.toLocaleString()} weeks of collections</span>
             </div>
             <div className="text-base md:text-lg text-white/70">
-              Every single week since April 2020. No exceptions.
+              Weekly collections since April 2020 — pausing only for major holidays (Thanksgiving, Christmas/New Year, July 4, Memorial Day, and a small number of other holiday weeks).
             </div>
           </div>
 
@@ -854,20 +899,23 @@ export default function GrantMetrics() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{liveHeroPeakWeek}</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Peak week baseline (up from 1,000 in 2020)</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Peak single-week total (sandwiches)</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">35</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{totalHosts}</div>
               <div className="text-sm md:text-base text-white/90 mt-1">Collection sites across Metro Atlanta</div>
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Volunteers powering the network</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Volunteers in our broader community*</div>
             </div>
             <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">50+</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Partner organizations served weekly</div>
+              <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{recipientMetrics.total > 0 ? recipientMetrics.total : '—'}</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Active recipient partner organizations</div>
             </div>
+          </div>
+          <div className="text-xs text-white/60 text-center -mt-4 mb-6 italic">
+            *Volunteer community size reflects our private group membership and is tracked outside this database.
           </div>
 
           {/* Our Story */}
@@ -1034,10 +1082,12 @@ export default function GrantMetrics() {
             </CardHeader>
             <CardContent>
               <div className="text-5xl font-black mb-2">
-                {metrics.peakYear.total.toLocaleString()}
+                {completeYearPeak.total > 0 ? completeYearPeak.total.toLocaleString() : '—'}
               </div>
               <p className="text-white/90 text-base font-medium">
-                Sandwiches in {metrics.peakYear.year} - our best year yet
+                {completeYearPeak.year > 0
+                  ? `Sandwiches in ${completeYearPeak.year} — our best complete year`
+                  : 'Awaiting first complete year of data'}
               </p>
             </CardContent>
           </Card>
@@ -1122,10 +1172,10 @@ export default function GrantMetrics() {
                     Mobilized during Hurricane Helene (October 2024)
                   </p>
                   <p className="text-sm font-semibold text-[#007E8C]">
-                    2-3x surge capacity within one week
+                    Significant surge above typical weekly output
                   </p>
                   <p className="text-xs text-gray-500 italic mt-1">
-                    Proven disaster infrastructure, not just routine food distribution
+                    Demonstrating disaster-response capacity beyond routine distribution
                   </p>
                 </div>
               </div>
@@ -1143,9 +1193,9 @@ export default function GrantMetrics() {
             <CardContent className="space-y-6 pt-6">
               <div className="text-center p-6 bg-gradient-to-br from-[#A31C41] to-[#8a1636] rounded-xl text-white">
                 <div className="font-black mb-1 text-[28px]">
-                  291 Consecutive Weeks
+                  {liveWeeksOfService.toLocaleString()} Weeks of Collections
                 </div>
-                <p className="text-white/90 text-sm mb-4">of service — no gaps, no exceptions</p>
+                <p className="text-white/90 text-sm mb-4">since April 2020 — weekly cadence, pausing only for major holidays</p>
 
                 {/* Visual separator line */}
                 <div className="w-16 h-0.5 bg-white/30 mx-auto mb-4"></div>
@@ -1153,7 +1203,7 @@ export default function GrantMetrics() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="font-black text-[24px]">4,000+</div>
-                    <p className="text-white/90 text-xs">volunteers</p>
+                    <p className="text-white/90 text-xs">in volunteer community*</p>
                   </div>
                   <div>
                     <div className="font-black text-[24px]">{metrics.avgPerCollection}</div>
@@ -1167,21 +1217,24 @@ export default function GrantMetrics() {
                 <ul className="space-y-2 text-sm text-gray-600">
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Zero paid staff for collections — 100% volunteer-powered</span>
+                    <span>Sandwich making and ingredients are 100% volunteer-driven — TSP pays nothing for sandwich supplies</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Distributed network enables rapid response and 24/7 coverage</span>
+                    <span>Distributed network of host sites enables broad geographic coverage</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Geographic diversity reaches hungry people across Metro Atlanta</span>
+                    <span>Distribution is volunteer-led, with one contract driver for the refrigerated van</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Zap className="w-4 h-4 text-[#A31C41] flex-shrink-0 mt-0.5" />
-                    <span>Crisis-ready: proven 3x surge capacity (Hurricane Helene)</span>
+                    <span>Crisis-ready: surged response during Hurricane Helene (October 2024)</span>
                   </li>
                 </ul>
+                <p className="text-xs text-gray-500 italic mt-3">
+                  *Volunteer community size is tracked outside this database.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -1288,18 +1341,18 @@ export default function GrantMetrics() {
               <div className="space-y-4">
                 <div>
                   <div className="text-3xl font-black text-[#007E8C] mb-1">
-                    35 sites
+                    {totalHosts} sites
                   </div>
                   <p className="text-sm text-gray-600">
-                    Collection locations across Metro Atlanta
+                    Active collection locations across Metro Atlanta
                   </p>
                 </div>
                 <div className="pt-3 border-t border-gray-200">
                   <div className="text-2xl font-bold text-[#236383] mb-1">
-                    50+ partners
+                    {recipientMetrics.total > 0 ? recipientMetrics.total : '—'} partners
                   </div>
                   <p className="text-sm text-gray-600">
-                    Organizations receiving deliveries weekly
+                    Active recipient organizations in our database
                   </p>
                 </div>
                 <div className="pt-3 border-t border-gray-200">
@@ -1326,7 +1379,7 @@ export default function GrantMetrics() {
                     4,000+
                   </div>
                   <p className="text-sm text-gray-600">
-                    Active members in private volunteer community
+                    Members in our private volunteer community*
                   </p>
                 </div>
                 <div className="pt-3 border-t border-gray-200">
@@ -1334,12 +1387,12 @@ export default function GrantMetrics() {
                     5,350+
                   </div>
                   <p className="text-sm text-gray-600">
-                    Newsletter recipients staying informed
+                    Newsletter recipients staying informed*
                   </p>
                 </div>
                 <div className="pt-3 border-t border-gray-200">
                   <p className="text-xs text-gray-500 italic">
-                    Volunteers consistently engaged for 3+ years
+                    *Tracked outside this database (private community + mailing list). Many volunteers have been engaged for several years.
                   </p>
                 </div>
               </div>
@@ -1364,59 +1417,85 @@ export default function GrantMetrics() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white p-4 rounded-lg border border-[#236383]/20">
-                <div className="text-sm text-gray-600 mb-1">April 2020 (Start)</div>
-                <div className="text-3xl font-black text-[#236383]">317</div>
+                <div className="text-sm text-gray-600 mb-1">
+                  {liveFirstWeekDate ? `First Week (${formatWeekLabel(liveFirstWeekDate)})` : 'First Week'}
+                </div>
+                <div className="text-3xl font-black text-[#236383]">
+                  {liveFirstWeekTotal > 0 ? liveFirstWeekTotal.toLocaleString() : '—'}
+                </div>
                 <div className="text-xs text-gray-500">sandwiches</div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#A31C41]/20">
-                <div className="text-sm text-gray-600 mb-1">Peak Week (Nov 2023)</div>
-                <div className="text-3xl font-black text-[#A31C41]">38,828</div>
+                <div className="text-sm text-gray-600 mb-1">
+                  {livePeakWeekDate ? `Peak Week (${formatWeekLabel(livePeakWeekDate)})` : 'Peak Week'}
+                </div>
+                <div className="text-3xl font-black text-[#A31C41]">
+                  {livePeakWeekTotal > 0 ? livePeakWeekTotal.toLocaleString() : '—'}
+                </div>
                 <div className="text-xs text-gray-500">sandwiches</div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#007E8C]/20">
                 <div className="text-sm text-gray-600 mb-1">Weekly Avg (Recent)</div>
                 <div className="text-3xl font-black text-[#007E8C]">
-                  {metrics.weeklyAverage > 0 ? metrics.weeklyAverage.toLocaleString() : '8-10K'}
+                  {metrics.weeklyAverage > 0 ? metrics.weeklyAverage.toLocaleString() : '—'}
                 </div>
-                <div className="text-xs text-gray-500">sandwiches/week</div>
+                <div className="text-xs text-gray-500">sandwiches/week (last 4 non-holiday weeks)</div>
               </div>
 
               <div className="bg-white p-4 rounded-lg border border-[#FBAD3F]/20">
                 <div className="text-sm text-gray-600 mb-1">Overall Growth</div>
                 <div className="text-3xl font-black text-[#FBAD3F]">
-                  {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '107x'}
+                  {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : '—'}
                 </div>
-                <div className="text-xs text-gray-500">since inception</div>
+                <div className="text-xs text-gray-500">earliest vs. latest year on record</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Inflation Resilience Callout */}
-        <Card className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] text-white shadow-xl border-0">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
-              <div className="flex-shrink-0 text-center md:text-left">
-                <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">+26%</div>
-                <div className="text-sm text-white/80">food price inflation<br />since 2022</div>
-              </div>
-              <div className="flex-grow">
-                <h3 className="text-xl font-bold mb-2">Real Growth Despite Rising Costs</h3>
-                <p className="text-white/90">
-                  Food prices have increased 26%+ since 2022. Despite this, we've grown from <strong className="text-[#fbad3f]">440,371 sandwiches</strong> (2022)
-                  to <strong className="text-[#fbad3f]">526,083</strong> (2025) — representing <strong className="text-[#fbad3f]">41% real growth</strong> in
-                  volunteer effort and community contribution.
-                </p>
-              </div>
-              <div className="flex-shrink-0 text-center md:text-right">
-                <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">526K</div>
-                <div className="text-sm text-white/80">sandwiches in 2025<br />(peak year)</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {(() => {
+          // Use the complete-year peak so we don't compare a full 2022 to a
+          // YTD partial of the current year.
+          const baseYearTotal = metrics.yearTotals[2022] || 0;
+          const peakYearTotal = completeYearPeak.total;
+          const peakYear = completeYearPeak.year;
+          const realGrowthPct = baseYearTotal > 0
+            ? Math.round(((peakYearTotal - baseYearTotal) / baseYearTotal) * 100)
+            : 0;
+          if (baseYearTotal === 0 || peakYearTotal === 0) return null;
+          return (
+            <Card className="mb-8 bg-gradient-to-r from-[#236383] to-[#007e8c] text-white shadow-xl border-0">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                  <div className="flex-shrink-0 text-center md:text-left">
+                    <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">+26%</div>
+                    <div className="text-sm text-white/80">food price inflation<br />since 2022 (BLS CPI)</div>
+                  </div>
+                  <div className="flex-grow">
+                    <h3 className="text-xl font-bold mb-2">Growth Despite Rising Costs — Absorbed by Volunteers</h3>
+                    <p className="text-white/90">
+                      Food prices have risen significantly since 2022. Because TSP does not pay for sandwich ingredients —
+                      volunteers and partner groups supply them — every dollar of food inflation has been absorbed by
+                      our community, not by our budget. Even so, output grew from{' '}
+                      <strong className="text-[#fbad3f]">{baseYearTotal.toLocaleString()}</strong> sandwiches (2022) to{' '}
+                      <strong className="text-[#fbad3f]">{peakYearTotal.toLocaleString()}</strong> ({peakYear})
+                      {realGrowthPct > 0 && (
+                        <> — a <strong className="text-[#fbad3f]">{realGrowthPct}% increase</strong> in volunteer contribution.</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 text-center md:text-right">
+                    <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">{formatHeroSandwiches(peakYearTotal)}</div>
+                    <div className="text-sm text-white/80">sandwiches in {peakYear}<br />(peak year)</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* What Makes This Infrastructure Revolutionary */}
         <Card className="mb-8 border-2 border-[#A31C41] shadow-lg">
@@ -1432,33 +1511,33 @@ export default function GrantMetrics() {
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
-                <div className="font-bold text-[#A31C41] mb-2">100% Volunteer-Powered</div>
+                <div className="font-bold text-[#A31C41] mb-2">Volunteer-Driven Production</div>
                 <p className="text-sm text-gray-700">
-                  Zero paid staff for collections. Built entirely on volunteer coordination and community trust.
+                  Sandwich making and all ingredient costs are 100% volunteer-supplied. TSP pays nothing for sandwich supplies.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
-                <div className="font-bold text-[#A31C41] mb-2">Weekly Consistency</div>
+                <div className="font-bold text-[#A31C41] mb-2">Weekly Cadence</div>
                 <p className="text-sm text-gray-700">
-                  {liveWeeksOfService.toLocaleString()} consecutive weeks of service. No gaps. No exceptions. Institutional-grade reliability.
+                  {liveWeeksOfService.toLocaleString()} weeks of collections since April 2020 — pausing only for major holidays. Within non-holiday weeks, our consistency is exceptional.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
                 <div className="font-bold text-[#A31C41] mb-2">Crisis-Ready</div>
                 <p className="text-sm text-gray-700">
-                  Proven 3x surge capacity during Hurricane Helene — mobilized without external support.
+                  Surged response during Hurricane Helene (Oct 2024) — mobilized through existing volunteer network.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
                 <div className="font-bold text-[#A31C41] mb-2">Inflation-Resilient</div>
                 <p className="text-sm text-gray-700">
-                  41% real growth despite 26% food cost increases since 2022. Volunteers absorbed the extra effort.
+                  Sandwich output has grown despite food-price inflation since 2022. Because volunteers and groups supply the food, rising costs hit them — not TSP's budget.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
                 <div className="font-bold text-[#A31C41] mb-2">Dual Collection Model</div>
                 <p className="text-sm text-gray-700">
-                  Scalable via both individuals and organizations — 1,113 sandwiches per collection average.
+                  Scalable via both individuals and organizations — {metrics.avgPerCollection.toLocaleString()} sandwiches per collection on average.
                 </p>
               </div>
               <div className="p-4 bg-[#FCE4E6] rounded-lg border border-[#A31C41]/20">
@@ -1485,15 +1564,38 @@ export default function GrantMetrics() {
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
-                <div className="text-4xl font-black text-[#007E8C] mb-2">
-                  $1.2-2M
-                </div>
-                <p className="text-sm text-gray-700 font-medium">
-                  Annual food value delivered to community
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  At $1.40-$1.48 per sandwich
-                </p>
+                {(() => {
+                  // Use the peak *complete* year so we never label a YTD
+                  // partial-year total as the year's food value. Band the
+                  // per-sandwich cost by ±10% off costPerSandwich so this
+                  // card can't drift when that estimate is updated.
+                  const peakYearTotal = completeYearPeak.total;
+                  const cost = allTimeCostMetrics.costPerSandwich;
+                  const costLow = cost * 0.9;
+                  const costHigh = cost * 1.1;
+                  const annualLow = Math.round((peakYearTotal * costLow) / 1000);
+                  const annualHigh = Math.round((peakYearTotal * costHigh) / 1000);
+                  const display = peakYearTotal > 0
+                    ? annualLow >= 1000
+                      ? `$${(annualLow / 1000).toFixed(1)}-${(annualHigh / 1000).toFixed(1)}M`
+                      : `$${annualLow}K-${annualHigh}K`
+                    : '—';
+                  return (
+                    <>
+                      <div className="text-4xl font-black text-[#007E8C] mb-2">
+                        {display}
+                      </div>
+                      <p className="text-sm text-gray-700 font-medium">
+                        {completeYearPeak.year > 0
+                          ? `Food value delivered in ${completeYearPeak.year}`
+                          : 'Food value (peak complete year)'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">
+                        At ~${costLow.toFixed(2)}–${costHigh.toFixed(2)} per sandwich (volunteer-supplied ingredients)
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
 
               <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
@@ -1501,10 +1603,10 @@ export default function GrantMetrics() {
                   $500-2K
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Corporate team building investment per event
+                  Typical corporate team-building event value
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  Companies make 2,000-5,000 sandwiches
+                  Companies typically make 2,000-5,000 sandwiches per event
                 </p>
               </div>
 
@@ -1656,13 +1758,13 @@ export default function GrantMetrics() {
 
               <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
                 <div className="text-4xl font-black text-[#236383] mb-2">
-                  ${filteredCostMetrics.costPerPerson.toFixed(2)}
+                  ${filteredCostMetrics.costPerMeal.toFixed(2)}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Cost per person served
+                  Cost per meal
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Direct food cost
+                  Ingredients only (2 sandwiches = 1 meal)
                 </p>
               </div>
 
@@ -1705,7 +1807,7 @@ export default function GrantMetrics() {
                   <div>
                     <p className="font-semibold text-gray-900">Exceptional Cost Efficiency</p>
                     <p className="text-sm text-gray-600">
-                      At ${filteredCostMetrics.costPerPerson.toFixed(2)}/person, we deliver dignified food assistance at a fraction of traditional meal program costs ($8-15/meal)
+                      At ${filteredCostMetrics.costPerMeal.toFixed(2)} per meal (2 sandwiches), we deliver dignified food assistance at a fraction of traditional meal program costs ($8-15/meal)
                     </p>
                   </div>
                 </div>
@@ -1727,7 +1829,7 @@ export default function GrantMetrics() {
                   <div>
                     <p className="font-semibold text-gray-900">Proven Sustainability</p>
                     <p className="text-sm text-gray-600">
-                      Operating continuously since April 2020 with consistent growth, not a one-time initiative
+                      Operating on a weekly cadence since April 2020 — pausing only for major holidays — with consistent growth, not a one-time initiative
                     </p>
                   </div>
                 </div>
@@ -2076,15 +2178,16 @@ export default function GrantMetrics() {
                   </h3>
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-4xl font-black text-[#FBAD3F]">~95%</div>
+                      <div className="text-4xl font-black text-[#FBAD3F]">
+                        {eventMetrics.totalEvents > 0
+                          ? `${Math.round((eventMetrics.socialMediaPostsCompleted / eventMetrics.totalEvents) * 100)}%`
+                          : '—'}
+                      </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        of group events include social media posts
+                        of completed group events have a tracked social media post
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        Partners frequently tag @TheSandwichProject in their posts
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1 italic">
-                        (Event-level tracking coming soon)
+                        {eventMetrics.socialMediaPostsCompleted.toLocaleString()} of {eventMetrics.totalEvents.toLocaleString()} events. Partners frequently tag @TheSandwichProject in their posts.
                       </p>
                     </div>
                     <Mail className="w-16 h-16 text-[#FBAD3F]/20" />
@@ -2139,13 +2242,33 @@ export default function GrantMetrics() {
                   <div>
                     <h3 className="font-bold text-gray-900 mb-2">Executive Leadership (Achieved)</h3>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Status:</strong> Full-time Executive Director hired September 2025 to manage operations, fundraising, and strategic partnerships
+                      <strong>Status:</strong> First paid Executive Director hired September 2025 (full-time) to manage operations, fundraising, and strategic partnerships
                     </p>
                     <p className="text-sm text-gray-700 mb-2">
-                      <strong>Impact:</strong> Professional leadership now in place after scaling to 107x our founding capacity — enabling structured growth, grant pursuit, and operational efficiency
+                      <strong>Impact:</strong> Professional leadership now in place after scaling{' '}
+                      {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : 'significantly'}{' '}
+                      from our founding output — enabling structured growth, grant pursuit, and operational efficiency
                     </p>
                     <Badge className="bg-green-100 text-green-700 border-green-300">
                       Hired Sept 2025
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-white to-[#E0F2F1] p-5 rounded-lg border-l-4 border-[#47B3CB]">
+                <div className="flex items-start gap-4">
+                  <Users className="w-8 h-8 text-[#47B3CB] shrink-0 mt-1" />
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-2">Our Staffing Picture, in Full</h3>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Paid:</strong> One full-time Executive Director (since Sept 2025), one contract driver who operates the refrigerated van for weekly distribution and larger events, and a small number of part-time contractors who together account for roughly 10–15 hours of work each on an as-needed basis.
+                    </p>
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Volunteer:</strong> All sandwich making and all sandwich ingredients (TSP pays $0 for sandwich supplies). 20+ regular volunteer drivers handle the bulk of transportation alongside the contract driver. Operations leadership — including team members putting in 10s of hours per week — are unpaid volunteers.
+                    </p>
+                    <Badge className="bg-[#47B3CB]/20 text-[#47B3CB] border-[#47B3CB]/30">
+                      Mostly volunteer-driven, with a small paid core
                     </Badge>
                   </div>
                 </div>
@@ -2212,8 +2335,10 @@ export default function GrantMetrics() {
                 Why These Investments Matter
               </h3>
               <p className="text-sm text-gray-700 mb-3">
-                The Sandwich Project has grown 107x since inception while maintaining volunteer-led operations.
-                These strategic investments will:
+                The Sandwich Project has grown{' '}
+                {metrics.overallGrowthMultiplier > 0 ? `${metrics.overallGrowthMultiplier}x` : 'substantially'}{' '}
+                in annual output from its earliest year on record to its peak year, while remaining
+                largely volunteer-led. These strategic investments will:
               </p>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
