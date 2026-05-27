@@ -69,6 +69,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { logger } from '@/lib/logger';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -1650,9 +1656,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const [editingMode, setEditingMode] = useState<'simple' | 'detailed'>('simple');
   const [editingTypes, setEditingTypes] = useState<Record<string, number>>({});
 
-  // Compact social media details — expand to reveal full editor
-  const [showSocialDetails, setShowSocialDetails] = useState(false);
-
   // Inline editing state for TSP contact
   const [isEditingTspContact, setIsEditingTspContact] = useState(false);
   const [editingTspContactId, setEditingTspContactId] = useState<number | null>(null);
@@ -2429,8 +2432,16 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
           </div>
         ) : null}
 
+        {/* Main content split into two columns on lg+ so the card isn't a
+            tall vertical stack. Column 1: at-a-glance + post-event notes.
+            Column 2: event summary (date history, recipients/team, follow-ups,
+            completion notes). Mirrors the InProcessCard / ScheduledCardEnhanced
+            two-column layout. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 lg:items-start">
+          {/* Column 1 */}
+          <div className="space-y-3 min-w-0">
         {/* At-a-glance: sandwiches + social — minimal, expand only when needed */}
-        <div className="bg-white rounded-lg p-3 mb-3 border border-gray-200 space-y-2">
+        <div className="bg-white rounded-lg p-3 border border-gray-200 space-y-2">
           {/* Sandwiches row */}
           <div className="flex items-center gap-2 text-sm flex-wrap">
             <Package className="w-4 h-4 text-[#FBAD3F] shrink-0" />
@@ -2536,19 +2547,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </a>
               ) : null;
             })()}
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowSocialDetails((s) => !s)}
-              className="h-6 px-1.5 text-xs text-gray-500 hover:text-gray-800 ml-auto"
-            >
-              {showSocialDetails ? 'Hide' : 'Manage'}
-            </Button>
-          </div>
-
-          {/* Expanded social media actions */}
-          {showSocialDetails && (
-            <div className="border-t pt-2 mt-1 flex flex-wrap gap-2">
+            {/* Inline one-click status buttons (no Manage step).
+                - Nothing tracked:  [Mark Requested] [Mark Posted]
+                - Requested:        [Mark Posted]    [Edit ▾]
+                - Posted:           [Edit ▾]    (+ Add Instagram Link if missing) */}
+            <div className="flex items-center gap-1.5 ml-auto flex-wrap">
               {!request.socialMediaPostCompleted && !request.socialMediaPostRequested && (
                 <Button
                   size="sm"
@@ -2586,15 +2589,62 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                   Add Instagram Link
                 </Button>
               )}
+              {(request.socialMediaPostCompleted || request.socialMediaPostRequested) && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-gray-500 hover:text-gray-800"
+                      disabled={updateSocialMediaMutation.isPending}
+                      title="Edit social status"
+                    >
+                      <Edit2 className="w-3 h-3 mr-1" />
+                      Edit
+                      <ChevronDown className="w-3 h-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="text-xs">
+                    {request.socialMediaPostCompleted && (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          updateSocialMediaMutation.mutate({
+                            socialMediaPostCompleted: false,
+                            socialMediaPostCompletedDate: null,
+                          })
+                        }
+                      >
+                        Revert to Requested
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() =>
+                        updateSocialMediaMutation.mutate({
+                          socialMediaPostCompleted: false,
+                          socialMediaPostCompletedDate: null,
+                          socialMediaPostRequested: false,
+                          socialMediaPostRequestedDate: null,
+                        })
+                      }
+                      className="text-red-600 focus:text-red-700"
+                    >
+                      Clear status
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Post-event Notes */}
         <PostEventNotes eventId={request.id} />
+          </div>
 
+          {/* Column 2 */}
+          <div className="space-y-3 min-w-0">
         {/* Event Summary */}
-        <div className="space-y-2 mb-3">
+        <div className="space-y-2">
           <div className="bg-white rounded-lg p-2 space-y-2">
             {/* Date history — original request + backup dates (kept for reference, not prominent) */}
             {(() => {
@@ -2829,6 +2879,9 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <p className="text-sm text-gray-600">{request.followUpNotes}</p>
               </div>
             )}
+          </div>
+        </div>
+
           </div>
         </div>
 
