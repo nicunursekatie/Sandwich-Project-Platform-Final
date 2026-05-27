@@ -1669,7 +1669,11 @@ export default function GrantMetrics() {
               <div className="text-center p-4 bg-[#E8F4F8] rounded-lg">
                 <DollarSign className="w-8 h-8 mx-auto mb-2 text-[#236383]" />
                 <div className="text-3xl font-black text-[#236383] mb-1">
-                  ${(filteredVolunteerMetrics.economicValue / 1000).toFixed(0)}K
+                  {(() => {
+                    const v = filteredVolunteerMetrics.economicValue;
+                    if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(2)}M`;
+                    return `$${(v / 1000).toFixed(0)}K`;
+                  })()}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
                   Economic value (IRS rate)
