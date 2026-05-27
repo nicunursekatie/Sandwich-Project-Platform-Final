@@ -176,6 +176,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all',
         active
@@ -202,6 +203,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
+      aria-label={label}
       className={cn(
         'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all',
         active ? 'bg-white shadow-sm' : 'text-gray-600 hover:text-gray-900',
@@ -525,6 +528,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                           icon={Mic}
                           color={BRAND.burgundy}
                           label="Speaker"
+                          ctaLabel="Sign up as Speaker"
+                          signedUpLabel="Signed up as Speaker"
                           assigned={needs.speakersAssignedCount}
                           needed={needs.speakersNeededCount}
                           signedUp={isSpeakerSignedUp}
@@ -537,6 +542,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                           icon={Users}
                           color={BRAND.teal}
                           label="Volunteer"
+                          ctaLabel="Sign up as Volunteer"
+                          signedUpLabel="Signed up as Volunteer"
                           assigned={needs.volunteersAssignedCount}
                           needed={needs.volunteersNeededCount}
                           signedUp={isVolunteerSignedUp}
@@ -549,6 +556,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                           icon={Truck}
                           color={BRAND.amber}
                           label="Van Driver"
+                          ctaLabel="Sign up as Van Driver"
+                          signedUpLabel="Signed up as Van Driver"
                           assigned={0}
                           needed={1}
                           signedUp={isDriverSignedUp}
@@ -562,6 +571,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                           icon={Truck}
                           color={BRAND.primary}
                           label="Driver"
+                          ctaLabel="Sign up as Driver"
+                          signedUpLabel="Signed up as Driver"
                           assigned={needs.driversAssignedCount}
                           needed={needs.driversNeededCount}
                           signedUp={isDriverSignedUp}
