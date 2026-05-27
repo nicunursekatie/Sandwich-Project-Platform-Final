@@ -76,6 +76,37 @@ const customMarkerStyles = `
     background: transparent !important;
     border: none !important;
   }
+  /* Pulsing halo behind the selected-event pin so it stands out even when
+     surrounded by host/recipient/driver pins. Two concentric rings animate
+     out from the pin location. The pin itself sits above them via z-index. */
+  .selected-event-marker .selected-event-pulse-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    margin-left: -18px;
+    margin-top: -18px;
+    border-radius: 50%;
+    background: rgba(255, 0, 0, 0.35);
+    box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.18);
+    animation: selected-event-pulse 1.8s ease-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .selected-event-marker .selected-event-pulse-ring.delay {
+    animation-delay: 0.9s;
+  }
+  .selected-event-marker .selected-event-pin {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 3px 4px rgba(0,0,0,0.45));
+  }
+  @keyframes selected-event-pulse {
+    0%   { transform: scale(0.6); opacity: 0.85; }
+    70%  { transform: scale(2.2); opacity: 0;    }
+    100% { transform: scale(2.2); opacity: 0;    }
+  }
 `;
 
 // Inject custom marker styles
@@ -403,7 +434,31 @@ const colors = {
 };
 
 const eventIcon = createEventIcon(colors.event);
-const selectedEventIcon = createEventIcon(colors.selectedEvent);
+
+// Selected event pin — intentionally much larger than regular event pins, with
+// a pulsing red halo behind it. Designed to remain visible when surrounded by
+// host/recipient/driver/volunteer pins. Anchor is at the tip of the pin (40,60).
+const selectedEventIcon = (() => {
+  const html = `
+    <div style="position: relative; width: 40px; height: 60px;">
+      <span class="selected-event-pulse-ring"></span>
+      <span class="selected-event-pulse-ring delay"></span>
+      <svg class="selected-event-pin" viewBox="0 0 40 60" width="40" height="60" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 0C9 0 0 9 0 20c0 14 20 40 20 40s20-26 20-40C40 9 31 0 20 0z"
+              fill="${colors.selectedEvent}" stroke="white" stroke-width="2.5"/>
+        <circle cx="20" cy="20" r="10" fill="white"/>
+        <circle cx="20" cy="20" r="5" fill="${colors.selectedEvent}"/>
+      </svg>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'custom-marker event-marker selected-event-marker',
+    iconSize: [40, 60],
+    iconAnchor: [20, 60],
+    popupAnchor: [0, -52],
+  });
+})();
 const customLocationIcon = createEventIcon(colors.customLocation); // Orange pin for custom locations
 const hostIcon = createHostIcon(colors.host);
 const hostFocusedIcon = createHostIcon(colors.hostFocused);
@@ -793,9 +848,14 @@ function MapController({
       }
 
       if (points.length > 1) {
-        // Compute zoom that includes event + closest host + closest recipient, but keep the event centered
+        // Compute zoom that includes event + closest host + closest recipient, but
+        // clamp it: never zoom OUT past 14 (otherwise the event pin gets buried in
+        // a wide bounds-fit when the closest host/recipient is far away — user
+        // reported this making the selected event hard to find). Cap the max at 15
+        // so we don't over-zoom either when everything is right on top of each other.
         const bounds = L.latLngBounds(points);
-        const zoomForBounds = Math.min(map.getBoundsZoom(bounds, false, L.point(60, 60)), 14);
+        const rawZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
+        const zoomForBounds = Math.min(Math.max(rawZoom, 14), 15);
         map.setView(
           [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
           zoomForBounds,
@@ -805,7 +865,7 @@ function MapController({
         // Fallback to just centering on event if no hosts/recipients
         map.setView(
           [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
-          14,
+          15,
           { animate: true }
         );
       }
@@ -3148,9 +3208,9 @@ export default function DriverPlanningDashboard() {
                   <Tooltip
                     permanent={isSelected}
                     direction="top"
-                    offset={[0, -35]}
+                    offset={isSelected ? [0, -56] : [0, -35]}
                     className={isSelected
-                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-sm !font-bold !px-3 !py-1.5 !rounded !shadow-lg !border-2"
                       : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
                     }
                   >
@@ -3873,10 +3933,12 @@ export default function DriverPlanningDashboard() {
                       <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
                     </button>
                     <div className="flex items-center gap-2">
-                      <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="0.5"/>
+                      <svg viewBox="0 0 12 18" className="w-3.5 h-5" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="1"/>
+                        <circle cx="6" cy="6" r="2.5" fill="white"/>
+                        <circle cx="6" cy="6" r="1.2" fill="#ff0000"/>
                       </svg>
-                      <span>Selected Event</span>
+                      <span className="font-semibold">Selected Event (pulses)</span>
                     </div>
                     {effectiveSelectedEvent && (
                       <>
@@ -3909,6 +3971,26 @@ export default function DriverPlanningDashboard() {
                         >
                           <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
                           <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowVolunteersSpeakers((v) => !v)}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-40'}`}
+                          title={showVolunteersSpeakers ? 'Click to hide Volunteer/Speaker pins' : 'Click to show Volunteer/Speaker pins'}
+                          data-testid="toggle-layer-volunteers"
+                        >
+                          <div className="w-3 h-3 rotate-45 bg-purple-500 border border-white shadow-sm" />
+                          <span>Speakers/Volunteers{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowTeamMembers((v) => !v)}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${showTeamMembers ? '' : 'opacity-40'}`}
+                          title={showTeamMembers ? 'Click to hide Team Member pins' : 'Click to show Team Member pins'}
+                          data-testid="toggle-layer-team-members"
+                        >
+                          <div className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm" />
+                          <span>Team Members{showTeamMembers ? '' : ' (hidden)'}</span>
                         </button>
                         <div className="flex items-center gap-2">
                           <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
@@ -5457,9 +5539,9 @@ export default function DriverPlanningDashboard() {
                   <Tooltip
                     permanent={isSelected}
                     direction="top"
-                    offset={[0, -35]}
+                    offset={isSelected ? [0, -56] : [0, -35]}
                     className={isSelected
-                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-sm !font-bold !px-3 !py-1.5 !rounded !shadow-lg !border-2"
                       : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
                     }
                   >
@@ -5851,9 +5933,9 @@ export default function DriverPlanningDashboard() {
                   <Tooltip
                     permanent={isSelected}
                     direction="top"
-                    offset={[0, -35]}
+                    offset={isSelected ? [0, -56] : [0, -35]}
                     className={isSelected
-                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-[11px] !font-semibold !px-2 !py-1 !rounded !shadow-md"
+                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-sm !font-bold !px-3 !py-1.5 !rounded !shadow-lg !border-2"
                       : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
                     }
                   >

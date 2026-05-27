@@ -73,7 +73,7 @@ const DRAFT_STORAGE_KEY = 'tsp-collection-form-draft';
 interface DraftFormData {
   date: string;
   location: string;
-  groupCollections: Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>;
+  groupCollections: Array<{ name: string; count: number; deli?: number; pbj?: number; generic?: number }>;
   newGroupName: string;
   newGroupCount: number;
   totalMode: 'simple' | 'detailed';
@@ -139,7 +139,7 @@ export default function CompactCollectionForm({
   const [date, setDate] = useState(() => savedDraft.current?.date || formatLocalDate(new Date()));
   const [location, setLocation] = useState(() => savedDraft.current?.location || '');
   const [groupCollections, setGroupCollections] = useState<
-    Array<{ name: string; count: number; deli?: number; pbj?: number; other?: number }>
+    Array<{ name: string; count: number; deli?: number; pbj?: number; generic?: number }>
   >(() => savedDraft.current?.groupCollections || []);
   const [newGroupName, setNewGroupName] = useState(() => savedDraft.current?.newGroupName || '');
   const [newGroupCount, setNewGroupCount] = useState(() => savedDraft.current?.newGroupCount || 0);
@@ -355,16 +355,16 @@ export default function CompactCollectionForm({
     }
 
     if (newGroupName && newGroupCount > 0) {
-      const newGroup: { name: string; count: number; deli?: number; pbj?: number; other?: number } = {
+      const newGroup: { name: string; count: number; deli?: number; pbj?: number; generic?: number } = {
         name: newGroupName,
         count: Number(newGroupCount),
       };
 
       // Only include breakdown if provided
       if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0)) {
+        newGroup.generic = newGroupOther;
         newGroup.deli = newGroupDeli;
         newGroup.pbj = newGroupPbj;
-        newGroup.other = newGroupOther;
       }
 
       setGroupCollections([...groupCollections, newGroup]);
@@ -398,16 +398,16 @@ export default function CompactCollectionForm({
       }
 
       // Auto-add the pending group
-      const pendingGroup: { name: string; count: number; deli?: number; pbj?: number; other?: number } = {
+      const pendingGroup: { name: string; count: number; deli?: number; pbj?: number; generic?: number } = {
         name: newGroupName.trim(),
         count: Number(newGroupCount),
       };
 
       // Only include breakdown if provided
       if (showGroupBreakdown && (newGroupDeli > 0 || newGroupPbj > 0 || newGroupOther > 0)) {
+        pendingGroup.generic = newGroupOther;
         pendingGroup.deli = newGroupDeli;
         pendingGroup.pbj = newGroupPbj;
-        pendingGroup.other = newGroupOther;
       }
 
       finalGroupCollections.push(pendingGroup);
@@ -432,7 +432,7 @@ export default function CompactCollectionForm({
     if (totalMode === 'detailed' && hasDetails) {
       if (details.deli) submissionData.individualDeli = parseInt(details.deli);
       if (details.pbj) submissionData.individualPbj = parseInt(details.pbj);
-      if (details.other) submissionData.individualOther = parseInt(details.other);
+      if (details.other) submissionData.individualGeneric = parseInt(details.other);
     }
 
     // Include ALL groups in the submission (unlimited groups)
@@ -1264,12 +1264,12 @@ export default function CompactCollectionForm({
                     <div className="text-3xl md:text-2xl font-bold text-gray-800">
                       {group.count}
                     </div>
-                    {(group.deli || group.pbj || group.other) && (
+                    {(group.deli || group.pbj || group.generic) && (
                       <div className="text-xs text-gray-600 mt-1">
                         {[
                           group.deli && `Deli: ${group.deli}`,
                           group.pbj && `PBJ: ${group.pbj}`,
-                          group.other && `Generic: ${group.other}`
+                          group.generic && `Generic: ${group.generic}`
                         ].filter(Boolean).join(' • ')}
                       </div>
                     )}
