@@ -1382,7 +1382,7 @@ export default function EventImpactReports() {
               {/* Calendar Date Pickers */}
               <div className="flex flex-wrap gap-3 items-end">
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">From</Label>
+                  <Label className="text-sm font-medium">From</Label>
                   <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -1415,7 +1415,7 @@ export default function EventImpactReports() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">To</Label>
+                  <Label className="text-sm font-medium">To</Label>
                   <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                     <PopoverTrigger asChild>
                       <Button
@@ -1736,14 +1736,14 @@ export default function EventImpactReports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
+              <div className="text-2xl font-bold">
                 {processedData?.totalEvents || 0}
               </div>
-              <div className="flex gap-2 mt-2 text-sm text-white/80">
-                <span className="bg-green-500/30 px-2 py-0.5 rounded">
+              <div className="flex gap-2 mt-2 text-base text-white/85">
+                <span className="bg-green-500/30 px-2 py-0.5 rounded text-sm">
                   {processedData?.totalCompleted || 0} completed
                 </span>
-                <span className="bg-blue-500/30 px-2 py-0.5 rounded">
+                <span className="bg-blue-500/30 px-2 py-0.5 rounded text-sm">
                   {processedData?.totalScheduled || 0} scheduled
                 </span>
               </div>
@@ -1758,10 +1758,10 @@ export default function EventImpactReports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
+              <div className="text-2xl font-bold">
                 {processedData?.totalSandwiches?.toLocaleString() || 0}
               </div>
-              <p className="text-white/80 text-sm mt-1">
+              <p className="text-white/85 text-base mt-1">
                 ~{processedData?.avgSandwichesPerEvent || 0} avg per event
               </p>
             </CardContent>
@@ -1775,17 +1775,16 @@ export default function EventImpactReports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
+              <div className="text-2xl font-bold">
                 {processedData?.uniqueOrganizations || 0}
               </div>
-              <p className="text-white/80 text-sm mt-1">
+              <p className="text-white/85 text-base mt-1">
                 Unique organizations served
               </p>
             </CardContent>
           </Card>
 
-          {/* NOTE: Ensure 'brand-burgundy-dark' is defined in tailwind.config.ts as '#8B1535' */}
-          <Card className="bg-gradient-to-r from-brand-burgundy to-brand-burgundy-dark text-white">
+          <Card className="bg-brand-burgundy text-white">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg font-medium flex items-center">
                 <Users className="w-5 h-5 mr-2" />
@@ -1793,10 +1792,10 @@ export default function EventImpactReports() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">
+              <div className="text-2xl font-bold">
                 {processedData?.totalVolunteers?.toLocaleString() || 0}
               </div>
-              <p className="text-white/80 text-sm mt-1">
+              <p className="text-white/85 text-base mt-1">
                 Total volunteers engaged
               </p>
             </CardContent>
