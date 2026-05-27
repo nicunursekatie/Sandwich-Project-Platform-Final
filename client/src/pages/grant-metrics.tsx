@@ -844,6 +844,20 @@ export default function GrantMetrics() {
     return false; // Don't include incomplete current year
   });
 
+  // Peak year over *completed* years only. metrics.peakYear treats all
+  // yearTotals equally and will pick the in-progress year if its YTD total
+  // already exceeds prior years — which would make annual callouts
+  // ("Food value delivered in 2026", "Sandwiches in 2026 - our best year")
+  // compare a partial year against full years. Anywhere we want a year-level
+  // peak to *mean* a full year, use this instead.
+  const completeYearPeak = completeYears.reduce(
+    (max, year) => {
+      const total = metrics.yearTotals[year] || 0;
+      return total > max.total ? { year, total } : max;
+    },
+    { year: 0, total: 0 }
+  );
+
   // Prepare chart data from complete years only
   const yearChartData = completeYears.map(year => ({
     year: year.toString(),
@@ -1068,10 +1082,12 @@ export default function GrantMetrics() {
             </CardHeader>
             <CardContent>
               <div className="text-5xl font-black mb-2">
-                {metrics.peakYear.total.toLocaleString()}
+                {completeYearPeak.total > 0 ? completeYearPeak.total.toLocaleString() : '—'}
               </div>
               <p className="text-white/90 text-base font-medium">
-                Sandwiches in {metrics.peakYear.year} - our best year yet
+                {completeYearPeak.year > 0
+                  ? `Sandwiches in ${completeYearPeak.year} — our best complete year`
+                  : 'Awaiting first complete year of data'}
               </p>
             </CardContent>
           </Card>
@@ -1441,9 +1457,11 @@ export default function GrantMetrics() {
 
         {/* Inflation Resilience Callout */}
         {(() => {
+          // Use the complete-year peak so we don't compare a full 2022 to a
+          // YTD partial of the current year.
           const baseYearTotal = metrics.yearTotals[2022] || 0;
-          const peakYearTotal = metrics.peakYear.total || 0;
-          const peakYear = metrics.peakYear.year;
+          const peakYearTotal = completeYearPeak.total;
+          const peakYear = completeYearPeak.year;
           const realGrowthPct = baseYearTotal > 0
             ? Math.round(((peakYearTotal - baseYearTotal) / baseYearTotal) * 100)
             : 0;
@@ -1547,12 +1565,11 @@ export default function GrantMetrics() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
                 {(() => {
-                  // Estimate annual food value from the peak year (most
-                  // representative of current scale). Band the per-sandwich
-                  // cost by ±10% off the same costPerSandwich constant used
-                  // elsewhere, so this card can't drift when that estimate
-                  // is updated.
-                  const peakYearTotal = metrics.peakYear.total || 0;
+                  // Use the peak *complete* year so we never label a YTD
+                  // partial-year total as the year's food value. Band the
+                  // per-sandwich cost by ±10% off costPerSandwich so this
+                  // card can't drift when that estimate is updated.
+                  const peakYearTotal = completeYearPeak.total;
                   const cost = allTimeCostMetrics.costPerSandwich;
                   const costLow = cost * 0.9;
                   const costHigh = cost * 1.1;
@@ -1569,7 +1586,9 @@ export default function GrantMetrics() {
                         {display}
                       </div>
                       <p className="text-sm text-gray-700 font-medium">
-                        Food value delivered in {metrics.peakYear.year}
+                        {completeYearPeak.year > 0
+                          ? `Food value delivered in ${completeYearPeak.year}`
+                          : 'Food value (peak complete year)'}
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
                         At ~${costLow.toFixed(2)}–${costHigh.toFixed(2)} per sandwich (volunteer-supplied ingredients)
