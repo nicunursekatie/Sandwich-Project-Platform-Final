@@ -38,7 +38,7 @@ const CATEGORIES = [
   { id: 'brand_marketing', label: 'Brand & Marketing' },
   { id: 'operations_safety', label: 'Operations & Safety' },
   { id: 'forms_templates', label: 'Forms & Templates' },
-  { id: 'training', label: 'Training Materials' },
+  { id: 'toolkit', label: 'Toolkit' },
   { id: 'master_documents', label: 'Master Documents' },
 ];
 
@@ -83,8 +83,25 @@ export function ResourceAdminModal({
         pinnedOrder: existingResource.resource.pinnedOrder,
         tags: existingResource.tags.map((t: any) => t.id),
       });
+    } else {
+      // When the modal is reopened for "Add" after being used to edit,
+      // clear any leftover values from the previous edit session.
+      setFormData({
+        title: '',
+        description: '',
+        type: 'link',
+        category: 'legal_governance',
+        url: '',
+        file: null,
+        icon: '',
+        iconColor: '',
+        isPinnedGlobal: false,
+        pinnedOrder: null,
+        tags: [],
+      });
     }
-  }, [existingResource]);
+    setError(null);
+  }, [existingResource, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

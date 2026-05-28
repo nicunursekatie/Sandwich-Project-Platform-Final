@@ -28,10 +28,17 @@ const getUser = (req: AuthenticatedRequest) => {
   return req.user || req.session?.user;
 };
 
-// Helper function to check if user is admin
+// Helper function to check if user is admin.
+// Admin and super_admin both get full management access; anyone else needs the
+// explicit 'manage_resources' permission.
 const isAdmin = (req: AuthenticatedRequest): boolean => {
   const user = getUser(req);
-  return user?.role === 'admin' || user?.permissions?.includes('manage_resources') || false;
+  return (
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.permissions?.includes('manage_resources') ||
+    false
+  );
 };
 
 // GET /api/resources - Get all resources with filtering and search

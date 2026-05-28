@@ -605,8 +605,12 @@ function SandwichGuideEditDialog({
 
 export function Resources() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.permissions?.includes('manage_resources');
+  const isAdmin =
+    user?.role === 'admin' ||
+    user?.role === 'super_admin' ||
+    user?.permissions?.includes('manage_resources');
   const { track } = useOnboardingTracker();
+  const { toast } = useToast();
 
   const [resources, setResources] = useState<Resource[]>([]);
   const [favorites, setFavorites] = useState<Resource[]>([]);
@@ -621,6 +625,7 @@ export function Resources() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingResource, setEditingResource] = useState<Resource | null>(null);
 
   // Track onboarding challenge on page load
   useEffect(() => {
@@ -701,6 +706,39 @@ export function Resources() {
       });
     } catch (error) {
       console.error('Error tracking access:', error);
+    }
+  };
+
+  // Delete (soft-delete) a resource — admin only
+  const handleDeleteResource = async (resource: Resource) => {
+    const title = resource.resource.title;
+    if (
+      !window.confirm(
+        `Delete "${title}"? It will be hidden from this page for everyone. This can be undone by an admin.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/resources/${resource.resource.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete resource');
+      }
+      toast({
+        title: 'Resource deleted',
+        description: `"${title}" has been removed.`,
+      });
+      await loadResources();
+    } catch (err) {
+      toast({
+        title: 'Delete failed',
+        description: err instanceof Error ? err.message : 'Could not delete resource',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -935,6 +973,27 @@ export function Resources() {
                 className={`w-4 h-4 ${item.isFavorite ? 'fill-[#FBAD3F]' : ''}`}
               />
             </button>
+
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => setEditingResource(item)}
+                  className="px-3 py-2 rounded-lg text-sm bg-gray-100 text-[#236383] hover:bg-[#236383]/10 transition-colors"
+                  title="Edit resource"
+                  data-testid={`resource-edit-${item.resource.id}`}
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteResource(item)}
+                  className="px-3 py-2 rounded-lg text-sm bg-gray-100 text-red-600 hover:bg-red-50 transition-colors"
+                  title="Delete resource"
+                  data-testid={`resource-delete-${item.resource.id}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -994,12 +1053,16 @@ export function Resources() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Admin Modal */}
+      {/* Admin Modal — handles both "Add" and "Edit" */}
       <ResourceAdminModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        isOpen={showAddModal || editingResource !== null}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingResource(null);
+        }}
         onSuccess={loadResources}
         availableTags={tags}
+        existingResource={editingResource ?? undefined}
       />
 
       <div className="max-w-7xl mx-auto">
