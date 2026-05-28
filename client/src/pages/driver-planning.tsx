@@ -517,6 +517,34 @@ const formatTime12Hour = (time: string | null): string => {
   }
 };
 
+const formatSandwichType = (type: string | null | undefined): string => {
+  const normalized = (type || '').trim().toLowerCase();
+  if (!normalized) return 'type not set';
+  if (normalized === 'pbj' || normalized === 'pb&j' || normalized.includes('peanut')) return 'PB&J';
+  if (normalized.includes('deli')) return 'deli';
+  return type!.trim();
+};
+
+const formatSandwichBreakdown = (sandwichTypes: EventMapData['sandwichTypes']): string => {
+  if (!Array.isArray(sandwichTypes) || sandwichTypes.length === 0) return '';
+
+  return sandwichTypes
+    .filter((item) => item && (item.quantity || item.type))
+    .map((item) => {
+      const quantity = Number(item.quantity || 0);
+      const type = formatSandwichType(item.type);
+      return quantity > 0 ? `${quantity} ${type}` : type;
+    })
+    .join(', ');
+};
+
+const formatSandwichSummary = (event: Pick<EventMapData, 'estimatedSandwichCount' | 'sandwichTypes'>): string => {
+  const count = event.estimatedSandwichCount || 0;
+  const breakdown = formatSandwichBreakdown(event.sandwichTypes);
+  const countText = count > 0 ? `~${count} sandwiches` : 'Sandwich count not set';
+  return breakdown ? `${countText} (${breakdown})` : `${countText} (type not set)`;
+};
+
 // Extract city from address
 const extractCityFromAddress = (address: string | null): string | null => {
   if (!address) return null;
@@ -946,7 +974,9 @@ const generateDriverSMS = (event: EventMapData, driver: SMSDriver): string => {
   const time = event.pickupTime || event.eventStartTime;
   const formattedTime = time ? formatTime12Hour(time) : 'TBD';
   const location = event.eventAddress || 'TBD';
-  const sandwichCount = event.estimatedSandwichCount || 'TBD';
+  const sandwichCount = event.estimatedSandwichCount
+    ? formatSandwichSummary(event)
+    : 'TBD';
   const firstName = driver.name?.split(' ')[0] || 'there';
 
   return `Hi ${firstName}! We have a sandwich event coming up and would love your help! 🥪
@@ -954,7 +984,7 @@ const generateDriverSMS = (event: EventMapData, driver: SMSDriver): string => {
 📅 ${formattedDate}
 ⏰ Pickup around ${formattedTime}
 📍 ${location}
-🥪 ~${sandwichCount} sandwiches
+🥪 ${sandwichCount}
 
 Would you be available to help with delivery? Let me know and I'll send you the details!
 
@@ -1039,6 +1069,25 @@ export default function DriverPlanningDashboard() {
   }, [layerVisibility]);
   const toggleLayer = (key: MapLayerKey) =>
     setLayerVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const LayerToggleCheck = ({ checked, compact = false }: { checked: boolean; compact?: boolean }) => (
+    <span
+      className={`flex flex-shrink-0 items-center justify-center rounded border ${
+        compact ? 'h-3 w-3' : 'h-4 w-4'
+      } ${
+        checked
+          ? 'border-[#007E8C] bg-[#007E8C] text-white'
+          : 'border-gray-300 bg-white text-gray-400'
+      }`}
+      aria-hidden="true"
+    >
+      {checked ? (
+        <Check className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+      ) : (
+        <EyeOff className={compact ? 'h-2 w-2' : 'h-2.5 w-2.5'} />
+      )}
+    </span>
+  );
 
   // Quick Location Lookup state
   const [customLocation, setCustomLocation] = useState<{
@@ -2921,12 +2970,7 @@ export default function DriverPlanningDashboard() {
                         <div className="flex items-center gap-1.5 text-xs text-gray-600">
                           <Package className="w-3.5 h-3.5 flex-shrink-0" />
                           <span className={event.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
-                            ~{event.estimatedSandwichCount} sandwiches
-                            {event.sandwichTypes && event.sandwichTypes.length > 0 && (
-                              <span className="text-gray-500 font-normal ml-1">
-                                ({event.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
-                              </span>
-                            )}
+                            {formatSandwichSummary(event)}
                           </span>
                         </div>
                       )}
@@ -3070,6 +3114,18 @@ export default function DriverPlanningDashboard() {
                             <span className="text-gray-600">{getDesignatedRecipientLabel(event)}</span>
                           </div>
                         )}
+                        {event.eventAddress && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Address:</span>{' '}
+                            <span className="text-gray-600">{event.eventAddress}</span>
+                          </div>
+                        )}
+                        {event.pickupTime && (
+                          <div className="text-[11px] text-gray-700">
+                            <span className="font-semibold">Pickup:</span>{' '}
+                            <span className="text-gray-600">{formatTime12Hour(event.pickupTime)}</span>
+                          </div>
+                        )}
                         {!getTspContactLabel(event) && !getAssignedDriversLabel(event) && !getAssignedSpeakersLabel(event) && !getAssignedVolunteersLabel(event) && !getDesignatedRecipientLabel(event) && (
                           <div className="text-[11px] text-gray-500">
                             No assignments yet.
@@ -3200,16 +3256,23 @@ export default function DriverPlanningDashboard() {
                 >
                   <Tooltip
                     permanent={isSelected}
-                    direction="top"
-                    offset={isSelected ? [0, -56] : [0, -35]}
+                    direction={isSelected ? 'right' : 'top'}
+                    offset={isSelected ? [26, -28] : [0, -35]}
                     className={isSelected
-                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-sm !font-bold !px-3 !py-1.5 !rounded !shadow-lg !border-2"
+                      ? "!bg-white !border-[#007E8C] !text-gray-900 !text-sm !font-semibold !px-3 !py-2 !rounded-md !shadow-xl !border-2"
                       : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
                     }
                   >
-                    <span className="truncate max-w-[120px] block">
-                      {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
-                    </span>
+                    {isSelected ? (
+                      <span className="block max-w-[260px] leading-tight whitespace-normal">
+                        <span className="block text-[10px] uppercase tracking-wide text-[#007E8C] font-bold">Selected Event</span>
+                        <span className="block break-words">{event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}</span>
+                      </span>
+                    ) : (
+                      <span className="truncate max-w-[120px] block">
+                        {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
+                      </span>
+                    )}
                   </Tooltip>
                   <Popup>
                     <div className="p-2 min-w-[200px]">
@@ -3217,12 +3280,7 @@ export default function DriverPlanningDashboard() {
                       <p className="text-sm text-gray-600">{event.eventAddress}</p>
                       {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                         <p className="text-sm" style={event.estimatedSandwichCount > 400 ? { color: '#a31c41', fontWeight: 600 } : undefined}>
-                          ~{event.estimatedSandwichCount} sandwiches
-                          {event.sandwichTypes && event.sandwichTypes.length > 0 && (
-                            <span className="text-gray-500 font-normal block text-xs">
-                              {event.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')}
-                            </span>
-                          )}
+                          {formatSandwichSummary(event)}
                         </p>
                       )}
                     </div>
@@ -3892,9 +3950,9 @@ export default function DriverPlanningDashboard() {
 
           </div>
 
-          <div className="border-t bg-white px-4 py-3">
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="bg-white rounded-lg shadow-sm border inline-block" data-testid="driver-planning-legend">
+          <div className="border-t bg-white px-4 py-3 overflow-x-auto">
+            <div className="flex flex-nowrap items-start gap-3 min-w-max">
+              <div className="bg-white rounded-lg shadow-sm border inline-block flex-shrink-0" data-testid="driver-planning-legend">
                 <button
                   onClick={() => setDesktopLegendCollapsed(!desktopLegendCollapsed)}
                   className="flex items-center gap-1.5 w-full p-2 text-xs font-semibold hover:bg-gray-50 rounded-lg"
@@ -3910,16 +3968,18 @@ export default function DriverPlanningDashboard() {
                 </button>
                 {!desktopLegendCollapsed && (
                   <div className="space-y-1.5 text-xs px-2 pb-2">
-                    {/* Each legend row is also a layer-visibility toggle.
-                        Click the row → hide/show that category on the map.
-                        Hidden state is shown by reduced opacity + a (hidden) suffix. */}
+                    <p className="text-[11px] leading-tight text-gray-500 max-w-[220px]">
+                      Checked items are visible. Click a row to show or hide those pins.
+                    </p>
                     <button
                       type="button"
                       onClick={() => toggleLayer('events')}
-                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.events ? '' : 'opacity-40'}`}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.events ? '' : 'opacity-60'}`}
                       title={layerVisibility.events ? 'Click to hide Event pins' : 'Click to show Event pins'}
+                      aria-pressed={layerVisibility.events}
                       data-testid="toggle-layer-events"
                     >
+                      <LayerToggleCheck checked={layerVisibility.events} />
                       <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
                         <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
                       </svg>
@@ -3938,52 +3998,64 @@ export default function DriverPlanningDashboard() {
                         <button
                           type="button"
                           onClick={() => toggleLayer('hosts')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.hosts ? '' : 'opacity-40'}`}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.hosts ? '' : 'opacity-60'}`}
                           title={layerVisibility.hosts ? 'Click to hide Host pins' : 'Click to show Host pins'}
+                          aria-pressed={layerVisibility.hosts}
                           data-testid="toggle-layer-hosts"
                         >
+                          <LayerToggleCheck checked={layerVisibility.hosts} />
                           <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
                           <span>Host (circle){layerVisibility.hosts ? '' : ' (hidden)'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleLayer('recipients')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.recipients ? '' : 'opacity-40'}`}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.recipients ? '' : 'opacity-60'}`}
                           title={layerVisibility.recipients ? 'Click to hide Recipient pins' : 'Click to show Recipient pins'}
+                          aria-pressed={layerVisibility.recipients}
                           data-testid="toggle-layer-recipients"
                         >
+                          <LayerToggleCheck checked={layerVisibility.recipients} />
                           <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
                           <span>Recipient (diamond){layerVisibility.recipients ? '' : ' (hidden)'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => toggleLayer('drivers')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${layerVisibility.drivers ? '' : 'opacity-40'}`}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.drivers ? '' : 'opacity-60'}`}
                           title={layerVisibility.drivers ? 'Click to hide Driver pins' : 'Click to show Driver pins'}
+                          aria-pressed={layerVisibility.drivers}
                           data-testid="toggle-layer-drivers"
                         >
+                          <LayerToggleCheck checked={layerVisibility.drivers} />
                           <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
                           <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowVolunteersSpeakers((v) => !v)}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-40'}`}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
                           title={showVolunteersSpeakers ? 'Click to hide Volunteer/Speaker pins' : 'Click to show Volunteer/Speaker pins'}
+                          aria-pressed={showVolunteersSpeakers}
                           data-testid="toggle-layer-volunteers"
                         >
-                          <div className="w-3 h-3 rotate-45 bg-purple-500 border border-white shadow-sm" />
-                          <span>Speakers/Volunteers{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                          <LayerToggleCheck checked={showVolunteersSpeakers} />
+                          <svg viewBox="0 0 24 24" className="w-4 h-4 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
+                          </svg>
+                          <span>Speakers/Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowTeamMembers((v) => !v)}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 transition-opacity ${showTeamMembers ? '' : 'opacity-40'}`}
+                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showTeamMembers ? '' : 'opacity-60'}`}
                           title={showTeamMembers ? 'Click to hide Team Member pins' : 'Click to show Team Member pins'}
+                          aria-pressed={showTeamMembers}
                           data-testid="toggle-layer-team-members"
                         >
-                          <div className="w-3 h-3 rounded-full bg-red-500 border border-white shadow-sm" />
-                          <span>Team Members{showTeamMembers ? '' : ' (hidden)'}</span>
+                          <LayerToggleCheck checked={showTeamMembers} />
+                          <div className="w-3.5 h-3.5 rounded-[4px] bg-red-500 border border-white shadow-sm" />
+                          <span>Team Members (rounded square){showTeamMembers ? '' : ' (hidden)'}</span>
                         </button>
                         <div className="flex items-center gap-2">
                           <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
@@ -3994,7 +4066,7 @@ export default function DriverPlanningDashboard() {
                         </div>
                         <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
                           <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-                          <span>Selected = orange</span>
+                          <span>Selected item = orange</span>
                         </div>
                       </>
                     )}
@@ -4002,115 +4074,8 @@ export default function DriverPlanningDashboard() {
                 )}
               </div>
 
-              {/* Selected Event Quick Details */}
-              {selectedEvent && selectedEvent.id !== -1 && (
-                <div className="bg-white rounded-lg shadow-sm border p-3 flex-1 min-w-[260px] max-w-[500px]">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h4 className="text-sm font-semibold text-gray-900 leading-tight">
-                      {selectedEvent.organizationName || 'Unknown'}
-                    </h4>
-                    <button
-                      onClick={() => { setSelectedEvent(null); clearTripPlanningState(); }}
-                      className="text-gray-400 hover:text-gray-600 p-0.5 hover:bg-gray-100 rounded flex-shrink-0"
-                      title="Deselect event"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
-                    {/* Date & Time */}
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      <span>
-                        {(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate)
-                          ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
-                          : 'No date'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                      <span>
-                        {selectedEvent.eventStartTime
-                          ? `${formatTime12Hour(selectedEvent.eventStartTime)}${selectedEvent.eventEndTime ? ` – ${formatTime12Hour(selectedEvent.eventEndTime)}` : ''}`
-                          : 'No time set'}
-                      </span>
-                    </div>
-                    {/* Address */}
-                    <div className="col-span-2 flex items-start gap-1.5 mt-0.5">
-                      <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-500 leading-tight">{selectedEvent.eventAddress || 'No address'}</span>
-                    </div>
-                    {/* Sandwiches */}
-                    {selectedEvent.estimatedSandwichCount && selectedEvent.estimatedSandwichCount > 0 && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Package className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span>~{selectedEvent.estimatedSandwichCount} sandwiches</span>
-                      </div>
-                    )}
-                    {/* Pickup time */}
-                    {selectedEvent.pickupTime && (
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <Truck className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span>Pickup: {formatTime12Hour(selectedEvent.pickupTime)}</span>
-                      </div>
-                    )}
-                  </div>
-                  {/* Staffing summary */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
-                    {selectedEvent.selfTransport ? (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Self-transport</Badge>
-                    ) : (
-                      <>
-                        {(() => {
-                          const driversNeeded = selectedEvent.driversNeeded || 0;
-                          const driversAssigned = getTotalDriverCount(selectedEvent);
-                          const fulfilled = driversAssigned >= driversNeeded;
-                          return driversNeeded > 0 ? (
-                            <Badge variant={fulfilled ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
-                              <Truck className="w-2.5 h-2.5 mr-0.5" />
-                              {driversAssigned}/{driversNeeded} drivers
-                            </Badge>
-                          ) : null;
-                        })()}
-                        {selectedEvent.vanDriverNeeded && (
-                          <Badge
-                            variant={selectedEvent.assignedVanDriverId || selectedEvent.isDhlVan ? 'default' : 'destructive'}
-                            className="text-[10px] px-1.5 py-0"
-                          >
-                            {selectedEvent.isDhlVan ? 'DHL Van' : selectedEvent.assignedVanDriverId ? 'Van assigned' : 'Van needed'}
-                          </Badge>
-                        )}
-                        {(() => {
-                          const needed = selectedEvent.speakersNeeded || 0;
-                          const assigned = getSpeakerCount(selectedEvent);
-                          return needed > 0 ? (
-                            <Badge variant={assigned >= needed ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
-                              <Megaphone className="w-2.5 h-2.5 mr-0.5" />
-                              {assigned}/{needed} spk
-                            </Badge>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const needed = selectedEvent.volunteersNeeded || 0;
-                          const assigned = getVolunteerCount(selectedEvent);
-                          return needed > 0 ? (
-                            <Badge variant={assigned >= needed ? 'default' : 'destructive'} className="text-[10px] px-1.5 py-0">
-                              <Users className="w-2.5 h-2.5 mr-0.5" />
-                              {assigned}/{needed} vol
-                            </Badge>
-                          ) : null;
-                        })()}
-                        {!selectedEvent.driversNeeded && !selectedEvent.vanDriverNeeded && !selectedEvent.speakersNeeded && !selectedEvent.volunteersNeeded && (
-                          <span className="text-[10px] text-gray-400">No staffing requirements set</span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {fullTripRoute && selectedDriver && selectedDestination && (
-                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px]">
+                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px] flex-shrink-0">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-semibold text-gray-800">Full Trip Route</span>
                     <button
@@ -4245,7 +4210,7 @@ export default function DriverPlanningDashboard() {
               )}
 
               {((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute && (
-                <div className={`bg-white rounded-xl shadow-sm border transition-all duration-200 ${tripPlanningCollapsed ? 'p-2 w-auto' : 'min-w-[280px] p-4'}`}>
+                <div className={`bg-white rounded-xl shadow-sm border flex-shrink-0 transition-all duration-200 ${tripPlanningCollapsed ? 'p-2 w-auto' : 'min-w-[280px] p-4'}`}>
                   {tripPlanningCollapsed ? (
                     /* Collapsed state - just show a small expand button */
                     <button
@@ -4388,7 +4353,7 @@ export default function DriverPlanningDashboard() {
               )}
 
               {drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination && (
-                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[220px]">
+                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[220px] flex-shrink-0">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-semibold text-gray-800">Route Preview</span>
                     <button
@@ -5407,6 +5372,17 @@ export default function DriverPlanningDashboard() {
                         <Calendar className="w-3 h-3" />
                         {eventDate ? format(parseLocalDate(eventDate), 'MMM d') : 'No date'}
                       </div>
+                      {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
+                        <div className="flex items-start gap-1 text-[11px] text-gray-600">
+                          <Package className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          <span
+                            className={event.estimatedSandwichCount > 400 ? 'font-semibold' : ''}
+                            style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}
+                          >
+                            {formatSandwichSummary(event)}
+                          </span>
+                        </div>
+                      )}
                       {event.selfTransport ? (
                         <Badge variant="secondary" className="text-[10px] px-1 py-0">
                           Self
@@ -5467,6 +5443,18 @@ export default function DriverPlanningDashboard() {
                             <div className="text-[11px] text-gray-700">
                               <span className="font-semibold">Recipient:</span>{' '}
                               <span className="text-gray-600">{getDesignatedRecipientLabel(event)}</span>
+                            </div>
+                          )}
+                          {event.eventAddress && (
+                            <div className="text-[11px] text-gray-700">
+                              <span className="font-semibold">Address:</span>{' '}
+                              <span className="text-gray-600">{event.eventAddress}</span>
+                            </div>
+                          )}
+                          {event.pickupTime && (
+                            <div className="text-[11px] text-gray-700">
+                              <span className="font-semibold">Pickup:</span>{' '}
+                              <span className="text-gray-600">{formatTime12Hour(event.pickupTime)}</span>
                             </div>
                           )}
                         </div>
@@ -5531,16 +5519,23 @@ export default function DriverPlanningDashboard() {
                 >
                   <Tooltip
                     permanent={isSelected}
-                    direction="top"
-                    offset={isSelected ? [0, -56] : [0, -35]}
+                    direction={isSelected ? 'right' : 'top'}
+                    offset={isSelected ? [26, -28] : [0, -35]}
                     className={isSelected
-                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-sm !font-bold !px-3 !py-1.5 !rounded !shadow-lg !border-2"
+                      ? "!bg-white !border-[#007E8C] !text-gray-900 !text-sm !font-semibold !px-3 !py-2 !rounded-md !shadow-xl !border-2"
                       : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
                     }
                   >
-                    <span className="truncate max-w-[120px] block">
-                      {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
-                    </span>
+                    {isSelected ? (
+                      <span className="block max-w-[220px] leading-tight whitespace-normal">
+                        <span className="block text-[10px] uppercase tracking-wide text-[#007E8C] font-bold">Selected Event</span>
+                        <span className="block break-words">{event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}</span>
+                      </span>
+                    ) : (
+                      <span className="truncate max-w-[120px] block">
+                        {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
+                      </span>
+                    )}
                   </Tooltip>
                   <Popup>
                     <div className="p-2 min-w-[180px]">
@@ -5925,16 +5920,23 @@ export default function DriverPlanningDashboard() {
                 >
                   <Tooltip
                     permanent={isSelected}
-                    direction="top"
-                    offset={isSelected ? [0, -56] : [0, -35]}
+                    direction={isSelected ? 'right' : 'top'}
+                    offset={isSelected ? [24, -28] : [0, -35]}
                     className={isSelected
-                      ? "!bg-[#007E8C] !border-[#007E8C] !text-white !text-sm !font-bold !px-3 !py-1.5 !rounded !shadow-lg !border-2"
+                      ? "!bg-white !border-[#007E8C] !text-gray-900 !text-xs !font-semibold !px-2.5 !py-2 !rounded-md !shadow-xl !border-2"
                       : "!bg-white !border-gray-300 !text-gray-800 !text-[10px] !font-medium !px-1.5 !py-0.5 !rounded !shadow-sm"
                     }
                   >
-                    <span className="truncate max-w-[100px] block">
-                      {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
-                    </span>
+                    {isSelected ? (
+                      <span className="block max-w-[170px] leading-tight whitespace-normal">
+                        <span className="block text-[9px] uppercase tracking-wide text-[#007E8C] font-bold">Selected Event</span>
+                        <span className="block break-words">{event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}</span>
+                      </span>
+                    ) : (
+                      <span className="truncate max-w-[100px] block">
+                        {event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}
+                      </span>
+                    )}
                   </Tooltip>
                   <Popup>
                     <div className="p-2">
@@ -6171,14 +6173,18 @@ export default function DriverPlanningDashboard() {
               </svg>
             </button>
             {!mobileLegendCollapsed && (
-              <div className="space-y-0.5 text-[10px] px-2 pb-2">
-                {/* Each row also toggles its layer's visibility on the map. */}
+              <div className="space-y-1 text-[10px] px-2 pb-2">
+                <p className="max-w-[160px] leading-tight text-gray-500">
+                  Checked pins are visible. Tap a row to show or hide.
+                </p>
                 <button
                   type="button"
                   onClick={() => toggleLayer('events')}
-                  className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.events ? '' : 'opacity-40'}`}
+                  className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 text-left transition-opacity ${layerVisibility.events ? '' : 'opacity-60'}`}
+                  aria-pressed={layerVisibility.events}
                   data-testid="toggle-layer-events-mobile"
                 >
+                  <LayerToggleCheck checked={layerVisibility.events} compact />
                   <svg viewBox="0 0 12 18" className="w-2 h-3" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
                   </svg>
@@ -6195,33 +6201,63 @@ export default function DriverPlanningDashboard() {
                     <button
                       type="button"
                       onClick={() => toggleLayer('hosts')}
-                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.hosts ? '' : 'opacity-40'}`}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 text-left transition-opacity ${layerVisibility.hosts ? '' : 'opacity-60'}`}
+                      aria-pressed={layerVisibility.hosts}
                       data-testid="toggle-layer-hosts-mobile"
                     >
+                      <LayerToggleCheck checked={layerVisibility.hosts} compact />
                       <div className="w-2 h-2 rounded-full bg-green-500 border border-white" />
                       <span>Host{layerVisibility.hosts ? '' : ' (hidden)'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleLayer('recipients')}
-                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.recipients ? '' : 'opacity-40'}`}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 text-left transition-opacity ${layerVisibility.recipients ? '' : 'opacity-60'}`}
+                      aria-pressed={layerVisibility.recipients}
                       data-testid="toggle-layer-recipients-mobile"
                     >
+                      <LayerToggleCheck checked={layerVisibility.recipients} compact />
                       <div className="w-2 h-2 bg-purple-500 border border-white rotate-45" style={{ borderRadius: '1px' }} />
                       <span>Recipient{layerVisibility.recipients ? '' : ' (hidden)'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => toggleLayer('drivers')}
-                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 -mx-1 transition-opacity ${layerVisibility.drivers ? '' : 'opacity-40'}`}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 text-left transition-opacity ${layerVisibility.drivers ? '' : 'opacity-60'}`}
+                      aria-pressed={layerVisibility.drivers}
                       data-testid="toggle-layer-drivers-mobile"
                     >
+                      <LayerToggleCheck checked={layerVisibility.drivers} compact />
                       <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400" />
                       <span>Driver{layerVisibility.drivers ? '' : ' (hidden)'}</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowVolunteersSpeakers((v) => !v)}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
+                      aria-pressed={showVolunteersSpeakers}
+                      data-testid="toggle-layer-volunteers-mobile"
+                    >
+                      <LayerToggleCheck checked={showVolunteersSpeakers} compact />
+                      <svg viewBox="0 0 24 24" className="w-3 h-3 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
+                      </svg>
+                      <span>Speaker/Volunteer{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTeamMembers((v) => !v)}
+                      className={`flex items-center gap-1 w-full hover:bg-gray-50 rounded px-1 py-0.5 -mx-1 text-left transition-opacity ${showTeamMembers ? '' : 'opacity-60'}`}
+                      aria-pressed={showTeamMembers}
+                      data-testid="toggle-layer-team-members-mobile"
+                    >
+                      <LayerToggleCheck checked={showTeamMembers} compact />
+                      <div className="w-2.5 h-2.5 rounded-[3px] bg-red-500 border border-white shadow-sm" />
+                      <span>Team Member{showTeamMembers ? '' : ' (hidden)'}</span>
+                    </button>
                     <div className="flex items-center gap-1 pt-0.5 border-t border-gray-200 mt-0.5">
                       <div className="w-2 h-2 rounded-full bg-orange-500 border border-white" />
-                      <span>Selected = orange</span>
+                      <span>Selected item = orange</span>
                     </div>
                   </>
                 )}
@@ -6440,12 +6476,7 @@ export default function DriverPlanningDashboard() {
                         <div className="flex items-center gap-2 text-sm">
                           <Package className="w-4 h-4 text-gray-500 flex-shrink-0" />
                           <span className={selectedEvent.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={selectedEvent.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
-                            ~{selectedEvent.estimatedSandwichCount} sandwiches
-                            {selectedEvent.sandwichTypes && selectedEvent.sandwichTypes.length > 0 && (
-                              <span className="text-gray-500 font-normal ml-1">
-                                ({selectedEvent.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
-                              </span>
-                            )}
+                            {formatSandwichSummary(selectedEvent)}
                           </span>
                         </div>
                       )}
@@ -6814,12 +6845,7 @@ export default function DriverPlanningDashboard() {
                               )}
                               {event.estimatedSandwichCount && event.estimatedSandwichCount > 0 && (
                                 <span className={`text-xs ${event.estimatedSandwichCount > 400 ? 'font-semibold' : 'text-gray-500'}`} style={event.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
-                                  ~{event.estimatedSandwichCount} sandwiches
-                                  {event.sandwichTypes && event.sandwichTypes.length > 0 && (
-                                    <span className="text-gray-400 font-normal ml-1">
-                                      ({event.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
-                                    </span>
-                                  )}
+                                  {formatSandwichSummary(event)}
                                 </span>
                               )}
                             </div>
@@ -6903,12 +6929,7 @@ export default function DriverPlanningDashboard() {
                     <div className="flex items-center gap-2 text-sm">
                       <Package className="w-4 h-4 text-gray-500" />
                       <span className={selectedEvent.estimatedSandwichCount > 400 ? 'font-semibold' : ''} style={selectedEvent.estimatedSandwichCount > 400 ? { color: '#a31c41' } : undefined}>
-                        ~{selectedEvent.estimatedSandwichCount} sandwiches
-                        {selectedEvent.sandwichTypes && selectedEvent.sandwichTypes.length > 0 && (
-                          <span className="text-gray-500 font-normal ml-1">
-                            ({selectedEvent.sandwichTypes.map(t => `${t.quantity} ${t.type}`).join(', ')})
-                          </span>
-                        )}
+                        {formatSandwichSummary(selectedEvent)}
                       </span>
                     </div>
                   )}

@@ -269,10 +269,13 @@ export default function LocationsMapView() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState(10);
+  // Pin visibility defaults to the active tab only — additional pin types can be
+  // layered on via the checkboxes. Switching tabs forces the new tab's type ON
+  // but doesn't clear any extras the user already toggled.
   const [showHosts, setShowHosts] = useState(true);
-  const [showRecipients, setShowRecipients] = useState(true);
-  const [showDrivers, setShowDrivers] = useState(true);
-  const [showVolunteers, setShowVolunteers] = useState(true);
+  const [showRecipients, setShowRecipients] = useState(false);
+  const [showDrivers, setShowDrivers] = useState(false);
+  const [showVolunteers, setShowVolunteers] = useState(false);
   const [searchedLocation, setSearchedLocation] = useState<SearchedLocation | null>(null);
   const [flyKey, setFlyKey] = useState(0);
 
@@ -720,7 +723,20 @@ export default function LocationsMapView() {
           `}
         >
           {isPanelOpen && (
-            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSearchTerm(''); }} className="flex flex-col h-full overflow-hidden">
+            <Tabs
+              value={activeTab}
+              onValueChange={(v) => {
+                setActiveTab(v);
+                setSearchTerm('');
+                // Force the new tab's pin type on; leave any other types the
+                // user already enabled untouched (additive behavior).
+                if (v === 'hosts') setShowHosts(true);
+                else if (v === 'recipients') setShowRecipients(true);
+                else if (v === 'drivers') setShowDrivers(true);
+                else if (v === 'volunteers') setShowVolunteers(true);
+              }}
+              className="flex flex-col h-full overflow-hidden"
+            >
               {/* Searched Location Info - show at top when search is active */}
               {searchedLocation && (
                 <div className="p-3 bg-green-50 border-b border-green-200 flex-shrink-0">
