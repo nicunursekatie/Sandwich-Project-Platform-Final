@@ -13,6 +13,28 @@
   max-height: none !important;
 }
 
+.leaflet-tooltip.volunteer-map-event-label {
+  border: 1px solid rgba(0, 126, 140, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(35, 99, 131, 0.18);
+  color: #1f2937;
+  font-size: 12px;
+  line-height: 1.15;
+  padding: 6px 8px;
+  white-space: normal;
+}
+
+.leaflet-popup.volunteer-map-event-popup .leaflet-popup-content {
+  margin: 14px;
+  width: 360px !important;
+}
+
+@media (max-width: 480px) {
+  .leaflet-popup.volunteer-map-event-popup .leaflet-popup-content {
+    width: calc(100vw - 3rem) !important;
+  }
+}
+
 /* Fix for horizontal scroll issues */
 html, body {
   @apply overflow-x-hidden;

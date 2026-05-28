@@ -14,7 +14,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isAfter, startOfDay } from 'date-fns';
@@ -187,6 +187,17 @@ interface AvailableEvent {
   selfTransport: boolean | null;
   pickupTime: string | null;
   eventNotes: string | null;
+}
+
+function getEventDateLabel(
+  event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
+  pattern = 'MMM d',
+): string {
+  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  if (!eventDate) return 'Date TBD';
+
+  const parsedDate = parseEventDate(eventDate);
+  return parsedDate ? format(parsedDate, pattern) : 'Date TBD';
 }
 
 interface MySignup {
@@ -455,156 +466,6 @@ function EventCard({
   );
 }
 
-// Compact event preview shown when a calendar chip or map pin is clicked.
-function CalendarEventPreview({
-  event,
-  onSignupClick,
-  canSelfSignup,
-  canAssignOthers,
-  onAssignClick,
-  distanceMiles,
-}: {
-  event: AvailableEvent;
-  onSignupClick: (eventId: number) => void;
-  canSelfSignup: boolean;
-  canAssignOthers: boolean;
-  onAssignClick: (eventId: number) => void;
-  distanceMiles?: number;
-}) {
-  const isCompleted = event.status === 'completed';
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
-  const formattedDate = eventDate
-    ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
-    : 'Date TBD';
-
-  const roleRow = (
-    show: boolean,
-    Icon: typeof Mic,
-    label: string,
-    unfilled: number,
-    colorClass: string,
-  ) => {
-    if (!show) return null;
-    const hasOpen = unfilled > 0;
-    return (
-      <div className="flex items-center gap-2 text-xs">
-        <Icon className={cn('w-3.5 h-3.5 shrink-0', colorClass)} />
-        <span className={hasOpen ? `${colorClass} font-semibold` : 'text-green-700'}>
-          {label} — {hasOpen ? `${unfilled} ${unfilled === 1 ? 'spot' : 'spots'} open` : 'filled, extra help welcome'}
-        </span>
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="px-4 pt-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="font-semibold text-sm leading-tight">{event.organizationName}</p>
-            {event.organizationCategory && (
-              <p className="text-xs text-muted-foreground mt-0.5">{event.organizationCategory}</p>
-            )}
-          </div>
-          {isCompleted && (
-            <Badge variant="secondary" className="bg-gray-200 text-gray-600 text-[10px] shrink-0">
-              Completed
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      <div className="px-4 space-y-1.5 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
-          <span>{formattedDate}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
-          <span>{formatEventTime(event.eventStartTime, event.eventEndTime)}</span>
-        </div>
-        {event.pickupTime && (
-          <div className="flex items-center gap-2">
-            <Truck className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
-            <span>Pickup: {formatTimeForDisplay(event.pickupTime)}</span>
-          </div>
-        )}
-        {event.eventAddress && (
-          <AddressLink
-            location={event}
-            className="text-xs"
-            iconClassName="w-3.5 h-3.5 shrink-0 mt-0.5 text-[#007e8c]"
-          />
-        )}
-        {distanceMiles !== undefined && (
-          <div className="flex items-center gap-2 text-blue-600 font-medium">
-            <Navigation className="w-3.5 h-3.5 shrink-0" />
-            <span>{distanceMiles.toFixed(1)} miles from you</span>
-          </div>
-        )}
-        {event.estimatedSandwichCount && (
-          <div className="flex items-center gap-2">
-            <Sandwich className="w-3.5 h-3.5 shrink-0 text-[#007e8c]" />
-            <span>{event.estimatedSandwichCount.toLocaleString()} sandwiches</span>
-          </div>
-        )}
-      </div>
-
-      <div className="px-4 pt-2 border-t space-y-1.5">
-        {roleRow(
-          event.speakersNeeded > 0 || event.speakersAssigned > 0,
-          Mic,
-          'Speaker',
-          event.speakersUnfilled,
-          'text-[#a31c41]',
-        )}
-        {roleRow(
-          event.volunteersNeeded > 0 || event.volunteersAssigned > 0,
-          UserCheck,
-          'General Volunteer',
-          event.volunteersUnfilled,
-          'text-[#007e8c]',
-        )}
-        {roleRow(
-          event.driversNeeded > 0 || event.driversAssigned > 0,
-          Car,
-          'Driver',
-          event.driversUnfilled,
-          'text-[#236383]',
-        )}
-      </div>
-
-      {!isCompleted && (
-        <div className="px-4 pb-4 pt-1 space-y-2">
-          {canSelfSignup ? (
-            <Button
-              size="sm"
-              onClick={() => onSignupClick(event.id)}
-              className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
-            >
-              Sign Up to Volunteer
-            </Button>
-          ) : (
-            <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 text-center">
-              Ask a coordinator to sign you up.
-            </div>
-          )}
-          {canAssignOthers && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onAssignClick(event.id)}
-              className="w-full text-xs text-muted-foreground hover:text-[#236383]"
-            >
-              Assign Someone Else
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Wrapper used inside Leaflet Popup so we can close the popup
 // before opening the signup/assign modal (otherwise the popup hovers
 // behind the modal). Must be rendered inside MapContainer.
@@ -633,14 +494,21 @@ function MapEventPopupContent({
       )
     : undefined;
   return (
-    <CalendarEventPreview
-      event={event}
-      onSignupClick={(id) => { map.closePopup(); onSignupClick(id); }}
-      canSelfSignup={canSelfSignup}
-      canAssignOthers={canAssignOthers}
-      onAssignClick={(id) => { map.closePopup(); onAssignClick(id); }}
-      distanceMiles={distanceMiles}
-    />
+    <div className="w-[360px] max-w-[calc(100vw-3rem)] space-y-3">
+      {distanceMiles !== undefined && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+          <Navigation className="w-4 h-4 shrink-0" />
+          <span>{distanceMiles.toFixed(1)} miles from you</span>
+        </div>
+      )}
+      <EventCard
+        event={event}
+        onSignup={(id) => { map.closePopup(); onSignupClick(id); }}
+        onAssign={(id) => { map.closePopup(); onAssignClick(id); }}
+        canSelfSignup={canSelfSignup}
+        canAssignOthers={canAssignOthers}
+      />
+    </div>
   );
 }
 
@@ -1862,12 +1730,12 @@ export default function VolunteerEventHub() {
 
           <div className="flex-1" />
 
-          <div className="flex rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-1">
+          <div className="flex w-full flex-wrap gap-1 rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-1 sm:w-auto">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('calendar')}
-              className={`gap-1.5 ${view === 'calendar' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 sm:flex-none ${view === 'calendar' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <CalendarDays className="w-4 h-4" />
               Calendar
@@ -1876,7 +1744,7 @@ export default function VolunteerEventHub() {
               variant="ghost"
               size="sm"
               onClick={() => setView('list')}
-              className={`gap-1.5 ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 sm:flex-none ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <List className="w-4 h-4" />
               List
@@ -1885,7 +1753,7 @@ export default function VolunteerEventHub() {
               variant="ghost"
               size="sm"
               onClick={() => setView('map')}
-              className={`gap-1.5 ${view === 'map' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 sm:flex-none ${view === 'map' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <MapIcon className="w-4 h-4" />
               Map
@@ -1894,7 +1762,7 @@ export default function VolunteerEventHub() {
               variant="ghost"
               size="sm"
               onClick={() => setView('my_signups')}
-              className={`gap-1.5 ${view === 'my_signups' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 sm:flex-none ${view === 'my_signups' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
               <UserCheck className="w-4 h-4" />
               My Signups
@@ -1911,7 +1779,7 @@ export default function VolunteerEventHub() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setView('pending_approvals')}
-                className={`gap-1.5 ${view === 'pending_approvals' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-amber-700 hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+                className={`flex-1 gap-1.5 sm:flex-none ${view === 'pending_approvals' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-amber-700 hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
               >
                 <Clock className="w-4 h-4" />
                 Pending Approvals
@@ -2218,22 +2086,24 @@ export default function VolunteerEventHub() {
               <CardContent className="p-0">
                 {/* Address search for distance */}
                 <div className="p-4 border-b space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4 text-[#236383] shrink-0" />
-                    <span className="text-sm font-medium text-gray-700 shrink-0">Your location:</span>
-                    <div className="flex-1 flex gap-2 flex-wrap">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="flex items-center gap-2">
+                      <Navigation className="w-4 h-4 text-[#236383] shrink-0" />
+                      <span className="text-sm font-medium text-gray-700">Your location:</span>
+                    </div>
+                    <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap">
                       <Input
                         placeholder="Enter your address to see distances..."
                         value={userAddress}
                         onChange={(e) => setUserAddress(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleGeocodeAddress()}
-                        className="text-sm flex-1 min-w-[180px]"
+                        className="min-w-0 flex-1 text-sm sm:min-w-[180px]"
                       />
                       <Button
                         size="sm"
                         onClick={handleGeocodeAddress}
                         disabled={geocodingLoading || !userAddress.trim()}
-                        className="bg-[#007e8c] hover:bg-[#236383] shrink-0"
+                        className="shrink-0 bg-[#007e8c] hover:bg-[#236383]"
                       >
                         {geocodingLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -2246,7 +2116,7 @@ export default function VolunteerEventHub() {
                         variant="outline"
                         onClick={handleUseBrowserLocation}
                         disabled={browserLocationLoading}
-                        className="shrink-0 gap-1.5 text-xs border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
+                        className="shrink-0 gap-1.5 border-[#007e8c]/30 text-xs text-[#236383] hover:bg-[#007e8c]/10"
                       >
                         {browserLocationLoading ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2267,11 +2137,11 @@ export default function VolunteerEventHub() {
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground ml-6">
+                  <p className="text-xs text-muted-foreground sm:ml-6">
                     Your browser will ask for permission before sharing your location.
                   </p>
                   {userLocation && (
-                    <p className="text-xs text-green-600 ml-6">
+                    <p className="text-xs text-green-600 sm:ml-6">
                       <Check className="w-3 h-3 inline mr-1" />
                       Location set — distances shown in event popups
                     </p>
@@ -2284,7 +2154,7 @@ export default function VolunteerEventHub() {
                   Showing <span className="font-semibold text-[#007e8c]">{filteredEvents.length}</span> scheduled events from today onward that need volunteers, speakers, or drivers
                 </div>
 
-                <div className="h-[600px] rounded-lg overflow-hidden">
+                <div className="h-[520px] overflow-hidden rounded-lg sm:h-[600px]">
                   <MapContainer
                     center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter}
                     zoom={11}
@@ -2323,7 +2193,21 @@ export default function VolunteerEventHub() {
                             event.vanDriverNeeded
                           )}
                         >
-                          <Popup minWidth={280} maxWidth={320}>
+                          <Tooltip
+                            permanent
+                            direction="top"
+                            offset={[0, -44]}
+                            opacity={1}
+                            className="volunteer-map-event-label"
+                          >
+                            <div className="max-w-[150px]">
+                              <div className="truncate font-semibold">{event.organizationName}</div>
+                              <div className="text-[11px] font-medium text-[#236383]">
+                                {getEventDateLabel(event)}
+                              </div>
+                            </div>
+                          </Tooltip>
+                          <Popup minWidth={380} maxWidth={420} className="volunteer-map-event-popup">
                             <MapEventPopupContent
                               event={event}
                               onSignupClick={handleSignupClick}
@@ -2447,7 +2331,7 @@ export default function VolunteerEventHub() {
                   return (
                     <Card key={signup.id} className="border-l-4 border-l-[#47b3cb] hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex-1 min-w-0 space-y-2">
                             <div>
                               <h3 className="font-semibold text-base">{signup.event.organizationName}</h3>
@@ -2471,7 +2355,7 @@ export default function VolunteerEventHub() {
                               {signup.notes && <span>— {signup.notes}</span>}
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-2 shrink-0">
+                          <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end sm:shrink-0">
                             <RoleBadge role={signup.role} />
                             <StatusBadge status={signup.status} />
                             {signup.status === 'pending' && (
@@ -2516,7 +2400,7 @@ export default function VolunteerEventHub() {
                   return (
                     <Card key={signup.id} className="border border-gray-200 hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-gray-900">{signup.volunteerName || 'Unknown'}</span>
@@ -2558,7 +2442,7 @@ export default function VolunteerEventHub() {
                               Signed up {format(parseISO(signup.signedUpAt), 'MMM d, yyyy h:mm a')}
                             </div>
                           </div>
-                          <div className="flex flex-col gap-2 shrink-0">
+                          <div className="grid gap-2 sm:flex sm:flex-col sm:shrink-0">
                             <Button
                               size="sm"
                               className="bg-green-600 hover:bg-green-700 text-white"
@@ -2622,7 +2506,7 @@ export default function VolunteerEventHub() {
                           )}
                         >
                           <CardContent className="p-3">
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                               <div className="flex-1 min-w-0 space-y-1.5">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-semibold text-gray-900 truncate">{signup.volunteerName || 'Unknown'}</span>
@@ -2643,7 +2527,7 @@ export default function VolunteerEventHub() {
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-gray-700 bg-gray-50 px-2.5 py-1 rounded">
+                                <div className="flex flex-wrap items-center gap-2 rounded bg-gray-50 px-2.5 py-1 text-xs text-gray-700">
                                   <Building2 className="w-3.5 h-3.5 text-[#236383] shrink-0" />
                                   <span className="font-medium truncate">{signup.event?.organizationName || 'Unknown Event'}</span>
                                   {eventDate && (
@@ -2663,7 +2547,7 @@ export default function VolunteerEventHub() {
                                 </div>
                               </div>
                               {isApproved && (
-                                <div className="flex flex-col gap-1.5 shrink-0">
+                                <div className="grid gap-1.5 sm:flex sm:flex-col sm:shrink-0">
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -2691,7 +2575,7 @@ export default function VolunteerEventHub() {
                                 </div>
                               )}
                               {isDeclined && (
-                                <div className="flex flex-col gap-1.5 shrink-0">
+                                <div className="grid gap-1.5 sm:flex sm:flex-col sm:shrink-0">
                                   <Button
                                     size="sm"
                                     variant="outline"

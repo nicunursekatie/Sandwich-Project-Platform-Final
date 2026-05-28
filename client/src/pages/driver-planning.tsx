@@ -3967,10 +3967,11 @@ export default function DriverPlanningDashboard() {
                   </svg>
                 </button>
                 {!desktopLegendCollapsed && (
-                  <div className="space-y-1.5 text-xs px-2 pb-2">
-                    <p className="text-[11px] leading-tight text-gray-500 max-w-[220px]">
+                  <div className="text-xs px-2 pb-2">
+                    <p className="text-[11px] leading-tight text-gray-500 mb-1.5">
                       Checked items are visible. Click a row to show or hide those pins.
                     </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 items-center">
                     <button
                       type="button"
                       onClick={() => toggleLayer('events')}
@@ -4064,12 +4065,13 @@ export default function DriverPlanningDashboard() {
                           </svg>
                           <span>Host+Driver</span>
                         </div>
-                        <div className="flex items-center gap-2 pt-1 border-t border-gray-200 mt-1">
+                        <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
                           <span>Selected item = orange</span>
                         </div>
                       </>
                     )}
+                    </div>
                   </div>
                 )}
               </div>
