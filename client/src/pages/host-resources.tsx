@@ -646,11 +646,7 @@ export default function HostResources() {
   const queryClient = useQueryClient();
   const [uploadOpen, setUploadOpen] = React.useState(false);
 
-  const isAdmin = user && (
-    user.role === 'admin' ||
-    user.role === 'admin_coordinator' ||
-    user.role === 'super_admin'
-  );
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   // Fetch resources from API
   const { data: apiResources, isLoading } = useQuery<HostResource[]>({

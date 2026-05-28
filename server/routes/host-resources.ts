@@ -8,6 +8,28 @@ import { hostResourceUpload } from '../middleware/uploads';
 
 const router = Router();
 
+const HOST_RESOURCE_UPLOAD_ROOT = path.resolve('uploads/host-resources');
+
+const isHostResourceAdmin = (req: any): boolean =>
+  req.user?.role === 'admin' || req.user?.role === 'super_admin';
+
+const requireHostResourceAdmin = (req: any, res: any, next: any) => {
+  if (!isHostResourceAdmin(req)) {
+    return res.status(403).json({ message: 'Only admins can manage host resources' });
+  }
+  next();
+};
+
+const getUploadedHostResourcePath = (fileUrl: string): string | null => {
+  const prefix = '/host-resource-files/';
+  if (!fileUrl.startsWith(prefix)) return null;
+
+  const relativePath = fileUrl.slice(prefix.length);
+  const resolvedPath = path.resolve(HOST_RESOURCE_UPLOAD_ROOT, relativePath);
+  if (!resolvedPath.startsWith(HOST_RESOURCE_UPLOAD_ROOT)) return null;
+  return resolvedPath;
+};
+
 // Default resources to seed into the database on first fetch
 const DEFAULT_RESOURCES = [
   { title: 'TSP Host Handbook', description: 'Complete guide for host collection sites — everything you need to know about hosting a sandwich collection', category: 'document', fileType: 'PDF', fileUrl: '/documents/tsp-host-handbook.pdf', fileName: 'tsp-host-handbook.pdf', sortOrder: 1, isActive: true },
@@ -17,7 +39,6 @@ const DEFAULT_RESOURCES = [
   { title: 'Food Safety for Hosts', description: 'Food safety guidelines and best practices for host collection sites', category: 'document', fileType: 'PDF', fileUrl: '/documents/food-safety-hosts.pdf', fileName: 'food-safety-hosts.pdf', sortOrder: 5, isActive: true },
   { title: 'Deli Sandwich Making 101', description: 'Step-by-step guide for making deli sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/deli-sandwich-making-101.pdf', fileName: 'deli-sandwich-making-101.pdf', sortOrder: 6, isActive: true },
   { title: 'PB&J Sandwich Making 101', description: 'Step-by-step guide for making peanut butter & jelly sandwiches', category: 'document', fileType: 'PDF', fileUrl: '/documents/pbj-sandwich-making-101.pdf', fileName: 'pbj-sandwich-making-101.pdf', sortOrder: 7, isActive: true },
-  { title: 'Deli Sandwich Assembly', description: 'Deli sandwich assembly guide with portion sizes in ounces', category: 'image', fileType: 'JPEG', fileUrl: '/images/sandwich-assembly.jpeg', fileName: 'deli-sandwich-assembly-ounces.jpeg', sortOrder: 1, isActive: true },
   { title: 'White Bread Sandwich', description: 'Complete sandwich with white bread - bread, cheese, meat, cheese, bread', category: 'image', fileType: 'PNG', fileUrl: '/images/sandwich-white-bread.png', fileName: 'sandwich-white-bread.png', sortOrder: 2, isActive: true },
   { title: 'Why Cheese on the Bottom', description: 'Cheese acts as a moisture barrier to keep bread from getting soggy', category: 'image', fileType: 'PNG', fileUrl: '/images/why-cheese-bottom.png', fileName: 'why-cheese-bottom.png', sortOrder: 3, isActive: true },
   { title: 'PB&J Assembly', description: 'Peanut butter on both slices, jelly on one - 3 easy steps', category: 'image', fileType: 'PNG', fileUrl: '/images/pbj-assembly.png', fileName: 'pbj-assembly.png', sortOrder: 4, isActive: true },
@@ -57,7 +78,7 @@ router.get('/', async (_req, res) => {
 });
 
 // POST upload a file and create a new host resource
-router.post('/upload', hostResourceUpload.single('file'), async (req: any, res) => {
+router.post('/upload', requireHostResourceAdmin, hostResourceUpload.single('file'), async (req: any, res) => {
   try {
     const file = req.file;
     if (!file) {
@@ -82,16 +103,18 @@ router.post('/upload', hostResourceUpload.single('file'), async (req: any, res) 
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9\-_.]/g, '');
 
-    // Determine the target directory
+    // Store runtime uploads outside client/public. Replit production serves the
+    // built dist folder, so files written into client/public after deploy 404.
     const subDir = isImage ? 'images' : 'documents';
-    const publicDir = path.resolve('client/public', subDir);
+    const publicDir = path.join(HOST_RESOURCE_UPLOAD_ROOT, subDir);
 
     // Ensure target directory exists
     if (!fs.existsSync(publicDir)) {
       fs.mkdirSync(publicDir, { recursive: true });
     }
 
-    const destPath = path.join(publicDir, sanitizedName);
+    const uniqueName = `${Date.now()}-${sanitizedName}`;
+    const destPath = path.join(publicDir, uniqueName);
 
     // Move file from temp upload to public directory
     fs.copyFileSync(file.path, destPath);
@@ -101,7 +124,7 @@ router.post('/upload', hostResourceUpload.single('file'), async (req: any, res) 
     let fileType = ext.replace('.', '').toUpperCase();
     if (fileType === 'JPG') fileType = 'JPEG';
 
-    const fileUrl = `/${subDir}/${sanitizedName}`;
+    const fileUrl = `/host-resource-files/${subDir}/${uniqueName}`;
 
     // Get next sort order
     const existing = await storage.getHostResources();
@@ -133,7 +156,7 @@ router.post('/upload', hostResourceUpload.single('file'), async (req: any, res) 
 });
 
 // POST create a new host resource (without file upload - for links)
-router.post('/', async (req: any, res) => {
+router.post('/', requireHostResourceAdmin, async (req: any, res) => {
   try {
     const data = insertHostResourceSchema.parse(req.body);
     const resource = await storage.createHostResource(data);
@@ -149,7 +172,7 @@ router.post('/', async (req: any, res) => {
 });
 
 // PATCH update a host resource
-router.patch('/:id', async (req: any, res) => {
+router.patch('/:id', requireHostResourceAdmin, async (req: any, res) => {
   try {
     const id = parseInt(req.params.id);
     const resource = await storage.updateHostResource(id, req.body);
@@ -164,7 +187,7 @@ router.patch('/:id', async (req: any, res) => {
 });
 
 // DELETE a host resource
-router.delete('/:id', async (req: any, res) => {
+router.delete('/:id', requireHostResourceAdmin, async (req: any, res) => {
   try {
     const id = parseInt(req.params.id);
     const resource = await storage.getHostResource(id);
@@ -174,6 +197,14 @@ router.delete('/:id', async (req: any, res) => {
     const success = await storage.deleteHostResource(id);
     if (!success) {
       return res.status(500).json({ message: 'Failed to delete resource' });
+    }
+    const uploadedPath = getUploadedHostResourcePath(resource.fileUrl);
+    if (uploadedPath && fs.existsSync(uploadedPath)) {
+      try {
+        fs.unlinkSync(uploadedPath);
+      } catch (fileError) {
+        logger.warn(`Deleted host resource record ${id}, but could not remove file ${uploadedPath}`, fileError);
+      }
     }
     res.json({ message: 'Resource deleted' });
   } catch (error) {

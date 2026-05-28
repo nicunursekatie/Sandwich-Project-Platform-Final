@@ -1,4 +1,7 @@
 import multer from 'multer';
+import fs from 'fs';
+
+fs.mkdirSync('uploads/host-resources', { recursive: true });
 
 // Configure multer for file uploads
 export const upload = multer({

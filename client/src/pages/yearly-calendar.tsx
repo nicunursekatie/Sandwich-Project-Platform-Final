@@ -95,12 +95,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   school_breaks: 'bg-amber-100 text-amber-800 border-amber-300',
   school_markers: 'bg-emerald-100 text-emerald-800 border-emerald-300',
   religious_holidays: 'bg-violet-100 text-violet-800 border-violet-300',
+  holiday: 'bg-rose-100 text-rose-800 border-rose-300',
 };
 
 const TRACKED_CATEGORY_LABELS: Record<string, string> = {
   school_breaks: 'School Breaks',
   school_markers: 'School Dates',
   religious_holidays: 'Religious Holidays',
+  holiday: 'Holidays',
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -217,6 +219,7 @@ export default function YearlyCalendar() {
   const [importHolidaysJsonText, setImportHolidaysJsonText] = useState('');
   const [showTrackedItems, setShowTrackedItems] = useState(true);
   const [showReligiousHolidays, setShowReligiousHolidays] = useState(true);
+  const [showHolidays, setShowHolidays] = useState(true);
   const [isAddTrackedItemDialogOpen, setIsAddTrackedItemDialogOpen] = useState(false);
   const [isEditTrackedItemDialogOpen, setIsEditTrackedItemDialogOpen] = useState(false);
   const [editingTrackedItem, setEditingTrackedItem] = useState<TrackedCalendarItem | null>(null);
@@ -339,6 +342,7 @@ export default function YearlyCalendar() {
     // First filter by toggle states
     let filtered = trackedItems.filter(item => {
       if (item.category === 'religious_holidays') return showReligiousHolidays;
+      if (item.category === 'holiday') return showHolidays;
       // school_breaks and school_markers follow the showTrackedItems toggle
       return showTrackedItems;
     });
@@ -360,11 +364,11 @@ export default function YearlyCalendar() {
       const breakTypes = ['spring', 'winter', 'fall', 'summer', 'thanksgiving', 'christmas', 'mlk', 'presidents', 'memorial', 'labor'];
       if (breakTypes.some(bt => bt.includes(query) && item.title.toLowerCase().includes(bt))) return true;
       // Search for religious holiday terms
-      const holidayTerms = ['easter', 'passover', 'hanukkah', 'chanukah', 'rosh', 'yom kippur', 'sukkot', 'shavuot', 'purim', 'lent', 'ash wednesday', 'good friday', 'palm sunday', 'christmas', 'jewish', 'christian'];
+      const holidayTerms = ['holiday', 'new year', 'mlk', 'presidents', 'memorial', 'juneteenth', 'independence', 'labor', 'thanksgiving', 'christmas', 'veterans', 'easter', 'passover', 'hanukkah', 'chanukah', 'rosh', 'yom kippur', 'sukkot', 'shavuot', 'purim', 'lent', 'ash wednesday', 'good friday', 'palm sunday', 'jewish', 'christian'];
       if (holidayTerms.some(ht => ht.includes(query) && (item.title.toLowerCase().includes(ht) || (item.metadata as any)?.tradition?.toLowerCase().includes(ht)))) return true;
       return false;
     });
-  }, [trackedItems, searchQuery, showTrackedItems, showReligiousHolidays]);
+  }, [trackedItems, searchQuery, showTrackedItems, showReligiousHolidays, showHolidays]);
 
   // Group items by month and sort them (uses filtered items)
   const itemsByMonth = useMemo(() => {
@@ -593,19 +597,44 @@ export default function YearlyCalendar() {
     },
   });
 
+  // Add common U.S./TSP-relevant holidays for the selected year
+  const importUSHolidaysMutation = useMutation({
+    mutationFn: async (year: number) => {
+      return await apiRequest('POST', '/api/tracked-calendar/import-us-holidays', { year });
+    },
+    onSuccess: (result: { created: number; updated: number; errors: string[] }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
+      setShowHolidays(true);
+      toast({
+        title: 'Holidays added',
+        description: `Created: ${result.created}, Updated: ${result.updated}${result.errors.length > 0 ? `, Errors: ${result.errors.length}` : ''}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Import failed',
+        description: error?.message || 'Failed to add holidays',
+        variant: 'destructive',
+      });
+    },
+  });
+
   // Create a tracked calendar item (school breaks, holidays, etc.)
   const createTrackedItemMutation = useMutation({
     mutationFn: async (data: { title: string; startDate: string; endDate: string; category: string; district: string }) => {
+      const metadata =
+        data.category === 'religious_holidays'
+          ? { type: data.category, tradition: data.district || null, source: 'manual' }
+          : data.category === 'holiday'
+            ? { type: 'holiday', holidayType: data.district || null, source: 'manual' }
+            : { type: data.category, districts: data.district ? [data.district] : [], source: 'manual' };
+
       return await apiRequest('POST', '/api/tracked-calendar', {
         category: data.category,
         title: data.title,
         startDate: data.startDate,
         endDate: data.endDate,
-        metadata: {
-          type: data.category,
-          districts: data.district ? [data.district] : [],
-          source: 'manual',
-        },
+        metadata,
       });
     },
     onSuccess: () => {
@@ -672,7 +701,7 @@ export default function YearlyCalendar() {
     setTrackedStartDate(item.startDate);
     setTrackedEndDate(item.endDate);
     setTrackedCategory(item.category);
-    setTrackedDistrict(item.metadata?.districts?.[0] || '');
+    setTrackedDistrict(item.metadata?.districts?.[0] || (item.metadata as any)?.tradition || (item.metadata as any)?.holidayType || '');
     setIsEditTrackedItemDialogOpen(true);
   };
 
@@ -689,7 +718,12 @@ export default function YearlyCalendar() {
       category: trackedCategory,
       metadata: {
         ...editingTrackedItem.metadata,
-        districts: trackedDistrict.trim() ? [trackedDistrict.trim()] : [],
+        type: trackedCategory === 'holiday' ? 'holiday' : trackedCategory,
+        districts: trackedCategory === 'school_breaks' || trackedCategory === 'school_markers'
+          ? (trackedDistrict.trim() ? [trackedDistrict.trim()] : [])
+          : [],
+        tradition: trackedCategory === 'religious_holidays' ? trackedDistrict.trim() || null : undefined,
+        holidayType: trackedCategory === 'holiday' ? trackedDistrict.trim() || null : undefined,
       },
     });
   };
@@ -941,8 +975,38 @@ export default function YearlyCalendar() {
             <Filter className="h-4 w-4 mr-2" />
             {showReligiousHolidays ? 'Hide' : 'Show'} Religious Holidays
           </Button>
+          <Button
+            variant={showHolidays ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setShowHolidays(!showHolidays)}
+            className={showHolidays ? 'bg-rose-500 hover:bg-rose-600' : ''}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            {showHolidays ? 'Hide' : 'Show'} Holidays
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setExpandedMonth(new Date().getFullYear() === selectedYear ? new Date().getMonth() + 1 : 1)}
+            className="border-[#236383] text-[#236383] hover:bg-[#e8f4f8]"
+          >
+            <CalendarDays className="h-4 w-4 mr-2" />
+            Open Calendar Grid
+          </Button>
           {canEditAll && (
             <>
+              <Button
+                variant="outline"
+                onClick={() => importUSHolidaysMutation.mutate(selectedYear)}
+                disabled={importUSHolidaysMutation.isPending}
+              >
+                {importUSHolidaysMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CalendarDays className="h-4 w-4 mr-2" />
+                )}
+                Add {selectedYear} Holidays
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => setIsImportDialogOpen(true)}
@@ -1031,7 +1095,7 @@ export default function YearlyCalendar() {
           </Badge>
           <span className="text-sm text-gray-600">
             Found {filteredYearlyItems.length} calendar item{filteredYearlyItems.length !== 1 ? 's' : ''}
-            {(showTrackedItems || showReligiousHolidays) && ` and ${filteredTrackedItems.length} tracked item${filteredTrackedItems.length !== 1 ? 's' : ''}`}
+            {(showTrackedItems || showReligiousHolidays || showHolidays) && ` and ${filteredTrackedItems.length} tracked item${filteredTrackedItems.length !== 1 ? 's' : ''}`}
           </span>
           <button
             onClick={() => setSearchQuery('')}
@@ -1068,15 +1132,8 @@ export default function YearlyCalendar() {
                 } ${isPastMonth ? 'opacity-75' : ''} ${isExpanded ? 'ring-2 ring-amber-400' : ''}`}
               >
                 <CardHeader className="pb-3 flex-shrink-0">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <button
-                      onClick={() => setExpandedMonth(isExpanded ? null : monthNumber)}
-                      className="flex items-center gap-2 hover:text-[#236383] transition-colors text-left"
-                      title="Click to expand monthly calendar view"
-                    >
-                      <span>{monthName}</span>
-                      <CalendarDays className="h-4 w-4 text-gray-400 hover:text-[#236383]" />
-                    </button>
+                  <CardTitle className="text-lg flex items-center justify-between gap-3">
+                    <span>{monthName}</span>
                     <div className="flex items-center gap-1">
                       {monthItems.length > 0 && (
                         <Badge variant="secondary" className="ml-2">
@@ -1090,6 +1147,19 @@ export default function YearlyCalendar() {
                       )}
                     </div>
                   </CardTitle>
+                  <Button
+                    type="button"
+                    variant={isExpanded ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setExpandedMonth(isExpanded ? null : monthNumber)}
+                    className={isExpanded
+                      ? 'mt-3 w-full bg-[#236383] hover:bg-[#007E8C] text-white'
+                      : 'mt-3 w-full border-[#236383]/30 text-[#236383] hover:bg-[#e8f4f8]'
+                    }
+                  >
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    {isExpanded ? 'Close Calendar View' : 'View Month Calendar'}
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-2 flex-1 overflow-y-auto max-h-[500px] min-h-[100px]">
                   {monthItems.length === 0 && totalTrackedCount === 0 ? (
@@ -1930,24 +2000,25 @@ export default function YearlyCalendar() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="school_breaks">School Breaks</SelectItem>
-                  <SelectItem value="school_markers">School Dates</SelectItem>
-                  <SelectItem value="religious_holidays">Religious Holidays</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tracked-district">
-                {trackedCategory === 'religious_holidays' ? 'Tradition (optional)' : 'School / District (optional)'}
-              </Label>
-              <Input
-                id="tracked-district"
-                value={trackedDistrict}
-                onChange={(e) => setTrackedDistrict(e.target.value)}
-                placeholder={trackedCategory === 'religious_holidays' ? 'e.g. Jewish, Christian' : 'e.g. Westminster'}
-              />
-            </div>
+                  <SelectContent>
+                    <SelectItem value="school_breaks">School Breaks</SelectItem>
+                    <SelectItem value="school_markers">School Dates</SelectItem>
+                    <SelectItem value="religious_holidays">Religious Holidays</SelectItem>
+                    <SelectItem value="holiday">Holidays</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tracked-district">
+                {trackedCategory === 'religious_holidays' ? 'Tradition (optional)' : trackedCategory === 'holiday' ? 'Holiday type (optional)' : 'School / District (optional)'}
+                </Label>
+                <Input
+                  id="tracked-district"
+                  value={trackedDistrict}
+                  onChange={(e) => setTrackedDistrict(e.target.value)}
+                placeholder={trackedCategory === 'religious_holidays' ? 'e.g. Jewish, Christian' : trackedCategory === 'holiday' ? 'e.g. Federal, TSP no-collection week' : 'e.g. Westminster'}
+                />
+              </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="tracked-start">Start Date</Label>
@@ -2016,24 +2087,25 @@ export default function YearlyCalendar() {
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="school_breaks">School Breaks</SelectItem>
-                  <SelectItem value="school_markers">School Dates</SelectItem>
-                  <SelectItem value="religious_holidays">Religious Holidays</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-tracked-district">
-                {trackedCategory === 'religious_holidays' ? 'Tradition (optional)' : 'School / District (optional)'}
-              </Label>
-              <Input
-                id="edit-tracked-district"
-                value={trackedDistrict}
-                onChange={(e) => setTrackedDistrict(e.target.value)}
-                placeholder={trackedCategory === 'religious_holidays' ? 'e.g. Jewish, Christian' : 'e.g. Westminster'}
-              />
-            </div>
+                  <SelectContent>
+                    <SelectItem value="school_breaks">School Breaks</SelectItem>
+                    <SelectItem value="school_markers">School Dates</SelectItem>
+                    <SelectItem value="religious_holidays">Religious Holidays</SelectItem>
+                    <SelectItem value="holiday">Holidays</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tracked-district">
+                {trackedCategory === 'religious_holidays' ? 'Tradition (optional)' : trackedCategory === 'holiday' ? 'Holiday type (optional)' : 'School / District (optional)'}
+                </Label>
+                <Input
+                  id="edit-tracked-district"
+                  value={trackedDistrict}
+                  onChange={(e) => setTrackedDistrict(e.target.value)}
+                placeholder={trackedCategory === 'religious_holidays' ? 'e.g. Jewish, Christian' : trackedCategory === 'holiday' ? 'e.g. Federal, TSP no-collection week' : 'e.g. Westminster'}
+                />
+              </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-tracked-start">Start Date</Label>
@@ -2087,6 +2159,7 @@ export default function YearlyCalendar() {
             searchQuery: searchQuery || undefined,
             showTrackedItems,
             showReligiousHolidays,
+            showHolidays,
           },
           summaryStats: {
             totalItems: filteredYearlyItems.length,

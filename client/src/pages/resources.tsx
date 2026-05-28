@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { ResourceAdminModal } from '../components/resource-admin-modal';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
@@ -30,9 +31,21 @@ import {
   Image,
   Download,
   Share2,
+  Upload,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Category definitions with icons and colors (using brand color scheme)
 const CATEGORIES = [
@@ -127,30 +140,60 @@ interface Tag {
   usageCount: number;
 }
 
-// Sandwich Assembly Guides Component
-function SandwichAssemblyGuides() {
-  const { toast } = useToast();
+// Sandwich Assembly Guides Component — backed by /api/host-resources.
+// Public users see + download/share. Admins (admin or super_admin) can upload
+// new guides, edit titles/descriptions, and delete them via inline controls.
+// Shares the same backend as the Host Resources page, so edits show up in
+// both places.
 
-  const guides = [
-    {
-      title: "Sandwich Assembly",
-      description: "Basic sandwich assembly guide showing cheese, meat, and cheese layers",
-      imageUrl: "/images/sandwich-assembly.png",
-      fileName: "sandwich-assembly.png",
+interface HostResource {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  fileType: string;
+  fileUrl: string;
+  fileName: string;
+}
+
+function SandwichAssemblyGuides() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [editing, setEditing] = useState<HostResource | null>(null);
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+
+  const { data: apiResources, isLoading } = useQuery<HostResource[]>({
+    queryKey: ['/api/host-resources'],
+  });
+
+  const guides = (apiResources || []).filter((r) => r.category === 'image');
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/host-resources/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+      return res.json();
     },
-    {
-      title: "White Bread Sandwich",
-      description: "Complete sandwich with white bread - bread, cheese, meat, cheese, bread",
-      imageUrl: "/images/sandwich-white-bread.png",
-      fileName: "sandwich-white-bread.png",
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/host-resources'] });
+      toast({ title: 'Guide deleted', description: 'The assembly guide has been removed.' });
     },
-    {
-      title: "Why Cheese on the Bottom",
-      description: "Cheese acts as a moisture barrier to keep bread from getting soggy",
-      imageUrl: "/images/why-cheese-bottom.png",
-      fileName: "why-cheese-bottom.png",
+    onError: () => {
+      toast({ title: 'Delete failed', description: 'Could not delete the guide.', variant: 'destructive' });
     },
-  ];
+  });
+
+  const handleDelete = (id: number, title: string) => {
+    if (window.confirm(`Delete "${title}"? This cannot be undone.`)) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const handleDownload = async (imageUrl: string, fileName: string) => {
     try {
@@ -177,7 +220,7 @@ function SandwichAssemblyGuides() {
 
   const handleShare = async (title: string, description: string, imageUrl: string) => {
     const shareUrl = window.location.origin + imageUrl;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -211,52 +254,352 @@ function SandwichAssemblyGuides() {
         <div className="bg-[#007E8C]/10 p-3 rounded-lg">
           <Image className="w-7 h-7 text-[#007E8C]" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">
-          Sandwich Assembly Guides
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900">Sandwich Assembly Guides</h2>
         <span className="text-sm font-semibold text-gray-500 ml-auto">
-          3 items
+          {guides.length} {guides.length === 1 ? 'item' : 'items'}
         </span>
+        {isAdmin && (
+          <Button
+            onClick={() => setUploadOpen(true)}
+            size="sm"
+            className="bg-[#007E8C] hover:bg-[#236383] text-white gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            Add Guide
+          </Button>
+        )}
       </div>
       <p className="text-sm text-gray-600 mb-4">
         Visual guides for proper sandwich assembly. Download or share these with your volunteers.
+        {isAdmin && ' As an admin, you can add new guides, edit titles/descriptions, or remove outdated ones.'}
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {guides.map((guide) => (
-          <div 
-            key={guide.fileName}
-            className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
-          >
-            <div className="aspect-[4/5] relative bg-gray-100">
-              <img
-                src={guide.imageUrl}
-                alt={guide.title}
-                className="w-full h-full object-contain p-2"
-              />
-            </div>
-            <div className="p-4">
-              <h4 className="font-medium text-sm mb-1">{guide.title}</h4>
-              <p className="text-xs text-gray-500 mb-3">{guide.description}</p>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => handleDownload(guide.imageUrl, guide.fileName)}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  <Download className="w-4 h-4" />
-                  Download
-                </button>
-                <button 
-                  onClick={() => handleShare(guide.title, guide.description, guide.imageUrl)}
-                  className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Skeleton className="h-72 w-full" />
+          <Skeleton className="h-72 w-full" />
+          <Skeleton className="h-72 w-full" />
+        </div>
+      ) : guides.length === 0 ? (
+        <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+          <Image className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-600">No assembly guides yet.</p>
+          {isAdmin && (
+            <Button
+              onClick={() => setUploadOpen(true)}
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              Upload the first one
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {guides.map((guide) => (
+            <div
+              key={guide.id}
+              className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+            >
+              <div className="aspect-[4/5] relative bg-gray-100">
+                <img
+                  src={guide.fileUrl}
+                  alt={guide.title}
+                  className="w-full h-full object-contain p-2"
+                />
+              </div>
+              <div className="p-4">
+                <h4 className="font-medium text-sm mb-1">{guide.title}</h4>
+                <p className="text-xs text-gray-500 mb-3">{guide.description}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleDownload(guide.fileUrl, guide.fileName)}
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => handleShare(guide.title, guide.description, guide.fileUrl)}
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                    title="Share"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => setEditing(guide)}
+                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors text-[#007E8C]"
+                        title="Edit title/description"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(guide.id, guide.title)}
+                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-red-50 transition-colors text-red-600"
+                        title="Delete guide"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {isAdmin && (
+        <SandwichGuideUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+      )}
+      {isAdmin && editing && (
+        <SandwichGuideEditDialog
+          guide={editing}
+          open={!!editing}
+          onOpenChange={(open) => { if (!open) setEditing(null); }}
+        />
+      )}
     </div>
+  );
+}
+
+// Upload dialog — admin-only. Posts to /api/host-resources/upload with
+// category=image so it shows up in the Sandwich Assembly Guides grid
+// (and on the Host Resources page).
+function SandwichGuideUploadDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file || !title || !description) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('category', 'image');
+
+      const res = await fetch('/api/host-resources/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Upload failed');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['/api/host-resources'] });
+      toast({ title: 'Guide added', description: `"${title}" is now visible to everyone.` });
+      resetForm();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: 'Upload failed',
+        description: error.message || 'Could not upload the file.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5 text-[#007E8C]" />
+            Add Assembly Guide
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="guide-title">Title</Label>
+            <Input
+              id="guide-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Turkey & Cheese Assembly"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="guide-description">Description</Label>
+            <Textarea
+              id="guide-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description shown under the image..."
+              rows={2}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="guide-file">Image File</Label>
+            <Input
+              ref={fileInputRef}
+              id="guide-file"
+              type="file"
+              accept=".jpg,.jpeg,.png,.gif,.webp"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              required
+            />
+            <p className="text-xs text-gray-500">JPG, PNG, or WEBP up to 15MB.</p>
+          </div>
+
+          {file && (
+            <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+              Selected: <span className="font-medium">{file.name}</span> ({(file.size / 1024 / 1024).toFixed(1)} MB)
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={() => { resetForm(); onOpenChange(false); }}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={uploading || !file || !title || !description}
+              className="bg-[#007E8C] hover:bg-[#236383] text-white"
+            >
+              {uploading ? 'Uploading…' : 'Add Guide'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Edit dialog — admin-only. PATCHes title + description (the image file itself
+// is not editable here; delete + re-upload if the image needs to change).
+function SandwichGuideEditDialog({
+  guide,
+  open,
+  onOpenChange,
+}: {
+  guide: HostResource;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState(guide.title);
+  const [description, setDescription] = useState(guide.description);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setTitle(guide.title);
+    setDescription(guide.description);
+  }, [guide.id, guide.title, guide.description]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/host-resources/${guide.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title, description }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Update failed');
+      }
+      queryClient.invalidateQueries({ queryKey: ['/api/host-resources'] });
+      toast({ title: 'Guide updated' });
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        title: 'Update failed',
+        description: error.message || 'Could not save changes.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="w-5 h-5 text-[#007E8C]" />
+            Edit Assembly Guide
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-guide-title">Title</Label>
+            <Input
+              id="edit-guide-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-guide-description">Description</Label>
+            <Textarea
+              id="edit-guide-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              required
+            />
+          </div>
+
+          <p className="text-xs text-gray-500">
+            To replace the image itself, delete this guide and upload a new one.
+          </p>
+
+          <div className="flex gap-2 justify-end pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving || !title || !description}
+              className="bg-[#007E8C] hover:bg-[#236383] text-white"
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

@@ -236,6 +236,15 @@ async function bootstrap() {
 
     // Set up basic routes BEFORE starting server
     app.use('/attached_assets', express.static('attached_assets'));
+    app.use(
+      '/host-resource-files',
+      express.static('uploads/host-resources', {
+        index: false,
+        setHeaders: (res) => {
+          res.setHeader('Cache-Control', 'public, max-age=3600');
+        },
+      })
+    );
 
     // Health check route - available before full initialization
     app.get('/health', (_req: Request, res: Response) => {

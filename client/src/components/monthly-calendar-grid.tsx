@@ -564,6 +564,7 @@ export function MonthlyCalendarGrid({
     staffing: 'Staffing',
     board: 'Board',
     seasonal: 'Seasonal',
+    holiday: 'Holidays',
     religious_holidays: 'Religious Holidays',
     other: 'Other',
   };

@@ -671,13 +671,15 @@ interface CardContactInfoProps {
   onCall?: () => void;
   onIntakeCall?: () => void;
   onContact?: () => void;
+  onToolkit?: () => void;
 }
 
 const CardContactInfo: React.FC<CardContactInfoProps> = ({
   request,
   onCall,
   onIntakeCall,
-  onContact
+  onContact,
+  onToolkit,
 }) => {
   const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
 
@@ -742,7 +744,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                   className="text-sm h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
                 >
                   <Phone className="w-4 h-4 mr-1" />
-                  Intake Call
+                  Intake Call Notes Form
                 </Button>
               )}
               {onCall && (
@@ -767,6 +769,17 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
             >
               <Mail className="w-4 h-4 mr-1" />
               Email
+            </Button>
+          )}
+          {onToolkit && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onToolkit}
+              className="text-sm h-8 bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
+            >
+              <Package className="w-4 h-4 mr-1" />
+              Send Toolkit
             </Button>
           )}
         </div>
@@ -1146,6 +1159,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               onCall={onCall}
               onIntakeCall={onIntakeCall}
               onContact={onContact}
+              onToolkit={onToolkit}
             />
 
             {/* TSP Contact Assignment Status */}
@@ -1294,23 +1308,6 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={onToolkit}
-                  className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
-                >
-                  <Package className="w-4 h-4 mr-1" />
-                  Send Toolkit
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Send toolkit email to the organizer</p>
-              </TooltipContent>
-            </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>

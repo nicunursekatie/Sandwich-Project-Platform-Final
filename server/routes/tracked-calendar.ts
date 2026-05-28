@@ -44,6 +44,98 @@ const religiousHolidaySchema = z.object({
 
 const religiousHolidaysImportSchema = z.array(religiousHolidaySchema);
 
+const usHolidaysImportSchema = z.object({
+  year: z.number().int().min(2020).max(2100),
+});
+
+function formatDate(year: number, monthIndex: number, day: number): string {
+  return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function getNthWeekdayOfMonth(year: number, monthIndex: number, weekday: number, nth: number): string {
+  const first = new Date(year, monthIndex, 1);
+  const offset = (weekday - first.getDay() + 7) % 7;
+  const day = 1 + offset + (nth - 1) * 7;
+  return formatDate(year, monthIndex, day);
+}
+
+function getLastWeekdayOfMonth(year: number, monthIndex: number, weekday: number): string {
+  const last = new Date(year, monthIndex + 1, 0);
+  const offset = (last.getDay() - weekday + 7) % 7;
+  return formatDate(year, monthIndex, last.getDate() - offset);
+}
+
+function buildUSHolidays(year: number) {
+  return [
+    {
+      id: `new-years-day-${year}`,
+      label: "New Year's Day",
+      date: formatDate(year, 0, 1),
+      notes: 'Federal holiday; collection and volunteer availability may be affected.',
+    },
+    {
+      id: `mlk-day-${year}`,
+      label: 'Martin Luther King Jr. Day',
+      date: getNthWeekdayOfMonth(year, 0, 1, 3),
+      notes: 'Federal holiday and common day of service.',
+    },
+    {
+      id: `presidents-day-${year}`,
+      label: "Presidents' Day",
+      date: getNthWeekdayOfMonth(year, 1, 1, 3),
+      notes: 'Federal holiday; schools and businesses may be closed.',
+    },
+    {
+      id: `memorial-day-${year}`,
+      label: 'Memorial Day',
+      date: getLastWeekdayOfMonth(year, 4, 1),
+      notes: 'Federal holiday; TSP often treats this as a no-collection week.',
+    },
+    {
+      id: `juneteenth-${year}`,
+      label: 'Juneteenth',
+      date: formatDate(year, 5, 19),
+      notes: 'Federal holiday; business schedules may be affected.',
+    },
+    {
+      id: `independence-day-${year}`,
+      label: 'Independence Day',
+      date: formatDate(year, 6, 4),
+      notes: 'Federal holiday; TSP often treats this as a no-collection week.',
+    },
+    {
+      id: `labor-day-${year}`,
+      label: 'Labor Day',
+      date: getNthWeekdayOfMonth(year, 8, 1, 1),
+      notes: 'Federal holiday; volunteer availability may be affected.',
+    },
+    {
+      id: `indigenous-peoples-day-${year}`,
+      label: "Indigenous Peoples' Day / Columbus Day",
+      date: getNthWeekdayOfMonth(year, 9, 1, 2),
+      notes: 'Federal holiday observed by many schools, governments, and businesses.',
+    },
+    {
+      id: `veterans-day-${year}`,
+      label: 'Veterans Day',
+      date: formatDate(year, 10, 11),
+      notes: 'Federal holiday; some schools and organizations may be closed.',
+    },
+    {
+      id: `thanksgiving-day-${year}`,
+      label: 'Thanksgiving Day',
+      date: getNthWeekdayOfMonth(year, 10, 4, 4),
+      notes: 'Major holiday; TSP often treats Thanksgiving week as a no-collection week.',
+    },
+    {
+      id: `christmas-day-${year}`,
+      label: 'Christmas Day',
+      date: formatDate(year, 11, 25),
+      notes: 'Major holiday; TSP often treats Christmas/New Year weeks as no-collection weeks.',
+    },
+  ];
+}
+
 // GET /api/tracked-calendar - Get tracked items for a year
 router.get('/', requirePermission(PERMISSIONS.YEARLY_CALENDAR_VIEW), async (req: Request, res: Response) => {
   try {
@@ -244,6 +336,81 @@ router.post('/import-religious-holidays', requirePermission(PERMISSIONS.YEARLY_C
   } catch (error) {
     logger.error('Failed to import religious holidays:', error);
     res.status(500).json({ message: 'Failed to import religious holidays' });
+  }
+});
+
+// POST /api/tracked-calendar/import-us-holidays - Add common U.S./TSP-relevant holidays for a year
+router.post('/import-us-holidays', requirePermission(PERMISSIONS.YEARLY_CALENDAR_EDIT), async (req: Request, res: Response) => {
+  try {
+    const parseResult = usHolidaysImportSchema.safeParse(req.body);
+
+    if (!parseResult.success) {
+      return res.status(400).json({
+        message: 'Invalid holiday import request',
+        errors: parseResult.error.errors,
+      });
+    }
+
+    const { year } = parseResult.data;
+    const holidays = buildUSHolidays(year);
+    const results = {
+      created: 0,
+      updated: 0,
+      errors: [] as string[],
+    };
+
+    for (const holiday of holidays) {
+      try {
+        const externalId = `us_holiday_${holiday.id}`;
+        const existing = await db
+          .select()
+          .from(trackedCalendarItems)
+          .where(eq(trackedCalendarItems.externalId, externalId))
+          .limit(1);
+
+        const itemData = {
+          externalId,
+          category: 'holiday',
+          title: holiday.label,
+          startDate: holiday.date,
+          endDate: holiday.date,
+          notes: holiday.notes,
+          metadata: {
+            type: 'us_holiday',
+            year,
+            source: 'generated',
+            originalId: holiday.id,
+          },
+          updatedAt: new Date(),
+        };
+
+        if (existing.length > 0) {
+          await db
+            .update(trackedCalendarItems)
+            .set(itemData)
+            .where(eq(trackedCalendarItems.externalId, externalId));
+          results.updated++;
+        } else {
+          await db.insert(trackedCalendarItems).values({
+            ...itemData,
+            createdAt: new Date(),
+          });
+          results.created++;
+        }
+      } catch (itemError) {
+        results.errors.push(`Failed to process ${holiday.label}: ${itemError}`);
+      }
+    }
+
+    logger.log(`US holidays import for ${year}: ${results.created} created, ${results.updated} updated, ${results.errors.length} errors`);
+
+    res.json({
+      message: 'Import completed',
+      ...results,
+    });
+  } catch (error) {
+    logger.error('Failed to import US holidays:', error);
+    res.status(500).json({ message: 'Failed to import US holidays' });
   }
 });
 
