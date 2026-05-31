@@ -1435,14 +1435,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
           <div className="flex space-x-3">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            {/*
+              Belt-and-suspenders: this button lives outside the <form>, so it relies on the
+              `form` attribute to submit. Some browser/portal combinations don't honor that
+              association, which made the button appear to do nothing. The onClick triggers the
+              save directly. preventDefault suppresses the native form submit so there is no
+              double submission, and the button stays disabled while a save is in flight.
+            */}
             <Button type="submit" form="event-scheduling-form" className="text-white"
               style={{ backgroundColor: '#236383' }}
               disabled={isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
-              // Belt-and-suspenders: this button lives outside the <form>, so it relies on the
-              // `form` attribute to submit. Some browser/portal combinations don't honor that
-              // association, which made the button appear to do nothing. The onClick triggers the
-              // save directly. The button stays disabled while a save is in flight, and the submit
-              // event itself is suppressed when this fires, so there is no double submission.
               onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
               {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
