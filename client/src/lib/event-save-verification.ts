@@ -43,6 +43,27 @@ function normalizeDateForCompare(value: any): string | null {
   return match ? match[1] : value;
 }
 
+/**
+ * Return the fields the server *explicitly* reported as dropped during a save.
+ *
+ * This is the only authoritative signal that a successful (HTTP 200) PATCH did
+ * not fully persist. `findMismatchedSavedFields` below is a heuristic best-effort
+ * comparison and is NOT reliable enough to block a save: the server legitimately
+ * transforms many fields (auto-bumps `driversNeeded`/`speakersNeeded`, sets
+ * `isConfirmed`, normalizes dates, returns `null` where the client sent `false`,
+ * stores recipients/assignments in join tables, parses JSON columns, etc.).
+ * Treating those heuristic mismatches as failures made every "Mark Scheduled"
+ * save appear to silently not save — the dialog stayed open and the draft was
+ * preserved even though the event had actually been saved.
+ */
+export function getDroppedServerFields(
+  savedEvent: Record<string, any> | null | undefined
+): DroppedEventField[] {
+  return Array.isArray(savedEvent?._droppedFields)
+    ? (savedEvent!._droppedFields as DroppedEventField[])
+    : [];
+}
+
 export function findMismatchedSavedFields(
   expectedUpdates: Record<string, any>,
   savedEvent: Record<string, any> | null | undefined

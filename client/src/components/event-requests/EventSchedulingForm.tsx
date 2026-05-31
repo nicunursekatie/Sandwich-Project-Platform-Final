@@ -58,6 +58,7 @@ import {
   buildEventDataForServer,
   detectChangedFields,
   findMismatchedSavedFields,
+  getDroppedServerFields,
   determineSandwichMode,
   determineActualSandwichMode,
   calculateRelevantSandwichCount,
@@ -767,25 +768,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
 
-      const droppedFields: Array<{ field: string; reason: string }> | undefined = updatedEvent?._droppedFields;
+      // Only the server-reported dropped fields are authoritative enough to block
+      // save completion. The heuristic round-trip comparison below is logged for
+      // diagnostics but must NOT keep the dialog open — treating its false
+      // positives as failures made every save look like it silently didn't save.
+      const droppedFields = getDroppedServerFields(updatedEvent);
       const mismatchedFields = findMismatchedSavedFields(variables.data || {}, updatedEvent);
-      if (
-        (Array.isArray(droppedFields) && droppedFields.length > 0) ||
-        mismatchedFields.length > 0
-      ) {
+      if (mismatchedFields.length > 0) {
+        logger.warn(
+          '[EventSchedulingForm] Post-save field comparison flagged (non-blocking):',
+          mismatchedFields,
+        );
+      }
+      if (droppedFields.length > 0) {
         saveToLocalStorage();
         await invalidateEventRequestQueries(queryClient);
 
-        const droppedSummary = Array.isArray(droppedFields) && droppedFields.length > 0
-          ? `Not saved: ${droppedFields.map((d) => `${d.field} (${d.reason})`).join(', ')}`
-          : '';
-        const mismatchSummary = mismatchedFields.length > 0
-          ? `Needs review: ${mismatchedFields.join(', ')} did not match the saved response.`
-          : '';
-
         toast({
           title: 'Partial Save - Please Review',
-          description: [droppedSummary, mismatchSummary].filter(Boolean).join(' '),
+          description: `Not saved: ${droppedFields.map((d) => `${d.field} (${d.reason})`).join(', ')}`,
           variant: 'destructive',
           duration: Number.POSITIVE_INFINITY,
         });
