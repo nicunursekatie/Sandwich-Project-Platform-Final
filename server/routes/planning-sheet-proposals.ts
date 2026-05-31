@@ -250,6 +250,26 @@ export function createPlanningSheetProposalsRouter(
       const result = await service.pushEventDirectly(parsedEventId, userId, mergeDecisions);
 
       if (result.success) {
+        // The event is now on the official planning sheet, so mark it "On Calendar".
+        // Only set the timestamp the first time so we preserve when it was originally added.
+        try {
+          const [existing] = await db
+            .select({ addedToOfficialSheet: eventRequests.addedToOfficialSheet })
+            .from(eventRequests)
+            .where(eq(eventRequests.id, parsedEventId));
+          await db
+            .update(eventRequests)
+            .set({
+              addedToOfficialSheet: true,
+              ...(existing?.addedToOfficialSheet ? {} : { addedToOfficialSheetAt: new Date() }),
+              updatedAt: new Date(),
+            })
+            .where(eq(eventRequests.id, parsedEventId));
+        } catch (markError) {
+          // Don't fail the push if the flag update hiccups — the sheet write already succeeded.
+          logger.error(`Pushed event ${parsedEventId} to sheet but failed to mark On Calendar:`, markError);
+        }
+
         res.json({
           success: true,
           message: result.message,

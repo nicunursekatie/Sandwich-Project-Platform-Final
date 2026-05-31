@@ -4472,6 +4472,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               showLabel
             />
 
+            {/* For users who type the event into the Google Sheet by hand instead of
+                using "Push to Sheet" — lets them mark it On Calendar without an actual
+                push. Hidden once the event is already on the calendar. */}
+            {canEdit && !request.addedToOfficialSheet && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => { e.stopPropagation(); quickToggleBoolean('addedToOfficialSheet', false); }}
+                className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
+              >
+                <CalendarCheck2 className="w-4 h-4 mr-1" />
+                Manually Added to Google Sheet
+              </Button>
+            )}
+
             {/* Van needed — only renders when no van flag is set AND no van driver assigned. */}
             {!request.assignedVanDriverId && !request.isDhlVan && (
               <VanNeededBadgeAndButton

@@ -2775,6 +2775,20 @@ router.patch(
           processedUpdates.isConfirmed = true;
         }
 
+        // When an event becomes scheduled (or rescheduled to a new confirmed date),
+        // auto-confirm the date ("Date Pending" → "Date Confirmed") and surface it on
+        // the Volunteer Hub so volunteers can sign up. Both remain manually toggleable
+        // afterward; we only set them on the transition, and we never force
+        // showOnVolunteerHub back off. Respect an explicit value sent in the same request.
+        if (toStatus === 'scheduled' || toStatus === 'rescheduled') {
+          if (processedUpdates.isConfirmed === undefined) {
+            processedUpdates.isConfirmed = true;
+          }
+          if (processedUpdates.showOnVolunteerHub === undefined && !originalEvent.showOnVolunteerHub) {
+            processedUpdates.showOnVolunteerHub = true;
+          }
+        }
+
         // Track reason metadata for declined status
         if (processedUpdates.status === 'declined') {
           processedUpdates.declinedAt = new Date();
