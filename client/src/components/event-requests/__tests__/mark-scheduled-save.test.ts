@@ -71,6 +71,24 @@ describe('Mark Scheduled status handling', () => {
     expect(payload.desiredEventDate).toBe('2026-07-20');
   });
 
+  it('KEEPS scheduledEventDate for rescheduled (a confirmed-calendar status) when the date changed', () => {
+    // Rescheduled is "a previously scheduled event assigned a new confirmed date" and is
+    // treated like scheduled, so the new confirmed date must persist on scheduledEventDate.
+    const formData = { ...baseFormData, status: 'rescheduled', eventDate: '2026-07-20' };
+    const original = { ...baseFormData, status: 'scheduled', eventDate: '2026-06-15' };
+    const eventData = buildEventDataForServer(formData, {
+      mode: 'schedule',
+      hasEventRequest: true,
+      eventRequestStatus: 'scheduled',
+      sandwichMode: 'total',
+      actualSandwichMode: 'total',
+    });
+    const payload = detectChangedFields(eventData, original, 'schedule');
+
+    expect(payload.status).toBe('rescheduled');
+    expect(payload.scheduledEventDate).toBe('2026-07-20');
+  });
+
   it('still sends scheduledEventDate when scheduling AND the date changed', () => {
     const formData = { ...baseFormData, status: 'scheduled', eventDate: '2026-07-20' };
     const original = { ...baseFormData, status: 'in_process', eventDate: '2026-06-15' };

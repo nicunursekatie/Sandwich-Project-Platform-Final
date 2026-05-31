@@ -291,15 +291,20 @@ export function detectChangedFields(
   if (mode === 'schedule') {
     const resolvedStatus = eventData.status || 'scheduled';
     filteredEventData.status = resolvedStatus;
-    if (resolvedStatus === 'scheduled') {
-      // Only attach the scheduled date when the event is actually being scheduled.
+    // 'scheduled' and 'rescheduled' are both confirmed-calendar statuses (the shared
+    // workflow defines rescheduled as "a previously scheduled event assigned a new
+    // confirmed date" and says to treat it like a scheduled event), so they keep a
+    // scheduledEventDate.
+    const isConfirmedCalendarStatus = resolvedStatus === 'scheduled' || resolvedStatus === 'rescheduled';
+    if (isConfirmedCalendarStatus) {
+      // Attach the scheduled date when the event has a confirmed calendar date.
       const schedDate = eventData.scheduledEventDate || eventData.desiredEventDate;
       if (schedDate) {
         filteredEventData.scheduledEventDate = schedDate;
       }
     } else {
       // The dialog opens in schedule mode, so buildEventDataForServer always populates
-      // scheduledEventDate. If the user instead picks a non-scheduled status (e.g.
+      // scheduledEventDate. If the user instead picks a non-calendar status (e.g.
       // Standby) AND changed the date, the change-detection loop above would have added
       // scheduledEventDate to the payload — sending a confirmed scheduled date alongside
       // a non-scheduled status. Strip it so the status and date stay consistent.
