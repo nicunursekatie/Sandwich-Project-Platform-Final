@@ -46,7 +46,7 @@ export function buildEventDataForServer(
 
   const eventData: Record<string, any> = {
     // Status logic: different handling per mode
-    ...(hasEventRequest && mode === 'schedule' ? { status: 'scheduled' } : {}),
+    ...(hasEventRequest && mode === 'schedule' ? { status: formData.status || 'scheduled' } : {}),
     ...(!hasEventRequest ? { status: formData.status || 'new' } : {}),
     ...(hasEventRequest && mode === 'edit' ? { status: formData.status || eventRequestStatus || 'new' } : {}),
 
@@ -284,16 +284,21 @@ export function detectChangedFields(
     }
   });
 
-  // Schedule mode safety: always ensure status and date are present
+  // Schedule mode safety: always ensure status and date are present.
+  // Status defaults to 'scheduled' (the whole point of this dialog) but respects
+  // an explicit choice the user made in the dropdown (e.g. Standby) rather than
+  // silently forcing 'scheduled'.
   if (mode === 'schedule') {
-    filteredEventData.status = 'scheduled';
-    // Always include scheduledEventDate in schedule mode - use the date from eventData
-    const schedDate = eventData.scheduledEventDate || eventData.desiredEventDate;
-    if (schedDate) {
-      filteredEventData.scheduledEventDate = schedDate;
+    const resolvedStatus = eventData.status || 'scheduled';
+    filteredEventData.status = resolvedStatus;
+    // Only attach the scheduled date when the event is actually being scheduled.
+    if (resolvedStatus === 'scheduled') {
+      const schedDate = eventData.scheduledEventDate || eventData.desiredEventDate;
+      if (schedDate) {
+        filteredEventData.scheduledEventDate = schedDate;
+      }
     }
-    // Also always include desiredEventDate if it has a value, so the date is never lost
-    // when scheduling an event
+    // Always include desiredEventDate if it has a value, so the date is never lost.
     if (eventData.desiredEventDate) {
       filteredEventData.desiredEventDate = eventData.desiredEventDate;
     }
