@@ -291,12 +291,19 @@ export function detectChangedFields(
   if (mode === 'schedule') {
     const resolvedStatus = eventData.status || 'scheduled';
     filteredEventData.status = resolvedStatus;
-    // Only attach the scheduled date when the event is actually being scheduled.
     if (resolvedStatus === 'scheduled') {
+      // Only attach the scheduled date when the event is actually being scheduled.
       const schedDate = eventData.scheduledEventDate || eventData.desiredEventDate;
       if (schedDate) {
         filteredEventData.scheduledEventDate = schedDate;
       }
+    } else {
+      // The dialog opens in schedule mode, so buildEventDataForServer always populates
+      // scheduledEventDate. If the user instead picks a non-scheduled status (e.g.
+      // Standby) AND changed the date, the change-detection loop above would have added
+      // scheduledEventDate to the payload — sending a confirmed scheduled date alongside
+      // a non-scheduled status. Strip it so the status and date stay consistent.
+      delete filteredEventData.scheduledEventDate;
     }
     // Always include desiredEventDate if it has a value, so the date is never lost.
     if (eventData.desiredEventDate) {

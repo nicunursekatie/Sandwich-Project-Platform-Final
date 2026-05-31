@@ -49,6 +49,44 @@ describe('Mark Scheduled status handling', () => {
     expect(payload.scheduledEventDate).toBeUndefined();
   });
 
+  it('does NOT leak scheduledEventDate when status is non-scheduled AND the date changed', () => {
+    // Regression: opening "Mark Scheduled", picking Standby, and ALSO changing the date.
+    // The form is in schedule mode so scheduledEventDate is populated, and because the
+    // date differs from the original, change-detection would include it. It must be
+    // stripped so a confirmed scheduled date isn't sent alongside a standby status.
+    const formData = { ...baseFormData, status: 'standby', eventDate: '2026-07-20' };
+    const original = { ...baseFormData, status: 'in_process', eventDate: '2026-06-15' };
+    const eventData = buildEventDataForServer(formData, {
+      mode: 'schedule',
+      hasEventRequest: true,
+      eventRequestStatus: 'in_process',
+      sandwichMode: 'total',
+      actualSandwichMode: 'total',
+    });
+    const payload = detectChangedFields(eventData, original, 'schedule');
+
+    expect(payload.status).toBe('standby');
+    expect(payload.scheduledEventDate).toBeUndefined();
+    // The desired date should still flow through so the date change isn't lost.
+    expect(payload.desiredEventDate).toBe('2026-07-20');
+  });
+
+  it('still sends scheduledEventDate when scheduling AND the date changed', () => {
+    const formData = { ...baseFormData, status: 'scheduled', eventDate: '2026-07-20' };
+    const original = { ...baseFormData, status: 'in_process', eventDate: '2026-06-15' };
+    const eventData = buildEventDataForServer(formData, {
+      mode: 'schedule',
+      hasEventRequest: true,
+      eventRequestStatus: 'in_process',
+      sandwichMode: 'total',
+      actualSandwichMode: 'total',
+    });
+    const payload = detectChangedFields(eventData, original, 'schedule');
+
+    expect(payload.status).toBe('scheduled');
+    expect(payload.scheduledEventDate).toBe('2026-07-20');
+  });
+
   it('falls back to "scheduled" when the form has no status set', () => {
     const formData = { ...baseFormData };
     delete formData.status;
