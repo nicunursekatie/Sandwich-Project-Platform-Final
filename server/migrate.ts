@@ -149,6 +149,7 @@ export async function runMigrationsAutomatically() {
       .sort(); // Sort to ensure migrations run in order
 
     let executedCount = 0;
+    let failedCount = 0;
 
     for (const file of files) {
       // Check if migration has already been executed
@@ -160,7 +161,12 @@ export async function runMigrationsAutomatically() {
         continue; // Skip already executed migrations
       }
 
-      // Read and execute the migration
+      // Read and execute the migration. Each file is isolated in its own
+      // try/catch so a single failing migration (e.g. a pre-existing broken
+      // file) cannot halt the entire chain and silently leave the database
+      // drifting from shared/schema.ts. Note: Neon's HTTP driver has no
+      // transaction support, so a mid-file failure may apply some statements;
+      // migrations should therefore be written idempotently (IF [NOT] EXISTS).
       const migrationPath = path.join(migrationsDir, file);
       const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
 
@@ -172,26 +178,46 @@ export async function runMigrationsAutomatically() {
       const normalizedSQL = migrationSQL.split('--> statement-breakpoint').join('\n');
       const statements = splitSqlStatements(normalizedSQL);
 
-      for (const statement of statements) {
-        await sql(statement);
+      try {
+        for (let idx = 0; idx < statements.length; idx++) {
+          try {
+            await sql(statements[idx]);
+          } catch (statementError) {
+            const snippet = statements[idx].slice(0, 200);
+            logger.error(
+              `❌ Migration ${file} failed at statement ${idx + 1}/${statements.length}: ${snippet}`,
+              statementError,
+            );
+            throw statementError;
+          }
+        }
+
+        // Mark migration as executed (only after all statements succeed)
+        await sql`
+          INSERT INTO "_migrations" (name) VALUES (${file})
+        `;
+
+        logger.log(`✅ Migration ${file} completed`);
+        executedCount++;
+      } catch (fileError) {
+        // Isolate the failure to this file and continue with the rest so a
+        // single broken migration does not block later ones.
+        failedCount++;
+        logger.error(`❌ Skipping migration ${file} after failure:`, fileError);
       }
-
-      // Mark migration as executed
-      await sql`
-        INSERT INTO "_migrations" (name) VALUES (${file})
-      `;
-
-      logger.log(`✅ Migration ${file} completed`);
-      executedCount++;
     }
 
-    if (executedCount > 0) {
+    if (failedCount > 0) {
+      logger.error(
+        `⚠️  Migrations completed with ${failedCount} failed file(s); ${executedCount} applied. Database may not match shared/schema.ts.`,
+      );
+    } else if (executedCount > 0) {
       logger.log(`✅ Applied ${executedCount} database migration(s)`);
     } else {
       logger.log('✅ All migrations already applied');
     }
   } catch (error) {
-    logger.error('❌ Migration failed:', error);
+    logger.error('❌ Migration runner failed:', error);
     // Don't throw - allow app to continue (migrations might fail in dev environments)
   }
 }
