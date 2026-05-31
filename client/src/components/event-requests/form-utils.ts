@@ -12,6 +12,24 @@ import type { EventFormData } from './form-sections/types';
 export { findMismatchedSavedFields, getDroppedServerFields } from '@/lib/event-save-verification';
 
 /**
+ * Statuses that represent a confirmed date on the calendar. These are the only
+ * statuses that carry a `scheduledEventDate`. `rescheduled` is defined in the shared
+ * workflow as "a previously scheduled event assigned a new confirmed date" and is
+ * explicitly meant to be treated like `scheduled`.
+ *
+ * SINGLE source of truth — used by both buildEventDataForServer (deciding whether to
+ * populate scheduledEventDate) and detectChangedFields (deciding whether to keep or
+ * strip it). Keeping these in lockstep prevents date/status drift bugs where a
+ * confirmed date is dropped (rescheduled) or a stale date leaks onto a non-calendar
+ * status (standby).
+ */
+const CONFIRMED_CALENDAR_STATUSES = new Set(['scheduled', 'rescheduled']);
+
+function isConfirmedCalendarStatus(status: string | null | undefined): boolean {
+  return !!status && CONFIRMED_CALENDAR_STATUSES.has(status);
+}
+
+/**
  * Serialize a date string for the backend.
  * Sends bare YYYY-MM-DD so parseDateOnly uses its safe local-noon path.
  * Returns null for empty/falsy strings.
@@ -54,8 +72,13 @@ export function buildEventDataForServer(
     desiredEventDate: serializeDateToISO(formData.eventDate),
     dateFlexible: formData.dateFlexible,
     backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
-    // In schedule mode OR when status is 'scheduled', always sync scheduledEventDate with the event date
-    ...(formData.status === 'scheduled' || mode === 'schedule'
+    // Sync scheduledEventDate with the event date whenever the event has (or is getting)
+    // a confirmed calendar date: any confirmed-calendar status, or schedule mode (which
+    // defaults to scheduling). In edit mode this covers both 'scheduled' and 'rescheduled'
+    // so editing a rescheduled event's date actually persists. The detectChangedFields
+    // schedule-mode safety block strips this again for non-calendar statuses picked in the
+    // scheduling dialog (e.g. Standby).
+    ...(isConfirmedCalendarStatus(formData.status) || mode === 'schedule'
       ? { scheduledEventDate: serializeDateToISO(formData.eventDate) }
       : {}),
 
