@@ -9,6 +9,110 @@ import { getDatabaseUrl, getDatabaseBranch } from './db-url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Neon's HTTP driver cannot execute multiple commands in a single call
+// ("cannot insert multiple commands into a prepared statement"). Migration
+// files often contain several statements, so we split them into individual
+// statements before executing. This splitter respects single-quoted strings
+// and dollar-quoted blocks so semicolons inside them are not treated as
+// statement separators.
+function splitSqlStatements(sql: string): string[] {
+  const statements: string[] = [];
+  let current = '';
+  let i = 0;
+  let inSingleQuote = false;
+  let dollarTag: string | null = null;
+
+  while (i < sql.length) {
+    const char = sql[i];
+    const rest = sql.slice(i);
+
+    // Inside a dollar-quoted block ($$ ... $$ or $tag$ ... $tag$)
+    if (dollarTag) {
+      if (rest.startsWith(dollarTag)) {
+        current += dollarTag;
+        i += dollarTag.length;
+        dollarTag = null;
+        continue;
+      }
+      current += char;
+      i++;
+      continue;
+    }
+
+    // Inside a single-quoted string literal
+    if (inSingleQuote) {
+      if (char === "'") {
+        // Handle escaped quote ('')
+        if (sql[i + 1] === "'") {
+          current += "''";
+          i += 2;
+          continue;
+        }
+        inSingleQuote = false;
+      }
+      current += char;
+      i++;
+      continue;
+    }
+
+    // Line comment -- ... (skip to end of line)
+    if (char === '-' && sql[i + 1] === '-') {
+      const newlineIdx = sql.indexOf('\n', i);
+      if (newlineIdx === -1) {
+        i = sql.length;
+      } else {
+        current += '\n';
+        i = newlineIdx + 1;
+      }
+      continue;
+    }
+
+    // Block comment /* ... */
+    if (char === '/' && sql[i + 1] === '*') {
+      const endIdx = sql.indexOf('*/', i + 2);
+      i = endIdx === -1 ? sql.length : endIdx + 2;
+      continue;
+    }
+
+    // Start of dollar-quoted block
+    if (char === '$') {
+      const match = rest.match(/^\$[A-Za-z0-9_]*\$/);
+      if (match) {
+        dollarTag = match[0];
+        current += dollarTag;
+        i += dollarTag.length;
+        continue;
+      }
+    }
+
+    if (char === "'") {
+      inSingleQuote = true;
+      current += char;
+      i++;
+      continue;
+    }
+
+    // Statement terminator at top level
+    if (char === ';') {
+      if (current.trim()) {
+        statements.push(current.trim());
+      }
+      current = '';
+      i++;
+      continue;
+    }
+
+    current += char;
+    i++;
+  }
+
+  if (current.trim()) {
+    statements.push(current.trim());
+  }
+
+  return statements;
+}
+
 export async function runMigrationsAutomatically() {
   const DATABASE_URL = getDatabaseUrl();
 
@@ -62,14 +166,14 @@ export async function runMigrationsAutomatically() {
 
       logger.log(`📝 Executing migration: ${file}...`);
 
-      // Split by statement-breakpoint if it exists, otherwise execute as one statement
-      const statements = migrationSQL.split('--> statement-breakpoint');
+      // Migration files may contain multiple statements (optionally separated
+      // by the drizzle "--> statement-breakpoint" marker). Neon's HTTP driver
+      // only accepts one command per call, so split into individual statements.
+      const normalizedSQL = migrationSQL.split('--> statement-breakpoint').join('\n');
+      const statements = splitSqlStatements(normalizedSQL);
 
       for (const statement of statements) {
-        const trimmed = statement.trim();
-        if (trimmed) {
-          await sql(trimmed);
-        }
+        await sql(statement);
       }
 
       // Mark migration as executed
