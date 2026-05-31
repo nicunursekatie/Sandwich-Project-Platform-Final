@@ -251,17 +251,20 @@ export function createPlanningSheetProposalsRouter(
 
       if (result.success) {
         // The event is now on the official planning sheet, so mark it "On Calendar".
-        // Only set the timestamp the first time so we preserve when it was originally added.
+        // Key the "first time" check off the timestamp itself (not the boolean): older
+        // rows, manual toggles, or partial migrations can have addedToOfficialSheet=true
+        // with a null timestamp, and we want to backfill the timestamp in that case so
+        // the UI doesn't show "On Calendar" without a date.
         try {
           const [existing] = await db
-            .select({ addedToOfficialSheet: eventRequests.addedToOfficialSheet })
+            .select({ addedToOfficialSheetAt: eventRequests.addedToOfficialSheetAt })
             .from(eventRequests)
             .where(eq(eventRequests.id, parsedEventId));
           await db
             .update(eventRequests)
             .set({
               addedToOfficialSheet: true,
-              ...(existing?.addedToOfficialSheet ? {} : { addedToOfficialSheetAt: new Date() }),
+              ...(existing?.addedToOfficialSheetAt ? {} : { addedToOfficialSheetAt: new Date() }),
               updatedAt: new Date(),
             })
             .where(eq(eventRequests.id, parsedEventId));

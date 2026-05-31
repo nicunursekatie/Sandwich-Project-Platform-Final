@@ -2820,8 +2820,15 @@ router.patch(
 
       }
 
-      // Automatically set isConfirmed = true when scheduledEventDate is set
-      if (processedUpdates.scheduledEventDate && !originalEvent.scheduledEventDate) {
+      // Automatically set isConfirmed = true when scheduledEventDate is first set,
+      // UNLESS the client explicitly provided isConfirmed in the same request — an
+      // explicit isConfirmed: false alongside a new date should be respected, not
+      // silently overridden back to true.
+      if (
+        processedUpdates.isConfirmed === undefined &&
+        processedUpdates.scheduledEventDate &&
+        !originalEvent.scheduledEventDate
+      ) {
         processedUpdates.isConfirmed = true;
       }
 
