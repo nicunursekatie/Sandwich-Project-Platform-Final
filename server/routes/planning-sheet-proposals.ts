@@ -250,6 +250,45 @@ export function createPlanningSheetProposalsRouter(
       const result = await service.pushEventDirectly(parsedEventId, userId, mergeDecisions);
 
       if (result.success) {
+        // The event is now on the official planning sheet, so mark it "On Calendar".
+        // Key the "first time" check off the timestamp itself (not the boolean): older
+        // rows, manual toggles, or partial migrations can have addedToOfficialSheet=true
+        // with a null timestamp, and we want to backfill the timestamp in that case so
+        // the UI doesn't show "On Calendar" without a date.
+        try {
+          const [existing] = await db
+            .select({ addedToOfficialSheetAt: eventRequests.addedToOfficialSheetAt })
+            .from(eventRequests)
+            .where(eq(eventRequests.id, parsedEventId));
+          const setTimestamp = !existing?.addedToOfficialSheetAt;
+          try {
+            await db
+              .update(eventRequests)
+              .set({
+                addedToOfficialSheet: true,
+                ...(setTimestamp ? { addedToOfficialSheetAt: new Date() } : {}),
+                updatedAt: new Date(),
+              })
+              .where(eq(eventRequests.id, parsedEventId));
+          } catch (updateError) {
+            // The addedToOfficialSheetAt column may not exist on this branch yet
+            // (migration pending). Mirror the main PATCH path: retry with just the
+            // boolean so "On Calendar" still flips true even if the timestamp can't persist.
+            if (setTimestamp) {
+              logger.warn(`Push mark On Calendar failed with timestamp for event ${parsedEventId}, retrying without it:`, updateError);
+              await db
+                .update(eventRequests)
+                .set({ addedToOfficialSheet: true, updatedAt: new Date() })
+                .where(eq(eventRequests.id, parsedEventId));
+            } else {
+              throw updateError;
+            }
+          }
+        } catch (markError) {
+          // Don't fail the push if the flag update hiccups — the sheet write already succeeded.
+          logger.error(`Pushed event ${parsedEventId} to sheet but failed to mark On Calendar:`, markError);
+        }
+
         res.json({
           success: true,
           message: result.message,
