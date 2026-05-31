@@ -4482,7 +4482,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 onClick={(e) => { e.stopPropagation(); quickToggleBoolean('addedToOfficialSheet', false); }}
                 className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
               >
-                <CalendarPlus className="w-4 h-4 mr-1" />
+                <Calendar className="w-4 h-4 mr-1" />
                 Manually Added to Google Sheet
               </Button>
             )}
