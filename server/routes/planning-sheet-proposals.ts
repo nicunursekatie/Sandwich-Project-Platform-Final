@@ -260,14 +260,30 @@ export function createPlanningSheetProposalsRouter(
             .select({ addedToOfficialSheetAt: eventRequests.addedToOfficialSheetAt })
             .from(eventRequests)
             .where(eq(eventRequests.id, parsedEventId));
-          await db
-            .update(eventRequests)
-            .set({
-              addedToOfficialSheet: true,
-              ...(existing?.addedToOfficialSheetAt ? {} : { addedToOfficialSheetAt: new Date() }),
-              updatedAt: new Date(),
-            })
-            .where(eq(eventRequests.id, parsedEventId));
+          const setTimestamp = !existing?.addedToOfficialSheetAt;
+          try {
+            await db
+              .update(eventRequests)
+              .set({
+                addedToOfficialSheet: true,
+                ...(setTimestamp ? { addedToOfficialSheetAt: new Date() } : {}),
+                updatedAt: new Date(),
+              })
+              .where(eq(eventRequests.id, parsedEventId));
+          } catch (updateError) {
+            // The addedToOfficialSheetAt column may not exist on this branch yet
+            // (migration pending). Mirror the main PATCH path: retry with just the
+            // boolean so "On Calendar" still flips true even if the timestamp can't persist.
+            if (setTimestamp) {
+              logger.warn(`Push mark On Calendar failed with timestamp for event ${parsedEventId}, retrying without it:`, updateError);
+              await db
+                .update(eventRequests)
+                .set({ addedToOfficialSheet: true, updatedAt: new Date() })
+                .where(eq(eventRequests.id, parsedEventId));
+            } else {
+              throw updateError;
+            }
+          }
         } catch (markError) {
           // Don't fail the push if the flag update hiccups — the sheet write already succeeded.
           logger.error(`Pushed event ${parsedEventId} to sheet but failed to mark On Calendar:`, markError);
