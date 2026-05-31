@@ -111,26 +111,66 @@ export function ResourceAdminModal({
     try {
       let documentId = null;
 
-      // Upload file if type is 'file' and a file is selected
+      // Upload file if type is 'file' and a file is selected.
+      // Uses the two-step presigned-URL flow: request a cloud upload URL,
+      // PUT the file directly to storage, then create the document record.
       if (formData.type === 'file' && formData.file) {
-        const fileFormData = new FormData();
-        fileFormData.append('file', formData.file);
-        fileFormData.append('title', formData.title);
-        fileFormData.append('description', formData.description);
-        fileFormData.append('category', formData.category);
+        const file = formData.file;
 
-        const uploadRes = await fetch('/api/documents', {
+        // Step 1: Request a presigned upload URL
+        const urlRes = await fetch('/api/documents/request-upload-url', {
           method: 'POST',
           credentials: 'include',
-          body: fileFormData,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            contentType: file.type,
+          }),
+        });
+
+        if (!urlRes.ok) {
+          const err = await urlRes.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to get upload URL');
+        }
+
+        const { uploadURL, objectPath } = await urlRes.json();
+
+        // Step 2: Upload the file directly to cloud storage
+        const uploadRes = await fetch(uploadURL, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
         });
 
         if (!uploadRes.ok) {
-          throw new Error('Failed to upload file');
+          throw new Error('Failed to upload file to storage');
         }
 
-        const uploadData = await uploadRes.json();
-        documentId = uploadData.id;
+        // Step 3: Create the document record in the database
+        const createRes = await fetch('/api/documents', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: formData.title,
+            description: formData.description || null,
+            category: formData.category,
+            fileName: file.name,
+            originalName: file.name,
+            fileSize: file.size,
+            mimeType: file.type,
+            objectPath,
+          }),
+        });
+
+        if (!createRes.ok) {
+          const err = await createRes.json().catch(() => ({}));
+          throw new Error(err.error || 'Failed to create document record');
+        }
+
+        const uploadData = await createRes.json();
+        documentId = uploadData.document?.id ?? uploadData.id;
       }
 
       // Create or update resource
