@@ -44,33 +44,48 @@ export const StatusToolkitSection: React.FC<StatusToolkitSectionProps> = ({
 }) => {
   const [showCorporatePriorityConfirmDialog, setShowCorporatePriorityConfirmDialog] = React.useState(false);
 
-  const effectiveStatus = formData.status || eventRequest?.status || 'new';
+  // The value shown as selected in the dropdown — reflects the user's current choice,
+  // including a pre-set intent like "Scheduled" when opened via "Mark Scheduled".
+  const selectedStatus = (formData.status || eventRequest?.status || 'new') as EventStatus;
+  // The REAL stored status on the server. The list of offerable transitions must be
+  // derived from this — not from the pre-set selected value — otherwise the dropdown
+  // could offer jumps the server rejects (e.g. an in_process event opened via "Mark
+  // Scheduled" pre-selects 'scheduled' and would otherwise offer scheduled-only options
+  // like Cancelled/Completed, which the server refuses as invalid from in_process).
+  const serverStatus = (eventRequest?.status || formData.status || 'new') as EventStatus;
+
+  // Build the option set from the real status: the current status plus its valid
+  // transitions. Always include the currently-selected value so the dropdown can
+  // render it even if it isn't in the transition list. De-dupe while preserving order.
+  const statusOptions = Array.from(
+    new Set<EventStatus>([
+      serverStatus,
+      ...((VALID_STATUS_TRANSITIONS[serverStatus] || []) as EventStatus[]),
+      selectedStatus,
+    ])
+  );
 
   return (
     <>
       {/* Status */}
       <div>
         <Label htmlFor="status">Status</Label>
-        <Select value={effectiveStatus} onValueChange={onStatusChange}>
+        <Select value={selectedStatus} onValueChange={onStatusChange}>
           <SelectTrigger data-testid="select-status">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent className="z-[200]" position="popper" sideOffset={5}>
-            <SelectItem value={effectiveStatus}>
-              {STATUS_DEFINITIONS[effectiveStatus as EventStatus]?.label || effectiveStatus} (Current)
-            </SelectItem>
-            {(VALID_STATUS_TRANSITIONS[effectiveStatus as EventStatus] || [])
-              .filter(s => s !== effectiveStatus)
-              .map(status => (
-                <SelectItem key={status} value={status}>
-                  {STATUS_DEFINITIONS[status]?.label || status}
-                </SelectItem>
-              ))}
+            {statusOptions.map(status => (
+              <SelectItem key={status} value={status}>
+                {STATUS_DEFINITIONS[status]?.label || status}
+                {status === serverStatus ? ' (Current)' : ''}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        {effectiveStatus && STATUS_DEFINITIONS[effectiveStatus as EventStatus] && (
+        {selectedStatus && STATUS_DEFINITIONS[selectedStatus as EventStatus] && (
           <p className="text-xs text-gray-500 mt-1">
-            {STATUS_DEFINITIONS[effectiveStatus as EventStatus].definition}
+            {STATUS_DEFINITIONS[selectedStatus as EventStatus].definition}
           </p>
         )}
       </div>
