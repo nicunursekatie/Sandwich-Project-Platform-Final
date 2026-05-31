@@ -1,7 +1,68 @@
 jest.mock('@/lib/logger', () => ({ logger: { log() {}, warn() {}, error() {}, info() {} } }));
 jest.mock('@/lib/queryClient', () => ({ apiRequest: jest.fn() }));
 
-import { findMismatchedSavedFields, getDroppedServerFields } from '../form-utils';
+import {
+  findMismatchedSavedFields,
+  getDroppedServerFields,
+  buildEventDataForServer,
+  detectChangedFields,
+} from '../form-utils';
+
+const baseFormData: any = {
+  eventDate: '2026-06-15',
+  backupDates: [],
+  sandwichTypes: [],
+  totalSandwichCount: 100,
+  estimatedSandwichCountMin: 0,
+  estimatedSandwichCountMax: 0,
+  actualSandwichTypes: [],
+  assignedRecipientIds: [],
+  speakersNeeded: 0,
+  driversNeeded: 0,
+  volunteersNeeded: 0,
+};
+
+function buildSchedulePayload(formStatus: string) {
+  const formData = { ...baseFormData, status: formStatus };
+  const original = { ...baseFormData, status: 'in_process' };
+  const eventData = buildEventDataForServer(formData, {
+    mode: 'schedule',
+    hasEventRequest: true,
+    eventRequestStatus: 'in_process',
+    sandwichMode: 'total',
+    actualSandwichMode: 'total',
+  });
+  return detectChangedFields(eventData, original, 'schedule');
+}
+
+describe('Mark Scheduled status handling', () => {
+  it('defaults the saved status to "scheduled" and includes the scheduled date', () => {
+    const payload = buildSchedulePayload('scheduled');
+    expect(payload.status).toBe('scheduled');
+    expect(payload.scheduledEventDate).toBe('2026-06-15');
+  });
+
+  it('respects an explicit non-scheduled choice (e.g. Standby) instead of forcing scheduled', () => {
+    const payload = buildSchedulePayload('standby');
+    expect(payload.status).toBe('standby');
+    // No scheduled date should be attached when the user is not actually scheduling.
+    expect(payload.scheduledEventDate).toBeUndefined();
+  });
+
+  it('falls back to "scheduled" when the form has no status set', () => {
+    const formData = { ...baseFormData };
+    delete formData.status;
+    const eventData = buildEventDataForServer(formData, {
+      mode: 'schedule',
+      hasEventRequest: true,
+      eventRequestStatus: 'in_process',
+      sandwichMode: 'total',
+      actualSandwichMode: 'total',
+    });
+    const payload = detectChangedFields(eventData, { ...baseFormData, status: 'in_process' }, 'schedule');
+    expect(payload.status).toBe('scheduled');
+  });
+});
 
 /**
  * Regression coverage for the "Mark Scheduled won't save" bug.
