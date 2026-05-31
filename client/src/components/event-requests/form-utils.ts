@@ -9,7 +9,7 @@
 
 import { FIELD_MAPPINGS } from './fieldConfig';
 import type { EventFormData } from './form-sections/types';
-export { findMismatchedSavedFields } from '@/lib/event-save-verification';
+export { findMismatchedSavedFields, getDroppedServerFields } from '@/lib/event-save-verification';
 
 /**
  * Serialize a date string for the backend.
