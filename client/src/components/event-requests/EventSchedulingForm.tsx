@@ -920,7 +920,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const performSubmit = async (skipSpeakerWarning = false, fieldOverrides?: Record<string, any>) => {
     setIsSubmitting(true);
-    clearAutoSave();
+    // NOTE: the recovery draft is intentionally cleared only after a successful
+    // save (in the mutation onSuccess handlers). Clearing it here would wipe the
+    // user's unsaved edits if the save then failed (network drop, timeout, 4xx/5xx).
+    // The auto-save effect is suppressed while isSubmitting is true.
 
     // Block submission if form not initialized
     if (eventRequest && !formInitialized) {
@@ -1021,8 +1024,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // ── Form Submit Handler ────────────────────────────────────────────
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault?.();
 
     // Non-blocking van conflict check
     if (eventLikelyNeedsVan() && !vanConflictChecked) {
@@ -1435,6 +1438,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             <Button type="submit" form="event-scheduling-form" className="text-white"
               style={{ backgroundColor: '#236383' }}
               disabled={isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              // Belt-and-suspenders: this button lives outside the <form>, so it relies on the
+              // `form` attribute to submit. Some browser/portal combinations don't honor that
+              // association, which made the button appear to do nothing. The onClick triggers the
+              // save directly. The button stays disabled while a save is in flight, and the submit
+              // event itself is suppressed when this fires, so there is no double submission.
+              onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
               {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
                 ? (mode === 'edit' ? 'Saving...' : 'Scheduling...')
