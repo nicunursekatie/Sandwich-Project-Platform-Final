@@ -357,19 +357,60 @@ streamRoutes.post('/channels/:type/:id/members', async (req, res) => {
       .map((p) => `user_${p}`)
       .filter((sid) => currentMemberIds.includes(sid));
 
-    if (addStreamIds.length > 0) {
-      await channel.addMembers(addStreamIds);
-    }
-    if (removeStreamIds.length > 0) {
-      await channel.removeMembers(removeStreamIds);
+    // Nothing actually resolves to a real change (e.g. all adds were already members or unknown,
+    // all removes were absent). Report changed:false so the client doesn't show a misleading
+    // "Group updated" toast.
+    if (addStreamIds.length === 0 && removeStreamIds.length === 0) {
+      return res.json({
+        success: true,
+        changed: false,
+        added: 0,
+        removed: 0,
+        members: currentMemberIds,
+      });
     }
 
-    // Re-query to return the updated member list.
+    // Stream has no single atomic add+remove call, so apply sequentially and track what actually
+    // committed. On a partial failure we still re-query and return the real member list (with a
+    // 207) instead of a blanket 500, so the client can refresh to the true state.
+    let added = 0;
+    let removed = 0;
+    let opError: any = null;
+    try {
+      if (addStreamIds.length > 0) {
+        await channel.addMembers(addStreamIds);
+        added = addStreamIds.length;
+      }
+      if (removeStreamIds.length > 0) {
+        await channel.removeMembers(removeStreamIds);
+        removed = removeStreamIds.length;
+      }
+    } catch (mutationError: any) {
+      opError = mutationError;
+      logger.error('Channel member mutation partially failed:', mutationError);
+    }
+
+    // Re-query to return the actual resulting member list.
     await channel.query({ members: { limit: 200 } });
+    const members = Object.keys(channel.state.members || {});
+
+    if (opError) {
+      return res.status(207).json({
+        success: false,
+        changed: added > 0 || removed > 0,
+        added,
+        removed,
+        members,
+        error: opError.message || 'Some changes could not be applied',
+      });
+    }
 
     res.json({
       success: true,
-      members: Object.keys(channel.state.members || {}),
+      changed: added > 0 || removed > 0,
+      added,
+      removed,
+      members,
     });
   } catch (error) {
     logger.error('Channel member update error:', error);

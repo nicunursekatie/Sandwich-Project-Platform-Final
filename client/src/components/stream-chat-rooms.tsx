@@ -457,20 +457,44 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
     if (!client || !streamUserId) return;
     setIsSavingMembers(true);
     try {
-      await apiRequest('POST', `/api/stream/channels/${channel.type}/${channel.id}/members`, changes);
-      // Refresh the channel state so the dialog and list reflect the change.
+      const result = await apiRequest('POST', `/api/stream/channels/${channel.type}/${channel.id}/members`, changes);
+      // Refresh the channel state so the dialog and list reflect the actual result (a partial
+      // failure may still have committed some changes).
       await channel.watch();
       setMembersDialogUsers(getChannelMemberList(channel));
       setMembersToAdd([]);
       setMemberSearch('');
       setShowAddMembers(false);
       await loadUserChannels(client, streamUserId);
-      toast({
-        title: 'Group updated',
-        description: 'The member list has been updated.',
-      });
+
+      if (result?.success === false) {
+        // Partial failure (HTTP 207): some changes may have applied, some did not.
+        toast({
+          title: 'Group only partially updated',
+          description: result?.error || 'Some changes could not be applied. Please review the member list.',
+          variant: 'destructive',
+        });
+      } else if (result?.changed === false) {
+        toast({
+          title: 'No changes',
+          description: 'The member list was already up to date.',
+        });
+      } else {
+        toast({
+          title: 'Group updated',
+          description: 'The member list has been updated.',
+        });
+      }
     } catch (error: any) {
       logger.error('Failed to update group members:', error);
+      // The request failed outright — still refresh so the UI reflects the true state.
+      try {
+        await channel.watch();
+        setMembersDialogUsers(getChannelMemberList(channel));
+        await loadUserChannels(client, streamUserId);
+      } catch (refreshError) {
+        logger.error('Failed to refresh group after error:', refreshError);
+      }
       toast({
         title: 'Failed to update group',
         description: error?.message || 'Please try again.',
