@@ -1280,12 +1280,16 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
           </DialogDescription>
         </DialogHeader>
         {(() => {
+          // Total members on the channel (independent of how the current user is filtered out
+          // of the display list, so a 2-person DM can never be mistaken for a group).
+          const totalMemberCount = Object.keys(membersDialogChannel?.state?.members || {}).length;
+
           // Membership can only be edited on group chats (messaging channels with 3+ members),
           // and only by admins/coordinators. Team rooms and DMs are not editable here.
           const isEditableGroup =
             canManageMembers &&
             membersDialogChannel?.type === 'messaging' &&
-            membersDialogUsers.length >= 2;
+            totalMemberCount > 2;
 
           // App user IDs already in the channel (strip the `user_` Stream prefix).
           const currentMemberAppIds = new Set(
