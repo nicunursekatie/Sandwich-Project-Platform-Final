@@ -2,6 +2,7 @@ import { db } from '../db';
 import { emailMessages, users } from '@shared/schema';
 import { eq, and, or, desc, isNull, sql, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { getLinkedUserIds } from '../lib/linked-accounts';
 
 export interface EmailMessage {
   id: number;
@@ -43,12 +44,13 @@ export class EmailService {
    */
   async getUnreadEmailCount(userId: string): Promise<number> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       const result = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(emailMessages)
         .where(
           and(
-            eq(emailMessages.recipientId, userId),
+            inArray(emailMessages.recipientId, linkedIds),
             eq(emailMessages.isRead, false),
             eq(emailMessages.isDraft, false),
             eq(emailMessages.isTrashed, false)
@@ -70,6 +72,7 @@ export class EmailService {
     folder: string
   ): Promise<EmailMessage[]> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       let query;
 
       switch (folder) {
@@ -79,7 +82,7 @@ export class EmailService {
             .from(emailMessages)
             .where(
               and(
-                eq(emailMessages.recipientId, userId), // Only show emails sent TO this user
+                inArray(emailMessages.recipientId, linkedIds), // Show emails sent TO this user or a linked account
                 eq(emailMessages.isDraft, false),
                 eq(emailMessages.isTrashed, false),
                 eq(emailMessages.isArchived, false)
@@ -95,7 +98,7 @@ export class EmailService {
               and(
                 or(
                   eq(emailMessages.senderId, userId),
-                  eq(emailMessages.recipientId, userId)
+                  inArray(emailMessages.recipientId, linkedIds)
                 ),
                 eq(emailMessages.isStarred, true),
                 eq(emailMessages.isTrashed, false)
@@ -137,7 +140,7 @@ export class EmailService {
               and(
                 or(
                   eq(emailMessages.senderId, userId),
-                  eq(emailMessages.recipientId, userId)
+                  inArray(emailMessages.recipientId, linkedIds)
                 ),
                 eq(emailMessages.isArchived, true),
                 eq(emailMessages.isTrashed, false)
@@ -153,7 +156,7 @@ export class EmailService {
               and(
                 or(
                   eq(emailMessages.senderId, userId),
-                  eq(emailMessages.recipientId, userId)
+                  inArray(emailMessages.recipientId, linkedIds)
                 ),
                 eq(emailMessages.isTrashed, true)
               )
@@ -169,7 +172,7 @@ export class EmailService {
               and(
                 or(
                   eq(emailMessages.senderId, userId),
-                  eq(emailMessages.recipientId, userId)
+                  inArray(emailMessages.recipientId, linkedIds)
                 ),
                 eq(emailMessages.isDraft, false),
                 eq(emailMessages.isTrashed, false),
@@ -434,6 +437,7 @@ export class EmailService {
     }
   ): Promise<boolean> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       // Verify user has access to this email
       const [email] = await db
         .select()
@@ -443,7 +447,7 @@ export class EmailService {
             eq(emailMessages.id, emailId),
             or(
               eq(emailMessages.senderId, userId),
-              eq(emailMessages.recipientId, userId)
+              inArray(emailMessages.recipientId, linkedIds)
             )
           )
         );
@@ -454,8 +458,10 @@ export class EmailService {
       }
 
       // CRITICAL FIX: Only allow recipients to mark emails as read
-      // If sender is trying to mark as read, ignore that update to prevent affecting recipient's unread status
-      if (updates.isRead !== undefined && email.senderId === userId) {
+      // If the acting account is the sender (and not also a linked recipient),
+      // ignore read updates to prevent affecting the recipient's unread status
+      const isRecipient = linkedIds.includes(email.recipientId);
+      if (updates.isRead !== undefined && !isRecipient) {
         logger.log(
           `Sender ${userId} attempted to mark email ${emailId} as read - ignoring to protect recipient read status`
         );
@@ -504,6 +510,7 @@ export class EmailService {
    */
   async deleteEmail(emailId: number, userId: string): Promise<boolean> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       // Verify user has access to this email
       const result = await db
         .delete(emailMessages)
@@ -512,7 +519,7 @@ export class EmailService {
             eq(emailMessages.id, emailId),
             or(
               eq(emailMessages.senderId, userId),
-              eq(emailMessages.recipientId, userId)
+              inArray(emailMessages.recipientId, linkedIds)
             )
           )
         );
@@ -532,6 +539,7 @@ export class EmailService {
     userId: string
   ): Promise<EmailMessage | null> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       const [email] = await db
         .select()
         .from(emailMessages)
@@ -540,7 +548,7 @@ export class EmailService {
             eq(emailMessages.id, emailId),
             or(
               eq(emailMessages.senderId, userId),
-              eq(emailMessages.recipientId, userId)
+              inArray(emailMessages.recipientId, linkedIds)
             )
           )
         );
@@ -561,6 +569,7 @@ export class EmailService {
     userId: string
   ): Promise<EmailMessage[]> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       // First, find the root of this thread by walking up the parent chain
       let rootId = emailId;
       let currentEmail = await this.getEmailById(emailId, userId);
@@ -602,7 +611,7 @@ export class EmailService {
                 eq(emailMessages.parentMessageId, messageId),
                 or(
                   eq(emailMessages.senderId, userId),
-                  eq(emailMessages.recipientId, userId)
+                  inArray(emailMessages.recipientId, linkedIds)
                 )
               )
             )
@@ -638,6 +647,7 @@ export class EmailService {
     searchTerm: string
   ): Promise<EmailMessage[]> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       const results = await db
         .select()
         .from(emailMessages)
@@ -645,7 +655,7 @@ export class EmailService {
           and(
             or(
               eq(emailMessages.senderId, userId),
-              eq(emailMessages.recipientId, userId)
+              inArray(emailMessages.recipientId, linkedIds)
             ),
             or(
               sql`${emailMessages.subject} ILIKE ${`%${searchTerm}%`}`,

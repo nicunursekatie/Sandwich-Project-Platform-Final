@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import type { RouterDependencies } from '../types';
 import type { AuthenticatedRequest, SessionUser } from '../types/express';
-import { eq, sql, and, gt, or, isNull } from 'drizzle-orm';
+import { eq, sql, and, gt, or, isNull, inArray } from 'drizzle-orm';
 import {
   messages,
   messageRecipients,
@@ -13,6 +13,7 @@ import {
   emailMessages,
 } from '../../shared/schema';
 import { db } from '../db';
+import { getLinkedUserIds } from '../lib/linked-accounts';
 import { PERMISSIONS } from '../../shared/auth-utils';
 import { hasPermission } from '../../shared/unified-auth-utils';
 import { logger } from '../utils/production-safe-logger';
@@ -142,13 +143,15 @@ const getUnreadCounts = async (req: AuthenticatedRequest, res: Response) => {
 
       // Get unread email-style message counts (direct/group messages)
       // Use the correct email_messages table that powers the inbox interface
+      const linkedIds = await getLinkedUserIds(userId);
+
       try {
         const directMessageCount = await db
           .select({ count: sql<number>`COUNT(*)::int` })
           .from(emailMessages)
           .where(
             and(
-              eq(emailMessages.recipientId, userId),
+              inArray(emailMessages.recipientId, linkedIds),
               eq(emailMessages.isRead, false),
               eq(emailMessages.isDraft, false),
               eq(emailMessages.isTrashed, false),
@@ -178,11 +181,11 @@ const getUnreadCounts = async (req: AuthenticatedRequest, res: Response) => {
           .innerJoin(kudosTracking, eq(kudosTracking.messageId, messages.id))
           .where(
             and(
-              eq(messageRecipients.recipientId, userId),
+              inArray(messageRecipients.recipientId, linkedIds),
               eq(messageRecipients.read, false),
               eq(messageRecipients.contextAccessRevoked, false),
               isNull(messages.deletedAt),
-              sql`${messages.senderId} != ${userId}` // Don't count own kudos
+              sql`${messages.senderId} NOT IN (${sql.join(linkedIds.map((id) => sql`${id}`), sql`, `)})` // Don't count own kudos
             )
           );
 
@@ -336,6 +339,8 @@ const markMessagesRead = async (req: AuthenticatedRequest, res: Response) => {
       `Marking messages as read for user ${userId} in conversation ${conversationId}`
     );
 
+    const linkedIds = await getLinkedUserIds(userId);
+
     // Update messageRecipients to mark messages in this conversation as read
     const result = await db
       .update(messageRecipients)
@@ -345,7 +350,7 @@ const markMessagesRead = async (req: AuthenticatedRequest, res: Response) => {
       })
       .where(
         and(
-          eq(messageRecipients.recipientId, userId),
+          inArray(messageRecipients.recipientId, linkedIds),
           eq(messageRecipients.read, false),
           // Get messages from this conversation
           sql`${messageRecipients.messageId} IN (SELECT id FROM ${messages} WHERE ${messages.conversationId} = ${conversationId})`
@@ -377,6 +382,7 @@ const markAllRead = async (req: AuthenticatedRequest, res: Response) => {
     logger.log(`Marking all messages as read for user ${userId}`);
 
     let totalMarkedCount = 0;
+    const linkedIds = await getLinkedUserIds(userId);
 
     // 1. Mark all formal message recipients as read (messageRecipients)
     const messageRecipientsResult = await db
@@ -387,7 +393,7 @@ const markAllRead = async (req: AuthenticatedRequest, res: Response) => {
       })
       .where(
         and(
-          eq(messageRecipients.recipientId, userId),
+          inArray(messageRecipients.recipientId, linkedIds),
           eq(messageRecipients.read, false)
         )
       )
@@ -404,7 +410,7 @@ const markAllRead = async (req: AuthenticatedRequest, res: Response) => {
       })
       .where(
         and(
-          eq(emailMessages.recipientId, userId),
+          inArray(emailMessages.recipientId, linkedIds),
           eq(emailMessages.isRead, false),
           eq(emailMessages.isDraft, false),
           eq(emailMessages.isTrashed, false),
