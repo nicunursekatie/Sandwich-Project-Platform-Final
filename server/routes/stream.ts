@@ -7,6 +7,7 @@ import { NotificationService } from '../notification-service';
 import { getUserMetadata } from '@shared/types';
 import { requirePermission } from '../middleware/auth';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { db } from '../db';
 import { notifications } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
@@ -291,17 +292,13 @@ streamRoutes.post('/channels/:type/:id/members', async (req, res) => {
       return res.status(400).json({ error: 'Only group chats can be edited' });
     }
 
-    // Permission check (mirrors requirePermission: super_admin/admin pass, otherwise needs the
-    // specific permission). Adding and removing are gated independently.
-    const hasPerm = (permission: string) =>
-      user.role === 'super_admin' ||
-      user.role === 'admin' ||
-      (Array.isArray(user.permissions) && user.permissions.includes(permission));
-
-    if (add.length > 0 && !hasPerm(PERMISSIONS.CHAT_GROUP_ADD_MEMBERS)) {
+    // Permission check using the SAME unified logic as the client (hasPermission), so an admin
+    // with an explicit/restricted permissions array is treated identically here and in the UI.
+    // Adding and removing are gated independently.
+    if (add.length > 0 && !hasPermission(user as any, PERMISSIONS.CHAT_GROUP_ADD_MEMBERS)) {
       return res.status(403).json({ error: 'You do not have permission to add members' });
     }
-    if (remove.length > 0 && !hasPerm(PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS)) {
+    if (remove.length > 0 && !hasPermission(user as any, PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS)) {
       return res.status(403).json({ error: 'You do not have permission to remove members' });
     }
 

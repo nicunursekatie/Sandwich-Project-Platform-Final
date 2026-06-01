@@ -246,6 +246,27 @@ function MultiViewSidebar({
   );
 }
 
+// Renders the GuidedTour floating help button, but hides it whenever Team Chat
+// ('chat') is one of the currently visible panels. The Stream Chat message/DM
+// reply send button sits at the bottom-right, exactly where the floating help
+// button would otherwise overlap it. This must read the multi-view context
+// (not dashboard's activeSection) because panel navigation in multi-view mode
+// updates the focused panel's section without touching activeSection.
+function GuidedTourGate() {
+  const { panels, activePanel, isMultiViewEnabled } = useMultiView();
+
+  const visibleSections = isMultiViewEnabled
+    ? panels.map((p) => p.section)
+    : [
+        (panels.find((p) => p.id === activePanel) ||
+          panels.find((p) => p.id === 'primary') ||
+          panels[0])?.section,
+      ];
+
+  if (visibleSections.includes('chat')) return null;
+  return <GuidedTour />;
+}
+
 export default function Dashboard({
   initialSection = 'dashboard',
 }: {
@@ -1260,9 +1281,9 @@ export default function Dashboard({
         </div>
         </div>
 
-        {/* Guided Tour System - hidden on Team Chat so the floating help button
-            doesn't overlap the message/DM reply send button (bottom-right) */}
-        {activeSection !== 'chat' && <GuidedTour />}
+        {/* Guided Tour System - hidden on Team Chat (incl. multi-view panels) so the
+            floating help button doesn't overlap the message/DM reply send button */}
+        <GuidedTourGate />
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
         {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'groups-catalog'].includes(activeSection) && (
