@@ -763,7 +763,7 @@ export function Resources() {
     trackAccess(resource.resource.id);
 
     if (resource.resource.type === 'file' && resource.resource.documentId) {
-      window.open(`/api/documents/${resource.resource.documentId}`, '_blank');
+      window.open(`/api/documents/${resource.resource.documentId}/preview`, '_blank');
     } else if (resource.resource.url) {
       window.open(resource.resource.url, '_blank');
     }
@@ -773,7 +773,7 @@ export function Resources() {
   const copyLink = async (resource: Resource) => {
     let link = '';
     if (resource.resource.type === 'file' && resource.resource.documentId) {
-      link = `${window.location.origin}/api/documents/${resource.resource.documentId}`;
+      link = `${window.location.origin}/api/documents/${resource.resource.documentId}/download`;
     } else if (resource.resource.url) {
       link = resource.resource.url;
     }
