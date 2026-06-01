@@ -246,13 +246,18 @@ function MultiViewSidebar({
   );
 }
 
-// Renders the GuidedTour floating help button, but hides it whenever Team Chat
-// ('chat') is one of the currently visible panels. The Stream Chat message/DM
-// reply send button sits at the bottom-right, exactly where the floating help
-// button would otherwise overlap it. This must read the multi-view context
-// (not dashboard's activeSection) because panel navigation in multi-view mode
-// updates the focused panel's section without touching activeSection.
-function GuidedTourGate() {
+// Sections whose layout has a bottom-anchored send/reply button (e.g. Team
+// Chat's Stream Chat message/DM composer) that the floating help button would
+// otherwise overlap. The help button is hidden on these sections.
+const HELP_BUTTON_HIDDEN_SECTIONS = [
+  'chat',
+  'messages',
+  'inbox',
+  'stream-messages',
+  'gmail-inbox',
+];
+
+function GuidedTourGate({ activeSection }: { activeSection: string }) {
   const { panels, activePanel, isMultiViewEnabled } = useMultiView();
 
   const visibleSections = isMultiViewEnabled
@@ -263,7 +268,13 @@ function GuidedTourGate() {
           panels[0])?.section,
       ];
 
-  if (visibleSections.includes('chat')) return null;
+  // Also consider the dashboard's actual active section. During single-view
+  // navigation the multi-view panel state can lag behind activeSection, so
+  // relying on panels alone left the help button visible over Team Chat.
+  const sectionsToCheck = [...visibleSections, activeSection];
+
+  if (sectionsToCheck.some((s) => s && HELP_BUTTON_HIDDEN_SECTIONS.includes(s)))
+    return null;
   return <GuidedTour />;
 }
 
@@ -1283,7 +1294,7 @@ export default function Dashboard({
 
         {/* Guided Tour System - hidden on Team Chat (incl. multi-view panels) so the
             floating help button doesn't overlap the message/DM reply send button */}
-        <GuidedTourGate />
+        <GuidedTourGate activeSection={activeSection} />
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
         {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'groups-catalog'].includes(activeSection) && (
