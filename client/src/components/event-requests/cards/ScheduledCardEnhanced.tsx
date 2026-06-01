@@ -3132,8 +3132,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* Van needed toggle — lives here in Team Assignments (next to the
                     driver/transport controls) rather than in the bottom action row,
                     since it switches the event between needing regular drivers and a
-                    van driver. Only shown when no van driver is assigned and it's not DHL. */}
-                {canEdit && !request.assignedVanDriverId && !request.isDhlVan && (
+                    van driver. Only the un-set "Mark Van Needed" call-to-action lives
+                    here; once a van is flagged needed the "Van Driver (Needed)" section
+                    above takes over, so this row is hidden then to avoid an empty strip
+                    (VanNeededBadgeAndButton renders nothing in that state). */}
+                {canEdit && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
                   <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200">
                     <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
                       Van
