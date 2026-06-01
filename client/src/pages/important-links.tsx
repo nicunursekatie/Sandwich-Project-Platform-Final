@@ -19,6 +19,7 @@ import {
   Heart,
   LayoutDashboard,
   BookOpen,
+  FileText,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
@@ -27,8 +28,17 @@ import { logger } from '@/lib/logger';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
+// If the embedded Google Sheet hasn't loaded within this window, show a
+// fallback so the user is never stuck staring at a blank frame (e.g. when
+// docs.google.com is slow or blocked by a network/extension).
+const EVENTS_LOAD_TIMEOUT_MS = 20000;
+
 export default function ImportantLinks() {
   const [isLoading, setIsLoading] = useState(false);
+  // Dedicated load state for the embedded events sheet.
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsLoadFailed, setEventsLoadFailed] = useState(false);
+  const [eventsReloadKey, setEventsReloadKey] = useState(0);
   const [eventsZoomLevel, setEventsZoomLevel] = useState(85);
   const [userSheetZoomLevel, setUserSheetZoomLevel] = useState(85);
   const { track } = useOnboardingTracker();
@@ -42,6 +52,17 @@ export default function ImportantLinks() {
       'User accessed important links page'
     );
   }, [trackView]);
+
+  // While the events sheet is loading, arm a timeout that surfaces a fallback
+  // message if it never finishes. Resets whenever we (re)load the iframe.
+  useEffect(() => {
+    if (!eventsLoading) return;
+    const timer = setTimeout(
+      () => setEventsLoadFailed(true),
+      EVENTS_LOAD_TIMEOUT_MS
+    );
+    return () => clearTimeout(timer);
+  }, [eventsLoading, eventsReloadKey]);
 
   // URLs for all the important links (original URLs for "open in new tab" buttons)
   const inventoryCalculatorUrl =
@@ -141,15 +162,16 @@ export default function ImportantLinks() {
     handleUserSheetZoomChange([85]);
   };
 
+  const handleEventsIframeLoad = () => {
+    setEventsLoading(false);
+    setEventsLoadFailed(false);
+  };
+
   const handleRefreshEvents = () => {
-    setIsLoading(true);
-    const iframe = document.getElementById(
-      'events-spreadsheet'
-    ) as HTMLIFrameElement;
-    if (iframe) {
-      iframe.src = iframe.src;
-    }
-    setTimeout(() => setIsLoading(false), 1000);
+    setEventsLoadFailed(false);
+    setEventsLoading(true);
+    // Remounting the iframe (via key) forces a clean reload.
+    setEventsReloadKey((k) => k + 1);
   };
 
   const handleRefreshUserSheet = () => {
@@ -675,11 +697,11 @@ export default function ImportantLinks() {
                     variant="outline"
                     size="sm"
                     onClick={handleRefreshEvents}
-                    disabled={isLoading}
+                    disabled={eventsLoading}
                     className="flex items-center gap-1 sm:gap-2 h-9 text-xs sm:text-sm"
                   >
                     <RefreshCw
-                      className={`h-3 w-3 sm:h-4 sm:w-4 ${isLoading ? 'animate-spin' : ''}`}
+                      className={`h-3 w-3 sm:h-4 sm:w-4 ${eventsLoading ? 'animate-spin' : ''}`}
                     />
                     <span className="hidden sm:inline">Refresh</span>
                   </Button>
@@ -755,7 +777,7 @@ export default function ImportantLinks() {
                 className="w-full relative overflow-hidden hidden sm:block"
                 style={{ height: 'calc(100vh - 320px)', minHeight: '500px' }}
               >
-                {isLoading && (
+                {eventsLoading && !eventsLoadFailed && (
                   <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
                     <div className="flex items-center gap-2 text-gray-600">
                       <RefreshCw className="h-5 w-5 animate-spin" />
@@ -764,9 +786,46 @@ export default function ImportantLinks() {
                   </div>
                 )}
 
+                {eventsLoadFailed && (
+                  <div className="absolute inset-0 bg-white flex items-center justify-center z-20 p-6">
+                    <div className="max-w-md text-center">
+                      <FileText className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-700 font-medium mb-1">
+                        The events sheet is taking longer than usual to load.
+                      </p>
+                      <p className="text-sm text-gray-500 mb-4">
+                        This can happen on slower connections, or if a network
+                        or browser extension is blocking Google Sheets. You can
+                        keep waiting, try again, or open the sheet directly.
+                      </p>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleRefreshEvents}
+                          className="flex items-center gap-2"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                          Try again
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => window.open(eventsFullViewUrl, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Open in New Tab
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <iframe
+                  key={eventsReloadKey}
                   id="events-spreadsheet"
                   src={eventsEmbedUrl}
+                  onLoad={handleEventsIframeLoad}
                   className="border-0 rounded-b-lg"
                   style={{
                     transform: `scale(${eventsZoomLevel / 100})`,

@@ -11,8 +11,16 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 
+// If the embedded Google Sheet hasn't loaded within this window, show a
+// fallback so the user is never stuck staring at a blank frame (e.g. when
+// docs.google.com is slow or blocked by a network/extension).
+const LOAD_TIMEOUT_MS = 20000;
+
 export default function EventsViewer() {
-  const [isLoading, setIsLoading] = useState(false);
+  // Start in the loading state — the iframe's onLoad clears it.
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(85); // Default zoom level (85%)
 
   // Events Google Sheet ID - this is the actual editable spreadsheet
@@ -20,7 +28,7 @@ export default function EventsViewer() {
 
   // Use published Google Sheets URL (no authentication required)
   const embedUrl =
-    'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2r5KMRKuKSrqn1yQxtw8T0e5Ooi_iBfd0HlgGVcIHtFat3o54FrqyTLB_uq-RxojjSFg1GTvpIZLZ/pubhtml?widget=true&amp;headers=false';
+    'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2r5KMRKuKSrqn1yQxtw8T0e5Ooi_iBfd0HlgGVcIHtFat3o54FrqyTLB_uq-RxojjSFg1GTvpIZLZ/pubhtml?widget=true&headers=false';
   const fullViewUrl =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vT2r5KMRKuKSrqn1yQxtw8T0e5Ooi_iBfd0HlgGVcIHtFat3o54FrqyTLB_uq-RxojjSFg1GTvpIZLZ/pubhtml';
 
@@ -32,6 +40,14 @@ export default function EventsViewer() {
     }
   }, []);
 
+  // While loading, arm a timeout that surfaces a fallback message if the
+  // sheet never finishes loading. Resets whenever we (re)load the iframe.
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setTimeout(() => setLoadFailed(true), LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [isLoading, reloadKey]);
+
   // Save zoom preference when changed
   const handleZoomChange = (newZoom: number[]) => {
     const zoom = newZoom[0];
@@ -39,16 +55,16 @@ export default function EventsViewer() {
     localStorage.setItem('events-spreadsheet-zoom', zoom.toString());
   };
 
+  const handleIframeLoad = () => {
+    setIsLoading(false);
+    setLoadFailed(false);
+  };
+
   const handleRefresh = () => {
+    setLoadFailed(false);
     setIsLoading(true);
-    // Reload the iframe by changing its key
-    const iframe = document.getElementById(
-      'events-spreadsheet'
-    ) as HTMLIFrameElement;
-    if (iframe) {
-      iframe.src = iframe.src;
-    }
-    setTimeout(() => setIsLoading(false), 1000);
+    // Remounting the iframe (via key) forces a clean reload.
+    setReloadKey((k) => k + 1);
   };
 
   const handleOpenInNewTab = () => {
@@ -174,7 +190,7 @@ export default function EventsViewer() {
 
         <CardContent className="flex-1 p-0 h-full">
           <div className="w-full h-full relative overflow-hidden">
-            {isLoading && (
+            {isLoading && !loadFailed && (
               <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
                 <div className="flex items-center gap-2 text-gray-600">
                   <RefreshCw className="h-5 w-5 animate-spin" />
@@ -183,9 +199,46 @@ export default function EventsViewer() {
               </div>
             )}
 
+            {loadFailed && (
+              <div className="absolute inset-0 bg-white flex items-center justify-center z-20 p-6">
+                <div className="max-w-md text-center">
+                  <FileSpreadsheet className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium mb-1">
+                    The events sheet is taking longer than usual to load.
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    This can happen on slower connections, or if a network or
+                    browser extension is blocking Google Sheets. You can keep
+                    waiting, try again, or open the sheet directly.
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRefresh}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      Try again
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleOpenInNewTab}
+                      className="flex items-center gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Open in New Tab
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <iframe
+              key={reloadKey}
               id="events-spreadsheet"
               src={embedUrl}
+              onLoad={handleIframeLoad}
               className="border-0 rounded-b-lg"
               style={{
                 height: 'calc(100vh - 180px)',
