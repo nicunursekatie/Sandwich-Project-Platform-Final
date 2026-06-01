@@ -1260,8 +1260,9 @@ export default function Dashboard({
         </div>
         </div>
 
-        {/* Guided Tour System */}
-        <GuidedTour />
+        {/* Guided Tour System - hidden on Team Chat so the floating help button
+            doesn't overlap the message/DM reply send button (bottom-right) */}
+        {activeSection !== 'chat' && <GuidedTour />}
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
         {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'groups-catalog'].includes(activeSection) && (
