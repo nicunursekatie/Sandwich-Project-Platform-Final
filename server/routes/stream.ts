@@ -253,7 +253,18 @@ streamRoutes.post('/channels', async (req, res) => {
       channelData.name = channelName;
     }
 
-    const channel = streamServerClient.channel(channelType, undefined, channelData);
+    // 1:1 DMs use a "distinct" channel (no explicit ID) so the same pair of
+    // users always maps to the same channel. Group chats (3+ members, or any
+    // named group) MUST get an explicit ID — a distinct channel's identity is
+    // its member set, so Stream rejects addMembers/removeMembers on it later
+    // with error 17 ("cannot add members to the distinct channel"). Giving
+    // groups their own ID keeps membership editable.
+    const isGroup = memberIds.length > 2 || !!channelName;
+    const channelId = isGroup
+      ? `group_${crypto.randomBytes(12).toString('hex')}`
+      : undefined;
+
+    const channel = streamServerClient.channel(channelType, channelId, channelData);
 
     await channel.create();
 
@@ -395,13 +406,23 @@ streamRoutes.post('/channels/:type/:id/members', async (req, res) => {
     const members = Object.keys(channel.state.members || {});
 
     if (opError) {
+      // Stream error 17 on a "distinct" channel means this group was created
+      // before group chats got their own channel IDs; its membership can never
+      // be edited. Give a plain-language explanation instead of the raw error.
+      const isDistinctError =
+        opError?.code === 17 ||
+        /distinct channel/i.test(opError?.message || '');
+      const friendlyError = isDistinctError
+        ? "This group can't have its members changed because of how it was originally created. Please start a new group with everyone you want included."
+        : opError.message || 'Some changes could not be applied';
+
       return res.status(207).json({
         success: false,
         changed: added > 0 || removed > 0,
         added,
         removed,
         members,
-        error: opError.message || 'Some changes could not be applied',
+        error: friendlyError,
       });
     }
 
