@@ -939,9 +939,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
-              {/* Traffic conflict (e.g. World Cup matches) */}
+              {/* Traffic conflict (e.g. World Cup matches). Once scheduled, only
+                  the confirmed scheduled date matters — checking the original
+                  desiredEventDate too left a stale badge when an event was
+                  rescheduled off a conflict date onto a clear one. */}
               <TrafficConflictBadge
-                dates={[request.scheduledEventDate, request.desiredEventDate]}
+                dates={[request.scheduledEventDate || request.desiredEventDate]}
                 className="mt-1 mr-1"
               />
               {/* Returning Organization Indicator */}

@@ -606,9 +606,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </TooltipContent>
             </Tooltip>
           )}
-          {/* Traffic conflict (e.g. World Cup matches) */}
+          {/* Traffic conflict (e.g. World Cup matches). Prefer the scheduled
+              date once set so a rescheduled event doesn't keep a stale badge
+              from its original desiredEventDate. */}
           <TrafficConflictBadge
-            dates={[request.scheduledEventDate, request.desiredEventDate]}
+            dates={[request.scheduledEventDate || request.desiredEventDate]}
           />
           {/* Last-contact-age — escalates by week since last contact attempt; skipped when a future call is scheduled */}
           <LastContactAgeBadge request={request} />
