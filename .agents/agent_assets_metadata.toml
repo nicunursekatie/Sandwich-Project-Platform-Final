@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "li4xptBByAdYja6M1tatQ"
+uri = "file://exports/the-sandwich-project-overview.pdf"
+type = "pdf"
+title = "The Sandwich Project Platform — Overview"
