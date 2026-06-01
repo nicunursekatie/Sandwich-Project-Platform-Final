@@ -326,27 +326,31 @@ streamRoutes.post('/channels/:type/:id/members', async (req, res) => {
       return res.status(400).json({ error: 'Member editing is only available for group chats' });
     }
 
-    // Register any newly added users with Stream before adding them.
+    // Register any newly added users with Stream before adding them. Only users that exist
+    // and upsert successfully are queued for addMembers, so a bad/unknown ID can't fail the
+    // whole update or add a non-existent user.
     const addStreamIds: string[] = [];
     for (const participantId of add) {
       const participantStreamId = `user_${participantId}`;
       if (currentMemberIds.includes(participantStreamId)) continue;
       try {
         const participantUser = await storage.getUser(participantId);
-        if (participantUser) {
-          await streamServerClient.upsertUser({
-            id: participantStreamId,
-            name: participantUser.firstName && participantUser.lastName
-              ? `${participantUser.firstName} ${participantUser.lastName}`
-              : participantUser.email,
-            email: participantUser.email,
-            role: 'user',
-          });
+        if (!participantUser) {
+          logger.warn(`Skipping add for unknown user ${participantId}`);
+          continue;
         }
+        await streamServerClient.upsertUser({
+          id: participantStreamId,
+          name: participantUser.firstName && participantUser.lastName
+            ? `${participantUser.firstName} ${participantUser.lastName}`
+            : participantUser.email,
+          email: participantUser.email,
+          role: 'user',
+        });
+        addStreamIds.push(participantStreamId);
       } catch (upsertError) {
-        logger.error(`Failed to upsert participant ${participantId}:`, upsertError);
+        logger.error(`Failed to upsert participant ${participantId}, skipping:`, upsertError);
       }
-      addStreamIds.push(participantStreamId);
     }
 
     const removeStreamIds = remove
