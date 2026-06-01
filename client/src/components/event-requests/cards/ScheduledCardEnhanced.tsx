@@ -124,7 +124,6 @@ interface ScheduledCardEnhancedProps {
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
-  onFollowUp: () => void;
   onReschedule: () => void;
   onDuplicate?: () => void;
   onAiIntakeAssist?: () => void;
@@ -198,7 +197,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
-  onFollowUp,
   onReschedule,
   onDuplicate,
   onAiIntakeAssist,
@@ -234,9 +232,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
   const [showAllocationEditor, setShowAllocationEditor] = useState(false);
-  const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
   const [showFlagsDialog, setShowFlagsDialog] = useState(false);
   const [showContactLog, setShowContactLog] = useState(false);
 

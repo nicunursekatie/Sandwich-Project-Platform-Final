@@ -327,10 +327,6 @@ export const MyAssignmentsTab: React.FC = () => {
               setContactEventRequest(request);
               setShowContactOrganizerDialog(true);
             }}
-            onFollowUp={() => {
-              setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
-            }}
             onReschedule={() => {
               // Handle reschedule if needed
             }}
