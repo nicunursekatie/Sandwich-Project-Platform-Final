@@ -268,6 +268,114 @@ streamRoutes.post('/channels', async (req, res) => {
   }
 });
 
+// Add and/or remove members on an existing group chat (messaging channel with 3+ members).
+// Restricted to admins/coordinators via the CHAT_GROUP_ADD_MEMBERS / CHAT_GROUP_REMOVE_MEMBERS
+// permissions. DMs and permission-driven team rooms cannot be edited here.
+streamRoutes.post('/channels/:type/:id/members', async (req, res) => {
+  try {
+    const user = req.user || req.session?.user;
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { type, id } = req.params;
+    const add: string[] = Array.isArray(req.body?.add) ? req.body.add : [];
+    const remove: string[] = Array.isArray(req.body?.remove) ? req.body.remove : [];
+
+    if (add.length === 0 && remove.length === 0) {
+      return res.status(400).json({ error: 'Nothing to change' });
+    }
+
+    // Only group chats (messaging type) can have their membership edited here.
+    if (type !== 'messaging') {
+      return res.status(400).json({ error: 'Only group chats can be edited' });
+    }
+
+    // Permission check (mirrors requirePermission: super_admin/admin pass, otherwise needs the
+    // specific permission). Adding and removing are gated independently.
+    const hasPerm = (permission: string) =>
+      user.role === 'super_admin' ||
+      user.role === 'admin' ||
+      (Array.isArray(user.permissions) && user.permissions.includes(permission));
+
+    if (add.length > 0 && !hasPerm(PERMISSIONS.CHAT_GROUP_ADD_MEMBERS)) {
+      return res.status(403).json({ error: 'You do not have permission to add members' });
+    }
+    if (remove.length > 0 && !hasPerm(PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS)) {
+      return res.status(403).json({ error: 'You do not have permission to remove members' });
+    }
+
+    if (!streamServerClient) {
+      streamServerClient = initializeStreamServer();
+      if (!streamServerClient) {
+        return res.status(500).json({ error: 'Stream Chat not initialized' });
+      }
+    }
+
+    const streamUserId = `user_${user.id}`;
+    const channel = streamServerClient.channel(type, id);
+    await channel.query({ members: { limit: 200 } });
+
+    const currentMemberIds = Object.keys(channel.state.members || {});
+
+    // Only an admin or an existing member can manage the group.
+    const isAdmin = user.role === 'super_admin' || user.role === 'admin';
+    if (!isAdmin && !currentMemberIds.includes(streamUserId)) {
+      return res.status(403).json({ error: 'You are not a member of this group' });
+    }
+
+    // Guard: this endpoint is for editing existing group chats, not 1:1 DMs.
+    if (currentMemberIds.length <= 2) {
+      return res.status(400).json({ error: 'Member editing is only available for group chats' });
+    }
+
+    // Register any newly added users with Stream before adding them.
+    const addStreamIds: string[] = [];
+    for (const participantId of add) {
+      const participantStreamId = `user_${participantId}`;
+      if (currentMemberIds.includes(participantStreamId)) continue;
+      try {
+        const participantUser = await storage.getUser(participantId);
+        if (participantUser) {
+          await streamServerClient.upsertUser({
+            id: participantStreamId,
+            name: participantUser.firstName && participantUser.lastName
+              ? `${participantUser.firstName} ${participantUser.lastName}`
+              : participantUser.email,
+            email: participantUser.email,
+            role: 'user',
+          });
+        }
+      } catch (upsertError) {
+        logger.error(`Failed to upsert participant ${participantId}:`, upsertError);
+      }
+      addStreamIds.push(participantStreamId);
+    }
+
+    const removeStreamIds = remove
+      .map((p) => `user_${p}`)
+      .filter((sid) => currentMemberIds.includes(sid));
+
+    if (addStreamIds.length > 0) {
+      await channel.addMembers(addStreamIds);
+    }
+    if (removeStreamIds.length > 0) {
+      await channel.removeMembers(removeStreamIds);
+    }
+
+    // Re-query to return the updated member list.
+    await channel.query({ members: { limit: 200 } });
+
+    res.json({
+      success: true,
+      members: Object.keys(channel.state.members || {}),
+    });
+  } catch (error) {
+    logger.error('Channel member update error:', error);
+    res.status(500).json({ error: 'Failed to update members', message: error.message });
+  }
+});
+
 /**
  * Verify Stream Chat webhook signature
  */
