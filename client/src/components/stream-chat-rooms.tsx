@@ -412,7 +412,15 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
       .filter((m) => m.id && m.id !== streamUserId)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-  const openMembersDialog = (channel: ChannelType) => {
+  const openMembersDialog = async (channel: ChannelType) => {
+    // Channels opened from the sidebar list may not be watched yet, so channel.state.members can
+    // be a partial subset. Watch first so the full member list (and the group-vs-DM member count
+    // used to gate edit controls) is accurate.
+    try {
+      await channel.watch();
+    } catch (error) {
+      logger.error('Failed to load channel members:', error);
+    }
     setMembersDialogChannel(channel);
     setMembersDialogUsers(getChannelMemberList(channel));
     setMembersDialogTitle(String((channel.data as any)?.name || 'Chat Members'));
@@ -468,10 +476,15 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
       await loadUserChannels(client, streamUserId);
 
       if (result?.success === false) {
-        // Partial failure (HTTP 207): some changes may have applied, some did not.
+        // HTTP 207: the mutation failed. If anything committed it's a partial update; if nothing
+        // committed it's an outright failure.
         toast({
-          title: 'Group only partially updated',
-          description: result?.error || 'Some changes could not be applied. Please review the member list.',
+          title: result?.changed ? 'Group only partially updated' : 'Failed to update group',
+          description:
+            result?.error ||
+            (result?.changed
+              ? 'Some changes could not be applied. Please review the member list.'
+              : 'No changes could be applied. Please try again.'),
           variant: 'destructive',
         });
       } else if (result?.changed === false) {
