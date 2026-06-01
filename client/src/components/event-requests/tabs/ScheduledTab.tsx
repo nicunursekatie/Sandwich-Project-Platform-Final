@@ -564,9 +564,6 @@ export const ScheduledTab: React.FC = () => {
                   setLogContactEventRequest(request);
                   setShowLogContactDialog(true);
                 }}
-                onFollowUp={() => {
-                  setShowOneDayFollowUpDialog(true);
-                }}
                 onReschedule={() => {
                   setRescheduleRequest(request);
                   setShowRescheduleDialog(true);
