@@ -525,6 +525,7 @@ export function createMainRoutes(deps: RouterDependencies) {
     'https://nicunursekatie.github.io',
     'https://receipt-gen--katielong2316.replit.app',
     'https://bread-and-butter-donors.lovable.app',
+    'https://tsp-host-handbook-ylfb92u.gamma.site',
   ];
   router.get('/api/proxy/page', deps.isAuthenticated, async (req, res) => {
     try {
