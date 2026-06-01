@@ -63,7 +63,7 @@ app.use(
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://fonts.googleapis.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
-            connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io', 'https://*.stream-io-api.com', 'wss://*.stream-io-api.com', 'https://*.stream-io-cdn.com', 'https://*.getstream.io', 'https://www.googletagmanager.com', 'https://www.google-analytics.com'],
+            connectSrc: ["'self'", 'wss:', 'ws:', 'https://api.openai.com', 'https://api.anthropic.com', 'https://*.sentry.io', 'https://*.stream-io-api.com', 'wss://*.stream-io-api.com', 'https://*.stream-io-cdn.com', 'https://*.getstream.io', 'https://www.googletagmanager.com', 'https://www.google-analytics.com', 'https://storage.googleapis.com'],
             // CSP frame-src — origins allowed in <iframe>. When adding a new
             // embedded external page, check three things in order:
             //   1. Add the origin here (otherwise the browser blocks the frame).
