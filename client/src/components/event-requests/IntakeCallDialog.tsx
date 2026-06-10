@@ -440,7 +440,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   const isCorporateEvent = itemAnswers.is_corporate_event === 'yes';
 
   // Sandwich-count gating: the form's later sections behave differently
-  // depending on the count entered in the Sandwich Estimates section.
+  // depending on the count entered in the Sandwich Logistics section.
   //
   // - under 200: not eligible as a group event. The remainder of the form
   //   is grayed out unless the operator types a free-text override note
@@ -674,10 +674,20 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
   const handleAnswerChange = (itemId: string, answer: string) => {
     markInteracted();
-    setItemAnswers((prev) => ({
-      ...prev,
-      [itemId]: answer,
-    }));
+    setItemAnswers((prev) => {
+      const next = {
+        ...prev,
+        [itemId]: answer,
+      };
+
+      if (itemId === 'is_corporate_event' && answer !== 'yes') {
+        next.participant_count = '';
+        next.speaker_needed = '';
+        next.additional_volunteers = '';
+      }
+
+      return next;
+    });
     
     // Automatically check the item when text is entered
     if (answer.trim() && !checkedItems.has(itemId)) {
@@ -765,17 +775,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             !!itemAnswers.event_pickup_time?.trim()
           );
         }
-        // outside_operating_area is a checkbox-only item — include it in
-        // the summary when the operator ticked the box.
-        if (item.id === 'outside_operating_area') {
-          return checkedItems.has('outside_operating_area');
-        }
-        // Other checkbox-only items: same pattern.
-        if (
-          item.id === 'young_children_pbj' ||
-          item.id === 'pbj_spatulas_mentioned' ||
-          item.id === 'assembly_reviewed'
-        ) {
+        // Checkbox-only items are included in the saved summary when ticked.
+        if (CONFIRMATION_ITEM_IDS.has(item.id)) {
           return checkedItems.has(item.id);
         }
         // Sandwich types — show when at least one type is selected.
@@ -813,6 +814,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         }
         if (item.id === 'assembly_reviewed') {
           return `- ${item.label}: Yes (assembly + food-safety walked through)`;
+        }
+        if (CONFIRMATION_ITEM_IDS.has(item.id)) {
+          return `- ${item.label}: Yes`;
         }
         if (item.id === 'sandwich_types') {
           const LABELS: Record<string, string> = {
@@ -1077,46 +1081,59 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   if (!eventRequest) return null;
 
   const checklistItems: ChecklistItem[] = [
-    // Initial Questions
+    // Contact Confirmation
     {
-      id: 'how_heard',
-      label: 'How did they hear about us?',
-      category: 'Initial Questions',
+      id: 'contact_name',
+      label: 'Contact person name',
+      category: 'Contact Confirmation',
       required: true,
     },
     {
+      id: 'contact_phone',
+      label: 'Contact phone number',
+      category: 'Contact Confirmation',
+      required: true,
+    },
+    {
+      id: 'contact_email',
+      label: 'Contact email',
+      category: 'Contact Confirmation',
+      required: true,
+    },
+
+    // Event Basics
+    {
       id: 'event_date',
       label: 'Event date',
-      category: 'Initial Questions',
+      category: 'Event Basics',
       required: true,
       notes:
         "Pre-filled from the interest form. Change here if the group is going with a different date, or pick 'Not decided yet' if they're still figuring it out.",
     },
     // (Conflict warnings render inline below the event_date row — not a
     // separate checklist item.)
-    // (Event Times moved into the Event Details category as a single
+    // (Event Times live in Sandwich Logistics as a single
     // multi-field row — see `event_times` below.)
 
-    // Location & Area Check
     {
       id: 'event_address',
       label: 'Event address',
-      category: 'Location & Area',
+      category: 'Event Basics',
       required: true,
     },
     {
       id: 'outside_operating_area',
       label: 'Event is outside our typical operating areas',
-      category: 'Location & Area',
+      category: 'Event Basics',
       notes:
         'If checked, a follow-up will be added to consult with Christine & Marcy. Let the group know we will try to make it work but need leadership confirmation first.',
     },
 
-    // Sandwich Estimates & Refrigeration
+    // Sandwich Logistics
     {
       id: 'sandwich_count',
       label: 'How many sandwiches do they plan to make?',
-      category: 'Sandwich Estimates & Refrigeration',
+      category: 'Sandwich Logistics',
       required: true,
       notes:
         '500+ opens the door to sending the van. Under 500: no van (generally). Under 200: not a group event — direct them to drop sandwiches at a host home on a Wednesday.',
@@ -1124,72 +1141,21 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     {
       id: 'under_200_override_note',
       label: 'Reason for proceeding under 200',
-      category: 'Sandwich Estimates & Refrigeration',
+      category: 'Sandwich Logistics',
       notes:
         'Required to continue when under 200. Explain why this is being approved (e.g. discussed with Marcy/Christine).',
     },
     {
       id: 'sandwich_types',
       label: 'Type of sandwiches',
-      category: 'Sandwich Estimates & Refrigeration',
+      category: 'Sandwich Logistics',
       required: true,
       notes: 'Multi-select. Refrigeration questions depend on whether non-PBJ is involved.',
     },
     {
-      id: 'refrigeration_status',
-      label: 'Sufficient refrigeration available?',
-      category: 'Sandwich Estimates & Refrigeration',
-      notes: 'Only relevant when a refrigerated sandwich (turkey / chicken / deli) is selected.',
-    },
-    {
-      id: 'young_children_pbj',
-      label: 'School or group of children under 13?',
-      category: 'Sandwich Estimates & Refrigeration',
-      notes:
-        'PBJ-only: we generally do not let children under 13 make PBJ for safety/hygiene reasons. High adult-to-child ratio improves the odds of an exception.',
-    },
-    {
-      id: 'pbj_spatulas_mentioned',
-      label: 'Mentioned recommended PBJ spatulas (link in toolkit)',
-      category: 'Sandwich Estimates & Refrigeration',
-    },
-    {
-      id: 'assembly_reviewed',
-      label: 'Reviewed assembly + food-safety instructions with the group',
-      category: 'Sandwich Estimates & Refrigeration',
-      required: true,
-    },
-
-    // Event Details Collection
-    {
-      id: 'contact_name',
-      label: 'Contact person name',
-      category: 'Event Details',
-      required: true,
-    },
-    {
-      id: 'contact_phone',
-      label: 'Contact phone number',
-      category: 'Event Details',
-      required: true,
-    },
-    {
-      id: 'contact_email',
-      label: 'Contact email',
-      category: 'Event Details',
-      required: true,
-    },
-    {
-      id: 'event_times',
-      label: 'Event Times',
-      category: 'Event Details',
-      required: true,
-      notes: 'Start and End Times Are Ideal (Required if Speakers/Volunteers are desired), Pickup Time required if they need a driver',
-    },
-    {
       id: 'is_corporate_event',
       label: 'Is this a corporate event?',
-      category: 'Event Details',
+      category: 'Sandwich Logistics',
       required: true,
       notes:
         'A corporate event is one hosted by or at a company. Corporate events require a speaker or volunteer from TSP.',
@@ -1197,93 +1163,156 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     {
       id: 'participant_count',
       label: 'Approximate number of people',
-      category: 'Event Details',
+      category: 'Sandwich Logistics',
     },
     {
       id: 'speaker_needed',
       label: 'Do they want a speaker?',
-      category: 'Event Details',
+      category: 'Sandwich Logistics',
     },
     {
       id: 'additional_volunteers',
       label: 'Additional volunteers needed?',
-      category: 'Event Details',
+      category: 'Sandwich Logistics',
+    },
+    {
+      id: 'event_times',
+      label: 'Event Times',
+      category: 'Sandwich Logistics',
+      required: true,
+      notes: 'Start and End Times Are Ideal (Required if Speakers/Volunteers are desired), Pickup Time required if they need a driver',
     },
 
-    // Food Safety & Logistics
+    // Food Safety & Assembly
+    {
+      id: 'refrigeration_status',
+      label: 'Sufficient refrigeration available?',
+      category: 'Food Safety & Assembly',
+      notes: 'Only relevant when a refrigerated sandwich (turkey / chicken / deli) is selected.',
+    },
+    {
+      id: 'young_children_pbj',
+      label: 'School or group of children under 13?',
+      category: 'Food Safety & Assembly',
+      notes:
+        'PBJ-only: we generally do not let children under 13 make PBJ for safety/hygiene reasons. High adult-to-child ratio improves the odds of an exception.',
+    },
+    {
+      id: 'pbj_spatulas_mentioned',
+      label: 'Mentioned recommended PBJ spatulas (link in toolkit)',
+      category: 'Food Safety & Assembly',
+    },
+    {
+      id: 'assembly_reviewed',
+      label: 'Reviewed assembly + food-safety instructions with the group',
+      category: 'Food Safety & Assembly',
+      required: true,
+    },
     {
       id: 'review_toolkit',
       label: 'Review toolkit (food safety, setup, supplies)',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
       required: true,
       notes: '• Food safety protocols\n• Setup requirements\n• Supplies needed\n• Tablecloths\n• Food-safe gloves',
     },
     {
       id: 'food_safe_gloves',
       label: 'Include food safe gloves, tablecloths, etc.',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
     },
     {
       id: 'meat_cheese_refrigeration',
       label: 'Meat and cheese must be refrigerated until used',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
       notes: 'Only take out what is needed. Once made and packed back into bread bag, put back in fridge',
     },
     {
       id: 'discuss_shopping',
       label: 'Discuss shopping: coolers, deli meat & cheese storage, bread',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
     },
     {
       id: 'transport_meat_cheese',
       label: 'When transporting: meat/cheese on ice packs in cooler',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
     },
     {
       id: 'buying_supplies',
       label: 'Meat/cheese bought just before event, remain unopened until making',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
       notes: 'One person who reviewed food safety protocols should buy supplies. Others should not bring ingredients',
     },
     {
       id: 'cooling_sandwiches',
       label: 'Last sandwiches in freezer to cool OR pickup 30+ min after making',
-      category: 'Food Safety & Logistics',
+      category: 'Food Safety & Assembly',
     },
-    {
-      id: 'parking_access',
-      label: 'Information for TSP volunteer: parking or building access?',
-      category: 'Food Safety & Logistics',
-    },
-    {
-      id: 'backup_contact',
-      label: 'Back-up contact? (Name and number)',
-      category: 'Food Safety & Logistics',
-    },
-
-    // Process Discussion
     {
       id: 'discuss_process',
       label: 'Discuss how groups make sandwiches',
-      category: 'Process Discussion',
+      category: 'Food Safety & Assembly',
       notes: 'Have them open PDF: Two slices bread, two slices cheese, two to three slices turkey',
     },
     {
       id: 'assembly_line',
       label: 'Discuss teams making sandwiches in assembly line',
-      category: 'Process Discussion',
+      category: 'Food Safety & Assembly',
     },
     {
       id: 'runner_role',
       label: 'Discuss having a runner (gets meat/cheese out, puts sandwiches back)',
-      category: 'Process Discussion',
+      category: 'Food Safety & Assembly',
     },
     {
       id: 'typical_rules',
       label: 'Discuss typical event rules: runner needed, food safety (hair tied back, gloves, tablecloths), someone to snap photos',
-      category: 'Process Discussion',
+      category: 'Food Safety & Assembly',
+    },
+    {
+      id: 'food_safety_notes',
+      label: 'Food safety / assembly notes',
+      category: 'Food Safety & Assembly',
+      notes: 'Optional shared notes for exceptions, concerns, or anything that needs a follow-up.',
+    },
+
+    // Logistics Details
+    {
+      id: 'parking_access',
+      label: 'Information for TSP volunteer: parking or building access?',
+      category: 'Logistics Details',
+    },
+    {
+      id: 'backup_contact',
+      label: 'Back-up contact? (Name and number)',
+      category: 'Logistics Details',
+    },
+
+    // Admin Wrap-Up
+    {
+      id: 'how_heard',
+      label: 'How did they hear about us?',
+      category: 'Admin Wrap-Up',
+      required: true,
     },
   ];
+
+  const CONFIRMATION_ITEM_IDS = new Set<string>([
+    'outside_operating_area',
+    'young_children_pbj',
+    'pbj_spatulas_mentioned',
+    'assembly_reviewed',
+    'review_toolkit',
+    'food_safe_gloves',
+    'meat_cheese_refrigeration',
+    'discuss_shopping',
+    'transport_meat_cheese',
+    'buying_supplies',
+    'cooling_sandwiches',
+    'discuss_process',
+    'assembly_line',
+    'runner_role',
+    'typical_rules',
+  ]);
 
   const itemsByCategory = checklistItems.reduce((acc, item) => {
     if (!acc[item.category]) {
@@ -1438,17 +1467,17 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             {Object.entries(itemsByCategory).map(([category, items]) => (
               <div key={category} className="border border-gray-200 rounded-lg p-4">
                 <h3 className="font-semibold text-[#236383] mb-3 text-lg flex items-center gap-2">
-                  {category === 'Initial Questions' && <Clock className="w-5 h-5" />}
-                  {category === 'Location & Area' && <MapPin className="w-5 h-5" />}
-                  {category === 'Sandwich Estimates & Refrigeration' && <Refrigerator className="w-5 h-5" />}
-                  {category === 'Event Details' && <FileText className="w-5 h-5" />}
-                  {category === 'Food Safety & Logistics' && <UtensilsCrossed className="w-5 h-5" />}
-                  {category === 'Process Discussion' && <Users className="w-5 h-5" />}
+                  {category === 'Contact Confirmation' && <Users className="w-5 h-5" />}
+                  {category === 'Event Basics' && <MapPin className="w-5 h-5" />}
+                  {category === 'Sandwich Logistics' && <Refrigerator className="w-5 h-5" />}
+                  {category === 'Food Safety & Assembly' && <UtensilsCrossed className="w-5 h-5" />}
+                  {category === 'Logistics Details' && <FileText className="w-5 h-5" />}
+                  {category === 'Admin Wrap-Up' && <Clock className="w-5 h-5" />}
                   {category}
                 </h3>
                 <div className="space-y-2">
                   {items.map((item) => {
-                    // Conditional visibility for Sandwich Estimates branches.
+                    // Conditional visibility for intake-call branches.
                     // The override-note input only appears when the count is
                     // under 200. Refrigeration only when at least one
                     // non-PBJ type is selected. PBJ-only-specific items
@@ -1458,8 +1487,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                     if (item.id === 'refrigeration_status' && !hasNonPbjType) return null;
                     if (item.id === 'young_children_pbj' && !isPbjOnly) return null;
                     if (item.id === 'pbj_spatulas_mentioned' && !selectedTypes.has('pbj')) return null;
+                    if (['participant_count', 'speaker_needed', 'additional_volunteers'].includes(item.id) && !isCorporateEvent) return null;
 
-                    // Gate everything past Sandwich Estimates when the
+                    // Gate everything past the low-count decision when the
                     // count is under 200 and the override note isn't
                     // filled. The two un-grayed items are sandwich_count
                     // itself (so the operator can change it) and the
@@ -1467,7 +1497,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                     // section header still renders normally.
                     const isUnderGated =
                       formGatedByLowCount &&
-                      item.category !== 'Sandwich Estimates & Refrigeration' &&
                       item.id !== 'sandwich_count' &&
                       item.id !== 'under_200_override_note';
 
@@ -1476,27 +1505,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                     // Every other item is a regular form row (label + input
                     // only). Confirmation items have no input branch in the
                     // render switch below; non-confirmation items do.
-                    const CONFIRMATION_ITEM_IDS = new Set<string>([
-                      'outside_operating_area',
-                      'young_children_pbj',
-                      'pbj_spatulas_mentioned',
-                      'assembly_reviewed',
-                      // Food Safety & Logistics + Process Discussion items
-                      // are all verbal confirmations.
-                      'review_toolkit',
-                      'food_safe_gloves',
-                      'meat_cheese_refrigeration',
-                      'discuss_shopping',
-                      'transport_meat_cheese',
-                      'buying_supplies',
-                      'cooling_sandwiches',
-                      'parking_access',
-                      'backup_contact',
-                      'discuss_process',
-                      'assembly_line',
-                      'runner_role',
-                      'typical_rules',
-                    ]);
                     const isConfirmationItem = CONFIRMATION_ITEM_IDS.has(item.id);
 
                     return (
@@ -1803,21 +1811,28 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               />
                             </div>
                           ) : item.id === 'is_corporate_event' ? (
-                            <Select
-                              value={itemAnswers[item.id] || ''}
-                              onValueChange={(v) => handleAnswerChange(item.id, v)}
-                            >
-                              <SelectTrigger
-                                className="text-sm h-8"
-                                onClick={(e) => e.stopPropagation()}
+                            <div className="space-y-2">
+                              <Select
+                                value={itemAnswers[item.id] || ''}
+                                onValueChange={(v) => handleAnswerChange(item.id, v)}
                               >
-                                <SelectValue placeholder="Yes / No" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="yes">Yes</SelectItem>
-                                <SelectItem value="no">No</SelectItem>
-                              </SelectContent>
-                            </Select>
+                                <SelectTrigger
+                                  className="text-sm h-8"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <SelectValue placeholder="Yes / No" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="yes">Yes</SelectItem>
+                                  <SelectItem value="no">No</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              {itemAnswers[item.id] === 'yes' && (
+                                <p className="text-xs text-[#A31C41] italic">
+                                  Corporate follow-ups will appear below: participant count, speaker, and volunteer needs.
+                                </p>
+                              )}
+                            </div>
                           ) : item.id === 'speaker_needed' ? (
                             <div className="space-y-2">
                               <Input
@@ -2029,15 +2044,25 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 />
                               </div>
                             </div>
-                          ) : (
-                            <Input
-                              type="text"
-                              placeholder="Record notes here"
+                          ) : item.id === 'food_safety_notes' ? (
+                            <Textarea
+                              placeholder="Optional: exceptions, follow-up concerns, supply questions, refrigeration concerns, or anything unusual from the safety review."
                               value={itemAnswers[item.id] || ''}
                               onChange={(e) => handleAnswerChange(item.id, e.target.value)}
-                              className="text-sm h-8"
+                              className="text-sm min-h-[90px]"
                               onClick={(e) => e.stopPropagation()}
                             />
+                          ) : (
+                            isConfirmationItem ? null : (
+                              <Input
+                                type="text"
+                                placeholder="Record notes here"
+                                value={itemAnswers[item.id] || ''}
+                                onChange={(e) => handleAnswerChange(item.id, e.target.value)}
+                                className="text-sm h-8"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            )
                           )}
                         </div>
                       </div>
@@ -2127,11 +2152,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             ))}
 
 
-            {/* Other Notes — catch-all bucket for anything that didn't
-                fit a structured question above. Each section already has
-                its own notes fields (how-heard notes, undecided-date notes,
-                under-200 override, food-safety divergences, etc.), so this
-                is explicitly for miscellaneous context. */}
+            {/* Other Notes — final admin wrap-up bucket for anything that
+                didn't fit a structured question above. */}
             <div className="bg-white border border-gray-300 rounded-lg p-4">
               <Label htmlFor="call-notes" className="text-base font-semibold text-[#236383] mb-2 flex items-center gap-2">
                 <FileText className="w-5 h-5" />
