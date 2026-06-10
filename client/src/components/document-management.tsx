@@ -296,6 +296,90 @@ function DocumentUploadDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function EditDocumentDialog({
+  document,
+  onClose,
+  onSave,
+  isSaving,
+}: {
+  document: Document;
+  onClose: () => void;
+  onSave: (values: { title: string; description: string; category: string }) => void;
+  isSaving: boolean;
+}) {
+  const [title, setTitle] = useState(document.title);
+  const [description, setDescription] = useState(document.description ?? '');
+  const [category, setCategory] = useState(document.category);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+    onSave({ title: title.trim(), description: description.trim(), category });
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="w-[95vw] max-w-md p-4 sm:p-6">
+        <DialogHeader>
+          <DialogTitle>Edit Document</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="edit-title">Document Title *</Label>
+            <Input
+              id="edit-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter document title"
+              required
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="edit-description">Description</Label>
+            <Textarea
+              id="edit-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of the document"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="edit-category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            File contents and filename cannot be edited &mdash; re-upload the document to replace the file.
+          </p>
+
+          <div className="flex justify-end space-x-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSaving || !title.trim()}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DocumentPermissionsDialog({
   document,
   onClose,
@@ -664,6 +748,7 @@ export default function DocumentManagement() {
     null
   );
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const { toast } = useToast();
@@ -687,6 +772,38 @@ export default function DocumentManagement() {
     onError: (error) => {
       toast({
         title: 'Failed to delete document',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateDocumentMutation = useMutation({
+    mutationFn: async (payload: {
+      id: number;
+      title: string;
+      description: string;
+      category: string;
+    }) => {
+      const { id, ...updates } = payload;
+      const response = await fetch(`/api/documents/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to update document');
+      }
+    },
+    onSuccess: () => {
+      toast({ title: 'Document updated successfully' });
+      setEditingDocument(null);
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to update document',
         description: error instanceof Error ? error.message : 'Unknown error',
         variant: 'destructive',
       });
@@ -817,6 +934,16 @@ export default function DocumentManagement() {
                         >
                           <Download className="w-4 h-4" />
                         </Button>
+                        {user && (user.role === 'admin' || user.role === 'super_admin' || document.uploadedBy === user.id) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            title="Edit"
+                            onClick={() => setEditingDocument(document)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
                         {user && (user.role === 'admin' || user.role === 'super_admin') && (
                           <Button
                             size="sm"
@@ -871,6 +998,17 @@ export default function DocumentManagement() {
           documentPath={`/api/documents/${previewDocument.id}/preview`}
           documentName={previewDocument.originalName || previewDocument.title}
           documentType={getDocumentTypeFromMime(previewDocument.mimeType)}
+        />
+      )}
+
+      {editingDocument && (
+        <EditDocumentDialog
+          document={editingDocument}
+          onClose={() => setEditingDocument(null)}
+          onSave={(values) =>
+            updateDocumentMutation.mutate({ id: editingDocument.id, ...values })
+          }
+          isSaving={updateDocumentMutation.isPending}
         />
       )}
     </div>

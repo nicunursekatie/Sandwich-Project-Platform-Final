@@ -406,6 +406,88 @@ documentsRouter.delete(
   }
 );
 
+// PATCH /api/documents/:id - Update document metadata (title/description/category)
+documentsRouter.patch(
+  '/:id',
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const user = getUser(req);
+
+      if (!user || !user.email) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const documentId = parseInt(req.params.id);
+      if (isNaN(documentId)) {
+        return res.status(400).json({ error: 'Invalid document ID' });
+      }
+
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      // Auth: same rules as delete — super admins, the privileged accounts,
+      // or the original uploader can edit metadata.
+      const isPrivileged =
+        user.role === 'super_admin' ||
+        user.email === 'admin@sandwich.project' ||
+        user.email === 'katielong2316@gmail.com';
+      const isUploader = document.uploadedBy === user.id;
+      if (!isPrivileged && !isUploader) {
+        logger.warn(
+          `Unauthorized document edit attempt: ${user.email} tried to edit document ID ${documentId}`
+        );
+        return res.status(403).json({
+          error: 'You do not have permission to edit this document',
+        });
+      }
+
+      // Only accept the metadata fields the UI can edit. Ignore anything else
+      // the client sends to avoid letting people overwrite filePath / uploadedBy / etc.
+      const { title, description, category } = req.body ?? {};
+      const updates: { title?: string; description?: string | null; category?: string } = {};
+
+      if (title !== undefined) {
+        if (typeof title !== 'string' || title.trim() === '') {
+          return res.status(400).json({ error: 'Title must be a non-empty string' });
+        }
+        updates.title = title.trim();
+      }
+      if (description !== undefined) {
+        if (description !== null && typeof description !== 'string') {
+          return res.status(400).json({ error: 'Description must be a string or null' });
+        }
+        updates.description = description === null ? null : description.trim();
+      }
+      if (category !== undefined) {
+        if (typeof category !== 'string' || category.trim() === '') {
+          return res.status(400).json({ error: 'Category must be a non-empty string' });
+        }
+        updates.category = category.trim();
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: 'No editable fields supplied' });
+      }
+
+      const updated = await storage.updateDocument(documentId, updates);
+      if (!updated) {
+        return res.status(500).json({ error: 'Failed to update document' });
+      }
+
+      logger.info(
+        `Document updated by ${user.email}: ID ${documentId} fields=${Object.keys(updates).join(',')}`
+      );
+
+      res.json({ success: true, document: updated });
+    } catch (error: any) {
+      logger.error('Error updating document:', error);
+      res.status(500).json({ error: 'Failed to update document' });
+    }
+  }
+);
+
 // GET /api/documents/:id/permissions - Get document permissions (stub for future implementation)
 documentsRouter.get(
   '/:id/permissions',

@@ -827,7 +827,21 @@ async function getAllActiveTspContacts(): Promise<string[]> {
     contactIds.add(adminUser[0].id);
   }
 
-  return Array.from(contactIds);
+  if (contactIds.size === 0) return [];
+
+  // Filter out users who have opted out of the weekly portfolio digest.
+  // This applies to everyone, including the auto-included admin — if the
+  // admin opts out, they stop receiving it.
+  const ids = Array.from(contactIds);
+  const optedOut = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(inArray(users.id, ids), eq(users.weeklyDigestOptOut, true)));
+
+  if (optedOut.length === 0) return ids;
+
+  const optedOutSet = new Set(optedOut.map((u) => u.id));
+  return ids.filter((id) => !optedOutSet.has(id));
 }
 
 /**

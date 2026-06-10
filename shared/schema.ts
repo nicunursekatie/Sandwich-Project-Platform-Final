@@ -84,6 +84,9 @@ export const users = pgTable('users', {
   notifyOnNewIntake: boolean('notify_on_new_intake'),
   notifyOnTaskDue: boolean('notify_on_task_due'),
   notifyOnStatusChange: boolean('notify_on_status_change'),
+  // Per-user opt-out for the Monday morning "Your Weekly Event Portfolio"
+  // digest. Null/false = receive (default). True = skip in processWeeklyDigests.
+  weeklyDigestOptOut: boolean('weekly_digest_opt_out').notNull().default(false),
 }, (table) => ({
   // Case-insensitive unique index on email. Lives here instead of as a
   // column-level `.unique()` so the same email with different casing can't
