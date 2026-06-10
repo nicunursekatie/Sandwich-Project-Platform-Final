@@ -415,8 +415,8 @@ ${userEmail}`;
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
+                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -589,8 +589,8 @@ ${userEmail}`;
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
+                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -762,8 +762,8 @@ ${userEmail}`;
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
+                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -910,8 +910,8 @@ ${userEmail}`;
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
+                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -1047,8 +1047,8 @@ ${userEmail}`;
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
+                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -1220,8 +1220,8 @@ ${userEmail}`;
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff;">
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #007E8C; padding: 40px 30px; text-align: center;">
-                            <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffffff;">🥪 The Sandwich Project</h1>
+                        <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
+                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -1416,7 +1416,9 @@ ${userEmail}`;
             searchText.includes('deli') ||
             searchText.includes('pbj') ||
             searchText.includes('pb&j') ||
-            searchText.includes('sandwich making')
+            searchText.includes('sandwich making') ||
+            searchText.includes('group event reference') ||
+            searchText.includes('event reference guide')
           );
         })
         .map((doc) => doc.filePath);
