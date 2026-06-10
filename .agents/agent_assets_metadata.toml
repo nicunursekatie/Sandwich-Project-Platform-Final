@@ -6,3 +6,9 @@ id = "li4xptBByAdYja6M1tatQ"
 uri = "file://exports/the-sandwich-project-overview.pdf"
 type = "pdf"
 title = "The Sandwich Project Platform — Overview"
+
+[[outputs]]
+id = "P7Mu951CDT5yqRspIPW-_"
+uri = "file://docs/ORGANIZATIONAL_OVERVIEW.md"
+type = "text"
+title = "The Sandwich Project — Organizational Overview"
