@@ -1507,7 +1507,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             and also hidden when no van flag is set at all (the "Mark Van Needed"
             toggle lives in the Team Assignments box, next to the driver controls).
             Only renders when there's an actual badge state to show. */}
-        {!request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely) && (
+        {!request.selfTransport && !request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely) && (
           <div className="mb-3 flex items-center gap-2">
             <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
               Van:
@@ -1526,7 +1526,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Auto-flag: this event flipped to "van needed" but still has assigned regular drivers.
             The regular driver slot won't satisfy the van requirement — coordinator should
             review (likely reassign as van driver or remove). */}
-        {request.vanDriverNeeded && driverAssigned > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
+        {!request.selfTransport && request.vanDriverNeeded && driverAssigned > 0 && !request.assignedVanDriverId && !request.isDhlVan && (
           <div className="mb-3 flex items-start gap-2 rounded-md border border-[#A31C41]/40 bg-[#A31C41]/5 px-3 py-2 text-xs text-[#A31C41]">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
@@ -3135,7 +3135,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     here; once a van is flagged needed the "Van Driver (Needed)" section
                     above takes over, so this row is hidden then to avoid an empty strip
                     (VanNeededBadgeAndButton renders nothing in that state). */}
-                {canEdit && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
+                {canEdit && !request.selfTransport && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
                   <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200">
                     <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
                       Van
@@ -3152,7 +3152,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 )}
 
                 {/* Speakers */}
-                {(speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
+                {!request.selfTransport ? ((speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'speakersNeeded' ? (
@@ -3615,10 +3615,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                ) : null}
+                ) : null) : null}
 
                 {/* Volunteers */}
-                {(volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
+                {!request.selfTransport ? ((volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'volunteersNeeded' ? (
@@ -4053,7 +4053,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                ) : null}
+                ) : null) : null}
 
                 {/* Attendance */}
                 <div className="flex items-start gap-2 pb-3 border-b border-gray-200">

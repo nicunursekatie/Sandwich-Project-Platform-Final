@@ -3423,6 +3423,20 @@ router.put(
         processedUpdates.status !== originalEvent.status
       ) {
         processedUpdates.statusChangedAt = new Date();
+
+        const toStatus = processedUpdates.status as EventStatus;
+
+        // Keep PUT behavior aligned with PATCH: when an event becomes scheduled
+        // or rescheduled, the date is considered confirmed unless explicitly
+        // overridden in the same request.
+        if (toStatus === 'scheduled' || toStatus === 'rescheduled') {
+          if (processedUpdates.isConfirmed === undefined) {
+            processedUpdates.isConfirmed = true;
+          }
+          if (processedUpdates.showOnVolunteerHub === undefined && !originalEvent.showOnVolunteerHub) {
+            processedUpdates.showOnVolunteerHub = true;
+          }
+        }
       }
 
       // Track who marked the event as unresponsive

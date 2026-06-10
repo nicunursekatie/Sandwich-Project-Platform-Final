@@ -153,10 +153,16 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
               ) : (
                 <Badge variant="outline" className="shrink-0 border-gray-400">Requested</Badge>
               )}
-              {staffingComplete && (
+              {!request.selfTransport && staffingComplete && (
                 <Badge className="bg-[#47B3CB]/10 text-[#236383] border-[#47B3CB]/30 shrink-0">
                   <Check className="w-3 h-3 mr-1" />
                   Staffed
+                </Badge>
+              )}
+              {request.selfTransport && (
+                <Badge className="bg-[#FBAD3F]/10 text-[#D68319] border-[#FBAD3F]/40 shrink-0">
+                  <Car className="w-3 h-3 mr-1" />
+                  Self-Transport
                 </Badge>
               )}
               {missingInfo.length > 0 && (
@@ -249,7 +255,7 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
             </div>
 
             {/* Staffing Status Bar */}
-            {totalNeeded > 0 && (
+            {!request.selfTransport && totalNeeded > 0 && (
               <div className="mt-3 flex items-center gap-4 text-xs">
                 {/* Driver staffing status */}
                 {request.vanDriverNeeded ? (
@@ -419,7 +425,7 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
             )}
 
             {/* Assignments */}
-            {totalNeeded > 0 && (
+            {!request.selfTransport && totalNeeded > 0 && (
               <div className="bg-[#007E8C]/5 rounded-lg p-3 border border-[#007E8C]/20">
                 <h4 className="text-xs font-semibold text-[#236383] mb-2 uppercase tracking-wide">Team Assignments</h4>
                 <div className="space-y-2 text-sm">
