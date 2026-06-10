@@ -722,15 +722,19 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     }
   };
 
-  const handleComplete = async () => {
+  const saveIntakeCall = async ({
+    markCallComplete,
+  }: {
+    markCallComplete: boolean;
+  }) => {
     if (!eventRequest || isSaving) {
       return;
     }
 
     // Corporate-event requirement: at least one of speaker / volunteer must
-    // be filled in. Block save with a toast rather than silently letting
-    // the operator submit an invalid intake for a corporate event.
-    if (isCorporateEvent) {
+    // be filled in before the operator marks the call complete. A plain
+    // save-and-close can still preserve partial notes while intake is ongoing.
+    if (markCallComplete && isCorporateEvent) {
       const speakerAnswered = !!itemAnswers.speaker_needed?.trim();
       const volunteersAnswered = !!itemAnswers.additional_volunteers?.trim();
       if (!speakerAnswered && !volunteersAnswered) {
@@ -748,6 +752,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
     try {
       const nowLabel = new Date().toLocaleString();
+      const summaryTitle = markCallComplete
+        ? `Intake call completed: ${nowLabel}`
+        : `Intake call notes saved: ${nowLabel}`;
       const answeredItems = checklistItems.filter((item) => {
         // event_times is a virtual parent — show it in the summary when any
         // of the three sub-fields is filled.
@@ -833,7 +840,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       };
 
       const summaryLines = [
-        `Intake call completed: ${nowLabel}`,
+        summaryTitle,
         `Contact: ${contactName || 'N/A'} | ${contactPhone || 'N/A'} | ${contactEmail || 'N/A'}`,
         ...answeredItems.map(renderItemForNotes),
       ];
@@ -1022,7 +1029,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         );
       }
       toast({
-        title: hasUnparseable ? 'Intake call saved (with warnings)' : 'Intake call saved',
+        title: hasUnparseable
+          ? 'Intake notes saved (with warnings)'
+          : markCallComplete
+            ? 'Intake call saved'
+            : 'Intake notes saved',
         description: toastParts.join(' '),
         variant: hasUnparseable ? 'destructive' : 'default',
         duration: hasUnparseable ? 12000 : 5000,
@@ -1031,7 +1042,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       // Save succeeded — clear the autosaved draft for this event.
       clearDraft(`intake:${eventRequest?.id}`);
 
-      onCallComplete?.();
       setCheckedItems(new Set());
       setItemAnswers({});
       setCallNotes('');
@@ -1039,6 +1049,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       setContactPhone('');
       setContactEmail('');
       setHasUserInteracted(false);
+      if (markCallComplete) {
+        onCallComplete?.();
+      }
       onClose();
     } catch (error: any) {
       toast({
@@ -1051,6 +1064,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveAndClose = () => {
+    void saveIntakeCall({ markCallComplete: false });
+  };
+
+  const handleComplete = () => {
+    void saveIntakeCall({ markCallComplete: true });
   };
 
   if (!eventRequest) return null;
@@ -2155,6 +2176,14 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose} disabled={isSaving}>
               Close
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSaveAndClose}
+              disabled={isSaving}
+              className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+            >
+              {isSaving ? 'Saving...' : 'Close & Save'}
             </Button>
             {/* Move to Non-Event — shown when under-200 and the operator
                 hasn't filled in an override note. Direct exit path for

@@ -859,7 +859,7 @@ Note: Corporate events may use platforms like Deed or Benevity - be sure to note
   private static getEventUrl(eventId: number): string {
     const baseUrl = getAppBaseUrl();
 
-    return `${baseUrl}/event-requests-v2?eventId=${eventId}`;
+    return `${baseUrl}/dashboard?section=event-requests&eventId=${eventId}`;
   }
 
   /**
@@ -1535,7 +1535,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
 
     try {
       const appUrl = process.env.REPL_URL || 'https://app.thesandwichproject.org';
-      const eventUrl = `${appUrl}/dashboard?section=event-requests&tab=in-progress`;
+      const eventUrl = `${appUrl}/dashboard?section=event-requests&tab=in_process`;
       
       let subject: string;
       let bodyContent: string;
