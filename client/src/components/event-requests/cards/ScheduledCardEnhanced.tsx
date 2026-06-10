@@ -124,7 +124,6 @@ interface ScheduledCardEnhancedProps {
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onLogContact: () => void;
-  onFollowUp: () => void;
   onReschedule: () => void;
   onDuplicate?: () => void;
   onAiIntakeAssist?: () => void;
@@ -198,7 +197,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onAssignTspContact,
   onEditTspContact,
   onLogContact,
-  onFollowUp,
   onReschedule,
   onDuplicate,
   onAiIntakeAssist,
@@ -234,9 +232,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [showSendSmsDialog, setShowSendSmsDialog] = useState(false);
   const [showSendCorrectionDialog, setShowSendCorrectionDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [showPreEventFollowUpDialog, setShowPreEventFollowUpDialog] = useState(false);
   const [showAllocationEditor, setShowAllocationEditor] = useState(false);
-  const [preEventFollowUpNotes, setPreEventFollowUpNotes] = useState('');
   const [showFlagsDialog, setShowFlagsDialog] = useState(false);
   const [showContactLog, setShowContactLog] = useState(false);
 
@@ -943,9 +939,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
-              {/* Traffic conflict (e.g. World Cup matches) */}
+              {/* Traffic conflict (e.g. World Cup matches). Once scheduled, only
+                  the confirmed scheduled date matters — checking the original
+                  desiredEventDate too left a stale badge when an event was
+                  rescheduled off a conflict date onto a clear one. */}
               <TrafficConflictBadge
-                dates={[request.scheduledEventDate, request.desiredEventDate]}
+                dates={[request.scheduledEventDate || request.desiredEventDate]}
                 className="mt-1 mr-1"
               />
               {/* Returning Organization Indicator */}
@@ -1506,9 +1505,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Van status — dedicated prominent row so the badge doesn't get lost in the
             pills wrap. Hidden once a van driver is actually assigned (or DHL is set),
             and also hidden when no van flag is set at all (the "Mark Van Needed"
-            call-to-action moved to the bottom action row, where the user looks
-            for actions to take). Only renders when there's an actual badge state
-            to show. */}
+            toggle lives in the Team Assignments box, next to the driver controls).
+            Only renders when there's an actual badge state to show. */}
         {!request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely) && (
           <div className="mb-3 flex items-center gap-2">
             <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
@@ -3130,6 +3128,29 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : null}
 
+                {/* Van needed toggle — lives here in Team Assignments (next to the
+                    driver/transport controls) rather than in the bottom action row,
+                    since it switches the event between needing regular drivers and a
+                    van driver. Only the un-set "Mark Van Needed" call-to-action lives
+                    here; once a van is flagged needed the "Van Driver (Needed)" section
+                    above takes over, so this row is hidden then to avoid an empty strip
+                    (VanNeededBadgeAndButton renders nothing in that state). */}
+                {canEdit && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200">
+                    <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
+                      Van
+                    </span>
+                    <VanNeededBadgeAndButton
+                      eventRequestId={request.id}
+                      vanDriverNeeded={request.vanDriverNeeded}
+                      vanNeededLikely={(request as any).vanNeededLikely}
+                      canEdit={!!canEdit}
+                      simpleToggle
+                      mode="button"
+                    />
+                  </div>
+                )}
+
                 {/* Speakers */}
                 {(speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
                   <div className="pb-3 border-b border-gray-200">
@@ -4346,11 +4367,15 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         )}
 
 
-        {/* Action Buttons Row — single consolidated row of every action available on a
-            scheduled event. Workflow/communication actions on the left, card-management
-            cluster (Edit + Delete) pushed to the right with a vertical divider. */}
+        {/* Action Buttons Row — actions grouped by purpose with thin vertical dividers:
+            (1) organizer outreach, (2) recipient SMS, (3) team coordination,
+            (4) event management, (5) official calendar/sheet, and finally the
+            card-management cluster (Edit + Delete) pushed to the right. The van
+            toggle lives in the Team Assignments box, and "Follow Up" is intentionally
+            absent — that step belongs to completed events, not scheduled ones. */}
         <TooltipProvider>
           <div className="flex flex-wrap items-center gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
+            {/* Group 1 — Organizer outreach */}
             <Button onClick={onContact}>
               <Mail className="w-4 h-4 mr-2" />
               Contact Organizer
@@ -4360,27 +4385,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               Log Contact
             </Button>
 
-            {/* Message — always visible */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowMessageDialog(true)}
-                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
-                  data-testid="button-message-event"
-                >
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Message
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Message about this event</p>
-              </TooltipContent>
-            </Tooltip>
-
+            {/* Group 2 — Recipient SMS (event details + corrections texted to opted-in recipients) */}
             {canEdit && canSendSMS && (
               <>
+                <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -4418,11 +4426,39 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </>
             )}
 
-            <ReminderRulesManager
-              eventRequestId={request.id}
-              tspContactUserId={request.tspContact || request.tspContactAssigned}
-              eventStatus={request.status}
-            />
+            {/* Group 3 — Team coordination (message other TSP team members about this event) */}
+            <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowMessageDialog(true)}
+                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+                  data-testid="button-message-event"
+                >
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  Message
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Message the team about this event</p>
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Group 4 — Event management */}
+            <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onAssignTspContact}
+                className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
+              >
+                <UserPlus className="w-4 h-4 mr-1" />
+                Assign TSP Contact
+              </Button>
+            )}
 
             {onAiIntakeAssist && (
               <Button
@@ -4437,6 +4473,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </Button>
             )}
 
+            <ReminderRulesManager
+              eventRequestId={request.id}
+              tspContactUserId={request.tspContact || request.tspContactAssigned}
+              eventStatus={request.status}
+            />
+
             <Button size="sm" variant="outline" onClick={onReschedule}>
               Reschedule
             </Button>
@@ -4448,22 +4490,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </Button>
             )}
 
-            <Button size="sm" onClick={onFollowUp}>
-              Follow Up
-            </Button>
-
-            {!(request.tspContact || request.customTspContact) && canEditTspContact && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onAssignTspContact}
-                className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
-              >
-                <UserPlus className="w-4 h-4 mr-1" />
-                Assign TSP Contact
-              </Button>
-            )}
-
+            {/* Group 5 — Official calendar / Google Sheet */}
+            <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
             <ProposeToSheetButton
               eventId={request.id}
               organizationName={request.organizationName || 'Unknown'}
@@ -4472,16 +4500,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               showLabel
             />
 
-            {/* Van needed — only renders when no van flag is set AND no van driver assigned. */}
-            {!request.assignedVanDriverId && !request.isDhlVan && (
-              <VanNeededBadgeAndButton
-                eventRequestId={request.id}
-                vanDriverNeeded={request.vanDriverNeeded}
-                vanNeededLikely={(request as any).vanNeededLikely}
-                canEdit={!!canEdit}
-                simpleToggle
-                mode="button"
-              />
+            {/* For users who type the event into the Google Sheet by hand instead of
+                using "Push to Sheet" — lets them mark it On Calendar without an actual
+                push. Hidden once the event is already on the calendar. */}
+            {canEdit && !request.addedToOfficialSheet && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => { e.stopPropagation(); quickToggleBoolean('addedToOfficialSheet', false); }}
+                className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
+              >
+                <Calendar className="w-4 h-4 mr-1" />
+                Manually Added to Google Sheet
+              </Button>
             )}
 
             {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}

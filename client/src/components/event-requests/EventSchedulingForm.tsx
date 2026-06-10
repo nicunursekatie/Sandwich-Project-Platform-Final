@@ -58,6 +58,7 @@ import {
   buildEventDataForServer,
   detectChangedFields,
   findMismatchedSavedFields,
+  getDroppedServerFields,
   determineSandwichMode,
   determineActualSandwichMode,
   calculateRelevantSandwichCount,
@@ -767,25 +768,25 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
 
-      const droppedFields: Array<{ field: string; reason: string }> | undefined = updatedEvent?._droppedFields;
+      // Only the server-reported dropped fields are authoritative enough to block
+      // save completion. The heuristic round-trip comparison below is logged for
+      // diagnostics but must NOT keep the dialog open — treating its false
+      // positives as failures made every save look like it silently didn't save.
+      const droppedFields = getDroppedServerFields(updatedEvent);
       const mismatchedFields = findMismatchedSavedFields(variables.data || {}, updatedEvent);
-      if (
-        (Array.isArray(droppedFields) && droppedFields.length > 0) ||
-        mismatchedFields.length > 0
-      ) {
+      if (mismatchedFields.length > 0) {
+        logger.warn(
+          '[EventSchedulingForm] Post-save field comparison flagged (non-blocking):',
+          mismatchedFields,
+        );
+      }
+      if (droppedFields.length > 0) {
         saveToLocalStorage();
         await invalidateEventRequestQueries(queryClient);
 
-        const droppedSummary = Array.isArray(droppedFields) && droppedFields.length > 0
-          ? `Not saved: ${droppedFields.map((d) => `${d.field} (${d.reason})`).join(', ')}`
-          : '';
-        const mismatchSummary = mismatchedFields.length > 0
-          ? `Needs review: ${mismatchedFields.join(', ')} did not match the saved response.`
-          : '';
-
         toast({
           title: 'Partial Save - Please Review',
-          description: [droppedSummary, mismatchSummary].filter(Boolean).join(' '),
+          description: `Not saved: ${droppedFields.map((d) => `${d.field} (${d.reason})`).join(', ')}`,
           variant: 'destructive',
           duration: Number.POSITIVE_INFINITY,
         });
@@ -919,7 +920,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const performSubmit = async (skipSpeakerWarning = false, fieldOverrides?: Record<string, any>) => {
     setIsSubmitting(true);
-    clearAutoSave();
+    // NOTE: the recovery draft is intentionally cleared only after a successful
+    // save (in the mutation onSuccess handlers). Clearing it here would wipe the
+    // user's unsaved edits if the save then failed (network drop, timeout, 4xx/5xx).
+    // The auto-save effect is suppressed while isSubmitting is true.
 
     // Block submission if form not initialized
     if (eventRequest && !formInitialized) {
@@ -1020,8 +1024,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // ── Form Submit Handler ────────────────────────────────────────────
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    e?.preventDefault?.();
 
     // Non-blocking van conflict check
     if (eventLikelyNeedsVan() && !vanConflictChecked) {
@@ -1431,9 +1435,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           </div>
           <div className="flex space-x-3">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            {/*
+              Belt-and-suspenders: this button lives outside the <form>, so it relies on the
+              `form` attribute to submit. Some browser/portal combinations don't honor that
+              association, which made the button appear to do nothing. The onClick triggers the
+              save directly. preventDefault suppresses the native form submit so there is no
+              double submission, and the button stays disabled while a save is in flight.
+            */}
             <Button type="submit" form="event-scheduling-form" className="text-white"
               style={{ backgroundColor: '#236383' }}
               disabled={isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
               {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
                 ? (mode === 'edit' ? 'Saving...' : 'Scheduling...')

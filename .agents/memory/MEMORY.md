@@ -1,0 +1,1 @@
+- [Stream Chat distinct channels](stream-distinct-channels.md) — group chats need an explicit channel id; distinct (id-less) channels reject addMembers (error 17).

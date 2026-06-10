@@ -33,6 +33,9 @@ import {
   X,
   MessageCircle,
   ChevronLeft,
+  Trash2,
+  UserPlus,
+  UserMinus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +44,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { Check, CheckCheck } from 'lucide-react';
 import {
   Tooltip,
@@ -370,12 +384,26 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [membersDialogTitle, setMembersDialogTitle] = useState<string>('Chat Members');
   const [membersDialogUsers, setMembersDialogUsers] = useState<Array<{ id: string; name: string }>>([]);
-  
+  const [membersDialogChannel, setMembersDialogChannel] = useState<ChannelType | null>(null);
+  const [showAddMembers, setShowAddMembers] = useState(false);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [membersToAdd, setMembersToAdd] = useState<string[]>([]);
+  const [isSavingMembers, setIsSavingMembers] = useState(false);
+
+  // DM deletion (hide-for-me) confirmation
+  const [dmToDelete, setDmToDelete] = useState<ChannelType | null>(null);
+
+  // Permission flags for managing group membership (admins/coordinators only)
+  const canAddMembers = hasPermission(user, PERMISSIONS.CHAT_GROUP_ADD_MEMBERS);
+  const canRemoveMembers = hasPermission(user, PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS);
+  const canManageMembers = canAddMembers || canRemoveMembers;
+
   // Mobile view: show sidebar (rooms list) or chat
   const [mobileShowSidebar, setMobileShowSidebar] = useState(true);
 
-  const openMembersDialog = (channel: ChannelType) => {
-    const members = Object.values(channel.state?.members || {})
+  // Build the (sorted, current-user-excluded) member list for a channel.
+  const getChannelMemberList = (channel: ChannelType) =>
+    Object.values(channel.state?.members || {})
       .map((m: any) => {
         const id = String(m.user?.id || m.user_id || '');
         const name = String(m.user?.name || m.user_id || m.user?.id || 'Unknown');
@@ -384,9 +412,110 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
       .filter((m) => m.id && m.id !== streamUserId)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    setMembersDialogUsers(members);
+  const openMembersDialog = async (channel: ChannelType) => {
+    // Channels opened from the sidebar list may not be watched yet, so channel.state.members can
+    // be a partial subset. Watch first so the full member list (and the group-vs-DM member count
+    // used to gate edit controls) is accurate.
+    try {
+      await channel.watch();
+    } catch (error) {
+      logger.error('Failed to load channel members:', error);
+    }
+    setMembersDialogChannel(channel);
+    setMembersDialogUsers(getChannelMemberList(channel));
     setMembersDialogTitle(String((channel.data as any)?.name || 'Chat Members'));
+    setShowAddMembers(false);
+    setMembersToAdd([]);
+    setMemberSearch('');
     setShowMembersDialog(true);
+  };
+
+  // Hide a DM for the current user only (non-destructive; clears their copy of history).
+  const hideDirectMessage = async (channel: ChannelType) => {
+    if (!client || !streamUserId) return;
+    try {
+      // hide(null, clearHistory) hides for the connected user and clears their copy of history
+      await channel.hide(null, true);
+      if (activeChannel?.cid === channel.cid) {
+        setActiveChannel(null);
+        setMobileShowSidebar(true);
+      }
+      await loadUserChannels(client, streamUserId);
+      toast({
+        title: 'Conversation deleted',
+        description: 'It has been removed from your list. It will reappear if a new message is sent.',
+      });
+    } catch (error) {
+      logger.error('Failed to hide DM:', error);
+      toast({
+        title: 'Failed to delete conversation',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDmToDelete(null);
+    }
+  };
+
+  // Add or remove members on an existing group chat via the server (admin-gated).
+  const updateGroupMembers = async (
+    channel: ChannelType,
+    changes: { add?: string[]; remove?: string[] }
+  ) => {
+    if (!client || !streamUserId) return;
+    setIsSavingMembers(true);
+    try {
+      const result = await apiRequest('POST', `/api/stream/channels/${channel.type}/${channel.id}/members`, changes);
+      // Refresh the channel state so the dialog and list reflect the actual result (a partial
+      // failure may still have committed some changes).
+      await channel.watch();
+      setMembersDialogUsers(getChannelMemberList(channel));
+      setMembersToAdd([]);
+      setMemberSearch('');
+      setShowAddMembers(false);
+      await loadUserChannels(client, streamUserId);
+
+      if (result?.success === false) {
+        // HTTP 207: the mutation failed. If anything committed it's a partial update; if nothing
+        // committed it's an outright failure.
+        toast({
+          title: result?.changed ? 'Group only partially updated' : 'Failed to update group',
+          description:
+            result?.error ||
+            (result?.changed
+              ? 'Some changes could not be applied. Please review the member list.'
+              : 'No changes could be applied. Please try again.'),
+          variant: 'destructive',
+        });
+      } else if (result?.changed === false) {
+        toast({
+          title: 'No changes',
+          description: 'The member list was already up to date.',
+        });
+      } else {
+        toast({
+          title: 'Group updated',
+          description: 'The member list has been updated.',
+        });
+      }
+    } catch (error: any) {
+      logger.error('Failed to update group members:', error);
+      // The request failed outright — still refresh so the UI reflects the true state.
+      try {
+        await channel.watch();
+        setMembersDialogUsers(getChannelMemberList(channel));
+        await loadUserChannels(client, streamUserId);
+      } catch (refreshError) {
+        logger.error('Failed to refresh group after error:', refreshError);
+      }
+      toast({
+        title: 'Failed to update group',
+        description: error?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingMembers(false);
+    }
   };
 
   // Fetch all users for DM/group creation (uses for-assignments endpoint - no special permissions needed)
@@ -990,6 +1119,19 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                               {unreadCount}
                             </Badge>
                           )}
+                          <button
+                            type="button"
+                            aria-label={`Delete conversation with ${getDMDisplayName(channel)}`}
+                            title="Delete conversation"
+                            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              setDmToDelete(channel);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     );
@@ -1174,35 +1316,200 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
             {membersDialogUsers.length} member{membersDialogUsers.length === 1 ? '' : 's'}
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[320px] pr-3">
-          <div className="space-y-2">
-            {membersDialogUsers.map((m) => {
-              const initials = m.name
-                .split(' ')
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((p) => p[0])
-                .join('')
-                .toUpperCase();
+        {(() => {
+          // Total members on the channel (independent of how the current user is filtered out
+          // of the display list, so a 2-person DM can never be mistaken for a group).
+          const totalMemberCount = Object.keys(membersDialogChannel?.state?.members || {}).length;
 
-              return (
-                <div key={m.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-[#47B3CB]/20 text-[#007E8C] text-xs">
-                      {initials || 'TM'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{m.name}</div>
-                    <div className="text-xs text-gray-500 truncate">{m.id}</div>
-                  </div>
+          // Membership can only be edited on group chats (messaging channels with 3+ members),
+          // and only by admins/coordinators. Team rooms and DMs are not editable here.
+          const isEditableGroup =
+            canManageMembers &&
+            membersDialogChannel?.type === 'messaging' &&
+            totalMemberCount > 2;
+
+          // App user IDs already in the channel (strip the `user_` Stream prefix).
+          const currentMemberAppIds = new Set(
+            Object.keys(membersDialogChannel?.state?.members || {}).map((sid) =>
+              sid.replace(/^user_/, '')
+            )
+          );
+
+          const addableUsers = allUsers.filter((u: any) => {
+            if (currentMemberAppIds.has(String(u.id))) return false;
+            if (!memberSearch.trim()) return true;
+            const q = memberSearch.toLowerCase();
+            return (
+              u.firstName?.toLowerCase().includes(q) ||
+              u.lastName?.toLowerCase().includes(q) ||
+              u.email?.toLowerCase().includes(q)
+            );
+          });
+
+          return (
+            <>
+              <ScrollArea className="max-h-[280px] pr-3">
+                <div className="space-y-2">
+                  {membersDialogUsers.map((m) => {
+                    const initials = m.name
+                      .split(' ')
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((p) => p[0])
+                      .join('')
+                      .toUpperCase();
+
+                    return (
+                      <div key={m.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-50">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-[#47B3CB]/20 text-[#007E8C] text-xs">
+                            {initials || 'TM'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-900 truncate">{m.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{m.id}</div>
+                        </div>
+                        {isEditableGroup && canRemoveMembers && (
+                          <button
+                            type="button"
+                            aria-label={`Remove ${m.name} from group`}
+                            title="Remove from group"
+                            disabled={isSavingMembers}
+                            className="p-1 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                            onClick={() =>
+                              updateGroupMembers(membersDialogChannel!, {
+                                remove: [m.id.replace(/^user_/, '')],
+                              })
+                            }
+                          >
+                            <UserMinus className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
+              </ScrollArea>
+
+              {isEditableGroup && canAddMembers && (
+                <div className="border-t pt-3 mt-1">
+                  {!showAddMembers ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-dashed border-[#47B3CB] text-[#007E8C] hover:bg-[#47B3CB]/10"
+                      onClick={() => setShowAddMembers(true)}
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add members
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Search team members..."
+                          value={memberSearch}
+                          onChange={(e) => setMemberSearch(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <ScrollArea className="h-40">
+                        {addableUsers.length === 0 ? (
+                          <div className="text-center text-gray-500 py-4 text-sm">
+                            No team members to add
+                          </div>
+                        ) : (
+                          addableUsers.map((u: any) => (
+                            <div
+                              key={u.id}
+                              className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
+                                membersToAdd.includes(u.id) ? 'bg-[#47B3CB]/20' : 'hover:bg-gray-100'
+                              }`}
+                              onClick={() =>
+                                setMembersToAdd((prev) =>
+                                  prev.includes(u.id)
+                                    ? prev.filter((id) => id !== u.id)
+                                    : [...prev, u.id]
+                                )
+                              }
+                            >
+                              <Checkbox checked={membersToAdd.includes(u.id)} />
+                              <Avatar className="w-8 h-8">
+                                <AvatarFallback className="bg-[#47B3CB]/20 text-[#007E8C] text-xs">
+                                  {getUserInitials(u)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-sm truncate">{getUserDisplayName(u)}</div>
+                                <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </ScrollArea>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1"
+                          disabled={isSavingMembers}
+                          onClick={() => {
+                            setShowAddMembers(false);
+                            setMembersToAdd([]);
+                            setMemberSearch('');
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="flex-1 bg-[#007E8C] hover:bg-[#236383]"
+                          disabled={membersToAdd.length === 0 || isSavingMembers}
+                          onClick={() =>
+                            updateGroupMembers(membersDialogChannel!, { add: membersToAdd })
+                          }
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Add{membersToAdd.length > 0 ? ` (${membersToAdd.length})` : ''}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
       </DialogContent>
     </Dialog>
+
+    {/* Delete (hide) DM confirmation */}
+    <AlertDialog open={!!dmToDelete} onOpenChange={(open) => !open && setDmToDelete(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes the conversation{dmToDelete ? ` with ${getDMDisplayName(dmToDelete)}` : ''} from
+            your list and clears your copy of the messages. The other person will still have it, and the
+            conversation will reappear if a new message is sent.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-red-600 hover:bg-red-700"
+            onClick={() => dmToDelete && hideDirectMessage(dmToDelete)}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
 
     {/* New Direct Message Dialog */}
     <Dialog open={showNewMessageDialog} onOpenChange={setShowNewMessageDialog}>

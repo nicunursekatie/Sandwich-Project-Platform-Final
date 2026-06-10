@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { eq, desc, and, sql, or } from 'drizzle-orm';
+import { eq, desc, and, sql, or, inArray } from 'drizzle-orm';
 import { db } from '../../db';
 import { notifications, users } from '../../../shared/schema';
+import { getLinkedUserIds } from '../../lib/linked-accounts';
 import { insertNotificationSchema } from '../../../shared/schema';
 import { createStandardMiddleware } from '../../middleware';
 import { smartNotificationsRouter } from './smart';
@@ -50,12 +51,14 @@ notificationsRouter.get('/', async (req, res) => {
       include_archived = false 
     } = req.query;
 
+    const linkedIds = await getLinkedUserIds(req.user.id);
+
     let query = db
       .select()
       .from(notifications)
       .where(
         and(
-          eq(notifications.userId, req.user.id),
+          inArray(notifications.userId, linkedIds),
           include_archived === 'true' ? undefined : eq(notifications.isArchived, false),
           unread_only === 'true' ? eq(notifications.isRead, false) : undefined,
           category ? eq(notifications.category, category as string) : undefined
@@ -73,7 +76,7 @@ notificationsRouter.get('/', async (req, res) => {
       .from(notifications)
       .where(
         and(
-          eq(notifications.userId, req.user.id),
+          inArray(notifications.userId, linkedIds),
           eq(notifications.isRead, false),
           eq(notifications.isArchived, false)
         )
@@ -101,6 +104,8 @@ notificationsRouter.get('/counts', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const linkedIds = await getLinkedUserIds(req.user.id);
+
     const counts = await db
       .select({
         category: notifications.category,
@@ -110,7 +115,7 @@ notificationsRouter.get('/counts', async (req, res) => {
       .from(notifications)
       .where(
         and(
-          eq(notifications.userId, req.user.id),
+          inArray(notifications.userId, linkedIds),
           eq(notifications.isRead, false),
           eq(notifications.isArchived, false)
         )
@@ -153,13 +158,14 @@ notificationsRouter.patch('/:id/read', async (req, res) => {
       return res.status(400).json({ error: 'Invalid notification ID' });
     }
 
+    const linkedIds = await getLinkedUserIds(req.user.id);
     const result = await db
       .update(notifications)
       .set({ isRead: true })
       .where(
         and(
           eq(notifications.id, notificationId),
-          eq(notifications.userId, req.user.id)
+          inArray(notifications.userId, linkedIds)
         )
       )
       .returning();
@@ -183,7 +189,8 @@ notificationsRouter.patch('/bulk/read', async (req, res) => {
     }
 
     const { notificationIds } = req.body;
-    
+    const linkedIds = await getLinkedUserIds(req.user.id);
+
     // If no specific IDs provided, mark all unread as read
     if (!notificationIds || notificationIds.length === 0) {
       await db
@@ -191,7 +198,7 @@ notificationsRouter.patch('/bulk/read', async (req, res) => {
         .set({ isRead: true })
         .where(
           and(
-            eq(notifications.userId, req.user.id),
+            inArray(notifications.userId, linkedIds),
             eq(notifications.isRead, false)
           )
         );
@@ -208,7 +215,7 @@ notificationsRouter.patch('/bulk/read', async (req, res) => {
       .set({ isRead: true })
       .where(
         and(
-          eq(notifications.userId, req.user.id),
+          inArray(notifications.userId, linkedIds),
           sql`${notifications.id} = ANY(${notificationIds})`
         )
       )
@@ -237,13 +244,14 @@ notificationsRouter.patch('/:id/archive', async (req, res) => {
       return res.status(400).json({ error: 'Invalid notification ID' });
     }
 
+    const linkedIds = await getLinkedUserIds(req.user.id);
     const result = await db
       .update(notifications)
       .set({ isArchived: true, isRead: true })
       .where(
         and(
           eq(notifications.id, notificationId),
-          eq(notifications.userId, req.user.id)
+          inArray(notifications.userId, linkedIds)
         )
       )
       .returning();
@@ -386,12 +394,13 @@ notificationsRouter.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Invalid notification ID' });
     }
 
-    // Users can only delete their own notifications, admins can delete any
+    // Users can only delete their own (or linked accounts') notifications, admins can delete any
+    const linkedIds = await getLinkedUserIds(req.user.id);
     const whereCondition = req.user.permissions?.includes('admin')
       ? eq(notifications.id, notificationId)
       : and(
           eq(notifications.id, notificationId),
-          eq(notifications.userId, req.user.id)
+          inArray(notifications.userId, linkedIds)
         );
 
     const result = await db

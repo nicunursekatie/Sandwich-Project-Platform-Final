@@ -13,6 +13,7 @@ import {
 import { createStandardMiddleware } from '../../middleware';
 import { logger } from '../../utils/production-safe-logger';
 import { getSocketInstance } from '../../socket-chat';
+import { getLinkedUserIds } from '../../lib/linked-accounts';
 
 const actionsRouter = Router();
 
@@ -347,8 +348,9 @@ async function handleEmailMessageAction(
     throw new Error('Email message not found');
   }
 
-  // Verify user is sender or recipient
-  if (email.senderId !== userId && email.recipientId !== userId) {
+  // Verify user (or a linked account) is sender or recipient
+  const linkedIds = await getLinkedUserIds(userId);
+  if (!linkedIds.includes(email.senderId) && !linkedIds.includes(email.recipientId)) {
     throw new Error('Not authorized to perform this action');
   }
 
@@ -453,8 +455,9 @@ actionsRouter.post('/:id/actions/:actionType', async (req, res) => {
       return res.status(404).json({ error: 'Notification not found' });
     }
 
-    // Verify notification belongs to user
-    if (notification.userId !== userId) {
+    // Verify notification belongs to user (or a linked account)
+    const linkedIds = await getLinkedUserIds(userId);
+    if (!linkedIds.includes(notification.userId)) {
       return res.status(403).json({ error: 'Forbidden: Not your notification' });
     }
 
@@ -615,13 +618,14 @@ actionsRouter.get('/:id/action-history', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Verify notification belongs to user
+    // Verify notification belongs to user (or a linked account)
     const [notification] = await db
       .select()
       .from(notifications)
       .where(eq(notifications.id, parseInt(id)));
 
-    if (!notification || notification.userId !== userId) {
+    const linkedIds = await getLinkedUserIds(userId);
+    if (!notification || !linkedIds.includes(notification.userId)) {
       return res.status(404).json({ error: 'Notification not found' });
     }
 
@@ -661,8 +665,9 @@ actionsRouter.post('/:id/actions/:actionHistoryId/undo', async (req, res) => {
       return res.status(404).json({ error: 'Action history not found' });
     }
 
-    // Verify action belongs to user
-    if (actionHistory.userId !== userId) {
+    // Verify action belongs to user (or a linked account)
+    const linkedIds = await getLinkedUserIds(userId);
+    if (!linkedIds.includes(actionHistory.userId)) {
       return res.status(403).json({ error: 'Forbidden: Not your action' });
     }
 

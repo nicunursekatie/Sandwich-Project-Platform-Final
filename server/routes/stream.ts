@@ -7,6 +7,7 @@ import { NotificationService } from '../notification-service';
 import { getUserMetadata } from '@shared/types';
 import { requirePermission } from '../middleware/auth';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import { db } from '../db';
 import { notifications } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
@@ -252,7 +253,18 @@ streamRoutes.post('/channels', async (req, res) => {
       channelData.name = channelName;
     }
 
-    const channel = streamServerClient.channel(channelType, undefined, channelData);
+    // 1:1 DMs use a "distinct" channel (no explicit ID) so the same pair of
+    // users always maps to the same channel. Group chats (3+ members, or any
+    // named group) MUST get an explicit ID — a distinct channel's identity is
+    // its member set, so Stream rejects addMembers/removeMembers on it later
+    // with error 17 ("cannot add members to the distinct channel"). Giving
+    // groups their own ID keeps membership editable.
+    const isGroup = memberIds.length > 2 || !!channelName;
+    const channelId = isGroup
+      ? `group_${crypto.randomBytes(12).toString('hex')}`
+      : undefined;
+
+    const channel = streamServerClient.channel(channelType, channelId, channelData);
 
     await channel.create();
 
@@ -265,6 +277,165 @@ streamRoutes.post('/channels', async (req, res) => {
   } catch (error) {
     logger.error('Channel creation error:', error);
     res.status(500).json({ error: 'Failed to create channel', message: error.message });
+  }
+});
+
+// Add and/or remove members on an existing group chat (messaging channel with 3+ members).
+// Restricted to admins/coordinators via the CHAT_GROUP_ADD_MEMBERS / CHAT_GROUP_REMOVE_MEMBERS
+// permissions. DMs and permission-driven team rooms cannot be edited here.
+streamRoutes.post('/channels/:type/:id/members', async (req, res) => {
+  try {
+    const user = req.user || req.session?.user;
+    if (!user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { type, id } = req.params;
+    const add: string[] = Array.isArray(req.body?.add) ? req.body.add : [];
+    const remove: string[] = Array.isArray(req.body?.remove) ? req.body.remove : [];
+
+    if (add.length === 0 && remove.length === 0) {
+      return res.status(400).json({ error: 'Nothing to change' });
+    }
+
+    // Only group chats (messaging type) can have their membership edited here.
+    if (type !== 'messaging') {
+      return res.status(400).json({ error: 'Only group chats can be edited' });
+    }
+
+    // Permission check using the SAME unified logic as the client (hasPermission), so an admin
+    // with an explicit/restricted permissions array is treated identically here and in the UI.
+    // Adding and removing are gated independently.
+    if (add.length > 0 && !hasPermission(user as any, PERMISSIONS.CHAT_GROUP_ADD_MEMBERS)) {
+      return res.status(403).json({ error: 'You do not have permission to add members' });
+    }
+    if (remove.length > 0 && !hasPermission(user as any, PERMISSIONS.CHAT_GROUP_REMOVE_MEMBERS)) {
+      return res.status(403).json({ error: 'You do not have permission to remove members' });
+    }
+
+    if (!streamServerClient) {
+      streamServerClient = initializeStreamServer();
+      if (!streamServerClient) {
+        return res.status(500).json({ error: 'Stream Chat not initialized' });
+      }
+    }
+
+    const streamUserId = `user_${user.id}`;
+    const channel = streamServerClient.channel(type, id);
+    await channel.query({ members: { limit: 200 } });
+
+    const currentMemberIds = Object.keys(channel.state.members || {});
+
+    // Only an admin or an existing member can manage the group.
+    const isAdmin = user.role === 'super_admin' || user.role === 'admin';
+    if (!isAdmin && !currentMemberIds.includes(streamUserId)) {
+      return res.status(403).json({ error: 'You are not a member of this group' });
+    }
+
+    // Guard: this endpoint is for editing existing group chats, not 1:1 DMs.
+    if (currentMemberIds.length <= 2) {
+      return res.status(400).json({ error: 'Member editing is only available for group chats' });
+    }
+
+    // Register any newly added users with Stream before adding them. Only users that exist
+    // and upsert successfully are queued for addMembers, so a bad/unknown ID can't fail the
+    // whole update or add a non-existent user.
+    const addStreamIds: string[] = [];
+    for (const participantId of add) {
+      const participantStreamId = `user_${participantId}`;
+      if (currentMemberIds.includes(participantStreamId)) continue;
+      try {
+        const participantUser = await storage.getUser(participantId);
+        if (!participantUser) {
+          logger.warn(`Skipping add for unknown user ${participantId}`);
+          continue;
+        }
+        await streamServerClient.upsertUser({
+          id: participantStreamId,
+          name: participantUser.firstName && participantUser.lastName
+            ? `${participantUser.firstName} ${participantUser.lastName}`
+            : participantUser.email,
+          email: participantUser.email,
+          role: 'user',
+        });
+        addStreamIds.push(participantStreamId);
+      } catch (upsertError) {
+        logger.error(`Failed to upsert participant ${participantId}, skipping:`, upsertError);
+      }
+    }
+
+    const removeStreamIds = remove
+      .map((p) => `user_${p}`)
+      .filter((sid) => currentMemberIds.includes(sid));
+
+    // Nothing actually resolves to a real change (e.g. all adds were already members or unknown,
+    // all removes were absent). Report changed:false so the client doesn't show a misleading
+    // "Group updated" toast.
+    if (addStreamIds.length === 0 && removeStreamIds.length === 0) {
+      return res.json({
+        success: true,
+        changed: false,
+        added: 0,
+        removed: 0,
+        members: currentMemberIds,
+      });
+    }
+
+    // Stream has no single atomic add+remove call, so apply sequentially and track what actually
+    // committed. On a partial failure we still re-query and return the real member list (with a
+    // 207) instead of a blanket 500, so the client can refresh to the true state.
+    let added = 0;
+    let removed = 0;
+    let opError: any = null;
+    try {
+      if (addStreamIds.length > 0) {
+        await channel.addMembers(addStreamIds);
+        added = addStreamIds.length;
+      }
+      if (removeStreamIds.length > 0) {
+        await channel.removeMembers(removeStreamIds);
+        removed = removeStreamIds.length;
+      }
+    } catch (mutationError: any) {
+      opError = mutationError;
+      logger.error('Channel member mutation partially failed:', mutationError);
+    }
+
+    // Re-query to return the actual resulting member list.
+    await channel.query({ members: { limit: 200 } });
+    const members = Object.keys(channel.state.members || {});
+
+    if (opError) {
+      // Stream error 17 on a "distinct" channel means this group was created
+      // before group chats got their own channel IDs; its membership can never
+      // be edited. Give a plain-language explanation instead of the raw error.
+      const isDistinctError =
+        opError?.code === 17 ||
+        /distinct channel/i.test(opError?.message || '');
+      const friendlyError = isDistinctError
+        ? "This group can't have its members changed because of how it was originally created. Please start a new group with everyone you want included."
+        : opError.message || 'Some changes could not be applied';
+
+      return res.status(207).json({
+        success: false,
+        changed: added > 0 || removed > 0,
+        added,
+        removed,
+        members,
+        error: friendlyError,
+      });
+    }
+
+    res.json({
+      success: true,
+      changed: added > 0 || removed > 0,
+      added,
+      removed,
+      members,
+    });
+  } catch (error) {
+    logger.error('Channel member update error:', error);
+    res.status(500).json({ error: 'Failed to update members', message: error.message });
   }
 });
 

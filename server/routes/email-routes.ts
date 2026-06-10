@@ -5,6 +5,7 @@ import { db } from '../db';
 import { kudosTracking, users, emailMessages } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { getLinkedUserIds } from '../lib/linked-accounts';
 
 export function createEmailRouter(deps: RouterDependencies) {
   const router = Router();
@@ -177,8 +178,9 @@ export function createEmailRouter(deps: RouterDependencies) {
         `[Email API] ID ${emailId} is a kudos message (kudosTracking.id=${kudoCheck[0].id})`
       );
 
-      // Verify user is the recipient of this kudo (compare as strings since recipientId is text)
-      if (String(kudoCheck[0].recipientId) !== String(user.id)) {
+      // Verify user (or a linked account) is the recipient of this kudo
+      const kudoLinkedIds = (await getLinkedUserIds(String(user.id))).map(String);
+      if (!kudoLinkedIds.includes(String(kudoCheck[0].recipientId))) {
         return res
           .status(403)
           .json({ message: 'Not authorized to update this kudo' });
@@ -465,8 +467,9 @@ export function createEmailRouter(deps: RouterDependencies) {
         `[Email API] Found kudos (kudosTracking.id=${kudoCheck[0].kudosId}) for message ${actualMessageId}`
       );
 
-      // Verify user is the recipient of this kudo (compare as strings since recipientId is text)
-      if (String(kudoCheck[0].recipientId) !== String(user.id)) {
+      // Verify user (or a linked account) is the recipient of this kudo
+      const kudoReadLinkedIds = (await getLinkedUserIds(String(user.id))).map(String);
+      if (!kudoReadLinkedIds.includes(String(kudoCheck[0].recipientId))) {
         return res
           .status(403)
           .json({ message: 'Not authorized to mark this kudo as read' });

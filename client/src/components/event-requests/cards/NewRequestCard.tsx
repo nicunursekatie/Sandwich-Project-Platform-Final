@@ -519,9 +519,11 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            {/* Traffic conflict (e.g. World Cup matches) */}
+            {/* Traffic conflict (e.g. World Cup matches). Prefer the scheduled
+                date once set so a rescheduled event doesn't keep a stale badge
+                from its original desiredEventDate. */}
             <TrafficConflictBadge
-              dates={[request.scheduledEventDate, request.desiredEventDate]}
+              dates={[request.scheduledEventDate || request.desiredEventDate]}
             />
           </div>
           <div className="text-sm text-[#007E8C] mt-1 space-y-1">

@@ -246,6 +246,38 @@ function MultiViewSidebar({
   );
 }
 
+// Sections whose layout has a bottom-anchored send/reply button (e.g. Team
+// Chat's Stream Chat message/DM composer) that the floating help button would
+// otherwise overlap. The help button is hidden on these sections.
+const HELP_BUTTON_HIDDEN_SECTIONS = [
+  'chat',
+  'messages',
+  'inbox',
+  'stream-messages',
+  'gmail-inbox',
+];
+
+function GuidedTourGate({ activeSection }: { activeSection: string }) {
+  const { panels, activePanel, isMultiViewEnabled } = useMultiView();
+
+  const visibleSections = isMultiViewEnabled
+    ? panels.map((p) => p.section)
+    : [
+        (panels.find((p) => p.id === activePanel) ||
+          panels.find((p) => p.id === 'primary') ||
+          panels[0])?.section,
+      ];
+
+  // Also consider the dashboard's actual active section. During single-view
+  // navigation the multi-view panel state can lag behind activeSection, so
+  // relying on panels alone left the help button visible over Team Chat.
+  const sectionsToCheck = [...visibleSections, activeSection];
+
+  if (sectionsToCheck.some((s) => s && HELP_BUTTON_HIDDEN_SECTIONS.includes(s)))
+    return null;
+  return <GuidedTour />;
+}
+
 export default function Dashboard({
   initialSection = 'dashboard',
 }: {
@@ -1260,8 +1292,9 @@ export default function Dashboard({
         </div>
         </div>
 
-        {/* Guided Tour System */}
-        <GuidedTour />
+        {/* Guided Tour System - hidden on Team Chat (incl. multi-view panels) so the
+            floating help button doesn't overlap the message/DM reply send button */}
+        <GuidedTourGate activeSection={activeSection} />
 
         {/* AI Assistant - Only show on sections that don't have their own AI chat */}
         {!['event-requests', 'event-ops-dashboard', 'collections', 'analytics', 'grant-metrics', 'weekly-monitoring', 'event-impact-reports', 'team-board', 'tsp-network', 'projects', 'resources', 'important-links', 'meetings', 'groups-catalog'].includes(activeSection) && (

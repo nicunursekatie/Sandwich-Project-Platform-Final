@@ -15,6 +15,7 @@ import {
 } from '@shared/schema';
 import { NotificationService } from '../notification-service';
 import { logger } from '../utils/production-safe-logger';
+import { getLinkedUserIds } from '../lib/linked-accounts';
 
 export interface MessageWithSender extends Message {
   senderName?: string;
@@ -164,6 +165,7 @@ export class MessagingService {
     const { contextType, limit = 50, offset = 0 } = options || {};
 
     try {
+      const linkedIds = await getLinkedUserIds(recipientId);
       const query = db
         .select({
           message: messages,
@@ -175,7 +177,7 @@ export class MessagingService {
         .leftJoin(users, eq(users.id, messages.senderId))
         .where(
           and(
-            eq(messageRecipients.recipientId, recipientId),
+            inArray(messageRecipients.recipientId, linkedIds),
             eq(messageRecipients.read, false),
             isNull(messages.deletedAt),
             eq(messageRecipients.contextAccessRevoked, false),
@@ -188,11 +190,13 @@ export class MessagingService {
 
       const results = await query;
 
-      return results.map((row) => ({
-        ...row.message,
-        senderName: row.senderName || 'Unknown User',
-        senderEmail: row.senderEmail || undefined,
-      }));
+      return dedupeByMessageId(
+        results.map((row) => ({
+          ...row.message,
+          senderName: row.senderName || 'Unknown User',
+          senderEmail: row.senderEmail || undefined,
+        }))
+      );
     } catch (error) {
       logger.error('Failed to get unread messages:', error);
       throw error;
@@ -221,12 +225,13 @@ export class MessagingService {
       }
 
       const { senderId } = messageInfo[0];
+      const linkedIds = await getLinkedUserIds(userId);
       logger.log(`[markMessageRead] Message ${messageId} has senderId: ${senderId}, current userId: ${userId}`);
 
-      // If current user is the sender, don't update read status (sender messages are always "read")
-      if (senderId === userId) {
+      // If a linked account is the sender, don't update read status (sender messages are always "read")
+      if (senderId && linkedIds.includes(senderId)) {
         logger.log(
-          `[markMessageRead] User ${userId} is sender of message ${messageId} - no read update needed`
+          `[markMessageRead] User ${userId} (or linked account) is sender of message ${messageId} - no read update needed`
         );
         return true; // Return true since sender doesn't need to mark their own message as read
       }
@@ -245,7 +250,7 @@ export class MessagingService {
       logger.log(`[markMessageRead] Found ${recipientCheck.length} messageRecipients entries for messageId ${messageId}:`,
         JSON.stringify(recipientCheck.map(r => ({ id: r.id, recipientId: r.recipientId, read: r.read }))));
 
-      const matchingRecipient = recipientCheck.find(r => r.recipientId === userId);
+      const matchingRecipient = recipientCheck.find(r => linkedIds.includes(r.recipientId));
       if (!matchingRecipient) {
         logger.log(`[markMessageRead] No messageRecipients entry found for userId ${userId} and messageId ${messageId} - creating one`);
         // Create the missing message_recipients entry (for old kudos that didn't have one)
@@ -268,7 +273,8 @@ export class MessagingService {
       logger.log(`[markMessageRead] Found matching recipient entry: id=${matchingRecipient.id}, currentRead=${matchingRecipient.read}`);
 
       // Only update if user is actually a recipient
-      // Update both 'read' (legacy) and 'isRead' (canonical) columns
+      // Update both 'read' (legacy) and 'isRead' (canonical) columns across
+      // every linked account, so reading in one account clears it everywhere.
       const result = await db
         .update(messageRecipients)
         .set({
@@ -278,7 +284,7 @@ export class MessagingService {
         })
         .where(
           and(
-            eq(messageRecipients.recipientId, userId),
+            inArray(messageRecipients.recipientId, linkedIds),
             eq(messageRecipients.messageId, messageId)
           )
         );
@@ -291,7 +297,7 @@ export class MessagingService {
         .from(messageRecipients)
         .where(
           and(
-            eq(messageRecipients.recipientId, userId),
+            inArray(messageRecipients.recipientId, linkedIds),
             eq(messageRecipients.messageId, messageId)
           )
         )
@@ -314,8 +320,9 @@ export class MessagingService {
     contextType?: string
   ): Promise<number> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       if (contextType) {
-        // Mark read only for specific context type, excluding messages where user is the sender
+        // Mark read only for specific context type, excluding messages where a linked account is the sender
         const messageIds = await db
           .select({ id: messages.id })
           .from(messages)
@@ -325,11 +332,11 @@ export class MessagingService {
           )
           .where(
             and(
-              eq(messageRecipients.recipientId, userId),
+              inArray(messageRecipients.recipientId, linkedIds),
               eq(messageRecipients.read, false),
               eq(messages.contextType, contextType),
-              // Don't mark messages where user is the sender
-              not(eq(messages.senderId, userId))
+              // Don't mark messages where a linked account is the sender
+              not(inArray(messages.senderId, linkedIds))
             )
           );
 
@@ -339,7 +346,7 @@ export class MessagingService {
             .set({ read: true, readAt: new Date() })
             .where(
               and(
-                eq(messageRecipients.recipientId, userId),
+                inArray(messageRecipients.recipientId, linkedIds),
                 inArray(
                   messageRecipients.messageId,
                   messageIds.map((m) => m.id)
@@ -353,7 +360,7 @@ export class MessagingService {
         );
         return messageIds.length;
       } else {
-        // Mark all messages as read, excluding messages where user is the sender
+        // Mark all messages as read, excluding messages where a linked account is the sender
         const messageIds = await db
           .select({ id: messages.id })
           .from(messages)
@@ -363,10 +370,10 @@ export class MessagingService {
           )
           .where(
             and(
-              eq(messageRecipients.recipientId, userId),
+              inArray(messageRecipients.recipientId, linkedIds),
               eq(messageRecipients.read, false),
-              // Don't mark messages where user is the sender
-              not(eq(messages.senderId, userId))
+              // Don't mark messages where a linked account is the sender
+              not(inArray(messages.senderId, linkedIds))
             )
           );
 
@@ -376,7 +383,7 @@ export class MessagingService {
             .set({ read: true, readAt: new Date() })
             .where(
               and(
-                eq(messageRecipients.recipientId, userId),
+                inArray(messageRecipients.recipientId, linkedIds),
                 inArray(
                   messageRecipients.messageId,
                   messageIds.map((m) => m.id)
@@ -403,21 +410,22 @@ export class MessagingService {
     userId: string
   ): Promise<Record<string, number>> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       const contextCounts = await db
         .select({
           contextType: messages.contextType,
-          count: sql<number>`COUNT(*)`,
+          count: sql<number>`COUNT(DISTINCT ${messages.id})`,
         })
         .from(messageRecipients)
         .innerJoin(messages, eq(messages.id, messageRecipients.messageId))
         .where(
           and(
-            eq(messageRecipients.recipientId, userId),
+            inArray(messageRecipients.recipientId, linkedIds),
             eq(messageRecipients.read, false),
             isNull(messages.deletedAt),
             eq(messageRecipients.contextAccessRevoked, false),
-            // Don't count messages where user is the sender
-            not(eq(messages.senderId, userId))
+            // Don't count messages where the viewer is the sender
+            not(inArray(messages.senderId, linkedIds))
           )
         )
         .groupBy(messages.contextType);
@@ -769,14 +777,15 @@ export class MessagingService {
   ): Promise<{ count: number }> {
     try {
       logger.log(`[markKudosAsRead] Marking kudos as read for user ${userId}, message IDs: ${kudosIds.join(', ')}`);
-      
-      // Get the message IDs from kudos tracking
+      const linkedIds = await getLinkedUserIds(userId);
+
+      // Get the message IDs from kudos tracking (across linked accounts)
       const kudosEntries = await db
         .select({ messageId: kudosTracking.messageId })
         .from(kudosTracking)
         .where(
           and(
-            eq(kudosTracking.recipientId, userId),
+            inArray(kudosTracking.recipientId, linkedIds),
             sql`${kudosTracking.messageId} IN (${sql.join(
               kudosIds.map((id) => sql`${id}`),
               sql`, `
@@ -801,7 +810,7 @@ export class MessagingService {
         .from(messageRecipients)
         .where(
           and(
-            eq(messageRecipients.recipientId, userId),
+            inArray(messageRecipients.recipientId, linkedIds),
             sql`${messageRecipients.messageId} IN (${sql.join(
               messageIds.map((id) => sql`${id}`),
               sql`, `
@@ -842,7 +851,7 @@ export class MessagingService {
         })
         .where(
           and(
-            eq(messageRecipients.recipientId, userId),
+            inArray(messageRecipients.recipientId, linkedIds),
             sql`${messageRecipients.messageId} IN (${sql.join(
               messageIds.map((id) => sql`${id}`),
               sql`, `
@@ -866,9 +875,10 @@ export class MessagingService {
     try {
       // Convert userId to string to handle numeric IDs from dev mode
       const userIdStr = String(userId);
+      const linkedIds = await getLinkedUserIds(userIdStr);
       logger.log(`[getReceivedKudos] Fetching kudos for userId: ${userIdStr}`);
 
-      // Get kudos tracking entries where this user is the recipient
+      // Get kudos tracking entries where any linked account is the recipient
       const kudosEntries = await db
         .select({
           messageId: kudosTracking.messageId,
@@ -878,7 +888,7 @@ export class MessagingService {
           createdAt: kudosTracking.sentAt,
         })
         .from(kudosTracking)
-        .where(eq(kudosTracking.recipientId, userIdStr))
+        .where(inArray(kudosTracking.recipientId, linkedIds))
         .orderBy(desc(kudosTracking.sentAt));
 
       logger.log(`[getReceivedKudos] Found ${kudosEntries.length} kudos entries`);
@@ -918,7 +928,7 @@ export class MessagingService {
                 messageRecipients,
                 and(
                   eq(messages.id, messageRecipients.messageId),
-                  eq(messageRecipients.recipientId, userIdStr)
+                  inArray(messageRecipients.recipientId, linkedIds)
                 )
               )
               .where(eq(messages.id, entry.messageId!))
@@ -1001,6 +1011,7 @@ export class MessagingService {
     const { contextType, limit = 50, offset = 0 } = options;
 
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       let query = db
         .select({
           id: messages.id,
@@ -1025,7 +1036,7 @@ export class MessagingService {
           eq(messages.id, messageRecipients.messageId)
         )
         .leftJoin(users, eq(messages.senderId, users.id))
-        .where(eq(messageRecipients.recipientId, userId));
+        .where(inArray(messageRecipients.recipientId, linkedIds));
 
       if (contextType) {
         query = query.where(eq(messages.contextType, contextType));
@@ -1036,16 +1047,18 @@ export class MessagingService {
         .limit(limit)
         .offset(offset);
 
-      return result.map((msg) => ({
-        ...msg,
-        senderName:
-          msg.senderName ||
-          msg.senderEmail ||
-          `User ${msg.senderId}` ||
-          'Unknown User',
-        read: !!msg.read,
-        readAt: msg.readAt || undefined,
-      }));
+      return dedupeByMessageId(
+        result.map((msg) => ({
+          ...msg,
+          senderName:
+            msg.senderName ||
+            msg.senderEmail ||
+            `User ${msg.senderId}` ||
+            'Unknown User',
+          read: !!msg.read,
+          readAt: msg.readAt || undefined,
+        }))
+      );
     } catch (error) {
       logger.error('Failed to get all messages:', error);
       throw error;
@@ -1121,6 +1134,7 @@ export class MessagingService {
     const { contextType, limit = 50, offset = 0 } = options;
 
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       let query = db
         .select({
           id: messages.id,
@@ -1145,7 +1159,7 @@ export class MessagingService {
           eq(messages.id, messageRecipients.messageId)
         )
         .leftJoin(users, eq(messages.senderId, users.id))
-        .where(eq(messageRecipients.recipientId, userId));
+        .where(inArray(messageRecipients.recipientId, linkedIds));
 
       if (contextType && contextType !== 'all') {
         query = query.where(eq(messages.contextType, contextType));
@@ -1156,16 +1170,18 @@ export class MessagingService {
         .limit(limit)
         .offset(offset);
 
-      return result.map((msg) => ({
-        ...msg,
-        senderName:
-          msg.senderName ||
-          msg.senderEmail ||
-          `User ${msg.senderId}` ||
-          'Unknown User',
-        read: !!msg.read,
-        readAt: msg.readAt || undefined,
-      }));
+      return dedupeByMessageId(
+        result.map((msg) => ({
+          ...msg,
+          senderName:
+            msg.senderName ||
+            msg.senderEmail ||
+            `User ${msg.senderId}` ||
+            'Unknown User',
+          read: !!msg.read,
+          readAt: msg.readAt || undefined,
+        }))
+      );
     } catch (error) {
       logger.error('Failed to get inbox messages:', error);
       throw error;
@@ -1270,6 +1286,7 @@ export class MessagingService {
    */
   async getMessageThread(messageId: number, userId: string): Promise<MessageWithSender[]> {
     try {
+      const linkedIds = await getLinkedUserIds(userId);
       // First, get the current message
       const currentMessage = await db
         .select({
@@ -1364,7 +1381,7 @@ export class MessagingService {
             .where(
               and(
                 eq(messageRecipients.messageId, msgId),
-                eq(messageRecipients.recipientId, userId)
+                inArray(messageRecipients.recipientId, linkedIds)
               )
             )
             .limit(1);
@@ -1620,7 +1637,7 @@ export class MessagingService {
         .innerJoin(kudosTracking, eq(kudosTracking.messageId, messages.id))
         .where(
           and(
-            eq(messageRecipients.recipientId, recipientId),
+            inArray(messageRecipients.recipientId, await getLinkedUserIds(recipientId)),
             eq(messageRecipients.read, false),
             eq(messageRecipients.initiallyNotified, false),
             isNull(messages.deletedAt),
@@ -1632,12 +1649,14 @@ export class MessagingService {
 
       const results = await query;
 
-      return results.map((row) => ({
-        ...row.message,
-        senderName: row.senderName || 'Unknown User',
-        senderEmail: row.senderEmail || undefined,
-        entityName: row.entityName || 'Unknown Entity',
-      }));
+      return dedupeByMessageId(
+        results.map((row) => ({
+          ...row.message,
+          senderName: row.senderName || 'Unknown User',
+          senderEmail: row.senderEmail || undefined,
+          entityName: row.entityName || 'Unknown Entity',
+        }))
+      );
     } catch (error) {
       logger.error('Failed to get unnotified kudos:', error);
       throw error;
@@ -1652,6 +1671,7 @@ export class MessagingService {
     kudosIds: number[]
   ): Promise<void> {
     try {
+      const linkedIds = await getLinkedUserIds(recipientId);
       await db
         .update(messageRecipients)
         .set({
@@ -1660,7 +1680,7 @@ export class MessagingService {
         })
         .where(
           and(
-            eq(messageRecipients.recipientId, recipientId),
+            inArray(messageRecipients.recipientId, linkedIds),
             inArray(messageRecipients.messageId, kudosIds)
           )
         );
@@ -1669,6 +1689,26 @@ export class MessagingService {
       throw error;
     }
   }
+}
+
+// Remove duplicate rows that can appear when a message was addressed to more
+// than one account in the same linked-account group (each recipient row would
+// otherwise yield a separate result). Keeps the first (read=false wins via
+// query ordering is not guaranteed, so prefer an unread copy if present).
+function dedupeByMessageId<T extends { id: number; read?: boolean }>(
+  rows: T[]
+): T[] {
+  const byId = new Map<number, T>();
+  for (const row of rows) {
+    const existing = byId.get(row.id);
+    if (!existing) {
+      byId.set(row.id, row);
+    } else if (existing.read === true && row.read === false) {
+      // Prefer the unread copy so the merged inbox surfaces it as unread.
+      byId.set(row.id, row);
+    }
+  }
+  return Array.from(byId.values());
 }
 
 // Export singleton instance

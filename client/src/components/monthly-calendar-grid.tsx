@@ -199,6 +199,24 @@ function getItemColor(item: TrackedCalendarItem): { bg: string; text: string; bo
   return CATEGORY_COLORS[item.category] || CATEGORY_COLORS.default;
 }
 
+// Detect single-day school markers (last/first day of school, etc.) from the title.
+// These are NOT breaks — e.g. "Last Day of School" marks the start of a district's
+// summer break, not a break period itself. Returns '' when the title is not a marker.
+function getSchoolMarkerType(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes('last day')) return 'Last Day';
+  if (
+    t.includes('first day') ||
+    t.includes('school starts') ||
+    t.includes('school start') ||
+    t.includes('school resumes')
+  )
+    return '1st Day';
+  if (t.includes('early release') || t.includes('early dismissal')) return 'Early Release';
+  if (t.includes('graduation')) return 'Graduation';
+  return '';
+}
+
 // Get abbreviated break type from title
 function getBreakType(title: string): string {
   const lowerTitle = title.toLowerCase();
@@ -248,6 +266,13 @@ function getItemLabel(item: TrackedCalendarItem): string {
     districtLabel = 'All';
   } else {
     districtLabel = `${districts.length} Dist`;
+  }
+
+  // Single-day school markers (e.g. last/first day of school) take precedence over
+  // break labeling so they aren't mislabeled as a generic "Break".
+  const markerType = getSchoolMarkerType(item.title);
+  if (markerType) {
+    return `${districtLabel} ${markerType}`;
   }
 
   // Add break type context
