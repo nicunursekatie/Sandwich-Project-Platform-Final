@@ -12,3 +12,9 @@ id = "P7Mu951CDT5yqRspIPW-_"
 uri = "file://docs/ORGANIZATIONAL_OVERVIEW.md"
 type = "text"
 title = "The Sandwich Project — Organizational Overview"
+
+[[outputs]]
+id = "eWbNU9bzS1cjBRSgC06vw"
+uri = "file://docs/ORGANIZATIONAL_OVERVIEW.pdf"
+type = "pdf"
+title = "The Sandwich Project — Organizational Overview (PDF)"
