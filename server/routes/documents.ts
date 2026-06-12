@@ -1,5 +1,6 @@
 import { Router, type Response } from 'express';
 import path from 'path';
+import { existsSync, createReadStream } from 'fs';
 import type { IStorage } from '../storage';
 import { isAuthenticated } from '../auth';
 import { logger } from '../middleware/logger';
@@ -227,7 +228,6 @@ documentsRouter.get(
         }
       }
 
-      const { existsSync, createReadStream } = require('fs');
       if (!existsSync(document.filePath)) {
         logger.error(`File not found (neither cloud nor disk): ${document.filePath}`);
         return res.status(404).json({ error: 'File not found on server. This document may need to be re-uploaded.' });
@@ -240,6 +240,12 @@ documentsRouter.get(
       res.setHeader('Cache-Control', 'private, max-age=3600');
 
       const fileStream = createReadStream(document.filePath);
+      fileStream.on('error', (err) => {
+        logger.error('Stream error during preview:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Error streaming file' });
+        }
+      });
       fileStream.pipe(res);
     } catch (error: any) {
       logger.error('Error previewing document:', error);
@@ -321,7 +327,6 @@ documentsRouter.get(
         }
       }
 
-      const { existsSync, createReadStream } = require('fs');
       if (!existsSync(document.filePath)) {
         logger.error(`File not found (neither cloud nor disk): ${document.filePath}`);
         return res.status(404).json({ error: 'File not found on server. This document may need to be re-uploaded.' });
@@ -332,6 +337,12 @@ documentsRouter.get(
       res.setHeader('Content-Length', document.fileSize);
 
       const fileStream = createReadStream(document.filePath);
+      fileStream.on('error', (err) => {
+        logger.error('Stream error during download:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Error streaming file' });
+        }
+      });
       fileStream.pipe(res);
     } catch (error: any) {
       logger.error('Error downloading document:', error);
