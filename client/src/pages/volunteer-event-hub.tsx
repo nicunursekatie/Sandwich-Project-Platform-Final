@@ -187,6 +187,9 @@ interface AvailableEvent {
   selfTransport: boolean | null;
   pickupTime: string | null;
   eventNotes: string | null;
+  driverInstructions: string | null;
+  volunteerInstructions: string | null;
+  speakerInstructions: string | null;
 }
 
 function getEventDateLabel(
@@ -218,6 +221,9 @@ interface MySignup {
     city: string | null;
     state: string | null;
     status: string;
+    driverInstructions?: string | null;
+    volunteerInstructions?: string | null;
+    speakerInstructions?: string | null;
   };
 }
 
@@ -539,6 +545,7 @@ function SignupDialog({
       colorClass: string;
       borderClass: string;
       bgClass: string;
+      instructions: string | null;
     }> = [];
 
     const spotsLabel = (count: number) => (count === 1 ? '1 spot open' : `${count} spots open`);
@@ -554,6 +561,7 @@ function SignupDialog({
         colorClass: 'text-[#a31c41]',
         borderClass: 'border-[#a31c41]/30',
         bgClass: 'bg-[#a31c41]/5',
+        instructions: event.speakerInstructions,
       });
     }
 
@@ -569,6 +577,7 @@ function SignupDialog({
       colorClass: 'text-[#007e8c]',
       borderClass: 'border-[#007e8c]/30',
       bgClass: 'bg-[#007e8c]/5',
+      instructions: event.volunteerInstructions,
     });
 
     // Show driver role if event needs drivers AND it's NOT a van-required event.
@@ -583,6 +592,7 @@ function SignupDialog({
         colorClass: 'text-[#236383]',
         borderClass: 'border-[#236383]/30',
         bgClass: 'bg-[#236383]/5',
+        instructions: event.driverInstructions,
       });
     }
 
@@ -637,7 +647,7 @@ function SignupDialog({
                       key={role.value}
                       htmlFor={`role-${role.value}`}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors',
+                        'flex items-start gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors',
                         role.borderClass,
                         isSelected ? role.bgClass : 'bg-white'
                       )}
@@ -653,9 +663,18 @@ function SignupDialog({
                             return prev.filter((value) => value !== role.value);
                           });
                         }}
+                        className="mt-0.5"
                       />
-                      <Icon className={cn('w-4 h-4', role.colorClass)} />
-                      <span className="text-sm text-gray-700">{role.label}</span>
+                      <Icon className={cn('w-4 h-4 mt-0.5 shrink-0', role.colorClass)} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-700">{role.label}</span>
+                        {role.instructions && role.instructions.trim() && (
+                          <p className="mt-1 text-xs text-gray-600 whitespace-pre-line">
+                            <span className="font-medium text-gray-700">What to expect:</span>{' '}
+                            {role.instructions}
+                          </p>
+                        )}
+                      </div>
                     </Label>
                   );
                 })}
@@ -2354,6 +2373,19 @@ export default function VolunteerEventHub() {
                               <span>Signed up {format(parseISO(signup.signedUpAt), 'MMM d, yyyy')}</span>
                               {signup.notes && <span>— {signup.notes}</span>}
                             </div>
+                            {(() => {
+                              const roleInstructions = signup.role === 'driver'
+                                ? signup.event.driverInstructions
+                                : signup.role === 'speaker'
+                                  ? signup.event.speakerInstructions
+                                  : signup.event.volunteerInstructions;
+                              if (!roleInstructions || !roleInstructions.trim()) return null;
+                              return (
+                                <div className="rounded-md border border-[#FBAD3F]/30 bg-[#FFF7E6] px-3 py-2 text-xs text-[#236383] whitespace-pre-line">
+                                  <span className="font-semibold">What to expect:</span> {roleInstructions}
+                                </div>
+                              );
+                            })()}
                           </div>
                           <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end sm:shrink-0">
                             <RoleBadge role={signup.role} />

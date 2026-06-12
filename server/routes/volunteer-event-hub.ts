@@ -852,6 +852,11 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
         selfTransport: event.selfTransport,
         pickupTime: event.pickupTime,
         eventNotes: event.notes, // Public notes about the event
+        // Role-specific instructions surfaced to volunteers on the signup slot
+        // and the my-signups view. Same source the SMS reminder uses.
+        driverInstructions: event.driverInstructions,
+        volunteerInstructions: event.volunteerInstructions,
+        speakerInstructions: event.speakerInstructions,
       };
     });
 
@@ -933,6 +938,9 @@ router.get('/event/:eventId', isAuthenticated, async (req: AuthenticatedRequest,
       selfTransport: event.selfTransport,
       pickupTime: event.pickupTime,
       eventNotes: event.notes,
+      driverInstructions: event.driverInstructions,
+      volunteerInstructions: event.volunteerInstructions,
+      speakerInstructions: event.speakerInstructions,
       confirmedVolunteers,
       pendingSignups: existingSignups.filter(v => v.status === 'pending').length,
     });
@@ -1298,6 +1306,9 @@ router.get('/my-signups', isAuthenticated, async (req: AuthenticatedRequest, res
         city: event.city,
         state: event.state,
         status: event.status,
+        driverInstructions: event.driverInstructions,
+        volunteerInstructions: event.volunteerInstructions,
+        speakerInstructions: event.speakerInstructions,
       },
     }));
 
