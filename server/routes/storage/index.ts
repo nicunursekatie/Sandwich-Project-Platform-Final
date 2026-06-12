@@ -408,9 +408,6 @@ storageRouter.post('/documents/populate', async (req: AuthenticatedRequest, res:
 
     logger.info(`User ${user.email} populating documents table`);
 
-    const fs = require('fs');
-    const path = require('path');
-    
     // Document categories and their corresponding folders
     const DOCUMENT_CATEGORIES = {
       'toolkit': {

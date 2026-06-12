@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import {
   users,
   projects,
@@ -2889,9 +2891,6 @@ export class MemStorage implements IStorage {
   // Helper method to populate documents from public folders
   private async populateDocumentsFromPublicFolders(): Promise<void> {
     try {
-      const fs = require('fs');
-      const path = require('path');
-      
       const DOCUMENT_CATEGORIES = {
         'toolkit': {
           folder: path.join(process.cwd(), 'public/toolkit'),

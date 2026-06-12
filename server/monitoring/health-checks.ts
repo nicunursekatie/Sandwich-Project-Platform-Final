@@ -9,6 +9,7 @@ import { db } from '../db';
 import logger from '../utils/logger';
 import { systemHealth } from './metrics';
 import { sql } from 'drizzle-orm';
+import fs from 'fs';
 
 export interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -113,7 +114,6 @@ function checkDiskHealth(): ComponentHealth {
   // This is a simplified check
   // In production, you might want to check actual disk usage
   try {
-    const fs = require('fs');
     const tmpDir = '/tmp';
 
     // Try to write a test file
