@@ -7,8 +7,10 @@
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
+import { and, eq } from 'drizzle-orm';
+import { db } from '../../db';
 import { storage } from '../../storage-wrapper';
-import { insertEventVolunteerSchema } from '@shared/schema';
+import { eventVolunteerDeclines, insertEventVolunteerSchema } from '@shared/schema';
 import { isAuthenticated } from '../../auth';
 import { logger } from '../../middleware/logger';
 import type { AuthenticatedRequest } from '../../types/express';
@@ -81,6 +83,23 @@ router.post('/:eventId/volunteers', isAuthenticated, async (req, res) => {
     if (alreadySignedUp) {
       return res.status(400).json({
         error: `You are already signed up as a ${volunteerData.role} for this event`,
+      });
+    }
+
+    const existingUnavailable = await db
+      .select()
+      .from(eventVolunteerDeclines)
+      .where(
+        and(
+          eq(eventVolunteerDeclines.eventRequestId, eventId),
+          eq(eventVolunteerDeclines.volunteerUserId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existingUnavailable.length > 0) {
+      return res.status(400).json({
+        error: 'You marked yourself not available for this event. Clear that mark before signing up.',
       });
     }
 

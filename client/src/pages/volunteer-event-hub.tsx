@@ -81,6 +81,7 @@ import {
   Navigation,
   CheckCircle2,
   LocateFixed,
+  Ban,
 } from 'lucide-react';
 
 // Fix Leaflet default marker icon
@@ -227,6 +228,72 @@ interface MySignup {
   };
 }
 
+interface MyUnavailable {
+  id: number;
+  eventRequestId: number;
+  volunteerUserId: string;
+  volunteerName: string | null;
+  volunteerEmail: string | null;
+  volunteerPhone: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  event: {
+    id: number;
+    organizationName: string;
+    scheduledEventDate: string | null;
+    desiredEventDate: string | null;
+    eventStartTime: string | null;
+    eventEndTime: string | null;
+    eventAddress: string;
+    city: string | null;
+    state: string | null;
+    status: string;
+  };
+}
+
+interface CoverageSummaryEvent {
+  id: number;
+  organizationName: string;
+  department: string | null;
+  scheduledEventDate: string | null;
+  desiredEventDate: string | null;
+  eventStartTime: string | null;
+  eventEndTime: string | null;
+  eventAddress: string;
+  city: string | null;
+  state: string | null;
+  status: string | null;
+  vanDriverNeeded: boolean;
+  roles: Array<{
+    role: string;
+    label: string;
+    needed: number;
+    assigned: number;
+    unfilled: number;
+  }>;
+  signups: Array<{
+    id: number;
+    volunteerUserId: string | null;
+    volunteerName: string | null;
+    volunteerEmail: string | null;
+    volunteerPhone: string | null;
+    role: string;
+    status: string;
+    notes: string | null;
+    signedUpAt: string;
+  }>;
+  unavailable: Array<{
+    id: number;
+    volunteerUserId: string;
+    volunteerName: string | null;
+    volunteerEmail: string | null;
+    volunteerPhone: string | null;
+    notes: string | null;
+    updatedAt: string;
+  }>;
+}
+
 // Custom marker icons using brand colors
 const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
   // Two-state: needs help (teal) vs filled/completed (gray). Specific role detail lives in the popup.
@@ -328,16 +395,22 @@ function EventCard({
   event,
   onSignup,
   onAssign,
+  onUnavailable,
+  onClearUnavailable,
   canSelfSignup,
   canAssignOthers,
   existingSignup,
+  existingUnavailable,
 }: {
   event: AvailableEvent;
   onSignup: (eventId: number) => void;
   onAssign?: (eventId: number) => void;
+  onUnavailable: (eventId: number) => void;
+  onClearUnavailable: (eventId: number) => void;
   canSelfSignup: boolean;
   canAssignOthers?: boolean;
   existingSignup?: MySignup;
+  existingUnavailable?: MyUnavailable;
 }) {
   const eventDate = event.scheduledEventDate || event.desiredEventDate;
   const formattedDate = eventDate
@@ -439,6 +512,48 @@ function EventCard({
               </div>
               <StatusBadge status={existingSignup.status} />
             </div>
+          ) : existingUnavailable ? (
+            <div className="space-y-2 rounded-lg border border-[#A31C41]/25 bg-[#A31C41]/5 p-3">
+              <div className="flex items-start gap-2">
+                <div className="bg-[#A31C41] rounded-full p-0.5 mt-0.5">
+                  <Ban className="w-3 h-3 text-white" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-[#A31C41]">Marked not available</p>
+                  {existingUnavailable.notes && (
+                    <p className="mt-1 text-xs text-gray-600 whitespace-pre-line">{existingUnavailable.notes}</p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-[#A31C41]/30 text-[#A31C41] hover:bg-[#A31C41]/10"
+                  onClick={() => onUnavailable(event.id)}
+                >
+                  Update Note
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
+                  onClick={() => onClearUnavailable(event.id)}
+                >
+                  Available Again
+                </Button>
+              </div>
+              {canAssignOthers && onAssign && (
+                <Button
+                  variant="outline"
+                  className="w-full h-9 border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5"
+                  onClick={() => onAssign(event.id)}
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Assign Someone Else
+                </Button>
+              )}
+            </div>
           ) : (
             <div className="space-y-2">
               {canSelfSignup ? (
@@ -454,6 +569,14 @@ function EventCard({
                   Ask a coordinator to sign you up.
                 </div>
               )}
+              <Button
+                variant="outline"
+                className="w-full h-9 border-[#A31C41]/30 text-[#A31C41] hover:bg-[#A31C41]/10"
+                onClick={() => onUnavailable(event.id)}
+              >
+                <Ban className="w-4 h-4 mr-2" />
+                I'm Not Available
+              </Button>
               {canAssignOthers && onAssign && (
                 <Button
                   variant="outline"
@@ -478,17 +601,25 @@ function EventCard({
 function MapEventPopupContent({
   event,
   onSignupClick,
+  onUnavailableClick,
+  onClearUnavailable,
   canSelfSignup,
   canAssignOthers,
   onAssignClick,
   userLocation,
+  existingSignup,
+  existingUnavailable,
 }: {
   event: AvailableEvent;
   onSignupClick: (eventId: number) => void;
+  onUnavailableClick: (eventId: number) => void;
+  onClearUnavailable: (eventId: number) => void;
   canSelfSignup: boolean;
   canAssignOthers: boolean;
   onAssignClick: (eventId: number) => void;
   userLocation: { lat: number; lng: number } | null;
+  existingSignup?: MySignup;
+  existingUnavailable?: MyUnavailable;
 }) {
   const map = useMap();
   const distanceMiles = userLocation && event.latitude && event.longitude
@@ -510,9 +641,13 @@ function MapEventPopupContent({
       <EventCard
         event={event}
         onSignup={(id) => { map.closePopup(); onSignupClick(id); }}
+        onUnavailable={(id) => { map.closePopup(); onUnavailableClick(id); }}
+        onClearUnavailable={(id) => { map.closePopup(); onClearUnavailable(id); }}
         onAssign={(id) => { map.closePopup(); onAssignClick(id); }}
         canSelfSignup={canSelfSignup}
         canAssignOthers={canAssignOthers}
+        existingSignup={existingSignup}
+        existingUnavailable={existingUnavailable}
       />
     </div>
   );
@@ -727,6 +862,89 @@ function SignupDialog({
               <>
                 <HandHeart className="w-4 h-4 mr-2" />
                 Submit Signup Request
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function UnavailableDialog({
+  event,
+  existingUnavailable,
+  open,
+  onOpenChange,
+  onSubmit,
+  isSubmitting,
+}: {
+  event: AvailableEvent | null;
+  existingUnavailable?: MyUnavailable;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (notes: string) => void;
+  isSubmitting: boolean;
+}) {
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setNotes(existingUnavailable?.notes || '');
+    }
+  }, [open, existingUnavailable]);
+
+  if (!event) return null;
+
+  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const formattedDate = eventDate
+    ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
+    : 'Date TBD';
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Mark Not Available</DialogTitle>
+          <DialogDescription>
+            Let coordinators know not to ask you about {event.organizationName} on {formattedDate}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="rounded-md border border-[#A31C41]/25 bg-[#A31C41]/5 px-3 py-2 text-sm text-[#A31C41]">
+            Marking this means you will not be able to sign up for any role on this event unless you clear it later.
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="unavailable-notes">Notes (optional)</Label>
+            <Textarea
+              id="unavailable-notes"
+              placeholder="Optional: out of town, already booked, too far away..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => onSubmit(notes)}
+            disabled={isSubmitting}
+            className="bg-[#A31C41] hover:bg-[#8e1738] text-white"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Ban className="w-4 h-4 mr-2" />
+                Mark Not Available
               </>
             )}
           </Button>
@@ -1107,11 +1325,12 @@ export default function VolunteerEventHub() {
   const queryClient = useQueryClient();
 
   // View state
-  const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals'>('calendar');
+  const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals' | 'coverage'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  const [unavailableDialogOpen, setUnavailableDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [manageSignup, setManageSignup] = useState<any | null>(null);
   const [manageMode, setManageMode] = useState<'change_role' | 'remove' | null>(null);
@@ -1167,6 +1386,17 @@ export default function VolunteerEventHub() {
     },
   });
 
+  const { data: myUnavailable = [], isLoading: unavailableLoading } = useQuery<MyUnavailable[]>({
+    queryKey: ['/api/volunteer-hub/my-unavailable'],
+    queryFn: async () => {
+      const response = await fetch('/api/volunteer-hub/my-unavailable', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch unavailable events');
+      return response.json();
+    },
+  });
+
   // Fetch pending signups (for coordinators)
   const { data: pendingSignups = [] } = useQuery<any[]>({
     queryKey: ['/api/volunteer-hub/pending-signups'],
@@ -1195,6 +1425,7 @@ export default function VolunteerEventHub() {
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
       toast({ title: status === 'assigned' ? 'Signup approved' : 'Signup declined' });
     },
     onError: () => {
@@ -1207,6 +1438,17 @@ export default function VolunteerEventHub() {
     queryKey: ['/api/volunteer-hub/all-signups'],
     queryFn: async () => {
       const response = await fetch('/api/volunteer-hub/pending-signups?all=true', { credentials: 'include' });
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: canApproveSignups,
+    refetchInterval: 30000,
+  });
+
+  const { data: coverageSummary = [], isLoading: coverageLoading } = useQuery<CoverageSummaryEvent[]>({
+    queryKey: ['/api/volunteer-hub/coverage-summary'],
+    queryFn: async () => {
+      const response = await fetch('/api/volunteer-hub/coverage-summary', { credentials: 'include' });
       if (!response.ok) return [];
       return response.json();
     },
@@ -1233,6 +1475,7 @@ export default function VolunteerEventHub() {
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
       toast({ title: 'Role updated', description: 'Volunteer has been notified by email.' });
     },
     onError: (err: Error) => {
@@ -1259,6 +1502,7 @@ export default function VolunteerEventHub() {
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/pending-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
       toast({ title: 'Volunteer removed', description: 'They have been notified by email.' });
     },
     onError: (err: Error) => {
@@ -1290,10 +1534,75 @@ export default function VolunteerEventHub() {
       setSelectedEvent(null);
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
     },
     onError: (error: Error) => {
       toast({
         title: 'Signup Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const unavailableMutation = useMutation({
+    mutationFn: async ({ eventId, notes }: { eventId: number; notes: string }) => {
+      const response = await fetch(`/api/volunteer-hub/availability/${eventId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isUnavailable: true, notes }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save availability');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Marked Not Available',
+        description: data.message || 'Coordinators will see that you cannot help with this event.',
+      });
+      setUnavailableDialogOpen(false);
+      setSelectedEvent(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-unavailable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Could Not Save',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const clearUnavailableMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await fetch(`/api/volunteer-hub/availability/${eventId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isUnavailable: false }),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to clear availability');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Availability Updated',
+        description: 'You can sign up for this event again.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-unavailable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Could Not Update',
         description: error.message,
         variant: 'destructive',
       });
@@ -1335,6 +1644,8 @@ export default function VolunteerEventHub() {
       setAssignDialogOpen(false);
       setSelectedEvent(null);
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/all-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
     },
     onError: (error: Error) => {
       toast({
@@ -1364,6 +1675,7 @@ export default function VolunteerEventHub() {
         description: 'Your volunteer signup has been cancelled.',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-signups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
     },
     onError: (error: Error) => {
       toast({
@@ -1509,6 +1821,10 @@ export default function VolunteerEventHub() {
     return mySignups.find(s => s.eventRequestId === eventId);
   };
 
+  const getExistingUnavailable = (eventId: number) => {
+    return myUnavailable.find((unavailable) => unavailable.eventRequestId === eventId);
+  };
+
   // Handle signup click
   // Geocode user address for distance calculation
   const handleGeocodeAddress = async () => {
@@ -1576,6 +1892,53 @@ export default function VolunteerEventHub() {
     }
   };
 
+  const handleUnavailableClick = (eventId: number) => {
+    const unavailableEvent = myUnavailable.find((unavailable) => unavailable.eventRequestId === eventId)?.event;
+    const event = events.find(e => e.id === eventId) || (unavailableEvent ? {
+      id: unavailableEvent.id,
+      organizationName: unavailableEvent.organizationName,
+      organizationCategory: null,
+      department: null,
+      eventAddress: unavailableEvent.eventAddress,
+      city: unavailableEvent.city,
+      state: unavailableEvent.state,
+      zipCode: null,
+      latitude: null,
+      longitude: null,
+      scheduledEventDate: unavailableEvent.scheduledEventDate,
+      desiredEventDate: unavailableEvent.desiredEventDate,
+      eventStartTime: unavailableEvent.eventStartTime,
+      eventEndTime: unavailableEvent.eventEndTime,
+      estimatedSandwichCount: null,
+      status: unavailableEvent.status,
+      speakersNeeded: 0,
+      speakersAssigned: 0,
+      speakersUnfilled: 0,
+      volunteersNeeded: 0,
+      volunteersAssigned: 0,
+      volunteersUnfilled: 0,
+      driversNeeded: 0,
+      driversAssigned: 0,
+      driversUnfilled: 0,
+      hasUnfilledNeeds: false,
+      vanDriverNeeded: false,
+      selfTransport: null,
+      pickupTime: null,
+      eventNotes: null,
+      driverInstructions: null,
+      volunteerInstructions: null,
+      speakerInstructions: null,
+    } satisfies AvailableEvent : null);
+    if (event) {
+      setSelectedEvent(event);
+      setUnavailableDialogOpen(true);
+    }
+  };
+
+  const handleClearUnavailable = (eventId: number) => {
+    clearUnavailableMutation.mutate(eventId);
+  };
+
   const handleAssignClick = (eventId: number) => {
     const event = events.find(e => e.id === eventId);
     if (event) {
@@ -1588,6 +1951,12 @@ export default function VolunteerEventHub() {
   const handleSignupSubmit = (roles: string[], notes: string) => {
     if (selectedEvent) {
       signupMutation.mutate({ eventId: selectedEvent.id, roles, notes });
+    }
+  };
+
+  const handleUnavailableSubmit = (notes: string) => {
+    if (selectedEvent) {
+      unavailableMutation.mutate({ eventId: selectedEvent.id, notes });
     }
   };
 
@@ -1638,7 +2007,24 @@ export default function VolunteerEventHub() {
     return [40.7128, -74.006]; // Default to NYC
   }, [filteredEvents]);
 
-  if (eventsLoading || signupsLoading) {
+  const coverageMetrics = useMemo(() => {
+    const eventsNeedingHelp = coverageSummary.filter((event) => (
+      event.roles.some((role) => role.unfilled > 0)
+    )).length;
+    const openRoles = coverageSummary.reduce((sum, event) => (
+      sum + event.roles.reduce((roleSum, role) => roleSum + Math.max(0, role.unfilled), 0)
+    ), 0);
+    const unavailableResponses = coverageSummary.reduce((sum, event) => sum + event.unavailable.length, 0);
+
+    return {
+      events: coverageSummary.length,
+      eventsNeedingHelp,
+      openRoles,
+      unavailableResponses,
+    };
+  }, [coverageSummary]);
+
+  if (eventsLoading || signupsLoading || unavailableLoading) {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -1701,7 +2087,7 @@ export default function VolunteerEventHub() {
 
         {/* Filters & View Toggle */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          {view !== 'my_signups' && (
+          {['calendar', 'list', 'map'].includes(view) && (
             <>
               <div className="relative w-full sm:max-w-sm">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -1794,22 +2180,33 @@ export default function VolunteerEventHub() {
               )}
             </Button>
             {canApproveSignups && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setView('pending_approvals')}
-                className={`flex-1 gap-1.5 sm:flex-none ${view === 'pending_approvals' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-amber-700 hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
-              >
-                <Clock className="w-4 h-4" />
-                Pending Approvals
-                {pendingSignups.length > 0 && (
-                  <span className={`ml-1 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center ${
-                    view === 'pending_approvals' ? 'bg-white text-[#007e8c]' : 'bg-amber-500 text-white'
-                  }`}>
-                    {pendingSignups.length}
-                  </span>
-                )}
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setView('pending_approvals')}
+                  className={`flex-1 gap-1.5 sm:flex-none ${view === 'pending_approvals' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-amber-700 hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+                >
+                  <Clock className="w-4 h-4" />
+                  Pending
+                  {pendingSignups.length > 0 && (
+                    <span className={`ml-1 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center ${
+                      view === 'pending_approvals' ? 'bg-white text-[#007e8c]' : 'bg-amber-500 text-white'
+                    }`}>
+                      {pendingSignups.length}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setView('coverage')}
+                  className={`flex-1 gap-1.5 sm:flex-none ${view === 'coverage' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+                >
+                  <Eye className="w-4 h-4" />
+                  Coverage
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -2000,6 +2397,7 @@ export default function VolunteerEventHub() {
                         selectedDateEvents.map((event) => {
                           const roles = getRoleOpenings(event);
                           const existingSignup = getExistingSignup(event.id);
+                          const existingUnavailable = getExistingUnavailable(event.id);
 
                           return (
                             <div key={event.id} className="rounded-xl bg-white border border-[#47B3CB]/25 shadow-sm overflow-hidden">
@@ -2060,6 +2458,44 @@ export default function VolunteerEventHub() {
                                     </span>
                                     <StatusBadge status={existingSignup.status} />
                                   </div>
+                                ) : existingUnavailable ? (
+                                  <div className="space-y-2 rounded-lg border border-[#A31C41]/25 bg-[#A31C41]/5 px-3 py-2">
+                                    <div className="flex items-start gap-2 text-sm text-[#A31C41]">
+                                      <Ban className="w-4 h-4 mt-0.5 shrink-0" />
+                                      <div className="min-w-0">
+                                        <p className="font-semibold">You marked this event not available</p>
+                                        {existingUnavailable.notes && (
+                                          <p className="mt-1 text-xs text-gray-600 whitespace-pre-line">{existingUnavailable.notes}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <Button
+                                        variant="outline"
+                                        className="border-[#A31C41]/30 text-[#A31C41] hover:bg-[#A31C41]/10"
+                                        onClick={() => handleUnavailableClick(event.id)}
+                                      >
+                                        Update Note
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        className="border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
+                                        onClick={() => handleClearUnavailable(event.id)}
+                                      >
+                                        Available Again
+                                      </Button>
+                                      {canAssignOthers && (
+                                        <Button
+                                          variant="outline"
+                                          className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5 sm:col-span-2"
+                                          onClick={() => handleAssignClick(event.id)}
+                                        >
+                                          <Users className="w-4 h-4 mr-2" />
+                                          Assign Someone
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
                                 ) : (
                                   <div className="grid gap-2 sm:grid-cols-2">
                                     {canSelfSignup ? (
@@ -2075,10 +2511,18 @@ export default function VolunteerEventHub() {
                                         Ask a coordinator to sign you up.
                                       </div>
                                     )}
+                                    <Button
+                                      variant="outline"
+                                      className="border-[#A31C41]/30 text-[#A31C41] hover:bg-[#A31C41]/10"
+                                      onClick={() => handleUnavailableClick(event.id)}
+                                    >
+                                      <Ban className="w-4 h-4 mr-2" />
+                                      I'm Not Available
+                                    </Button>
                                     {canAssignOthers && (
                                       <Button
                                         variant="outline"
-                                        className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5"
+                                        className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/5 sm:col-span-2"
                                         onClick={() => handleAssignClick(event.id)}
                                       >
                                         <Users className="w-4 h-4 mr-2" />
@@ -2230,10 +2674,14 @@ export default function VolunteerEventHub() {
                             <MapEventPopupContent
                               event={event}
                               onSignupClick={handleSignupClick}
+                              onUnavailableClick={handleUnavailableClick}
+                              onClearUnavailable={handleClearUnavailable}
                               canSelfSignup={canSelfSignup}
                               canAssignOthers={canAssignOthers}
                               onAssignClick={handleAssignClick}
                               userLocation={userLocation}
+                              existingSignup={getExistingSignup(event.id)}
+                              existingUnavailable={getExistingUnavailable(event.id)}
                             />
                           </Popup>
                         </Marker>
@@ -2283,10 +2731,13 @@ export default function VolunteerEventHub() {
                     key={event.id}
                     event={event}
                     onSignup={handleSignupClick}
+                    onUnavailable={handleUnavailableClick}
+                    onClearUnavailable={handleClearUnavailable}
                     onAssign={canAssignOthers ? handleAssignClick : undefined}
                     canSelfSignup={canSelfSignup}
                     canAssignOthers={canAssignOthers}
                     existingSignup={getExistingSignup(event.id)}
+                    existingUnavailable={getExistingUnavailable(event.id)}
                   />
                 ))
               )}
@@ -2295,7 +2746,7 @@ export default function VolunteerEventHub() {
 
           {/* My Signups View */}
           <TabsContent value="my_signups" className="mt-0">
-            {mySignups.length === 0 ? (
+            {mySignups.length === 0 && myUnavailable.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <HandHeart className="w-12 h-12 mx-auto text-[#007e8c] mb-4" />
@@ -2311,7 +2762,15 @@ export default function VolunteerEventHub() {
                   </Button>
                 </CardContent>
               </Card>
-            ) : (() => {
+            ) : (
+              <div className="space-y-6">
+                {mySignups.length === 0 ? (
+                  <Card className="border-dashed">
+                    <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                      No active signups right now.
+                    </CardContent>
+                  </Card>
+                ) : (() => {
               const filteredSignups = mySignupsRoleFilter === 'all'
                 ? mySignups
                 : mySignups.filter(s => s.role === mySignupsRoleFilter);
@@ -2411,7 +2870,81 @@ export default function VolunteerEventHub() {
                 )}
               </div>
               );
-            })()}
+                })()}
+
+                {myUnavailable.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-lg font-semibold text-[#236383]">Events You Marked Not Available</h3>
+                      <p className="text-xs text-gray-500">{myUnavailable.length} event{myUnavailable.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    {myUnavailable.map((unavailable) => {
+                      const unavailableDate = unavailable.event.scheduledEventDate || unavailable.event.desiredEventDate;
+                      const formattedUnavailableDate = unavailableDate
+                        ? format(parseEventDate(unavailableDate)!, 'EEEE, MMMM d, yyyy')
+                        : 'Date TBD';
+
+                      return (
+                        <Card key={unavailable.id} className="border-l-4 border-l-[#A31C41] hover:shadow-md transition-shadow">
+                          <CardContent className="p-4">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div>
+                                  <h3 className="font-semibold text-base">{unavailable.event.organizationName}</h3>
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                    <Calendar className="w-4 h-4 shrink-0 text-[#A31C41]" />
+                                    <span>
+                                      {formattedUnavailableDate}
+                                      {' · '}{formatEventTime(unavailable.event.eventStartTime, unavailable.event.eventEndTime)}
+                                    </span>
+                                  </div>
+                                  {unavailable.event.eventAddress && (
+                                    <AddressLink
+                                      location={unavailable.event}
+                                      className="mt-1"
+                                      iconClassName="w-4 h-4 shrink-0 mt-0.5 text-[#A31C41]"
+                                    />
+                                  )}
+                                </div>
+                                {unavailable.notes && (
+                                  <p className="text-sm text-gray-600 italic bg-[#A31C41]/5 px-3 py-1.5 rounded-md">"{unavailable.notes}"</p>
+                                )}
+                                <div className="text-xs text-gray-400">
+                                  Updated {format(parseISO(unavailable.updatedAt), 'MMM d, yyyy')}
+                                </div>
+                              </div>
+                              <div className="grid gap-2 sm:flex sm:flex-col sm:items-end sm:shrink-0">
+                                <Badge variant="outline" className="bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30 gap-1">
+                                  <Ban className="w-3 h-3" />
+                                  Not Available
+                                </Badge>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-[#A31C41] border-[#A31C41]/30 hover:bg-[#A31C41]/10"
+                                  onClick={() => handleUnavailableClick(unavailable.eventRequestId)}
+                                >
+                                  Update Note
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-[#236383] border-[#007e8c]/30 hover:bg-[#007e8c]/10"
+                                  onClick={() => handleClearUnavailable(unavailable.eventRequestId)}
+                                  disabled={clearUnavailableMutation.isPending}
+                                >
+                                  Available Again
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </TabsContent>
 
           {/* Pending Approvals View */}
@@ -2629,6 +3162,186 @@ export default function VolunteerEventHub() {
               })()}
             </div>
           </TabsContent>
+
+          {/* Event Coverage View */}
+          <TabsContent value="coverage" className="mt-0">
+            {coverageLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-40 w-full" />
+                <Skeleton className="h-40 w-full" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-3">
+                    <p className="text-2xl font-bold text-[#236383]">{coverageMetrics.events}</p>
+                    <p className="text-sm font-medium text-[#236383]">Upcoming Events</p>
+                  </div>
+                  <div className="rounded-lg border border-[#FBAD3F]/30 bg-[#FFF7E6] p-3">
+                    <p className="text-2xl font-bold text-[#B45309]">{coverageMetrics.eventsNeedingHelp}</p>
+                    <p className="text-sm font-medium text-[#B45309]">Need Help</p>
+                  </div>
+                  <div className="rounded-lg border border-[#A31C41]/20 bg-[#A31C41]/5 p-3">
+                    <p className="text-2xl font-bold text-[#A31C41]">{coverageMetrics.openRoles}</p>
+                    <p className="text-sm font-medium text-[#A31C41]">Open Slots</p>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-2xl font-bold text-gray-700">{coverageMetrics.unavailableResponses}</p>
+                    <p className="text-sm font-medium text-gray-700">No Responses</p>
+                  </div>
+                </div>
+
+                {coverageSummary.length === 0 ? (
+                  <Card className="border-dashed">
+                    <CardContent className="py-12 text-center">
+                      <Eye className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium">No upcoming hub events</h3>
+                      <p className="text-muted-foreground mt-1">Coverage will appear here once events are visible in the Volunteer Hub.</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  coverageSummary.map((event) => {
+                    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                    const formattedEventDate = eventDate
+                      ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
+                      : 'Date TBD';
+                    const activeSignups = event.signups.filter((signup) => signup.status === 'pending' || signup.status === 'confirmed' || signup.status === 'assigned');
+                    const declinedSignups = event.signups.filter((signup) => signup.status === 'declined');
+
+                    return (
+                      <Card key={event.id} className="border border-gray-200 shadow-sm">
+                        <CardContent className="p-4 space-y-4">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 space-y-1">
+                              <h3 className="text-lg font-semibold text-[#236383]">{event.organizationName}</h3>
+                              {event.department && <p className="text-sm text-gray-500">{event.department}</p>}
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+                                <span className="inline-flex items-center gap-1.5">
+                                  <Calendar className="w-4 h-4 text-[#007e8c]" />
+                                  {formattedEventDate}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <Clock className="w-4 h-4 text-[#007e8c]" />
+                                  {formatEventTime(event.eventStartTime, event.eventEndTime)}
+                                </span>
+                              </div>
+                              {event.eventAddress && (
+                                <AddressLink
+                                  location={event}
+                                  className="mt-1"
+                                  iconClassName="w-4 h-4 shrink-0 mt-0.5 text-[#007e8c]"
+                                />
+                              )}
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'w-fit',
+                                event.roles.some((role) => role.unfilled > 0)
+                                  ? 'bg-[#FFF7E6] text-[#B45309] border-[#FBAD3F]/40'
+                                  : 'bg-green-50 text-green-700 border-green-200'
+                              )}
+                            >
+                              {event.roles.some((role) => role.unfilled > 0) ? 'Needs Help' : 'Covered'}
+                            </Badge>
+                          </div>
+
+                          <div className="grid gap-2 md:grid-cols-4">
+                            {event.roles.filter((role) => role.needed > 0 || role.assigned > 0 || role.unfilled > 0).map((role) => (
+                              <div key={role.role} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-semibold text-gray-800">{role.label}</p>
+                                  <Badge
+                                    variant="outline"
+                                    className={role.unfilled > 0 ? 'bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/25' : 'bg-green-50 text-green-700 border-green-200'}
+                                  >
+                                    {role.unfilled > 0 ? `${role.unfilled} open` : 'Filled'}
+                                  </Badge>
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  {role.assigned} filled of {role.needed}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="grid gap-4 lg:grid-cols-3">
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-[#236383]">Signed Up or Assigned</h4>
+                              {activeSignups.length === 0 ? (
+                                <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-500">No active signups yet.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {activeSignups.map((signup) => (
+                                    <div key={signup.id} className="rounded-md border border-[#47B3CB]/25 bg-[#47B3CB]/5 px-3 py-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-sm font-semibold text-gray-900">{signup.volunteerName || 'Unknown'}</span>
+                                        <RoleBadge role={signup.role} />
+                                        <StatusBadge status={signup.status} />
+                                      </div>
+                                      <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-gray-500">
+                                        {signup.volunteerEmail && <span>{signup.volunteerEmail}</span>}
+                                        {signup.volunteerPhone && <span>{signup.volunteerPhone}</span>}
+                                      </div>
+                                      {signup.notes && <p className="mt-1 text-xs text-gray-600 italic">"{signup.notes}"</p>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-gray-700">Declined Signups</h4>
+                              {declinedSignups.length === 0 ? (
+                                <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-500">No declined signup records.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {declinedSignups.map((signup) => (
+                                    <div key={signup.id} className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-sm font-semibold text-gray-900">{signup.volunteerName || 'Unknown'}</span>
+                                        <RoleBadge role={signup.role} />
+                                        <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">Declined</Badge>
+                                      </div>
+                                      {signup.notes && <p className="mt-1 text-xs text-gray-600 italic">"{signup.notes}"</p>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-[#A31C41]">Marked Not Available</h4>
+                              {event.unavailable.length === 0 ? (
+                                <p className="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-500">No one has said no yet.</p>
+                              ) : (
+                                <div className="space-y-2">
+                                  {event.unavailable.map((unavailable) => (
+                                    <div key={unavailable.id} className="rounded-md border border-[#A31C41]/20 bg-[#A31C41]/5 px-3 py-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Ban className="w-4 h-4 text-[#A31C41]" />
+                                        <span className="text-sm font-semibold text-gray-900">{unavailable.volunteerName || 'Unknown'}</span>
+                                      </div>
+                                      <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-gray-500">
+                                        {unavailable.volunteerEmail && <span>{unavailable.volunteerEmail}</span>}
+                                        {unavailable.volunteerPhone && <span>{unavailable.volunteerPhone}</span>}
+                                      </div>
+                                      {unavailable.notes && <p className="mt-1 text-xs text-gray-600 italic">"{unavailable.notes}"</p>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Signup Dialog */}
@@ -2638,6 +3351,15 @@ export default function VolunteerEventHub() {
           onOpenChange={setSignupDialogOpen}
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
+        />
+
+        <UnavailableDialog
+          event={selectedEvent}
+          existingUnavailable={selectedEvent ? getExistingUnavailable(selectedEvent.id) : undefined}
+          open={unavailableDialogOpen}
+          onOpenChange={setUnavailableDialogOpen}
+          onSubmit={handleUnavailableSubmit}
+          isSubmitting={unavailableMutation.isPending}
         />
 
         {/* Manage signup dialog (change role / remove) */}

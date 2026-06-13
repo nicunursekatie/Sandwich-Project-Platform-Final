@@ -2698,6 +2698,31 @@ export const eventVolunteers = pgTable(
   })
 );
 
+// Event-level negative RSVPs so coordinators know not to re-ask someone who
+// already said they cannot help with a specific Volunteer Hub event.
+export const eventVolunteerDeclines = pgTable(
+  'event_volunteer_declines',
+  {
+    id: serial('id').primaryKey(),
+    eventRequestId: integer('event_request_id').notNull(),
+    volunteerUserId: varchar('volunteer_user_id').notNull(),
+    volunteerName: varchar('volunteer_name'),
+    volunteerEmail: varchar('volunteer_email'),
+    volunteerPhone: varchar('volunteer_phone'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    eventIdIdx: index('idx_event_volunteer_declines_event_id').on(table.eventRequestId),
+    volunteerIdx: index('idx_event_volunteer_declines_volunteer').on(table.volunteerUserId),
+    eventVolunteerUnique: uniqueIndex('idx_event_volunteer_declines_event_user_unique').on(
+      table.eventRequestId,
+      table.volunteerUserId
+    ),
+  })
+);
+
 // Event reminders table for tracking follow-ups and to-dos related to events
 export const eventReminders = pgTable(
   'event_reminders',
@@ -3572,6 +3597,17 @@ export const insertEventVolunteerSchema = createInsertSchema(
 
 export type EventVolunteer = typeof eventVolunteers.$inferSelect;
 export type InsertEventVolunteer = z.infer<typeof insertEventVolunteerSchema>;
+
+export const insertEventVolunteerDeclineSchema = createInsertSchema(
+  eventVolunteerDeclines
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type EventVolunteerDecline = typeof eventVolunteerDeclines.$inferSelect;
+export type InsertEventVolunteerDecline = z.infer<typeof insertEventVolunteerDeclineSchema>;
 
 // Meeting notes table for agenda planning and note management
 export const meetingNotes = pgTable('meeting_notes', {

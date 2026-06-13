@@ -11,6 +11,7 @@ import { eq, and, or, gte, inArray, sql, desc } from 'drizzle-orm';
 import { db } from '../db';
 import {
   eventRequests,
+  eventVolunteerDeclines,
   eventVolunteers,
   users,
   insertEventVolunteerSchema
@@ -32,6 +33,8 @@ const router = Router();
 const COORDINATOR_EMAILS = [
   'katie@thesandwichproject.org'
 ];
+
+const ACTIVE_SIGNUP_STATUSES = ['pending', 'confirmed', 'assigned'];
 
 // ============================================================================
 // Helper Functions
@@ -987,6 +990,167 @@ router.get('/signup/:eventId', isAuthenticated, async (req: AuthenticatedRequest
 });
 
 /**
+ * Get current user's events they have marked not available.
+ */
+router.get('/my-unavailable', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const unavailable = await db
+      .select({
+        unavailable: eventVolunteerDeclines,
+        event: eventRequests,
+      })
+      .from(eventVolunteerDeclines)
+      .innerJoin(eventRequests, eq(eventVolunteerDeclines.eventRequestId, eventRequests.id))
+      .where(eq(eventVolunteerDeclines.volunteerUserId, userId))
+      .orderBy(desc(eventVolunteerDeclines.updatedAt));
+
+    res.json(unavailable.map(({ unavailable: unavailableRecord, event }) => ({
+      ...unavailableRecord,
+      event: {
+        id: event.id,
+        organizationName: event.organizationName,
+        scheduledEventDate: event.scheduledEventDate,
+        desiredEventDate: event.desiredEventDate,
+        eventStartTime: event.eventStartTime,
+        eventEndTime: event.eventEndTime,
+        eventAddress: event.eventAddress,
+        city: event.city,
+        state: event.state,
+        status: event.status,
+      },
+    })));
+  } catch (error) {
+    logger.error('Error fetching user unavailable events:', error);
+    res.status(500).json({ error: 'Failed to fetch your unavailable events' });
+  }
+});
+
+/**
+ * Mark or clear current user's availability decline for an event.
+ * Body: { isUnavailable: boolean, notes?: string }
+ */
+router.post('/availability/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const eventId = parseInt(req.params.eventId);
+    const userId = req.user?.id;
+    const { isUnavailable = true, notes } = req.body || {};
+
+    if (!eventId || isNaN(eventId)) {
+      return res.status(400).json({ error: 'Valid event ID required' });
+    }
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const [event] = await db
+      .select()
+      .from(eventRequests)
+      .where(eq(eventRequests.id, eventId))
+      .limit(1);
+
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+
+    if (isUnavailable === false) {
+      await db
+        .delete(eventVolunteerDeclines)
+        .where(
+          and(
+            eq(eventVolunteerDeclines.eventRequestId, eventId),
+            eq(eventVolunteerDeclines.volunteerUserId, userId)
+          )
+        );
+
+      return res.json({ success: true, message: 'Availability mark cleared.' });
+    }
+
+    const activeSignups = await db
+      .select()
+      .from(eventVolunteers)
+      .where(
+        and(
+          eq(eventVolunteers.eventRequestId, eventId),
+          eq(eventVolunteers.volunteerUserId, userId),
+          inArray(eventVolunteers.status, ACTIVE_SIGNUP_STATUSES)
+        )
+      )
+      .limit(1);
+
+    if (activeSignups.length > 0) {
+      return res.status(400).json({
+        error: 'You are already signed up for this event. Please cancel or ask a coordinator to remove that signup before marking yourself not available.',
+      });
+    }
+
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const trimmedNotes = typeof notes === 'string' && notes.trim() ? notes.trim() : null;
+    const volunteerName = user.displayName ||
+      `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+      user.email?.split('@')[0] ||
+      'Unknown';
+
+    const existingUnavailable = await db
+      .select()
+      .from(eventVolunteerDeclines)
+      .where(
+        and(
+          eq(eventVolunteerDeclines.eventRequestId, eventId),
+          eq(eventVolunteerDeclines.volunteerUserId, userId)
+        )
+      )
+      .limit(1);
+
+    const values = {
+      eventRequestId: eventId,
+      volunteerUserId: userId,
+      volunteerName,
+      volunteerEmail: user.preferredEmail || user.email,
+      volunteerPhone: user.phoneNumber,
+      notes: trimmedNotes,
+      updatedAt: new Date(),
+    };
+
+    const [unavailableRecord] = existingUnavailable.length > 0
+      ? await db
+          .update(eventVolunteerDeclines)
+          .set(values)
+          .where(eq(eventVolunteerDeclines.id, existingUnavailable[0].id))
+          .returning()
+      : await db
+          .insert(eventVolunteerDeclines)
+          .values(values)
+          .returning();
+
+    logger.info(`Volunteer marked unavailable: ${userId} for event ${eventId}`);
+
+    res.json({
+      success: true,
+      message: 'Marked not available for this event.',
+      unavailable: unavailableRecord,
+    });
+  } catch (error) {
+    logger.error('Error saving volunteer availability decline:', error);
+    res.status(500).json({ error: 'Failed to save availability' });
+  }
+});
+
+/**
  * Request to volunteer for an event
  * Creates a pending signup that coordinators must confirm
  */
@@ -1050,6 +1214,25 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
 
     if (!event) {
       return res.status(404).json({ error: 'Event not found' });
+    }
+
+    const existingUnavailable = await db
+      .select()
+      .from(eventVolunteerDeclines)
+      .where(
+        and(
+          eq(eventVolunteerDeclines.eventRequestId, eventId),
+          eq(eventVolunteerDeclines.volunteerUserId, targetUserId)
+        )
+      )
+      .limit(1);
+
+    if (existingUnavailable.length > 0) {
+      return res.status(400).json({
+        error: isAssigningOther
+          ? `${user.firstName || 'That user'} has marked themselves not available for this event. Clear that mark before assigning them.`
+          : 'You marked yourself not available for this event. Clear that mark before signing up.',
+      });
     }
 
     const requestedRoles = Array.isArray(roles) ? roles : (role ? [role] : []);
@@ -1123,7 +1306,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
           volunteerUserId: targetUserId,
           volunteerName: volunteerName,
           volunteerEmail: user.preferredEmail || user.email,
-          volunteerPhone: user.phone,
+          volunteerPhone: user.phoneNumber,
           role: requestedRole,
           status,
           notes: notes || null,
@@ -1367,6 +1550,147 @@ router.get('/pending-signups', isAuthenticated, async (req: AuthenticatedRequest
   } catch (error) {
     logger.error('Error fetching pending signups:', error);
     res.status(500).json({ error: 'Failed to fetch pending signups' });
+  }
+});
+
+/**
+ * Coordinator coverage view: upcoming Volunteer Hub events with role coverage,
+ * active/declined signups, and volunteers who marked themselves not available.
+ */
+router.get('/coverage-summary', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
+      return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required' });
+    }
+
+    const now = new Date();
+    const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
+
+    const events = await db
+      .select()
+      .from(eventRequests)
+      .where(
+        and(
+          eq(eventRequests.showOnVolunteerHub, true),
+          or(
+            eq(eventRequests.status, 'scheduled'),
+            eq(eventRequests.status, 'rescheduled')
+          )
+        )
+      )
+      .orderBy(eventRequests.scheduledEventDate);
+
+    const upcomingEvents = events.filter((event) => {
+      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      if (!eventDate) return true;
+      return new Date(eventDate) >= today;
+    });
+
+    const eventIds = upcomingEvents.map((event) => event.id);
+    const signups = eventIds.length > 0
+      ? await db
+          .select()
+          .from(eventVolunteers)
+          .where(inArray(eventVolunteers.eventRequestId, eventIds))
+          .orderBy(desc(eventVolunteers.signedUpAt))
+      : [];
+    const unavailable = eventIds.length > 0
+      ? await db
+          .select()
+          .from(eventVolunteerDeclines)
+          .where(inArray(eventVolunteerDeclines.eventRequestId, eventIds))
+          .orderBy(desc(eventVolunteerDeclines.updatedAt))
+      : [];
+
+    const signupsByEvent = new Map<number, typeof signups>();
+    signups.forEach((signup) => {
+      const existing = signupsByEvent.get(signup.eventRequestId) || [];
+      existing.push(signup);
+      signupsByEvent.set(signup.eventRequestId, existing);
+    });
+
+    const unavailableByEvent = new Map<number, typeof unavailable>();
+    unavailable.forEach((unavailableRecord) => {
+      const existing = unavailableByEvent.get(unavailableRecord.eventRequestId) || [];
+      existing.push(unavailableRecord);
+      unavailableByEvent.set(unavailableRecord.eventRequestId, existing);
+    });
+
+    res.json(upcomingEvents.map((event) => {
+      const counts = getUnfilledCounts(event);
+      const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
+      const eventSignups = signupsByEvent.get(event.id) || [];
+      const eventUnavailable = unavailableByEvent.get(event.id) || [];
+
+      return {
+        id: event.id,
+        organizationName: event.organizationName,
+        department: event.department,
+        scheduledEventDate: event.scheduledEventDate,
+        desiredEventDate: event.desiredEventDate,
+        eventStartTime: event.eventStartTime,
+        eventEndTime: event.eventEndTime,
+        eventAddress: event.eventAddress,
+        city: event.city,
+        state: event.state,
+        status: event.status,
+        vanDriverNeeded,
+        roles: [
+          {
+            role: 'speaker',
+            label: 'Speakers',
+            needed: counts.speakersNeeded,
+            assigned: counts.speakersAssigned,
+            unfilled: counts.speakersUnfilled,
+          },
+          {
+            role: 'general',
+            label: 'Volunteers',
+            needed: counts.volunteersNeeded,
+            assigned: counts.volunteersAssigned,
+            unfilled: counts.volunteersUnfilled,
+          },
+          {
+            role: 'driver',
+            label: 'Drivers',
+            needed: counts.driversNeeded,
+            assigned: counts.driversAssigned,
+            unfilled: counts.driversUnfilled,
+          },
+          {
+            role: 'van_driver',
+            label: 'Van Driver',
+            needed: event.vanDriverNeeded ? 1 : 0,
+            assigned: event.vanDriverNeeded && !vanDriverNeeded ? 1 : 0,
+            unfilled: vanDriverNeeded ? 1 : 0,
+          },
+        ],
+        signups: eventSignups.map((signup) => ({
+          id: signup.id,
+          volunteerUserId: signup.volunteerUserId,
+          volunteerName: signup.volunteerName,
+          volunteerEmail: signup.volunteerEmail,
+          volunteerPhone: signup.volunteerPhone,
+          role: signup.role,
+          status: signup.status,
+          notes: signup.notes,
+          signedUpAt: signup.signedUpAt,
+        })),
+        unavailable: eventUnavailable.map((unavailableRecord) => ({
+          id: unavailableRecord.id,
+          volunteerUserId: unavailableRecord.volunteerUserId,
+          volunteerName: unavailableRecord.volunteerName,
+          volunteerEmail: unavailableRecord.volunteerEmail,
+          volunteerPhone: unavailableRecord.volunteerPhone,
+          notes: unavailableRecord.notes,
+          updatedAt: unavailableRecord.updatedAt,
+        })),
+      };
+    }));
+  } catch (error) {
+    logger.error('Error fetching volunteer hub coverage summary:', error);
+    res.status(500).json({ error: 'Failed to fetch coverage summary' });
   }
 });
 
