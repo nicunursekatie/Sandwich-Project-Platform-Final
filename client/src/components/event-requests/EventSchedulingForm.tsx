@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useEventRequestContext } from './context/EventRequestContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -21,7 +20,6 @@ import {
 import {
   Trash2,
   FileText,
-  StickyNote,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
@@ -265,9 +263,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 }) => {
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
-
-  // Scratchpad context for opening the standalone scratchpad dialog
-  const { setScratchpadEventRequest, setShowScratchpad } = useEventRequestContext();
 
   // ── Data Fetching ──────────────────────────────────────────────────
 
@@ -733,26 +728,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
   }, [effectiveEventRequest?.updatedAt]);
 
-  // ── Sync message field from scratchpad ──────────────────────────
-  // When the standalone scratchpad syncs call notes to the server, the query cache
-  // updates effectiveEventRequest.message. Keep the form in sync so saving the form
-  // doesn't overwrite the scratchpad's notes with stale data.
-  useEffect(() => {
-    if (!formInitialized || effectiveEventRequest?.message === undefined) return;
-    const serverMessage = effectiveEventRequest.message || '';
-    const baselineMessage = originalFormDataRef.current?.message || '';
-    const formMessage = (formData as any).message || '';
-
-    // Only update if: server message changed from baseline AND form hasn't locally modified it
-    if (serverMessage !== baselineMessage && formMessage === baselineMessage) {
-      setFormData((prev: any) => ({ ...prev, message: serverMessage }));
-      if (originalFormDataRef.current) {
-        originalFormDataRef.current = { ...originalFormDataRef.current, message: serverMessage };
-      }
-    }
-  }, [effectiveEventRequest?.message, formInitialized]);
-
-
   // ── Mutations ──────────────────────────────────────────────────────
 
   const updateEventRequestMutation = useMutation({
@@ -1102,27 +1077,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               </Button>
             </div>
           )}
-
-          {/* Open Call Notes Scratchpad button */}
-          <div className="mb-4" data-testid="call-notes-scratchpad">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 flex items-center justify-center gap-2 py-3"
-              onClick={() => {
-                if (eventRequest) {
-                  setScratchpadEventRequest(eventRequest);
-                  setShowScratchpad(true);
-                }
-              }}
-            >
-              <StickyNote className="w-4 h-4" />
-              Open Call Notes Scratchpad
-              {formData.message && (
-                <span className="text-xs opacity-75 ml-1">(has notes)</span>
-              )}
-            </Button>
-          </div>
 
           {/* Progress Indicator */}
           <div className="bg-slate-50 rounded-lg p-3 border mb-4">

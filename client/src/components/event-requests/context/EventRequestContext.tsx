@@ -84,8 +84,6 @@ interface EventRequestContextType {
   setShowAiIntakeAssistantDialog: (show: boolean) => void;
   showIntakeCallDialog: boolean;
   setShowIntakeCallDialog: (show: boolean) => void;
-  showScratchpad: boolean;
-  setShowScratchpad: (show: boolean) => void;
   showDeclineDialog: boolean;
   setShowDeclineDialog: (show: boolean) => void;
   showCancelDialog: boolean;
@@ -118,8 +116,6 @@ interface EventRequestContextType {
   setAiIntakeAssistantEventRequest: (event: EventRequest | null) => void;
   intakeCallEventRequest: EventRequest | null;
   setIntakeCallEventRequest: (event: EventRequest | null) => void;
-  scratchpadEventRequest: EventRequest | null;
-  setScratchpadEventRequest: (event: EventRequest | null) => void;
   reasonDialogEventRequest: EventRequest | null;
   setReasonDialogEventRequest: (event: EventRequest | null) => void;
   nonEventDialogEventRequest: EventRequest | null;

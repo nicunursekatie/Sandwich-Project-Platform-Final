@@ -72,8 +72,6 @@ export interface EventDialogContextType {
   setShowAiIntakeAssistantDialog: (show: boolean) => void;
   showIntakeCallDialog: boolean;
   setShowIntakeCallDialog: (show: boolean) => void;
-  showScratchpad: boolean;
-  setShowScratchpad: (show: boolean) => void;
   showDeclineDialog: boolean;
   setShowDeclineDialog: (show: boolean) => void;
   showCancelDialog: boolean;
@@ -108,8 +106,6 @@ export interface EventDialogContextType {
   setAiIntakeAssistantEventRequest: (event: EventRequest | null) => void;
   intakeCallEventRequest: EventRequest | null;
   setIntakeCallEventRequest: (event: EventRequest | null) => void;
-  scratchpadEventRequest: EventRequest | null;
-  setScratchpadEventRequest: (event: EventRequest | null) => void;
   reasonDialogEventRequest: EventRequest | null;
   setReasonDialogEventRequest: (event: EventRequest | null) => void;
   nonEventDialogEventRequest: EventRequest | null;
@@ -231,7 +227,6 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
   const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
   const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
   const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
-  const [showScratchpad, setShowScratchpad] = useState(false);
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showNonEventDialog, setShowNonEventDialog] = useState(false);
@@ -250,7 +245,6 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
   const [aiSuggestionEventRequest, setAiSuggestionEventRequest] = useState<EventRequest | null>(null);
   const [aiIntakeAssistantEventRequest, setAiIntakeAssistantEventRequest] = useState<EventRequest | null>(null);
   const [intakeCallEventRequest, setIntakeCallEventRequest] = useState<EventRequest | null>(null);
-  const [scratchpadEventRequest, setScratchpadEventRequest] = useState<EventRequest | null>(null);
   const [reasonDialogEventRequest, setReasonDialogEventRequest] = useState<EventRequest | null>(null);
   const [nonEventDialogEventRequest, setNonEventDialogEventRequest] = useState<EventRequest | null>(null);
   const [rescheduleDialogEventRequest, setRescheduleDialogEventRequest] = useState<EventRequest | null>(null);
@@ -353,8 +347,6 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
       setShowAiIntakeAssistantDialog,
       showIntakeCallDialog,
       setShowIntakeCallDialog,
-      showScratchpad,
-      setShowScratchpad,
       showDeclineDialog,
       setShowDeclineDialog,
       showCancelDialog,
@@ -389,8 +381,6 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
       setAiIntakeAssistantEventRequest,
       intakeCallEventRequest,
       setIntakeCallEventRequest,
-      scratchpadEventRequest,
-      setScratchpadEventRequest,
       reasonDialogEventRequest,
       setReasonDialogEventRequest,
       nonEventDialogEventRequest,
@@ -471,12 +461,12 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
       showAssignmentDialog, showTspContactAssignmentDialog, showSandwichPlanningModal,
       showStaffingPlanningModal, showLogContactDialog, showEditContactDialog,
       showAiDateSuggestionDialog, showAiIntakeAssistantDialog, showIntakeCallDialog,
-      showScratchpad, showDeclineDialog, showCancelDialog, showNonEventDialog,
+      showDeclineDialog, showCancelDialog, showNonEventDialog,
       showRescheduleDialog, showNextActionDialog,
       schedulingEventRequest, toolkitEventRequest, collectionLogEventRequest,
       contactEventRequest, tspContactEventRequest, logContactEventRequest,
       editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,
-      aiIntakeAssistantEventRequest, intakeCallEventRequest, scratchpadEventRequest,
+      aiIntakeAssistantEventRequest, intakeCallEventRequest,
       reasonDialogEventRequest, nonEventDialogEventRequest, rescheduleDialogEventRequest,
       nextActionEventRequest, nextActionMode,
       assignmentType, assignmentEventId, selectedAssignees, isEditingAssignment,
