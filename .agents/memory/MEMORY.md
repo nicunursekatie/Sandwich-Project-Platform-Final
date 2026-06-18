@@ -1,1 +1,2 @@
 - [Stream Chat distinct channels](stream-distinct-channels.md) — group chats need an explicit channel id; distinct (id-less) channels reject addMembers (error 17).
+- [Event mgmt strategy](event-mgmt-strategy.md) — phase-mismatch CRUD; fix 3 core bugs first (clobbered form / false-409 / dropped fields), freeze layers; realtime + save-verification are load-bearing.
