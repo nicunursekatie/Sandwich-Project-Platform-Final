@@ -527,6 +527,40 @@ const activityRules: Array<{ pattern: RegExp | string; rule: ActivityRule }> = [
       methods: ['POST'],
     },
   },
+  // Resource access tracking — fired when the resources UI marks an item as
+  // opened. Without this rule the access event leaves no per-user trail.
+  {
+    pattern: /\/api\/resources\/\d+\/access$/,
+    rule: {
+      section: 'Resources',
+      feature: 'Resource',
+      action: 'Access',
+      details: 'Opened a resource',
+      methods: ['POST'],
+    },
+  },
+  // Document download / preview — counts as a resource access for the
+  // impact metrics. Same section so the per-user count picks them up.
+  {
+    pattern: /\/api\/documents\/\d+\/download$/,
+    rule: {
+      section: 'Resources',
+      feature: 'Document',
+      action: 'Download',
+      details: 'Downloaded a document',
+      methods: ['GET'],
+    },
+  },
+  {
+    pattern: /\/api\/documents\/\d+\/preview$/,
+    rule: {
+      section: 'Resources',
+      feature: 'Document',
+      action: 'Preview',
+      details: 'Previewed a document',
+      methods: ['GET'],
+    },
+  },
 ];
 
 // Paths to completely skip - these provide zero user insight
