@@ -3,6 +3,8 @@ import { Settings, Shield, FileText, Trophy, Database, MessageSquare, BarChart3,
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { ClientErrorLog } from '@/components/client-error-log';
+import { ApplicationErrorLog } from '@/components/application-error-log';
+import { SystemHealthPanel } from '@/components/system-health-panel';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
 import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
 import { TollFreeVerificationPanel } from '@/components/toll-free-verification-panel';
@@ -174,6 +176,8 @@ export default function AdminSettings() {
           </TabsContent>
 
           <TabsContent value="error-logs" className="space-y-6">
+            <SystemHealthPanel />
+            <ApplicationErrorLog />
             <ClientErrorLog />
           </TabsContent>
 

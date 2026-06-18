@@ -1521,6 +1521,35 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Integration health check — daily at 6 AM ET, logs/email on failures
+  const integrationHealthJob = cron.schedule('0 6 * * *', async () => {
+    cronLogger.info('Running daily integration health check...');
+    try {
+      const { runIntegrationHealthCheck } = await import('./integration-health');
+      const report = await runIntegrationHealthCheck({ liveCheck: true, logFailures: true });
+      cronLogger.info('Integration health check completed', {
+        status: report.overallStatus,
+        checkedAt: report.checkedAt,
+        unhealthy: report.integrations.filter((i) => i.healthy === false).map((i) => i.name),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running integration health check cron job',
+        undefined,
+        { jobType: 'integration-health' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York',
+  });
+
+  cronLogger.info('Integration health check scheduled successfully', {
+    schedule: 'Daily at 6:00 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1539,6 +1568,7 @@ export function initializeCronJobs() {
     adminSmsPulseJob,
     predictionAlertJob,
     checkInReminderJob,
+    integrationHealthJob,
   };
 }
 
@@ -1563,5 +1593,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.adminSmsPulseJob.stop();
   jobs.predictionAlertJob.stop();
   jobs.checkInReminderJob.stop();
+  jobs.integrationHealthJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

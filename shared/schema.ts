@@ -194,6 +194,29 @@ export const clientErrorLogs = pgTable(
   })
 );
 
+// Server-side application error logs — SMS failures, integration outages, cron errors, etc.
+export const applicationErrorLogs = pgTable(
+  'application_error_logs',
+  {
+    id: serial('id').primaryKey(),
+    source: varchar('source').notNull(), // sms_parser, sms_webhook, health_check, cron, api, email, etc.
+    severity: varchar('severity').notNull().default('error'), // info, warning, error, critical
+    category: varchar('category'), // openai, twilio, parse_failure, database, etc.
+    message: text('message').notNull(),
+    details: jsonb('details').default('{}'),
+    userId: varchar('user_id'),
+    phoneNumber: varchar('phone_number'), // redacted phone for SMS-related errors
+    requestPath: varchar('request_path'),
+    emailSent: boolean('email_sent').default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    createdAtIdx: index('idx_application_error_logs_created_at').on(table.createdAt),
+    sourceIdx: index('idx_application_error_logs_source').on(table.source),
+    severityIdx: index('idx_application_error_logs_severity').on(table.severity),
+  })
+);
+
 // Team member availability calendar system
 export const availabilitySlots = pgTable('availability_slots', {
   id: serial('id').primaryKey(),

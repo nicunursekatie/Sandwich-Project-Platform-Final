@@ -1458,6 +1458,64 @@ export function createMainRoutes(deps: RouterDependencies) {
     }
   );
 
+  // Admin-only: fetch server-side application error logs
+  router.get(
+    '/api/admin/application-error-logs',
+    deps.isAuthenticated,
+    deps.requirePermission('ADMIN_PANEL_ACCESS'),
+    async (req, res) => {
+      try {
+        const { db } = await import('../db');
+        const { applicationErrorLogs } = await import('@shared/schema');
+        const { desc, gte, eq, and } = await import('drizzle-orm');
+
+        const daysParam = parseInt((req.query.days as string) || '7', 10);
+        const days = !isNaN(daysParam) && daysParam > 0 && daysParam <= 365 ? daysParam : 7;
+        const limitParam = parseInt((req.query.limit as string) || '200', 10);
+        const limit = !isNaN(limitParam) && limitParam > 0 && limitParam <= 1000 ? limitParam : 200;
+        const source = (req.query.source as string) || undefined;
+        const severity = (req.query.severity as string) || undefined;
+
+        const sinceDate = new Date();
+        sinceDate.setDate(sinceDate.getDate() - days);
+
+        const conditions = [gte(applicationErrorLogs.createdAt, sinceDate)];
+        if (source) conditions.push(eq(applicationErrorLogs.source, source));
+        if (severity) conditions.push(eq(applicationErrorLogs.severity, severity));
+
+        const logs = await db
+          .select()
+          .from(applicationErrorLogs)
+          .where(and(...conditions))
+          .orderBy(desc(applicationErrorLogs.createdAt))
+          .limit(limit);
+
+        res.json(logs);
+      } catch (err) {
+        logger.error('Failed to fetch application error logs:', err);
+        res.status(500).json({ error: 'Failed to fetch application error logs' });
+      }
+    }
+  );
+
+  // Admin-only: integration health check (OpenAI, Twilio, SendGrid, etc.)
+  router.get(
+    '/api/admin/system-health',
+    deps.isAuthenticated,
+    deps.requirePermission('ADMIN_PANEL_ACCESS'),
+    async (req, res) => {
+      try {
+        const { runIntegrationHealthCheck } = await import('../services/integration-health');
+        const liveCheck = req.query.liveCheck === 'true';
+        const report = await runIntegrationHealthCheck({ liveCheck, logFailures: false });
+        res.json(report);
+      } catch (err) {
+        logger.error('Failed to run system health check:', err);
+        res.status(500).json({ error: 'Failed to run system health check' });
+      }
+    }
+  );
+
   return router;
 }
 

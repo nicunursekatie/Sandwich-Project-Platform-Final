@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { logger } from '../utils/production-safe-logger';
+import { logApplicationError } from './application-error-logger';
 
 /**
  * SMS Collection Parser Service
@@ -180,8 +181,89 @@ function parseSimpleMessage(message: string): CollectionParseResult | null {
   };
 }
 
+/**
+ * Parse host weekly count texts like:
+ *   "East cobb/roswell total 1281, Groups Grace Resurrection 251"
+ *   "East Cobb/Roswell total 1281, Groups Grace Resurrection 251, Acme Corp 100"
+ *
+ * The number after "total" is the grand total for the week; each group entry is
+ * "[name] [count]". Individual count = total − sum(group counts).
+ *
+ * This format is used by several hosts and must not depend on OpenAI — any comma
+ * in the message previously forced AI parsing, which fails when OPENAI_API_KEY is unset.
+ */
+function parseHostTotalGroupsMessage(message: string): CollectionParseResult | null {
+  const trimmed = message.trim().replace(/,\s*$/, '');
+
+  const mainMatch = trimmed.match(
+    /^(.+?)\s+total\s+(\d+)\s*(?:(?:,\s*)?Groups?\s*:?\s*(.+))?$/i
+  );
+  if (!mainMatch) return null;
+
+  const hostName = mainMatch[1].trim();
+  const grandTotal = parseInt(mainMatch[2], 10);
+  const groupsPart = mainMatch[3]?.trim();
+
+  if (!hostName || hostName.length < 2 || grandTotal < 1 || grandTotal > 50000) {
+    return null;
+  }
+
+  const groupCollections: Array<{ name: string; count: number }> = [];
+
+  if (groupsPart) {
+    for (const entry of groupsPart.split(/\s*,\s*/)) {
+      const entryMatch = entry.match(/^(.+?)\s+(\d+)\s*$/);
+      if (entryMatch) {
+        const name = entryMatch[1].trim();
+        const count = parseInt(entryMatch[2], 10);
+        if (name.length >= 2 && count > 0) {
+          groupCollections.push({ name, count });
+        }
+      }
+    }
+
+    // Had a Groups section but couldn't parse any "Name 123" entries — don't guess
+    if (groupCollections.length === 0) {
+      return null;
+    }
+  }
+
+  const groupTotal = groupCollections.reduce((sum, g) => sum + g.count, 0);
+  if (groupTotal > grandTotal) {
+    return null;
+  }
+
+  const individualSandwiches = grandTotal - groupTotal;
+  const { date, remainingText: hostWithoutDate } = parseDateFromText(hostName);
+  const resolvedHost = hostWithoutDate.trim() || hostName;
+
+  logger.info(
+    `[StructuredParser] Parsed host-total-groups: ${grandTotal} total at "${resolvedHost}" ` +
+      `(${individualSandwiches} individual + ${groupTotal} from ${groupCollections.length} group(s))`
+  );
+
+  return {
+    success: true,
+    data: {
+      hostName: resolvedHost,
+      individualSandwiches,
+      groupCollections: groupCollections.length > 0 ? groupCollections : undefined,
+      collectionDate: date,
+      confidence: 0.95,
+      needsClarification: false,
+    },
+    rawMessage: message,
+  };
+}
+
 // Simple regex-based parser for structured messages
 function parseStructuredMessage(message: string): CollectionParseResult | null {
+  // Host "location total N, Groups …" format — must run before needsAIParsing (comma → AI)
+  const hostTotalResult = parseHostTotalGroupsMessage(message);
+  if (hostTotalResult) {
+    return hostTotalResult;
+  }
+
   // If message needs complex parsing, route to AI
   if (needsAIParsing(message)) {
     logger.info(`[StructuredParser] Complex message detected, routing to AI parser for: "${message}"`);
@@ -283,6 +365,14 @@ async function parseWithAI(message: string): Promise<CollectionParseResult> {
 
   if (!apiKey) {
     logger.warn('[SMSCollectionParser] No OpenAI API key, falling back to simple parsing');
+    logApplicationError({
+      source: 'sms_parser',
+      severity: 'warning',
+      category: 'openai',
+      message: 'OPENAI_API_KEY missing — AI SMS parsing unavailable',
+      details: { messagePreview: message.slice(0, 200) },
+      notifyAdmin: false,
+    });
     return {
       success: false,
       error: 'Could not parse message. Try: LOG [count] [location name]',
@@ -452,6 +542,14 @@ If message clearly isn't about logging sandwiches, return needsClarification: tr
     };
   } catch (error) {
     logger.error('[SMSCollectionParser] AI parsing error:', error);
+    logApplicationError({
+      source: 'sms_parser',
+      severity: 'error',
+      category: 'openai',
+      message: error instanceof Error ? error.message : 'OpenAI API call failed',
+      details: { messagePreview: message.slice(0, 200) },
+      notifyAdmin: true,
+    });
     return {
       success: false,
       error: 'Could not parse message. Try: LOG [count] [location name]',

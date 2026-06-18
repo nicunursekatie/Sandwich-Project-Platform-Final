@@ -12,6 +12,7 @@ import { getTwilioAuthToken } from '../sms-providers/replit-twilio-connector';
 import { db } from '../db';
 import { teamBoardItems } from '@shared/schema';
 import { parseCollectionSMS, generateConfirmationMessage } from '../services/sms-collection-parser';
+import { logApplicationError } from '../services/application-error-logger';
 const { validateRequest } = twilio;
 // Note: SMS functionality now uses the provider abstraction from sms-service
 
@@ -1377,6 +1378,16 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
       } catch (createError) {
         logger.error('❌ Failed to create collection from SMS');
         logger.error('Error:', createError instanceof Error ? createError.message : String(createError));
+        logApplicationError({
+          source: 'sms_webhook',
+          severity: 'error',
+          category: 'collection_save',
+          message: createError instanceof Error ? createError.message : 'Failed to save SMS collection',
+          details: { bodyPreview: Body?.slice(0, 200) },
+          phoneNumber: redactedPhone,
+          requestPath: '/api/sms/webhook',
+          notifyAdmin: true,
+        });
         res.type('text/xml');
         return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Sorry, we couldn't save your collection right now. Please try again or log in to the app.</Message></Response>`);
       }
@@ -1513,11 +1524,35 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
         } else {
           // Low confidence or failed parse - send helpful message
           logger.info(`ℹ️ Low confidence or failed parse from ${redactedPhone}, showing help`);
+          logApplicationError({
+            source: 'sms_webhook',
+            severity: 'warning',
+            category: 'parse_failure',
+            message: parseResult.error || 'SMS collection message could not be parsed',
+            details: {
+              bodyPreview: Body.trim().slice(0, 300),
+              confidence: parseResult.data?.confidence,
+              parseSuccess: parseResult.success,
+            },
+            phoneNumber: redactedPhone,
+            requestPath: '/api/sms/webhook',
+            notifyAdmin: false,
+          });
           res.type('text/xml');
           return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>Couldn't understand that. Just text:\n• 500 Dunwoody\n• 100 pbj 200 deli Intown\n\nOr add groups:\n• 500 Dunwoody, Acme 200\n\nText HELP for more.</Message></Response>`);
         }
       } catch (parseError) {
         logger.error('❌ Error parsing potential collection:', parseError);
+        logApplicationError({
+          source: 'sms_webhook',
+          severity: 'error',
+          category: 'parse_exception',
+          message: parseError instanceof Error ? parseError.message : 'SMS parse exception',
+          details: { bodyPreview: Body?.slice(0, 200) },
+          phoneNumber: redactedPhone,
+          requestPath: '/api/sms/webhook',
+          notifyAdmin: true,
+        });
         // Fall through to unrecognized message handler
       }
     }
@@ -1540,6 +1575,14 @@ webhookRouter.post('/sms/webhook', async (req, res) => {
     res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');
   } catch (error) {
     logger.error('Error processing SMS webhook:', error);
+    logApplicationError({
+      source: 'sms_webhook',
+      severity: 'critical',
+      category: 'webhook',
+      message: error instanceof Error ? error.message : 'SMS webhook processing failed',
+      requestPath: '/api/sms/webhook',
+      notifyAdmin: true,
+    });
     // Always respond with TwiML even on errors
     res.type('text/xml');
     res.status(200).send('<?xml version="1.0" encoding="UTF-8"?><Response></Response>');

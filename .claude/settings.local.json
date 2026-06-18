@@ -102,7 +102,17 @@
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final ls-files -u replit.md)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final status --short)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -5)",
-      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -1 -- client/src/components/compact-collection-form.tsx)"
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -1 -- client/src/components/compact-collection-form.tsx)",
+      "Bash(awk 'NR>=900 && NR<=1241 && /\\(^function|^async function|^export.*function|router\\\\.|app\\\\.|^const.*=.*async|^\\\\\\)\\\\\\)|^\\\\}\\\\\\);\\)/' /Users/kathrynelong/Sandwich-Project-Platform-Final/server/routes/sms-users.ts)",
+      "Bash(awk 'NR>=900 && NR<=1241 && /\\(function|export|router\\\\.|app\\\\.\\)/' /Users/kathrynelong/Sandwich-Project-Platform-Final/server/routes/sms-users.ts)",
+      "Bash(awk -F: '$1<1242')",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --since=\"2026-06-03\" --oneline --all -- server/routes/sms-users.ts server/services/sms-collection-parser.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline --all -- server/routes/sms-users.ts server/services/sms-collection-parser.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --since=\"2026-06-03\" --oneline)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --since=\"2 months ago\" --oneline -- server/routes/sms-users.ts server/services/sms-collection-parser.ts server/sms-providers/)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --all --oneline -S \"Couldn't understand that\" -- server/routes/sms-users.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --all --oneline -S \"OPENAI_API_KEY\" -- server/services/sms-collection-parser.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show --stat c8850e41e)"
     ],
     "deny": [],
     "ask": [],
