@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { io, Socket } from 'socket.io-client';
 import { logger } from '@/lib/logger';
+import { getDefaultSocketIoOptions } from '@/lib/socket-io-config';
 
 interface OnlineUser {
   id: string;
@@ -86,16 +87,9 @@ export function useOnlinePresenceNotifications() {
     const socketUrl = window.location.origin;
     logger.log('[OnlinePresence] Connecting WebSocket to:', socketUrl);
 
-    const newSocket = io(socketUrl, {
-      path: '/socket.io/',
-      transports: ['polling', 'websocket'],
-      upgrade: true,
-      timeout: 30000,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+    const newSocket = io(socketUrl, getDefaultSocketIoOptions({
       reconnectionAttempts: 5,
-    });
+    }));
 
     newSocket.on('connect', () => {
       logger.log('[OnlinePresence] ✅ WebSocket connected');
