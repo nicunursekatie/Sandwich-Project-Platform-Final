@@ -54,7 +54,6 @@ import {
 } from './form-sections';
 import {
   buildEventDataForServer,
-  detectChangedFields,
   findMismatchedSavedFields,
   getDroppedServerFields,
   determineSandwichMode,
@@ -351,7 +350,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Version tracking for optimistic locking
-  const callNotesExpectedVersionRef = useRef<string | null>(null);
 
 
   const { toast } = useToast();
@@ -722,21 +720,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     if (isCreateMode) setShowContactInfo(true);
   }, [isCreateMode]);
 
-  // ── Version Tracking for Optimistic Locking ──────────────────────
-
-  useEffect(() => {
-    callNotesExpectedVersionRef.current = effectiveEventRequest?.updatedAt ? String(effectiveEventRequest.updatedAt) : null;
-  }, [effectiveEventRequest?.updatedAt]);
 
   // ── Mutations ──────────────────────────────────────────────────────
 
   const updateEventRequestMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => {
-      const payload = { ...data };
-      // Use effectiveEventRequest (full data) for version check, not the stale prop
-      const latestUpdatedAt = callNotesExpectedVersionRef.current || effectiveEventRequest?.updatedAt || eventRequest?.updatedAt;
-      if (latestUpdatedAt) payload._expectedVersion = latestUpdatedAt;
-      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
+      // Row-level version gate was removed server-side (PR #417); _expectedVersion
+      // is ignored by the server, so we no longer send it.
+      return apiRequest('PATCH', `/api/event-requests/${id}`, data);
     },
     networkMode: 'always',
     onSuccess: async (updatedEvent: any, variables) => {
@@ -962,21 +953,23 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
 
-      // Detect changed fields using extracted utility
-      const filteredEventData = detectChangedFields(eventData, originalFormDataRef.current, mode);
-
-      // In edit mode, if nothing changed, tell the user
-      if (mode === 'edit' && Object.keys(filteredEventData).length === 0) {
+      // FULL-FORM SAVE (B5): send the entire built payload, not a change-detected
+      // subset. Removes the silent-dropped-field bug class (van flags, baseline
+      // drift) at the root.
+      // GUARD: never send a full payload before the full record has loaded —
+      // otherwise blank defaults from the lightweight list prop could overwrite
+      // real full-record fields. (formInitialized goes true on partial init, so
+      // it is NOT a sufficient guard here; fullEventRequest is. Create mode has
+      // no eventRequest and never reaches this branch.)
+      if (!fullEventRequest) {
+        logger.log('⛔ Save blocked: full event data not loaded yet');
+        toast({ title: 'Please wait', description: 'Still loading the full event details — please try again in a moment.', variant: 'destructive' });
         setIsSubmitting(false);
-        logger.log('⛔ Save blocked: no changes detected. Van fields - formData:', formData.vanDriverNeeded, 'original:', originalFormDataRef.current.vanDriverNeeded);
-        toast({ description: 'No changes detected. Make a change and try saving again.' });
         return;
       }
 
-      logger.log('🔄 Updating event:', eventRequest.id, 'Changed fields:', Object.keys(filteredEventData), 'Van:', filteredEventData.vanDriverNeeded);
-      // VAN DRIVER DEBUG: always log so bug can be diagnosed in production
-      console.info('[VAN DRIVER SAVE] event:', eventRequest.id, 'in filteredEventData:', { vanDriverNeeded: filteredEventData.vanDriverNeeded, assignedVanDriverId: filteredEventData.assignedVanDriverId, isDhlVan: filteredEventData.isDhlVan }, 'in formData:', { vanDriverNeeded: (formData as any).vanDriverNeeded, assignedVanDriverId: (formData as any).assignedVanDriverId, isDhlVan: (formData as any).isDhlVan }, 'original baseline:', { vanDriverNeeded: originalFormDataRef.current?.vanDriverNeeded, assignedVanDriverId: originalFormDataRef.current?.assignedVanDriverId, isDhlVan: originalFormDataRef.current?.isDhlVan });
-      updateEventRequestMutation.mutate({ id: eventRequest.id, data: filteredEventData });
+      logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
+      updateEventRequestMutation.mutate({ id: eventRequest.id, data: eventData });
     } else {
       logger.log('➕ Creating new event');
       createEventRequestMutation.mutate(eventData);
