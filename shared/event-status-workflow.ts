@@ -171,12 +171,14 @@ export const STATUS_REASON_FIELD: Partial<Record<EventStatus, string>> = {
 
 /** Whether moving an event to `status` requires a reason to be recorded. */
 export function requiresReason(status: EventStatus): boolean {
-  return status in STATUS_REASON_FIELD;
+  // Own-property check (not `in`) so prototype keys like "toString" never match,
+  // even if called with an untrusted string at runtime.
+  return Object.prototype.hasOwnProperty.call(STATUS_REASON_FIELD, status);
 }
 
 /** The field name that carries the required reason for `status`, if any. */
 export function getReasonField(status: EventStatus): string | undefined {
-  return STATUS_REASON_FIELD[status];
+  return requiresReason(status) ? STATUS_REASON_FIELD[status] : undefined;
 }
 
 /**
@@ -197,7 +199,10 @@ export const STATUS_REASON_SATISFYING_FIELDS: Partial<Record<EventStatus, string
 
 /** Fields that can satisfy the reason requirement for `status` (any non-empty one). */
 export function getReasonSatisfyingFields(status: EventStatus): string[] {
-  return STATUS_REASON_SATISFYING_FIELDS[status] ?? [];
+  // Own-property check guards against prototype keys returning a function.
+  return Object.prototype.hasOwnProperty.call(STATUS_REASON_SATISFYING_FIELDS, status)
+    ? STATUS_REASON_SATISFYING_FIELDS[status]!
+    : [];
 }
 
 /**

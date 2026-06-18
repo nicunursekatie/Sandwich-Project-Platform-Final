@@ -2662,12 +2662,22 @@ router.patch(
         // Pure transition side-effect from the shared workflow: when scheduling
         // an event with no date yet, fall back to its desired date. Applied here
         // so every scheduling path is consistent (the client no longer does it).
+        //
+        // Resolve effective values with `!== undefined` (not `??`) so an explicit
+        // null in this PATCH (intentionally clearing a date) is respected, and a
+        // desired date updated in the same request is preferred over the stored one.
+        const effectiveScheduledDate =
+          processedUpdates.scheduledEventDate !== undefined
+            ? processedUpdates.scheduledEventDate
+            : originalEvent.scheduledEventDate;
+        const effectiveDesiredDate =
+          processedUpdates.desiredEventDate !== undefined
+            ? processedUpdates.desiredEventDate
+            : originalEvent.desiredEventDate;
         const scheduledDateDefault = getScheduledDateDefault(
           toStatus,
-          processedUpdates.scheduledEventDate ?? originalEvent.scheduledEventDate,
-          // Prefer a desired date set in this same request over the stored one,
-          // so updating the desired date and scheduling in one PATCH uses the new date.
-          processedUpdates.desiredEventDate ?? originalEvent.desiredEventDate,
+          effectiveScheduledDate,
+          effectiveDesiredDate,
         );
         if (scheduledDateDefault !== undefined) {
           processedUpdates.scheduledEventDate = scheduledDateDefault;

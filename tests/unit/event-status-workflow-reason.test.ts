@@ -38,6 +38,14 @@ describe('requiresReason / getReasonField', () => {
       expect(getReasonField(status as any)).toBe((STATUS_REASON_FIELD as any)[status]);
     }
   });
+
+  it('does not treat prototype keys as reason-required (own-property check)', () => {
+    for (const key of ['toString', 'constructor', 'hasOwnProperty', '__proto__']) {
+      expect(requiresReason(key as any)).toBe(false);
+      expect(getReasonField(key as any)).toBeUndefined();
+      expect(getReasonSatisfyingFields(key as any)).toEqual([]);
+    }
+  });
 });
 
 describe('getReasonSatisfyingFields', () => {
