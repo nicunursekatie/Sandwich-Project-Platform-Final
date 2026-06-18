@@ -627,7 +627,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
         errorDescription = `${serverMessage} Missing: ${missingFields.join(', ')}`;
       }
 
-      // Check for optimistic locking conflict (409)
+      // Preserve generic 409 handling in case another server-side conflict
+      // guard reports one, but client-side _expectedVersion is no longer sent.
       const isConflict = error?.status === 409 || error?.data?.error === 'CONFLICT';
       if (isConflict) {
         toast({
@@ -787,10 +788,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     }
 
     console.log('[EventEditDialog] Final updates object:', JSON.stringify(updates, null, 2));
-    // Include optimistic locking version so the server can detect concurrent edits
-    if (event.updatedAt) {
-      updates._expectedVersion = event.updatedAt;
-    }
     updateMutation.mutate(updates);
   };
 
