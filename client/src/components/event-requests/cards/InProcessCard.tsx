@@ -79,6 +79,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { QuickScheduleButton } from '@/components/event-requests/QuickScheduleButton';
+import { EVENT_REQUEST_FEATURES } from '@/components/event-requests/feature-flags';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
@@ -1752,24 +1753,27 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            {/* Backup quick schedule button - bypasses form if main button has issues */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <QuickScheduleButton
-                    eventId={request.id}
-                    eventName={request.organizationName || 'Event'}
-                    currentStatus={request.status}
-                    scheduledDate={request.desiredEventDate}
-                    size="sm"
-                    variant="outline"
-                  />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Quick schedule (bypass form)</p>
-              </TooltipContent>
-            </Tooltip>
+            {/* Legacy quick-schedule workaround — hidden behind a default-off flag
+                now that the full scheduling form is trusted. See feature-flags.ts. */}
+            {EVENT_REQUEST_FEATURES.quickScheduleButton && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <QuickScheduleButton
+                      eventId={request.id}
+                      eventName={request.organizationName || 'Event'}
+                      currentStatus={request.status}
+                      scheduledDate={request.desiredEventDate}
+                      size="sm"
+                      variant="outline"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Quick schedule (bypass form)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>
