@@ -78,15 +78,11 @@ export const useEventMutations = () => {
       logger.log('Event ID:', id);
       logger.log('Data being sent:', JSON.stringify(data, null, 2));
 
-      // Include optimistic locking version if we have the selected event's updatedAt
-      // This prevents silent overwrites when two users edit the same event.
-      // _skipVersionCheck bypasses this for additive-only updates (e.g. contact logs)
-      // where two users saving simultaneously cannot produce a conflict.
+      // Row-level updatedAt locking was removed server-side (PR #417) and the
+      // legacy _expectedVersion field is ignored/stripped there. Keep the
+      // client payload clean so this path behaves like the other PATCH flows.
       const { _skipVersionCheck, ...rest } = data;
       const payload = { ...rest };
-      if (!_skipVersionCheck && selectedEventRequest?.updatedAt) {
-        payload._expectedVersion = selectedEventRequest.updatedAt;
-      }
 
       return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
     },
@@ -165,6 +161,7 @@ export const useEventMutations = () => {
       if (isConflict) {
         errorTitle = 'Edit Conflict';
         errorDescription = 'This event was modified by another user or process. The latest data has been loaded — please reapply your changes and save again.';
+        // Refresh list/counts and re-fetch the selected event so the next save starts from fresh data.
         await refreshEventRequestListAndCounts(queryClient);
         if (selectedEventRequest?.id) {
           try {
