@@ -13,7 +13,7 @@ import type { EventRequest } from '@shared/schema';
 import { AssignmentDialog } from '@/components/event-requests/dialogs/AssignmentDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { applyPatchResponseToCache } from '@/lib/queryClient';
 
 interface MissingDriversModalProps {
   open: boolean;
@@ -44,8 +44,10 @@ export default function MissingDriversModal({
       if (!response.ok) throw new Error('Failed to assign drivers');
       return response.json();
     },
-    onSuccess: () => {
-      invalidateEventRequestQueries(queryClient);
+    onSuccess: (updatedEvent) => {
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        touchedFields: ['assignedDriverIds', 'driversNeeded'],
+      });
       toast({
         title: 'Success',
         description: 'Drivers assigned successfully',

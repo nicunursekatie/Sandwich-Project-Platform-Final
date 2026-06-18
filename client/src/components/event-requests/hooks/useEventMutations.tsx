@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { logger } from '@/lib/logger';
 
@@ -120,8 +120,15 @@ export const useEventMutations = () => {
         });
       }
 
-      // Await query invalidation so the UI has fresh data before we close the dialog
-      await invalidateEventRequestQueries(queryClient);
+      // Patch caches surgically — avoid refetching every list while other forms may be open.
+      const statusChanged =
+        !!selectedEventRequest?.status &&
+        !!updatedEvent?.status &&
+        selectedEventRequest.status !== updatedEvent.status;
+      await applyEventRequestSaveToCache(queryClient, updatedEvent, {
+        statusChanged,
+        touchedFields: Object.keys(variables.data || {}),
+      });
 
       setShowEventDetails(false);
       setSelectedEventRequest(null);
@@ -132,7 +139,7 @@ export const useEventMutations = () => {
       setEditingField(null);
       setEditingValue('');
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       logger.error('Update event request error:', error);
 
       const status = error?.status;
@@ -158,18 +165,14 @@ export const useEventMutations = () => {
       if (isConflict) {
         errorTitle = 'Edit Conflict';
         errorDescription = 'This event was modified by another user or process. The latest data has been loaded — please reapply your changes and save again.';
-        // Refresh the data so the user sees the latest version. Selected event is also re-fetched
-        // so the next save attempt carries the fresh _expectedVersion.
-        invalidateEventRequestQueries(queryClient);
+        await refreshEventRequestListAndCounts(queryClient);
         if (selectedEventRequest?.id) {
-          (async () => {
-            try {
-              const fresh = await apiRequest('GET', `/api/event-requests/${selectedEventRequest.id}`);
-              setSelectedEventRequest(fresh);
-            } catch {
-              // best-effort — invalidation above will repopulate next time the dialog is opened
-            }
-          })();
+          try {
+            const fresh = await apiRequest('GET', `/api/event-requests/${selectedEventRequest.id}`);
+            setSelectedEventRequest(fresh);
+          } catch {
+            // best-effort — list refresh above will repopulate next time the dialog is opened
+          }
         }
       } else if (isPermissionDenied) {
         errorTitle = 'Permission Denied';
@@ -271,15 +274,14 @@ export const useEventMutations = () => {
         title: 'Toolkit marked as sent',
         description: message,
       });
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['toolkitSentDate', 'status', 'contactAttempts'],
+        statusChanged: true,
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after toolkit sent:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
 
       setShowToolkitSentDialog(false);
@@ -311,16 +313,13 @@ export const useEventMutations = () => {
         description: 'Call has been scheduled successfully.',
       });
 
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['scheduledCallDate'],
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after call scheduled:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
 
       setShowScheduleCallDialog(false);
@@ -347,28 +346,25 @@ export const useEventMutations = () => {
       value: any;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
     onMutate: async ({ id, field, value }) => {
-      // Cancel outgoing fetches so we can optimistically update
-      await queryClient.cancelQueries({ queryKey: ['/api/event-requests'] });
-      await queryClient.cancelQueries({ queryKey: ['/api/event-requests', 'v2'] });
+      await queryClient.cancelQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) && query.queryKey[0] === '/api/event-requests/list',
+      });
 
-      const patchList = (data: any) => {
-        if (!data) return data;
-        const patchArray = (arr: any[]) =>
-          arr.map((item) => (item?.id === id ? { ...item, [field]: value } : item));
+      const previousLists = new Map<readonly unknown[], unknown>();
+      queryClient.getQueryCache().findAll({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) && query.queryKey[0] === '/api/event-requests/list',
+      }).forEach((query) => {
+        previousLists.set(query.queryKey, queryClient.getQueryData(query.queryKey));
+      });
 
-        if (Array.isArray(data)) return patchArray(data);
-        if (Array.isArray(data?.requests)) return { ...data, requests: patchArray(data.requests) };
-        if (Array.isArray(data?.items)) return { ...data, items: patchArray(data.items) };
-        return data;
-      };
+      patchEventInListCaches(queryClient, id, (existing) => ({
+        ...existing,
+        [field]: value,
+      }));
 
-      const previousV1 = queryClient.getQueryData(['/api/event-requests']);
-      const previousV2 = queryClient.getQueryData(['/api/event-requests', 'v2']);
-
-      queryClient.setQueryData(['/api/event-requests'], (data) => patchList(data));
-      queryClient.setQueryData(['/api/event-requests', 'v2'], (data) => patchList(data));
-
-      return { previousV1, previousV2 };
+      return { previousLists };
     },
     onSuccess: async (updatedEvent, variables) => {
       toast({
@@ -376,27 +372,22 @@ export const useEventMutations = () => {
         description: 'Event field has been updated successfully.',
       });
 
+      await applyEventRequestSaveToCache(queryClient, updatedEvent, {
+        touchedFields: [variables.field],
+      });
+
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after field update:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
 
       setEditingScheduledId(null);
       setEditingField(null);
       setEditingValue('');
     },
-    onError: (error: any, _vars, context) => {
-      // Roll back optimistic update
-      if (context?.previousV1) {
-        queryClient.setQueryData(['/api/event-requests'], context.previousV1);
-      }
-      if (context?.previousV2) {
-        queryClient.setQueryData(['/api/event-requests', 'v2'], context.previousV2);
-      }
+    onError: async (error: any, _vars, context) => {
+      context?.previousLists?.forEach((data, key) => {
+        queryClient.setQueryData(key, data);
+      });
       logger.error('Inline field update error:', error);
 
       const status = error?.status;
@@ -412,6 +403,7 @@ export const useEventMutations = () => {
       } else if (status === 409) {
         errorTitle = 'Edit Conflict';
         errorDescription = 'This event was modified by another user or process. The latest data has been loaded — please try your edit again.';
+        await refreshEventRequestListAndCounts(queryClient);
       }
 
       toast({
@@ -421,11 +413,6 @@ export const useEventMutations = () => {
         // Sticky toast so a quick destructive error isn't missed during busy editing sessions.
         duration: Number.POSITIVE_INFINITY,
       });
-    },
-    // Refetch once in onSettled (covers both success and error paths).
-    // Removed duplicate invalidation that was in onSuccess.
-    onSettled: () => {
-      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -442,15 +429,13 @@ export const useEventMutations = () => {
         description: 'Follow-up has been marked as completed.',
       });
 
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['followUpOneDayCompleted', 'followUpOneDayDate', 'followUpNotes'],
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after 1-day follow-up:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
 
       setShowOneDayFollowUpDialog(false);
@@ -478,15 +463,13 @@ export const useEventMutations = () => {
         description: 'Follow-up has been marked as completed.',
       });
 
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['followUpOneMonthCompleted', 'followUpOneMonthDate', 'followUpNotes'],
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data after 1-month follow-up:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
 
       setShowOneMonthFollowUpDialog(false);
@@ -506,7 +489,7 @@ export const useEventMutations = () => {
       apiRequest('PATCH', `/api/event-requests/${id}`, {
         scheduledEventDate: newDate.toISOString(),
       }),
-    onSuccess: (_, variables) => {
+    onSuccess: async (updatedEvent, variables) => {
       const { id, newDate, previousDate } = variables;
       const newDateStr = newDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const prevDateStr = previousDate
@@ -523,10 +506,12 @@ export const useEventMutations = () => {
             <button
               onClick={async () => {
                 try {
-                  await apiRequest('PATCH', `/api/event-requests/${id}`, {
+                  const restored = await apiRequest('PATCH', `/api/event-requests/${id}`, {
                     scheduledEventDate: previousDate,
                   });
-                  invalidateEventRequestQueries(queryClient);
+                  await applyPatchResponseToCache(queryClient, restored, {
+                    touchedFields: ['scheduledEventDate'],
+                  });
                   dismiss();
                   toast({
                     title: 'Date restored',
@@ -553,8 +538,10 @@ export const useEventMutations = () => {
         });
       }
 
-      // Invalidate all event request queries to refresh UI
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['scheduledEventDate'],
+      });
     },
     onError: (error: any) => {
       toast({
@@ -593,15 +580,13 @@ export const useEventMutations = () => {
         description: 'Recipients have been successfully assigned to this event.',
       });
 
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['assignedRecipientIds', 'recipientAllocations'],
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
     },
     onError: (error: any) => {
@@ -641,15 +626,13 @@ export const useEventMutations = () => {
             : 'TSP contact has been successfully assigned and notified.',
       });
 
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['tspContact', 'customTspContact'],
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
     },
     onError: (error: any) => {
@@ -691,15 +674,13 @@ export const useEventMutations = () => {
           : 'This event is no longer marked as corporate priority.',
       });
 
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: selectedEventRequest?.status,
+        touchedFields: ['isCorporatePriority', 'coreTeamMemberNotes'],
+      });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
-        try {
-          const freshEventData = await apiRequest('GET', `/api/event-requests/${variables.id}`);
-          setSelectedEventRequest(freshEventData);
-        } catch (error) {
-          logger.error('Failed to fetch updated event data:', error);
-        }
+        setSelectedEventRequest(updatedEvent);
       }
     },
     onError: (error: any) => {

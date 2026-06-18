@@ -61,7 +61,7 @@ import { CommentThread, CompactPresenceBadge } from '@/components/collaboration'
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   Dialog,
@@ -1125,12 +1125,15 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}/social-media`, data),
-    onSuccess: () => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Social media tracking updated',
         description: 'Social media tracking information has been successfully updated.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: Object.keys(variables),
+      });
       // Reset states
       setShowRequestedDate(false);
       setShowPostedDate(false);
@@ -1143,7 +1146,6 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
         description: 'Failed to update social media tracking.',
         variant: 'destructive',
       });
-      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -1686,12 +1688,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const updateSocialMediaMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       apiRequest('PATCH', `/api/event-requests/${request.id}/social-media`, data),
-    onSuccess: () => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Social media tracking updated',
         description: 'Social media tracking information has been successfully updated.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: Object.keys(variables),
+      });
       setShowInstagramDialog(false);
     },
     onError: () => {
@@ -1700,7 +1705,6 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
         description: 'Failed to update social media tracking.',
         variant: 'destructive',
       });
-      invalidateEventRequestQueries(queryClient);
     },
   });
 
@@ -1708,12 +1712,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const updateOrgDetailsMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       patchEventRequestVerified(request.id, data),
-    onSuccess: () => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Event details updated',
         description: 'Event information has been successfully updated.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: Object.keys(variables),
+      });
       setIsEditingField(false);
       setEditingField('');
       setEditingValue('');
@@ -1732,12 +1739,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const updateSandwichCountMutation = useMutation({
     mutationFn: (data: { actualSandwichCount: number; actualSandwichTypes?: unknown }) =>
       patchEventRequestVerified(request.id, data),
-    onSuccess: () => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Sandwich count updated',
         description: 'The actual sandwich count has been successfully updated.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: Object.keys(variables),
+      });
       setIsEditingSandwichCount(false);
       setEditingSandwichCount('');
       setEditingTypes({});
@@ -1756,12 +1766,15 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const updateTspContactMutation = useMutation({
     mutationFn: (data: { tspContact?: number | null; customTspContact?: string | null; tspContactAssignedDate: string }) =>
       patchEventRequestVerified(request.id, data),
-    onSuccess: () => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'TSP Contact updated',
         description: 'The TSP contact has been successfully updated.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: Object.keys(variables),
+      });
       setIsEditingTspContact(false);
       setEditingTspContactId(null);
       setEditingCustomTspContact('');

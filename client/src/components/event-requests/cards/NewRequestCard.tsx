@@ -61,7 +61,7 @@ import { MessageComposer } from '@/components/message-composer';
 import { useToast } from '@/hooks/use-toast';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread, CompactPresenceBadge } from '@/components/collaboration';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   Tooltip,
@@ -900,8 +900,11 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   const toggleConfirmMutation = useMutation({
     mutationFn: async (newValue: boolean) =>
       patchEventRequestVerified(request.id, { isConfirmed: newValue }),
-    onSuccess: () => {
-      invalidateEventRequestQueries(queryClient);
+    onSuccess: (updatedEvent) => {
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: ['isConfirmed'],
+      });
       setShowConfirmToggle(false);
     },
     onError: (error: any) => {

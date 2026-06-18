@@ -44,7 +44,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import {
   parseDateOnly,
   toDateOnlyString,
@@ -713,14 +713,15 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   const handleMoveToNonEvent = async () => {
     if (!eventRequest) return;
     try {
-      await apiRequest('PATCH', `/api/event-requests/${eventRequest.id}`, {
+      const updated = await apiRequest('PATCH', `/api/event-requests/${eventRequest.id}`, {
         status: 'non_event',
         nonEventReason: 'Sandwich count under 200 — directed to host finder.',
         nonEventAt: new Date().toISOString(),
       });
-      // Refresh the list ourselves — this dialog no longer relies on the socket
-      // echo (the originating tab now ignores its own echo).
-      await invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updated, {
+        previousStatus: eventRequest.status,
+        statusChanged: true,
+      });
       clearDraft(`intake:${eventRequest.id}`);
       toast({
         title: 'Moved to Non-Event',
@@ -999,13 +1000,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           : newActionBlock;
       }
 
-      await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
+      const updated = await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
 
-      // Refresh the list ourselves. Previously the "Save notes" path (without
-      // marking the call complete) relied on the socket echo to refresh; now
-      // that the originating tab ignores its own echo, we invalidate here so the
-      // saved notes/structured fields show up immediately.
-      await invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updated, {
+        previousStatus: eventRequest?.status,
+        touchedFields: Object.keys(updates),
+      });
 
       // Build a toast that tells the operator exactly which structured fields
       // got mapped to columns and which inputs couldn't be parsed (those still

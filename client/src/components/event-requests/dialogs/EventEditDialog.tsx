@@ -43,7 +43,7 @@ import {
   History,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import {
   useDraftPersistence,
   loadDraft,
@@ -596,12 +596,13 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       logger.log('Updating event:', event.id, data);
       return apiRequest('PATCH', `/api/event-requests/${event.id}`, data);
     },
-    onSuccess: async () => {
+    onSuccess: async (updatedEvent, variables) => {
       // Save succeeded — clear the autosaved draft for this event.
       if (event) clearDraft(`event-edit:${event.id}`);
-      // Invalidate all event request queries and wait for them to complete
-      // before closing the dialog, so the list reflects the saved changes
-      await invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: event?.status,
+        touchedFields: Object.keys(variables),
+      });
       toast({
         title: 'Event updated',
         description: 'Your changes have been saved.',

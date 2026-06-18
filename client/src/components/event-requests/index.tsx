@@ -1198,10 +1198,6 @@ const EventRequestsManagementContent: React.FC = () => {
             }}
             eventRequest={nextActionEventRequest}
             mode={nextActionMode}
-            onActionSaved={() => {
-              // Refresh event requests after action is saved
-              invalidateEventRequestQueries(queryClient);
-            }}
           />
         )}
 

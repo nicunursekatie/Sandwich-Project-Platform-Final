@@ -22,7 +22,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { STATUS_DEFINITIONS } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
@@ -745,7 +745,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
       if (droppedFields.length > 0) {
         saveToLocalStorage();
-        await invalidateEventRequestQueries(queryClient);
+        await refreshEventRequestListAndCounts(queryClient);
 
         toast({
           title: 'Partial Save - Please Review',
@@ -758,9 +758,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
       clearAutoSave();
       setHasRecoveredData(false);
-      if (eventRequest?.id) {
-        queryClient.setQueryData(['/api/event-requests', eventRequest.id, 'full'], updatedEvent);
-      }
+      const statusChanged =
+        !!eventRequest?.status &&
+        !!updatedEvent?.status &&
+        eventRequest.status !== updatedEvent.status;
+      await applyEventRequestSaveToCache(queryClient, updatedEvent, {
+        statusChanged,
+        touchedFields: Object.keys(variables.data || {}),
+      });
       toast({
         title: mode === 'edit' ? 'Changes Saved Successfully' : 'Event Scheduled Successfully',
         description: mode === 'edit'
@@ -768,11 +773,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           : `"${orgName}" has been scheduled and saved.`,
         duration: 8000,
       });
-      await invalidateEventRequestQueries(queryClient);
       onSuccessCallback();
       onClose();
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
       setIsSubmitting(false);
       const serverMessage = error?.data?.message || error?.message;
       const isConflict = error?.status === 409 || error?.code?.includes('CONFLICT');
@@ -787,7 +791,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         errorTitle = 'Edit Conflict';
         saveToLocalStorage();
         errorDescription = 'This event was modified by another user. Please close and reopen to see latest data. Your changes are saved locally.';
-        invalidateEventRequestQueries(queryClient);
+        await refreshEventRequestListAndCounts(queryClient);
       } else if (isNotFound) {
         errorTitle = 'Event Not Found';
         errorDescription = 'The event request was not found. It may have been deleted.';

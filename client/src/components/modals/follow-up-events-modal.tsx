@@ -13,7 +13,7 @@ import { CheckCircle, Calendar, MapPin, Users, Phone, Mail } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import type { EventRequest } from '@shared/schema';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { applyPatchResponseToCache } from '@/lib/queryClient';
 
 interface FollowUpEventsModalProps {
   open: boolean;
@@ -43,9 +43,13 @@ export default function FollowUpEventsModal({
       if (!response.ok) throw new Error('Failed to mark follow-up as completed');
       return response.json();
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedEvent, variables) => {
       setCompletedFollowUps(prev => new Set(prev).add(variables.eventId));
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        touchedFields: variables.type === '1day'
+          ? ['followUpOneDayCompleted', 'followUpOneDayDate']
+          : ['followUpOneMonthCompleted', 'followUpOneMonthDate'],
+      });
       toast({
         title: 'Follow-up marked complete',
         description: `${followUpType === '1day' ? '1-day' : '30-day'} follow-up has been completed.`,

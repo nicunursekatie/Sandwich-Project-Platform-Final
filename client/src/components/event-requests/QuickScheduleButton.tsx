@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import { CalendarCheck } from 'lucide-react';
 import {
   AlertDialog,
@@ -83,8 +83,11 @@ export const QuickScheduleButton: React.FC<QuickScheduleButtonProps> = ({
         duration: 5000,
       });
 
-      // Refresh the event lists
-      invalidateEventRequestQueries(queryClient);
+      await applyPatchResponseToCache(queryClient, response, {
+        previousStatus: currentStatus,
+        statusChanged: true,
+        touchedFields: ['status', ...(scheduledDate ? ['scheduledEventDate'] : [])],
+      });
 
       onSuccess?.();
       setShowConfirm(false);

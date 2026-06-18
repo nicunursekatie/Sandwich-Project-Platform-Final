@@ -17,7 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { applyEventRequestUpdateById } from '@/lib/queryClient';
 import { FileSpreadsheet, Check, Loader2, ChevronDown, ChevronUp, AlertTriangle, AlertCircle, ArrowRight, RefreshCw, Equal } from 'lucide-react';
 
 interface PushToSheetButtonProps {
@@ -182,10 +182,8 @@ export function PushToSheetButton({
           : `Added new row ${data.rowIndex} to the Planning Sheet.`,
       });
       queryClient.invalidateQueries({ queryKey: ['planning-sheet-preview', eventId] });
-      // The server marks the event addedToOfficialSheet=true on a successful push,
-      // so refresh event-request data too — otherwise the card keeps showing
-      // "Not on Calendar" (and the manual "Added to Google Sheet" button) until reload.
-      invalidateEventRequestQueries(queryClient);
+      // Server marks addedToOfficialSheet=true — fetch once and patch caches surgically.
+      void applyEventRequestUpdateById(queryClient, eventId);
       setShowDialog(false);
     },
     onError: (error: Error) => {

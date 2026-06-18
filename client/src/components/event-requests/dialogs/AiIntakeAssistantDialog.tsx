@@ -38,7 +38,7 @@ import {
   X,
 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { EventRequest } from '@shared/schema';
@@ -124,8 +124,11 @@ export function AiIntakeAssistantDialog({
         { [field]: value }
       );
     },
-    onSuccess: () => {
-      invalidateEventRequestQueries(queryClient);
+    onSuccess: (updatedEvent, variables) => {
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: eventRequest.status,
+        touchedFields: [variables.field],
+      });
       toast({
         title: 'Updated',
         description: 'Event information updated successfully',

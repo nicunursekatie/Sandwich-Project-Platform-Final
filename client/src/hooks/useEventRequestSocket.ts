@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getOrCreateSocket } from '@/lib/socket-singleton';
 import { logger } from '@/lib/logger';
 import { useToast } from './use-toast';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { invalidateEventRequestQueries, applyEventRequestUpdateById } from '@/lib/queryClient';
 
 /**
  * Hook that listens for real-time event request updates via Socket.IO
@@ -29,12 +29,8 @@ export function useEventRequestSocket() {
       });
     };
 
-    const handleEventUpdated = (eventRequest: any) => {
-      // Ignore the echo of our OWN save. Every mutation already refreshes the UI
-      // locally (invalidate in onSuccess/onSettled), so re-invalidating here just
-      // triggers a redundant full refetch that can reset an open form mid-edit.
-      // Updates from other users/tabs/background sync carry a different socket id
-      // (or none) and still refresh exactly as before.
+    const handleEventUpdated = (eventRequest: { id: number; originSocketId?: string }) => {
+      // Ignore the echo of our OWN save. Mutations patch caches locally on success.
       if (
         eventRequest?.originSocketId &&
         socket.id &&
@@ -44,7 +40,7 @@ export function useEventRequestSocket() {
         return;
       }
       logger.log('[EventRequestSocket] Event request updated:', eventRequest.id);
-      invalidateEventRequestQueries(queryClient);
+      void applyEventRequestUpdateById(queryClient, eventRequest.id);
     };
 
     const handleEventDeleted = (data: { id: number }) => {

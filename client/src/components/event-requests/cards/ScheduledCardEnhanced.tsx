@@ -90,7 +90,7 @@ import { CommentThread } from '@/components/collaboration';
 import { useToast } from '@/hooks/use-toast';
 import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
 import { Sheet } from 'lucide-react';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import {
   Tooltip,
@@ -290,8 +290,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const updateFieldsMutation = useMutation({
     mutationFn: async (updates: Record<string, unknown>) =>
       patchEventRequestVerified(request.id, updates),
-    onSuccess: () => {
-      invalidateEventRequestQueries(queryClient);
+    onSuccess: (updatedEvent, variables) => {
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus: request.status,
+        touchedFields: Object.keys(variables),
+      });
       setAddingAllTimes(false);
       setTempStartTime('');
       setTempEndTime('');

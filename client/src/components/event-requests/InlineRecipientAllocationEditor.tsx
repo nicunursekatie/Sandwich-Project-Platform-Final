@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Building, Check, X, Loader2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import type { RecipientAllocation } from './RecipientAllocationEditor';
 
 interface InlineRecipientAllocationEditorProps {
@@ -85,12 +85,14 @@ export function InlineRecipientAllocationEditor({
         recipientAllocations: allocations.filter(a => a.sandwichCount > 0),
       });
     },
-    onSuccess: () => {
+    onSuccess: (updatedEvent) => {
       toast({
         title: 'Allocations saved',
         description: 'Recipient sandwich counts have been updated.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        touchedFields: ['assignedRecipientIds', 'recipientAllocations'],
+      });
       onSave();
     },
     onError: () => {

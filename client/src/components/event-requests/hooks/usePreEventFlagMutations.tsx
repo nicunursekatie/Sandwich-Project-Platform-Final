@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { invalidateEventRequestQueries } from '@/lib/queryClient';
+import { applyPatchResponseToCache } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AddFlagParams {
@@ -20,7 +20,7 @@ interface ResolveFlagParams {
  *
  * This hook follows the established data fetching pattern:
  * 1. Uses React Query's useMutation for all mutations
- * 2. Invalidates relevant queries on success via invalidateEventRequestQueries
+ * 2. Patches list caches surgically on success via applyPatchResponseToCache
  * 3. Shows toast notifications for success/error states
  * 4. Returns isPending for loading states
  *
@@ -63,12 +63,14 @@ export function usePreEventFlagMutations() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedEvent, variables) => {
       toast({
         title: 'Flag added',
         description: 'Pre-event flag has been added to this event.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        touchedFields: ['preEventFlags'],
+      });
     },
     onError: () => {
       toast({
@@ -99,12 +101,14 @@ export function usePreEventFlagMutations() {
 
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedEvent) => {
       toast({
         title: 'Flag resolved',
         description: 'The pre-event flag has been marked as resolved.',
       });
-      invalidateEventRequestQueries(queryClient);
+      void applyPatchResponseToCache(queryClient, updatedEvent, {
+        touchedFields: ['preEventFlags'],
+      });
     },
     onError: () => {
       toast({

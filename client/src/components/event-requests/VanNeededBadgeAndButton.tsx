@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Truck, HelpCircle, AlertTriangle } from 'lucide-react';
-import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, queryClient, applyEventRequestSaveToCache } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface VanNeededBadgeAndButtonProps {
@@ -146,8 +146,10 @@ export function VanNeededBadgeAndButton({
   const updateMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
       apiRequest('PATCH', `/api/event-requests/${eventRequestId}`, data),
-    onSuccess: () => {
-      invalidateEventRequestQueries(queryClient);
+    onSuccess: async (updatedEvent, variables) => {
+      await applyEventRequestSaveToCache(queryClient, updatedEvent, {
+        touchedFields: Object.keys(variables),
+      });
       setDialogOpen(false);
     },
     onError: () => {

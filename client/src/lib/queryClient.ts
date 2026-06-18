@@ -180,10 +180,237 @@ export const getQueryFn: <T>(options: {
     }
   };
 
+const EVENT_LIST_QUERY_PREFIX = '/api/event-requests/list';
+const EVENT_STATUS_COUNTS_KEY = '/api/event-requests/status-counts';
+
+/** Fields whose change affects volunteer-hub screens — invalidate hub only when touched. */
+const VOLUNTEER_HUB_TOUCH_FIELDS = new Set([
+  'showOnVolunteerHub',
+  'status',
+  'scheduledEventDate',
+  'desiredEventDate',
+  'eventStartTime',
+  'eventEndTime',
+  'eventAddress',
+  'organizationName',
+  'department',
+  'driversNeeded',
+  'speakersNeeded',
+  'volunteersNeeded',
+  'vanDriverNeeded',
+  'vanNeededLikely',
+  'assignedDriverIds',
+  'assignedSpeakerIds',
+  'assignedVolunteerIds',
+  'assignedVanDriverId',
+  'selfTransport',
+  'isDhlVan',
+  'estimatedSandwichCount',
+]);
+
+/** Fields whose change affects the event map — invalidate map only when touched. */
+const EVENT_MAP_TOUCH_FIELDS = new Set([
+  'status',
+  'scheduledEventDate',
+  'desiredEventDate',
+  'latitude',
+  'longitude',
+  'eventAddress',
+  'organizationName',
+]);
+
+function isEventListQueryKey(key: unknown): key is readonly unknown[] {
+  return Array.isArray(key) && key[0] === EVENT_LIST_QUERY_PREFIX;
+}
+
+function stripEventResponseMeta<T extends Record<string, unknown>>(event: T): Omit<T, '_droppedFields'> {
+  const { _droppedFields: _dropped, ...rest } = event;
+  return rest;
+}
+
+/**
+ * Patch one event row inside every cached `/api/event-requests/list` query.
+ * Returns how many list caches contained that event id.
+ */
+export function patchEventInListCaches(
+  qc: QueryClient,
+  eventId: number,
+  merge: (existing: Record<string, unknown>) => Record<string, unknown>
+): number {
+  let cachesPatched = 0;
+
+  qc.getQueryCache().findAll({
+    predicate: (query) => isEventListQueryKey(query.queryKey),
+  }).forEach((query) => {
+    qc.setQueryData(query.queryKey, (old: unknown) => {
+      if (!Array.isArray(old)) return old;
+
+      let rowFound = false;
+      const next = old.map((item) => {
+        if (!item || typeof item !== 'object' || (item as { id?: number }).id !== eventId) {
+          return item;
+        }
+        rowFound = true;
+        return merge(item as Record<string, unknown>);
+      });
+
+      if (rowFound) cachesPatched += 1;
+      return rowFound ? next : old;
+    });
+  });
+
+  return cachesPatched;
+}
+
+/** Read the first cached list row for an event (any list query), if present. */
+export function findEventInListCaches(
+  qc: QueryClient,
+  eventId: number
+): Record<string, unknown> | undefined {
+  for (const query of qc.getQueryCache().findAll({
+    predicate: (q) => isEventListQueryKey(q.queryKey),
+  })) {
+    const data = query.state.data;
+    if (!Array.isArray(data)) continue;
+    const match = data.find(
+      (item) => item && typeof item === 'object' && (item as { id?: number }).id === eventId
+    );
+    if (match && typeof match === 'object') return match as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+/** Invalidate + refetch list queries and tab status-counts (not volunteer hub / map). */
+export async function refreshEventRequestListAndCounts(qc: QueryClient): Promise<void> {
+  const predicate = (query: { queryKey: unknown }) => {
+    const key = query.queryKey;
+    if (!Array.isArray(key) || typeof key[0] !== 'string') return false;
+    return key[0] === EVENT_LIST_QUERY_PREFIX || key[0] === EVENT_STATUS_COUNTS_KEY;
+  };
+
+  await qc.invalidateQueries({ predicate });
+  await qc.refetchQueries({ predicate });
+}
+
+async function invalidateVolunteerHubQueries(qc: QueryClient): Promise<void> {
+  await qc.invalidateQueries({
+    predicate: (query) => {
+      const key = query.queryKey;
+      return Array.isArray(key) && typeof key[0] === 'string' && key[0].startsWith('/api/volunteer-hub');
+    },
+  });
+}
+
+export type EventRequestCacheUpdateOptions = {
+  /** When true, row-level list patch is insufficient (event may move tabs). */
+  statusChanged?: boolean;
+  /** Limit downstream invalidations to fields the PATCH actually sent. */
+  touchedFields?: string[];
+  /** Creates/deletes/bulk imports — fall back to full invalidation. */
+  forceFullInvalidate?: boolean;
+};
+
+/**
+ * Surgical cache update after a successful event PATCH/PUT.
+ *
+ * - Same-status field saves: patch list row + single-record caches; no list refetch.
+ * - Status changes: refresh list + status-counts only (not the full sledgehammer).
+ * - Volunteer hub / event map: invalidate only when relevant fields changed.
+ */
+export async function applyEventRequestSaveToCache(
+  qc: QueryClient,
+  updatedEvent: Record<string, unknown> & { id: number },
+  options: EventRequestCacheUpdateOptions = {}
+): Promise<void> {
+  if (options.forceFullInvalidate) {
+    await invalidateEventRequestQueries(qc);
+    return;
+  }
+
+  const eventData = stripEventResponseMeta(updatedEvent);
+  const id = updatedEvent.id;
+
+  qc.setQueryData(['/api/event-requests', id], eventData);
+  qc.setQueryData(['/api/event-requests', id, 'full'], eventData);
+
+  if (options.statusChanged) {
+    await refreshEventRequestListAndCounts(qc);
+  } else {
+    patchEventInListCaches(qc, id, (existing) => ({
+      ...existing,
+      ...eventData,
+    }));
+  }
+
+  const touched = options.touchedFields ?? Object.keys(eventData);
+  if (touched.some((field) => VOLUNTEER_HUB_TOUCH_FIELDS.has(field))) {
+    await invalidateVolunteerHubQueries(qc);
+  }
+  if (touched.some((field) => EVENT_MAP_TOUCH_FIELDS.has(field))) {
+    await qc.invalidateQueries({ queryKey: ['/api/event-map'] });
+  }
+}
+
+/**
+ * Convenience wrapper after a successful PATCH/PUT: merges the server row into
+ * list + single-record caches. Infers statusChanged from previousStatus when omitted.
+ */
+export async function applyPatchResponseToCache(
+  qc: QueryClient,
+  updatedEvent: Record<string, unknown> & { id: number },
+  options: {
+    previousStatus?: string | null;
+    touchedFields?: string[];
+    statusChanged?: boolean;
+    forceFullInvalidate?: boolean;
+  } = {}
+): Promise<void> {
+  const statusChanged =
+    options.statusChanged ??
+    (!!options.previousStatus &&
+      !!updatedEvent.status &&
+      options.previousStatus !== updatedEvent.status);
+
+  await applyEventRequestSaveToCache(qc, updatedEvent, {
+    statusChanged,
+    touchedFields: options.touchedFields,
+    forceFullInvalidate: options.forceFullInvalidate,
+  });
+}
+
+/**
+ * Apply a socket or cross-tab update when we only know the event id.
+ * Fetches the full record once, then patches caches surgically.
+ */
+export async function applyEventRequestUpdateById(
+  qc: QueryClient,
+  eventId: number
+): Promise<void> {
+  const previous = findEventInListCaches(qc, eventId);
+  try {
+    const fresh = await apiRequest('GET', `/api/event-requests/${eventId}`);
+    if (!fresh?.id) {
+      await refreshEventRequestListAndCounts(qc);
+      return;
+    }
+    const statusChanged =
+      !!previous?.status &&
+      !!fresh.status &&
+      previous.status !== fresh.status;
+    await applyEventRequestSaveToCache(qc, fresh, { statusChanged });
+  } catch {
+    await refreshEventRequestListAndCounts(qc);
+  }
+}
+
 /**
  * Invalidate and refetch all event request related queries.
  * Use this after any mutation that modifies event request data to ensure
  * the UI refreshes with the latest data immediately.
+ *
+ * Prefer `applyEventRequestSaveToCache` for single-event PATCH saves.
+ * Keep this for creates, deletes, bulk imports, and status moves when
+ * surgical patching is insufficient.
  *
  * This handles the query key mismatch between different query patterns:
  * - /api/event-requests (legacy)

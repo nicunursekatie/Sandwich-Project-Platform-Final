@@ -49,11 +49,11 @@ The full investigation lives in chat history; the verified facts:
 
 These are the bugs that produce most of the "it ate my edit / it told me there was a conflict / it saved but the field is wrong" complaints. **A UI rebuild alone will not fix them.**
 
-1. **Sledgehammer cache invalidation.**
-   `invalidateEventRequestQueries` ([client/src/lib/queryClient.ts:187-217](client/src/lib/queryClient.ts)) invalidates AND force-refetches every query whose key starts with `/api/event-requests` or `/api/volunteer-hub`, plus `/api/event-map`. It runs on every save and every socket event.
+1. **Sledgehammer cache invalidation.** *(PATCH saves fixed Unit 1 / B1 — see §1.5; create/delete/bulk/sync still use full invalidation.)*
+   `invalidateEventRequestQueries` ([client/src/lib/queryClient.ts](client/src/lib/queryClient.ts)) invalidates AND force-refetches every query whose key starts with `/api/event-requests` or `/api/volunteer-hub`, plus `/api/event-map`. **Before B1:** ran on every save and every cross-tab socket event.
 
-2. **Socket invalidation on every PATCH** *(own-echo partially fixed — see §1.5)*.
-   Server middleware at [server/routes/event-requests/index.ts:57-74](server/routes/event-requests/index.ts) wraps `res.json` to emit `event_request_updated` on any 2xx PATCH/PUT across all sub-routers. Client at [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) handles those events by calling the sledgehammer. **Still true for other users/tabs/background processes.** Before PR #416, your own save also triggered a second full refetch (save → socket echo → invalidate again).
+2. **Socket invalidation on every PATCH** *(own-echo fixed §1.5; cross-tab PATCH now surgical via `applyEventRequestUpdateById` — Unit 1)*.
+   Server middleware at [server/routes/event-requests/index.ts:57-74](server/routes/event-requests/index.ts) wraps `res.json` to emit `event_request_updated` on any 2xx PATCH/PUT across all sub-routers. Client at [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) handles cross-tab updates with a single GET + surgical cache patch. Create/delete socket events still use full invalidation. Before PR #416, your own save also triggered a second full refetch (save → socket echo → invalidate again).
 
 3. **Optimistic updates target dead cache keys.**
    List query reads from `['/api/event-requests/list', filterParams, quickFilter, 'v3']` ([eventRequestsListQuery.ts:102](client/src/components/event-requests/lib/eventRequestsListQuery.ts)). Optimistic patches in `useEventMutations` set `['/api/event-requests']` and `['/api/event-requests', 'v2']` ([useEventMutations.tsx:368-369](client/src/components/event-requests/hooks/useEventMutations.tsx)). **The keys never overlap.** The optimistic-update layer is effectively dead code; `onSettled` then runs the sledgehammer anyway. **History:** added Dec 2025 for inline scheduled edits; list migrated to `/list` … `v3` keys afterward — optimistic path was never rewired (classic AI-accretion half-fix).
@@ -93,8 +93,8 @@ These are the bugs that produce most of the "it ate my edit / it told me there w
 11. **Stale list cache → false "invalid status change."**
     `handleStatusChange` reads `request.status` from the **list cache** ([useEventAssignments.tsx:632-640](client/src/components/event-requests/hooks/useEventAssignments.tsx)) and validates client-side before PATCH. Server validates `originalEvent.status → requested status` from DB. If UI is stale (DB moved to B, UI still shows A), user can get blocked with a transition error they didn't cause. Calmer cache + fresh status before status PATCH addresses this; consolidating status paths is the long-term fix.
 
-12. **Mutation success still runs the sledgehammer.**
-    PR #416 removed the **double** refetch (own socket echo). Every save path that calls `invalidateEventRequestQueries` in `onSuccess`/`onSettled` still force-refetches all event + volunteer-hub queries once. That remains the main "it ate my edit" trigger while a form is open.
+12. **Mutation success still runs the sledgehammer.** *(PATCH paths fixed Unit 1 — see §1.5)*
+    PR #416 removed the **double** refetch (own socket echo). **Before Unit 1:** every save path that called `invalidateEventRequestQueries` in `onSuccess` force-refetched all event + volunteer-hub queries once — the main "it ate my edit" trigger while a form was open. **After Unit 1:** PATCH/PUT saves patch list rows surgically; full invalidation remains only for create, delete, restore, Sheets sync, and bulk admin tools.
 
 ### 1.3 How user complaints map (don't need a top-10 list)
 
@@ -129,7 +129,7 @@ This deserves its own writeup because it was the daily complaint that produced Q
 | Form pre-fill race | `EventSchedulingForm` opens before full-record fetch completes; the `status: 'scheduled'` intent gets lost in the partial→full merge ([EventSchedulingForm.tsx:541-548](client/src/components/event-requests/EventSchedulingForm.tsx)) | §1.2 #5 → fixed by **Unit 6** (form init race) + **Unit 7** (collapse partial/full) |
 | Partial PATCH drops `status` field | Server's `_droppedFields` pipeline rejects the status change as an "invalid transition" because it compared against stale baseline | §1.2 #7, #11 → reduced by **Unit 1**, eliminated by **Unit 7** |
 | Eight status paths, one of them broken | Mark Scheduled goes through `handleStatusChange` in [useEventAssignments.tsx](client/src/components/event-requests/hooks/useEventAssignments.tsx); other status buttons go through different paths; if `handleStatusChange` regresses, only Mark Scheduled breaks | §1.2 #10 → fixed by **Unit 9** (consolidate status paths) |
-| Socket echo wiped the form | Pre-PR #416: user clicks Mark Scheduled, save starts, server emits `event_request_updated`, client refetches and resets the form before save completes | §1.2 #2 → **own-echo fixed in PR #416**; cross-tab echo still possible until **Unit 1** |
+| Socket echo wiped the form | Pre-PR #416: user clicks Mark Scheduled, save starts, server emits `event_request_updated`, client refetches and resets the form before save completes | §1.2 #2 → **own-echo fixed PR #416**; cross-tab refetch storm fixed **Unit 1** |
 
 **Why it sporadic, not consistent:** It depends on whether a refetch is in flight when you click, whether the partial→full merge has completed, whether the sync just bumped `updatedAt`, and whether another user happened to save anything in the last few seconds. None of those things are visible to the user. From their POV, "sometimes the button works, sometimes it doesn't" — which is exactly what they report.
 
@@ -154,21 +154,23 @@ These are **not** causing event-management wipes in the current code:
 - **Not every background refresh re-initializes the form** — `EventSchedulingForm` guards re-init with `formInitSessionRef` / `${eventId}-partial|full` ([EventSchedulingForm.tsx:541-548](client/src/components/event-requests/EventSchedulingForm.tsx)) plus partial→full merge logic. Wipes still happen from refetch/version races, but not from a timer.
 - **Sheets sync is not continuously rewriting in-progress events** — insert-only except empty-message backfill (§1.2 #4).
 
-### 1.5 Already shipped (2026-06-18, PR #416)
+### 1.5 Already shipped (2026-06-18, PRs #416–#419 + Unit 1)
 
 Do not rebuild these:
 
 | Change | Commits | What it fixed |
 |---|---|---|
 | Ignore own socket echo | `b20a1e220` | `X-Socket-Id` on [apiRequest](client/src/lib/queryClient.ts); server echoes `originSocketId`; [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) skips matching id. Removes redundant refetch on your own save. Fails safe if socket not connected. |
-| Scratchpad list sync without refetch storm | `13f049395` | Surgical list-cache patch in scratchpad (component since removed §1.6). Pattern to reimplement in `queryClient.ts` for B1. |
-| Intake paths no longer rely on echo | same PR | [IntakeCallDialog.tsx](client/src/components/event-requests/IntakeCallDialog.tsx) calls `invalidateEventRequestQueries` after save-notes / move-to-non-event. |
+| Scratchpad list sync without refetch storm | `13f049395` | Surgical list-cache patch in scratchpad (component since removed §1.6). Pattern reimplemented in `queryClient.ts` for Unit 1. |
+| Intake paths surgical cache | Unit 1 | [IntakeCallDialog.tsx](client/src/components/event-requests/IntakeCallDialog.tsx) uses `applyPatchResponseToCache` after save-notes / move-to-non-event (was sledgehammer post-#416). |
 | Remove row-level version gate on PATCH | `4c2ff41fd` (PR #417) | [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) strips `_expectedVersion`; no 409 on `updatedAt` drift. **Unblocks Cause A root fix** (§2.5, §B5) — partial saves no longer needed to avoid row-level collisions. Form send removed in PR #418; `_expectedVersion` still sent from 2 remaining client paths; delete in §B8. |
 | Full-form save (Cause A root fix) | `08ca814a7` (PR #418) | [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) PATCHes full `buildEventDataForServer()` output; `detectChangedFields` deleted. Guards: must init from full record (`formInitSessionRef` ends `-full`); edit mode omits date columns when date box unchanged. |
+| List read contract (#419) | PR #419 | [shared/event-list-projection.ts](shared/event-list-projection.ts) + `toLightweightEventRequest()`; fixed blank Non-Event fields + missing `vanNeededLikely` on list cards. |
+| **Surgical cache invalidation (Unit 1 / B1)** | *(this commit)* | [queryClient.ts](client/src/lib/queryClient.ts): `patchEventInListCaches`, `applyEventRequestSaveToCache`, `applyPatchResponseToCache`, `applyEventRequestUpdateById`. Migrated ~20 PATCH save callsites; sledgehammer kept for create/delete/restore/Sheets sync/bulk. Status moves refresh list + counts only; volunteer hub / event map invalidate only when touched fields require it. |
 | Call Notes Scratchpad removed | `4f46dcd3e` | See §1.6 — ~400 lines deleted; audit showed zero usage. |
 | Resources Open button fix | `188fd17eb` | [resources.tsx](client/src/pages/resources.tsx) — URL priority + anchor click for reliable open. |
 
-**Still open after PR #416–#418:** mutation `onSuccess` sledgehammer (§1.2 #12, §B1), dead optimistic keys (§1.2 #3, §B6), list/card shape split (§2.5 Cause B, §B9), eight status paths (§1.2 #10, §B11), dead client `_expectedVersion` sends (§B8). **Post-merge:** run §B5 smoke checklist in production.
+**Still open after Unit 1:** dead optimistic keys (§1.2 #3, §B6 / Unit 2), list/card shape split compile-time enforcement (§2.5 Cause B, §B9 / Unit 4), eight status paths (§1.2 #10, §B11 / Unit 9), dead client `_expectedVersion` sends (§B8 / Unit 3). **Post-merge:** run §B5 + Unit 1 smoke checklists in production.
 
 ### 1.6 Removed (2026-06-18) — Call Notes Scratchpad
 
@@ -279,9 +281,7 @@ GROUP BY status ORDER BY status;
 - **List 3:** scratchpad marked ✅ removed (skipped 60-day hide — audit proved zero usage)
 - **§1.2 #4:** scratchpad removed from 409 trigger ranking
 - **§1.2 #4 / §B8:** scratchpad 409 source gone; strip dead client `_expectedVersion`; Sheets backfill if needed
-- **B1:** surgical cache helper to be written fresh in `queryClient.ts` (scratchpad implementation deleted with component)
-
-**Status:** Code change complete locally; pending commit/deploy.
+- **B1:** ✅ shipped Unit 1 — surgical helpers in [queryClient.ts](client/src/lib/queryClient.ts); PATCH saves no longer sledgehammer
 
 ### 1.7 UI-room problems (visible chaos)
 
@@ -390,7 +390,7 @@ Each major complaint class has two fixes. **Bandaids add or maintain complexity;
 
 #### Recommendation (2026-06-18)
 
-Do **B1 surgical invalidation next** (§B1) — addresses refetch-stomps while a form is open. Cause B (§B9) follows once saves + cache are trustworthy. ~~Cause A (§B5)~~ ✅ shipped PR #418.
+Do **Unit 2 (delete dead optimistic keys)** next — now that B1 is shipped. Cause B (§B9 / Unit 4) follows once saves + cache are trustworthy in production. ~~Cause A (§B5)~~ ✅ shipped PR #418. ~~B1 surgical invalidation~~ ✅ shipped Unit 1.
 
 ---
 
@@ -488,15 +488,9 @@ Ordered from highest payoff / lowest risk first. Dev-test each before deploy.
 
 Small, reversible engine fixes (e.g. PR #416) may ship alongside Phase A. Do not start **large** Phase B items until Phase A is stable unless the fix is already proven in dev.
 
-**B1. Surgical cache invalidation**
-- Replace the sledgehammer `invalidateEventRequestQueries` with by-ID updates where possible.
-- When you save event 47, only patch the cache entry for event 47; don't refetch every tab.
-- Add a shared `patchEventInListCaches(id, updatedEvent)` helper in `queryClient.ts`; use from `useEventMutations` and other save paths.
-- **Blast radius:** must still refresh `/api/volunteer-hub/*` and `/api/event-map` when fields that affect those views change (`showOnVolunteerHub`, dates, staffing) — surgical list patch alone is not enough for volunteer-facing screens.
-- Files: `client/src/lib/queryClient.ts`, `client/src/components/event-requests/hooks/useEventMutations.tsx`
-- Risk: medium-high — this is where stale-data complaints could resurface
-- Smoke: edit event in one tab, navigate to another tab, confirm new value visible without manual refresh. Toggle `showOnVolunteerHub`; confirm volunteer hub updates. Edit event, save, confirm no other queries refetched (watch Network panel).
-- **Concurrency test required:** two browser windows, two users, edit same event, save in one, observe what the other does.
+**B1. Surgical cache invalidation** — ✅ **Done (Unit 1, 2026-06-18)**
+
+Replace the sledgehammer `invalidateEventRequestQueries` with by-ID updates on PATCH saves. Helpers in `queryClient.ts`: `patchEventInListCaches`, `applyEventRequestSaveToCache`, `applyPatchResponseToCache`, `applyEventRequestUpdateById`. Full invalidation remains for create/delete/bulk/Sheets sync.
 
 **B5. Full-form save — Cause A root fix** — ✅ **Done (PR #418, 2026-06-18)**
 
@@ -578,7 +572,7 @@ Stop sending only changed fields from `EventSchedulingForm`. Send the full `buil
 
 #### Exit criteria
 
-Priority 1–2 pass on real events over 2–3 days of normal use → B5 is doing its job. **Still allowed to feel flaky until B1:** same event open in two tabs, or someone else saving while you have the form open (refresh can stomp unsaved work — next fix, not B5).
+Priority 1–2 pass on real events over 2–3 days of normal use → B5 is doing its job. **Unit 1 smoke test still required in production:** save a field → network-tab clean; two-tab edit of different events → form not wiped.
 
 **Dev smoke (engineer):** Network panel — PATCH body includes full form payload, not a 3-key subset.
 
@@ -729,16 +723,16 @@ Each item is a self-contained work unit. You can pick one up cold, do it, ship i
 
 **Closes:** #1 (sledgehammer), #11 (false "invalid transition"), most of remaining #2 (other-tab refetch storm), #12 (mutation success runs sledgehammer)
 
-**Status:** [ ] Not started
+**Status:** [x] Shipped (2026-06-18)
 
 **Why it's first:** This is the single highest-leverage remaining change. It closes the loudest open issue (forms wiped mid-edit by unrelated saves) and makes Units 2 and 5 trivially simpler.
 
 **Scope:**
-1. Replace `invalidateEventRequestQueries` calls with surgical `setQueryData` patches keyed by event ID.
-2. For list cache: patch the single row inside `['/api/event-requests/list', filterParams, quickFilter, 'v3']` array data, don't refetch the list.
-3. For status-counts cache (`['/api/event-requests/status-counts']`): only re-invalidate when status actually changed, not on every save.
-4. For volunteer hub cache: only invalidate if the save actually touched a field volunteer hub reads.
-5. Keep `invalidateEventRequestQueries` available as the fallback for status changes, deletes, and creates — but make it the exception, not the default.
+1. Replace `invalidateEventRequestQueries` calls with surgical `setQueryData` patches keyed by event ID. ✅
+2. For list cache: patch the single row inside `['/api/event-requests/list', filterParams, quickFilter, 'v3']` array data, don't refetch the list. ✅
+3. For status-counts cache (`['/api/event-requests/status-counts']`): only re-invalidate when status actually changed, not on every save. ✅
+4. For volunteer hub cache: only invalidate if the save actually touched a field volunteer hub reads. ✅
+5. Keep `invalidateEventRequestQueries` available as the fallback for status changes, deletes, and creates — but make it the exception, not the default. ✅
 
 **Files:**
 - `client/src/lib/queryClient.ts` (`invalidateEventRequestQueries`)
@@ -764,7 +758,10 @@ Each item is a self-contained work unit. You can pick one up cold, do it, ship i
 **Risk:** medium-high. Stale-data complaints could resurface if a patch misses a field. Mitigate by sitting-and-watching the deploy.
 
 **Notes after shipping:**
-_[fill in: what you noticed]_
+- Helpers live in `queryClient.ts`; ~20 PATCH callsites migrated across cards, dialogs, hooks, modals, and socket handler.
+- Sledgehammer intentionally kept for: create, delete, restore, Google Sheets sync, bulk import tools.
+- `updateScheduledFieldMutation` still has `onMutate` optimistic patch on correct list keys — Unit 2 cleanup candidate.
+- **Production smoke test pending** — run §Unit 1 smoke checklist before calling this fully stable.
 
 ---
 
