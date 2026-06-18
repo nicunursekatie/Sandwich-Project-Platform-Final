@@ -4,6 +4,7 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { ClientErrorLog } from '@/components/client-error-log';
 import { ApplicationErrorLog } from '@/components/application-error-log';
+import { UserIssueReportsLog } from '@/components/user-issue-reports-log';
 import { SystemHealthPanel } from '@/components/system-health-panel';
 import { DashboardDocumentSelector } from '@/components/dashboard-document-selector';
 import AdminOnboardingKudos from '@/components/admin-onboarding-kudos';
@@ -163,6 +164,7 @@ export default function AdminSettings() {
 
           <TabsContent value="error-logs" className="space-y-6">
             <SystemHealthPanel />
+            <UserIssueReportsLog />
             <ApplicationErrorLog />
             <ClientErrorLog />
           </TabsContent>

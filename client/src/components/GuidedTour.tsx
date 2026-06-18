@@ -12,7 +12,7 @@ import {
   Users,
   PlayCircle,
   CheckCircle,
-  Clock,
+  MessageSquareWarning,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ import {
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
+import { useIssueReport } from '@/contexts/issue-report-context';
 
 const CATEGORY_ICONS: Record<string, any> = {
   FolderOpen,
@@ -62,6 +63,7 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
   
   // Get user for permission checking
   const { user } = useAuth();
+  const { openReportDialog } = useIssueReport();
 
   // Auto-hide on scroll down, show on scroll up or after scroll stops
   useEffect(() => {
@@ -487,6 +489,22 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
                   )}
                 </div>
               </ScrollArea>
+
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start gap-2 text-amber-800 border-amber-200 hover:bg-amber-50"
+                  onClick={() => {
+                    setShowMenu(false);
+                    openReportDialog();
+                  }}
+                  data-testid="report-problem-button"
+                >
+                  <MessageSquareWarning className="h-4 w-4" />
+                  Report a problem
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>

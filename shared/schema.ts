@@ -217,6 +217,38 @@ export const applicationErrorLogs = pgTable(
   })
 );
 
+/** User-submitted issue reports from the in-app "Report a problem" flow. */
+export const userIssueReports = pgTable(
+  'user_issue_reports',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id').notNull(),
+    userEmail: varchar('user_email'),
+    userName: varchar('user_name'),
+    pagePath: text('page_path').notNull(),
+    pageLabel: varchar('page_label'),
+    whatDoing: text('what_doing').notNull(),
+    expectedOutcome: text('expected_outcome').notNull(),
+    actualOutcome: text('actual_outcome').notNull(),
+    recordType: varchar('record_type'),
+    recordId: varchar('record_id'),
+    recordLabel: varchar('record_label'),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    createdAtIdx: index('idx_user_issue_reports_created_at').on(table.createdAt),
+    userIdx: index('idx_user_issue_reports_user_id').on(table.userId),
+  })
+);
+
+export const insertUserIssueReportSchema = createInsertSchema(userIssueReports).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertUserIssueReport = z.infer<typeof insertUserIssueReportSchema>;
+export type UserIssueReport = typeof userIssueReports.$inferSelect;
+
 // Team member availability calendar system
 export const availabilitySlots = pgTable('availability_slots', {
   id: serial('id').primaryKey(),

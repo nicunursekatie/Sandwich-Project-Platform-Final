@@ -21,6 +21,7 @@ import { InstantMessageContainer } from '@/components/instant-message-container'
 import { ReviewerProvider } from '@/contexts/reviewer-context';
 import { ReviewerBlockedModal } from '@/components/reviewer-blocked-modal';
 import { FloatingViewsProvider } from '@/contexts/floating-views-context';
+import { IssueReportProvider } from '@/contexts/issue-report-context';
 
 import Dashboard from '@/pages/dashboard';
 import Landing from '@/pages/landing';
@@ -558,6 +559,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ReviewerProvider>
+          <IssueReportProvider>
           <ChatWindowsProvider>
             <FloatingViewsProvider>
               <InstantMessagingProvider>
@@ -572,6 +574,7 @@ function App() {
               </InstantMessagingProvider>
             </FloatingViewsProvider>
           </ChatWindowsProvider>
+          </IssueReportProvider>
         </ReviewerProvider>
       </QueryClientProvider>
     </ErrorBoundary>

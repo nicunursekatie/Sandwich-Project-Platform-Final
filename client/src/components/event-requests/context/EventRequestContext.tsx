@@ -7,6 +7,7 @@ import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
 import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
 import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
+import { useIssueReport } from '@/contexts/issue-report-context';
 
 interface EventRequestContextType {
   // Event requests data
@@ -259,6 +260,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   // context's value below so existing consumers don't need to change their
   // imports yet (the destination of PR 2 is to switch them over).
   const dialog = useEventDialogState();
+  const { setWorkingRecord } = useIssueReport();
 
   // Get role-based defaults for this user
   const roleDefaults = useMemo(() => {
@@ -398,6 +400,33 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     }
   }, [location, activeTab]);
   const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
+
+  // Pre-fill issue report context when working on event requests
+  useEffect(() => {
+    const sectionFromUrl = new URLSearchParams(window.location.search).get('section');
+    if (sectionFromUrl !== 'event-requests') return;
+
+    const tabLabel = activeTab.replace(/_/g, ' ');
+    const event = dialog.selectedEventRequest;
+    if (event?.id) {
+      setWorkingRecord({
+        recordType: 'event_request',
+        recordId: String(event.id),
+        recordLabel: event.organizationName || undefined,
+        pageLabel: `Event Management — ${tabLabel}`,
+      });
+    } else {
+      setWorkingRecord({
+        pageLabel: `Event Management — ${tabLabel}`,
+      });
+    }
+  }, [
+    activeTab,
+    dialog.selectedEventRequest?.id,
+    dialog.selectedEventRequest?.organizationName,
+    setWorkingRecord,
+  ]);
+
   const [confirmationFilter, setConfirmationFilter] = useState<'all' | 'confirmed' | 'requested'>(roleDefaults.defaultConfirmationFilter);
   const [sortBy, setSortBy] = useState<'event_date_desc' | 'event_date_asc' | 'organization_asc' | 'organization_desc' | 'created_date_desc' | 'created_date_asc'>(roleDefaults.defaultSort);
 

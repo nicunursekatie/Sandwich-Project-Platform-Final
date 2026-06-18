@@ -106,6 +106,7 @@ import {
 } from '../middleware';
 import { logger } from '../utils/production-safe-logger';
 import { createErrorLogsRoutes } from './error-logs';
+import { createUserIssueReportsRoutes } from './user-issue-reports';
 import workLogsRouter from './work-logs';
 import shoutoutsRouter from './shoutouts';
 import { RouterDependencies } from '../types';
@@ -959,6 +960,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     errorLogsRouter
   );
   router.use('/api/error-logs', createErrorHandler('error-logs'));
+
+  const userIssueReportsRouter = createUserIssueReportsRoutes({
+    isAuthenticated: deps.isAuthenticated,
+    requirePermission: deps.requirePermission,
+  });
+  router.use(
+    '/api/user-issue-reports',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    userIssueReportsRouter
+  );
+  router.use('/api/user-issue-reports', createErrorHandler('user-issue-reports'));
 
   // Work log time tracking endpoints
   router.use(
