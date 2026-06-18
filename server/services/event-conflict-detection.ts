@@ -577,6 +577,76 @@ export async function getConflictsForDate(date: Date): Promise<{
   }
 }
 
+export interface SameDayVanRequest {
+  id: number;
+  organizationName: string | null;
+  status: string;
+  vanDriverNeeded: boolean;
+  vanNeededLikely: boolean;
+  eventStartTime: string | null;
+}
+
+/**
+ * Other in-process or scheduled events on the same effective date that also
+ * need (or may need) the org van. Uses COALESCE(scheduledEventDate, desiredEventDate)
+ * so in-process cards with only a desired date still match correctly.
+ */
+export async function getOtherVanRequestsOnDate(
+  date: Date,
+  excludeEventId?: number
+): Promise<{ otherEvents: SameDayVanRequest[] }> {
+  const dateStr = getDateString(date);
+  const startOfDay = new Date(dateStr + 'T00:00:00.000Z');
+  const endOfDay = new Date(dateStr + 'T23:59:59.999Z');
+  const effectiveDate = sql`COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate})`;
+
+  try {
+    const conditions = [
+      gte(effectiveDate, startOfDay),
+      lte(effectiveDate, endOfDay),
+      or(
+        eq(eventRequests.status, 'in_process'),
+        eq(eventRequests.status, 'scheduled'),
+        eq(eventRequests.status, 'rescheduled')
+      ),
+      or(
+        eq(eventRequests.vanDriverNeeded, true),
+        eq(eventRequests.vanNeededLikely, true)
+      ),
+    ];
+
+    if (excludeEventId) {
+      conditions.push(ne(eventRequests.id, excludeEventId));
+    }
+
+    const rows = await db
+      .select({
+        id: eventRequests.id,
+        organizationName: eventRequests.organizationName,
+        status: eventRequests.status,
+        vanDriverNeeded: eventRequests.vanDriverNeeded,
+        vanNeededLikely: eventRequests.vanNeededLikely,
+        eventStartTime: eventRequests.eventStartTime,
+        selfTransport: eventRequests.selfTransport,
+        isDhlVan: eventRequests.isDhlVan,
+      })
+      .from(eventRequests)
+      .where(and(...conditions));
+
+    const otherEvents: SameDayVanRequest[] = rows
+      .filter((row) => row.selfTransport !== true && row.isDhlVan !== true)
+      .map(({ selfTransport: _st, isDhlVan: _dhl, ...event }) => ({
+        ...event,
+        vanDriverNeeded: event.vanDriverNeeded === true,
+      }));
+
+    return { otherEvents };
+  } catch (error) {
+    logger.error('Error getting other van requests for date:', error);
+    return { otherEvents: [] };
+  }
+}
+
 /**
  * Get weekly capacity summary for a date range.
  * Returns sandwich totals and event counts per week (Mon–Sun).

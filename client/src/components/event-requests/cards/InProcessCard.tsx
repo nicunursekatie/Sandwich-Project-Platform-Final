@@ -620,6 +620,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             eventRequestId={request.id}
             vanDriverNeeded={request.vanDriverNeeded}
             vanNeededLikely={(request as any).vanNeededLikely}
+            eventDate={displayDate}
             canEdit={!!canEdit}
             mode="badge"
           />

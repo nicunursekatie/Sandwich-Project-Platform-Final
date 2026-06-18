@@ -15,7 +15,7 @@
  * is for the in-process tab where the user is still triaging logistics.
  */
 import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,7 +32,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Truck, HelpCircle } from 'lucide-react';
+import { Truck, HelpCircle, AlertTriangle } from 'lucide-react';
 import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +40,8 @@ interface VanNeededBadgeAndButtonProps {
   eventRequestId: number;
   vanDriverNeeded: boolean | null | undefined;
   vanNeededLikely: boolean | null | undefined;
+  /** Effective event date — used to show other same-day van requests on the badge. */
+  eventDate?: Date | string | null;
   canEdit?: boolean;
   /**
    * When true, skip the Possibly/For sure dialog and the "likely" state entirely.
@@ -62,16 +64,84 @@ interface VanNeededBadgeAndButtonProps {
 
 type VanChoice = 'likely' | 'confirmed';
 
+interface SameDayVanRequest {
+  id: number;
+  organizationName: string | null;
+  status: string;
+  vanDriverNeeded: boolean;
+  vanNeededLikely: boolean;
+  eventStartTime: string | null;
+}
+
+function normalizeDateStr(date: Date | string | null | undefined): string | null {
+  if (!date) return null;
+  return typeof date === 'string' ? date.split('T')[0] : date.toISOString().split('T')[0];
+}
+
+function formatStatusLabel(status: string): string {
+  if (status === 'in_process') return 'In Process';
+  if (status === 'rescheduled') return 'Rescheduled';
+  return 'Scheduled';
+}
+
+function useSameDayVanRequests(
+  eventDate: Date | string | null | undefined,
+  eventRequestId: number,
+  enabled: boolean
+) {
+  const dateStr = normalizeDateStr(eventDate);
+
+  return useQuery<{ otherEvents: SameDayVanRequest[] }>({
+    queryKey: ['van-requests-for-date', dateStr, eventRequestId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ date: dateStr! });
+      params.set('excludeEventId', String(eventRequestId));
+      const response = await fetch(`/api/event-requests/van-requests-for-date?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch same-day van requests');
+      return response.json();
+    },
+    enabled: enabled && !!dateStr,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+function SameDayVanTooltipLines({ otherEvents }: { otherEvents: SameDayVanRequest[] }) {
+  if (otherEvents.length === 0) return null;
+
+  return (
+    <div className="mt-2 pt-2 border-t border-border/60">
+      <p className="text-xs font-medium text-amber-700">
+        {otherEvents.length} other event{otherEvents.length !== 1 ? 's' : ''} on this date also need{otherEvents.length === 1 ? 's' : ''} a van:
+      </p>
+      <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+        {otherEvents.map((event) => (
+          <li key={event.id}>
+            {event.organizationName || 'Unknown org'} ({formatStatusLabel(event.status)}
+            {event.vanDriverNeeded ? '' : ', possibly'}
+            {event.eventStartTime ? ` · ${event.eventStartTime}` : ''})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function VanNeededBadgeAndButton({
   eventRequestId,
   vanDriverNeeded,
   vanNeededLikely,
+  eventDate,
   canEdit = true,
   simpleToggle = false,
   mode = 'full',
 }: VanNeededBadgeAndButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
+  const showSameDayContext = !!(vanDriverNeeded || vanNeededLikely) && mode !== 'button';
+  const { data: sameDayData } = useSameDayVanRequests(eventDate, eventRequestId, showSameDayContext);
+  const otherVanEvents = sameDayData?.otherEvents ?? [];
+  const hasSameDayVanRequests = otherVanEvents.length > 0;
 
   const updateMutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
@@ -114,15 +184,22 @@ export function VanNeededBadgeAndButton({
             <TooltipTrigger asChild>
               <Badge
                 onClick={() => canEdit && clearVan()}
-                className={`inline-flex items-center gap-1 whitespace-nowrap bg-[#007E8C] text-white border-transparent ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+                className={`inline-flex items-center gap-1 whitespace-nowrap bg-[#007E8C] text-white border-transparent ${hasSameDayVanRequests ? 'ring-2 ring-amber-400 ring-offset-1' : ''} ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
                 data-testid="badge-van-needed"
               >
                 <Truck className="w-3 h-3" />
                 Van Needed
+                {hasSameDayVanRequests && (
+                  <>
+                    <AlertTriangle className="w-3 h-3 text-amber-200" />
+                    <span className="text-[10px] font-semibold">+{otherVanEvents.length}</span>
+                  </>
+                )}
               </Badge>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent className="max-w-xs">
               {canEdit ? <p>A van is needed for this event. Click to clear.</p> : <p>A van is needed for this event.</p>}
+              <SameDayVanTooltipLines otherEvents={otherVanEvents} />
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -155,15 +232,22 @@ export function VanNeededBadgeAndButton({
           <TooltipTrigger asChild>
             <Badge
               onClick={() => canEdit && setDialogOpen(true)}
-              className={`inline-flex items-center gap-1 whitespace-nowrap bg-[#007E8C] text-white border-transparent ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+              className={`inline-flex items-center gap-1 whitespace-nowrap bg-[#007E8C] text-white border-transparent ${hasSameDayVanRequests ? 'ring-2 ring-amber-400 ring-offset-1' : ''} ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
               data-testid="badge-van-needed"
             >
               <Truck className="w-3 h-3" />
               Van Needed
+              {hasSameDayVanRequests && (
+                <>
+                  <AlertTriangle className="w-3 h-3 text-amber-200" />
+                  <span className="text-[10px] font-semibold">+{otherVanEvents.length}</span>
+                </>
+              )}
             </Badge>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="max-w-xs">
             {canEdit ? <p>A van has been confirmed as needed. Click to change.</p> : <p>A van is needed for this event.</p>}
+            <SameDayVanTooltipLines otherEvents={otherVanEvents} />
           </TooltipContent>
         </Tooltip>
 
@@ -189,16 +273,23 @@ export function VanNeededBadgeAndButton({
             <Badge
               variant="outline"
               onClick={() => canEdit && setDialogOpen(true)}
-              className={`inline-flex items-center gap-1 whitespace-nowrap bg-amber-50 text-amber-700 border-amber-300 ${canEdit ? 'cursor-pointer hover:bg-amber-100' : ''}`}
+              className={`inline-flex items-center gap-1 whitespace-nowrap bg-amber-50 text-amber-700 border-amber-300 ${hasSameDayVanRequests ? 'ring-2 ring-red-300 ring-offset-1' : ''} ${canEdit ? 'cursor-pointer hover:bg-amber-100' : ''}`}
               data-testid="badge-van-likely-needed"
             >
               <Truck className="w-3 h-3" />
               Van Possibly Needed
+              {hasSameDayVanRequests && (
+                <>
+                  <AlertTriangle className="w-3 h-3 text-red-600" />
+                  <span className="text-[10px] font-semibold">+{otherVanEvents.length}</span>
+                </>
+              )}
             </Badge>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="max-w-xs">
             <p>Flagged as possibly needing a van. You'll be asked about it when scheduling, but you can leave it unresolved if you're still not sure.</p>
             {canEdit && <p className="text-xs text-muted-foreground mt-1">Click to change.</p>}
+            <SameDayVanTooltipLines otherEvents={otherVanEvents} />
           </TooltipContent>
         </Tooltip>
 

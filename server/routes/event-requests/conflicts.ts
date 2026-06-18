@@ -87,6 +87,38 @@ router.get('/conflicts-for-date', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * Other events on the same date also requesting the org van (in process or scheduled).
+ * GET /api/event-requests/van-requests-for-date?date=2024-01-15&excludeEventId=123
+ */
+router.get('/van-requests-for-date', isAuthenticated, async (req, res) => {
+  try {
+    const dateStr = req.query.date as string;
+    if (!dateStr) {
+      return res.status(400).json({ error: 'Date parameter required' });
+    }
+
+    const excludeEventId = req.query.excludeEventId
+      ? parseInt(req.query.excludeEventId as string, 10)
+      : undefined;
+
+    const { getOtherVanRequestsOnDate } = await import('../../services/event-conflict-detection');
+    const date = new Date(dateStr);
+
+    if (isNaN(date.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+
+    const result = await getOtherVanRequestsOnDate(date, excludeEventId);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error getting van requests for date:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
  * Get weekly capacity summary for a date range
  * GET /api/event-requests/weekly-capacity?start=2026-03-01&end=2026-04-30
  *
