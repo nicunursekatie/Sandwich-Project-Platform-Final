@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -29,6 +30,9 @@ export const NewRequestsTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -56,7 +60,7 @@ export const NewRequestsTab: React.FC = () => {
     setReasonDialogEventRequest,
     setShowNonEventDialog,
     setNonEventDialogEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const newRequests = filterRequestsByStatus('new');
 

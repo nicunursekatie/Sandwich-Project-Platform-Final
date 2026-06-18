@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -45,6 +46,11 @@ export const MyAssignmentsTab: React.FC = () => {
 
   const {
     isLoading,
+    myAssignmentsStatusFilter,
+    setMyAssignmentsStatusFilter,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -68,8 +74,6 @@ export const MyAssignmentsTab: React.FC = () => {
     setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-    myAssignmentsStatusFilter,
-    setMyAssignmentsStatusFilter,
 
     // Inline editing states for scheduled events
     editingScheduledId,
@@ -102,7 +106,7 @@ export const MyAssignmentsTab: React.FC = () => {
     setReasonDialogEventRequest,
     setShowNonEventDialog,
     setNonEventDialogEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   // Helper functions for ScheduledCardEnhanced
   const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet' | 'showOnVolunteerHub', currentValue: boolean) => {

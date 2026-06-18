@@ -2,6 +2,7 @@ import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';
 import type { EventRequest } from '@shared/schema';
@@ -21,6 +22,8 @@ export const useEventAssignments = () => {
   const { updateEventRequestMutation, assignRecipientsMutation } = useEventMutations();
   const {
     eventRequests,
+  } = useEventRequestContext();
+  const {
     setShowAssignmentDialog,
     setAssignmentType,
     setAssignmentEventId,
@@ -28,7 +31,7 @@ export const useEventAssignments = () => {
     setEditingAssignmentPersonId,
     setSelectedAssignees,
     setIsVanDriverAssignment,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   // Helper function to safely parse PostgreSQL arrays
   const parsePostgresArray = (assignments: any): string[] => {

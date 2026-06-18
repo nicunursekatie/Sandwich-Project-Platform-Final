@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -21,6 +22,9 @@ export const StalledTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -30,7 +34,7 @@ export const StalledTab: React.FC = () => {
     setLogContactEventRequest,
     setShowDeclineDialog,
     setReasonDialogEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const stalledRequests = filterRequestsByStatus('stalled');
 

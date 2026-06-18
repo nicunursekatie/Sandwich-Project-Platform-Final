@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -89,6 +90,9 @@ export const ScheduledTab: React.FC = () => {
   const {
     eventRequests,
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -130,7 +134,7 @@ export const ScheduledTab: React.FC = () => {
     setInlineRangeMax,
     inlineRangeType,
     setInlineRangeType,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   // Include both 'scheduled' and 'rescheduled' events on the Scheduled tab
   const scheduledOnly = filterRequestsByStatus('scheduled');

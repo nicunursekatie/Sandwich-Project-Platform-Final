@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useErrorToast } from '@/hooks/use-error-toast';
 import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { logger } from '@/lib/logger';
 
 export const useEventMutations = () => {
@@ -25,7 +26,7 @@ export const useEventMutations = () => {
     setEditingScheduledId,
     setEditingField,
     setEditingValue,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const eventReportContext = () =>
     selectedEventRequest?.id

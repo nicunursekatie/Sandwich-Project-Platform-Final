@@ -6,6 +6,7 @@ import {
   EventRequestProvider,
   useEventRequestContext,
 } from './context/EventRequestContext';
+import { useEventDialogState } from './context/EventDialogContext';
 import { NewRequestsTab } from './tabs/NewRequestsTab';
 import { InProcessTab } from './tabs/InProcessTab';
 import { ScheduledTab } from './tabs/ScheduledTab';
@@ -143,7 +144,9 @@ const EventRequestsManagementContent: React.FC = () => {
     statusCountsLoading,
     quickFilter,
     setQuickFilter,
+  } = useEventRequestContext();
 
+  const {
     // Dialog states
     showEventDetails,
     setShowEventDetails,
@@ -247,7 +250,7 @@ const EventRequestsManagementContent: React.FC = () => {
     setScheduleCallTime,
     followUpNotes,
     setFollowUpNotes,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   // Fetch ALL active events (scheduled + in_process + rescheduled) for dashboard cards
   // This query is independent of the active tab, ensuring driver counts are always accurate
