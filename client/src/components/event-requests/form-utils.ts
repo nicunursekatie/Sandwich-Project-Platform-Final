@@ -3,11 +3,10 @@
  *
  * Extracted from EventSchedulingForm.tsx to:
  * 1. Eliminate duplication in form data serialization
- * 2. Make change detection logic testable
+ * 2. Make payload-building / serialization logic testable
  * 3. Simplify the performSubmit function
  */
 
-import { FIELD_MAPPINGS } from './fieldConfig';
 import type { EventFormData } from './form-sections/types';
 export { findMismatchedSavedFields, getDroppedServerFields } from '@/lib/event-save-verification';
 
@@ -44,18 +43,29 @@ export function buildEventDataForServer(
 ): Record<string, any> {
   const { mode, hasEventRequest, eventRequestStatus, sandwichMode, actualSandwichMode, fieldOverrides } = options;
 
+  // Resolve the effective status once so the status field and the scheduled-date
+  // coupling stay consistent. (Schedule mode defaults to 'scheduled'.)
+  const resolvedStatus = !hasEventRequest
+    ? (formData.status || 'new')
+    : mode === 'schedule'
+      ? (formData.status || 'scheduled')
+      : (formData.status || eventRequestStatus || 'new');
+
   const eventData: Record<string, any> = {
-    // Status logic: different handling per mode
-    ...(hasEventRequest && mode === 'schedule' ? { status: formData.status || 'scheduled' } : {}),
-    ...(!hasEventRequest ? { status: formData.status || 'new' } : {}),
-    ...(hasEventRequest && mode === 'edit' ? { status: formData.status || eventRequestStatus || 'new' } : {}),
+    // Status logic: different handling per mode (all resolve via resolvedStatus)
+    ...(hasEventRequest && mode === 'schedule' ? { status: resolvedStatus } : {}),
+    ...(!hasEventRequest ? { status: resolvedStatus } : {}),
+    ...(hasEventRequest && mode === 'edit' ? { status: resolvedStatus } : {}),
 
     // Date fields - always include desiredEventDate so it can be set or cleared intentionally
     desiredEventDate: serializeDateToISO(formData.eventDate),
     dateFlexible: formData.dateFlexible,
     backupDates: formData.backupDates.filter(d => d).map(d => serializeDateToISO(d)),
-    // In schedule mode OR when status is 'scheduled', always sync scheduledEventDate with the event date
-    ...(formData.status === 'scheduled' || mode === 'schedule'
+    // Attach the confirmed scheduled date only when the resolved status is
+    // 'scheduled'. (Previously also attached whenever mode === 'schedule', which
+    // over-included it for non-scheduled picks like Standby and required a
+    // downstream strip in detectChangedFields — removed with full-form save.)
+    ...(resolvedStatus === 'scheduled'
       ? { scheduledEventDate: serializeDateToISO(formData.eventDate) }
       : {}),
 
@@ -207,111 +217,6 @@ export function buildEventDataForServer(
   eventData.assignedRecipientIds = formData.assignedRecipientIds || [];
 
   return eventData;
-}
-
-/**
- * Normalize a date string for comparison.
- * Extracts YYYY-MM-DD from ISO strings.
- */
-function normalizeDateForCompare(value: any): string | null {
-  if (!value) return null;
-  if (typeof value !== 'string') return String(value);
-  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : value;
-}
-
-/** Date field names that need special comparison logic (both server and client names) */
-const DATE_COMPARE_FIELDS = [
-  'desiredEventDate', 'eventDate', 'scheduledEventDate', 'toolkitSentDate',
-  'socialMediaPostRequestedDate', 'socialMediaPostCompletedDate', 'actualSandwichCountRecordedDate',
-  'followUpOneDayDate', 'followUpOneMonthDate', 'standbyExpectedDate',
-];
-
-/**
- * Detect which fields have changed between the original form data and the
- * new server payload. Returns only the changed fields.
- *
- * This is used to send minimal PATCH payloads, preventing accidental
- * overwrites of fields the user didn't touch.
- */
-export function detectChangedFields(
-  eventData: Record<string, any>,
-  originalFormData: Record<string, any>,
-  mode: 'schedule' | 'edit' | 'create'
-): Record<string, any> {
-  const filteredEventData: Record<string, any> = {};
-
-  // Extended mapping: scheduledEventDate maps back to eventDate in the form
-  // since the form uses eventDate for both desired and scheduled dates
-  const getOriginalFieldKey = (serverKey: string): string => {
-    if (serverKey === 'scheduledEventDate') return 'eventDate';
-    return (FIELD_MAPPINGS.serverToClient as Record<string, string>)[serverKey] || serverKey;
-  };
-
-  const hasChanged = (key: string, newValue: any): boolean => {
-    const formDataKey = getOriginalFieldKey(key);
-    const originalValue = originalFormData[formDataKey];
-
-    // Array comparison
-    if (Array.isArray(newValue) && Array.isArray(originalValue)) {
-      const normalizedNew = newValue.map(v => normalizeDateForCompare(v));
-      const normalizedOrig = originalValue.map(v => normalizeDateForCompare(v));
-      return JSON.stringify(normalizedNew) !== JSON.stringify(normalizedOrig);
-    }
-
-    // Date field comparison - use normalization so "2024-03-15" matches "2024-03-15T00:00:00.000Z"
-    if (DATE_COMPARE_FIELDS.includes(key) || DATE_COMPARE_FIELDS.includes(formDataKey)) {
-      return normalizeDateForCompare(newValue) !== normalizeDateForCompare(originalValue);
-    }
-
-    // Null/empty/undefined equivalence
-    const normalizedNew = newValue === '' || newValue === null || newValue === undefined ? null : newValue;
-    const normalizedOrig = originalValue === '' || originalValue === null || originalValue === undefined ? null : originalValue;
-
-    return normalizedNew !== normalizedOrig;
-  };
-
-  // Boolean resource flags that must ALWAYS be included in the payload.
-  // These are critical checkboxes (van driver needed, DHL van, self-transport)
-  // where silent omission causes the server to leave the old value in place.
-  // Sending the current form value every time is safe and cheap.
-  const ALWAYS_INCLUDE_FIELDS = new Set(['vanDriverNeeded', 'isDhlVan', 'selfTransport']);
-
-  // Include fields that actually changed, plus the always-include booleans
-  Object.keys(eventData).forEach(key => {
-    if (ALWAYS_INCLUDE_FIELDS.has(key) || hasChanged(key, eventData[key])) {
-      filteredEventData[key] = eventData[key];
-    }
-  });
-
-  // Schedule mode safety: always ensure status and date are present.
-  // Status defaults to 'scheduled' (the whole point of this dialog) but respects
-  // an explicit choice the user made in the dropdown (e.g. Standby) rather than
-  // silently forcing 'scheduled'.
-  if (mode === 'schedule') {
-    const resolvedStatus = eventData.status || 'scheduled';
-    filteredEventData.status = resolvedStatus;
-    if (resolvedStatus === 'scheduled') {
-      // Only attach the scheduled date when the event is actually being scheduled.
-      const schedDate = eventData.scheduledEventDate || eventData.desiredEventDate;
-      if (schedDate) {
-        filteredEventData.scheduledEventDate = schedDate;
-      }
-    } else {
-      // The dialog opens in schedule mode, so buildEventDataForServer always populates
-      // scheduledEventDate. If the user instead picks a non-scheduled status (e.g.
-      // Standby) AND changed the date, the change-detection loop above would have added
-      // scheduledEventDate to the payload — sending a confirmed scheduled date alongside
-      // a non-scheduled status. Strip it so the status and date stay consistent.
-      delete filteredEventData.scheduledEventDate;
-    }
-    // Always include desiredEventDate if it has a value, so the date is never lost.
-    if (eventData.desiredEventDate) {
-      filteredEventData.desiredEventDate = eventData.desiredEventDate;
-    }
-  }
-
-  return filteredEventData;
 }
 
 /**

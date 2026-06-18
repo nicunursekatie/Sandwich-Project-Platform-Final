@@ -5,7 +5,6 @@ import {
   findMismatchedSavedFields,
   getDroppedServerFields,
   buildEventDataForServer,
-  detectChangedFields,
 } from '../form-utils';
 
 const baseFormData: any = {
@@ -22,83 +21,73 @@ const baseFormData: any = {
   volunteersNeeded: 0,
 };
 
-function buildSchedulePayload(formStatus: string) {
-  const formData = { ...baseFormData, status: formStatus };
-  const original = { ...baseFormData, status: 'in_process' };
-  const eventData = buildEventDataForServer(formData, {
+// Full-form save (B5) sends the entire buildEventDataForServer() output every
+// time, so these assertions check the builder directly. The schedule-mode
+// status/date consistency that used to live in detectChangedFields now lives in
+// buildEventDataForServer: the scheduled date is attached only when the resolved
+// status is 'scheduled'.
+function buildScheduleData(formStatus: string | undefined, eventDate?: string) {
+  const formData: any = { ...baseFormData, ...(eventDate ? { eventDate } : {}) };
+  if (formStatus === undefined) {
+    delete formData.status;
+  } else {
+    formData.status = formStatus;
+  }
+  return buildEventDataForServer(formData, {
     mode: 'schedule',
     hasEventRequest: true,
     eventRequestStatus: 'in_process',
     sandwichMode: 'total',
     actualSandwichMode: 'total',
   });
-  return detectChangedFields(eventData, original, 'schedule');
 }
 
-describe('Mark Scheduled status handling', () => {
+describe('Mark Scheduled status handling (full-form save)', () => {
   it('defaults the saved status to "scheduled" and includes the scheduled date', () => {
-    const payload = buildSchedulePayload('scheduled');
+    const payload = buildScheduleData('scheduled');
     expect(payload.status).toBe('scheduled');
     expect(payload.scheduledEventDate).toBe('2026-06-15');
+    expect(payload.desiredEventDate).toBe('2026-06-15');
   });
 
-  it('respects an explicit non-scheduled choice (e.g. Standby) instead of forcing scheduled', () => {
-    const payload = buildSchedulePayload('standby');
+  it('respects an explicit non-scheduled choice (e.g. Standby) and attaches no scheduled date', () => {
+    const payload = buildScheduleData('standby');
     expect(payload.status).toBe('standby');
-    // No scheduled date should be attached when the user is not actually scheduling.
+    // No confirmed scheduled date when the user is not actually scheduling.
     expect(payload.scheduledEventDate).toBeUndefined();
+    // The desired date still flows through.
+    expect(payload.desiredEventDate).toBe('2026-06-15');
   });
 
   it('does NOT leak scheduledEventDate when status is non-scheduled AND the date changed', () => {
-    // Regression: opening "Mark Scheduled", picking Standby, and ALSO changing the date.
-    // The form is in schedule mode so scheduledEventDate is populated, and because the
-    // date differs from the original, change-detection would include it. It must be
-    // stripped so a confirmed scheduled date isn't sent alongside a standby status.
-    const formData = { ...baseFormData, status: 'standby', eventDate: '2026-07-20' };
-    const original = { ...baseFormData, status: 'in_process', eventDate: '2026-06-15' };
-    const eventData = buildEventDataForServer(formData, {
-      mode: 'schedule',
-      hasEventRequest: true,
-      eventRequestStatus: 'in_process',
-      sandwichMode: 'total',
-      actualSandwichMode: 'total',
-    });
-    const payload = detectChangedFields(eventData, original, 'schedule');
-
+    // Open "Mark Scheduled", pick Standby, and ALSO change the date. The builder
+    // must not stamp a confirmed scheduled date alongside a standby status, but
+    // the desired date change must still flow through.
+    const payload = buildScheduleData('standby', '2026-07-20');
     expect(payload.status).toBe('standby');
     expect(payload.scheduledEventDate).toBeUndefined();
-    // The desired date should still flow through so the date change isn't lost.
     expect(payload.desiredEventDate).toBe('2026-07-20');
   });
 
   it('still sends scheduledEventDate when scheduling AND the date changed', () => {
-    const formData = { ...baseFormData, status: 'scheduled', eventDate: '2026-07-20' };
-    const original = { ...baseFormData, status: 'in_process', eventDate: '2026-06-15' };
-    const eventData = buildEventDataForServer(formData, {
-      mode: 'schedule',
-      hasEventRequest: true,
-      eventRequestStatus: 'in_process',
-      sandwichMode: 'total',
-      actualSandwichMode: 'total',
-    });
-    const payload = detectChangedFields(eventData, original, 'schedule');
-
+    const payload = buildScheduleData('scheduled', '2026-07-20');
     expect(payload.status).toBe('scheduled');
     expect(payload.scheduledEventDate).toBe('2026-07-20');
   });
 
-  it('falls back to "scheduled" when the form has no status set', () => {
-    const formData = { ...baseFormData };
-    delete formData.status;
-    const eventData = buildEventDataForServer(formData, {
-      mode: 'schedule',
-      hasEventRequest: true,
-      eventRequestStatus: 'in_process',
-      sandwichMode: 'total',
-      actualSandwichMode: 'total',
-    });
-    const payload = detectChangedFields(eventData, { ...baseFormData, status: 'in_process' }, 'schedule');
+  it('falls back to "scheduled" (and attaches the date) when the form has no status set', () => {
+    const payload = buildScheduleData(undefined);
     expect(payload.status).toBe('scheduled');
+    expect(payload.scheduledEventDate).toBe('2026-06-15');
+  });
+
+  it('always includes the critical van/transport booleans (no longer change-detected)', () => {
+    // Previously these relied on ALWAYS_INCLUDE_FIELDS to avoid being dropped.
+    // Full-form save sends them unconditionally as part of the built payload.
+    const payload = buildScheduleData('scheduled');
+    expect(payload).toHaveProperty('vanDriverNeeded');
+    expect(payload).toHaveProperty('isDhlVan');
+    expect(payload).toHaveProperty('selfTransport');
   });
 });
 
