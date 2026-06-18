@@ -140,6 +140,45 @@ interface Tag {
   usageCount: number;
 }
 
+/** Fallback paths when a seeded resource lost its URL in the DB (e.g. after a bad edit). */
+const STATIC_RESOURCE_URLS: Record<string, string> = {
+  'Sandwich Sign-In Form':
+    '/attached_assets/Sandwich Project - Sign In Sheet correct qrs.pdf',
+};
+
+function encodeAssetPath(path: string): string {
+  if (!path.startsWith('/')) return path;
+  return path
+    .split('/')
+    .map((segment, index) => (index === 0 || !segment ? segment : encodeURIComponent(segment)))
+    .join('/');
+}
+
+function getResourceOpenUrl(item: Resource): string | null {
+  const { type, documentId, url, title } = item.resource;
+
+  if (type === 'file' && documentId) {
+    return `/api/documents/${documentId}/preview`;
+  }
+
+  if (url) {
+    if (url.startsWith('/dashboard') || url.startsWith('?')) {
+      return url.startsWith('?') ? `/dashboard${url}` : url;
+    }
+    if (url.startsWith('/')) {
+      return encodeAssetPath(url);
+    }
+    return url;
+  }
+
+  const fallback = STATIC_RESOURCE_URLS[title];
+  if (fallback) {
+    return encodeAssetPath(fallback);
+  }
+
+  return null;
+}
+
 // Sandwich Assembly Guides Component — backed by /api/host-resources.
 // Public users see + download/share. Admins (admin or super_admin) can upload
 // new guides, edit titles/descriptions, and delete them via inline controls.
@@ -760,22 +799,55 @@ export function Resources() {
 
   // Open resource
   const openResource = (resource: Resource) => {
-    trackAccess(resource.resource.id);
+    const openUrl = getResourceOpenUrl(resource);
 
-    if (resource.resource.type === 'file' && resource.resource.documentId) {
-      window.open(`/api/documents/${resource.resource.documentId}/preview`, '_blank');
-    } else if (resource.resource.url) {
-      window.open(resource.resource.url, '_blank');
+    if (!openUrl) {
+      toast({
+        title: 'Unable to open',
+        description:
+          'This resource has no file or link attached. An admin can re-link it in Edit Resource.',
+        variant: 'destructive',
+      });
+      return;
     }
+
+    if (openUrl.startsWith('/dashboard')) {
+      window.location.href = openUrl;
+    } else {
+      const opened = window.open(openUrl, '_blank', 'noopener,noreferrer');
+      if (!opened) {
+        toast({
+          title: 'Popup blocked',
+          description: 'Your browser blocked the new tab. Allow popups for this site and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    trackAccess(resource.resource.id);
   };
 
   // Copy link
   const copyLink = async (resource: Resource) => {
-    let link = '';
+    const openUrl = getResourceOpenUrl(resource);
+    let link = openUrl || '';
+
     if (resource.resource.type === 'file' && resource.resource.documentId) {
       link = `${window.location.origin}/api/documents/${resource.resource.documentId}/download`;
-    } else if (resource.resource.url) {
-      link = resource.resource.url;
+    } else if (openUrl?.startsWith('/')) {
+      link = `${window.location.origin}${openUrl}`;
+    } else if (openUrl) {
+      link = openUrl;
+    }
+
+    if (!link) {
+      toast({
+        title: 'No link to copy',
+        description: 'This resource has no file or URL attached.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
@@ -820,6 +892,10 @@ export function Resources() {
       if (item.resource.type === 'file' && item.resource.documentId && canPreviewInIframe() && !previewError) {
         return `/api/documents/${item.resource.documentId}/preview`;
       }
+      const staticUrl = getResourceOpenUrl(item);
+      if (staticUrl?.startsWith('/') && staticUrl.toLowerCase().endsWith('.pdf') && !previewError) {
+        return staticUrl;
+      }
       return null;
     };
 
@@ -828,7 +904,11 @@ export function Resources() {
     return (
       <div
         className={`border ${category.borderColor} ${category.bgColor} rounded-lg overflow-hidden hover:shadow-md transition-shadow relative flex flex-col`}
-        data-testid={`resource-card-${item.resource.id}`}
+        data-testid={
+          item.resource.title === 'Sandwich Sign-In Form'
+            ? 'document-sandwich-signin-form'
+            : `resource-card-${item.resource.id}`
+        }
       >
         {/* Pinned badge */}
         {item.resource.isPinnedGlobal && (
@@ -838,9 +918,10 @@ export function Resources() {
         )}
 
         {/* Document Preview */}
-        {previewUrl && (
+            {previewUrl && (
           <div className="w-full h-48 bg-gray-100 relative overflow-hidden group cursor-pointer" onClick={() => openResource(item)}>
-            {item.document?.mimeType === 'application/pdf' ? (
+            {(item.document?.mimeType === 'application/pdf' ||
+              previewUrl.toLowerCase().endsWith('.pdf')) ? (
               <object
                 data={`${previewUrl}#toolbar=0&navpanes=0&view=FitH`}
                 type="application/pdf"
@@ -941,6 +1022,7 @@ export function Resources() {
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => openResource(item)}
               className="flex-1 bg-[#236383] text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#007E8C] transition-colors flex items-center justify-center gap-2"
             >

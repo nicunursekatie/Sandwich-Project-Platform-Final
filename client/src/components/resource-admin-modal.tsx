@@ -174,19 +174,30 @@ export function ResourceAdminModal({
       }
 
       // Create or update resource
-      const resourceData = {
+      const resourceData: Record<string, unknown> = {
         title: formData.title,
         description: formData.description,
         type: formData.type,
         category: formData.category,
-        url: formData.type !== 'file' ? formData.url : null,
-        documentId,
         icon: formData.icon || null,
         iconColor: formData.iconColor || null,
         isPinnedGlobal: formData.isPinnedGlobal,
         pinnedOrder: formData.isPinnedGlobal ? formData.pinnedOrder : null,
         tags: formData.tags,
       };
+
+      if (existingResource) {
+        // PUT: don't wipe url/documentId when editing metadata without a new file upload
+        if (formData.type === 'link' || formData.type === 'google_drive') {
+          resourceData.url = formData.url;
+        } else if (documentId) {
+          resourceData.documentId = documentId;
+          resourceData.url = null;
+        }
+      } else {
+        resourceData.url = formData.type !== 'file' ? formData.url : null;
+        resourceData.documentId = documentId;
+      }
 
       const url = existingResource
         ? `/api/resources/${existingResource.resource.id}`

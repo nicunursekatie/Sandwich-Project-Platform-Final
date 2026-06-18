@@ -543,7 +543,9 @@ resourcesRouter.put(
         title,
         description,
         category,
+        type,
         url,
+        documentId,
         icon,
         iconColor,
         isPinnedGlobal,
@@ -559,6 +561,8 @@ resourcesRouter.put(
       if (title !== undefined) updateData.title = title;
       if (description !== undefined) updateData.description = description;
       if (category !== undefined) updateData.category = category;
+      if (type !== undefined) updateData.type = type;
+      if (documentId !== undefined) updateData.documentId = documentId;
       if (url !== undefined) updateData.url = url;
       if (icon !== undefined) updateData.icon = icon;
       if (iconColor !== undefined) updateData.iconColor = iconColor;

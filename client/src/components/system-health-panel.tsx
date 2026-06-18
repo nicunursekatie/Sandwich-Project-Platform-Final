@@ -25,6 +25,7 @@ interface IntegrationCheckResult {
   healthy: boolean | null;
   message: string;
   latencyMs?: number;
+  optional?: boolean;
 }
 
 interface SystemHealthReport {
@@ -33,11 +34,25 @@ interface SystemHealthReport {
   integrations: IntegrationCheckResult[];
 }
 
-function StatusIcon({ healthy, configured }: { healthy: boolean | null; configured: boolean }) {
+function StatusIcon({
+  healthy,
+  configured,
+  optional,
+}: {
+  healthy: boolean | null;
+  configured: boolean;
+  optional?: boolean;
+}) {
   if (healthy === true) {
     return <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />;
   }
-  if (healthy === false || !configured) {
+  if (healthy === false && !optional) {
+    return <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />;
+  }
+  if (!configured && optional) {
+    return <HelpCircle className="w-5 h-5 text-gray-400 flex-shrink-0" />;
+  }
+  if (!configured) {
     return <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />;
   }
   return <HelpCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />;
@@ -95,7 +110,7 @@ export function SystemHealthPanel() {
             </CardTitle>
             <CardDescription className="mt-1">
               Integration status for SMS parsing, email, and other external services.
-              Run a live check to verify API keys actually work (not just present).
+              Run a live check to ping each API and confirm keys actually work.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -139,6 +154,7 @@ export function SystemHealthPanel() {
                 <StatusIcon
                   healthy={integration.healthy}
                   configured={integration.configured}
+                  optional={integration.optional}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-sm">{integration.name}</div>
@@ -151,8 +167,13 @@ export function SystemHealthPanel() {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   {!integration.configured && (
-                    <Badge variant="outline" className="text-[10px] text-red-600">
-                      Not configured
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${
+                        integration.optional ? 'text-gray-500' : 'text-red-600'
+                      }`}
+                    >
+                      {integration.optional ? 'Optional' : 'Not configured'}
                     </Badge>
                   )}
                   {integration.healthy === true && (
@@ -177,8 +198,17 @@ export function SystemHealthPanel() {
               <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
                 <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <p>
-                  Failures are logged automatically and emailed to admin (deduped every 6 hours).
-                  SMS collection texts that need AI parsing will fail until OpenAI is healthy.
+                  One or more critical integrations need attention. Failures are logged
+                  automatically and emailed to admin (deduped every 6 hours).
+                </p>
+              </div>
+            )}
+            {data.overallStatus === 'healthy' && liveCheck && (
+              <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-900">
+                <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <p>
+                  Live checks passed for OpenAI, SendGrid, SMS, and Replit AI.
+                  Sentry is optional and only checks whether a DSN is configured.
                 </p>
               </div>
             )}
