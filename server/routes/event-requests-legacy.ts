@@ -15,7 +15,7 @@ import {
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
-import { isValidTransition, getTransitionError, type EventStatus } from '@shared/event-status-workflow';
+import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 import { toLightweightEventRequest } from '@shared/event-list-projection';
 import { requirePermission } from '../middleware/auth';
@@ -2633,7 +2633,55 @@ router.patch(
           });
         }
 
+        // Enforce that reason-required transitions actually record a reason.
+        // Single source of truth: the shared workflow lists every field that can
+        // satisfy the requirement — the structured reason column (filled by the
+        // card-action dialogs) OR the matching/general notes (the full-form
+        // scheduling path documents the reason there). The requirement is met if
+        // ANY of those is non-empty after this PATCH (incoming value if provided,
+        // otherwise what's already on the record).
+        if (requiresReason(toStatus)) {
+          const satisfied = getReasonSatisfyingFields(toStatus).some((field) => {
+            const incoming = (processedUpdates as any)[field];
+            const effective = incoming !== undefined ? incoming : (originalEvent as any)[field];
+            return typeof effective === 'string' && effective.trim() !== '';
+          });
+          if (!satisfied) {
+            logger.warn(`[PATCH /:id] Missing required reason for event ${id}: ${fromStatus} → ${toStatus}`);
+            return res.status(400).json({
+              message: `A reason or note is required to mark this event as "${toStatus}".`,
+              error: 'MISSING_REASON',
+              requestedStatus: toStatus,
+              reasonField: getReasonField(toStatus),
+            });
+          }
+        }
+
         processedUpdates.statusChangedAt = new Date();
+
+        // Pure transition side-effect from the shared workflow: when scheduling
+        // an event with no date yet, fall back to its desired date. Applied here
+        // so every scheduling path is consistent (the client no longer does it).
+        //
+        // Resolve effective values with `!== undefined` (not `??`) so an explicit
+        // null in this PATCH (intentionally clearing a date) is respected, and a
+        // desired date updated in the same request is preferred over the stored one.
+        const effectiveScheduledDate =
+          processedUpdates.scheduledEventDate !== undefined
+            ? processedUpdates.scheduledEventDate
+            : originalEvent.scheduledEventDate;
+        const effectiveDesiredDate =
+          processedUpdates.desiredEventDate !== undefined
+            ? processedUpdates.desiredEventDate
+            : originalEvent.desiredEventDate;
+        const scheduledDateDefault = getScheduledDateDefault(
+          toStatus,
+          effectiveScheduledDate,
+          effectiveDesiredDate,
+        );
+        if (scheduledDateDefault !== undefined) {
+          processedUpdates.scheduledEventDate = scheduledDateDefault;
+        }
 
         // If status is changing to 'completed', auto-confirm the event
         if (processedUpdates.status === 'completed') {
