@@ -134,6 +134,31 @@ export function CallNotesScratchpadDialog({
           ...(prev || {}),
           ...updatedEvent,
         }));
+
+        // Keep cached list views in sync WITHOUT a full refetch. This dialog
+        // auto-saves every 5s, so a nuclear invalidate here would cause a
+        // refetch storm — and since the originating tab now ignores its own
+        // socket echo, the list won't refresh on its own. Patch the changed
+        // event into any cached list query by id (no-op if its shape doesn't
+        // match or the event isn't present).
+        queryClient.setQueriesData(
+          {
+            predicate: (query) =>
+              Array.isArray(query.queryKey) &&
+              query.queryKey[0] === '/api/event-requests/list',
+          },
+          (data: any) => {
+            if (!data) return data;
+            const patchArray = (arr: any[]) =>
+              arr.map((item) =>
+                item?.id === variables.id ? { ...item, ...updatedEvent } : item
+              );
+            if (Array.isArray(data)) return patchArray(data);
+            if (Array.isArray(data?.requests)) return { ...data, requests: patchArray(data.requests) };
+            if (Array.isArray(data?.items)) return { ...data, items: patchArray(data.items) };
+            return data;
+          }
+        );
       }
       setSyncedAt(new Date());
       setSyncError('');
