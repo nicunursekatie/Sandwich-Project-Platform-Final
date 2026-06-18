@@ -102,7 +102,7 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
           case 'contribution':
             return b.totalContributionValue - a.totalContributionValue;
           case 'events':
-            return b.eventsAssigned - a.eventsAssigned;
+            return b.eventsAssignedActive - a.eventsAssignedActive;
           case 'logs':
             return b.collectionLogsRecorded - a.collectionLogsRecorded;
           case 'messages':
@@ -223,7 +223,7 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="contribution">Overall Impact</SelectItem>
-                <SelectItem value="events">Events Assigned</SelectItem>
+                <SelectItem value="events">Active Events</SelectItem>
                 <SelectItem value="logs">Collection Logs</SelectItem>
                 <SelectItem value="messages">Messages Sent</SelectItem>
                 <SelectItem value="resources">Resources Accessed</SelectItem>
@@ -249,14 +249,14 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
                 <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-5 sm:flex-1">
                   <div>
                     <div className="text-lg font-semibold">
-                      {user.eventsAssigned}
+                      {user.eventsAssignedActive}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Events
+                      Active Events
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {user.eventsAssignedCompleted} done ·{' '}
-                      {user.eventsAssignedActive} active
+                      {user.eventsAssignedCompleted} completed ·{' '}
+                      {user.eventsAssigned} total
                     </div>
                   </div>
                   <div>
@@ -280,7 +280,7 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
                       {user.resourcesAccessed}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      Resources
+                      Resources Accessed
                     </div>
                   </div>
                   <div>
@@ -317,12 +317,13 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
         <CardContent className="text-brand-primary-dark">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <h4 className="font-semibold mb-2">Events Assigned</h4>
+              <h4 className="font-semibold mb-2">Active Events</h4>
               <p className="text-sm">
-                Total events where the user is the TSP contact or an additional
-                contact. Shown alongside how many are completed vs. still
-                active (new, in process, scheduled, or standby). Not limited to
-                the selected time period — reflects current event load.
+                Events currently in process where the user is the TSP contact
+                or an additional contact (new, in process, scheduled, or
+                standby). Shown alongside completed and total counts. Not
+                limited to the selected time period — reflects current event
+                load.
               </p>
             </div>
             <div>
@@ -342,8 +343,8 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
             <div>
               <h4 className="font-semibold mb-2">Resources Accessed</h4>
               <p className="text-sm">
-                Document uploads, views, and downloads in the resources section
-                during the selected period.
+                Times the user opened a resource, previewed or downloaded a
+                document, or uploaded one during the selected period.
               </p>
             </div>
           </div>
