@@ -1,7 +1,7 @@
 # Event Requests Reliability Plan (v2)
 
 > Supersedes `EVENT_REQUESTS_RELIABILITY_PLAN.md` (kept for history).
-> Last updated: 2026-06-18 (scratchpad removal recorded §1.6)
+> Last updated: 2026-06-18 (scratchpad §1.6; bandaid vs root §2.5; Cause A scope §B5)
 > Author: Katie + Claude, after end-to-end codebase walkthrough.
 >
 > **Companion docs** (still authoritative for their narrow topic):
@@ -58,21 +58,19 @@ These are the bugs that produce most of the "it ate my edit / it told me there w
 3. **Optimistic updates target dead cache keys.**
    List query reads from `['/api/event-requests/list', filterParams, quickFilter, 'v3']` ([eventRequestsListQuery.ts:102](client/src/components/event-requests/lib/eventRequestsListQuery.ts)). Optimistic patches in `useEventMutations` set `['/api/event-requests']` and `['/api/event-requests', 'v2']` ([useEventMutations.tsx:368-369](client/src/components/event-requests/hooks/useEventMutations.tsx)). **The keys never overlap.** The optimistic-update layer is effectively dead code; `onSettled` then runs the sledgehammer anyway. **History:** added Dec 2025 for inline scheduled edits; list migrated to `/list` … `v3` keys afterward — optimistic path was never rewired (classic AI-accretion half-fix).
 
-4. **Row-level `_expectedVersion` check is over-triggered → spurious 409s.**
-   PATCH at [event-requests-legacy.ts:2646-2660](server/routes/event-requests-legacy.ts) returns 409 when client `_expectedVersion` ≠ server `updatedAt`. The check is **row-level**: any `updatedAt` bump blocks the **entire** save, even when edits touch different fields. Codebase already bypasses this for additive updates via `_skipVersionCheck` ([useEventMutations.tsx:83-88](client/src/components/event-requests/hooks/useEventMutations.tsx), [index.tsx:1029](client/src/components/event-requests/index.tsx)) — evidence the team knew the check is too aggressive. **Do not remove locking outright** (real co-edit → silent overwrite); fix the triggers below.
+4. **Row-level `_expectedVersion` check → spurious 409s** *(row-level gate **removed** PR #417 — see §1.5)*.
+   PATCH at [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) now **strips** `_expectedVersion` and does not 409 on `updatedAt` drift. Client still sends the field from [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx), [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx), and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx) — dead code cleanup pending.
 
-   **Verified 409 trigger ranking** (solo intake, most → least common):
+   **Historical 409 triggers** (pre-#417; scratchpad removed §1.6):
 
    | Trigger | Mechanism |
    |---|---|
-   | 1. Two quick saves / two tabs | First save bumps `updatedAt`; second PATCH still sends stale `_expectedVersion` |
-   | 2. Mutation invalidates while form open | Full refetch can desync version refs (less common now that own-echo is suppressed) |
-   | 3. Sheets message backfill (rare) | Sync updates **existing** rows only when DB `message` is empty and sheet has content — sets `updatedAt` ([google-sheets-event-requests-sync.ts:573-578, 685-692](server/google-sheets-event-requests-sync.ts)). **Not** "sync rewrites all events every 30 min." |
-   | 4. Real two-human same-field edit | Legitimate 409 — keep this signal |
+   | ~~Scratchpad + form~~ | Removed §1.6 |
+   | Two quick saves / two tabs | Stale client baseline (still possible if partial save + refetch desyncs form) |
+   | Sheets message backfill (rare) | Sets `updatedAt` on empty-message backfill |
+   | Real two-human same-field edit | Was blocked whole row; now last-write-wins unless field-level check added later |
 
-   ~~Scratchpad + form~~ — **removed 2026-06-18** (production audit: 0 message-only PATCHs in 90 days).
-
-   **Lighter fixes (B4):** don't bump `updatedAt` on backfill-only sync writes; keep `_expectedVersion` on intentional human saves (form submit, status change).
+   **Remaining work (§B8):** don't bump `updatedAt` on backfill-only sync writes; strip dead `_expectedVersion` from client.
 
 5. **Partial/full payload split with a hand-maintained contract.**
    Cards read from `/api/event-requests/list` (lightweight, ~30 fields). Edit form refetches via `/api/event-requests/:id` (full record) — see [EventSchedulingForm.tsx:274-288](client/src/components/event-requests/EventSchedulingForm.tsx). The contract is documented as comments at [event-requests-legacy.ts:1248-1268](server/routes/event-requests-legacy.ts). Past bugs (e.g., `vanDriverNeeded` not persisting) trace to this split — when a field is missing from the lightweight contract, cards show wrong data; when baseline comparison goes wrong, saves drop fields silently.
@@ -127,10 +125,11 @@ Do not rebuild these:
 | Change | Commits | What it fixed |
 |---|---|---|
 | Ignore own socket echo | `b20a1e220` | `X-Socket-Id` on [apiRequest](client/src/lib/queryClient.ts); server echoes `originSocketId`; [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) skips matching id. Removes redundant refetch on your own save. Fails safe if socket not connected. |
-| Scratchpad list sync without refetch storm | `13f049395` | Surgical list-cache patch in scratchpad (component since removed). Pattern to reimplement in `queryClient.ts` for B1. |
+| Scratchpad list sync without refetch storm | `13f049395` | Surgical list-cache patch in scratchpad (component since removed §1.6). Pattern to reimplement in `queryClient.ts` for B1. |
 | Intake paths no longer rely on echo | same PR | [IntakeCallDialog.tsx](client/src/components/event-requests/IntakeCallDialog.tsx) calls `invalidateEventRequestQueries` after save-notes / move-to-non-event. |
+| Remove row-level version gate on PATCH | `4c2ff41fd` (PR #417) | [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) strips `_expectedVersion`; no 409 on `updatedAt` drift. **Unblocks Cause A root fix** (§2.5, §B5) — partial saves no longer needed to avoid row-level collisions. Client still sends `_expectedVersion` in 3 places; delete in same PR as full-form save. |
 
-**Still open after PR #416:** mutation `onSuccess` sledgehammer (§1.2 #12), dead optimistic keys (§1.2 #3), spurious 409 triggers from Sheets backfill (§1.2 #4), eight status paths (§1.2 #10).
+**Still open after PR #416 + #417:** mutation `onSuccess` sledgehammer (§1.2 #12), dead optimistic keys (§1.2 #3), partial-save change detection (§2.5 Cause A), list/card shape split (§2.5 Cause B), eight status paths (§1.2 #10), dead client `_expectedVersion` sends.
 
 ### 1.6 Removed (2026-06-18) — Call Notes Scratchpad
 
@@ -240,7 +239,7 @@ GROUP BY status ORDER BY status;
 
 - **List 3:** scratchpad marked ✅ removed (skipped 60-day hide — audit proved zero usage)
 - **§1.2 #4:** scratchpad removed from 409 trigger ranking
-- **B4:** dominant solo-editor 409 source eliminated; remaining triggers are two-tab/double-save, Sheets backfill, real co-edit
+- **§1.2 #4 / §B8:** scratchpad 409 source gone; strip dead client `_expectedVersion`; Sheets backfill if needed
 - **B1:** surgical cache helper to be written fresh in `queryClient.ts` (scratchpad implementation deleted with component)
 
 **Status:** Code change complete locally; pending commit/deploy.
@@ -308,7 +307,8 @@ Cleaned and re-classified:
 
 - **Not** duplicating the entire 96-file event-requests folder into a "v2" sandbox. The renovation analogy is appealing but the engine room is shared — copying the UI alone fixes only half the bugs and doubles the maintenance surface.
 - **Not** building feature flags before Phase A. Dev environment + careful prod deploy is enough.
-- **Not** removing `_expectedVersion` optimistic locking. Fix the trigger (background sync bumping `updatedAt`) instead. Removing the safeguard would trade visible 409s for silent overwrites — that's worse.
+- **Not** removing server-side `_droppedFields` reporting. Keep until PATCH pipeline is clean; full-form save (§B5) fixes client-side omission.
+- **Not** reinstating row-level `_expectedVersion` (removed PR #417). If co-edit becomes real, add field-level conflict check — not row-level gate.
 - **Not** writing new defensive layers. If saves are unreliable, fix the save path, don't retry harder.
 
 ### 2.4 What we ARE doing (decision tree)
@@ -324,6 +324,34 @@ Does this item address an engine-room bug (cache, race, save pipeline)?
                   ├── Yes → Freeze (no new work) or Hide (turn off in UI).
                   └── No → Out of scope.
 ```
+
+### 2.5 Bandaid vs root fixes (the shrink-or-patch decision)
+
+Each major complaint class has two fixes. **Bandaids add or maintain complexity; root fixes delete layers.** Stacking bandaids is how the component got to 96 files.
+
+#### Cause A — "it didn't save the field"
+
+| | Approach | Effect on codebase |
+|---|---|---|
+| **Bandaid** | Add field to `ALWAYS_INCLUDE_FIELDS` in [form-utils.ts:278](client/src/components/event-requests/form-utils.ts) | Grows forever — one entry per dropped field |
+| **Root** | **Full-form save** from `EventSchedulingForm` — send entire `buildEventDataForServer()` payload every time, not `detectChangedFields()` subset | **Deletes** `detectChangedFields`, `ALWAYS_INCLUDE_FIELDS`, schedule-mode strip logic in change detection, and much of the save-verification scaffolding that only exists to catch silent drops |
+
+**Why root is viable now:** PR #417 removed the row-level `_expectedVersion` gate. Partial saves existed partly to minimize collision surface — with solo-editor reality + no row lock, writing the whole form is acceptable.
+
+**Scope:** `EventSchedulingForm` only. Card quick-toggles, status buttons, intake dialog, and other dialogs stay partial PATCH by design.
+
+#### Cause B — "it saved but the card doesn't show it"
+
+| | Approach | Effect on codebase |
+|---|---|---|
+| **Bandaid** | Add missing field to hand-maintained list contract at [event-requests-legacy.ts:1248](server/routes/event-requests-legacy.ts) + update docs | Same whack-a-mole as Cause A |
+| **Root** | **One read shape** — card and form share one cached event object (or list returns enough fields that form doesn't need a second fetch) | **Deletes** the lightweight/full contract split |
+
+**Tradeoff:** Bigger lift; touches list payload size. Audit-first, same as Cause A.
+
+#### Recommendation (2026-06-18)
+
+Do **Cause A root fix next** (§B5) — smaller than Cause B, unblocked by #417, subtracts a whole fragile layer. Cause B (§B9) follows once saves are trustworthy.
 
 ---
 
@@ -352,7 +380,7 @@ These work today, don't add to them, don't extend them without reverting.
 - The calendar view (kept; light usage)
 - The spreadsheet view (kept; light usage)
 - The Collaboration / presence indicators (kept; rarely two editors at once but harmless when one)
-- The optimistic locking with `_expectedVersion` (kept — fix the trigger, not the safeguard)
+- The optimistic locking with `_expectedVersion` (server gate removed PR #417; client sends are dead code — strip in §B5)
 
 ### List 3 — Hidden (turn off in UI, leave code, observe)
 
@@ -371,8 +399,8 @@ These items exist because there's an underlying bug. Removing the visible defens
 
 | Item | Underlying bug | Right action |
 |---|---|---|
-| `event-save-verification.ts` | Server's PATCH silently drops fields (`_droppedFields`) | Fix the PATCH pipeline; then verify-then-delete the layer |
-| Scary 409 toasts | Row-level version check (§1.2 #4); rare Sheets backfill | Fix backfill `updatedAt`; keep check for real human co-edit |
+| `event-save-verification.ts` | Server's PATCH silently drops fields (`_droppedFields`) + partial save omits fields client-side | **Root:** full-form save (§B5) eliminates client-side omission; keep `getDroppedServerFields` until server drops are fixed; delete heuristic `findMismatchedSavedFields` blocking later |
+| Scary 409 toasts | Was row-level version check (fixed #417) | Strip dead client `_expectedVersion`; fix Sheets backfill `updatedAt` if needed |
 | Auto-save & form-init race defenses | Two-phase load (list → full record) and socket-driven refetches collide with open forms | Collapse partial/full split OR silence socket-driven invalidation on records under edit |
 | Form initialization race flag | Same root cause | Fix in Phase B as part of cache work |
 | Dead optimistic update code | Wrong query keys + sledgehammer invalidation make it useless | Delete after Phase B (key mismatch fix + surgical invalidation) |
@@ -431,38 +459,76 @@ Small, reversible engine fixes (e.g. PR #416) may ship alongside Phase A. Do not
 - Smoke: edit event in one tab, navigate to another tab, confirm new value visible without manual refresh. Toggle `showOnVolunteerHub`; confirm volunteer hub updates. Edit event, save, confirm no other queries refetched (watch Network panel).
 - **Concurrency test required:** two browser windows, two users, edit same event, save in one, observe what the other does.
 
-**B2. Fix the optimistic-update key mismatch**
+**B5. Full-form save — Cause A root fix** *(recommended next; audit before merge)*
+
+Stop sending only changed fields from `EventSchedulingForm`. Send the full `buildEventDataForServer()` output every save.
+
+**Why:** `detectChangedFields` + `ALWAYS_INCLUDE_FIELDS` is the bandaid stack that causes "didn't save" (van driver flags, SpeakerWarningDialog pause race, baseline drift). Full-form save removes the bug *class* by subtraction.
+
+**Audit confirmed (2026-06-18):**
+
+| Question | Answer |
+|---|---|
+| Who uses `detectChangedFields`? | **Only** [EventSchedulingForm.tsx:966](client/src/components/event-requests/EventSchedulingForm.tsx) + [mark-scheduled-save.test.ts](client/src/components/event-requests/__tests__/mark-scheduled-save.test.ts) |
+| Who stays partial PATCH? | Card toggles (`useEventMutations`), status buttons, intake/reschedule/decline dialogs, assignments — **unchanged** |
+| Blocked by version lock? | **No** — PR #417 (`4c2ff41fd`) removed server 409 on `updatedAt` drift |
+| What gets deleted? | `detectChangedFields()` (~80 lines), `ALWAYS_INCLUDE_FIELDS`, schedule-mode strip logic inside it, client `_expectedVersion` sends in form mutation |
+| What stays? | `buildEventDataForServer()` (single serialization source), `getDroppedServerFields()` (server `_droppedFields` still authoritative), `originalFormDataRef` (form init + localStorage recovery) |
+
+**Implementation (1 PR):**
+
+1. [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) `performSubmit`: PATCH `eventData` instead of `detectChangedFields(eventData, originalFormDataRef.current, mode)`
+2. Delete `detectChangedFields` from [form-utils.ts](client/src/components/event-requests/form-utils.ts)
+3. Remove `callNotesExpectedVersionRef` + `_expectedVersion` from form mutation (server ignores it anyway)
+4. Rewrite [mark-scheduled-save.test.ts](client/src/components/event-requests/__tests__/mark-scheduled-save.test.ts) to assert `buildEventDataForServer` output includes critical booleans (van flags, status, dates)
+5. Update [replit.md](replit.md) — remove `ALWAYS_INCLUDE_FIELDS` rule (obsolete)
+
+**Risks to verify in dev:**
+
+- Stale form baseline → full save writes back untouched fields that drifted on server (mitigated by solo-editor workflow; worse case = refetch mid-edit from sledgehammer — fix in B1)
+- Server `_droppedFields` on fields not in allow-list (full payload may surface more server rejects — good, surfaces real bugs)
+- "No changes" guard in edit mode — replace with compare of full `eventData` vs baseline-built payload, or drop guard
+
+**Smoke test:**
+
+1. Toggle van driver / DHL van / self-transport → save → hard refresh → persists
+2. Mark Scheduled through main form (not QuickSchedule) → lands on Scheduled tab
+3. SpeakerWarningDialog pause path → save after dialog → van flags still persist
+4. Edit one field → save → unrelated fields unchanged on server
+5. Network panel: PATCH body includes all form fields, not 3-key subset
+
+**Effort:** ~2–4 hours · **Risk:** medium · **Payoff:** deletes a whole defensive layer
+
+**B6. Fix the optimistic-update key mismatch**
 - Make `useEventMutations.setQueryData` target the same keys the list reads from (`['/api/event-requests/list', filterParams, quickFilter, 'v3']`).
 - Alternatively: delete the optimistic layer entirely if B1 surgical invalidation makes it unnecessary.
 - Files: `useEventMutations.tsx`
 - Risk: low (worst case: optimistic UI doesn't appear; save still works)
 - Smoke: inline-edit a field; verify card updates without a flicker; verify no full-page refetch.
 
-**B3. Stop socket-driven refetch on your own saves** — ✅ **Done (PR #416)**
+**B7. Stop socket-driven refetch on your own saves** — ✅ **Done (PR #416)**
 - Implemented via `X-Socket-Id` / `originSocketId` echo suppression — not the "recently-saved IDs" sketch, but same outcome.
 - Smoke (regression): save a field; confirm no *second* full refetch from own echo in Network panel.
 
-**B4. Fix spurious 409 triggers (keep `_expectedVersion` for human saves)**
-- Scratchpad removed (§1.6) — dominant solo-editor trigger gone.
-- **If 409s persist:** don't bump `updatedAt` on Sheets backfill-only writes (message empty → sheet content).
-- **Avoid:** removing row-level locking entirely; avoid auto-retry-on-409.
-- Files: [google-sheets-event-requests-sync.ts](server/google-sheets-event-requests-sync.ts), optionally [event-requests-legacy.ts](server/routes/event-requests-legacy.ts)
-- Smoke: save form — no spurious 409. Two humans, same event, same field — 409 still appears.
+**B8. Strip dead client `_expectedVersion` + Sheets backfill fix**
+- Server already strips `_expectedVersion` (PR #417). Remove sends from [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx), [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx), [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx).
+- If needed: don't bump `updatedAt` on Sheets backfill-only writes.
+- Partially overlaps §B5 step 3 — do together.
 
-**B5. Collapse partial/full payload split, OR document & test the contract**
+**B9. One read shape — Cause B root fix** *(bigger lift; after B5)*
 - Option 1 (bigger): make `/api/event-requests/list` return enough fields that the edit form doesn't need a second fetch. Larger payload, simpler client.
 - Option 2 (smaller): keep the split but generate the field contract from a single source of truth (a constant array in shared code) so cards and the list endpoint cannot drift.
 - File: `server/routes/event-requests-legacy.ts` around line 1248, `eventRequestsListQuery.ts`, individual card consumers.
 - Risk: medium
 - Smoke: open every card type; confirm no missing fields. Save through every flow; confirm no silent drops in `_droppedFields` metadata.
 
-**B6. Retire one of the two edit paths**
+**B10. Retire one of the two edit paths**
 - Make `EventEditDialog` a thin wrapper around `EventSchedulingForm`, or fold the driver-planning use case into the main form.
 - Files: `client/src/pages/driver-planning.tsx`, `client/src/components/event-requests/dialogs/EventEditDialog.tsx`
 - Risk: medium
 - Smoke: edit event from driver-planning view; confirm same behavior as editing from event-requests view.
 
-**B7. Consolidate status-change paths (optional, after B1/B4)**
+**B11. Consolidate status-change paths (optional, after B1/B5)**
 - Funnel common moves (`new → in_process → scheduled`, decline/cancel with reason) through one function that re-fetches fresh status before PATCH.
 - Retire or hide `QuickScheduleButton` once main form path is trusted.
 - Files: [useEventAssignments.tsx](client/src/components/event-requests/hooks/useEventAssignments.tsx), tab/card consumers
@@ -473,7 +539,7 @@ Small, reversible engine fixes (e.g. PR #416) may ship alongside Phase A. Do not
 
 After A and B prove stable for a few weeks.
 
-- Delete the dead optimistic-update code if B1+B2 made it unnecessary.
+- Delete the dead optimistic-update code if B1+B6 made it unnecessary.
 - Delete hidden items from List 3 if no complaints surfaced in 60 days.
 - Remove DEBUG console.logs.
 - Address type-safety / network timeout items from v1 plan if motivation remains.
@@ -487,7 +553,7 @@ For each, why:
 
 - **Per-user feature flags before Phase A.** Dev environment is enough isolation. Flags become a maintenance burden if every change carries one.
 - **Full UI duplicate ("renovation in the next room") for Phase A.** The engine room is shared. A duplicate UI doesn't fix engine bugs, and doubles the maintenance surface for the duration.
-- **Remove `_expectedVersion` optimistic locking outright.** Trades visible 409s for silent overwrites. Fix spurious triggers in B4 (Sheets backfill, not blanket sync pause).
+- **Remove `_expectedVersion` optimistic locking outright.** Row-level gate already removed server-side (PR #417). Strip dead client sends (§B8); do not reinstate row-level 409s.
 - **Add retry logic / auto-retry on 409.** Defensive layer on a defensive stack. If saves fail, fix the trigger or the save path.
 - **Reduce TanStack Query stale time from 5min → 2min.** Runs counter to "calmer cache" direction.
 - **Build a new monitoring stack.** The `application_error_logs` table from the SMS investigation work is enough infrastructure for now.
@@ -501,8 +567,7 @@ For each, why:
 For each Phase B fix, log a counter to `application_error_logs` or stdout:
 
 - Number of socket-driven invalidations per minute, broken down by "originated by current user" vs "another user/process"
-- Number of 409 conflicts per day, broken down by trigger: two-tab/double-save vs Sheets backfill vs real co-edit
-- Number of saves that came back with `_droppedFields` metadata
+- Number of saves that came back with `_droppedFields` metadata (should drop after §B5 full-form save)
 - Time from "form opened" to "form initialized" (P50, P95)
 
 ### Exit criteria — "Phase A is done"
@@ -515,9 +580,10 @@ For each Phase B fix, log a counter to `application_error_logs` or stdout:
 
 - 409 rate drops to near-zero (only real concurrent human edits on overlapping fields).
 - Save → see new value without manual refresh works in 100% of smoke-test cases.
+- `detectChangedFields` / `ALWAYS_INCLUDE_FIELDS` deleted (§B5).
 - Optimistic update either works (visible flicker-free save) or has been deleted.
 - Volunteer hub still updates when admin toggles hub-visible fields.
-- The two-edit-paths divergence is gone (or status paths consolidated per B7).
+- The two-edit-paths divergence is gone (or status paths consolidated per B11).
 
 ---
 
@@ -545,7 +611,7 @@ A few rules to keep this from drifting back into the old pattern.
 ## 8. References to other docs
 
 - `docs/event-requests-behavior-contract.md` — what current behavior is, so refactors can preserve it. **Read before touching anything in Phase B.**
-- `docs/canonical-field-contracts.md` — the LIGHTWEIGHT FIELD CONTRACT. Critical for B5.
+- `docs/canonical-field-contracts.md` — the LIGHTWEIGHT FIELD CONTRACT. Critical for §B9 (Cause B).
 - `docs/event-request-api-audit.md` — query inventory. Useful for B1 (knowing what cache keys exist).
 - `docs/event-requests-lazy-loading-plan.md` — DB-level status filtering. Independent of this plan; can be done any time.
 - `docs/development/EVENT_REQUESTS_PERFORMANCE_PLAN.md` — payload work, mostly complete.
