@@ -313,7 +313,8 @@ export type EventRequestCacheUpdateOptions = {
 /**
  * Surgical cache update after a successful event PATCH/PUT.
  *
- * - Same-status field saves: patch list row + single-record caches; no list refetch.
+ * - Same-status field saves: patch list row + single-record caches; refetch lists
+ *   only if the event id was not found in any cached list query.
  * - Status changes: refresh list + status-counts only (not the full sledgehammer).
  * - Volunteer hub / event map: invalidate only when relevant fields changed.
  */
