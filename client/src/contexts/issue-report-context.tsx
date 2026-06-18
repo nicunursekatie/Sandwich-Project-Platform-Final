@@ -2,7 +2,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -15,12 +17,26 @@ export type WorkingRecordContext = {
   pageLabel?: string;
 };
 
+export type IssueReportDraft = WorkingRecordContext & {
+  whatDoing?: string;
+  expectedOutcome?: string;
+  actualOutcome?: string;
+};
+
 type IssueReportContextValue = {
   openReportDialog: () => void;
   setWorkingRecord: (record: WorkingRecordContext | null) => void;
+  reportProblem: (draft?: IssueReportDraft) => void;
 };
 
 const IssueReportContext = createContext<IssueReportContextValue | null>(null);
+
+let reportProblemHandler: ((draft: IssueReportDraft) => void) | null = null;
+
+/** Open the report dialog from anywhere (e.g. error toast actions). */
+export function reportProblem(draft: IssueReportDraft = {}) {
+  reportProblemHandler?.(draft);
+}
 
 export function useIssueReport() {
   const ctx = useContext(IssueReportContext);
@@ -28,6 +44,7 @@ export function useIssueReport() {
     return {
       openReportDialog: () => {},
       setWorkingRecord: (_record: WorkingRecordContext | null) => {},
+      reportProblem,
     };
   }
   return ctx;
@@ -36,16 +53,45 @@ export function useIssueReport() {
 export function IssueReportProvider({ children }: { children: ReactNode }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [workingRecord, setWorkingRecordState] = useState<WorkingRecordContext | null>(null);
+  const [initialDraft, setInitialDraft] = useState<IssueReportDraft | null>(null);
+  const workingRecordRef = useRef<WorkingRecordContext | null>(null);
 
-  const openReportDialog = useCallback(() => setDialogOpen(true), []);
+  workingRecordRef.current = workingRecord;
+
+  const openReportDialog = useCallback(() => {
+    setInitialDraft(null);
+    setDialogOpen(true);
+  }, []);
+
   const setWorkingRecord = useCallback(
     (record: WorkingRecordContext | null) => setWorkingRecordState(record),
     []
   );
 
+  const reportProblemFromContext = useCallback((draft: IssueReportDraft = {}) => {
+    setInitialDraft({ ...workingRecordRef.current, ...draft });
+    setDialogOpen(true);
+  }, []);
+
+  useEffect(() => {
+    reportProblemHandler = reportProblemFromContext;
+    return () => {
+      reportProblemHandler = null;
+    };
+  }, [reportProblemFromContext]);
+
+  const handleDialogOpenChange = useCallback((open: boolean) => {
+    setDialogOpen(open);
+    if (!open) setInitialDraft(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ openReportDialog, setWorkingRecord }),
-    [openReportDialog, setWorkingRecord]
+    () => ({
+      openReportDialog,
+      setWorkingRecord,
+      reportProblem: reportProblemFromContext,
+    }),
+    [openReportDialog, setWorkingRecord, reportProblemFromContext]
   );
 
   return (
@@ -53,8 +99,9 @@ export function IssueReportProvider({ children }: { children: ReactNode }) {
       {children}
       <ReportIssueDialog
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        onOpenChange={handleDialogOpenChange}
         workingRecord={workingRecord}
+        initialDraft={initialDraft}
       />
     </IssueReportContext.Provider>
   );

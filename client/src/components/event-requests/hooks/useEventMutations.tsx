@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorToast } from '@/hooks/use-error-toast';
 import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { logger } from '@/lib/logger';
 
 export const useEventMutations = () => {
   const { toast } = useToast();
+  const { errorToast } = useErrorToast();
   const queryClient = useQueryClient();
   const {
     selectedEventRequest,
@@ -24,6 +26,15 @@ export const useEventMutations = () => {
     setEditingField,
     setEditingValue,
   } = useEventRequestContext();
+
+  const eventReportContext = () =>
+    selectedEventRequest?.id
+      ? {
+          recordType: 'event_request' as const,
+          recordId: String(selectedEventRequest.id),
+          recordLabel: selectedEventRequest.organizationName || undefined,
+        }
+      : {};
 
   const deleteEventRequestMutation = useMutation({
     mutationFn: (id: number) =>
@@ -45,10 +56,10 @@ export const useEventMutations = () => {
                   description: 'The event request has been successfully restored.',
                 });
               } catch (error) {
-                toast({
+                errorToast({
                   title: 'Error',
                   description: 'Failed to restore event request.',
-                  variant: 'destructive',
+                  report: { whatDoing: 'Undo delete event request', ...eventReportContext() },
                 });
               }
             }}
@@ -64,10 +75,10 @@ export const useEventMutations = () => {
     },
     onError: (error: any) => {
       const errorMessage = error?.data?.message || error?.message || 'Failed to delete event request.';
-      toast({
+      errorToast({
         title: 'Error',
         description: errorMessage,
-        variant: 'destructive',
+        report: { whatDoing: 'Delete an event request', ...eventReportContext() },
       });
     },
   });
@@ -102,11 +113,16 @@ export const useEventMutations = () => {
         const summary = droppedFields
           .map((d) => `• ${d.field}: ${d.reason}`)
           .join('\n');
-        toast({
+        errorToast({
           title: '⚠️ Partial Save',
           description: `Saved "${orgName}" — but the following fields were not saved:\n${summary}`,
-          variant: 'destructive',
           duration: Number.POSITIVE_INFINITY,
+          report: {
+            whatDoing: 'Save changes to an event request',
+            expectedOutcome: 'All edited fields should be saved to the database.',
+            actualOutcome: `Partial save — fields dropped: ${summary}`,
+            ...eventReportContext(),
+          },
         });
       } else {
         toast({
@@ -182,13 +198,16 @@ export const useEventMutations = () => {
         errorDescription = 'Could not save changes. Please check your internet connection and try again.';
       }
 
-      toast({
+      errorToast({
         title: errorTitle,
         description: errorDescription,
-        variant: 'destructive',
         // Save failures are sticky — they don't auto-dismiss. User must click ✕ to acknowledge,
         // so silent failures stop slipping past busy operators.
         duration: Number.POSITIVE_INFINITY,
+        report: {
+          whatDoing: 'Save changes to an event request',
+          ...eventReportContext(),
+        },
       });
     },
   });
@@ -236,11 +255,11 @@ export const useEventMutations = () => {
         errorDescription = 'Could not create event. Please check your internet connection and try again.';
       }
 
-      toast({
+      errorToast({
         title: errorTitle,
         description: errorDescription,
-        variant: 'destructive',
         duration: 10000,
+        report: { whatDoing: 'Create a new event request' },
       });
     },
   });
@@ -285,10 +304,10 @@ export const useEventMutations = () => {
       setToolkitEventRequest(null);
     },
     onError: (error: any) => {
-      toast({
+      errorToast({
         title: 'Error',
         description: error?.data?.message || error?.message || 'Failed to mark toolkit as sent.',
-        variant: 'destructive',
+        report: { whatDoing: 'Mark toolkit as sent', ...eventReportContext() },
       });
     },
   });
@@ -324,10 +343,10 @@ export const useEventMutations = () => {
       setScheduleCallTime('');
     },
     onError: (error: any) => {
-      toast({
+      errorToast({
         title: 'Error',
         description: error?.data?.message || error?.message || 'Failed to schedule call.',
-        variant: 'destructive',
+        report: { whatDoing: 'Schedule an intake call', ...eventReportContext() },
       });
     },
   });
@@ -403,12 +422,15 @@ export const useEventMutations = () => {
         await refreshEventRequestListAndCounts(queryClient);
       }
 
-      toast({
+      errorToast({
         title: errorTitle,
         description: errorDescription,
-        variant: 'destructive',
         // Sticky toast so a quick destructive error isn't missed during busy editing sessions.
         duration: Number.POSITIVE_INFINITY,
+        report: {
+          whatDoing: 'Edit an event field inline on the card',
+          ...eventReportContext(),
+        },
       });
     },
   });
@@ -439,10 +461,10 @@ export const useEventMutations = () => {
       setFollowUpNotes('');
     },
     onError: (error: any) => {
-      toast({
+      errorToast({
         title: 'Error',
         description: error?.data?.message || error?.message || 'Failed to complete follow-up.',
-        variant: 'destructive',
+        report: { whatDoing: 'Complete 1-day follow-up', ...eventReportContext() },
       });
     },
   });
@@ -473,10 +495,10 @@ export const useEventMutations = () => {
       setFollowUpNotes('');
     },
     onError: (error: any) => {
-      toast({
+      errorToast({
         title: 'Error',
         description: error?.data?.message || error?.message || 'Failed to complete follow-up.',
-        variant: 'destructive',
+        report: { whatDoing: 'Complete 1-month follow-up', ...eventReportContext() },
       });
     },
   });
@@ -515,10 +537,10 @@ export const useEventMutations = () => {
                     description: `Event date restored to ${prevDateStr}.`,
                   });
                 } catch (error) {
-                  toast({
+                  errorToast({
                     title: 'Restore failed',
                     description: 'Failed to restore event date.',
-                    variant: 'destructive',
+                    report: { whatDoing: 'Undo event reschedule', ...eventReportContext() },
                   });
                 }
               }}
@@ -541,10 +563,10 @@ export const useEventMutations = () => {
       });
     },
     onError: (error: any) => {
-      toast({
+      errorToast({
         title: 'Error',
         description: error?.data?.message || error?.message || 'Failed to reschedule event.',
-        variant: 'destructive',
+        report: { whatDoing: 'Reschedule an event', ...eventReportContext() },
       });
     },
   });
@@ -590,10 +612,10 @@ export const useEventMutations = () => {
       logger.error('=== RECIPIENT ASSIGNMENT ERROR ===');
       logger.error(error);
 
-      toast({
+      errorToast({
         title: 'Failed to assign recipients',
         description: error?.data?.message || error?.message || 'There was an error assigning recipients to this event.',
-        variant: 'destructive',
+        report: { whatDoing: 'Assign recipients to an event', ...eventReportContext() },
       });
     },
   });
@@ -636,10 +658,10 @@ export const useEventMutations = () => {
       logger.error('=== TSP CONTACT ASSIGNMENT ERROR ===');
       logger.error(error);
 
-      toast({
+      errorToast({
         title: 'Failed to assign TSP contact',
         description: error?.data?.message || error?.message || 'There was an error assigning the TSP contact to this event.',
-        variant: 'destructive',
+        report: { whatDoing: 'Assign TSP contact to an event', ...eventReportContext() },
       });
     },
   });
@@ -684,10 +706,10 @@ export const useEventMutations = () => {
       logger.error('=== CORPORATE PRIORITY TOGGLE ERROR ===');
       logger.error(error);
 
-      toast({
+      errorToast({
         title: 'Failed to update corporate priority',
         description: error?.data?.message || error?.message || 'There was an error updating the corporate priority status.',
-        variant: 'destructive',
+        report: { whatDoing: 'Toggle corporate priority on an event', ...eventReportContext() },
       });
     },
   });
