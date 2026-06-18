@@ -243,7 +243,6 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
                   <p className="text-sm font-medium leading-none">
                     {user.userName}
                   </p>
-                  <p className="text-xs text-muted-foreground">{user.role}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-5 sm:flex-1">
