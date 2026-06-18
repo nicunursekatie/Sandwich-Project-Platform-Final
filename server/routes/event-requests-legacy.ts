@@ -15,7 +15,7 @@ import {
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
-import { isValidTransition, getTransitionError, requiresReason, getReasonField, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
+import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 import { toLightweightEventRequest } from '@shared/event-list-projection';
 import { requirePermission } from '../middleware/auth';
@@ -2634,24 +2634,25 @@ router.patch(
         }
 
         // Enforce that reason-required transitions actually record a reason.
-        // Single source of truth: requiresReason()/getReasonField() in the shared
-        // workflow. The reason may arrive in this request OR already exist on the
-        // record (e.g. the Undo action restoring a prior declined/cancelled state,
-        // or re-entering the status). An explicit empty value counts as clearing.
+        // Single source of truth: the shared workflow lists every field that can
+        // satisfy the requirement — the structured reason column (filled by the
+        // card-action dialogs) OR the matching/general notes (the full-form
+        // scheduling path documents the reason there). The requirement is met if
+        // ANY of those is non-empty after this PATCH (incoming value if provided,
+        // otherwise what's already on the record).
         if (requiresReason(toStatus)) {
-          const reasonField = getReasonField(toStatus)!;
-          const incoming = (processedUpdates as any)[reasonField];
-          const existing = (originalEvent as any)[reasonField];
-          const hasIncoming = typeof incoming === 'string' && incoming.trim() !== '';
-          const hasExisting = typeof existing === 'string' && existing.trim() !== '';
-          const clearingReason = incoming !== undefined && !hasIncoming;
-          if (!(hasIncoming || (!clearingReason && hasExisting))) {
+          const satisfied = getReasonSatisfyingFields(toStatus).some((field) => {
+            const incoming = (processedUpdates as any)[field];
+            const effective = incoming !== undefined ? incoming : (originalEvent as any)[field];
+            return typeof effective === 'string' && effective.trim() !== '';
+          });
+          if (!satisfied) {
             logger.warn(`[PATCH /:id] Missing required reason for event ${id}: ${fromStatus} → ${toStatus}`);
             return res.status(400).json({
-              message: `A reason is required to mark this event as "${toStatus}".`,
+              message: `A reason or note is required to mark this event as "${toStatus}".`,
               error: 'MISSING_REASON',
               requestedStatus: toStatus,
-              reasonField,
+              reasonField: getReasonField(toStatus),
             });
           }
         }

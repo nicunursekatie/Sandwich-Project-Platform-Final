@@ -180,6 +180,27 @@ export function getReasonField(status: EventStatus): string | undefined {
 }
 
 /**
+ * Fields whose presence satisfies the reason requirement, in priority order.
+ *
+ * The structured reason column is preferred (the card-action reason dialogs fill
+ * it), but the matching notes column AND the general planning/scheduling notes
+ * are also accepted — the full-form scheduling path records the reason in those
+ * free-text notes rather than the structured column. Accepting notes is a
+ * deliberate product choice: it keeps that form working, with the tradeoff that
+ * the structured reason column may stay empty for form-driven transitions.
+ */
+export const STATUS_REASON_SATISFYING_FIELDS: Partial<Record<EventStatus, string[]>> = {
+  declined: ['declinedReason', 'declinedNotes', 'planningNotes', 'schedulingNotes'],
+  cancelled: ['cancelledReason', 'cancelledNotes', 'planningNotes', 'schedulingNotes'],
+  non_event: ['nonEventReason', 'nonEventNotes', 'planningNotes', 'schedulingNotes'],
+};
+
+/** Fields that can satisfy the reason requirement for `status` (any non-empty one). */
+export function getReasonSatisfyingFields(status: EventStatus): string[] {
+  return STATUS_REASON_SATISFYING_FIELDS[status] ?? [];
+}
+
+/**
  * Pure transition side-effect: when an event becomes Scheduled with no scheduled
  * date set yet, fall back to its desired date.
  *

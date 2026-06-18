@@ -1,6 +1,7 @@
 import {
   requiresReason,
   getReasonField,
+  getReasonSatisfyingFields,
   getScheduledDateDefault,
   STATUS_REASON_FIELD,
 } from '@shared/event-status-workflow';
@@ -36,6 +37,31 @@ describe('requiresReason / getReasonField', () => {
       expect(requiresReason(status as any)).toBe(true);
       expect(getReasonField(status as any)).toBe((STATUS_REASON_FIELD as any)[status]);
     }
+  });
+});
+
+describe('getReasonSatisfyingFields', () => {
+  it('accepts the structured reason, the matching notes, and general notes', () => {
+    // The full-form scheduling path records the reason in planning/scheduling
+    // notes rather than the structured column, so those must satisfy the guard.
+    expect(getReasonSatisfyingFields('declined')).toEqual(
+      expect.arrayContaining(['declinedReason', 'declinedNotes', 'planningNotes', 'schedulingNotes']),
+    );
+    expect(getReasonSatisfyingFields('cancelled')).toEqual(
+      expect.arrayContaining(['cancelledReason', 'cancelledNotes', 'planningNotes', 'schedulingNotes']),
+    );
+    expect(getReasonSatisfyingFields('non_event')).toEqual(
+      expect.arrayContaining(['nonEventReason', 'nonEventNotes', 'planningNotes', 'schedulingNotes']),
+    );
+  });
+
+  it('prefers the structured reason column first', () => {
+    expect(getReasonSatisfyingFields('declined')[0]).toBe('declinedReason');
+  });
+
+  it('returns nothing for statuses that do not require a reason', () => {
+    expect(getReasonSatisfyingFields('scheduled')).toEqual([]);
+    expect(getReasonSatisfyingFields('standby')).toEqual([]);
   });
 });
 
