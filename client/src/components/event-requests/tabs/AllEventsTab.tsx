@@ -2,6 +2,7 @@ import React from 'react';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,15 +58,17 @@ export const AllEventsTab: React.FC = () => {
   const { paginatedRequests } = useEventFilters();
   const { resolveUserName } = useEventAssignments();
   const {
-    setSelectedEventRequest,
-    setIsEditing,
-    setShowEventDetails,
     statusFilter,
     setStatusFilter,
     sortBy,
     setSortBy,
     setCurrentPage,
   } = useEventRequestContext();
+  const {
+    setSelectedEventRequest,
+    setIsEditing,
+    setShowEventDetails,
+  } = useEventDialogState();
 
   const openEvent = (request: EventRequest) => {
     setSelectedEventRequest(request);

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -33,6 +34,9 @@ export const InProcessTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -59,7 +63,7 @@ export const InProcessTab: React.FC = () => {
     setNextActionMode,
     setShowIntakeCallDialog,
     setIntakeCallEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
 

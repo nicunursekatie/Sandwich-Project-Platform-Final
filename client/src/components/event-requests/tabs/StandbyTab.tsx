@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -21,6 +22,9 @@ export const StandbyTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -28,7 +32,7 @@ export const StandbyTab: React.FC = () => {
     setContactEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const standbyRequests = filterRequestsByStatus('standby');
 
