@@ -43,7 +43,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiRequest, invalidateEventRequestQueries } from '@/lib/queryClient';
 import {
   parseDateOnly,
   toDateOnlyString,
@@ -331,6 +332,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   onCallComplete,
 }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [itemAnswers, setItemAnswers] = useState<Record<string, string>>({});
@@ -716,6 +718,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         nonEventReason: 'Sandwich count under 200 — directed to host finder.',
         nonEventAt: new Date().toISOString(),
       });
+      // Refresh the list ourselves — this dialog no longer relies on the socket
+      // echo (the originating tab now ignores its own echo).
+      await invalidateEventRequestQueries(queryClient);
       clearDraft(`intake:${eventRequest.id}`);
       toast({
         title: 'Moved to Non-Event',
@@ -992,6 +997,12 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       }
 
       await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
+
+      // Refresh the list ourselves. Previously the "Save notes" path (without
+      // marking the call complete) relied on the socket echo to refresh; now
+      // that the originating tab ignores its own echo, we invalidate here so the
+      // saved notes/structured fields show up immediately.
+      await invalidateEventRequestQueries(queryClient);
 
       // Build a toast that tells the operator exactly which structured fields
       // got mapped to columns and which inputs couldn't be parsed (those still

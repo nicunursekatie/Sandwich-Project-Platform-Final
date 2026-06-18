@@ -1,5 +1,6 @@
 import { QueryClient, QueryFunction } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
+import { getSocketInstance } from '@/lib/socket-singleton';
 
 /**
  * Custom error class that preserves server response details.
@@ -67,7 +68,17 @@ export async function apiRequest(
   }
   
   const isFormData = body instanceof FormData;
-  
+
+  // Tag every request with this browser tab's Socket.IO id. The server echoes
+  // it back on real-time broadcasts so the originating tab can ignore its OWN
+  // echo instead of triggering a redundant full refetch (which can reset an
+  // open form mid-edit). Fails safe: if the socket isn't connected yet the
+  // header is simply omitted and the old refetch-on-echo behavior applies.
+  const socketId = getSocketInstance()?.id;
+  const headers: Record<string, string> = {};
+  if (!isFormData && body) headers['Content-Type'] = 'application/json';
+  if (socketId) headers['X-Socket-Id'] = socketId;
+
   // Create an AbortController for timeout handling
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -76,11 +87,7 @@ export async function apiRequest(
     logger.log('🚀 [apiRequest] Sending fetch request...');
     const res = await fetch(url, {
       method,
-      headers: isFormData
-        ? {}
-        : body
-          ? { 'Content-Type': 'application/json' }
-          : {},
+      headers,
       body: isFormData ? body : body ? JSON.stringify(body) : undefined,
       credentials: 'include',
       signal: controller.signal,

@@ -62,7 +62,14 @@ router.use('/:id', (req, res, next) => {
     // Only emit for successful responses (2xx) that return an event request object
     if (res.statusCode >= 200 && res.statusCode < 300 && body && body.id) {
       try {
-        emitEventRequestUpdate('event_request_updated', { id: body.id });
+        // Pass through the originating tab's socket id (sent by apiRequest as
+        // X-Socket-Id) so that tab can ignore its own echo. Other users/tabs
+        // and background processes won't match and still refresh as before.
+        const originSocketId = req.headers['x-socket-id'];
+        emitEventRequestUpdate('event_request_updated', {
+          id: body.id,
+          originSocketId: typeof originSocketId === 'string' ? originSocketId : undefined,
+        });
       } catch (e) {
         // Don't let socket errors break the response
         logger.warn('Failed to emit event request update via socket:', e);

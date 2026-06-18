@@ -30,6 +30,19 @@ export function useEventRequestSocket() {
     };
 
     const handleEventUpdated = (eventRequest: any) => {
+      // Ignore the echo of our OWN save. Every mutation already refreshes the UI
+      // locally (invalidate in onSuccess/onSettled), so re-invalidating here just
+      // triggers a redundant full refetch that can reset an open form mid-edit.
+      // Updates from other users/tabs/background sync carry a different socket id
+      // (or none) and still refresh exactly as before.
+      if (
+        eventRequest?.originSocketId &&
+        socket.id &&
+        eventRequest.originSocketId === socket.id
+      ) {
+        logger.log('[EventRequestSocket] Ignoring own update echo for', eventRequest.id);
+        return;
+      }
       logger.log('[EventRequestSocket] Event request updated:', eventRequest.id);
       invalidateEventRequestQueries(queryClient);
     };
