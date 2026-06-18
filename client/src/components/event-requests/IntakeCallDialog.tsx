@@ -726,7 +726,10 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         title: 'Moved to Non-Event',
         description: 'The request was marked as Non-Event. Directed the organizer to the host finder.',
       });
-      onCallComplete?.();
+      // NOTE: deliberately do NOT call onCallComplete() here. The parent's
+      // onCallComplete patches status to 'in_process', which would immediately
+      // undo the Non-Event move. "Move to Non-Event" must always leave the
+      // event in non_event status.
       onClose();
     } catch (error: any) {
       toast({
