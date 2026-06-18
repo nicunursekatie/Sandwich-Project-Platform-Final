@@ -18,3 +18,9 @@ id = "eWbNU9bzS1cjBRSgC06vw"
 uri = "file://docs/ORGANIZATIONAL_OVERVIEW.pdf"
 type = "pdf"
 title = "The Sandwich Project — Organizational Overview (PDF)"
+
+[[outputs]]
+id = "X_-ZLlamwYN39_1v5Kurk"
+uri = "file://EVENT_MANAGEMENT_MINIMUM_MAP.md"
+type = "text"
+title = "Minimum Event Management — Scope & Sequencing Map"
