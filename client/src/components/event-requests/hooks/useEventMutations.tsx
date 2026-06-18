@@ -342,30 +342,10 @@ export const useEventMutations = () => {
       field: string;
       value: any;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
-    onMutate: async ({ id, field, value }) => {
-      // Cancel outgoing fetches so we can optimistically update
-      await queryClient.cancelQueries({ queryKey: ['/api/event-requests'] });
-      await queryClient.cancelQueries({ queryKey: ['/api/event-requests', 'v2'] });
-
-      const patchList = (data: any) => {
-        if (!data) return data;
-        const patchArray = (arr: any[]) =>
-          arr.map((item) => (item?.id === id ? { ...item, [field]: value } : item));
-
-        if (Array.isArray(data)) return patchArray(data);
-        if (Array.isArray(data?.requests)) return { ...data, requests: patchArray(data.requests) };
-        if (Array.isArray(data?.items)) return { ...data, items: patchArray(data.items) };
-        return data;
-      };
-
-      const previousV1 = queryClient.getQueryData(['/api/event-requests']);
-      const previousV2 = queryClient.getQueryData(['/api/event-requests', 'v2']);
-
-      queryClient.setQueryData(['/api/event-requests'], (data) => patchList(data));
-      queryClient.setQueryData(['/api/event-requests', 'v2'], (data) => patchList(data));
-
-      return { previousV1, previousV2 };
-    },
+    // No optimistic update: the previous one patched ['/api/event-requests'] and
+    // [..,'v2'] cache keys that nothing reads (the list uses
+    // ['/api/event-requests/list', .., 'v3']), so it never affected the UI.
+    // onSettled below refreshes the real queries.
     onSuccess: async (updatedEvent, variables) => {
       toast({
         title: 'Field updated',
@@ -385,14 +365,7 @@ export const useEventMutations = () => {
       setEditingField(null);
       setEditingValue('');
     },
-    onError: (error: any, _vars, context) => {
-      // Roll back optimistic update
-      if (context?.previousV1) {
-        queryClient.setQueryData(['/api/event-requests'], context.previousV1);
-      }
-      if (context?.previousV2) {
-        queryClient.setQueryData(['/api/event-requests', 'v2'], context.previousV2);
-      }
+    onError: (error: any) => {
       logger.error('Inline field update error:', error);
 
       const status = error?.status;
