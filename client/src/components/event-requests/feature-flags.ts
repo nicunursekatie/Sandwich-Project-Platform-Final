@@ -1,8 +1,11 @@
 /**
- * Feature flags for the event-requests feature. Default OFF.
+ * Build-time UI toggles for the event-requests feature. Default OFF.
  *
- * These gate legacy / in-transition UI so it can be hidden without deleting the
- * code yet. Flip a flag to true to re-enable locally if needed.
+ * IMPORTANT: these are plain compile-time constants — NOT the runtime
+ * feature-flag system (`/api/feature-flags` + `useFeatureFlag`). There is no
+ * admin/runtime control: flipping one requires a code change and a rebuild/
+ * deploy. They exist only to gate legacy / in-transition UI so it can be hidden
+ * without deleting the code yet.
  */
 export const EVENT_REQUEST_FEATURES = {
   /**
