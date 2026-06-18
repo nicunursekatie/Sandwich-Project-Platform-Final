@@ -10,18 +10,14 @@ export function getSocketInstance(): Socket | null {
 }
 
 export function getOrCreateSocket(): Socket {
-  if (socketInstance && socketInstance.connected) {
-    return socketInstance;
-  }
-  
   if (socketInstance) {
     return socketInstance;
   }
 
   const socketUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  
+
   logger.log('[SocketSingleton] Creating new Socket.IO connection to:', socketUrl);
-  
+
   socketInstance = io(socketUrl, getDefaultSocketIoOptions());
 
   socketInstance.on('connect', () => {
@@ -52,6 +48,17 @@ export function getOrCreateSocket(): Socket {
   });
 
   return socketInstance;
+}
+
+/** Run handler on connect; also runs immediately when the socket is already connected. */
+export function onSocketConnect(socket: Socket, handler: () => void): () => void {
+  socket.on('connect', handler);
+  if (socket.connected) {
+    handler();
+  }
+  return () => {
+    socket.off('connect', handler);
+  };
 }
 
 export function disconnectSocket(): void {
