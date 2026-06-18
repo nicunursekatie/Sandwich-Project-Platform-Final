@@ -7,7 +7,6 @@
  * 3. Simplify the performSubmit function
  */
 
-import { FIELD_MAPPINGS } from './fieldConfig';
 import type { EventFormData } from './form-sections/types';
 export { findMismatchedSavedFields, getDroppedServerFields } from '@/lib/event-save-verification';
 
@@ -219,24 +218,6 @@ export function buildEventDataForServer(
 
   return eventData;
 }
-
-/**
- * Normalize a date string for comparison.
- * Extracts YYYY-MM-DD from ISO strings.
- */
-function normalizeDateForCompare(value: any): string | null {
-  if (!value) return null;
-  if (typeof value !== 'string') return String(value);
-  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-  return match ? match[1] : value;
-}
-
-/** Date field names that need special comparison logic (both server and client names) */
-const DATE_COMPARE_FIELDS = [
-  'desiredEventDate', 'eventDate', 'scheduledEventDate', 'toolkitSentDate',
-  'socialMediaPostRequestedDate', 'socialMediaPostCompletedDate', 'actualSandwichCountRecordedDate',
-  'followUpOneDayDate', 'followUpOneMonthDate', 'standbyExpectedDate',
-];
 
 /**
  * Determine sandwich mode from existing event data.

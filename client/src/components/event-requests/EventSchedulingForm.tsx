@@ -265,7 +265,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   // ── Data Fetching ──────────────────────────────────────────────────
 
-  const { data: fullEventRequest } = useQuery<EventRequest>({
+  const { data: fullEventRequest, isError: fullEventRequestError, refetch: refetchFullEventRequest } = useQuery<EventRequest>({
     queryKey: ['/api/event-requests', eventRequest?.id, 'full'],
     queryFn: async () => {
       const response = await fetch(`/api/event-requests/${eventRequest!.id}`, {
@@ -348,9 +348,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Version tracking for optimistic locking
-
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -966,10 +963,36 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // (formInitialized goes true on partial init, so it is NOT sufficient.
       // Create mode has no eventRequest and never reaches this branch.)
       if (!fullEventRequest || !formInitSessionRef.current?.endsWith('-full')) {
-        logger.log('⛔ Save blocked: form not yet initialized from full event data');
-        toast({ title: 'Please wait', description: 'Still loading the full event details — please try again in a moment.', variant: 'destructive' });
+        if (fullEventRequestError) {
+          // The full-record fetch FAILED (not just still loading). Don't leave
+          // the user stuck behind a misleading "still loading" message — kick a
+          // retry and tell them plainly. Saving stays blocked so a partial
+          // payload can't overwrite real data.
+          logger.log('⛔ Save blocked: full event data failed to load; retrying');
+          refetchFullEventRequest();
+          toast({
+            title: "Couldn't load this event",
+            description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or refresh the page if this keeps happening.",
+            variant: 'destructive',
+            duration: Number.POSITIVE_INFINITY,
+          });
+        } else {
+          logger.log('⛔ Save blocked: form not yet initialized from full event data');
+          toast({ title: 'Please wait', description: 'Still loading the full event details — please try again in a moment.', variant: 'destructive' });
+        }
         setIsSubmitting(false);
         return;
+      }
+
+      // The single date box maps to BOTH desiredEventDate and scheduledEventDate.
+      // In edit mode, if the user didn't change the date box, omit both date
+      // columns so a non-date save can't overwrite a scheduled event's CONFIRMED
+      // date with the originally-requested date (the box is initialized from
+      // desiredEventDate). Scheduling/rescheduling write the date via schedule
+      // mode / the Reschedule dialog.
+      if (mode === 'edit' && formData.eventDate === originalFormDataRef.current?.eventDate) {
+        delete eventData.scheduledEventDate;
+        delete eventData.desiredEventDate;
       }
 
       logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
