@@ -156,27 +156,49 @@ function encodeAssetPath(path: string): string {
 
 function getResourceOpenUrl(item: Resource): string | null {
   const { type, documentId, url, title } = item.resource;
+  const normalizedTitle = title?.trim() ?? '';
+
+  // Explicit URL wins — seeded link resources and admin-configured paths.
+  if (url?.trim()) {
+    const trimmed = url.trim();
+    if (trimmed.startsWith('/dashboard') || trimmed.startsWith('?')) {
+      return trimmed.startsWith('?') ? `/dashboard${trimmed}` : trimmed;
+    }
+    if (trimmed.startsWith('/')) {
+      return encodeAssetPath(trimmed);
+    }
+    return trimmed;
+  }
+
+  // Known static assets when DB url was cleared (e.g. bad edit).
+  const fallback = STATIC_RESOURCE_URLS[normalizedTitle];
+  if (fallback) {
+    return encodeAssetPath(fallback);
+  }
 
   if (type === 'file' && documentId) {
     return `/api/documents/${documentId}/preview`;
   }
 
-  if (url) {
-    if (url.startsWith('/dashboard') || url.startsWith('?')) {
-      return url.startsWith('?') ? `/dashboard${url}` : url;
-    }
-    if (url.startsWith('/')) {
-      return encodeAssetPath(url);
-    }
-    return url;
-  }
-
-  const fallback = STATIC_RESOURCE_URLS[title];
-  if (fallback) {
-    return encodeAssetPath(fallback);
-  }
-
   return null;
+}
+
+/** Open a URL in a new tab — anchor click is more reliable than window.open for PDFs. */
+function openUrlInNewTab(openUrl: string): boolean {
+  if (openUrl.startsWith('/dashboard')) {
+    window.location.href = openUrl;
+    return true;
+  }
+
+  const href = openUrl.startsWith('http') ? openUrl : `${window.location.origin}${openUrl}`;
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  return true;
 }
 
 // Sandwich Assembly Guides Component — backed by /api/host-resources.
@@ -811,18 +833,16 @@ export function Resources() {
       return;
     }
 
-    if (openUrl.startsWith('/dashboard')) {
-      window.location.href = openUrl;
-    } else {
-      const opened = window.open(openUrl, '_blank', 'noopener,noreferrer');
-      if (!opened) {
-        toast({
-          title: 'Popup blocked',
-          description: 'Your browser blocked the new tab. Allow popups for this site and try again.',
-          variant: 'destructive',
-        });
-        return;
-      }
+    try {
+      openUrlInNewTab(openUrl);
+    } catch (err) {
+      console.error('Failed to open resource:', err);
+      toast({
+        title: 'Unable to open',
+        description: 'Could not open this resource. Try Copy link and paste it into a new tab.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     trackAccess(resource.resource.id);
