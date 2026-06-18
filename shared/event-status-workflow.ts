@@ -149,3 +149,52 @@ export function getTransitionError(from: EventStatus, to: EventStatus): string {
 
   return `Cannot move from "${fromLabel}" to "${toLabel}". Valid next statuses are: ${allowedLabels.join(', ')}.`;
 }
+
+/**
+ * Statuses that require a reason, and the field that carries it.
+ *
+ * Single source of truth for the "needs a reason" rule — consumed by BOTH the
+ * client (to open the reason dialog) and the server (to enforce that a reason is
+ * actually recorded). Previously this list was hardcoded only on the client and
+ * the server enforced nothing, so a non-dialog path could record a declined /
+ * cancelled / non-event with no reason.
+ *
+ * NOTE: `rescheduled` is intentionally NOT here — it requires a new *date*
+ * (collected by RescheduleDialog), not a reason. `standby` / `stalled` have
+ * reason columns in the schema but reasons remain optional for them by design.
+ */
+export const STATUS_REASON_FIELD: Partial<Record<EventStatus, string>> = {
+  declined: 'declinedReason',
+  cancelled: 'cancelledReason',
+  non_event: 'nonEventReason',
+};
+
+/** Whether moving an event to `status` requires a reason to be recorded. */
+export function requiresReason(status: EventStatus): boolean {
+  return status in STATUS_REASON_FIELD;
+}
+
+/** The field name that carries the required reason for `status`, if any. */
+export function getReasonField(status: EventStatus): string | undefined {
+  return STATUS_REASON_FIELD[status];
+}
+
+/**
+ * Pure transition side-effect: when an event becomes Scheduled with no scheduled
+ * date set yet, fall back to its desired date.
+ *
+ * Centralized here so EVERY scheduling path obeys the same rule. Previously this
+ * lived only in the client status handler, so other paths (e.g. QuickSchedule)
+ * could schedule an event without carrying a date forward. Returns the date to
+ * use, or undefined when no default applies. Impure side-effects (timestamps,
+ * acting user, auto-confirm) stay in the server handler.
+ */
+export function getScheduledDateDefault<T extends string | Date>(
+  toStatus: EventStatus,
+  currentScheduledDate: T | null | undefined,
+  desiredDate: T | null | undefined,
+): T | undefined {
+  if (toStatus !== 'scheduled') return undefined;
+  if (currentScheduledDate) return undefined;
+  return desiredDate ?? undefined;
+}

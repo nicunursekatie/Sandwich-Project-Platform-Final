@@ -15,7 +15,7 @@ import {
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
-import { isValidTransition, getTransitionError, type EventStatus } from '@shared/event-status-workflow';
+import { isValidTransition, getTransitionError, requiresReason, getReasonField, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 import { toLightweightEventRequest } from '@shared/event-list-projection';
 import { requirePermission } from '../middleware/auth';
@@ -2633,7 +2633,42 @@ router.patch(
           });
         }
 
+        // Enforce that reason-required transitions actually record a reason.
+        // Single source of truth: requiresReason()/getReasonField() in the shared
+        // workflow. The reason may arrive in this request OR already exist on the
+        // record (e.g. the Undo action restoring a prior declined/cancelled state,
+        // or re-entering the status). An explicit empty value counts as clearing.
+        if (requiresReason(toStatus)) {
+          const reasonField = getReasonField(toStatus)!;
+          const incoming = (processedUpdates as any)[reasonField];
+          const existing = (originalEvent as any)[reasonField];
+          const hasIncoming = typeof incoming === 'string' && incoming.trim() !== '';
+          const hasExisting = typeof existing === 'string' && existing.trim() !== '';
+          const clearingReason = incoming !== undefined && !hasIncoming;
+          if (!(hasIncoming || (!clearingReason && hasExisting))) {
+            logger.warn(`[PATCH /:id] Missing required reason for event ${id}: ${fromStatus} → ${toStatus}`);
+            return res.status(400).json({
+              message: `A reason is required to mark this event as "${toStatus}".`,
+              error: 'MISSING_REASON',
+              requestedStatus: toStatus,
+              reasonField,
+            });
+          }
+        }
+
         processedUpdates.statusChangedAt = new Date();
+
+        // Pure transition side-effect from the shared workflow: when scheduling
+        // an event with no date yet, fall back to its desired date. Applied here
+        // so every scheduling path is consistent (the client no longer does it).
+        const scheduledDateDefault = getScheduledDateDefault(
+          toStatus,
+          processedUpdates.scheduledEventDate ?? originalEvent.scheduledEventDate,
+          originalEvent.desiredEventDate,
+        );
+        if (scheduledDateDefault !== undefined) {
+          processedUpdates.scheduledEventDate = scheduledDateDefault;
+        }
 
         // If status is changing to 'completed', auto-confirm the event
         if (processedUpdates.status === 'completed') {
