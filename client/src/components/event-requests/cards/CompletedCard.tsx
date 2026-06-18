@@ -473,6 +473,20 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {request.selfTransport && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium inline-flex items-center gap-1 cursor-help">
+                    <Car className="w-3 h-3" />
+                    <span className="hidden sm:inline">Self-Transport</span>
+                    <span className="sm:hidden">Self</span>
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{indicatorTooltips.selfTransport}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
           <div className="text-sm text-[#236383] mt-1 space-y-1">
             {/* Contact Information */}
@@ -2165,7 +2179,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const volunteersNeeded = request.volunteersNeeded || 0;
 
   // Use drivers.length for consistency with the displayed count and other checks
-  if (driversNeeded > drivers.length) {
+  if (!request.selfTransport && driversNeeded > drivers.length) {
     staffingGaps.push(`Needed ${driversNeeded} driver${driversNeeded > 1 ? 's' : ''} (had ${drivers.length})`);
   }
   if (speakersNeeded > speakers.length) {
@@ -2738,43 +2752,56 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
                 <span className="text-gray-300">|</span>
 
-                {/* Drivers */}
+                {/* Drivers or Self-Transport */}
                 <div className="flex items-center gap-1">
                   <Car className="w-4 h-4 text-[#236383]" />
-                  <span className="font-medium text-[#236383]">Drivers:</span>
-                  {canEditAssignments && openAssignmentDialog && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openAssignmentDialog('driver')}
-                      className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                      title="Add driver"
+                  {request.selfTransport ? (
+                    <Badge
+                      variant="outline"
+                      className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-medium text-xs px-2 py-0.5"
+                      title={indicatorTooltips.selfTransport}
                     >
-                      <UserPlus className="w-3 h-3 text-[#236383]" />
-                    </Button>
-                  )}
-                  {drivers.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {drivers.map((driver) => (
-                        <Badge
-                          key={driver.id}
-                          variant="secondary"
-                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
-                        >
-                          {driver.name}
-                          {canEditAssignments && handleRemoveAssignment && (
-                            <button
-                              onClick={() => handleRemoveAssignment('driver', driver.id)}
-                              className="ml-1 text-gray-400 hover:text-red-600"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                        </Badge>
-                      ))}
-                    </div>
+                      <Car className="w-3 h-3 mr-1" />
+                      Self-Transport
+                    </Badge>
                   ) : (
-                    <span className="text-gray-500 italic text-xs">(none)</span>
+                    <>
+                      <span className="font-medium text-[#236383]">Drivers:</span>
+                      {canEditAssignments && openAssignmentDialog && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => openAssignmentDialog('driver')}
+                          className="h-5 w-5 p-0 hover:bg-[#236383]/10"
+                          title="Add driver"
+                        >
+                          <UserPlus className="w-3 h-3 text-[#236383]" />
+                        </Button>
+                      )}
+                      {drivers.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {drivers.map((driver) => (
+                            <Badge
+                              key={driver.id}
+                              variant="secondary"
+                              className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
+                            >
+                              {driver.name}
+                              {canEditAssignments && handleRemoveAssignment && (
+                                <button
+                                  onClick={() => handleRemoveAssignment('driver', driver.id)}
+                                  className="ml-1 text-gray-400 hover:text-red-600"
+                                >
+                                  <X className="w-2.5 h-2.5" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 italic text-xs">(none)</span>
+                      )}
+                    </>
                   )}
                 </div>
 
