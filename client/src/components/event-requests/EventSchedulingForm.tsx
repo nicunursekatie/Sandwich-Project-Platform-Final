@@ -956,13 +956,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // FULL-FORM SAVE (B5): send the entire built payload, not a change-detected
       // subset. Removes the silent-dropped-field bug class (van flags, baseline
       // drift) at the root.
-      // GUARD: never send a full payload before the full record has loaded —
-      // otherwise blank defaults from the lightweight list prop could overwrite
-      // real full-record fields. (formInitialized goes true on partial init, so
-      // it is NOT a sufficient guard here; fullEventRequest is. Create mode has
-      // no eventRequest and never reaches this branch.)
-      if (!fullEventRequest) {
-        logger.log('⛔ Save blocked: full event data not loaded yet');
+      // GUARD: never send a full payload until the form has been INITIALIZED FROM
+      // the full record — not merely until the full query resolved. The full
+      // query (fullEventRequest) can become available one render before the
+      // partial→full init effect runs; saving in that window would build the
+      // payload from lightweight-list/default values and overwrite fields that
+      // are missing from the list prop. formInitSessionRef ends with '-full' only
+      // after that init effect has run, so it is the authoritative signal here.
+      // (formInitialized goes true on partial init, so it is NOT sufficient.
+      // Create mode has no eventRequest and never reaches this branch.)
+      if (!fullEventRequest || !formInitSessionRef.current?.endsWith('-full')) {
+        logger.log('⛔ Save blocked: form not yet initialized from full event data');
         toast({ title: 'Please wait', description: 'Still loading the full event details — please try again in a moment.', variant: 'destructive' });
         setIsSubmitting(false);
         return;
