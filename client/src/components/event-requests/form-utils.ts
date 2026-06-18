@@ -3,7 +3,7 @@
  *
  * Extracted from EventSchedulingForm.tsx to:
  * 1. Eliminate duplication in form data serialization
- * 2. Make change detection logic testable
+ * 2. Make payload-building / serialization logic testable
  * 3. Simplify the performSubmit function
  */
 
