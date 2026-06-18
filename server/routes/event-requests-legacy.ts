@@ -17,6 +17,7 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
 import { isValidTransition, getTransitionError, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
+import { toLightweightEventRequest } from '@shared/event-list-projection';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
@@ -1262,10 +1263,13 @@ router.get(
  *   - ScheduledSpreadsheetView.tsx
  *   - IntakeCallDialog.tsx
  *
- * RULES:
- *   1. If you modify ANY of those components to use a new field, you MUST add it here.
- *   2. If you add a field here, document which component needs it in the comments below.
- *   3. Do NOT remove fields without checking all consuming components.
+ * NOTE: The field list now lives in ONE place — shared/event-list-projection.ts
+ * (`toLightweightEventRequest`), which also exports `LightweightEventRequest`.
+ * Once the client adopts that type, the server payload and client type can no
+ * longer drift (TypeScript would flag a card reading a field the projection
+ * omits). That client adoption is deferred for now; today this just centralizes
+ * the shape. Add new list fields in the projection. The notes below are kept for
+ * historical reference only.
  *
  * FIELD REQUIREMENTS BY COMPONENT:
  *   - ALL CARDS: id, organizationName, department, status, scheduledEventDate,
@@ -1404,148 +1408,15 @@ router.get(
         eventRequests = eventRequests.filter(event => event.isCorporatePriority === true);
       }
 
-      // Map to lightweight format - see FIELD CONTRACT comment above
-      const lightweightEvents = eventRequests.map(event => ({
-        // ========== IDENTITY ==========
-        id: event.id,
-
-        // ========== ORGANIZATION (All cards) ==========
-        organizationName: event.organizationName,
-        organizationCategory: event.organizationCategory,
-        department: event.department,
-        partnerOrganizations: event.partnerOrganizations, // All cards
-
-        // ========== CONTACT (All cards, IntakeCallDialog) ==========
-        firstName: event.firstName,
-        lastName: event.lastName,
-        email: event.email,
-        phone: event.phone,
-        // Backup contact (NewRequestCard, CompletedCard)
-        backupContactFirstName: (event as any).backupContactFirstName,
-        backupContactLastName: (event as any).backupContactLastName,
-        backupContactEmail: (event as any).backupContactEmail,
-        backupContactPhone: (event as any).backupContactPhone,
-        backupContactRole: (event as any).backupContactRole,
-
-        // ========== DATES (All cards) ==========
-        desiredEventDate: event.desiredEventDate,
-        scheduledEventDate: event.scheduledEventDate,
-        isConfirmed: event.isConfirmed,
-        backupDates: event.backupDates, // NewRequestCard
-
-        // ========== STATUS & WORKFLOW ==========
-        status: event.status,
-        statusChangedAt: event.statusChangedAt,
-        assignedTo: event.assignedTo,
-        nextAction: event.nextAction, // NewRequestCard
-        message: event.message, // NewRequestCard
-        scheduledCallDate: event.scheduledCallDate, // InProcessCard - scheduled call with organizer
-
-        // ========== LOCATION (ScheduledCard, NewRequestCard) ==========
-        eventAddress: event.eventAddress,
-        latitude: event.latitude,
-        longitude: event.longitude,
-
-        // ========== SANDWICH COUNTS & TYPES ==========
-        estimatedSandwichCount: event.estimatedSandwichCount,
-        estimatedSandwichCountMin: event.estimatedSandwichCountMin, // ScheduledCard
-        estimatedSandwichCountMax: event.estimatedSandwichCountMax, // ScheduledCard
-        estimatedSandwichRangeType: event.estimatedSandwichRangeType, // ScheduledCard
-        actualSandwichCount: event.actualSandwichCount,
-        sandwichTypes: event.sandwichTypes, // NewRequestCard, ScheduledCard, CompletedCard
-        hasRefrigeration: event.hasRefrigeration, // RefrigerationWarningBadge on all cards
-        volunteerCount: event.volunteerCount,
-        actualAttendance: event.actualAttendance,
-        estimatedAttendance: event.estimatedAttendance,
-        attendanceAdults: event.attendanceAdults,
-        attendanceTeens: event.attendanceTeens,
-        attendanceKids: event.attendanceKids,
-
-        // ========== DRIVER STAFFING ==========
-        driversNeeded: event.driversNeeded,
-        assignedDriverIds: event.assignedDriverIds,
-        driverDetails: event.driverDetails,
-        selfTransport: event.selfTransport,
-        tentativeDriverIds: event.tentativeDriverIds,
-
-        // ========== SPEAKER STAFFING ==========
-        speakersNeeded: event.speakersNeeded,
-        assignedSpeakerIds: event.assignedSpeakerIds,
-        tentativeSpeakerIds: event.tentativeSpeakerIds,
-        speakerDetails: event.speakerDetails,
-
-        // ========== VOLUNTEER STAFFING ==========
-        volunteersNeeded: event.volunteersNeeded,
-        assignedVolunteerIds: event.assignedVolunteerIds,
-        tentativeVolunteerIds: event.tentativeVolunteerIds,
-        volunteerDetails: event.volunteerDetails,
-
-        // ========== VAN DRIVER ==========
-        vanDriverNeeded: event.vanDriverNeeded,
-        assignedVanDriverId: event.assignedVanDriverId,
-        isDhlVan: event.isDhlVan,
-        customVanDriverName: event.customVanDriverName, // ScheduledCardEnhanced
-
-        // ========== TSP CONTACT (All cards) ==========
-        tspContact: event.tspContact, // Actual user ID
-        tspContactAssigned: event.tspContactAssigned, // Display name
-        customTspContact: event.customTspContact,
-        tspContactAssignedDate: event.tspContactAssignedDate,
-
-        // ========== TOOLKIT STATUS ==========
-        toolkitSent: event.toolkitSent,
-        toolkitStatus: event.toolkitStatus,
-
-        // ========== TIMES (ScheduledCard, EventEditDialog) ==========
-        eventStartTime: event.eventStartTime,
-        eventEndTime: event.eventEndTime,
-        pickupTime: event.pickupTime,
-        pickupDateTime: event.pickupDateTime,
-        pickupTimeWindow: event.pickupTimeWindow, // EventEditDialog
-
-        // ========== TRACKING FLAGS ==========
-        addedToOfficialSheet: event.addedToOfficialSheet,
-        addedToOfficialSheetAt: event.addedToOfficialSheetAt,
-        showOnVolunteerHub: (event as any).showOnVolunteerHub, // ScheduledCardEnhanced badge
-        isUnresponsive: event.isUnresponsive,
-        contactAttempts: event.contactAttempts,
-        lastContactAttempt: event.lastContactAttempt, // NewRequestCard
-        hasHostedBefore: event.previouslyHosted === 'yes', // Computed from previouslyHosted column
-        previouslyHosted: event.previouslyHosted, // Raw value: 'yes', 'no', 'i_dont_know'
-
-        // ========== NOTES (ScheduledCard, ScheduledCardEnhanced) ==========
-        planningNotes: event.planningNotes,
-        schedulingNotes: event.schedulingNotes,
-        contactAttemptsLog: event.contactAttemptsLog,
-        unresponsiveNotes: event.unresponsiveNotes,
-        followUpNotes: event.followUpNotes,
-        distributionNotes: event.distributionNotes,
-        duplicateNotes: event.duplicateNotes,
-        socialMediaPostNotes: event.socialMediaPostNotes,
-        socialMediaPostRequested: event.socialMediaPostRequested,
-        socialMediaPostRequestedDate: event.socialMediaPostRequestedDate,
-        socialMediaPostCompleted: event.socialMediaPostCompleted,
-        socialMediaPostCompletedDate: event.socialMediaPostCompletedDate,
-        socialMediaPostLink: event.socialMediaPostLink,
-
-        // ========== RECIPIENT ALLOCATION (ScheduledCard, SpreadsheetView) ==========
-        assignedRecipientIds: event.assignedRecipientIds,
-        recipientAllocations: event.recipientAllocations, // ScheduledCardEnhanced
-
-        // ========== SPECIAL FLAGS ==========
-        isMlkDayEvent: event.isMlkDayEvent, // ScheduledCardEnhanced
-        isCorporatePriority: event.isCorporatePriority, // EventEditDialog, CorporatePriorityBadge
-        externalId: event.externalId, // ScheduledCard
-        overnightHoldingLocation: event.overnightHoldingLocation, // ScheduledCard
-
-        // ========== POSTPONEMENT (PostponedCard) ==========
-        tentativeNewDate: event.tentativeNewDate,
-        postponementReason: event.postponementReason,
-
-        // ========== TIMESTAMPS ==========
-        createdAt: event.createdAt,
-        updatedAt: event.updatedAt,
-      }));
+      // Map to the lightweight list shape. SINGLE SOURCE OF TRUTH:
+      // shared/event-list-projection.ts — it also exports LightweightEventRequest.
+      // Once the client adopts that type, the server payload and client type can
+      // no longer drift (this was "Cause B": a field a card read but the list
+      // didn't send rendered blank). Client adoption is deferred; for now this
+      // centralizes the shape. Add new list fields in the projection.
+      const lightweightEvents = eventRequests.map((event) =>
+        toLightweightEventRequest(event as any)
+      );
 
       logger.info(`📋 List endpoint returning ${lightweightEvents.length} lightweight events`);
       res.json(lightweightEvents);

@@ -59,7 +59,7 @@ These are the bugs that produce most of the "it ate my edit / it told me there w
    List query reads from `['/api/event-requests/list', filterParams, quickFilter, 'v3']` ([eventRequestsListQuery.ts:102](client/src/components/event-requests/lib/eventRequestsListQuery.ts)). Optimistic patches in `useEventMutations` set `['/api/event-requests']` and `['/api/event-requests', 'v2']` ([useEventMutations.tsx:368-369](client/src/components/event-requests/hooks/useEventMutations.tsx)). **The keys never overlap.** The optimistic-update layer is effectively dead code; `onSettled` then runs the sledgehammer anyway. **History:** added Dec 2025 for inline scheduled edits; list migrated to `/list` … `v3` keys afterward — optimistic path was never rewired (classic AI-accretion half-fix).
 
 4. **Row-level `_expectedVersion` check → spurious 409s** *(row-level gate **removed** PR #417 — see §1.5)*.
-   PATCH at [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) now **strips** `_expectedVersion` and does not 409 on `updatedAt` drift. Client still sends the field from [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx), [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx), and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx) — dead code cleanup pending.
+   PATCH at [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) now **strips** `_expectedVersion` and does not 409 on `updatedAt` drift. `EventSchedulingForm`'s send was removed with full-form save (PR #418); [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx) and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx) still send the now-ignored field — dead code cleanup pending (§B8).
 
    **Historical 409 triggers** (pre-#417; scratchpad removed §1.6):
 
@@ -163,7 +163,7 @@ Do not rebuild these:
 | Ignore own socket echo | `b20a1e220` | `X-Socket-Id` on [apiRequest](client/src/lib/queryClient.ts); server echoes `originSocketId`; [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) skips matching id. Removes redundant refetch on your own save. Fails safe if socket not connected. |
 | Scratchpad list sync without refetch storm | `13f049395` | Surgical list-cache patch in scratchpad (component since removed §1.6). Pattern to reimplement in `queryClient.ts` for B1. |
 | Intake paths no longer rely on echo | same PR | [IntakeCallDialog.tsx](client/src/components/event-requests/IntakeCallDialog.tsx) calls `invalidateEventRequestQueries` after save-notes / move-to-non-event. |
-| Remove row-level version gate on PATCH | `4c2ff41fd` (PR #417) | [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) strips `_expectedVersion`; no 409 on `updatedAt` drift. **Unblocks Cause A root fix** (§2.5, §B5) — partial saves no longer needed to avoid row-level collisions. Client still sends `_expectedVersion` in 3 places; delete in §B8. |
+| Remove row-level version gate on PATCH | `4c2ff41fd` (PR #417) | [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) strips `_expectedVersion`; no 409 on `updatedAt` drift. **Unblocks Cause A root fix** (§2.5, §B5) — partial saves no longer needed to avoid row-level collisions. Form send removed in PR #418; `_expectedVersion` still sent from 2 remaining client paths; delete in §B8. |
 | Full-form save (Cause A root fix) | `08ca814a7` (PR #418) | [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) PATCHes full `buildEventDataForServer()` output; `detectChangedFields` deleted. Guards: must init from full record (`formInitSessionRef` ends `-full`); edit mode omits date columns when date box unchanged. |
 | Call Notes Scratchpad removed | `4f46dcd3e` | See §1.6 — ~400 lines deleted; audit showed zero usage. |
 | Resources Open button fix | `188fd17eb` | [resources.tsx](client/src/pages/resources.tsx) — URL priority + anchor click for reliable open. |
@@ -596,7 +596,7 @@ Priority 1–2 pass on real events over 2–3 days of normal use → B5 is doing
 - Smoke (regression): save a field; confirm no *second* full refetch from own echo in Network panel.
 
 **B8. Strip dead client `_expectedVersion` + Sheets backfill fix**
-- Server already strips `_expectedVersion` (PR #417). Remove sends from [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx), [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx), [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx).
+- Server already strips `_expectedVersion` (PR #417). `EventSchedulingForm`'s send already removed (PR #418); remove the remaining sends from [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx) and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx).
 - If needed: don't bump `updatedAt` on Sheets backfill-only writes.
 - Partially overlaps §B5 step 3 — do together.
 
