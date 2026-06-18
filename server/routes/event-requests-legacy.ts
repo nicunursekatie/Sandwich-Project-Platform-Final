@@ -2664,7 +2664,9 @@ router.patch(
         const scheduledDateDefault = getScheduledDateDefault(
           toStatus,
           processedUpdates.scheduledEventDate ?? originalEvent.scheduledEventDate,
-          originalEvent.desiredEventDate,
+          // Prefer a desired date set in this same request over the stored one,
+          // so updating the desired date and scheduling in one PATCH uses the new date.
+          processedUpdates.desiredEventDate ?? originalEvent.desiredEventDate,
         );
         if (scheduledDateDefault !== undefined) {
           processedUpdates.scheduledEventDate = scheduledDateDefault;
