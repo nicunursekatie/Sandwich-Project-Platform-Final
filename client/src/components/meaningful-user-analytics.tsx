@@ -151,16 +151,15 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
     staleTime: 180000, // 3 minutes
   });
 
-  // Filter out admin users and sample data, then sort
+  // Filter out the literal sample-data row from the fallback. Real admins and
+  // admin_coordinators are part of the team and should appear on this view.
   const sortedUsers =
     userActivities
       ?.filter((user) => {
-        // Exclude admin roles and sample data
-        const isAdmin = user.role?.toLowerCase().includes('admin');
-        const isSampleData = 
+        const isSampleData =
           user.email?.includes('admin@sandwich.project') ||
-          user.userName?.toLowerCase().includes('admin user');
-        return !isAdmin && !isSampleData;
+          user.userName?.toLowerCase() === 'admin user';
+        return !isSampleData;
       })
       .sort((a, b) => {
         switch (sortBy) {

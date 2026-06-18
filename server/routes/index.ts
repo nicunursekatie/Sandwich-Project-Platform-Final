@@ -73,6 +73,7 @@ import { createMessageNotificationsRouter } from './message-notifications';
 import { createAnnouncementsRouter } from './announcements';
 import { createPerformanceRouter } from './performance';
 import { createAuditLogsRouter } from './audit-logs';
+import { createMeaningfulAnalyticsRouter } from './meaningful-analytics';
 import { createApiDocsRouter } from './api-docs';
 import featureFlagsRouter from './feature-flags';
 import activitiesRouter from './activities';
@@ -612,6 +613,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     auditLogsRouter
   );
   router.use('/api/audit-logs', createErrorHandler('audit-logs'));
+
+  // Impact analytics for User Management → Impact tab
+  router.use(
+    '/api/meaningful-analytics',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    createMeaningfulAnalyticsRouter()
+  );
+  router.use(
+    '/api/meaningful-analytics',
+    createErrorHandler('meaningful-analytics')
+  );
 
   // Feature Flags router (for gradual rollout)
   router.use(
