@@ -83,9 +83,10 @@ interface EventRequestProviderProps {
 }
 
 /**
- * Public provider. Wraps the inner provider in EventDialogProvider so the
- * inner can `useEventDialogState()` and pass dialog fields through on the
- * existing EventRequestContext value (Strangler Pattern, PR 1 of 3).
+ * Public provider. Wraps the tree in EventDialogProvider so components can call
+ * useEventDialogState() for dialog/inline-edit state, while this provider serves
+ * data/view/pagination via useEventRequestContext(). (The two were previously
+ * merged; the dialog state was split out and the pass-through removed.)
  */
 export const EventRequestProvider: React.FC<EventRequestProviderProps> = (props) => (
   <EventDialogProvider>
@@ -491,11 +492,11 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     }
   }, [initialTab, initialEventId, eventRequests, hasHandledInitialEvent]);
 
-  // Memoize context value. Dialog/inline-editing fields come from the
-  // separate EventDialogContext via `dialog` and are spread here so existing
-  // consumers see the same shape (Strangler Pattern pass-through). PR 2 will
-  // switch consumers to call useEventDialogState() directly and remove the
-  // dialog spread, which is where the re-render perf win lands.
+  // Memoize context value. This context now owns ONLY data / view / pagination
+  // state — dialog and inline-editing state lives on EventDialogContext and is
+  // consumed directly via useEventDialogState(). The Strangler pass-through that
+  // used to spread those fields here was removed (that's where the re-render win
+  // landed: consumers subscribe to just the context they need).
   const value: EventRequestContextType = useMemo(() => ({
     // ---- Fields owned by this context ----
     // Data
