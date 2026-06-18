@@ -1264,10 +1264,12 @@ router.get(
  *   - IntakeCallDialog.tsx
  *
  * NOTE: The field list now lives in ONE place — shared/event-list-projection.ts
- * (`toLightweightEventRequest`). The client derives `LightweightEventRequest`
- * from it, so the server payload and the client type cannot drift. Add new list
- * fields there, once; TypeScript will flag any card that reads a field the
- * projection omits. The notes below are kept for historical reference only.
+ * (`toLightweightEventRequest`), which also exports `LightweightEventRequest`.
+ * Once the client adopts that type, the server payload and client type can no
+ * longer drift (TypeScript would flag a card reading a field the projection
+ * omits). That client adoption is deferred for now; today this just centralizes
+ * the shape. Add new list fields in the projection. The notes below are kept for
+ * historical reference only.
  *
  * FIELD REQUIREMENTS BY COMPONENT:
  *   - ALL CARDS: id, organizationName, department, status, scheduledEventDate,
@@ -1407,10 +1409,11 @@ router.get(
       }
 
       // Map to the lightweight list shape. SINGLE SOURCE OF TRUTH:
-      // shared/event-list-projection.ts — the same function also drives the
-      // client's LightweightEventRequest type, so the server payload and the
-      // client type cannot drift (this was "Cause B": a field a card read but
-      // the list didn't send rendered blank). Add new list fields there, once.
+      // shared/event-list-projection.ts — it also exports LightweightEventRequest.
+      // Once the client adopts that type, the server payload and client type can
+      // no longer drift (this was "Cause B": a field a card read but the list
+      // didn't send rendered blank). Client adoption is deferred; for now this
+      // centralizes the shape. Add new list fields in the projection.
       const lightweightEvents = eventRequests.map((event) =>
         toLightweightEventRequest(event as any)
       );

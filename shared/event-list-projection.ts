@@ -3,15 +3,19 @@ import type { EventRequest } from './schema';
 /**
  * Single source of truth for the lightweight event-list projection.
  *
- * `GET /api/event-requests/list` returns exactly this shape, and the client
- * types the list query as `LightweightEventRequest`
- * (`ReturnType<typeof toLightweightEventRequest>`). Because the server payload
- * and the client type are both derived from this one function, they cannot
- * drift — which is what caused "Cause B": a field a card read but the list
- * didn't send rendered blank on the card even though it saved fine.
+ * `GET /api/event-requests/list` returns exactly this shape. The exported
+ * `LightweightEventRequest` type (`ReturnType<typeof toLightweightEventRequest>`)
+ * is derived from it. Once the client types the list query / card props as
+ * `LightweightEventRequest`, the server payload and the client type can no
+ * longer drift — a field a card reads but the list doesn't send would become a
+ * compile error instead of a blank card ("Cause B").
  *
- * To expose a new field to the cards: add it here, once. TypeScript will then
- * flag any card that reads a field this projection does not include.
+ * NOTE: that client-side adoption is NOT wired up yet (deferred — it's entangled
+ * with schema type debt; see PR notes). Today this centralizes the list shape in
+ * one place and fixes known drift; it does not yet enforce the contract at
+ * compile time.
+ *
+ * To expose a new field to the cards: add it here, once.
  *
  * Keep this a pure projection (field copies + the few documented computed
  * fields). Anything heavier belongs in the full-record endpoint.
@@ -32,11 +36,11 @@ export function toLightweightEventRequest(event: EventRequest) {
     lastName: event.lastName,
     email: event.email,
     phone: event.phone,
-    backupContactFirstName: (event as any).backupContactFirstName,
-    backupContactLastName: (event as any).backupContactLastName,
-    backupContactEmail: (event as any).backupContactEmail,
-    backupContactPhone: (event as any).backupContactPhone,
-    backupContactRole: (event as any).backupContactRole,
+    backupContactFirstName: event.backupContactFirstName,
+    backupContactLastName: event.backupContactLastName,
+    backupContactEmail: event.backupContactEmail,
+    backupContactPhone: event.backupContactPhone,
+    backupContactRole: event.backupContactRole,
 
     // ========== DATES (All cards) ==========
     desiredEventDate: event.desiredEventDate,
@@ -93,6 +97,7 @@ export function toLightweightEventRequest(event: EventRequest) {
 
     // ========== VAN DRIVER ==========
     vanDriverNeeded: event.vanDriverNeeded,
+    vanNeededLikely: event.vanNeededLikely, // read by InProcess/Scheduled cards — was missing from the list (live Cause B)
     assignedVanDriverId: event.assignedVanDriverId,
     isDhlVan: event.isDhlVan,
     customVanDriverName: event.customVanDriverName,
@@ -117,7 +122,7 @@ export function toLightweightEventRequest(event: EventRequest) {
     // ========== TRACKING FLAGS ==========
     addedToOfficialSheet: event.addedToOfficialSheet,
     addedToOfficialSheetAt: event.addedToOfficialSheetAt,
-    showOnVolunteerHub: (event as any).showOnVolunteerHub,
+    showOnVolunteerHub: event.showOnVolunteerHub,
     isUnresponsive: event.isUnresponsive,
     contactAttempts: event.contactAttempts,
     lastContactAttempt: event.lastContactAttempt,
@@ -157,10 +162,10 @@ export function toLightweightEventRequest(event: EventRequest) {
     // Added with the §B9 projection: these were read by NonEventCard but were
     // missing from the old hand-maintained mapper, so the reason/notes rendered
     // blank on Non-Event cards (a live "Cause B" instance).
-    nonEventReason: (event as any).nonEventReason,
-    nonEventNotes: (event as any).nonEventNotes,
-    nonEventBy: (event as any).nonEventBy,
-    nonEventAt: (event as any).nonEventAt,
+    nonEventReason: event.nonEventReason,
+    nonEventNotes: event.nonEventNotes,
+    nonEventBy: event.nonEventBy,
+    nonEventAt: event.nonEventAt,
 
     // ========== TIMESTAMPS ==========
     createdAt: event.createdAt,
