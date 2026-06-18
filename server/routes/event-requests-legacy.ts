@@ -2634,30 +2634,24 @@ router.patch(
         }
       }
 
-      // Extract and remove optimistic locking field from updates before processing
-      const expectedVersion = updates._expectedVersion;
+      // Row-level optimistic locking REMOVED for the normal edit path.
+      // The old _expectedVersion check returned 409 whenever updatedAt changed
+      // AT ALL since the client loaded the event — which fired far more false
+      // "someone else edited this" errors than it ever prevented real conflicts.
+      // The common triggers were the SAME operator (their scratchpad auto-save
+      // bumping updatedAt, the Google Sheets message-backfill, or two quick
+      // edits in a row), not a second person. For this mostly single-editor
+      // intake workflow, blocking the whole save in those cases was net-harmful.
+      // We still strip the field so it's never written as a column. If genuine
+      // concurrent co-editing ever becomes a real problem, add a FIELD-LEVEL
+      // check here (conflict only when the same field changed) rather than
+      // reinstating the row-level gate.
       delete updates._expectedVersion;
 
       // Get original data for audit logging
       logger.info(`[PATCH /:id] About to fetch event ${id} from storage`);
       const originalEvent = await storage.getEventRequestById(id);
       logger.info(`[PATCH /:id] Storage returned:`, originalEvent ? `Event found (${originalEvent.organizationName})` : 'null/undefined');
-
-      // Optimistic locking: if the client sent _expectedVersion, verify the event
-      // hasn't been modified by someone else since they loaded it.
-      // This prevents silent overwrites when two users edit the same event.
-      if (expectedVersion && originalEvent?.updatedAt) {
-        const clientVersion = new Date(expectedVersion).getTime();
-        const serverVersion = new Date(originalEvent.updatedAt).getTime();
-        if (clientVersion !== serverVersion) {
-          logger.warn(`[PATCH /:id] Optimistic lock conflict for event ${id}: client version ${new Date(expectedVersion).toISOString()} vs server version ${new Date(originalEvent.updatedAt).toISOString()}`);
-          return res.status(409).json({
-            message: 'This event was modified by another user while you were editing. Please refresh and try again.',
-            error: 'CONFLICT',
-            serverVersion: originalEvent.updatedAt,
-          });
-        }
-      }
 
       if (!originalEvent) {
         logger.error(`[PATCH /:id] Event request ${id} not found in database`);
