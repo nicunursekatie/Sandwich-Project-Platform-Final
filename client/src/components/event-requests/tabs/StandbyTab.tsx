@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const StandbyTab: React.FC = () => {
   const { toast } = useToast();
@@ -111,7 +112,8 @@ export const StandbyTab: React.FC = () => {
             No standby events
           </div>
         ) : (
-          standbyRequests.map((request) => (
+          <EventListBatchProviders events={standbyRequests}>
+          {standbyRequests.map((request) => (
           <StandbyCard
             key={request.id}
             request={request}
@@ -159,7 +161,8 @@ export const StandbyTab: React.FC = () => {
               }
             }}
           />
-          ))
+          ))}
+          </EventListBatchProviders>
         )}
       </div>
     </>

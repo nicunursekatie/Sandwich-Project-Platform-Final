@@ -23,7 +23,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest } from '@/lib/queryClient';
-import type { WorkingRecordContext } from '@/contexts/issue-report-context';
+import type { WorkingRecordContext, IssueReportDraft } from '@/contexts/issue-report-context';
 import { Loader2, MessageSquareWarning } from 'lucide-react';
 
 const RECORD_TYPE_OPTIONS = [
@@ -42,12 +42,14 @@ interface ReportIssueDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workingRecord: WorkingRecordContext | null;
+  initialDraft?: IssueReportDraft | null;
 }
 
 export function ReportIssueDialog({
   open,
   onOpenChange,
   workingRecord,
+  initialDraft,
 }: ReportIssueDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -62,16 +64,20 @@ export function ReportIssueDialog({
 
   useEffect(() => {
     if (!open) return;
+    const merged = { ...workingRecord, ...initialDraft };
     setPagePath(buildPagePath());
     setPageLabel(
-      workingRecord?.pageLabel ||
+      merged.pageLabel ||
         (typeof document !== 'undefined' ? document.title : '') ||
         ''
     );
-    setRecordType(workingRecord?.recordType || '');
-    setRecordId(workingRecord?.recordId || '');
-    setRecordLabel(workingRecord?.recordLabel || '');
-  }, [open, workingRecord]);
+    setWhatDoing(merged.whatDoing || '');
+    setExpectedOutcome(merged.expectedOutcome || '');
+    setActualOutcome(merged.actualOutcome || '');
+    setRecordType(merged.recordType || '');
+    setRecordId(merged.recordId || '');
+    setRecordLabel(merged.recordLabel || '');
+  }, [open, workingRecord, initialDraft]);
 
   const submitMutation = useMutation({
     mutationFn: () =>

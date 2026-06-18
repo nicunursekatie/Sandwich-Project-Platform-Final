@@ -189,4 +189,41 @@ router.get('/check-returning-org', isAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * Batch returning-org checks for visible event lists (one request per tab).
+ * POST /api/event-requests/check-returning-org/bulk
+ */
+router.post('/check-returning-org/bulk', isAuthenticated, async (req, res) => {
+  try {
+    const { z } = await import('zod');
+    const bulkSchema = z.object({
+      items: z
+        .array(
+          z.object({
+            eventId: z.number().int().positive(),
+            orgName: z.string().min(1).max(500),
+            contactEmail: z.string().max(320).optional().nullable(),
+            contactName: z.string().max(200).optional().nullable(),
+            contactPhone: z.string().max(50).optional().nullable(),
+            department: z.string().max(200).optional().nullable(),
+          })
+        )
+        .max(100),
+    });
+
+    const { items } = bulkSchema.parse(req.body);
+    const { checkReturningOrganizationsBulk } = await import(
+      '../../services/organizations/returning-organization'
+    );
+    const data = await checkReturningOrganizationsBulk(items);
+    res.json({ data });
+  } catch (error) {
+    logger.error('Error in bulk returning organization check:', error);
+    res.status(500).json({
+      data: {},
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 export default router;

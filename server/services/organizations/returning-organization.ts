@@ -783,3 +783,86 @@ export async function checkReturningOrganization(
     throw error;
   }
 }
+
+export type ReturningOrganizationResult = Awaited<ReturnType<typeof checkReturningOrganization>>;
+
+export interface ReturningOrgBulkItem {
+  eventId: number;
+  orgName: string;
+  contactEmail?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  department?: string | null;
+}
+
+const EMPTY_RETURNING_RESULT: ReturningOrganizationResult = {
+  isReturning: false,
+  isReturningContact: false,
+  inCatalog: false,
+  pastEventCount: 0,
+  collectionCount: 0,
+  pastDepartments: [],
+};
+
+/**
+ * Batch returning-org checks for a visible event list.
+ * One HTTP round-trip replaces N per-card calls; dedupes identical checks in the batch.
+ */
+export async function checkReturningOrganizationsBulk(
+  items: ReturningOrgBulkItem[]
+): Promise<Record<number, ReturningOrganizationResult>> {
+  const result: Record<number, ReturningOrganizationResult> = {};
+  if (!items.length) return result;
+
+  const deduped = new Map<
+    string,
+    { item: ReturningOrgBulkItem; eventIds: number[] }
+  >();
+
+  for (const item of items) {
+    if (!item.orgName?.trim()) {
+      result[item.eventId] = EMPTY_RETURNING_RESULT;
+      continue;
+    }
+
+    const key = [
+      item.orgName.trim().toLowerCase(),
+      item.eventId,
+      item.contactEmail?.trim().toLowerCase() ?? '',
+      item.contactName?.trim().toLowerCase() ?? '',
+      item.contactPhone?.trim() ?? '',
+      item.department?.trim().toLowerCase() ?? '',
+    ].join('|');
+
+    const existing = deduped.get(key);
+    if (existing) {
+      existing.eventIds.push(item.eventId);
+    } else {
+      deduped.set(key, { item, eventIds: [item.eventId] });
+    }
+  }
+
+  const checks = Array.from(deduped.values());
+  const CONCURRENCY = 6;
+
+  for (let i = 0; i < checks.length; i += CONCURRENCY) {
+    const chunk = checks.slice(i, i + CONCURRENCY);
+    await Promise.all(
+      chunk.map(async ({ item, eventIds }) => {
+        const checkResult = await checkReturningOrganization(
+          item.orgName,
+          item.eventId,
+          item.contactEmail ?? undefined,
+          item.contactName ?? undefined,
+          item.contactPhone ?? undefined,
+          item.department ?? undefined
+        );
+        for (const eventId of eventIds) {
+          result[eventId] = checkResult;
+        }
+      })
+    );
+  }
+
+  return result;
+}

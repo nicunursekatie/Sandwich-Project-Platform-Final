@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const DeclinedTab: React.FC = () => {
   const { toast } = useToast();
@@ -105,6 +106,7 @@ export const DeclinedTab: React.FC = () => {
           No declined or cancelled events
         </div>
       ) : (
+        <EventListBatchProviders events={allDeclinedOrCancelled}>
         <>
           {/* Declined Events Section */}
           {declinedRequests.length > 0 && (
@@ -206,6 +208,7 @@ export const DeclinedTab: React.FC = () => {
             </div>
           )}
         </>
+        </EventListBatchProviders>
         )}
       </div>
     </>

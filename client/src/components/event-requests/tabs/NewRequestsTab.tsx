@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
@@ -265,6 +266,7 @@ export const NewRequestsTab: React.FC = () => {
           No new event requests
         </div>
       ) : (
+        <EventListBatchProviders events={newRequests}>
         <div className="space-y-4">
           {newRequests.map((request) => (
             <NewRequestCard
@@ -364,6 +366,7 @@ export const NewRequestsTab: React.FC = () => {
             />
           ))}
         </div>
+        </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
     </>

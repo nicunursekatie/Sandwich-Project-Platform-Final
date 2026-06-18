@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 import type { EventRequest } from '@shared/schema';
 
 export const CompletedTab: React.FC = () => {
@@ -102,7 +103,8 @@ export const CompletedTab: React.FC = () => {
             No completed events
           </div>
         ) : (
-        completedRequests.map((request) => (
+        <EventListBatchProviders events={completedRequests}>
+        {completedRequests.map((request) => (
           <CompletedCard
             key={request.id}
             request={request}
@@ -204,7 +206,8 @@ export const CompletedTab: React.FC = () => {
             canSelfSignup={canSelfSignup}
             isUserSignedUp={isUserSignedUp}
           />
-        ))
+        ))}
+        </EventListBatchProviders>
         )}
       </div>
       <DuplicateEventDialog

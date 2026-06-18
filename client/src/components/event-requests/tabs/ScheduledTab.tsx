@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
@@ -16,7 +16,7 @@ import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
 import { Button } from '@/components/ui/button';
 import { LayoutGrid, Table2, Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
-import { BatchedCollaborationProvider } from '@/contexts/batched-collaboration-context';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 import { EventListSkeleton } from '../EventCardSkeleton';
 
 export const ScheduledTab: React.FC = () => {
@@ -136,12 +136,6 @@ export const ScheduledTab: React.FC = () => {
   const scheduledOnly = filterRequestsByStatus('scheduled');
   const rescheduledOnly = filterRequestsByStatus('rescheduled');
   const scheduledRequests = [...scheduledOnly, ...rescheduledOnly];
-
-  // Memoize event IDs for batched collaboration data fetching
-  const scheduledEventIds = useMemo(
-    () => scheduledRequests.map(r => r.id),
-    [scheduledRequests]
-  );
 
   // Inline editing functions - SPECIFIC to scheduled tab
   const startEditing = (id: number, field: string, currentValue: string) => {
@@ -534,7 +528,7 @@ export const ScheduledTab: React.FC = () => {
           No scheduled events
         </div>
       ) : (
-        <BatchedCollaborationProvider eventIds={scheduledEventIds}>
+        <EventListBatchProviders events={scheduledRequests}>
           <div className="space-y-4 max-w-7xl mx-auto px-4">
             {scheduledRequests.map((request) => (
               <div key={request.id} className="w-full" data-event-id={request.id}>
@@ -631,7 +625,7 @@ export const ScheduledTab: React.FC = () => {
               </div>
             ))}
           </div>
-        </BatchedCollaborationProvider>
+        </EventListBatchProviders>
       )}
 
     <RescheduleDialog

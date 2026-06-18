@@ -12,6 +12,7 @@ import { EyeOff, Eye, CalendarX, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
@@ -382,6 +383,7 @@ export const InProcessTab: React.FC = () => {
             : 'All past-date events are hidden. Click "Show Past Events" to view them.'}
         </div>
       ) : (
+        <EventListBatchProviders events={filteredRequests}>
         <div className="space-y-4">
           {filteredRequests.map((request) => (
             <InProcessCard
@@ -507,6 +509,7 @@ export const InProcessTab: React.FC = () => {
             />
           ))}
         </div>
+        </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
     </>

@@ -22,6 +22,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useErrorToast } from '@/hooks/use-error-toast';
 import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import type { EventRequest } from '@shared/schema';
 import { STATUS_DEFINITIONS } from './constants';
@@ -350,6 +351,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
+  const { errorToast } = useErrorToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
@@ -747,11 +749,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         saveToLocalStorage();
         await refreshEventRequestListAndCounts(queryClient);
 
-        toast({
+        errorToast({
           title: 'Partial Save - Please Review',
           description: `Not saved: ${droppedFields.map((d) => `${d.field} (${d.reason})`).join(', ')}`,
-          variant: 'destructive',
           duration: Number.POSITIVE_INFINITY,
+          report: {
+            whatDoing: mode === 'edit' ? 'Save event edits in scheduling form' : 'Schedule an event in the scheduling form',
+            expectedOutcome: 'All form fields should be saved to the database.',
+            actualOutcome: `Partial save — fields dropped: ${droppedFields.map((d) => d.field).join(', ')}`,
+            ...(eventRequest?.id
+              ? {
+                  recordType: 'event_request',
+                  recordId: String(eventRequest.id),
+                  recordLabel: eventRequest.organizationName || formData.organizationName,
+                }
+              : {}),
+          },
         });
         return;
       }
@@ -802,7 +815,21 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         errorDescription = serverMessage;
       }
 
-      toast({ title: errorTitle, description: errorDescription, variant: 'destructive', duration: 10000 });
+      errorToast({
+        title: errorTitle,
+        description: errorDescription,
+        duration: 10000,
+        report: {
+          whatDoing: mode === 'edit' ? 'Save event edits in scheduling form' : 'Schedule an event in the scheduling form',
+          ...(eventRequest?.id
+            ? {
+                recordType: 'event_request',
+                recordId: String(eventRequest.id),
+                recordLabel: eventRequest.organizationName || formData.organizationName,
+              }
+            : {}),
+        },
+      });
     },
   });
 
@@ -828,7 +855,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         errorTitle = 'Connection Error';
         errorDescription = 'Could not create event. Check your connection.';
       }
-      toast({ title: errorTitle, description: errorDescription, variant: 'destructive', duration: 10000 });
+      errorToast({
+        title: errorTitle,
+        description: errorDescription,
+        duration: 10000,
+        report: { whatDoing: 'Create a new event in the scheduling form' },
+      });
     },
   });
 
@@ -841,7 +873,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onClose();
     },
     onError: () => {
-      toast({ title: 'Error', description: 'Failed to delete event.', variant: 'destructive' });
+      errorToast({
+        title: 'Error',
+        description: 'Failed to delete event.',
+        report: {
+          whatDoing: 'Delete an event from the scheduling form',
+          ...(eventRequest?.id
+            ? {
+                recordType: 'event_request',
+                recordId: String(eventRequest.id),
+                recordLabel: eventRequest.organizationName || formData.organizationName,
+              }
+            : {}),
+        },
+      });
     },
   });
 

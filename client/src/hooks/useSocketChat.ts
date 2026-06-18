@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
+import { getDefaultSocketIoOptions } from '@/lib/socket-io-config';
 
 export interface ChatMessage {
   id: string;
@@ -57,14 +58,9 @@ export function useSocketChat() {
     const socketUrl = window.location.origin;
     logger.log('Connecting to Socket.IO at:', socketUrl);
 
-    const newSocket = io(socketUrl, {
-      path: '/socket.io/',
-      transports: ['polling', 'websocket'], // Try polling first, then upgrade to websocket
-      upgrade: true,
-      timeout: 30000,
+    const newSocket = io(socketUrl, getDefaultSocketIoOptions({
       forceNew: true,
-      autoConnect: true,
-    });
+    }));
 
     newSocket.on('connect', () => {
       setConnected(true);

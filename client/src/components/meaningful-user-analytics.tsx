@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -9,99 +8,69 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import {
   Sandwich,
-  Users,
-  Clock,
-  TrendingUp,
-  FileText,
-  MessageSquare,
-  Building2,
-  Target,
   Calendar,
-  CheckCircle,
+  MessageSquare,
+  FileText,
+  TrendingUp,
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
-import { apiRequest } from '@/lib/queryClient';
+import { formatDistanceToNow } from 'date-fns';
 
 interface MeaningfulActivity {
   userId: string;
   userName: string;
   email: string;
   role: string;
-  // Mission-critical activities
-  sandwichDataEntered: number;
-  volunteersManaged: number;
-  reportsGenerated: number;
-  messagesPosted: number;
-  meetingsScheduled: number;
-  // Engagement metrics that matter
+  // Event load (current state — not time-windowed)
+  eventsAssigned: number;
+  eventsAssignedCompleted: number;
+  eventsAssignedActive: number;
+  // Per-window activity
+  collectionLogsRecorded: number;
+  messagesSent: number;
+  resourcesAccessed: number;
   daysActive: number;
   lastActive: Date | null;
-  totalContributionValue: number; // Calculated impact score
+  totalContributionValue: number;
 }
 
 interface PlatformImpact {
-  // Core mission metrics
   totalSandwichesRecorded: number;
-  totalVolunteersManaged: number;
+  totalCollectionLogs: number;
+  totalEventsActive: number;
+  totalEventsCompleted: number;
   totalHostsConnected: number;
   totalReportsGenerated: number;
-
-  // Platform effectiveness
   activeContributors: number;
-  dataQualityScore: number;
   userProductivity: number;
-
-  // Recent activity summary
-  recentDataEntries: number;
-  recentCommunications: number;
-  recentCoordination: number;
+  totalMessages: number;
+  totalResourceAccesses: number;
 }
 
 export default function MeaningfulUserAnalytics(): React.ReactElement {
   const [selectedTimeframe, setSelectedTimeframe] = useState('30');
   const [sortBy, setSortBy] = useState('contribution');
 
-  // Get meaningful platform metrics
-  const { data: platformImpact, isLoading: isLoadingImpact } =
-    useQuery<PlatformImpact>({
-      queryKey: [
-        '/api/meaningful-analytics/platform-impact',
-        selectedTimeframe,
-      ],
-      queryFn: async () => {
-        const res = await fetch(
-          `/api/meaningful-analytics/platform-impact?days=${selectedTimeframe}`,
-          {
-            credentials: 'include',
-          }
-        );
-        if (!res.ok) {
-          // Return meaningful fallback data based on actual platform purpose
-          return {
-            totalSandwichesRecorded: 127500,
-            totalVolunteersManaged: 144,
-            totalHostsConnected: 12,
-            totalReportsGenerated: 23,
-            activeContributors: 18,
-            dataQualityScore: 94,
-            userProductivity: 87,
-            recentDataEntries: 89,
-            recentCommunications: 156,
-            recentCoordination: 34,
-          };
-        }
-        return res.json();
-      },
-      staleTime: 300000, // 5 minutes
-    });
+  const { data: platformImpact } = useQuery<PlatformImpact>({
+    queryKey: [
+      '/api/meaningful-analytics/platform-impact',
+      selectedTimeframe,
+    ],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/meaningful-analytics/platform-impact?days=${selectedTimeframe}`,
+        { credentials: 'include' }
+      );
+      if (!res.ok) {
+        throw new Error(`Failed to load platform impact (${res.status})`);
+      }
+      return res.json();
+    },
+    staleTime: 300000,
+  });
 
-  // Get meaningful user activities
-  const { data: userActivities, isLoading: isLoadingUsers } = useQuery<
-    MeaningfulActivity[]
-  >({
+  const { data: userActivities } = useQuery<MeaningfulActivity[]>({
     queryKey: [
       '/api/meaningful-analytics/user-contributions',
       selectedTimeframe,
@@ -109,50 +78,17 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
     queryFn: async () => {
       const res = await fetch(
         `/api/meaningful-analytics/user-contributions?days=${selectedTimeframe}`,
-        {
-          credentials: 'include',
-        }
+        { credentials: 'include' }
       );
       if (!res.ok) {
-        // Return meaningful example data
-        return [
-          {
-            userId: 'katie_admin',
-            userName: 'Katie Long',
-            email: 'katielong2316@gmail.com',
-            role: 'Core Team',
-            sandwichDataEntered: 45,
-            volunteersManaged: 12,
-            reportsGenerated: 8,
-            messagesPosted: 23,
-            meetingsScheduled: 3,
-            daysActive: 28,
-            lastActive: new Date(),
-            totalContributionValue: 95,
-          },
-          {
-            userId: 'admin_user',
-            userName: 'Admin User',
-            email: 'admin@sandwich.project',
-            role: 'Admin',
-            sandwichDataEntered: 38,
-            volunteersManaged: 8,
-            reportsGenerated: 12,
-            messagesPosted: 18,
-            meetingsScheduled: 5,
-            daysActive: 25,
-            lastActive: new Date(Date.now() - 2 * 60 * 60 * 1000),
-            totalContributionValue: 88,
-          },
-        ];
+        throw new Error(`Failed to load user contributions (${res.status})`);
       }
       return res.json();
     },
-    staleTime: 180000, // 3 minutes
+    staleTime: 180000,
   });
 
-  // Filter out the literal sample-data row from the fallback. Real admins and
-  // admin_coordinators are part of the team and should appear on this view.
+  // Filter out the literal sample-data row in case the fallback ever fires.
   const sortedUsers =
     userActivities
       ?.filter((user) => {
@@ -165,42 +101,20 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
         switch (sortBy) {
           case 'contribution':
             return b.totalContributionValue - a.totalContributionValue;
-          case 'data':
-            return b.sandwichDataEntered - a.sandwichDataEntered;
-          case 'volunteers':
-            return b.volunteersManaged - a.volunteersManaged;
+          case 'events':
+            return b.eventsAssigned - a.eventsAssigned;
+          case 'logs':
+            return b.collectionLogsRecorded - a.collectionLogsRecorded;
+          case 'messages':
+            return b.messagesSent - a.messagesSent;
+          case 'resources':
+            return b.resourcesAccessed - a.resourcesAccessed;
           case 'active':
             return b.daysActive - a.daysActive;
           default:
             return 0;
         }
       }) || [];
-
-  const getContributionLevel = (score: number) => {
-    if (score >= 90)
-      return {
-        level: 'Exceptional',
-        color: 'bg-green-500',
-        textColor: 'text-green-700',
-      };
-    if (score >= 75)
-      return {
-        level: 'High Impact',
-        color: 'bg-brand-primary',
-        textColor: 'text-brand-primary',
-      };
-    if (score >= 50)
-      return {
-        level: 'Contributing',
-        color: 'bg-yellow-500',
-        textColor: 'text-yellow-700',
-      };
-    return {
-      level: 'Getting Started',
-      color: 'bg-gray-500',
-      textColor: 'text-gray-700',
-    };
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -236,33 +150,31 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Sandwich Data Recorded
+              Collection Logs
             </CardTitle>
             <Sandwich className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {platformImpact?.totalSandwichesRecorded.toLocaleString()}
+              {platformImpact?.totalCollectionLogs?.toLocaleString() ?? 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              Core mission data entered by your team
+              Logs recorded in selected period
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Volunteers Coordinated
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Active Events</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {platformImpact?.totalVolunteersManaged}
+              {platformImpact?.totalEventsActive ?? 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              People connected and managed through platform
+              Currently new, in process, scheduled, or standby
             </p>
           </CardContent>
         </Card>
@@ -276,27 +188,25 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {platformImpact?.activeContributors}
+              {platformImpact?.activeContributors ?? 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              Team members actively using platform
+              Team members active in selected period
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Reports Generated
-            </CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Messages Sent</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {platformImpact?.totalReportsGenerated}
+              {platformImpact?.totalMessages?.toLocaleString() ?? 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              Impact reports created for stakeholders
+              Chat messages across the team in period
             </p>
           </CardContent>
         </Card>
@@ -313,97 +223,86 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="contribution">Overall Impact</SelectItem>
-                <SelectItem value="data">Data Entry</SelectItem>
-                <SelectItem value="volunteers">Volunteer Management</SelectItem>
+                <SelectItem value="events">Events Assigned</SelectItem>
+                <SelectItem value="logs">Collection Logs</SelectItem>
+                <SelectItem value="messages">Messages Sent</SelectItem>
+                <SelectItem value="resources">Resources Accessed</SelectItem>
                 <SelectItem value="active">Days Active</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {sortedUsers.map((user) => {
-              const contribution = getContributionLevel(
-                user.totalContributionValue
-              );
-              return (
-                <div
-                  key={user.userId}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium leading-none">
-                          {user.userName}
-                        </p>
-                        <Badge
-                          variant="outline"
-                          className={contribution.textColor}
-                        >
-                          {contribution.level}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {user.role}
-                      </p>
+          <div className="space-y-3">
+            {sortedUsers.map((user) => (
+              <div
+                key={user.userId}
+                className="flex flex-col gap-4 p-4 border rounded-lg sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="space-y-1 sm:min-w-[180px]">
+                  <p className="text-sm font-medium leading-none">
+                    {user.userName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{user.role}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-center sm:grid-cols-5 sm:flex-1">
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {user.eventsAssigned}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Events
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      {user.eventsAssignedCompleted} done ·{' '}
+                      {user.eventsAssignedActive} active
                     </div>
                   </div>
-                  <div className="grid grid-cols-5 gap-4 text-center">
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {user.sandwichDataEntered}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Data Entries
-                      </div>
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {user.collectionLogsRecorded}
                     </div>
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {user.volunteersManaged}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Volunteers
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {user.reportsGenerated}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Reports
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {user.messagesPosted}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Messages
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {user.daysActive}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Days Active
-                      </div>
+                    <div className="text-xs text-muted-foreground">
+                      Collection Logs
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground">
-                      Last active{' '}
-                      {user.lastActive
-                        ? formatDistanceToNow(user.lastActive, {
-                            addSuffix: true,
-                          })
-                        : 'Never'}
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {user.messagesSent}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Messages
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {user.resourcesAccessed}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Resources
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold">
+                      {user.daysActive}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Days Active
                     </div>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="text-right text-xs text-muted-foreground sm:min-w-[140px]">
+                  Last active{' '}
+                  {user.lastActive
+                    ? formatDistanceToNow(new Date(user.lastActive), {
+                        addSuffix: true,
+                      })
+                    : 'never'}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -418,31 +317,33 @@ export default function MeaningfulUserAnalytics(): React.ReactElement {
         <CardContent className="text-brand-primary-dark">
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <h4 className="font-semibold mb-2">Sandwich Data Recorded</h4>
+              <h4 className="font-semibold mb-2">Events Assigned</h4>
               <p className="text-sm">
-                Number of sandwich collection entries, donations, and
-                distributions logged by your team
+                Total events where the user is the TSP contact or an additional
+                contact. Shown alongside how many are completed vs. still
+                active (new, in process, scheduled, or standby). Not limited to
+                the selected time period — reflects current event load.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">Volunteers Coordinated</h4>
+              <h4 className="font-semibold mb-2">Collection Logs</h4>
               <p className="text-sm">
-                People added, updated, or managed in your volunteer directory
-                and host assignments
+                Number of sandwich collection entries logged by the user in the
+                selected period. Counts log entries, not the sandwich totals.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">Active Contributors</h4>
+              <h4 className="font-semibold mb-2">Messages Sent</h4>
               <p className="text-sm">
-                Team members who regularly enter data, manage contacts, or
-                coordinate activities
+                Chat messages and project-thread comments sent in the selected
+                period. Edited or deleted messages are excluded.
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">Contribution Score</h4>
+              <h4 className="font-semibold mb-2">Resources Accessed</h4>
               <p className="text-sm">
-                Based on mission-critical activities like data entry, volunteer
-                management, and communication
+                Document uploads, views, and downloads in the resources section
+                during the selected period.
               </p>
             </div>
           </div>

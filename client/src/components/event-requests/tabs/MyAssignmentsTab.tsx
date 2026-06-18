@@ -10,6 +10,7 @@ import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { CompletedCard } from '../cards/CompletedCard';
 import { InProcessCard } from '../cards/InProcessCard';
 import { DeclinedCard } from '../cards/DeclinedCard';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Filter } from 'lucide-react';
@@ -638,6 +639,7 @@ export const MyAssignmentsTab: React.FC = () => {
           </div>
         </div>
       ) : (
+        <EventListBatchProviders events={myAssignments}>
         <div className="space-y-4">
           {myAssignments.map((request) => (
             <div
@@ -648,6 +650,7 @@ export const MyAssignmentsTab: React.FC = () => {
             </div>
           ))}
         </div>
+        </EventListBatchProviders>
       )}
     </div>
   );

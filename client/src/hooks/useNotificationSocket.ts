@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { queryClient } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
+import { getDefaultSocketIoOptions } from '@/lib/socket-io-config';
 
 interface NotificationActionEvent {
   notificationId: number;
@@ -29,16 +30,9 @@ export function useNotificationSocket() {
     const socketUrl = window.location.origin;
     logger.log('[NotificationSocket] Connecting to:', socketUrl);
 
-    const newSocket = io(socketUrl, {
-      path: '/socket.io/',
-      transports: ['polling', 'websocket'], // Try polling first, then upgrade
-      upgrade: true,
-      timeout: 30000,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
+    const newSocket = io(socketUrl, getDefaultSocketIoOptions({
       reconnectionAttempts: 5,
-    });
+    }));
 
     // Connection events
     newSocket.on('connect', () => {

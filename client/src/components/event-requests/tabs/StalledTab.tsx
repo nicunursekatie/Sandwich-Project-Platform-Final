@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const StalledTab: React.FC = () => {
   const { toast } = useToast();
@@ -113,7 +114,8 @@ export const StalledTab: React.FC = () => {
             No stalled events
           </div>
         ) : (
-          stalledRequests.map((request) => (
+          <EventListBatchProviders events={stalledRequests}>
+          {stalledRequests.map((request) => (
           <StalledCard
             key={request.id}
             request={request}
@@ -159,7 +161,8 @@ export const StalledTab: React.FC = () => {
               }
             }}
           />
-          ))
+          ))}
+          </EventListBatchProviders>
         )}
       </div>
     </>
