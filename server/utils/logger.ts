@@ -142,6 +142,20 @@ export const logError = (
     stack: error.stack,
     ...meta,
   });
+
+  void import('../services/application-error-logger').then(({ logFromException }) => {
+    logFromException(error, {
+      source: meta?.jobType ? 'cron' : meta?.source || 'api',
+      severity: meta?.severity || 'error',
+      category: meta?.jobType || meta?.category,
+      context,
+      details: meta,
+      userId,
+      notifyAdmin: meta?.notifyAdmin ?? !!meta?.jobType,
+    });
+  }).catch(() => {
+    // Never break callers if error logging fails
+  });
 };
 
 export const logUserAction = (action: string, userId: string, meta?: any) => {

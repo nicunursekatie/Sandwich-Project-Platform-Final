@@ -186,6 +186,15 @@ export function createMainRoutes(deps: RouterDependencies) {
       });
     } catch (error) {
       logger.error('Google Sheets webhook processing failed:', error);
+      const { logFromException } = await import('../services/application-error-logger');
+      logFromException(error, {
+        source: 'sync',
+        severity: 'error',
+        category: 'google_sheets_webhook',
+        context: 'Google Sheets webhook processing failed',
+        requestPath: '/api/google-sheets/webhook',
+        notifyAdmin: true,
+      });
       res.status(500).json({
         error: 'Processing failed',
         message: error instanceof Error ? error.message : 'Unknown error'

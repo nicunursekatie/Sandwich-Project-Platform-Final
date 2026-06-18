@@ -23,6 +23,7 @@ import { sendEmail } from '../sendgrid';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import { getUserPhoneNumber } from '@shared/types';
 import { logger } from '../utils/production-safe-logger';
+import { logApplicationError, logFromException } from './application-error-logger';
 import { ADMIN_EMAIL, FROM_EMAIL, ORG_NAME, BRAND_PRIMARY, BRAND_SECONDARY } from '../config/organization';
 import { EMAIL_FOOTER_HTML, EMAIL_FOOTER_TEXT } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
@@ -525,10 +526,24 @@ export async function processAdminWeeklyDigest(): Promise<{ success: boolean; me
       return { success: true, message: 'Admin digest email sent' };
     } else {
       logger.error('Admin weekly digest email failed to send');
+      logApplicationError({
+        source: 'cron',
+        severity: 'error',
+        category: 'admin_weekly_digest',
+        message: 'Admin weekly digest email failed to send',
+        notifyAdmin: true,
+      });
       return { success: false, message: 'Email send failed' };
     }
   } catch (error) {
     logger.error('Error processing admin weekly digest:', error);
+    logFromException(error, {
+      source: 'cron',
+      severity: 'error',
+      category: 'admin_weekly_digest',
+      context: 'Admin weekly digest processing failed',
+      notifyAdmin: true,
+    });
     return { success: false, message: (error as Error).message };
   }
 }
@@ -642,6 +657,13 @@ export async function processAdminWeeklySms(): Promise<{ success: boolean; messa
     return { success: true, message: summary };
   } catch (error) {
     logger.error('Error processing admin weekly SMS:', error);
+    logFromException(error, {
+      source: 'cron',
+      severity: 'error',
+      category: 'admin_weekly_sms',
+      context: 'Admin weekly SMS pulse failed',
+      notifyAdmin: true,
+    });
     return { success: false, message: (error as Error).message };
   }
 }

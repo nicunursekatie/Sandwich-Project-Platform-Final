@@ -11,7 +11,10 @@ export type ApplicationErrorSource =
   | 'api'
   | 'email'
   | 'database'
-  | 'integration';
+  | 'integration'
+  | 'sync'
+  | 'process'
+  | 'client';
 
 export type ApplicationErrorSeverity = 'info' | 'warning' | 'error' | 'critical';
 
@@ -151,4 +154,61 @@ export function logApplicationError(input: ApplicationErrorInput): void {
       logger.error('[ApplicationErrorLogger] Failed to persist error log:', err);
     }
   })();
+}
+
+/** Log from a caught Error/unknown with optional context prefix */
+export function logFromException(
+  error: unknown,
+  input: Omit<ApplicationErrorInput, 'message'> & {
+    message?: string;
+    context?: string;
+  }
+): void {
+  const err = error instanceof Error ? error : new Error(String(error));
+  const message = input.message || (input.context ? `${input.context}: ${err.message}` : err.message);
+
+  logApplicationError({
+    ...input,
+    message,
+    details: {
+      ...input.details,
+      stack: err.stack,
+    },
+  });
+}
+
+/** Log an HTTP/API error with request context (skips 4xx by default) */
+export function logHttpError(
+  error: unknown,
+  req: { method?: string; originalUrl?: string; url?: string; user?: { id?: string } },
+  options?: {
+    moduleId?: string;
+    severity?: ApplicationErrorSeverity;
+    notifyAdmin?: boolean;
+    minStatus?: number;
+  }
+): void {
+  const err = error instanceof Error ? error : new Error(String(error));
+  const status = (error as any)?.status || (error as any)?.statusCode || 500;
+  const minStatus = options?.minStatus ?? 500;
+
+  if (status < minStatus) return;
+
+  const path = req.originalUrl || req.url || 'unknown';
+  const moduleId = options?.moduleId;
+
+  logApplicationError({
+    source: 'api',
+    severity: options?.severity || (status >= 500 ? 'error' : 'warning'),
+    category: moduleId || 'http',
+    message: err.message,
+    details: {
+      method: req.method,
+      status,
+      stack: err.stack,
+    },
+    userId: req.user?.id,
+    requestPath: path,
+    notifyAdmin: options?.notifyAdmin ?? status >= 500,
+  });
 }

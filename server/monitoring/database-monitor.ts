@@ -7,6 +7,18 @@
 import { recordDbQuery } from './metrics';
 import logger from '../utils/logger';
 import * as Sentry from '@sentry/node';
+import { logApplicationError } from '../services/application-error-logger';
+
+function logDbError(operation: string, table: string, duration: number, error: unknown) {
+  logApplicationError({
+    source: 'database',
+    severity: 'error',
+    category: `${operation}_${table}`,
+    message: error instanceof Error ? error.message : String(error),
+    details: { operation, table, durationSeconds: duration },
+    notifyAdmin: false,
+  });
+}
 
 /**
  * Wrap a database operation with monitoring (async version)
@@ -73,6 +85,8 @@ export async function monitorDbOperation<T>(
           duration,
         },
       });
+
+      logDbError(operation, table, duration, error);
       
       throw error;
     }
@@ -144,6 +158,8 @@ export function monitorDbOperationSync<T>(
           duration,
         },
       });
+
+      logDbError(operation, table, duration, error);
       
       throw error;
     }

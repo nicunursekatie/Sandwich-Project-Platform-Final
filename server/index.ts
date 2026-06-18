@@ -201,9 +201,25 @@ app.use((req, res, next) => {
 process.on('exit', (code) => logger.warn(`Process exiting with code: ${code}`));
 process.on('uncaughtException', (e) => {
   logger.error('Uncaught exception:', e);
+  void import('./services/application-error-logger').then(({ logFromException }) => {
+    logFromException(e, {
+      source: 'process',
+      severity: 'critical',
+      category: 'uncaught_exception',
+      notifyAdmin: true,
+    });
+  });
 });
 process.on('unhandledRejection', (e) => {
   logger.error('Unhandled rejection:', e);
+  void import('./services/application-error-logger').then(({ logFromException }) => {
+    logFromException(e, {
+      source: 'process',
+      severity: 'critical',
+      category: 'unhandled_rejection',
+      notifyAdmin: true,
+    });
+  });
 });
 
 async function bootstrap() {
@@ -225,6 +241,12 @@ async function bootstrap() {
       const status = err.status || err.statusCode || 500;
       const message = err.message || 'Internal Server Error';
       serverLogger.error('Unhandled error:', err);
+
+      if (status >= 500) {
+        void import('./services/application-error-logger').then(({ logHttpError }) => {
+          logHttpError(err, req, { moduleId: 'bootstrap', notifyAdmin: true });
+        });
+      }
 
       // Ensure API routes always return JSON
       if (req.originalUrl.startsWith('/api')) {

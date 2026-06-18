@@ -58,6 +58,9 @@ const SOURCE_LABELS: Record<string, string> = {
   email: 'Email',
   database: 'Database',
   integration: 'Integration',
+  sync: 'Google Sheets Sync',
+  process: 'Process Crash',
+  client: 'Client (JS)',
 };
 
 function severityColor(severity: string) {
@@ -128,6 +131,12 @@ export function ApplicationErrorLog() {
                 <SelectItem value="sms_webhook">SMS Webhook</SelectItem>
                 <SelectItem value="health_check">Health Check</SelectItem>
                 <SelectItem value="cron">Cron Jobs</SelectItem>
+                <SelectItem value="sync">Google Sheets Sync</SelectItem>
+                <SelectItem value="api">API Errors</SelectItem>
+                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="database">Database</SelectItem>
+                <SelectItem value="process">Process Crashes</SelectItem>
+                <SelectItem value="client">Client (JS)</SelectItem>
               </SelectContent>
             </Select>
             <Select value={days} onValueChange={setDays}>

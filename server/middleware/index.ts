@@ -20,6 +20,7 @@ import {
 import { requestLogger, errorLogger, logger } from './logger';
 import { sanitizeMiddleware, sanitizeHtml, sanitizeText } from './sanitizer';
 import { requirePermission, requireOwnershipPermission } from './auth';
+import { logHttpError } from '../services/application-error-logger';
 
 // Authentication and authorization middleware
 export { isAuthenticated, requirePermission, requireOwnershipPermission } from './auth';
@@ -231,8 +232,10 @@ export function createErrorHandler(moduleId: string): ErrorRequestHandler {
       url: fullPath,
     });
 
-    const isDevelopment = process.env.NODE_ENV === 'development';
     const status = error.status || 500;
+    logHttpError(error, req, { moduleId, notifyAdmin: status >= 500, minStatus: 500 });
+
+    const isDevelopment = process.env.NODE_ENV === 'development';
     const code: ApiErrorCode = error.code || getErrorCodeFromStatus(status);
 
     const response = createErrorResponse(
@@ -262,8 +265,10 @@ export function globalErrorHandler(): ErrorRequestHandler {
       stack: error.stack,
     });
 
-    const isDevelopment = process.env.NODE_ENV === 'development';
     const status = error.status || 500;
+    logHttpError(error, req, { moduleId: 'global', notifyAdmin: status >= 500, minStatus: 500 });
+
+    const isDevelopment = process.env.NODE_ENV === 'development';
     const code: ApiErrorCode = error.code || getErrorCodeFromStatus(status);
 
     const response = createErrorResponse(

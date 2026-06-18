@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { IStorage } from '../storage';
 import { logger } from '../utils/production-safe-logger';
+import { logApplicationError } from '../services/application-error-logger';
 
 const errorLogSchema = z.object({
   error: z.string(),
@@ -42,6 +43,22 @@ export function createErrorLogsRoutes(storage: IStorage) {
         page: errorData.context.currentPage,
         action: errorData.context.attemptedAction,
         timestamp: errorData.timestamp,
+      });
+
+      // Persist to application error log for unified admin view
+      logApplicationError({
+        source: 'client',
+        severity: 'warning',
+        category: 'dynamic_error_handler',
+        message: errorData.error,
+        details: {
+          context: errorData.context,
+          userAgent: logEntry.userAgent,
+          clientTimestamp: errorData.timestamp,
+        },
+        userId: errorData.context.userId,
+        requestPath: errorData.context.currentPage,
+        notifyAdmin: false,
       });
 
       // In a production app, you might want to:

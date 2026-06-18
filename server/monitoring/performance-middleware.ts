@@ -9,6 +9,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { recordHttpRequest } from './metrics';
 import logger from '../utils/logger';
 import * as Sentry from '@sentry/node';
+import { logHttpError } from '../services/application-error-logger';
 
 /**
  * Normalize route path for better metric grouping
@@ -156,6 +157,8 @@ export function errorTrackingMiddleware(err: Error, req: Request, res: Response,
     url: req.url,
     method: req.method,
   });
+
+  logHttpError(err, req, { moduleId: 'unhandled', notifyAdmin: true });
 
   next(err);
 }

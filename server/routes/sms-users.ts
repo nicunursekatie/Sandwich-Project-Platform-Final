@@ -1609,6 +1609,17 @@ webhookRouter.post('/sms-webhook/status', async (req, res) => {
         from: From,
       });
 
+      logApplicationError({
+        source: 'sms_webhook',
+        severity: 'warning',
+        category: 'delivery_failed',
+        message: `SMS delivery ${MessageStatus} (error ${ErrorCode || 'unknown'})`,
+        details: { messageSid: MessageSid, errorCode: ErrorCode, to: To, from: From },
+        phoneNumber: To ? `***${String(To).slice(-4)}` : undefined,
+        requestPath: '/api/sms/webhook/status',
+        notifyAdmin: false,
+      });
+
       // Log specific error code details
       if (ErrorCode === '30032') {
         logger.error('⚠️ Error 30032: Carrier unreachable. This may be due to:');

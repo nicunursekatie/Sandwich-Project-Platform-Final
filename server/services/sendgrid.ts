@@ -1,5 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import { logger } from '../utils/production-safe-logger';
+import { logApplicationError } from './application-error-logger';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -41,6 +42,19 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     if ((error as any).response?.body) {
       logger.error('SendGrid error details:', (error as any).response.body);
     }
+
+    logApplicationError({
+      source: 'email',
+      severity: 'error',
+      category: 'sendgrid',
+      message: error instanceof Error ? error.message : 'SendGrid email failed',
+      details: {
+        to: params.to,
+        subject: params.subject,
+        sendgridBody: (error as any).response?.body,
+      },
+      notifyAdmin: false,
+    });
 
     throw error;
   }

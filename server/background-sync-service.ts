@@ -7,6 +7,7 @@ import { eventRequests } from '@shared/schema';
 import { createServiceLogger } from './utils/logger.js';
 import { logger } from './utils/production-safe-logger';
 import { ADMIN_EMAIL } from './config/organization';
+import { logApplicationError } from './services/application-error-logger';
 
 const syncLogger = createServiceLogger('background-sync');
 
@@ -511,6 +512,14 @@ Action Required:
 
       this.lastAlertSent = new Date();
       logger.error(`📧 Sent no-sync-ever alert email to ${adminEmail}`);
+      logApplicationError({
+        source: 'sync',
+        severity: 'critical',
+        category: 'google_sheets',
+        message: `Event requests sync has never completed (${Math.round(minutesSinceStart)} min since startup)`,
+        details: { consecutiveFailures: this.consecutiveFailures, minutesSinceStart },
+        notifyAdmin: false,
+      });
       syncLogger.info('No sync ever alert sent', { 
         minutesSinceStart,
         consecutiveFailures: this.consecutiveFailures
@@ -597,6 +606,14 @@ This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unl
 
       this.lastAlertSent = new Date();
       logger.error(`📧 Sent sync failure alert email to ${adminEmail}`);
+      logApplicationError({
+        source: 'sync',
+        severity: 'critical',
+        category: 'google_sheets',
+        message: `Event requests sync failing (${this.consecutiveFailures} consecutive failures)`,
+        details: { errorMessage, consecutiveFailures: this.consecutiveFailures },
+        notifyAdmin: false,
+      });
       syncLogger.info('Sync failure alert sent', { 
         consecutiveFailures: this.consecutiveFailures,
         errorMessage 
@@ -676,6 +693,17 @@ This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unl
 
       this.lastAlertSent = new Date();
       logger.warn(`📧 Sent stale sync alert email to ${adminEmail}`);
+      logApplicationError({
+        source: 'sync',
+        severity: 'error',
+        category: 'google_sheets',
+        message: `Event requests sync stale (${Math.round(minutesSinceLastSuccess)} min since last success)`,
+        details: {
+          minutesSinceLastSuccess,
+          consecutiveFailures: this.consecutiveFailures,
+        },
+        notifyAdmin: false,
+      });
       syncLogger.info('Stale sync alert sent', { 
         minutesSinceLastSuccess,
         consecutiveFailures: this.consecutiveFailures
