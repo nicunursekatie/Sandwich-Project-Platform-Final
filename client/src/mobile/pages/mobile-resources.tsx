@@ -68,9 +68,7 @@ export function MobileResources() {
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (resourceId: number) => {
-      return apiRequest(`/api/resources/${resourceId}/favorite`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/resources/${resourceId}/favorite`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/resources/user/favorites'] });
@@ -80,9 +78,7 @@ export function MobileResources() {
   // Track access mutation
   const trackAccessMutation = useMutation({
     mutationFn: async (resourceId: number) => {
-      return apiRequest(`/api/resources/${resourceId}/access`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/resources/${resourceId}/access`);
     },
   });
 

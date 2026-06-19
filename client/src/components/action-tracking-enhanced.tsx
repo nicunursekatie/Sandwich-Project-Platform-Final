@@ -188,7 +188,7 @@ const ActionTracking = () => {
       followUpType: 'one_day' | 'one_month';
       notes?: string;
     }) => {
-      return apiRequest(`/api/event-requests/${eventId}/follow-up`, 'PATCH', {
+      return apiRequest('PATCH', `/api/event-requests/${eventId}/follow-up`, {
         followUpType,
         notes,
       });

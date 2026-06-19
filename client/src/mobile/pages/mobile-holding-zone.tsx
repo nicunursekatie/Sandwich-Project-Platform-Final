@@ -79,10 +79,7 @@ export function MobileHoldingZone() {
   // Mark item as done mutation
   const markDoneMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/team-board/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'done' }),
-      });
+      return apiRequest('PATCH', `/api/team-board/${id}`, { status: 'done' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
@@ -93,9 +90,7 @@ export function MobileHoldingZone() {
   // Delete item mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/team-board/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/team-board/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/team-board'] });
