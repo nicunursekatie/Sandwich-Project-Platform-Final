@@ -3244,18 +3244,21 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
   })
   .refine(
     (data) => {
-      // Require at least organization name OR some contact information
+      // Require at least ONE identifier so the record isn't completely blank,
+      // but never require email or phone specifically — any single field is
+      // enough (org name, a contact name, email, OR phone).
       const hasOrgName =
         data.organizationName && data.organizationName.trim().length > 0;
       const hasContactInfo =
         (data.firstName && data.firstName.trim().length > 0) ||
         (data.lastName && data.lastName.trim().length > 0) ||
-        (data.email && data.email.trim().length > 0);
+        (data.email && data.email.trim().length > 0) ||
+        (data.phone && data.phone.trim().length > 0);
       return hasOrgName || hasContactInfo;
     },
     {
       message:
-        'Either organization name or contact information (name/email) is required',
+        'Please enter at least one of: organization name, contact name, email, or phone.',
       path: ['organizationName'],
     }
   );
