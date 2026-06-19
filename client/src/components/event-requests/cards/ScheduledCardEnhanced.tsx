@@ -106,6 +106,7 @@ import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw, Copy } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -254,7 +255,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     contactFullName,
     request.phone,        // contactPhone - used with name for secondary matching
     request.department,   // department - used for umbrella org matching (churches, scouts)
-    request.status === 'scheduled'
+    isScheduledOrRescheduled(request.status)
   );
 
   // Check if there's any communication/notes content to show
@@ -442,7 +443,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   // Calculate follow-up reminder status
   // Show indicator when event is 2 weeks prior if scheduled more than 3 weeks ahead, or 1 week prior ideally
   const followUpStatus = (() => {
-    if (!displayDate || request.status !== 'scheduled') return null;
+    if (!displayDate || !isScheduledOrRescheduled(request.status)) return null;
     
     try {
       const eventDate = new Date(displayDate);

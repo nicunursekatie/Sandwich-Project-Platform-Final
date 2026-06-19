@@ -7,6 +7,7 @@ import { getReportableSandwichCount } from '@shared/sandwich-count-utils';
 import { sql, desc, and, gte } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../types/express';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '../../shared/event-status-workflow';
 
 export const aiChatRouter = Router();
 
@@ -896,7 +897,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     }
 
     // Check for unconfirmed scheduled events WITH DETAILS
-    if (e.status === 'scheduled' && !e.isConfirmed) {
+    if (isScheduledOrRescheduled(e.status) && !e.isConfirmed) {
       unconfirmedScheduledList.push({
         name: e.organizationName || 'Unknown',
         date: formatEventDate(getEffectiveEventDate(e)),

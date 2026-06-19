@@ -10,6 +10,7 @@ import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { ActivityFeed } from '@/components/activity-feed';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface TspContactStats {
   userId: string;
@@ -171,7 +172,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   // Count events by status
   const newCount = eventRequests.filter(e => e.status?.toLowerCase() === 'new').length;
   const inProcessCount = eventRequests.filter(e => e.status?.toLowerCase() === 'in_process').length;
-  const scheduledCount = eventRequests.filter(e => e.status?.toLowerCase() === 'scheduled').length;
+  const scheduledCount = eventRequests.filter(e => isScheduledOrRescheduled(e.status?.toLowerCase())).length;
 
   return (
     <div className="space-y-6">

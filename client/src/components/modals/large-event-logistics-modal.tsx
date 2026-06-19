@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { EventRequest } from '@shared/schema';
 import { parseCollectionDate } from '@/lib/analytics-utils';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface LargeEventLogisticsModalProps {
   open: boolean;
@@ -283,7 +284,7 @@ export default function LargeEventLogisticsModal({
                         )}
 
                         {/* Supplies & Ingredients Communication */}
-                        {event.status === 'scheduled' ? (
+                        {isScheduledOrRescheduled(event.status) ? (
                           <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
                             <Package className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                             <div className="flex-1">

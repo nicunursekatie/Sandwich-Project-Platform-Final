@@ -8,6 +8,7 @@ import { useLocation } from 'wouter';
 import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
 import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
 import { useIssueReport } from '@/contexts/issue-report-context';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface EventRequestContextType {
   // Event requests data
@@ -472,7 +473,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
         if (!initialTab) {
           if (targetEvent.status === 'completed') {
             setActiveTab('completed');
-          } else if (targetEvent.status === 'scheduled') {
+          } else if (isScheduledOrRescheduled(targetEvent.status)) {
             setActiveTab('scheduled');
           } else if (targetEvent.status === 'in_process') {
             setActiveTab('in_process');

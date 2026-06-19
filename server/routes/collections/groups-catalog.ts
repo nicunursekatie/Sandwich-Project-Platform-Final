@@ -3,6 +3,7 @@ import { storage } from '../../storage-wrapper';
 import { GroupsCatalogDependencies, AuthenticatedRequest } from '../../types';
 import { logger } from '../../utils/production-safe-logger';
 import { canonicalizeOrgName, organizationNamesMatch } from '../../utils/organization-canonicalization';
+import { isScheduledOrRescheduled } from '../../../shared/event-status-workflow';
 import type { EventRequest, SandwichCollection, Organization } from '@shared/schema';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -157,7 +158,7 @@ function deriveStatus(request: EventRequest): string {
   if (status === 'completed' || status === 'contact_completed') {
     return status;
   }
-  if (status === 'scheduled') {
+  if (isScheduledOrRescheduled(status)) {
     if (eventDate && eventDate <= now) return 'past';
     return 'scheduled';
   }

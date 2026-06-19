@@ -31,6 +31,7 @@ import { parseSandwichTypes } from '@/lib/sandwich-utils';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import { VolunteerOpportunitiesMap } from './VolunteerOpportunitiesMap';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Brand palette (tokens from tailwind.config.ts → brand.*)
 const BRAND = {
@@ -94,7 +95,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   // Filter events that need volunteers, speakers, or drivers
   const opportunities = useMemo(() => {
     return eventRequests
-      .filter((request: EventRequest) => request.status === 'scheduled')
+      .filter((request: EventRequest) => isScheduledOrRescheduled(request.status))
       .filter((request: EventRequest) => {
         const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } =
           getUnfilledNeeds(request);
@@ -117,7 +118,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   // Counts for filter chips
   const counts = useMemo(() => {
     const scheduled = eventRequests.filter(
-      (r: EventRequest) => r.status === 'scheduled',
+      (r: EventRequest) => isScheduledOrRescheduled(r.status),
     );
     let speaker = 0;
     let volunteer = 0;

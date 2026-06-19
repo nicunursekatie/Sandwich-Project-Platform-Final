@@ -88,6 +88,7 @@ import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/qu
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -661,8 +662,15 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Controls toolbar — view controls (primary, left) + filters & tools (right) */}
         <div className="flex flex-wrap items-center gap-2 px-2 sm:px-0">
-          {/* Primary: View mode controls */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+          {/* Primary: View mode controls. Labeled with "View as:" so users
+              notice this is a view picker — without the label the segmented
+              control reads as decoration and users miss the calendar/map
+              options entirely. */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#236383] hidden sm:inline">
+              View as:
+            </span>
+          <div className="flex items-center gap-1 bg-[#007E8C]/10 border border-[#007E8C]/20 rounded-lg p-0.5">
             {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
             {activeTab === 'scheduled' && viewMode === 'list' ? (
               <>
@@ -704,6 +712,7 @@ const EventRequestsManagementContent: React.FC = () => {
               <MapPin className="w-4 h-4" />
               {!isMobile && 'Map'}
             </button>
+          </div>
           </div>
 
           {/* Export — shown on scheduled and completed tabs in list view */}
@@ -1733,7 +1742,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
               return {
                 totalEvents: eventRequests.length,
-                scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
+                scheduledEvents: eventRequests.filter(e => isScheduledOrRescheduled(e.status)).length,
                 inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
                 newRequests: eventRequests.filter(e => e.status === 'new').length,
                 completedEvents: eventRequests.filter(e => e.status === 'completed').length,

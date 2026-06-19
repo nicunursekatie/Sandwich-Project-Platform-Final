@@ -210,7 +210,8 @@ async function getUpcomingContactNeededEvents(tspContactId: string): Promise<Dig
           eq(eventRequests.additionalContact1, tspContactId),
           eq(eventRequests.additionalContact2, tspContactId)
         ),
-        eq(eventRequests.status, 'scheduled'),
+        // Include 'rescheduled' — rescheduled events still appear in the digest.
+        inArray(eventRequests.status, ['scheduled', 'rescheduled']),
         // Event is happening within the next 7 days
         gte(eventRequests.scheduledEventDate, now),
         lte(eventRequests.scheduledEventDate, sevenDaysFromNow),

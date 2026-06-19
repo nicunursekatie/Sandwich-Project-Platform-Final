@@ -16,6 +16,7 @@ import { db } from '../db';
 import { eventRequests, drivers } from '@shared/schema';
 import { eq, and, ne, gte, lte, or, sql, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { isScheduledOrRescheduled } from '../../shared/event-status-workflow';
 
 export interface ConflictWarning {
   type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict' | 'high_volume_week';
@@ -157,10 +158,11 @@ export async function checkEventConflicts(
       .from(eventRequests)
       .where(and(...allRelevantConditions));
 
-    // Only check against SCHEDULED events for resource conflicts
-    // Scheduled events take precedence - new/in_process events need to work around them
+    // Only check against scheduled (or rescheduled) events for resource conflicts.
+    // Scheduled events take precedence - new/in_process events need to work around them.
+    // Rescheduled events also have locked-in dates and should count as scheduled.
     const eventsOnSameDay = allEventsOnSameDay.filter(
-      e => e.status === 'scheduled'
+      e => isScheduledOrRescheduled(e.status)
     );
 
     // Check 1: High volume day warning (count all relevant events including new/in_process)

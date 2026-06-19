@@ -124,7 +124,9 @@
       "Bash(node /tmp/migrate-event-date.mjs)",
       "Bash(node /tmp/add-imports.mjs)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash)",
-      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash pop)"
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash pop)",
+      "Bash(/)",
+      "Bash(awk '/router\\\\.get/' /Users/kathrynelong/Sandwich-Project-Platform-Final/server/routes/event-requests-legacy.ts)"
     ],
     "deny": [],
     "ask": [],

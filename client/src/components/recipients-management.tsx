@@ -3,28 +3,17 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
   Plus,
-  Edit,
-  Trash2,
-  Phone,
-  Mail,
-  MapPin,
   Upload,
   Search,
   Filter,
   Download,
-  ChevronDown,
-  ChevronRight,
   HelpCircle,
-  ToggleLeft,
-  ToggleRight,
   CalendarDays,
   List,
-  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
@@ -47,86 +36,29 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import TSPContactManager from './tsp-contact-manager';
-import { RecipientForm, RecipientCard } from './recipients';
-import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
-import { normalizeFocusArea } from '@/lib/focus-area-groups';
+  RecipientForm,
+  RecipientTable,
+  RecipientDetailDrawer,
+  RecipientWeeklyCalendar,
+} from './recipients';
+import {
+  WEEK_DAYS,
+  getRecipientCollectionDays,
+  getRecipientFeedingDays,
+  sortRecipients,
+  type SortColumn,
+  type SortDirection,
+} from './recipients/recipient-schedule-utils';
 import { useRecipientForm } from '@/hooks/useRecipientForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useResourcePermissions } from '@/hooks/useResourcePermissions';
 import { usePageSession } from '@/hooks/usePageSession';
+import { Checkbox } from '@/components/ui/checkbox';
+import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
+import { normalizeFocusArea } from '@/lib/focus-area-groups';
 import type { Recipient } from '@shared/schema';
 import { logger } from '@/lib/logger';
-
-// Week order used for day filtering + sorting (Mon → Sun)
-const WEEK_DAYS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-] as const;
-
-/**
- * Extract all day-name fragments from a single schedule entry's `day` field.
- * The field may be a single day, a comma list ("Monday, Wednesday"), or free
- * text ("Every other Tuesday", "1st & 3rd Sunday"). We do a case-insensitive
- * substring match for each weekday name and return the canonical day names
- * found. Returns an empty array when nothing matches a known day.
- */
-function extractDaysFromText(text: string | null | undefined): string[] {
-  if (!text) return [];
-  const lower = text.toLowerCase();
-  return WEEK_DAYS.filter((d) => lower.includes(d.toLowerCase()));
-}
-
-/** Collect all collection days for a recipient (legacy + array schedules). */
-function getRecipientCollectionDays(recipient: any): string[] {
-  const days = new Set<string>();
-  const schedules: Array<{ day?: string }> = Array.isArray(recipient?.collectionSchedules)
-    ? recipient.collectionSchedules
-    : [];
-  for (const s of schedules) {
-    for (const d of extractDaysFromText(s?.day)) days.add(d);
-  }
-  for (const d of extractDaysFromText(recipient?.collectionDay)) days.add(d);
-  return Array.from(days);
-}
-
-/** Collect all feeding days for a recipient (legacy + array schedules). */
-function getRecipientFeedingDays(recipient: any): string[] {
-  const days = new Set<string>();
-  const schedules: Array<{ day?: string }> = Array.isArray(recipient?.feedingSchedules)
-    ? recipient.feedingSchedules
-    : [];
-  for (const s of schedules) {
-    for (const d of extractDaysFromText(s?.day)) days.add(d);
-  }
-  for (const d of extractDaysFromText(recipient?.feedingDay)) days.add(d);
-  return Array.from(days);
-}
-
-/**
- * Earliest weekday in the supplied list, returned as the index into WEEK_DAYS.
- * Returns Infinity if there are no recognized days, so recipients with only
- * free-text or empty schedules sort to the end.
- */
-function earliestDayIndex(days: string[]): number {
-  if (!days.length) return Infinity;
-  let min = Infinity;
-  for (const d of days) {
-    const i = WEEK_DAYS.indexOf(d as (typeof WEEK_DAYS)[number]);
-    if (i !== -1 && i < min) min = i;
-  }
-  return min;
-}
 
 export default function RecipientsManagement({ highlightRecipientId }: { highlightRecipientId?: number } = {}) {
   const { toast } = useToast();
@@ -153,10 +85,13 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
   const [collectionDayFilter, setCollectionDayFilter] = useState<string>('all');
   const [feedingDayFilter, setFeedingDayFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortColumn, setSortColumn] = useState<SortColumn>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [calendarMode, setCalendarMode] = useState<'collection' | 'feeding'>('collection');
+  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+  const [inlineSavingId, setInlineSavingId] = useState<number | null>(null);
+  const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importResults, setImportResults] = useState<{
     imported: number;
@@ -165,7 +100,7 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
 
   // Highlight state for search-driven navigation
   const [highlightedId, setHighlightedId] = useState<number | undefined>(highlightRecipientId);
-  const highlightCardRef = useRef<HTMLDivElement>(null);
+  const highlightRowRef = useRef<HTMLTableRowElement>(null);
 
   // When highlightRecipientId changes (from URL param), reset filters so the card is visible
   useEffect(() => {
@@ -227,7 +162,13 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       );
     }
 
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'active' && !showInactive) {
+      filtered = filtered.filter((recipient) => recipient.status === 'active');
+    } else if (statusFilter === 'active' && showInactive) {
+      filtered = filtered.filter(
+        (recipient) => recipient.status === 'active' || recipient.status === 'inactive'
+      );
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter((recipient) => recipient.status === statusFilter);
     }
 
@@ -279,35 +220,14 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       );
     }
 
-    // Sort (creates a new array so we don't mutate state-derived data)
-    const sorted = [...filtered];
-    if (sortBy === 'collectionDay') {
-      sorted.sort((a, b) => {
-        const da = earliestDayIndex(getRecipientCollectionDays(a));
-        const db = earliestDayIndex(getRecipientCollectionDays(b));
-        if (da !== db) return da - db;
-        return (a.name || '').localeCompare(b.name || '');
-      });
-    } else if (sortBy === 'feedingDay') {
-      sorted.sort((a, b) => {
-        const da = earliestDayIndex(getRecipientFeedingDays(a));
-        const db = earliestDayIndex(getRecipientFeedingDays(b));
-        if (da !== db) return da - db;
-        return (a.name || '').localeCompare(b.name || '');
-      });
-    } else {
-      // Default: by name
-      sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    }
-
-    return sorted;
-  }, [recipients, searchTerm, statusFilter, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter, collectionDayFilter, feedingDayFilter, sortBy]);
+    return sortRecipients(filtered, sortColumn, sortDirection);
+  }, [recipients, searchTerm, statusFilter, showInactive, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter, collectionDayFilter, feedingDayFilter, sortColumn, sortDirection]);
 
   // Scroll to highlighted card once data is loaded and rendered
   useEffect(() => {
-    if (highlightedId && highlightCardRef.current) {
+    if (highlightedId && highlightRowRef.current) {
       const timer = setTimeout(() => {
-        highlightCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -327,31 +247,15 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
     }
   }, [highlightedId]);
 
-  const inactiveRecipients = useMemo(() => {
-    return recipients.filter((r) => r.status === 'inactive');
-  }, [recipients]);
+  const inactiveCount = useMemo(
+    () => recipients.filter((r) => r.status === 'inactive').length,
+    [recipients]
+  );
 
-  // Bucket filtered recipients by weekday for the calendar view.
-  // Recipients with multiple days appear in every matching column.
-  // Recipients with no recognized weekday land in `unscheduled`.
-  const weeklyBuckets = useMemo(() => {
-    const buckets: Record<string, Recipient[]> = {
-      Monday: [], Tuesday: [], Wednesday: [], Thursday: [],
-      Friday: [], Saturday: [], Sunday: [],
-    };
-    const unscheduled: Recipient[] = [];
-    for (const r of filteredRecipients) {
-      const days = calendarMode === 'collection'
-        ? getRecipientCollectionDays(r)
-        : getRecipientFeedingDays(r);
-      if (days.length === 0) {
-        unscheduled.push(r);
-        continue;
-      }
-      for (const d of days) buckets[d]?.push(r);
-    }
-    return { buckets, unscheduled };
-  }, [filteredRecipients, calendarMode]);
+  const activeCount = useMemo(
+    () => recipients.filter((r) => r.status === 'active').length,
+    [recipients]
+  );
 
   // Get unique values for filter dropdowns (derived from geocoded coords only; no manual region)
   const uniqueRegions = useMemo(() => {
@@ -366,7 +270,7 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const uniqueTspContacts = useMemo(() => {
     const allContacts = recipients
       .map((r) => r.tspContact)
-      .filter(Boolean)
+      .filter((contact): contact is string => Boolean(contact))
       .flatMap((contact) => contact.split(/[/&,]|and/i).map((c) => c.trim()))
       .filter((contact) => contact.length > 0);
     return [...new Set(allContacts)].sort();
@@ -441,6 +345,20 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
     },
   });
 
+  const inlineUpdateMutation = useMutation({
+    mutationFn: ({ id, ...updates }: any) => apiRequest('PUT', `/api/recipients/${id}`, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/recipients/map'] });
+    },
+    onError: () => {
+      toast({ title: 'Error', description: 'Failed to save change', variant: 'destructive' });
+    },
+    onSettled: () => {
+      setInlineSavingId(null);
+    },
+  });
+
   const deleteRecipientMutation = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/recipients/${id}`),
     onSuccess: () => {
@@ -500,6 +418,26 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const handleToggleStatus = (recipient: Recipient) => {
     const newStatus = recipient.status === 'active' ? 'inactive' : 'active';
     updateRecipientMutation.mutate({ ...recipient, status: newStatus });
+  };
+
+  const handleInlineUpdate = (recipient: Recipient, updates: Partial<Recipient>) => {
+    if (!canEdit) return;
+    setInlineSavingId(recipient.id);
+    inlineUpdateMutation.mutate({ ...recipient, ...updates, id: recipient.id });
+  };
+
+  const handleOpenDrawer = (recipient: Recipient) => {
+    setSelectedRecipient(recipient);
+    setDrawerOpen(true);
+  };
+
+  const handleSortColumn = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -764,17 +702,6 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex flex-col space-y-2">
-                  <Label htmlFor="sort-by" className="text-xs font-medium text-slate-600">Sort By</Label>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger id="sort-by" className="w-[180px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="name">Name (A–Z)</SelectItem>
-                      <SelectItem value="collectionDay">Collection day (Mon–Sun)</SelectItem>
-                      <SelectItem value="feedingDay">Feeding day (Mon–Sun)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
             </div>
           )}
@@ -782,35 +709,32 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
 
         {/* Results Count + View Switcher */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="text-sm text-slate-600">
-            Showing {filteredRecipients.length} of {recipients.length} recipients
+          <div className="flex items-center gap-4 flex-wrap text-sm text-slate-600">
+            <span>
+              Showing {filteredRecipients.length} of {recipients.length} recipients
+              {activeCount > 0 && ` (${activeCount} active`}
+              {inactiveCount > 0 && `, ${inactiveCount} inactive`}
+              {(activeCount > 0 || inactiveCount > 0) && ')'}
+            </span>
+            {inactiveCount > 0 && statusFilter !== 'inactive' && (
+              <label className="inline-flex items-center gap-2 cursor-pointer text-slate-700">
+                <Checkbox
+                  id="show-inactive"
+                  checked={showInactive}
+                  onCheckedChange={(checked) => setShowInactive(checked === true)}
+                />
+                <span className="text-sm">Show inactive</span>
+              </label>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            {viewMode === 'calendar' && (
-              <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setCalendarMode('collection')}
-                  className={`px-3 py-1 rounded ${calendarMode === 'collection' ? 'bg-[#007E8C] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  Collection
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCalendarMode('feeding')}
-                  className={`px-3 py-1 rounded ${calendarMode === 'feeding' ? 'bg-[#007E8C] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                >
-                  Feeding
-                </button>
-              </div>
-            )}
             <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5">
               <button
                 type="button"
-                onClick={() => setViewMode('list')}
-                aria-pressed={viewMode === 'list'}
-                aria-label="List view"
-                className={`px-2 py-1 rounded ${viewMode === 'list' ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+                onClick={() => setViewMode('table')}
+                aria-pressed={viewMode === 'table'}
+                aria-label="Table view"
+                className={`px-2 py-1 rounded ${viewMode === 'table' ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -827,143 +751,53 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
           </div>
         </div>
 
-        {viewMode === 'list' ? (
-          /* Recipients Grid */
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredRecipients.map((recipient) => (
-              <RecipientCard
-                key={recipient.id}
-                recipient={recipient}
-                canEdit={canEdit}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggleStatus={handleToggleStatus}
-                highlighted={highlightedId === recipient.id}
-                highlightRef={highlightedId === recipient.id ? highlightCardRef : undefined}
-              />
-            ))}
-
-            {filteredRecipients.length === 0 && recipients.length > 0 && (
-              <div className="col-span-full text-center py-12 text-slate-500">
+        {viewMode === 'table' ? (
+          <>
+            {filteredRecipients.length === 0 && recipients.length > 0 ? (
+              <div className="text-center py-12 text-slate-500 rounded-lg border border-dashed border-slate-300 bg-slate-50">
                 No recipients match your current filters. Try adjusting your search or filter criteria.
               </div>
-            )}
-
-            {recipients.length === 0 && (
-              <div className="col-span-full text-center py-12 text-slate-500">
+            ) : filteredRecipients.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 rounded-lg border border-dashed border-slate-300 bg-slate-50">
                 No recipients found. Add a new recipient to get started.
               </div>
+            ) : (
+              <RecipientTable
+                recipients={filteredRecipients}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSortColumn}
+                onRowClick={handleOpenDrawer}
+                highlightedId={highlightedId}
+                highlightRowRef={highlightRowRef}
+                canEdit={canEdit}
+                savingId={inlineSavingId}
+                onUpdateRecipient={handleInlineUpdate}
+              />
             )}
-          </div>
+          </>
         ) : (
-          /* Weekly Calendar View */
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
-              {WEEK_DAYS.map((day) => {
-                const list = weeklyBuckets.buckets[day] || [];
-                return (
-                  <div
-                    key={day}
-                    className="border border-slate-200 rounded-lg bg-white overflow-hidden flex flex-col"
-                  >
-                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                      <span className="text-sm font-medium text-slate-700">{day}</span>
-                      <Badge variant="secondary" className="text-xs">{list.length}</Badge>
-                    </div>
-                    <div className="p-2 space-y-1.5 min-h-[60px]">
-                      {list.length === 0 ? (
-                        <div className="text-xs text-slate-400 italic px-1 py-2">No recipients</div>
-                      ) : (
-                        list.map((r) => {
-                          const time = calendarMode === 'collection' ? r.collectionTime : r.feedingTime;
-                          return (
-                            <button
-                              key={r.id}
-                              type="button"
-                              onClick={() => canEdit && handleEdit(r)}
-                              disabled={!canEdit}
-                              className="w-full text-left px-2 py-1.5 rounded border border-slate-200 hover:border-[#007E8C] hover:bg-[#007E8C]/5 disabled:cursor-default disabled:hover:border-slate-200 disabled:hover:bg-transparent transition-colors"
-                            >
-                              <div className="text-xs font-medium text-slate-800 truncate">{r.name}</div>
-                              {time && (
-                                <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                  <Clock className="w-3 h-3" />
-                                  {time}
-                                </div>
-                              )}
-                            </button>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {weeklyBuckets.unscheduled.length > 0 && (
-              <div className="border border-dashed border-slate-300 rounded-lg p-3 bg-slate-50">
-                <div className="text-xs font-medium text-slate-600 mb-2">
-                  No {calendarMode} day set ({weeklyBuckets.unscheduled.length})
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {weeklyBuckets.unscheduled.map((r) => (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => canEdit && handleEdit(r)}
-                      disabled={!canEdit}
-                      className="text-xs px-2 py-1 rounded bg-white border border-slate-200 hover:border-[#007E8C] disabled:hover:border-slate-200 transition-colors"
-                    >
-                      {r.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {filteredRecipients.length === 0 && (
-              <div className="text-center py-12 text-slate-500">
-                No recipients match your current filters.
-              </div>
-            )}
-          </div>
+          <RecipientWeeklyCalendar
+            recipients={filteredRecipients}
+            onRecipientClick={handleOpenDrawer}
+          />
         )}
 
-        {/* Inactive Recipients Section */}
-        {inactiveRecipients.length > 0 && (
-          <div className="mt-8">
-            <Collapsible open={showInactive} onOpenChange={setShowInactive}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="w-full justify-between p-3 bg-slate-100 hover:bg-slate-200 rounded-lg">
-                  <span className="font-medium text-slate-600">
-                    Inactive Recipients ({inactiveRecipients.length})
-                  </span>
-                  {showInactive ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
-                  {inactiveRecipients.map((recipient) => (
-                    <Card key={recipient.id} className="border border-slate-200 bg-slate-50">
-                      <CardHeader className="py-2 px-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <CardTitle className="text-sm font-normal text-slate-600">{recipient.name}</CardTitle>
-                            <Badge variant="secondary" className="mt-1 text-xs">Inactive</Badge>
-                          </div>
-                          <Button size="sm" variant="outline" disabled={!canEdit} onClick={() => handleEdit(recipient)}>
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-        )}
+        <RecipientDetailDrawer
+          recipient={selectedRecipient}
+          open={drawerOpen}
+          onOpenChange={(open) => {
+            setDrawerOpen(open);
+            if (!open) setSelectedRecipient(null);
+          }}
+          canEdit={canEdit}
+          onEdit={(recipient) => {
+            setDrawerOpen(false);
+            handleEdit(recipient);
+          }}
+          onDelete={handleDelete}
+          onToggleStatus={handleToggleStatus}
+        />
 
         {/* Edit Modal */}
         {editingRecipient && (

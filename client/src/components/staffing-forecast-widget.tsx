@@ -28,6 +28,7 @@ import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/co
 import { getDriverCount, getSpeakerCount, getVolunteerCount } from '@/lib/assignment-utils';
 import { exportStaffingPlanning } from '@/lib/planning-pdf-export';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Day names for display
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -132,8 +133,8 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
 
     // Process events that need staffing (scheduled events only)
     const relevantEvents = eventRequests.filter((request) => {
-      // Only include scheduled events
-      if (request.status !== 'scheduled') {
+      // Only include scheduled (or rescheduled) events
+      if (!isScheduledOrRescheduled(request.status)) {
         return false;
       }
 
