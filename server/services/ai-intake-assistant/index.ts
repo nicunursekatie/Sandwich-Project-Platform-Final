@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '../../utils/production-safe-logger';
+import { getEffectiveEventDate } from '../../../shared/event-validation-utils';
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -105,7 +106,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     category: 'scheduling',
     severity: 'critical',
     check: (event) => {
-      const hasDate = event.scheduledEventDate || event.desiredEventDate;
+      const hasDate = getEffectiveEventDate(event);
       const hasEventTimes = event.eventStartTime && event.eventEndTime;
       const hasPickupTime = event.pickupTime;
       
@@ -131,7 +132,7 @@ const VALIDATION_RULES: ValidationRule[] = [
     category: 'scheduling',
     severity: 'warning',
     check: (event, context) => {
-      const targetDate = event.scheduledEventDate || event.desiredEventDate;
+      const targetDate = getEffectiveEventDate(event);
       if (!targetDate) return null;
 
       const eventDate = new Date(targetDate);

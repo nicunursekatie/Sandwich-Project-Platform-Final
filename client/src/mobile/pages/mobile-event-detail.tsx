@@ -16,6 +16,7 @@ import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useState } from 'react';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 /**
  * Parse a date string as a local date to avoid timezone shift issues.
@@ -111,10 +112,10 @@ export function MobileEventDetail() {
             {event.organizationName || event.title || event.recipientName || 'Untitled Event'}
           </h1>
 
-          {(event.scheduledEventDate || event.desiredEventDate) && (
+          {(getEffectiveEventDate(event)) && (
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
               <Calendar className="w-4 h-4" />
-              <span>{format(parseLocalDate(event.scheduledEventDate || event.desiredEventDate), 'EEEE, MMMM d, yyyy')}</span>
+              <span>{format(parseLocalDate(getEffectiveEventDate(event)), 'EEEE, MMMM d, yyyy')}</span>
             </div>
           )}
 

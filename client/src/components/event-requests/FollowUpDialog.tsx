@@ -77,9 +77,12 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
             <h4 className="font-semibold text-[#236383] uppercase tracking-wide text-sm mb-3">Event Details</h4>
             <div className="space-y-2 text-sm">
               <div><strong className="text-[#236383]">Event Date:</strong> <span className="text-gray-700">{
-                eventRequest?.desiredEventDate ?
-                  new Date(eventRequest.desiredEventDate).toLocaleDateString() :
-                  'Not specified'
+                // Prefer scheduled date — desired is the originally requested
+                // date and may be stale after the event was scheduled.
+                (() => {
+                  const effective = getEffectiveEventDate(eventRequest as any);
+                  return effective ? new Date(effective).toLocaleDateString() : 'Not specified';
+                })()
               }</span></div>
               <div><strong className="text-[#236383]">Address:</strong> <span className="text-gray-700">{eventRequest?.eventAddress || 'Not specified'}</span></div>
               <div><strong className="text-[#236383]">Estimated Sandwiches:</strong> <span className="text-gray-700">{eventRequest?.estimatedSandwichCount || 'Not specified'}</span></div>

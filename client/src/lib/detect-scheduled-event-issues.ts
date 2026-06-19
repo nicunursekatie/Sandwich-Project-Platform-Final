@@ -1,4 +1,5 @@
 import type { EventRequest } from '@shared/schema';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 /**
  * Detects critical issues for scheduled events approaching their date
@@ -9,7 +10,7 @@ export function detectScheduledEventIssues(event: EventRequest, daysUntilEvent?:
   
   // Calculate days until event if not provided
   if (daysUntilEvent === undefined) {
-    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+    const eventDate = getEffectiveEventDate(event);
     if (!eventDate) return issues;
     
     const now = new Date();

@@ -19,6 +19,7 @@ import { PullToRefresh } from '../components/pull-to-refresh';
 import { cn } from '@/lib/utils';
 import { format, addWeeks, isWithinInterval, startOfToday, endOfDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 /**
  * Parse a date string as a local date to avoid timezone shift issues.
@@ -142,7 +143,7 @@ export function MobileDriverPlanning() {
 
   // Helper to get event date
   const getEventDate = (event: EventForPlanning): Date | null => {
-    const dateStr = event.scheduledEventDate || event.desiredEventDate;
+    const dateStr = getEffectiveEventDate(event);
     if (!dateStr) return null;
     return parseLocalDate(dateStr);
   };

@@ -16,6 +16,7 @@ import {
 import { format } from 'date-fns';
 import { MapPin, Calendar, UserCheck, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
 import type { EventRequest } from '@shared/schema';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 /** Parse a date string as local time (not UTC) to avoid off-by-one day shift */
 const parseLocalDate = (dateInput: string | Date): Date => {
@@ -214,7 +215,7 @@ export const AllEventsTab: React.FC = () => {
                     </div>
                     <div className="mt-1 text-sm text-gray-600 flex items-center gap-2 flex-wrap">
                       <Calendar className="w-4 h-4" />
-                      <span>{formatDate(request.scheduledEventDate || request.desiredEventDate)}</span>
+                      <span>{formatDate(getEffectiveEventDate(request))}</span>
                       {request.eventAddress && (
                         <>
                           <span className="text-gray-400">•</span>

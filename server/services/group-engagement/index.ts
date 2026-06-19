@@ -3,6 +3,7 @@ import { eventRequests, sandwichCollections, organizationEngagementScores } from
 import { eq, sql, desc, and, gte, isNotNull } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { canonicalizeOrgName } from '../../utils/organization-canonicalization';
+import { getEffectiveEventDate } from '../../../shared/event-validation-utils';
 
 // ============================================================================
 // Types
@@ -910,7 +911,7 @@ async function gatherOrganizationMetrics(
   const eventDates: Date[] = [];
 
   orgRequests.forEach(req => {
-    const date = req.scheduledEventDate || req.desiredEventDate;
+    const date = getEffectiveEventDate(req);
     if (date) {
       eventDates.push(new Date(date));
     }
@@ -935,7 +936,7 @@ async function gatherOrganizationMetrics(
   orgRequests
     .filter(req => req.status === 'completed' || req.status === 'contact_completed')
     .forEach(req => {
-      const date = req.scheduledEventDate || req.desiredEventDate;
+      const date = getEffectiveEventDate(req);
       if (date) {
         completedEventDates.add(new Date(date).toISOString().split('T')[0]);
       }
@@ -1396,7 +1397,7 @@ export async function getOrganizationEventHistory(
 
   // Add event requests to the list
   matchingRequests.forEach(req => {
-    const eventDate = req.scheduledEventDate || req.desiredEventDate;
+    const eventDate = getEffectiveEventDate(req);
     if (eventDate) {
       events.push({
         date: new Date(eventDate),

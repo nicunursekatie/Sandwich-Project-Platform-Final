@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatDateShort } from '@/lib/date-utils';
 import { getVolunteerCount, getTotalDriverCount, getSpeakerCount } from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface VolunteerOpportunitiesSpotlightProps {
   onNavigate: (section: string) => void;
@@ -51,8 +52,8 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
       return needsSpeaker || needsVolunteer || needsDriver;
     })
     .sort((a, b) => {
-      const dateA = a.scheduledEventDate || a.desiredEventDate;
-      const dateB = b.scheduledEventDate || b.desiredEventDate;
+      const dateA = getEffectiveEventDate(a);
+      const dateB = getEffectiveEventDate(b);
       const timeA = dateA ? new Date(dateA).getTime() : Infinity;
       const timeB = dateB ? new Date(dateB).getTime() : Infinity;
       return timeA - timeB;
@@ -60,7 +61,7 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
     .slice(0, 3);
 
   const formatEventDate = (request: EventRequest) => {
-    const date = request.scheduledEventDate || request.desiredEventDate;
+    const date = getEffectiveEventDate(request);
     return formatDateShort(date);
   };
 

@@ -36,6 +36,7 @@ import {
 } from '@/lib/analytics-utils';
 import { isDateInExcludedWeek } from '@/lib/excluded-weeks';
 import { logger } from '@/lib/logger';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 export default function PredictiveForecasts() {
   // Week offset: 0 = current week, -1 = last week, 1 = next week, etc.
@@ -360,9 +361,9 @@ export default function PredictiveForecasts() {
     } else {
       const monthStart = new Date(targetYear, targetMonth, 1);
       const monthEnd = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999);
-      // Match calendar logic: use scheduledEventDate || desiredEventDate, include new/in_process/scheduled/completed
+      // Match calendar logic: use getEffectiveEventDate (scheduled wins, falls back to desired), include new/in_process/scheduled/completed
       const futureEventsThisMonth = (eventRequests || []).filter((e: any) => {
-        const eventDate = e.scheduledEventDate || e.desiredEventDate;
+        const eventDate = getEffectiveEventDate(e);
         if (!eventDate || !['new', 'in_process', 'scheduled', 'completed'].includes(e.status)) return false;
         const d = new Date(eventDate);
         d.setHours(0, 0, 0, 0);

@@ -4,6 +4,7 @@
  */
 
 import type { EventRequest } from '@shared/schema';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Brand colors
 const COLORS = {
@@ -412,8 +413,8 @@ const generatePDFStyles = () => `
 export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string {
   const events = weekData.events || [];
   const sortedEvents = [...events].sort((a, b) => {
-    const dateA = a.scheduledEventDate || a.desiredEventDate;
-    const dateB = b.scheduledEventDate || b.desiredEventDate;
+    const dateA = getEffectiveEventDate(a);
+    const dateB = getEffectiveEventDate(b);
     if (!dateA && !dateB) return 0;
     if (!dateA) return 1;
     if (!dateB) return -1;
@@ -425,7 +426,7 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
   const eventsHTML = sortedEvents.length === 0
     ? '<div class="no-events">No events scheduled for this week.</div>'
     : sortedEvents.map(event => {
-        const dateStr = event.scheduledEventDate || event.desiredEventDate;
+        const dateStr = getEffectiveEventDate(event);
         const count = getSandwichCount(event);
         const types = event.sandwichTypes as any[] | undefined;
         const typesStr = types && Array.isArray(types) && types.length > 0
@@ -506,8 +507,8 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
 export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string {
   const events = weekData.events || [];
   const sortedEvents = [...events].sort((a, b) => {
-    const dateA = a.scheduledEventDate || a.desiredEventDate;
-    const dateB = b.scheduledEventDate || b.desiredEventDate;
+    const dateA = getEffectiveEventDate(a);
+    const dateB = getEffectiveEventDate(b);
     if (!dateA && !dateB) return 0;
     if (!dateA) return 1;
     if (!dateB) return -1;
@@ -528,7 +529,7 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
   const eventsHTML = eventsWithUnmetNeeds.length === 0
     ? '<div class="no-events">✅ All staffing needs have been met for this week!</div>'
     : eventsWithUnmetNeeds.map(event => {
-        const dateStr = event.scheduledEventDate || event.desiredEventDate;
+        const dateStr = getEffectiveEventDate(event);
         const sandwichCount = getSandwichCount(event);
 
         const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));

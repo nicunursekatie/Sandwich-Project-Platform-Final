@@ -35,6 +35,7 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -483,8 +484,8 @@ export function FloatingAIChat({
             if (aPriority !== bPriority) return aPriority - bPriority;
 
             // Then sort by date (upcoming first)
-            const aDate = a.scheduledEventDate || a.desiredEventDate || a.collectionDate;
-            const bDate = b.scheduledEventDate || b.desiredEventDate || b.collectionDate;
+            const aDate = getEffectiveEventDate(a) || a.collectionDate;
+            const bDate = getEffectiveEventDate(b) || b.collectionDate;
             if (!aDate && !bDate) return 0;
             if (!aDate) return 1;
             if (!bDate) return -1;

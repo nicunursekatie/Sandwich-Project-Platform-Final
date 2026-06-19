@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { EventRequest } from '@shared/schema';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface MissingSpeakersModalProps {
   open: boolean;
@@ -42,8 +43,8 @@ export default function MissingSpeakersModal({
 
   // Sort events by date (earliest first)
   const sortedEvents = [...events].sort((a, b) => {
-    const dateA = new Date(a.scheduledEventDate || a.desiredEventDate || 0).getTime();
-    const dateB = new Date(b.scheduledEventDate || b.desiredEventDate || 0).getTime();
+    const dateA = new Date(getEffectiveEventDate(a) || 0).getTime();
+    const dateB = new Date(getEffectiveEventDate(b) || 0).getTime();
     return dateA - dateB;
   });
 
@@ -81,7 +82,7 @@ export default function MissingSpeakersModal({
                         <div className="flex items-center gap-2 mb-2">
                           <Calendar className="h-4 w-4 text-blue-600" />
                           <span className="text-sm font-medium text-gray-700">
-                            {formatDate(event.scheduledEventDate || event.desiredEventDate)}
+                            {formatDate(getEffectiveEventDate(event))}
                           </span>
                         </div>
                         {event.eventAddress && (

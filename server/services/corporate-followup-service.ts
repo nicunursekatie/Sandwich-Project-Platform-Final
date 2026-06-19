@@ -25,6 +25,7 @@ import { EmailNotificationService } from './email-notification-service';
 import sgMail from '@sendgrid/mail';
 import { getAppBaseUrl } from '../config/constants';
 import { isNotificationSuppressed } from '../utils/notification-suppression';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 const serviceLogger = {
   info: (msg: string, ...args: any[]) => logger.info(`[CorporateFollowup] ${msg}`, ...args),
@@ -517,7 +518,7 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
               event.id,
               event.tspContact!,
               event.organizationName || 'Unknown Organization',
-              event.scheduledEventDate || event.desiredEventDate,
+              getEffectiveEventDate(event),
               event.phone,
               contactName
             );
@@ -536,7 +537,7 @@ export async function processCorporateFollowups(): Promise<FollowupResult> {
             event.id,
             event.tspContact!,
             event.organizationName || 'Unknown Organization',
-            event.scheduledEventDate || event.desiredEventDate,
+            getEffectiveEventDate(event),
             event.phone,
             daysSinceAssigned,
             protocol
@@ -631,7 +632,7 @@ export async function initializeCorporateProtocol(
       eventId,
       tspContactId,
       event.organizationName || 'Unknown Organization',
-      event.scheduledEventDate || event.desiredEventDate,
+      getEffectiveEventDate(event),
       event.phone,
       contactName
     );

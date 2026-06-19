@@ -86,6 +86,7 @@ import { logger } from '@/lib/logger';
 import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -1718,7 +1719,7 @@ const EventRequestsManagementContent: React.FC = () => {
               sunday.setHours(23, 59, 59, 999);
 
               const thisWeekEvents = eventRequests.filter(e => {
-                const eventDate = e.scheduledEventDate || e.desiredEventDate;
+                const eventDate = getEffectiveEventDate(e);
                 if (!eventDate) return false;
                 const date = new Date(eventDate);
                 return date >= monday && date <= sunday && ['scheduled', 'in_process'].includes(e.status);
@@ -1741,7 +1742,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 thisWeekSandwichTotal: thisWeekSandwiches,
                 thisWeekEventsList: thisWeekEvents.map(e => ({
                   name: e.organizationName,
-                  date: new Date(e.scheduledEventDate || e.desiredEventDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                  date: new Date(getEffectiveEventDate(e)!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
                   sandwiches: e.estimatedSandwichCount || e.actualSandwichCount || 0,
                   status: e.status,
                 })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),

@@ -6,6 +6,7 @@ import { userActivityLogs } from '@shared/schema';
 import { getReportableSandwichCount } from '@shared/sandwich-count-utils';
 import { sql, desc, and, gte } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../types/express';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 export const aiChatRouter = Router();
 
@@ -249,7 +250,9 @@ function formatDataItem(item: any, contextType: string, index: number): string {
   if (contextType === 'events') {
     const org = item.organizationName || 'Unknown';
     const status = item.status || '';
-    const dateInput = item.scheduledEventDate || item.desiredEventDate;
+    // `item` is loosely typed in the surrounding code (came through an `unknown`
+    // path); cast for the helper which expects the standard event field shape.
+    const dateInput = getEffectiveEventDate(item as { scheduledEventDate?: string | Date | null; desiredEventDate?: string | Date | null });
     const date = formatEventDate(dateInput);
     const sandwiches = getReportableSandwichCount(item, { ignoreSuspiciousEstimatedCounts: true });
 
@@ -676,7 +679,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       const endDate = contextData.dateRange.end ? new Date(contextData.dateRange.end) : null;
 
       allEvents = allEvents.filter(e => {
-        const eventDate = e.scheduledEventDate || e.desiredEventDate;
+        const eventDate = getEffectiveEventDate(e);
         if (!eventDate) return false;
         const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
         if (startDate && date < startDate) return false;
@@ -726,7 +729,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       const event = contextData.selectedEvent;
       componentContext += `- Organization: ${event.organizationName || 'Unknown'}\n`;
       componentContext += `- Status: ${event.status || 'Unknown'}\n`;
-      componentContext += `- Date: ${event.scheduledEventDate || event.desiredEventDate || 'TBD'}\n`;
+      componentContext += `- Date: ${getEffectiveEventDate(event) || 'TBD'}\n`;
       componentContext += `- Sandwiches: ${getReportableSandwichCount(event, { ignoreSuspiciousEstimatedCounts: true }) || 'Not specified'}\n`;
       if (event.notes) componentContext += `- Notes: ${event.notes}\n`;
     }
@@ -788,7 +791,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     totalSandwiches += sandwichCount;
 
     // Track date range
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    const eventDate = getEffectiveEventDate(e);
     if (eventDate) {
       const date = eventDate instanceof Date ? eventDate : new Date(eventDate);
       if (!earliestEventDate || date < earliestEventDate) {
@@ -883,7 +886,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
       if (missingInfo.length > 0) {
         eventsWithMissingInfoList.push({
           name: e.organizationName || 'Unknown',
-          date: formatEventDate(e.scheduledEventDate || e.desiredEventDate),
+          date: formatEventDate(getEffectiveEventDate(e)),
           missing: missingInfo
         });
         missingInfo.forEach(item => {
@@ -896,7 +899,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
     if (e.status === 'scheduled' && !e.isConfirmed) {
       unconfirmedScheduledList.push({
         name: e.organizationName || 'Unknown',
-        date: formatEventDate(e.scheduledEventDate || e.desiredEventDate),
+        date: formatEventDate(getEffectiveEventDate(e)),
         sandwiches: sandwichCount,
         address: e.eventAddress || e.deliveryDestination || 'No address'
       });
@@ -904,7 +907,7 @@ async function buildEventsContext(contextData?: Record<string, any>): Promise<st
 
     // Check for completed events needing follow-ups WITH DETAILS
     if (e.status === 'completed') {
-      const completedDate = formatEventDate(e.scheduledEventDate || e.desiredEventDate);
+      const completedDate = formatEventDate(getEffectiveEventDate(e));
       if (!e.followUpOneDayCompleted) {
         needsOneDayFollowUpList.push({
           name: e.organizationName || 'Unknown',
@@ -1481,7 +1484,7 @@ async function buildOrganizationsContext(contextData?: Record<string, any>): Pro
         org.hasHostedEvent = true;
       }
 
-      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      const eventDate = getEffectiveEventDate(e);
       if (eventDate) {
         const date = new Date(eventDate);
         if (!org.latestEventDate || date > org.latestEventDate) {
@@ -1781,7 +1784,7 @@ async function buildDashboardContext(contextData?: Record<string, any>): Promise
   const activeProjects = projects.filter(p => p.status !== 'completed' && p.status !== 'archived').length;
   const openItems = teamBoardItems.filter(i => i.status === 'open').length;
   const upcomingEvents = events.filter(e => {
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    const eventDate = getEffectiveEventDate(e);
     return eventDate && new Date(eventDate) >= new Date();
   }).length;
 

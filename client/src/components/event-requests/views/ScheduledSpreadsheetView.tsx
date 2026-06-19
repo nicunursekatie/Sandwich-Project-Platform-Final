@@ -69,6 +69,7 @@ import {
   getVolunteerIds, getVolunteerCount
 } from '@/lib/assignment-utils';
 import { SANDWICH_TYPES } from '../constants';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface Column {
   id: string;
@@ -528,7 +529,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     endDate.setHours(23, 59, 59, 999);
     
     return scheduledEvents.filter(event => {
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       if (!eventDate) return false;
       
       // Use timezone-safe date parsing
@@ -628,8 +629,8 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
             return hours * 60 + minutes;
           };
 
-          aValue = parseDateSafe(a.scheduledEventDate || a.desiredEventDate);
-          bValue = parseDateSafe(b.scheduledEventDate || b.desiredEventDate);
+          aValue = parseDateSafe(getEffectiveEventDate(a));
+          bValue = parseDateSafe(getEffectiveEventDate(b));
 
           // If dates are equal, sort by event start time, then pickup time
           if (aValue === bValue) {
@@ -1192,7 +1193,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
     // Events are already sorted by date, so we can iterate through them
     sortedEvents.forEach(event => {
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       if (!eventDate) return;
 
       // Parse the date safely
@@ -1260,7 +1261,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
   // Helper to get the date string for an event (for comparing same-day events)
   const getEventDateString = (event: EventRequest): string => {
-    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+    const eventDate = getEffectiveEventDate(event);
     if (!eventDate) return '';
 
     const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
@@ -1353,7 +1354,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       sortable: true,
       frozen: true,
       center: true,
-      render: (event) => formatDate(event.scheduledEventDate || event.desiredEventDate),
+      render: (event) => formatDate(getEffectiveEventDate(event)),
     },
     // 2. Day of week (FROZEN) - rendering handled in renderCell for proper JSX support
     {
@@ -1846,7 +1847,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       switch (column.id) {
         case 'eventDate':
           // Convert to YYYY-MM-DD format for date input
-          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          const eventDate = getEffectiveEventDate(event);
           if (!eventDate) return '';
           const dateStr = typeof eventDate === 'string' ? eventDate : eventDate.toISOString();
           if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -2212,7 +2213,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
     // Special handling for dayOfWeek column (render the large abbreviation)
     if (column.id === 'dayOfWeek') {
-      const day = formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
+      const day = formatDayOfWeek(getEffectiveEventDate(event));
       if (!day) return <span className="text-[#47B3CB]/60">-</span>;
 
       const dayMap: Record<string, string> = {
@@ -2882,10 +2883,10 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-bold text-[#236383]">
-                          {formatDate(event.scheduledEventDate || event.desiredEventDate)}
+                          {formatDate(getEffectiveEventDate(event))}
                         </span>
                         <span className="text-xs text-[#007E8C] font-medium">
-                          {formatDayOfWeek(event.scheduledEventDate || event.desiredEventDate)?.slice(0, 3)}
+                          {formatDayOfWeek(getEffectiveEventDate(event))?.slice(0, 3)}
                         </span>
                       </div>
                       <h3 className="text-base font-semibold text-[#236383] truncate">

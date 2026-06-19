@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Fix Leaflet default marker icon issue in bundled apps
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -261,7 +262,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
         longitude: lng,
         metadata: {
           status: e.status,
-          date: e.scheduledEventDate || e.desiredEventDate,
+          date: getEffectiveEventDate(e),
           sandwichCount: e.estimatedSandwichCount,
           eventId: e.id,
           raw: e,

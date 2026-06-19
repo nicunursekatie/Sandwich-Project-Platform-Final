@@ -23,6 +23,7 @@ import {
   getLastContactAttemptTime,
   ContactAttemptLogEntry,
 } from './notification-tiers';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 // Initialize SendGrid if available
 if (process.env.SENDGRID_API_KEY) {
@@ -56,7 +57,7 @@ async function getActiveEventsForContact(tspContactId: string): Promise<DigestEv
     .orderBy(desc(eventRequests.scheduledEventDate));
 
   return events.map((event) => {
-    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+    const eventDate = getEffectiveEventDate(event);
     const contactLog = event.contactAttemptsLog as ContactAttemptLogEntry[] | null;
     const lastContactTime = getLastContactAttemptTime(event.lastContactAttempt, contactLog);
 

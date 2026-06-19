@@ -9,6 +9,7 @@ import { LastContactAgeBadge } from '@/components/event-requests/LastContactAgeB
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { ActivityFeed } from '@/components/activity-feed';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface TspContactStats {
   userId: string;
@@ -428,7 +429,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
                             }
                           })
                           .map((event) => {
-                            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                            const eventDate = getEffectiveEventDate(event);
                             return (
                             <div
                               key={event.id}

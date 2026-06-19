@@ -83,6 +83,7 @@ import { EVENT_REQUEST_FEATURES } from '@/components/event-requests/feature-flag
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -184,7 +185,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
 
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
@@ -611,7 +612,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               date once set so a rescheduled event doesn't keep a stale badge
               from its original desiredEventDate. */}
           <TrafficConflictBadge
-            dates={[request.scheduledEventDate || request.desiredEventDate]}
+            dates={[getEffectiveEventDate(request)]}
           />
           {/* Last-contact-age — escalates by week since last contact attempt; skipped when a future call is scheduled */}
           <LastContactAgeBadge request={request} />
@@ -999,7 +1000,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   // Date population hook - to show warnings for busy dates
   const { getDatePopulation } = useDatePopulation();
   const datePopulationInfo = getDatePopulation(
-    request.scheduledEventDate || request.desiredEventDate,
+    getEffectiveEventDate(request),
     request.id
   );
 

@@ -105,6 +105,7 @@ import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEdi
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw, Copy } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -435,7 +436,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const getRecipientName = resolveRecipientName || resolveLocalRecipientName;
 
   // Get display date
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate follow-up reminder status
@@ -557,7 +558,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   // Handler to export event to Google Sheet
   const handleExportToGoogleSheet = async () => {
-    const eventDate = request.scheduledEventDate || request.desiredEventDate;
+    const eventDate = getEffectiveEventDate(request);
     if (!eventDate) {
       toast({
         title: 'Missing Date',
@@ -947,7 +948,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   desiredEventDate too left a stale badge when an event was
                   rescheduled off a conflict date onto a clear one. */}
               <TrafficConflictBadge
-                dates={[request.scheduledEventDate || request.desiredEventDate]}
+                dates={[getEffectiveEventDate(request)]}
                 className="mt-1 mr-1"
               />
               {/* Returning Organization Indicator */}

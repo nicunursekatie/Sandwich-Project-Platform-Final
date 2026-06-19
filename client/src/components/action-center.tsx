@@ -45,6 +45,7 @@ import MissingDriversModal from '@/components/modals/missing-drivers-modal';
 import MissingSpeakersModal from '@/components/modals/missing-speakers-modal';
 import WeekOutlookModal from '@/components/modals/week-outlook-modal';
 import NextMonthPlanningModal from '@/components/modals/next-month-planning-modal';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface ActionItem {
   id: string;
@@ -565,9 +566,9 @@ export default function ActionCenter() {
     const monthEnd = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
     const todayStart = new Date(today);
     todayStart.setHours(0, 0, 0, 0);
-    // Match calendar logic: use scheduledEventDate || desiredEventDate, include new/in_process/scheduled/completed
+    // Match calendar logic: use getEffectiveEventDate (scheduled wins, falls back to desired), include new/in_process/scheduled/completed
     const futureEventsThisMonth = (eventRequests || []).filter((e: any) => {
-      const eventDate = e.scheduledEventDate || e.desiredEventDate;
+      const eventDate = getEffectiveEventDate(e);
       if (!eventDate || !['new', 'in_process', 'scheduled', 'completed'].includes(e.status)) return false;
       const d = new Date(eventDate);
       d.setHours(0, 0, 0, 0);
