@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
