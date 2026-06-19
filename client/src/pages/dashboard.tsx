@@ -57,6 +57,7 @@ import { NAV_ITEMS } from '@/nav.config';
 import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
+import { useIssueReport } from '@/contexts/issue-report-context';
 import { OnlineUsers } from '@/components/online-users';
 import { useOnlinePresenceNotifications } from '@/hooks/useOnlinePresenceNotifications';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
@@ -455,6 +456,7 @@ export default function Dashboard({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, isLoading } = useAuth();
   const { trackNavigation, trackButtonClick } = useAnalytics();
+  const { openReportDialog } = useIssueReport();
 
   // Prefetch event requests data for faster navigation.
   // IMPORTANT: Keep cache keys aligned with EventRequestContext so we actually reuse warmed cache.
@@ -1099,6 +1101,25 @@ export default function Dashboard({
 
               {/* Group 4: Account Menu */}
               <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-white/20">
+                {/* Report an issue — opens the same dialog as error-toast "Report" actions */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        trackButtonClick('report_issue', 'dashboard_header');
+                        openReportDialog();
+                      }}
+                      className="p-1.5 sm:p-2 rounded-md transition-colors text-white/80 hover:bg-white/15 hover:text-white"
+                      aria-label="Report an issue"
+                    >
+                      <AlertCircle className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" sideOffset={8}>Report an issue</TooltipContent>
+                </Tooltip>
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
