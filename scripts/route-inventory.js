@@ -44,7 +44,12 @@ const SERVER_ROUTE_METHODS = ['use', 'get', 'post', 'put', 'patch', 'delete'];
 
 function walk(dir, files = []) {
   if (!fs.existsSync(dir)) return files;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+  // Sort entries so traversal order is stable across OS/filesystems; otherwise
+  // readdirSync ordering can make the generated report (and --check) flaky.
+  const entries = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .sort((a, b) => a.name.localeCompare(b.name));
+  for (const entry of entries) {
     if (IGNORE_DIRS.has(entry.name)) continue;
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(fullPath, files);
@@ -172,7 +177,10 @@ function likelyUnmatchedApiRefs(apiRefs, serverRoutes) {
 }
 
 function occurrencesSummary(occurrences, limit = 4) {
-  return occurrences
+  // Sort by file/line so the "first locations" shown are deterministic and don't
+  // depend on filesystem walk order (keeps --check stable across machines).
+  return [...occurrences]
+    .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
     .slice(0, limit)
     .map((occ) => `${occ.file}:${occ.line}`)
     .join('<br>');
@@ -205,11 +213,15 @@ function buildReport({ apiRefs, apiRequestMismatches, serverRoutes, appRoutes, u
 }
 
 const allFiles = readSourceFiles(SOURCE_ROOTS);
-const clientFiles = allFiles.filter((file) => rel(file).startsWith('client/src/'));
 const serverFiles = allFiles.filter((file) => rel(file).startsWith('server/'));
+// Client API references / apiRequest mismatches are collected from client code
+// AND tests, so /api/... usages in integration tests are part of the inventory.
+const clientApiScanFiles = allFiles.filter(
+  (file) => rel(file).startsWith('client/src/') || rel(file).startsWith('tests/')
+);
 
-const apiRefs = extractClientApiReferences(clientFiles);
-const apiRequestMismatches = extractApiRequestMismatches(clientFiles);
+const apiRefs = extractClientApiReferences(clientApiScanFiles);
+const apiRequestMismatches = extractApiRequestMismatches(clientApiScanFiles);
 const serverRoutes = extractServerApiRoutes(serverFiles);
 const appRoutes = extractClientAppRoutes();
 const unmatched = likelyUnmatchedApiRefs(apiRefs, serverRoutes);
