@@ -139,8 +139,9 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient, applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -206,7 +207,7 @@ const isEventWithinUpcomingFilter = (
     return true;
   }
 
-  const dateStr = event.scheduledEventDate || event.desiredEventDate;
+  const dateStr = getEffectiveEventDate(event);
   if (!dateStr) {
     return false;
   }
@@ -562,7 +563,7 @@ const createStackedLocationIcon = (count: number) => {
 const EnhancedPopupContent = ({ event, navigate }: { event: EventMapData; navigate: any }) => {
   const contactName = [event.firstName, event.lastName].filter(Boolean).join(' ');
   const getEventDate = (evt: EventMapData) => {
-    const date = evt.scheduledEventDate || evt.desiredEventDate;
+    const date = getEffectiveEventDate(evt);
     return date ? format(parseLocalDate(date), 'MMM dd, yyyy') : 'No date set';
   };
 
@@ -907,12 +908,16 @@ export default function EventMapView() {
         eventAddress: address,
       });
     },
-    onSuccess: () => {
+    onSuccess: async (updated) => {
       toast({
         title: 'Address Updated',
         description: 'Event address has been updated successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      // Refresh event-request list/cards too (not just the map): eventAddress is
+      // a tracked field, so this also invalidates the map + volunteer hub.
+      await applyPatchResponseToCache(queryClient, updated as any, {
+        touchedFields: ['eventAddress'],
+      });
       setEditingEvent(null);
       setEditedAddress('');
     },
@@ -976,7 +981,7 @@ export default function EventMapView() {
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     events.forEach(event => {
-      const date = event.scheduledEventDate || event.desiredEventDate;
+      const date = getEffectiveEventDate(event);
       if (date) {
         const year = parseLocalDate(date).getFullYear();
         if (!isNaN(year)) {
@@ -1032,7 +1037,7 @@ export default function EventMapView() {
     if (yearFilter !== 'all') {
       const targetYear = parseInt(yearFilter);
       filtered = filtered.filter(event => {
-        const date = event.scheduledEventDate || event.desiredEventDate;
+        const date = getEffectiveEventDate(event);
         if (!date) return false;
         const year = parseLocalDate(date).getFullYear();
         return year === targetYear;
@@ -1385,11 +1390,11 @@ export default function EventMapView() {
                       </h3>
 
                       {/* Event Date */}
-                      {(event.scheduledEventDate || event.desiredEventDate) && (
+                      {(getEffectiveEventDate(event)) && (
                         <div className="flex items-center gap-1.5 text-xs text-gray-700 mt-1.5">
                           <Calendar className="w-3 h-3 flex-shrink-0" />
                           <span>
-                            {format(parseLocalDate(event.scheduledEventDate || event.desiredEventDate!), 'MMM d, yyyy')}
+                            {format(parseLocalDate(getEffectiveEventDate(event)!), 'MMM d, yyyy')}
                           </span>
                         </div>
                       )}

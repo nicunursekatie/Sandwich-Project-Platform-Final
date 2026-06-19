@@ -35,6 +35,8 @@ import {
   Tooltip,
   Legend,
 } from 'recharts';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -473,7 +475,7 @@ export function FloatingAIChat({
           const sortedData = [...limitedContext.rawData].sort((a, b) => {
             // Prioritize scheduled and in_process events
             const statusPriority = (status: string) => {
-              if (status === 'scheduled') return 0;
+              if (isScheduledOrRescheduled(status)) return 0;
               if (status === 'in_process') return 1;
               if (status === 'new') return 2;
               return 3;
@@ -483,8 +485,8 @@ export function FloatingAIChat({
             if (aPriority !== bPriority) return aPriority - bPriority;
 
             // Then sort by date (upcoming first)
-            const aDate = a.scheduledEventDate || a.desiredEventDate || a.collectionDate;
-            const bDate = b.scheduledEventDate || b.desiredEventDate || b.collectionDate;
+            const aDate = getEffectiveEventDate(a) || a.collectionDate;
+            const bDate = getEffectiveEventDate(b) || b.collectionDate;
             if (!aDate && !bDate) return 0;
             if (!aDate) return 1;
             if (!bDate) return -1;

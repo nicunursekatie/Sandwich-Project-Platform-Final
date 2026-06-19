@@ -30,6 +30,8 @@ import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
 import { EventCalendarView } from '@/components/event-calendar-view';
 import { VolunteerOpportunitiesMap } from './VolunteerOpportunitiesMap';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Brand palette (tokens from tailwind.config.ts → brand.*)
 const BRAND = {
@@ -93,7 +95,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   // Filter events that need volunteers, speakers, or drivers
   const opportunities = useMemo(() => {
     return eventRequests
-      .filter((request: EventRequest) => request.status === 'scheduled')
+      .filter((request: EventRequest) => isScheduledOrRescheduled(request.status))
       .filter((request: EventRequest) => {
         const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } =
           getUnfilledNeeds(request);
@@ -105,8 +107,8 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
         return needsSpeaker || needsVolunteer || needsDriver || needsVanDriver;
       })
       .sort((a: EventRequest, b: EventRequest) => {
-        const dateA = a.scheduledEventDate || a.desiredEventDate;
-        const dateB = b.scheduledEventDate || b.desiredEventDate;
+        const dateA = getEffectiveEventDate(a);
+        const dateB = getEffectiveEventDate(b);
         const timeA = dateA ? new Date(dateA).getTime() : 0;
         const timeB = dateB ? new Date(dateB).getTime() : 0;
         return timeA - timeB;
@@ -116,7 +118,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   // Counts for filter chips
   const counts = useMemo(() => {
     const scheduled = eventRequests.filter(
-      (r: EventRequest) => r.status === 'scheduled',
+      (r: EventRequest) => isScheduledOrRescheduled(r.status),
     );
     let speaker = 0;
     let volunteer = 0;
@@ -135,7 +137,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
   }, [eventRequests]);
 
   const formatEventDate = (request: EventRequest) => {
-    const date = request.scheduledEventDate || request.desiredEventDate;
+    const date = getEffectiveEventDate(request);
     if (!date) return null;
     try {
       const dateStr = typeof date === 'string' ? date : String(date);

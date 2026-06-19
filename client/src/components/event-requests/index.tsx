@@ -47,6 +47,7 @@ import {
 
 // Import existing components that we'll reuse
 import RequestFilters from '@/components/event-requests/RequestFilters';
+import { VanConflictsButton } from '@/components/event-requests/VanConflictsButton';
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
@@ -86,6 +87,8 @@ import { logger } from '@/lib/logger';
 import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -621,6 +624,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   {!isMobile && 'Sync'}
                 </button>
               )}
+              <VanConflictsButton isMobile={isMobile} />
               <button
                 onClick={openManualEventRequest}
                 className="premium-btn-outline text-sm"
@@ -658,10 +662,21 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Controls toolbar — view controls (primary, left) + filters & tools (right) */}
         <div className="flex flex-wrap items-center gap-2 px-2 sm:px-0">
-          {/* Primary: View mode controls */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-            {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
-            {activeTab === 'scheduled' && viewMode === 'list' ? (
+          {/* Primary: View mode controls. Labeled with "View as:" so users
+              notice this is a view picker — without the label the segmented
+              control reads as decoration and users miss the calendar/map
+              options entirely. */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#236383] hidden sm:inline">
+              View as:
+            </span>
+          <div className="flex items-center gap-1 bg-[#007E8C]/10 border border-[#007E8C]/20 rounded-lg p-0.5">
+            {/* On the Scheduled tab, Cards/Spreadsheet stay visible alongside
+                Calendar/Map so the user can see all four view options at once
+                — and so switching to Calendar/Map doesn't make the Cards
+                button vanish (it was confusing). On other tabs we show the
+                generic "List" button instead. */}
+            {activeTab === 'scheduled' ? (
               <>
                 <button
                   onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
@@ -701,6 +716,7 @@ const EventRequestsManagementContent: React.FC = () => {
               <MapPin className="w-4 h-4" />
               {!isMobile && 'Map'}
             </button>
+          </div>
           </div>
 
           {/* Export — shown on scheduled and completed tabs in list view */}
@@ -1718,7 +1734,7 @@ const EventRequestsManagementContent: React.FC = () => {
               sunday.setHours(23, 59, 59, 999);
 
               const thisWeekEvents = eventRequests.filter(e => {
-                const eventDate = e.scheduledEventDate || e.desiredEventDate;
+                const eventDate = getEffectiveEventDate(e);
                 if (!eventDate) return false;
                 const date = new Date(eventDate);
                 return date >= monday && date <= sunday && ['scheduled', 'in_process'].includes(e.status);
@@ -1730,7 +1746,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
               return {
                 totalEvents: eventRequests.length,
-                scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
+                scheduledEvents: eventRequests.filter(e => isScheduledOrRescheduled(e.status)).length,
                 inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
                 newRequests: eventRequests.filter(e => e.status === 'new').length,
                 completedEvents: eventRequests.filter(e => e.status === 'completed').length,
@@ -1741,7 +1757,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 thisWeekSandwichTotal: thisWeekSandwiches,
                 thisWeekEventsList: thisWeekEvents.map(e => ({
                   name: e.organizationName,
-                  date: new Date(e.scheduledEventDate || e.desiredEventDate!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+                  date: new Date(getEffectiveEventDate(e)!).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
                   sandwiches: e.estimatedSandwichCount || e.actualSandwichCount || 0,
                   status: e.status,
                 })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),

@@ -22,6 +22,8 @@ import type { EventRequest } from '@shared/schema';
 import { format, addWeeks, startOfWeek, endOfWeek, addDays, isWithinInterval, isBefore, isAfter } from 'date-fns';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { parsePostgresArray } from '../utils';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface SandwichDestinationOverviewProps {
   eventRequests: EventRequest[];
@@ -147,7 +149,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
       // Only include scheduled or in_process events
       if (!['scheduled', 'in_process'].includes(event.status || '')) return false;
 
-      const dateStr = event.scheduledEventDate || event.desiredEventDate;
+      const dateStr = getEffectiveEventDate(event);
       if (!dateStr) return false;
 
       const eventDate = parseLocalDate(dateStr as string);
@@ -174,7 +176,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
     }> = [];
 
     for (const event of eventsInWindow) {
-      const dateStr = (event.scheduledEventDate || event.desiredEventDate) as string;
+      const dateStr = (getEffectiveEventDate(event)) as string;
       const eventDate = format(parseLocalDate(dateStr), 'EEE, MMM d');
       const sandwichCount = event.estimatedSandwichCount || 0;
       const allocations = (event.recipientAllocations as RecipientAllocation[] | null) || [];
@@ -403,7 +405,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
                     <Badge
                       variant="outline"
                       className={`text-xs ${
-                        event.status === 'scheduled'
+                        isScheduledOrRescheduled(event.status)
                           ? 'border-green-300 text-green-700 bg-green-50'
                           : 'border-amber-300 text-amber-700 bg-amber-50'
                       }`}
@@ -461,7 +463,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
                     <Badge
                       variant="outline"
                       className={`text-xs ${
-                        event.status === 'scheduled'
+                        isScheduledOrRescheduled(event.status)
                           ? 'border-green-300 text-green-700 bg-green-50'
                           : 'border-amber-300 text-amber-700 bg-amber-50'
                       }`}

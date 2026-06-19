@@ -14,6 +14,7 @@ import { storage } from '../../storage-wrapper';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { isAuthenticated } from '../../auth';
+import { isScheduledOrRescheduled } from '../../../shared/event-status-workflow';
 import { logger } from '../../middleware/logger';
 import type { AuthenticatedRequest } from '../../types/express';
 
@@ -66,7 +67,7 @@ router.post('/:id/ai-suggest-dates', isAuthenticated, async (req, res) => {
     // Get all scheduled events for analysis
     const allEventRequests = await storage.getAllEventRequests();
     const scheduledEvents = allEventRequests.filter(e =>
-      e.status === 'scheduled' && e.scheduledEventDate
+      isScheduledOrRescheduled(e.status) && e.scheduledEventDate
     );
 
     // Import and call AI scheduling assistant with flexibility options
@@ -116,7 +117,7 @@ router.post('/:id/ai-intake-assist', isAuthenticated, async (req, res) => {
     // Get all scheduled events for context (for date conflict analysis)
     const allEventRequests = await storage.getAllEventRequests();
     const scheduledEvents = allEventRequests.filter(e =>
-      e.status === 'scheduled' && e.scheduledEventDate
+      isScheduledOrRescheduled(e.status) && e.scheduledEventDate
     );
 
     // Import and call AI intake assistant

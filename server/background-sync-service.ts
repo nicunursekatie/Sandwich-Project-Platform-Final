@@ -368,7 +368,10 @@ Action Required:
         })
         .where(
           and(
-            eq(eventRequests.status, 'scheduled'),
+            or(
+              eq(eventRequests.status, 'scheduled'),
+              eq(eventRequests.status, 'rescheduled')
+            ),
             or(
               and(isNotNull(eventRequests.scheduledEventDate), lt(eventRequests.scheduledEventDate, cutoffDate)),
               and(isNull(eventRequests.scheduledEventDate), lt(eventRequests.desiredEventDate, cutoffDate))

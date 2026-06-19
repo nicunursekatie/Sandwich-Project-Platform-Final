@@ -66,6 +66,7 @@ import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
 import { normalizeFocusArea, sortFocusAreaEntries } from '@/lib/focus-area-groups';
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // =====================================================================
 // EXTERNAL REFERENCE FIGURES — update annually before grant submissions.
@@ -273,7 +274,7 @@ export default function GrantMetrics() {
       const selectedYear = parseInt(selectedFiscalYear);
       eventsToAnalyze = eventsToAnalyze.filter((e: any) => {
         if (!e.scheduledEventDate && !e.desiredEventDate) return false;
-        const eventDate = new Date(e.scheduledEventDate || e.desiredEventDate);
+        const eventDate = new Date(getEffectiveEventDate(e));
         if (Number.isNaN(eventDate.getTime())) return false;
 
         const year = eventDate.getFullYear();
@@ -451,45 +452,134 @@ export default function GrantMetrics() {
 
   const filteredCollections = getFilteredCollections();
 
-  // Calculate volunteer hours based on conservative estimates
-  const calculateVolunteerMetrics = (collectionsToAnalyze: any[]) => {
-    // Conservative estimates:
-    // - Individual sandwich makers: 20 min (0.33 hours) per person
-    // - Group builds: 1.5 hours average per participant
-    // - Hosts: 2.5 hours per collection event
-    // - Administrative/coordination: 1.5 hours per event
+  /** Completed group events in the selected reporting period (same filters as collections). */
+  const getFilteredCompletedGroupEvents = (): number => {
+    let eventsToAnalyze = completedEvents;
 
-    const individualEvents = collectionsToAnalyze.filter((c: any) => c.individualSandwiches > 0).length;
-    const groupEvents = collectionsToAnalyze.filter((c: any) => {
-      const groupSandwiches = calculateGroupSandwiches(c);
-      return groupSandwiches > 0;
-    }).length;
+    if (selectedFiscalYear !== 'all') {
+      const selectedYear = parseInt(selectedFiscalYear);
+      eventsToAnalyze = eventsToAnalyze.filter((e: any) => {
+        if (!e.scheduledEventDate && !e.desiredEventDate) return false;
+        const eventDate = new Date(getEffectiveEventDate(e));
+        if (Number.isNaN(eventDate.getTime())) return false;
 
-    const totalEvents = collectionsToAnalyze.length;
+        const year = eventDate.getFullYear();
+        const month = eventDate.getMonth();
 
-    // Estimate participants from sandwich volume. Avg person makes ~8-12
-    // sandwiches, so use 10 sandwiches/person as a conservative proxy.
-    const totalSandwiches = collectionsToAnalyze.reduce((sum: number, c: any) => sum + calculateTotalSandwiches(c), 0);
-    const estimatedParticipants = Math.round(totalSandwiches / 10);
+        if (yearType === 'fiscal') {
+          if (month >= 6) return year === selectedYear;
+          return year === selectedYear + 1;
+        }
+        return year === selectedYear;
+      });
+    }
 
-    // Calculate hours
-    const makingHours = estimatedParticipants * 0.33; // 20 min per person
-    const hostHours = totalEvents * 2.5; // Host coordination
-    const adminHours = totalEvents * 1.5; // Administrative overhead
-    const driverHours = totalEvents * 1.5; // Driver/logistics
+    if (selectedQuarter !== 'all' && selectedFiscalYear !== 'all') {
+      const selectedYear = parseInt(selectedFiscalYear);
+      const quarter = parseInt(selectedQuarter);
+      eventsToAnalyze = eventsToAnalyze.filter((e: any) => {
+        if (!e.scheduledEventDate && !e.desiredEventDate) return false;
+        const eventDate = new Date(getEffectiveEventDate(e));
+        if (Number.isNaN(eventDate.getTime())) return false;
 
-    const totalVolunteerHours = Math.round(makingHours + hostHours + adminHours + driverHours);
+        const year = eventDate.getFullYear();
+        const month = eventDate.getMonth();
 
-    // Independent Sector "Value of Volunteer Time" — see constant declaration.
+        let eventQuarter = 0;
+        let eventYear = year;
+
+        if (yearType === 'fiscal') {
+          if (month >= 6 && month <= 8) eventQuarter = 1;
+          else if (month >= 9 && month <= 11) eventQuarter = 2;
+          else if (month >= 0 && month <= 2) {
+            eventQuarter = 3;
+            eventYear = year - 1;
+          } else {
+            eventQuarter = 4;
+            eventYear = year - 1;
+          }
+        } else {
+          if (month >= 0 && month <= 2) eventQuarter = 1;
+          else if (month >= 3 && month <= 5) eventQuarter = 2;
+          else if (month >= 6 && month <= 8) eventQuarter = 3;
+          else eventQuarter = 4;
+        }
+
+        return eventYear === selectedYear && eventQuarter === quarter;
+      });
+    }
+
+    return eventsToAnalyze.length;
+  };
+
+  const filteredCompletedGroupEvents = getFilteredCompletedGroupEvents();
+
+  /**
+   * Two-track volunteer hours model:
+   * Track 1 — group events (assembly-line builds + per-event prep/logistics)
+   * Track 2 — individual/family collections (household makers + shopping/dropoff)
+   */
+  const calculateVolunteerMetrics = (
+    collectionsToAnalyze: any[],
+    completedGroupEvents: number
+  ) => {
+    const totalSandwiches = collectionsToAnalyze.reduce(
+      (sum: number, c: any) => sum + calculateTotalSandwiches(c),
+      0
+    );
+    const groupEventSandwiches = collectionsToAnalyze.reduce(
+      (sum: number, c: any) => sum + calculateGroupSandwiches(c),
+      0
+    );
+
+    // Track 1 — Group Events
+    const groupParticipants = groupEventSandwiches / 25;
+    const groupMakingHours = groupParticipants * 1.5;
+    const groupShoppingHours = completedGroupEvents * 2;
+    const groupOrgPrepHours = completedGroupEvents * 1.5;
+    const groupTspLogisticsHours = completedGroupEvents * 1.5;
+    const groupTotalHours =
+      groupMakingHours +
+      groupShoppingHours +
+      groupOrgPrepHours +
+      groupTspLogisticsHours;
+
+    // Track 2 — Individual/Family Collections
+    const individualSandwiches = Math.max(0, totalSandwiches - groupEventSandwiches);
+    const familyUnits = individualSandwiches / 20;
+    const individualParticipants = familyUnits * 2.5;
+    const individualMakingHours = individualParticipants * 0.75;
+    const individualShoppingHours = familyUnits * 1;
+    const individualDropoffHours = familyUnits * 0.5;
+    const individualTotalHours =
+      individualMakingHours + individualShoppingHours + individualDropoffHours;
+
+    const estimatedParticipants = Math.round(groupParticipants + individualParticipants);
+    const totalVolunteerHours = Math.round(groupTotalHours + individualTotalHours);
     const economicValue = Math.round(
       totalVolunteerHours * IRS_VOLUNTEER_RATE_USD_PER_HOUR
+    );
+
+    // Average hours per engagement (group event + family collection run)
+    const totalEngagements = completedGroupEvents + familyUnits;
+    const avgHoursPerEvent = Math.round(
+      totalVolunteerHours / Math.max(totalEngagements, 1)
     );
 
     return {
       estimatedParticipants,
       totalVolunteerHours,
       economicValue,
-      avgHoursPerEvent: Math.round(totalVolunteerHours / Math.max(totalEvents, 1)),
+      avgHoursPerEvent,
+      totalSandwiches,
+      groupEventSandwiches,
+      completedGroupEvents,
+      groupParticipants: Math.round(groupParticipants),
+      groupTotalHours: Math.round(groupTotalHours),
+      individualSandwiches: Math.round(individualSandwiches),
+      familyUnits: Math.round(familyUnits),
+      individualParticipants: Math.round(individualParticipants),
+      individualTotalHours: Math.round(individualTotalHours),
     };
   };
 
@@ -710,7 +800,10 @@ export default function GrantMetrics() {
   };
 
   // Calculate metrics for filtered data (respects fiscal year/quarter selection)
-  const filteredVolunteerMetrics = calculateVolunteerMetrics(filteredCollections);
+  const filteredVolunteerMetrics = calculateVolunteerMetrics(
+    filteredCollections,
+    filteredCompletedGroupEvents
+  );
   const filteredCostMetrics = calculateCostMetrics(filteredCollections);
   const filteredQuarterlyBreakdown = getQuarterlyBreakdown(filteredCollections);
 
@@ -1393,7 +1486,7 @@ export default function GrantMetrics() {
                   Est. volunteer participants
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Sandwiches ÷ 10
+                  Group + individual/family tracks
                 </p>
               </div>
 
@@ -1406,7 +1499,7 @@ export default function GrantMetrics() {
                   Est. volunteer hours
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Conservative estimate
+                  Two-track methodology
                 </p>
               </div>
 
@@ -1433,49 +1526,106 @@ export default function GrantMetrics() {
                   {filteredVolunteerMetrics.avgHoursPerEvent}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Total volunteer hours per event
+                  Avg hours per engagement
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  All participants combined
+                  Group events + family collection runs
                 </p>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
-                <FileText className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                How We Calculate Volunteer Hours (Conservative Methodology)
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-700">
-                <div className="flex items-start gap-2">
-                  <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
-                    Making
-                  </Badge>
-                  <span>Estimated participants = total sandwiches ÷ 10; making time = 20 min per estimated participant</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#236383]/30">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-[#236383]" />
+                  Track 1 — Group Events
+                </h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
+                      Participants
+                    </Badge>
+                    <span>Group sandwiches ÷ 25 (assembly-line pace) = {filteredVolunteerMetrics.groupParticipants.toLocaleString()} participants</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
+                      Making
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.groupParticipants.toLocaleString()} participants × 1.5 hrs each</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
+                      Shopping
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} completed events × 2 hrs (1 shopper ahead)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
+                      Org prep
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} events × 1.5 hrs (group coordination)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
+                      TSP logistics
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} events × 1.5 hrs (TSP coordination)</span>
+                  </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
-                    Hosting
-                  </Badge>
-                  <span>2.5 hours per collection event (setup, coordination, cleanup)</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
-                    Logistics
-                  </Badge>
-                  <span>1.5 hours per event (driving, delivery, returns)</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
-                    Admin
-                  </Badge>
-                  <span>1.5 hours per event (coordination, communication, tracking)</span>
-                </div>
+                <p className="text-xs text-[#236383] font-medium mt-3">
+                  Track 1 total: {filteredVolunteerMetrics.groupTotalHours.toLocaleString()} hours
+                  ({filteredVolunteerMetrics.groupEventSandwiches.toLocaleString()} group-event sandwiches)
+                </p>
               </div>
-              <p className="text-xs text-gray-600 mt-3 italic">
-                * All estimates use conservative industry standards to ensure defensible grant reporting
-              </p>
+
+              <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-[#FBAD3F]" />
+                  Track 2 — Individual/Family Collections
+                </h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
+                      Sandwiches
+                    </Badge>
+                    <span>Total − group = {filteredVolunteerMetrics.individualSandwiches.toLocaleString()} individual sandwiches</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
+                      Families
+                    </Badge>
+                    <span>Individual sandwiches ÷ 20 (~1 loaf per run) = {filteredVolunteerMetrics.familyUnits.toLocaleString()} family units</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
+                      Participants
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.familyUnits.toLocaleString()} families × 2.5 makers = {filteredVolunteerMetrics.individualParticipants.toLocaleString()} participants</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
+                      Making
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.individualParticipants.toLocaleString()} participants × 0.75 hrs (45 min each)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
+                      Shopping + dropoff
+                    </Badge>
+                    <span>{filteredVolunteerMetrics.familyUnits.toLocaleString()} families × 1 hr shopping + 0.5 hr dropoff</span>
+                  </div>
+                </div>
+                <p className="text-xs text-[#FBAD3F] font-medium mt-3">
+                  Track 2 total: {filteredVolunteerMetrics.individualTotalHours.toLocaleString()} hours
+                </p>
+              </div>
             </div>
+
+            <p className="text-xs text-gray-600 italic px-1">
+              * Two-track methodology separates group assembly-line events from individual/family collection runs,
+              producing more accurate participant and hour estimates than the prior single formula (total sandwiches ÷ 10 × 20 min + flat per-event overhead).
+              Combined totals use Independent Sector&apos;s ${IRS_VOLUNTEER_RATE_USD_PER_HOUR.toFixed(2)}/hr rate ({IRS_VOLUNTEER_RATE_YEAR}) for grant-facing economic value.
+            </p>
           </CardContent>
         </Card>
 

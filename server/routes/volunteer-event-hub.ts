@@ -26,6 +26,7 @@ import { getAppBaseUrl } from '../config/constants';
 import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 const router = Router();
 
@@ -443,7 +444,7 @@ interface EventForEmail {
 }
 
 function eventDisplayDate(event: EventForEmail): { iso: string | null; formatted: string } {
-  const date = event.scheduledEventDate || event.desiredEventDate;
+  const date = getEffectiveEventDate(event);
   if (!date) return { iso: null, formatted: 'Date TBD' };
   const d = new Date(date);
   const formatted = d.toLocaleDateString('en-US', {
@@ -479,7 +480,7 @@ async function sendVolunteerApprovalEmail(
       : null;
 
     // Calendar
-    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+    const eventDate = getEffectiveEventDate(event);
     const times = buildEventTimes(eventDate, event.eventStartTime, event.eventEndTime);
     const calTitle = `TSP: ${orgName} — ${roleDisplay}`;
     const calDetails = [
@@ -814,7 +815,7 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
     // Filter to events with dates today or in the future
     // Include events with no date set (they're still active)
     const upcomingEvents = events.filter(event => {
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       if (!eventDate) {
         // Include events without dates - they're still active
         return true;
@@ -1366,7 +1367,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
         volunteerName,
         user.preferredEmail || user.email || '',
         event.organizationName || 'Unknown Organization',
-        event.scheduledEventDate || event.desiredEventDate,
+        getEffectiveEventDate(event),
         event.eventStartTime,
         event.eventEndTime,
         event.eventAddress,
@@ -1382,7 +1383,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
         user.preferredEmail || user.email || '',
         eventId,
         event.organizationName || 'Unknown Organization',
-        event.scheduledEventDate || event.desiredEventDate,
+        getEffectiveEventDate(event),
         normalizedRoles,
         notes
       );
@@ -1390,7 +1391,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
         volunteerName,
         user.preferredEmail || user.email || '',
         event.organizationName || 'Unknown Organization',
-        event.scheduledEventDate || event.desiredEventDate,
+        getEffectiveEventDate(event),
         event.eventStartTime,
         event.eventEndTime,
         event.eventAddress,
@@ -1582,7 +1583,7 @@ router.get('/coverage-summary', isAuthenticated, async (req: AuthenticatedReques
       .orderBy(eventRequests.scheduledEventDate);
 
     const upcomingEvents = events.filter((event) => {
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       if (!eventDate) return true;
       return new Date(eventDate) >= today;
     });

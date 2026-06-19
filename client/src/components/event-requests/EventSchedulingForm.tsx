@@ -251,8 +251,19 @@ interface EventSchedulingFormProps {
   mode?: 'schedule' | 'edit' | 'create';
 }
 
+/**
+ * A record is "full" when it carries columns the partial sources omit. The
+ * event map (/api/event-map) hands the form a PARTIAL record (a subset of
+ * columns), and a full-form save from that would blank the omitted fields.
+ * Detect partial records via sentinel columns the map never selects, so we can
+ * hydrate the full record before allowing a save.
+ */
+function isFullEventRecord(e: any): boolean {
+  return !!e && e.planningNotes !== undefined && e.createdAt !== undefined;
+}
+
 const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
-  eventRequest,
+  eventRequest: rawEventRequest,
   isVisible,
   isOpen,
   onClose,
@@ -264,6 +275,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
 
+  const eventRequest = rawEventRequest;
   // Event requests now use a single full-record shape from the list query.
   // Do not refetch a second "full" copy here; the form initializes from eventRequest.
 
@@ -871,6 +883,33 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       logger.log('⛔ Save blocked: form not initialized');
       toast({ title: 'Please wait', description: 'Form is still loading. Please try again in a moment.', variant: 'destructive' });
+      return;
+    }
+
+    // Block saving a partial record (e.g. opened from the map) until the FULL
+    // record is freshly hydrated. Also block while a hydration fetch is in flight
+    // or has errored: refetchOnMount serves the stale cached copy during the
+    // background refetch, and saving then would build the payload from stale
+    // values. A full-form save from a partial/stale record would overwrite the
+    // columns the partial source omitted (notes, backup contacts, toolkit, etc.).
+    if (recordIsPartial && (!hydratedEventRequest || hydrationFetching || hydrationFailed)) {
+      setIsSubmitting(false);
+      if (hydrationFailed && !hydrationFetching) {
+        // The full-record fetch failed and isn't already retrying. Don't leave
+        // the user stuck behind a "loading" message — retry and tell them plainly.
+        // Saving stays blocked so a partial/stale payload can't overwrite data.
+        logger.log('⛔ Save blocked: full event failed to load; retrying');
+        refetchHydration();
+        toast({
+          title: "Couldn't load this event",
+          description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or reopen it from the list.",
+          variant: 'destructive',
+          duration: Number.POSITIVE_INFINITY,
+        });
+      } else {
+        logger.log('⛔ Save blocked: full record not freshly hydrated yet');
+        toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to finish loading before saving.', variant: 'destructive' });
+      }
       return;
     }
 

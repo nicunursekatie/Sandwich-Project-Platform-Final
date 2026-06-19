@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 import OpenAI from 'openai';
 import type { AuthenticatedRequest } from '../types/express';
 import { getReportableSandwichCount } from '../../shared/sandwich-count-utils';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 export const impactReportsRouter = Router();
 
@@ -736,7 +737,7 @@ impactReportsRouter.get('/events-missing-types', async (req: AuthenticatedReques
         organizationName: e.organizationName,
         department: e.department,
         organizationCategory: e.organizationCategory,
-        scheduledEventDate: e.scheduledEventDate || e.desiredEventDate, // Fallback to desiredEventDate
+        scheduledEventDate: getEffectiveEventDate(e), // Fallback to desiredEventDate
         actualSandwichCount: e.actualSandwichCount,
         hasOrgPattern: patternsByOrg.has(e.organizationName || ''),
       })),
@@ -1171,7 +1172,7 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
 
     // Filter events by date range using string comparison
     const events = allEvents.filter(e => {
-      const eventDateRaw = e.scheduledEventDate || e.desiredEventDate;
+      const eventDateRaw = getEffectiveEventDate(e);
       if (!eventDateRaw) return false;
       // Handle both Date objects and string dates
       const eventDate = eventDateRaw instanceof Date ? eventDateRaw : new Date(eventDateRaw);
@@ -1224,7 +1225,7 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
       totalSandwiches += sandwichCount;
 
       // Track this event's week for deduplication
-      const eventDateRaw = e.scheduledEventDate || e.desiredEventDate;
+      const eventDateRaw = getEffectiveEventDate(e);
       if (eventDateRaw) {
         const eventDate = eventDateRaw instanceof Date ? eventDateRaw : new Date(eventDateRaw);
         const weekStart = new Date(eventDate);
@@ -1243,7 +1244,7 @@ impactReportsRouter.post('/ai-chat', async (req: AuthenticatedRequest, res: Resp
       if (sandwichCount > 0) categoryStats[category].counts.push(sandwichCount);
 
       // Monthly stats
-      const eventDateRaw2 = e.scheduledEventDate || e.desiredEventDate;
+      const eventDateRaw2 = getEffectiveEventDate(e);
       if (eventDateRaw2) {
         // Handle both Date objects and string dates
         const eventDateObj = eventDateRaw2 instanceof Date ? eventDateRaw2 : new Date(eventDateRaw2);

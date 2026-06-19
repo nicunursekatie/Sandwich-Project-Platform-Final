@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Marker color constants
 const COLORS = {
@@ -95,7 +96,7 @@ const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventReques
   const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
 
   const getEventDate = (evt: EventRequest) => {
-    const date = evt.scheduledEventDate || evt.desiredEventDate;
+    const date = getEffectiveEventDate(evt);
     return date ? format(parseLocalDate(date), 'MMM dd, yyyy') : 'No date set';
   };
 
@@ -280,7 +281,7 @@ export function VolunteerOpportunitiesMap({ events, onEventClick }: VolunteerOpp
   // Compute date range for display
   const dateRange = useMemo(() => {
     const dates = events
-      .map(e => e.scheduledEventDate || e.desiredEventDate)
+      .map(e => getEffectiveEventDate(e))
       .filter(Boolean)
       .map(d => parseLocalDate(d!))
       .sort((a, b) => a.getTime() - b.getTime());

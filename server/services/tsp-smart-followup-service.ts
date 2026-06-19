@@ -25,10 +25,12 @@ import { eventRequests, users, tspContactFollowups } from '@shared/schema';
 import { and, eq, sql, gte, lte, isNull, or, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata, getUserPhoneNumber } from '@shared/types';
+import { isScheduledOrRescheduled } from '../../shared/event-status-workflow';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import { EmailNotificationService } from './email-notification-service';
 import { getMissingIntakeInfo, getPrimaryContextualAction } from '@shared/event-validation-utils';
 import { isNotificationSuppressed } from '../utils/notification-suppression';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 const serviceLogger = {
   info: (msg: string, ...args: any[]) => logger.info(`[SmartFollowup] ${msg}`, ...args),
@@ -235,8 +237,8 @@ function getPreferredChannel(user: any): 'sms' | 'email' {
  * Check if event has had any activity (notes, contact logs, status changes)
  */
 function hasRecentActivity(event: any, sinceDate: Date): boolean {
-  // Check if status changed to scheduled
-  if (event.status === 'scheduled') {
+  // Check if status changed to scheduled (or rescheduled)
+  if (isScheduledOrRescheduled(event.status)) {
     return true;
   }
 
@@ -412,7 +414,7 @@ async function sendNotification(
   const channel = getPreferredChannel(user);
   const userName = user.displayName || user.firstName || 'there';
   const organization = event.organizationName || 'an organization';
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
 
   // Get contextual action for more specific messaging
   const missingInfo = getMissingIntakeInfo(event);
@@ -763,7 +765,7 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
               recordType,
               'sms',
               eventItem.event.organizationName || 'Unknown',
-              eventItem.event.scheduledEventDate || eventItem.event.desiredEventDate,
+              getEffectiveEventDate(eventItem.event),
               messagePreview
             );
 
@@ -821,7 +823,7 @@ export async function processSmartTspFollowups(): Promise<FollowupResult> {
             recordType,
             notificationResult.channel,
             notification.event.organizationName || 'Unknown',
-            notification.event.scheduledEventDate || notification.event.desiredEventDate,
+            getEffectiveEventDate(notification.event),
             messagePreview
           );
           result.notificationsSent++;

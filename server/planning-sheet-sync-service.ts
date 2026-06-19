@@ -4,6 +4,7 @@ import { db } from './db';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { eventRequests, proposedSheetChanges, users } from '@shared/schema';
 import { logger } from './utils/production-safe-logger';
+import { getEffectiveEventDate } from '../shared/event-validation-utils';
 
 /**
  * Planning Sheet Column Mapping
@@ -405,7 +406,7 @@ export class PlanningSheetSyncService {
     };
 
     // Format date with 2-digit year (M/D/YY)
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    const eventDate = getEffectiveEventDate(e);
     const eventDateObj = eventDate ? new Date(eventDate) : null;
     const dateStr = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
       month: 'numeric',
@@ -1048,7 +1049,7 @@ export class PlanningSheetSyncService {
           return { success: false, message: 'Event not found' };
         }
 
-        const eventDate = event[0].scheduledEventDate || event[0].desiredEventDate;
+        const eventDate = getEffectiveEventDate(event[0]);
         let eventDateObj = eventDate ? new Date(eventDate) : new Date();
 
         // Normalize to midnight for date-only comparison (ignore time component)
@@ -1157,7 +1158,7 @@ export class PlanningSheetSyncService {
     const sheetRows = await this.readPlanningSheet();
 
     // Try to match by organization name + date
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    const eventDate = getEffectiveEventDate(e);
     const eventDateObj = eventDate ? new Date(eventDate) : null;
     // Format with 2-digit year to match what eventToSheetRow writes (M/D/YY)
     const eventDateStr2Digit = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {

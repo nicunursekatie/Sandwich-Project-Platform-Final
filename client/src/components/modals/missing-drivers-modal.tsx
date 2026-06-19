@@ -14,6 +14,7 @@ import { AssignmentDialog } from '@/components/event-requests/dialogs/Assignment
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { applyPatchResponseToCache } from '@/lib/queryClient';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface MissingDriversModalProps {
   open: boolean;
@@ -95,8 +96,8 @@ export default function MissingDriversModal({
 
   // Sort events by date (earliest first)
   const sortedEvents = [...events].sort((a, b) => {
-    const dateA = new Date(a.scheduledEventDate || a.desiredEventDate || 0).getTime();
-    const dateB = new Date(b.scheduledEventDate || b.desiredEventDate || 0).getTime();
+    const dateA = new Date(getEffectiveEventDate(a) || 0).getTime();
+    const dateB = new Date(getEffectiveEventDate(b) || 0).getTime();
     return dateA - dateB;
   });
 
@@ -137,7 +138,7 @@ export default function MissingDriversModal({
                         <div className="flex items-center gap-2 mb-2">
                           <Calendar className="h-4 w-4 text-blue-600" />
                           <span className="text-sm font-medium text-gray-700">
-                            {formatDate(event.scheduledEventDate || event.desiredEventDate)}
+                            {formatDate(getEffectiveEventDate(event))}
                           </span>
                         </div>
                         {event.eventAddress && (

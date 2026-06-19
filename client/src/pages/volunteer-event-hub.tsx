@@ -83,6 +83,7 @@ import {
   LocateFixed,
   Ban,
 } from 'lucide-react';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Fix Leaflet default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -197,7 +198,7 @@ function getEventDateLabel(
   event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
   pattern = 'MMM d',
 ): string {
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   if (!eventDate) return 'Date TBD';
 
   const parsedDate = parseEventDate(eventDate);
@@ -412,7 +413,7 @@ function EventCard({
   existingSignup?: MySignup;
   existingUnavailable?: MyUnavailable;
 }) {
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   const formattedDate = eventDate
     ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
@@ -744,7 +745,7 @@ function SignupDialog({
 
   if (!event) return null;
 
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   const formattedDate = eventDate
     ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
@@ -896,7 +897,7 @@ function UnavailableDialog({
 
   if (!event) return null;
 
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   const formattedDate = eventDate
     ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
@@ -1047,7 +1048,7 @@ function AssignOthersDialog({
 
   if (!event) return null;
 
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   const formattedDate = eventDate
     ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
     : 'Date TBD';
@@ -1720,8 +1721,8 @@ export default function VolunteerEventHub() {
           return a.hasUnfilledNeeds ? -1 : 1;
         }
 
-        const dateA = a.scheduledEventDate || a.desiredEventDate;
-        const dateB = b.scheduledEventDate || b.desiredEventDate;
+        const dateA = getEffectiveEventDate(a);
+        const dateB = getEffectiveEventDate(b);
         if (dateA && dateB) return new Date(dateA).getTime() - new Date(dateB).getTime();
         if (dateA) return -1;
         if (dateB) return 1;
@@ -1752,7 +1753,7 @@ export default function VolunteerEventHub() {
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, AvailableEvent[]> = {};
     filteredEvents.forEach(event => {
-      const dateStr = event.scheduledEventDate || event.desiredEventDate;
+      const dateStr = getEffectiveEventDate(event);
       if (dateStr) {
         const key = dateStr.split('T')[0];
         if (!grouped[key]) grouped[key] = [];
@@ -1798,7 +1799,7 @@ export default function VolunteerEventHub() {
 
   const monthCalendarSummary = useMemo(() => {
     const monthEvents = filteredEvents.filter((event) => {
-      const dateStr = event.scheduledEventDate || event.desiredEventDate;
+      const dateStr = getEffectiveEventDate(event);
       if (!dateStr) return false;
       const date = parseEventDate(dateStr);
       return !!date && date.getMonth() === currentMonth.getMonth() && date.getFullYear() === currentMonth.getFullYear();
@@ -1807,7 +1808,7 @@ export default function VolunteerEventHub() {
     return {
       events: monthEvents.length,
       openings: getTotalOpeningsForEvents(monthEvents),
-      days: new Set(monthEvents.map((event) => (event.scheduledEventDate || event.desiredEventDate || '').split('T')[0])).size,
+      days: new Set(monthEvents.map((event) => (getEffectiveEventDate(event) || '').split('T')[0])).size,
     };
   }, [filteredEvents, currentMonth]);
 
@@ -2276,19 +2277,19 @@ export default function VolunteerEventHub() {
                 </div>
               </div>
 
-              <CardContent className="p-4 sm:p-6">
-                <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-5">
+              <CardContent className="p-4 sm:p-5 lg:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-5">
                   <div className="space-y-3">
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="text-center text-[11px] sm:text-sm font-bold text-[#236383] py-2">
+                        <div key={day} className="text-center text-[11px] md:text-xs lg:text-sm font-bold text-[#236383] py-2">
                           {day}
                         </div>
                       ))}
 
                       {paddedDays.map((day, idx) => {
                         if (!day) {
-                          return <div key={`empty-${idx}`} className="min-h-[76px] sm:min-h-[120px]" />;
+                          return <div key={`empty-${idx}`} className="min-h-[60px] sm:min-h-[76px] lg:min-h-[120px]" />;
                         }
 
                         const dateKey = format(day, 'yyyy-MM-dd');
@@ -2307,7 +2308,7 @@ export default function VolunteerEventHub() {
                             onClick={() => hasEvents && setSelectedCalendarDate(dateKey)}
                             disabled={!hasEvents}
                             className={cn(
-                              'relative min-h-[76px] sm:min-h-[120px] rounded-xl border p-2 text-left transition-all',
+                              'relative min-h-[60px] sm:min-h-[76px] lg:min-h-[120px] rounded-xl border p-2 text-left transition-all',
                               hasEvents
                                 ? 'bg-white border-[#47B3CB]/35 hover:border-[#007E8C] hover:shadow-md cursor-pointer'
                                 : 'bg-gray-50 border-gray-100 cursor-default',
@@ -2365,7 +2366,7 @@ export default function VolunteerEventHub() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 min-h-[360px]">
+                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 lg:min-h-[360px]">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-bold text-[#236383]">{selectedDateLabel}</h3>
@@ -2801,7 +2802,7 @@ export default function VolunteerEventHub() {
                   </Card>
                 ) : (
                 filteredSignups.map(signup => {
-                  const signupDate = signup.event.scheduledEventDate || signup.event.desiredEventDate;
+                  const signupDate = getEffectiveEventDate(signup.event);
                   const formattedSignupDate = signupDate
                     ? format(parseEventDate(signupDate)!, 'EEEE, MMMM d, yyyy')
                     : 'Date TBD';
@@ -2879,7 +2880,7 @@ export default function VolunteerEventHub() {
                       <p className="text-xs text-gray-500">{myUnavailable.length} event{myUnavailable.length !== 1 ? 's' : ''}</p>
                     </div>
                     {myUnavailable.map((unavailable) => {
-                      const unavailableDate = unavailable.event.scheduledEventDate || unavailable.event.desiredEventDate;
+                      const unavailableDate = getEffectiveEventDate(unavailable.event);
                       const formattedUnavailableDate = unavailableDate
                         ? format(parseEventDate(unavailableDate)!, 'EEEE, MMMM d, yyyy')
                         : 'Date TBD';
@@ -2961,7 +2962,7 @@ export default function VolunteerEventHub() {
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">{pendingSignups.length} signup{pendingSignups.length !== 1 ? 's' : ''} awaiting approval</p>
                 {pendingSignups.map((signup: any) => {
-                  const eventDate = signup.event?.scheduledEventDate || signup.event?.desiredEventDate;
+                  const eventDate = getEffectiveEventDate(signup.event);
                   return (
                     <Card key={signup.id} className="border border-gray-200 hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
@@ -3056,7 +3057,7 @@ export default function VolunteerEventHub() {
                 return (
                   <div className="space-y-2">
                     {managed.map((signup: any) => {
-                      const eventDate = signup.event?.scheduledEventDate || signup.event?.desiredEventDate;
+                      const eventDate = getEffectiveEventDate(signup.event);
                       const isApproved = signup.status === 'confirmed' || signup.status === 'assigned';
                       const isDeclined = signup.status === 'declined';
                       const vanNeeded = !!signup.event?.vanDriverNeeded;
@@ -3202,7 +3203,7 @@ export default function VolunteerEventHub() {
                   </Card>
                 ) : (
                   coverageSummary.map((event) => {
-                    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                    const eventDate = getEffectiveEventDate(event);
                     const formattedEventDate = eventDate
                       ? format(parseEventDate(eventDate)!, 'EEEE, MMMM d, yyyy')
                       : 'Date TBD';

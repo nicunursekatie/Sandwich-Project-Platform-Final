@@ -5,6 +5,56 @@
 import type { EventRequest } from './schema';
 
 // ============================================================================
+// EVENT DATE RESOLUTION
+// ============================================================================
+
+/**
+ * Return the date the app should treat as "the" date for this event.
+ *
+ * Rule:
+ *   - If the event has been scheduled, the scheduled date wins.
+ *   - Otherwise fall back to the originally requested (desired) date.
+ *   - If neither is set, returns `null`.
+ *
+ * Why a helper instead of an inline `||` everywhere: this rule used to live
+ * in ~200 callsites across client + server. Every one was a potential drift
+ * point (someone copies the wrong half, someone reverses the fallback,
+ * someone forgets the fallback entirely and uses the wrong field). One
+ * helper, one place to look, one place to change if the rule ever evolves.
+ *
+ * NOTE on context:
+ *   - `desiredEventDate` is "the date the organizer originally asked for"
+ *     and is retained for historical/audit purposes even after scheduling.
+ *   - `scheduledEventDate` is "the actual date the event was scheduled for"
+ *     and may differ from the desired date.
+ *
+ * When you SHOULD NOT use this helper:
+ *   - When you're specifically displaying the original request date (e.g.,
+ *     "Originally requested for: …" in audit/history UI).
+ *   - When you're specifically working with the scheduled date and want to
+ *     treat unscheduled events as "no date" (e.g., the main conflict-
+ *     detection check that only fires on scheduled events).
+ *   - When you're parsing / writing to one specific field via the schema.
+ *
+ * For all other cases — display, sorting, calendar placement, email
+ * insertion, reminder timing, follow-up scheduling — this is what you want.
+ *
+ * Generic on the date field type so callers preserve whatever type they had
+ * before migration: server callers usually have `Date | null` (Drizzle
+ * timestamps); client callers usually have `string | null` (ISO strings via
+ * JSON serialization). Either flows through unchanged.
+ */
+export function getEffectiveEventDate<T>(
+  event:
+    | { scheduledEventDate?: T | null; desiredEventDate?: T | null }
+    | null
+    | undefined
+): T | null {
+  if (!event) return null;
+  return event.scheduledEventDate ?? event.desiredEventDate ?? null;
+}
+
+// ============================================================================
 // REFRIGERATION VALIDATION
 // ============================================================================
 

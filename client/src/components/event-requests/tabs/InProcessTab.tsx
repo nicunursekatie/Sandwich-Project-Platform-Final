@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
@@ -69,7 +70,7 @@ export const InProcessTab: React.FC = () => {
 
   // Helper to check if an event's date has passed
   const isEventDatePast = (request: any): boolean => {
-    const eventDate = request.scheduledEventDate || request.desiredEventDate;
+    const eventDate = getEffectiveEventDate(request);
     if (!eventDate) return false;
     const date = new Date(eventDate);
     const today = new Date();
@@ -191,7 +192,7 @@ export const InProcessTab: React.FC = () => {
           if (editingField.startsWith('partnerOrg_')) {
             // Editing a single partner organization (name + optional department)
             const index = parseInt(editingField.split('_')[1]);
-            const currentEvent = eventRequests.find(r => r.id === editingInProcessId);
+            const currentEvent = inProcessRequests.find(r => r.id === editingInProcessId);
             const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
               ? (currentEvent.partnerOrganizations as any[]) 
               : [];

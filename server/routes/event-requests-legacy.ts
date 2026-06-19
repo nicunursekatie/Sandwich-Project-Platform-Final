@@ -30,6 +30,7 @@ import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 const router = Router();
 
@@ -111,7 +112,7 @@ const processPickupTimeFields = (updates: Partial<EventRequest>, existingData?: 
   // Get existing values for reference
   const existingPickupTime = existingData?.pickupTime;
   const existingPickupDateTime = existingData?.pickupDateTime;
-  const existingScheduledDate = existingData?.scheduledEventDate || existingData?.desiredEventDate;
+  const existingScheduledDate = getEffectiveEventDate(existingData);
   
   // Handle the case where both fields are provided in the update
   if (updates.pickupTime && updates.pickupDateTime) {
@@ -977,9 +978,13 @@ router.get('/assigned', isAuthenticated, async (req, res) => {
       let followUpNeeded = false;
       let followUpReason = '';
 
-      if (event.status === 'completed' && event.desiredEventDate) {
+      // For completed events, the actual scheduled date is what we want — the
+      // desired date is the original request and may differ if the event was
+      // rescheduled. Fall back to desired only when nothing was scheduled.
+      const completedEventDate = getEffectiveEventDate(event);
+      if (event.status === 'completed' && completedEventDate) {
         try {
-          const eventDate = new Date(event.desiredEventDate);
+          const eventDate = new Date(completedEventDate);
           const daysSinceEvent = Math.floor(
             (now.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24)
           );
@@ -1158,7 +1163,7 @@ router.get(
 
           eventRequests = eventRequests.filter(event => {
             // Check both scheduledEventDate and desiredEventDate
-            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+            const eventDate = getEffectiveEventDate(event);
             if (!eventDate) return false;
 
             const eventDateObj = new Date(eventDate);
@@ -1180,7 +1185,7 @@ router.get(
         
         eventRequests = eventRequests.filter(event => {
           // Include events in the next 14 days that need action
-          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          const eventDate = getEffectiveEventDate(event);
           if (!eventDate) return true; // Events without dates need action
           
           const eventDateObj = new Date(eventDate);
@@ -1280,7 +1285,7 @@ router.get(
           futureDate.setDate(futureDate.getDate() + days);
 
           eventRequests = eventRequests.filter(event => {
-            const eventDate = event.scheduledEventDate || event.desiredEventDate;
+            const eventDate = getEffectiveEventDate(event);
             if (!eventDate) return false;
             const eventDateObj = new Date(eventDate);
             eventDateObj.setHours(0, 0, 0, 0);
@@ -1298,7 +1303,7 @@ router.get(
         twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
 
         eventRequests = eventRequests.filter(event => {
-          const eventDate = event.scheduledEventDate || event.desiredEventDate;
+          const eventDate = getEffectiveEventDate(event);
           if (!eventDate) return true;
           const eventDateObj = new Date(eventDate);
           eventDateObj.setHours(0, 0, 0, 0);
@@ -4461,7 +4466,7 @@ router.patch('/:id/tsp-contact', isAuthenticated, async (req, res) => {
           validatedData.tspContact!,
           id,
           originalEvent.organizationName || 'Unknown Organization',
-          originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
+          getEffectiveEventDate(originalEvent),
           originalEvent.isCorporatePriority || false
         );
         logger.log(`✅ TSP contact assignment notification sent (tiered) for event ${id}`);
@@ -4613,7 +4618,7 @@ router.patch('/:id/corporate-priority', isAuthenticated, async (req, res) => {
         await EmailNotificationService.sendCorporatePriorityNotification(
           id,
           originalEvent.organizationName || 'Unknown Organization',
-          originalEvent.scheduledEventDate || originalEvent.desiredEventDate,
+          getEffectiveEventDate(originalEvent),
           req.user?.email || 'Unknown user'
         );
       } catch (error) {
@@ -4878,7 +4883,7 @@ router.get(
       const thisWeekEvents = allEventRequests.filter(event => {
         // Only count active events
         if (!activeStatuses.includes(event.status || '')) return false;
-        const eventDate = event.scheduledEventDate || event.desiredEventDate;
+        const eventDate = getEffectiveEventDate(event);
         if (!eventDate) return false;
         const date = parseDateOnly(eventDate);
         if (!date) return false;
@@ -4897,7 +4902,7 @@ router.get(
             event.status === 'cancelled') {
           return false;
         }
-        const eventDate = event.scheduledEventDate || event.desiredEventDate;
+        const eventDate = getEffectiveEventDate(event);
         if (!eventDate) return false;
         const date = parseDateOnly(eventDate);
         if (!date) return false;
@@ -4913,12 +4918,12 @@ router.get(
         return {
           id: event.id,
           organizationName: event.organizationName,
-          eventDate: event.scheduledEventDate || event.desiredEventDate,
+          eventDate: getEffectiveEventDate(event),
           status: event.status,
           needsDriver: (driversNeeded - assignedDrivers) > 0 && !event.selfTransport,
           needsSpeaker: (speakersNeeded - assignedSpeakers) > 0,
           needsVolunteer: (volunteersNeeded - assignedVolunteers) > 0,
-          isToday: toDateOnlyString(event.scheduledEventDate || event.desiredEventDate) === todayString,
+          isToday: toDateOnlyString(getEffectiveEventDate(event)) === todayString,
         };
       }).sort((a, b) => {
         const dateA = parseDateOnly(a.eventDate)?.getTime() || 0;
@@ -4971,7 +4976,7 @@ router.get(
       // Last week's events for completion rate
       // Only count events that were actually attempted (exclude cancelled/declined)
       const lastWeekEvents = allEventRequests.filter(event => {
-        const eventDate = event.scheduledEventDate || event.desiredEventDate;
+        const eventDate = getEffectiveEventDate(event);
         if (!eventDate) return false;
         const date = parseDateOnly(eventDate);
         if (!date || date < startOfLastWeek || date > endOfLastWeek) return false;

@@ -13,6 +13,7 @@ import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 export const RescheduledTab: React.FC = () => {
   const { toast } = useToast();
@@ -86,7 +87,7 @@ export const RescheduledTab: React.FC = () => {
           </div>
         ) : (
           rescheduledRequests.map((request) => {
-            const displayDate = request.scheduledEventDate || request.desiredEventDate;
+            const displayDate = getEffectiveEventDate(request);
             const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
             return (

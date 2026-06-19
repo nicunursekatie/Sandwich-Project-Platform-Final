@@ -13,6 +13,8 @@ import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour } from '@/components/event-requests/utils';
 import { exportSandwichPlanning } from '@/lib/planning-pdf-export';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface SandwichForecastWidgetProps {
   hideHeader?: boolean;
@@ -181,7 +183,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
       }
 
       // Use scheduledEventDate if available, otherwise use desiredEventDate
-      const dateToUse = request.scheduledEventDate || request.desiredEventDate;
+      const dateToUse = getEffectiveEventDate(request);
 
       if (!dateToUse) return false;
 
@@ -204,7 +206,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
 
     relevantEvents.forEach((request) => {
       try {
-        const dateToUse = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
+        const dateToUse = (isScheduledOrRescheduled(request.status) || request.status === 'completed') && request.scheduledEventDate
           ? request.scheduledEventDate
           : request.desiredEventDate;
 
@@ -247,7 +249,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
         const sandwichCount = getSandwichCount(request);
         week.totalEstimated += sandwichCount;
 
-        if (request.status === 'completed' || request.status === 'scheduled') {
+        if (request.status === 'completed' || isScheduledOrRescheduled(request.status)) {
           week.confirmedCount += sandwichCount;
         } else {
           week.pendingCount += sandwichCount;
@@ -584,8 +586,8 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                 ) : (
                   currentWeek.events
                     .sort((a, b) => {
-                      const dateA = a.scheduledEventDate || a.desiredEventDate;
-                      const dateB = b.scheduledEventDate || b.desiredEventDate;
+                      const dateA = getEffectiveEventDate(a);
+                      const dateB = getEffectiveEventDate(b);
                       if (!dateA && !dateB) return 0;
                       if (!dateA) return 1;
                       if (!dateB) return -1;
@@ -595,7 +597,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
                       const sandwichCount = event.status === 'completed' && event.actualSandwichCount
                         ? event.actualSandwichCount
                         : event.estimatedSandwichCount || 0;
-                      const dateStr = event.scheduledEventDate || event.desiredEventDate;
+                      const dateStr = getEffectiveEventDate(event);
                       const dateInfo = dateStr ? formatEventDate(dateStr.toString()) : null;
 
                       // Get sandwich types if available

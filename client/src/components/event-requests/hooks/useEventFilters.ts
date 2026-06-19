@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useAuth } from '@/hooks/useAuth';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Helper to parse a time string to minutes since midnight.
 //
@@ -450,7 +451,7 @@ export const useEventFilters = () => {
           (request.lastName && String(request.lastName).toLowerCase().includes(searchLower)) ||
           (request.email && String(request.email).toLowerCase().includes(searchLower)) ||
           (request.eventAddress && String(request.eventAddress).toLowerCase().includes(searchLower)) ||
-          dateMatchesSearch(request.scheduledEventDate || request.desiredEventDate, debouncedSearchQuery) ||
+          dateMatchesSearch(getEffectiveEventDate(request), debouncedSearchQuery) ||
           matchesTspContact ||
           matchesVolunteer;
       }
@@ -584,7 +585,7 @@ export const useEventFilters = () => {
               .toLowerCase()
               .includes(searchLower)) ||
             (request.eventAddress && request.eventAddress.toLowerCase().includes(searchLower)) ||
-            dateMatchesSearch(request.scheduledEventDate || request.desiredEventDate, debouncedSearchQuery) ||
+            dateMatchesSearch(getEffectiveEventDate(request), debouncedSearchQuery) ||
             matchesTspContact ||
             matchesVolunteer;
         }

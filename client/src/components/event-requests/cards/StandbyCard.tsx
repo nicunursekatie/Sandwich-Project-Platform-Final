@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface StandbyCardProps {
   request: EventRequest;
@@ -78,7 +79,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     return statusOption ? statusOption.label : status.replace('_', ' ');
   };
 
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   return (

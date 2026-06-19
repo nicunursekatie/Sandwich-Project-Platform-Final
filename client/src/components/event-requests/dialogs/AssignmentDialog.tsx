@@ -34,6 +34,7 @@ import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import type { AvailabilitySlot } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface ComprehensivePersonSelectorProps {
   selectedPeople: string[];
@@ -475,7 +476,7 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   const eventDate = useMemo(() => {
     if (!currentEvent) return null;
     
-    const dateToUse = currentEvent.scheduledEventDate || currentEvent.desiredEventDate;
+    const dateToUse = getEffectiveEventDate(currentEvent);
     if (!dateToUse) return null;
 
     // Format as YYYY-MM-DD for the API

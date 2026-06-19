@@ -92,6 +92,25 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+
+/**
+ * Only http(s) links are allowed for the social-media post link. Guards against
+ * stored-XSS: the value is rendered into an <a href>, so a stored
+ * `javascript:`/`data:` URL would execute on click. Returns a normalized URL
+ * (prepending https:// when the scheme is missing) or null if it isn't a safe
+ * web URL.
+ */
+function toSafeHttpUrl(value: string | null | undefined): string | null {
+  const v = (value || '').trim();
+  if (!v) return null;
+  try {
+    const url = new URL(v.includes('://') ? v : `https://${v}`);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Only http(s) links are allowed for the social-media post link. Guards against
@@ -213,7 +232,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
 
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
@@ -2393,7 +2412,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const assignedRecipientInfo = getRecipientDisplayInfo((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds);
 
   // Get event date and time for display
-  const eventDate = request.scheduledEventDate || request.desiredEventDate;
+  const eventDate = getEffectiveEventDate(request);
   const eventDateDisplay = eventDate ? formatEventDate(eventDate.toString()).text : 'No date set';
   const eventTimeDisplay = request.eventStartTime
     ? `${formatTime12Hour(request.eventStartTime)}${request.eventEndTime ? ` - ${formatTime12Hour(request.eventEndTime)}` : ''}`

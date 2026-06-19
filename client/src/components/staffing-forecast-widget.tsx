@@ -27,6 +27,8 @@ import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/components/event-requests/utils';
 import { getDriverCount, getSpeakerCount, getVolunteerCount } from '@/lib/assignment-utils';
 import { exportStaffingPlanning } from '@/lib/planning-pdf-export';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Day names for display
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -131,13 +133,13 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
 
     // Process events that need staffing (scheduled events only)
     const relevantEvents = eventRequests.filter((request) => {
-      // Only include scheduled events
-      if (request.status !== 'scheduled') {
+      // Only include scheduled (or rescheduled) events
+      if (!isScheduledOrRescheduled(request.status)) {
         return false;
       }
 
       // Use scheduledEventDate for scheduled events, fall back to desiredEventDate
-      const dateToUse = request.scheduledEventDate || request.desiredEventDate;
+      const dateToUse = getEffectiveEventDate(request);
       if (!dateToUse) return false;
 
       // Only include events that need staffing
@@ -167,7 +169,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
 
     relevantEvents.forEach((request) => {
       try {
-        const dateToUse = request.scheduledEventDate || request.desiredEventDate;
+        const dateToUse = getEffectiveEventDate(request);
         const eventDate = new Date(dateToUse!);
         const weekStart = getWeekStart(eventDate);
         const weekEnd = getWeekEnd(weekStart);
@@ -620,8 +622,8 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                   return eventsWithUnmetNeeds
                     .sort((a, b) => {
                       // Sort by date (earliest first)
-                      const dateA = a.scheduledEventDate || a.desiredEventDate;
-                      const dateB = b.scheduledEventDate || b.desiredEventDate;
+                      const dateA = getEffectiveEventDate(a);
+                      const dateB = getEffectiveEventDate(b);
                       if (!dateA && !dateB) return 0;
                       if (!dateA) return 1;
                       if (!dateB) return -1;
@@ -648,7 +650,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                           <div className="text-sm text-gray-600">
                             {(() => {
                               // Use scheduledEventDate first, fall back to desiredEventDate
-                              const dateStr = event.scheduledEventDate || event.desiredEventDate;
+                              const dateStr = getEffectiveEventDate(event);
                               if (!dateStr) return 'Date TBD';
                               const dateInfo = formatEventDate(dateStr.toString());
                               return dateInfo.text || 'Date TBD';

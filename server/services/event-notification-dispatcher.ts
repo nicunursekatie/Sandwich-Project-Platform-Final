@@ -28,6 +28,7 @@ import {
   ContactAttemptLogEntry,
   CorporateFollowUpProtocol,
 } from './notification-tiers';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 // Initialize SendGrid
 if (process.env.SENDGRID_API_KEY) {
@@ -975,7 +976,7 @@ export async function processApproachingIncompleteEvents(): Promise<{ sent: numb
     );
 
   for (const event of events) {
-    const eventDate = event.scheduledEventDate || event.desiredEventDate;
+    const eventDate = getEffectiveEventDate(event);
     if (!eventDate) {
       results.skipped++;
       continue;
@@ -1121,7 +1122,7 @@ export async function processWeeklyContactReminders(): Promise<{ sent: number; s
         event.id,
         event.organizationName || 'Unknown Organization',
         daysSinceContact,
-        event.scheduledEventDate || event.desiredEventDate
+        getEffectiveEventDate(event)
       );
 
       if (success) {
