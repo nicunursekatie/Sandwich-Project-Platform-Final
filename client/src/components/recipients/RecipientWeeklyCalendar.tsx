@@ -1,4 +1,4 @@
-import { Clock } from 'lucide-react';
+import { Clock, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Recipient } from '@shared/schema';
 import {
@@ -8,6 +8,8 @@ import {
   getCollectionSchedules,
   getFeedingSchedules,
   getTimeForDayOnSchedule,
+  getNotesForDayOnSchedule,
+  timeStringToMinutes,
 } from './recipient-schedule-utils';
 
 interface RecipientWeeklyCalendarProps {
@@ -46,13 +48,25 @@ function DaySection({
         {recipients.length === 0 ? (
           <p className="text-xs text-slate-400 italic px-1 py-1">None</p>
         ) : (
-          recipients.map((r) => {
-            const schedules =
-              scheduleType === 'collection'
-                ? getCollectionSchedules(r)
-                : getFeedingSchedules(r);
-            const time = getTimeForDayOnSchedule(schedules, day);
-            return (
+          recipients
+            .map((r) => {
+              const schedules =
+                scheduleType === 'collection'
+                  ? getCollectionSchedules(r)
+                  : getFeedingSchedules(r);
+              return {
+                recipient: r,
+                time: getTimeForDayOnSchedule(schedules, day),
+                notes: getNotesForDayOnSchedule(schedules, day),
+              };
+            })
+            .sort((a, b) => {
+              const ta = timeStringToMinutes(a.time);
+              const tb = timeStringToMinutes(b.time);
+              if (ta !== tb) return ta - tb;
+              return (a.recipient.name || '').localeCompare(b.recipient.name || '');
+            })
+            .map(({ recipient: r, time, notes }) => (
               <button
                 key={`${scheduleType}-${r.id}`}
                 type="button"
@@ -61,14 +75,22 @@ function DaySection({
               >
                 <div className="text-sm font-medium text-slate-800 truncate">{r.name}</div>
                 {time && (
-                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                  <div className="text-xs text-slate-600 flex items-center gap-1 mt-0.5 font-medium">
                     <Clock className="w-3 h-3 shrink-0" />
                     {time}
                   </div>
                 )}
+                {notes && (
+                  <div
+                    className="text-[11px] text-slate-500 flex items-start gap-1 mt-0.5 italic"
+                    title={notes}
+                  >
+                    <Info className="w-3 h-3 shrink-0 mt-px" />
+                    <span className="line-clamp-2">{notes}</span>
+                  </div>
+                )}
               </button>
-            );
-          })
+            ))
         )}
       </div>
     </div>

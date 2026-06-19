@@ -19,6 +19,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import type { RecipientFormData, SectionState } from '@/hooks/useRecipientForm';
+import { DELIVERY_CADENCE_OPTIONS } from './recipient-schedule-utils';
 
 interface RecipientFormProps {
   formData: RecipientFormData;
@@ -136,12 +137,14 @@ function ScheduleEntryList({
             </div>
             {/* Notes */}
             <div>
-              <Label className="text-xs text-slate-600 mb-1 block">Notes (optional)</Label>
+              <Label className="text-xs text-slate-600 mb-1 block">
+                Notes / frequency (optional)
+              </Label>
               <Input
                 type="text"
                 value={entry.notes || ''}
                 onChange={(e) => updateEntry(idx, 'notes', e.target.value)}
-                placeholder="e.g. Side entrance, call ahead"
+                placeholder="e.g. 3rd Monday of every month, biweekly, side entrance"
                 className="text-xs h-8"
                 id={`${idPrefix}${label}-notes-${idx}`}
               />
@@ -159,6 +162,217 @@ function ScheduleEntryList({
         <Plus className="w-3 h-3 mr-1" />
         Add {label} time
       </Button>
+    </div>
+  );
+}
+
+type AddressEntry = { label: string; address: string };
+
+/**
+ * Reusable extra-address list — labeled addresses below the primary.
+ *
+ * The primary `address` field upstream stays authoritative for the map +
+ * region detection. Entries here are reference-only ("warehouse",
+ * "north site", "summer location").
+ */
+function ExtraAddressesList({
+  entries,
+  onChange,
+  idPrefix,
+}: {
+  entries: AddressEntry[];
+  onChange: (entries: AddressEntry[]) => void;
+  idPrefix: string;
+}) {
+  const addEntry = () => onChange([...entries, { label: '', address: '' }]);
+  const removeEntry = (idx: number) => onChange(entries.filter((_, i) => i !== idx));
+  const updateEntry = (idx: number, field: keyof AddressEntry, value: string) => {
+    onChange(entries.map((e, i) => (i === idx ? { ...e, [field]: value } : e)));
+  };
+
+  return (
+    <div className="space-y-2">
+      {entries.length === 0 && (
+        <p className="text-xs text-slate-500 italic">
+          No additional addresses. The primary above is used for the map.
+        </p>
+      )}
+      {entries.map((entry, idx) => (
+        <div
+          key={idx}
+          className="grid grid-cols-[120px_1fr_auto] gap-2 items-start p-2 rounded border border-slate-200 bg-slate-50/40"
+        >
+          <div>
+            <Label className="text-xs text-slate-600 mb-1 block">Label</Label>
+            <Input
+              type="text"
+              value={entry.label}
+              onChange={(e) => updateEntry(idx, 'label', e.target.value)}
+              placeholder="e.g. Warehouse"
+              className="text-xs h-8"
+              id={`${idPrefix}address-label-${idx}`}
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-slate-600 mb-1 block">Address</Label>
+            <Input
+              type="text"
+              value={entry.address}
+              onChange={(e) => updateEntry(idx, 'address', e.target.value)}
+              placeholder="123 Main St, City, State 12345"
+              className="text-xs h-8"
+              id={`${idPrefix}address-value-${idx}`}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => removeEntry(idx)}
+            className="text-xs text-slate-500 hover:text-red-600 mt-5"
+            aria-label="Remove address"
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
+      ))}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={addEntry}
+        className="text-xs"
+      >
+        <Plus className="w-3 h-3 mr-1" />
+        Add another address
+      </Button>
+    </div>
+  );
+}
+
+type BreakdownRow = { type: string; min: number; max: number };
+
+/**
+ * Per-type sandwich breakdown with min/max range support.
+ *
+ * Each row captures planned distribution: a sandwich type + a min and max.
+ * Single number = type same min/max. Range = different min/max (150-200).
+ * The summed total range is computed live and shown beneath the rows.
+ */
+function PlannedBreakdownList({
+  entries,
+  onChange,
+  idPrefix,
+}: {
+  entries: BreakdownRow[];
+  onChange: (entries: BreakdownRow[]) => void;
+  idPrefix: string;
+}) {
+  const addEntry = () => onChange([...entries, { type: '', min: 0, max: 0 }]);
+  const removeEntry = (idx: number) => onChange(entries.filter((_, i) => i !== idx));
+  const updateEntry = (idx: number, field: keyof BreakdownRow, value: string) => {
+    onChange(
+      entries.map((e, i) => {
+        if (i !== idx) return e;
+        if (field === 'type') return { ...e, type: value };
+        const n = value === '' ? 0 : Math.max(0, parseInt(value, 10) || 0);
+        return { ...e, [field]: n };
+      })
+    );
+  };
+
+  // Live total range.
+  const totalMin = entries.reduce((s, r) => s + (Number(r.min) || 0), 0);
+  const totalMax = entries.reduce((s, r) => s + (Number(r.max) || 0), 0);
+  const totalLabel =
+    totalMin === totalMax
+      ? totalMin.toLocaleString()
+      : `${totalMin.toLocaleString()}-${totalMax.toLocaleString()}`;
+
+  return (
+    <div className="space-y-2">
+      {entries.length === 0 && (
+        <p className="text-xs text-slate-500 italic">
+          No type breakdown yet. Add rows to capture planned distribution by sandwich type.
+        </p>
+      )}
+      {entries.map((entry, idx) => {
+        const minGtMax = entry.min > entry.max && entry.max > 0;
+        return (
+          <div
+            key={idx}
+            className="grid grid-cols-[1fr_80px_80px_auto] gap-2 items-end p-2 rounded border border-slate-200 bg-slate-50/40"
+          >
+            <div>
+              <Label className="text-xs text-slate-600 mb-1 block">Sandwich type</Label>
+              <Input
+                type="text"
+                value={entry.type}
+                onChange={(e) => updateEntry(idx, 'type', e.target.value)}
+                placeholder="e.g. Deli, PB&J, Veggie"
+                className="text-xs h-8"
+                id={`${idPrefix}breakdown-type-${idx}`}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-slate-600 mb-1 block">Min</Label>
+              <Input
+                type="number"
+                min={0}
+                value={entry.min === 0 ? '' : entry.min}
+                onChange={(e) => updateEntry(idx, 'min', e.target.value)}
+                placeholder="0"
+                className="text-xs h-8"
+                id={`${idPrefix}breakdown-min-${idx}`}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-slate-600 mb-1 block">Max</Label>
+              <Input
+                type="number"
+                min={0}
+                value={entry.max === 0 ? '' : entry.max}
+                onChange={(e) => updateEntry(idx, 'max', e.target.value)}
+                placeholder="0"
+                className={`text-xs h-8 ${minGtMax ? 'border-red-400' : ''}`}
+                id={`${idPrefix}breakdown-max-${idx}`}
+                title={minGtMax ? 'Max should be at least the min' : undefined}
+              />
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => removeEntry(idx)}
+              className="text-xs text-slate-500 hover:text-red-600"
+              aria-label="Remove breakdown row"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        );
+      })}
+      <div className="flex items-center justify-between pt-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addEntry}
+          className="text-xs"
+        >
+          <Plus className="w-3 h-3 mr-1" />
+          Add type
+        </Button>
+        {entries.length > 0 && (
+          <div className="text-xs text-slate-600">
+            Total planned: <span className="font-semibold text-slate-800">{totalLabel}</span>
+          </div>
+        )}
+      </div>
+      <p className="text-[11px] text-slate-500">
+        Use the same value for min and max for a single number; differ them for a range
+        (e.g., min 150, max 200 = "150-200").
+      </p>
     </div>
   );
 }
@@ -308,14 +522,30 @@ export function RecipientForm({
                   placeholder="XX-XXXXXXX"
                 />
               </div>
-              <div>
-                <Label htmlFor={inputId('address')}>Street Address</Label>
-                <Input
-                  id={inputId('address')}
-                  value={formData.address}
-                  onChange={(e) => onFieldChange('address', e.target.value)}
-                  placeholder="123 Main St, City, State 12345"
-                />
+              <div className="sm:col-span-2 space-y-3">
+                <div>
+                  <Label htmlFor={inputId('address')}>Primary street address</Label>
+                  <p className="text-xs text-slate-500 mb-1">
+                    Used for the map and region detection.
+                  </p>
+                  <Input
+                    id={inputId('address')}
+                    value={formData.address}
+                    onChange={(e) => onFieldChange('address', e.target.value)}
+                    placeholder="123 Main St, City, State 12345"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Additional addresses (optional)</Label>
+                  <p className="text-xs text-slate-500 mb-1.5">
+                    Use these for secondary sites — warehouse, north location, summer site, etc.
+                  </p>
+                  <ExtraAddressesList
+                    entries={formData.addresses || []}
+                    onChange={(addresses) => onFieldChange('addresses', addresses)}
+                    idPrefix={idPrefix}
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor={inputId('region')}>Region/Area</Label>
@@ -488,7 +718,7 @@ export function RecipientForm({
                 />
               </div>
               <div>
-                <Label htmlFor={inputId('estimatedSandwiches')}>Estimated Sandwiches</Label>
+                <Label htmlFor={inputId('estimatedSandwiches')}>Estimated Sandwiches (single number)</Label>
                 <Input
                   id={inputId('estimatedSandwiches')}
                   type="number"
@@ -496,6 +726,80 @@ export function RecipientForm({
                   onChange={(e) => onFieldChange('estimatedSandwiches', e.target.value)}
                   placeholder="Number of sandwiches needed"
                 />
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Use this for a single total, or use the per-type breakdown below.
+                </p>
+              </div>
+              <div className="sm:col-span-2 space-y-2 p-3 rounded border border-slate-200 bg-white">
+                <div>
+                  <Label className="text-sm">Planned breakdown by sandwich type</Label>
+                  <p className="text-xs text-slate-500">
+                    Capture per-type planned counts with optional ranges (e.g., 150 deli + 50-100 PB&J).
+                  </p>
+                </div>
+                <PlannedBreakdownList
+                  entries={formData.plannedSandwichBreakdown || []}
+                  onChange={(rows) => onFieldChange('plannedSandwichBreakdown', rows)}
+                  idPrefix={idPrefix}
+                />
+              </div>
+              <div className="sm:col-span-2 space-y-2 p-3 rounded border border-slate-200 bg-slate-50/40">
+                <div>
+                  <Label className="text-sm">Delivery cadence</Label>
+                  <p className="text-xs text-slate-500">
+                    How often we serve this org — separate from the sandwich count.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {DELIVERY_CADENCE_OPTIONS.map((opt) => {
+                    const active = formData.deliveryCadence === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          onFieldChange(
+                            'deliveryCadence',
+                            active ? '' : opt.value
+                          )
+                        }
+                        title={opt.description}
+                        className={`px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+                          active
+                            ? opt.badgeClass + ' ring-2 ring-offset-1 ring-[#007E8C]/40'
+                            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                  {formData.deliveryCadence && (
+                    <button
+                      type="button"
+                      onClick={() => onFieldChange('deliveryCadence', '')}
+                      className="px-2 py-1.5 rounded text-xs text-slate-500 hover:text-red-600"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div>
+                  <Label
+                    htmlFor={inputId('deliveryCadenceNote')}
+                    className="text-xs text-slate-600"
+                  >
+                    Note (optional)
+                  </Label>
+                  <Input
+                    id={inputId('deliveryCadenceNote')}
+                    type="text"
+                    value={formData.deliveryCadenceNote}
+                    onChange={(e) => onFieldChange('deliveryCadenceNote', e.target.value)}
+                    placeholder="e.g. Only during school year, every other Friday when staffed"
+                    className="text-xs h-8"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor={inputId('sandwichType')}>Sandwich Type</Label>

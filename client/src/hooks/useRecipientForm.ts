@@ -10,6 +10,7 @@ export const getDefaultRecipientForm = () => ({
   instagramHandle: '',
   ein: '',
   address: '',
+  addresses: [] as Array<{ label: string; address: string }>,
   region: '',
   preferences: '',
   status: 'active' as const,
@@ -23,6 +24,10 @@ export const getDefaultRecipientForm = () => ({
   secondContactPersonRole: '',
   reportingGroup: '',
   estimatedSandwiches: '',
+  // Planned per-type breakdown rows. min === max means a single number (no range).
+  plannedSandwichBreakdown: [] as Array<{ type: string; min: number; max: number }>,
+  deliveryCadence: '' as '' | 'weekly_priority' | 'when_extras' | 'as_needed',
+  deliveryCadenceNote: '',
   sandwichType: '',
   focusAreas: [] as string[],
   tspContact: '',
@@ -140,6 +145,25 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
       feedingSchedules: Array.isArray((recipient as any).feedingSchedules)
         ? (recipient as any).feedingSchedules
         : [],
+      // Additional addresses — normalize from DB JSONB; filter out empty entries.
+      addresses: Array.isArray((recipient as any).addresses)
+        ? (recipient as any).addresses.filter(
+            (a: { address?: string }) => a && typeof a.address === 'string' && a.address.trim()
+          )
+        : [],
+      // Planned breakdown — normalize: coerce numeric strings to numbers, drop unusable rows.
+      plannedSandwichBreakdown: Array.isArray((recipient as any).plannedSandwichBreakdown)
+        ? (recipient as any).plannedSandwichBreakdown
+            .map((r: { type?: string; min?: unknown; max?: unknown }) => ({
+              type: typeof r?.type === 'string' ? r.type : '',
+              min: Number(r?.min ?? 0),
+              max: Number(r?.max ?? 0),
+            }))
+            .filter(
+              (r: { type: string; min: number; max: number }) =>
+                Number.isFinite(r.min) && Number.isFinite(r.max)
+            )
+        : [],
     };
   }, []);
 
@@ -210,6 +234,23 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
       partnershipYears: formData.partnershipYears
         ? parseInt(formData.partnershipYears, 10)
         : null,
+      // Drop empty extra address rows before submit (label-only rows are noise).
+      addresses: (formData.addresses || [])
+        .map((a) => ({ label: (a.label || '').trim(), address: (a.address || '').trim() }))
+        .filter((a) => a.address),
+      // Normalize cadence: empty string means "not categorized" → null.
+      deliveryCadence: formData.deliveryCadence || null,
+      deliveryCadenceNote: formData.deliveryCadenceNote?.trim() || null,
+      // Drop blank rows; enforce min <= max; coerce to integers.
+      plannedSandwichBreakdown: (formData.plannedSandwichBreakdown || [])
+        .map((r) => {
+          const type = (r.type || '').trim();
+          let min = Math.max(0, Math.round(Number(r.min) || 0));
+          let max = Math.max(0, Math.round(Number(r.max) || 0));
+          if (max < min) max = min;
+          return { type, min, max };
+        })
+        .filter((r) => r.type && (r.min > 0 || r.max > 0)),
     };
   }, [formData]);
 

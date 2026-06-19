@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Pencil } from 'lucide-react';
+import { Check, Loader2, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -21,11 +21,17 @@ import {
   WEEK_DAYS,
   DAY_ABBREV,
   RECIPIENT_FOCUS_AREAS,
+  DELIVERY_CADENCE_OPTIONS,
+  getCadenceMeta,
   getCollectionSchedules,
   getFeedingSchedules,
+  getPlannedSandwichBreakdown,
+  sumBreakdownRange,
+  formatRange,
   buildScheduleFromDaysAndTime,
   parseScheduleForInlineEdit,
   type ScheduleEntry,
+  type DeliveryCadence,
 } from './recipient-schedule-utils';
 
 type SaveHandler = (updates: Partial<Recipient>) => void;
@@ -269,6 +275,343 @@ export function InlineContractCell({
           <SelectItem value="pending">Pending</SelectItem>
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+/**
+ * Estimated sandwiches cell — displays planned breakdown by type if present,
+ * otherwise the single-number `estimatedSandwiches` field (inline-editable).
+ *
+ * When a breakdown exists, the single-number inline edit is hidden — the
+ * breakdown is authoritative. Edit the breakdown from the recipient form.
+ */
+export function InlineEstimatedSandwichesCell({
+  recipient,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const breakdown = getPlannedSandwichBreakdown(recipient);
+  const fallback = recipient.weeklyEstimate ?? recipient.estimatedSandwiches ?? null;
+
+  if (breakdown.length > 0) {
+    const total = sumBreakdownRange(breakdown);
+    return (
+      <div className="text-xs leading-tight space-y-0.5">
+        {breakdown.map((row, i) => (
+          <div key={i} className="text-slate-700">
+            <span className="font-medium tabular-nums">{formatRange(row.min, row.max)}</span>{' '}
+            <span className="text-slate-500">{row.type}</span>
+          </div>
+        ))}
+        {total && (
+          <div className="pt-0.5 border-t border-slate-200 mt-1 text-[11px] text-slate-500">
+            = <span className="font-semibold text-slate-700 tabular-nums">{formatRange(total.min, total.max)}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <InlineNumberCell
+      value={fallback}
+      canEdit={canEdit}
+      isSaving={isSaving}
+      onSave={(val) =>
+        onSave({
+          weeklyEstimate: val,
+          estimatedSandwiches: val,
+        } as Partial<Recipient>)
+      }
+    />
+  );
+}
+
+export function InlineCadenceCell({
+  recipient,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const cadence = (recipient as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
+  const note = (recipient as Recipient & { deliveryCadenceNote?: string | null }).deliveryCadenceNote;
+  const meta = getCadenceMeta(cadence);
+
+  if (!canEdit) {
+    if (!meta) {
+      return <span className="text-xs text-slate-400 italic">—</span>;
+    }
+    return (
+      <Badge
+        className={`text-xs ${meta.badgeClass}`}
+        title={note || meta.description}
+      >
+        {meta.label}
+      </Badge>
+    );
+  }
+
+  return (
+    <div onClick={stopRowClick}>
+      <Select
+        value={cadence || 'none'}
+        disabled={isSaving}
+        onValueChange={(v) => {
+          onSave({
+            deliveryCadence: (v === 'none' ? null : (v as DeliveryCadence)),
+          } as Partial<Recipient>);
+        }}
+      >
+        <SelectTrigger
+          className={`h-7 text-xs w-[140px] border-dashed ${
+            meta ? meta.badgeClass : ''
+          }`}
+          title={note || meta?.description || 'Not categorized'}
+        >
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">— Not set</SelectItem>
+          {DELIVERY_CADENCE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+export function InlinePeopleServedCell({
+  recipient,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const count = (recipient as Recipient & { averagePeopleServed?: number | null })
+    .averagePeopleServed;
+
+  return (
+    <InlineNumberCell
+      value={count ?? null}
+      canEdit={canEdit}
+      isSaving={isSaving}
+      onSave={(val) => onSave({ averagePeopleServed: val } as Partial<Recipient>)}
+    />
+  );
+}
+
+const PEOPLE_SERVED_FREQ_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+] as const;
+
+export function InlinePeopleServedFrequencyCell({
+  recipient,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const freq = (recipient as Recipient & { peopleServedFrequency?: string | null })
+    .peopleServedFrequency;
+  const label = PEOPLE_SERVED_FREQ_OPTIONS.find((o) => o.value === freq)?.label;
+
+  if (!canEdit) {
+    return label ? (
+      <span className="text-sm text-slate-700">{label}</span>
+    ) : (
+      <span className="text-xs text-slate-400 italic">—</span>
+    );
+  }
+
+  return (
+    <div onClick={stopRowClick}>
+      <Select
+        value={freq || 'none'}
+        disabled={isSaving}
+        onValueChange={(v) =>
+          onSave({ peopleServedFrequency: v === 'none' ? null : v } as Partial<Recipient>)
+        }
+      >
+        <SelectTrigger className="h-7 text-xs w-[100px] border-dashed">
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">— Not set</SelectItem>
+          {PEOPLE_SERVED_FREQ_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+/**
+ * Tri-state cell for fruit OR snacks status:
+ *   receiving  → green chip "Yes"
+ *   interested → amber chip "Wants"
+ *   none       → dim dash
+ * Editor cycles: none → wants → receiving → none.
+ */
+export function InlineFruitOrSnacksCell({
+  recipient,
+  variant,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  variant: 'fruit' | 'snacks';
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const recvField = variant === 'fruit' ? 'receivingFruit' : 'receivingSnacks';
+  const wantField = variant === 'fruit' ? 'wantsFruit' : 'wantsSnacks';
+  const recv = !!(recipient as Recipient & Record<string, unknown>)[recvField];
+  const want = !!(recipient as Recipient & Record<string, unknown>)[wantField];
+
+  const labelWord = variant === 'fruit' ? 'fruit' : 'snacks';
+
+  const next = (): { recv: boolean; want: boolean } => {
+    if (!recv && !want) return { recv: false, want: true }; // none → wants
+    if (want && !recv) return { recv: true, want: false }; // wants → receiving
+    return { recv: false, want: false }; // receiving → none
+  };
+
+  const display = (recvState: boolean, wantState: boolean) => {
+    if (recvState) {
+      return (
+        <span
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40"
+          title={`Currently receiving ${labelWord}`}
+        >
+          Yes
+        </span>
+      );
+    }
+    if (wantState) {
+      return (
+        <span
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border bg-[#FBAD3F]/20 text-[#B8860B] border-[#FBAD3F]/40"
+          title={`Interested in ${labelWord}`}
+        >
+          Wants
+        </span>
+      );
+    }
+    return (
+      <span className="text-xs text-slate-400" title={`Not receiving / not interested in ${labelWord}`}>
+        —
+      </span>
+    );
+  };
+
+  if (!canEdit) {
+    return display(recv, want);
+  }
+
+  return (
+    <div onClick={stopRowClick}>
+      <button
+        type="button"
+        disabled={isSaving}
+        onClick={() => {
+          const n = next();
+          onSave({
+            [recvField]: n.recv,
+            [wantField]: n.want,
+          } as unknown as Partial<Recipient>);
+        }}
+        className={`cursor-pointer hover:opacity-75 transition-opacity ${
+          isSaving ? 'opacity-50 cursor-wait' : ''
+        }`}
+        title="Click to cycle: none → interested → receiving → none"
+      >
+        {display(recv, want)}
+      </button>
+    </div>
+  );
+}
+
+export function InlineSurveyCell({
+  recipient,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const submitted = !!(recipient as Recipient & { surveySubmitted?: boolean }).surveySubmitted;
+  const submittedDate = (recipient as Recipient & { surveySubmittedDate?: Date | string | null })
+    .surveySubmittedDate;
+
+  const titleText = submitted
+    ? `Survey returned${submittedDate ? ` on ${new Date(submittedDate).toLocaleDateString()}` : ''}`
+    : 'Survey not yet returned';
+
+  if (!canEdit) {
+    return submitted ? (
+      <Badge
+        className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 text-xs gap-1"
+        title={titleText}
+      >
+        <Check className="w-3 h-3" />
+        Returned
+      </Badge>
+    ) : (
+      <span className="text-xs text-slate-400 italic" title={titleText}>
+        —
+      </span>
+    );
+  }
+
+  return (
+    <div onClick={stopRowClick}>
+      <button
+        type="button"
+        disabled={isSaving}
+        title={titleText}
+        onClick={() =>
+          onSave({
+            surveySubmitted: !submitted,
+            // Only auto-stamp the date when flipping to submitted AND no date is set.
+            surveySubmittedDate: !submitted && !submittedDate ? new Date() : submittedDate,
+          } as Partial<Recipient>)
+        }
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium border transition-colors ${
+          submitted
+            ? 'bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 hover:bg-[#47B3CB]/25'
+            : 'bg-white text-slate-500 border-dashed border-slate-300 hover:border-[#47B3CB] hover:text-[#236383]'
+        } ${isSaving ? 'opacity-50 cursor-wait' : 'cursor-pointer'}`}
+      >
+        {submitted ? (
+          <>
+            <Check className="w-3 h-3" />
+            Returned
+          </>
+        ) : (
+          <>Not yet</>
+        )}
+      </button>
     </div>
   );
 }

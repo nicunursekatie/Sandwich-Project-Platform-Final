@@ -11,15 +11,19 @@ import {
 import type { Recipient } from '@shared/schema';
 import {
   getRecipientRegion,
-  getEstimatedSandwiches,
   type SortColumn,
   type SortDirection,
 } from './recipient-schedule-utils';
 import {
   InlineTextCell,
-  InlineNumberCell,
   InlineContractCell,
   InlineScheduleCell,
+  InlineSurveyCell,
+  InlineCadenceCell,
+  InlineEstimatedSandwichesCell,
+  InlinePeopleServedCell,
+  InlinePeopleServedFrequencyCell,
+  InlineFruitOrSnacksCell,
   InlineFocusAreasCell,
   InlinePrimaryContactCell,
 } from './recipient-table-inline-cells';
@@ -37,6 +41,11 @@ const COLUMNS: { id: SortColumn; label: string; className?: string; defaultWidth
   { id: 'collectionDays', label: 'Collection Days', className: 'min-w-[130px]', defaultWidth: 150 },
   { id: 'feedingDays', label: 'Feeding Days', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'estimatedSandwiches', label: 'Est. Sandwiches', className: 'w-[110px]', defaultWidth: 120 },
+  { id: 'peopleServed', label: 'People served', className: 'w-[110px]', defaultWidth: 110 },
+  { id: 'peopleServedFrequency', label: 'Freq.', className: 'w-[90px]', defaultWidth: 100 },
+  { id: 'fruit', label: 'Fruit', className: 'w-[80px]', defaultWidth: 85 },
+  { id: 'snacks', label: 'Snacks', className: 'w-[80px]', defaultWidth: 85 },
+  { id: 'cadence', label: 'Cadence', className: 'min-w-[130px]', defaultWidth: 150 },
   { id: 'sandwichType', label: 'Sandwich Type', className: 'w-[110px]', defaultWidth: 120 },
   { id: 'reportingGroup', label: 'Reporting Group', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'tspContact', label: 'TSP Contact', className: 'min-w-[120px]', defaultWidth: 140 },
@@ -44,6 +53,7 @@ const COLUMNS: { id: SortColumn; label: string; className?: string; defaultWidth
   { id: 'region', label: 'Region', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'primaryContact', label: 'Primary Contact', className: 'min-w-[160px]', defaultWidth: 180 },
   { id: 'contract', label: 'Contract', className: 'w-[100px]', defaultWidth: 110 },
+  { id: 'survey', label: 'Survey', className: 'w-[90px]', defaultWidth: 100 },
 ];
 
 interface RecipientTableProps {
@@ -212,7 +222,6 @@ export function RecipientTable({
               const isInactive = recipient.status === 'inactive';
               const isHighlighted = highlightedId === recipient.id;
               const isSaving = savingId === recipient.id;
-              const estimate = getEstimatedSandwiches(recipient);
 
               return (
                 <TableRow
@@ -255,16 +264,53 @@ export function RecipientTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <InlineNumberCell
-                      value={estimate}
+                    <InlineEstimatedSandwichesCell
+                      recipient={recipient}
                       canEdit={canEdit}
                       isSaving={isSaving}
-                      onSave={(val) =>
-                        save(recipient, {
-                          weeklyEstimate: val,
-                          estimatedSandwiches: val,
-                        })
-                      }
+                      onSave={(updates) => save(recipient, updates)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlinePeopleServedCell
+                      recipient={recipient}
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(updates) => save(recipient, updates)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlinePeopleServedFrequencyCell
+                      recipient={recipient}
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(updates) => save(recipient, updates)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineFruitOrSnacksCell
+                      recipient={recipient}
+                      variant="fruit"
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(updates) => save(recipient, updates)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineFruitOrSnacksCell
+                      recipient={recipient}
+                      variant="snacks"
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(updates) => save(recipient, updates)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineCadenceCell
+                      recipient={recipient}
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(updates) => save(recipient, updates)}
                     />
                   </TableCell>
                   <TableCell>
@@ -321,6 +367,14 @@ export function RecipientTable({
                   </TableCell>
                   <TableCell>
                     <InlineContractCell
+                      recipient={recipient}
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(updates) => save(recipient, updates)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineSurveyCell
                       recipient={recipient}
                       canEdit={canEdit}
                       isSaving={isSaving}
