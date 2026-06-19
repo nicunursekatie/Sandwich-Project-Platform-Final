@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -12,6 +13,7 @@ import { EyeOff, Eye, CalendarX, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
@@ -32,6 +34,9 @@ export const InProcessTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -58,7 +63,7 @@ export const InProcessTab: React.FC = () => {
     setNextActionMode,
     setShowIntakeCallDialog,
     setIntakeCallEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
 
@@ -382,6 +387,7 @@ export const InProcessTab: React.FC = () => {
             : 'All past-date events are hidden. Click "Show Past Events" to view them.'}
         </div>
       ) : (
+        <EventListBatchProviders events={filteredRequests}>
         <div className="space-y-4">
           {filteredRequests.map((request) => (
             <InProcessCard
@@ -507,6 +513,7 @@ export const InProcessTab: React.FC = () => {
             />
           ))}
         </div>
+        </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
     </>

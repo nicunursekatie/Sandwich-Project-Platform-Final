@@ -11,6 +11,7 @@
 
 import { io, Socket } from 'socket.io-client';
 import { logger } from '@/lib/logger';
+import { getDefaultSocketIoOptions } from '@/lib/socket-io-config';
 
 // Module loaded (debug logging disabled for cleaner console)
 
@@ -271,20 +272,19 @@ function getOrCreateSocket(): Socket {
   const socketUrl = getSocketUrl();
   
   socketInstance = io(`${socketUrl}/collaboration`, {
-    path: '/socket.io/',
-    withCredentials: true,
-    // Polling only - more reliable through Replit/proxies
-    transports: ['polling'],
-    // Let Socket.IO handle reconnection with sensible defaults
-    reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 10000,
-    timeout: 20000,
-    auth: currentUser ? {
-      userId: currentUser.id,
-      userEmail: currentUser.email,
-    } : undefined,
+    ...getDefaultSocketIoOptions({
+      withCredentials: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
+    }),
+    auth: currentUser
+      ? {
+          userId: currentUser.id,
+          userEmail: currentUser.email,
+        }
+      : undefined,
   });
 
   setupSocketListeners(socketInstance);

@@ -810,7 +810,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Quick Actions Grid */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-w-full">
             <div
               className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('collections')}
@@ -840,6 +840,24 @@ export default function DashboardOverview({
               <p className="premium-text-body-sm text-gray-600 mb-3">Deep insights</p>
               <div className="text-brand-primary font-medium text-sm flex items-center">
                 View Analytics →
+              </div>
+            </div>
+
+            <div
+              className="premium-card premium-interactive p-4 group cursor-pointer"
+              onClick={() => onSectionChange?.('grant-metrics')}
+            >
+              <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mb-3">
+                <Award className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
+                Grant Metrics
+              </h3>
+              <p className="premium-text-body-sm text-gray-600 mb-3">
+                Funder-ready numbers
+              </p>
+              <div className="text-brand-primary font-medium text-sm flex items-center">
+                View Grant Metrics →
               </div>
             </div>
 

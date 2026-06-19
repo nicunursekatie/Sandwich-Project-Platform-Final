@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 import type { EventRequest } from '@shared/schema';
 
 export const CompletedTab: React.FC = () => {
@@ -31,6 +33,9 @@ export const CompletedTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -47,7 +52,7 @@ export const CompletedTab: React.FC = () => {
     setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const completedRequests = filterRequestsByStatus('completed') || [];
 
@@ -102,7 +107,8 @@ export const CompletedTab: React.FC = () => {
             No completed events
           </div>
         ) : (
-        completedRequests.map((request) => (
+        <EventListBatchProviders events={completedRequests}>
+        {completedRequests.map((request) => (
           <CompletedCard
             key={request.id}
             request={request}
@@ -204,7 +210,8 @@ export const CompletedTab: React.FC = () => {
             canSelfSignup={canSelfSignup}
             isUserSignedUp={isUserSignedUp}
           />
-        ))
+        ))}
+        </EventListBatchProviders>
         )}
       </div>
       <DuplicateEventDialog

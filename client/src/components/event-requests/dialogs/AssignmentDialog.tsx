@@ -31,6 +31,7 @@ import {
   CircleHelp,
 } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import type { AvailabilitySlot } from '@shared/schema';
 import { logger } from '@/lib/logger';
 
@@ -462,7 +463,8 @@ export const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   const [isTentative, setIsTentative] = useState(false);
 
   // Get context to find the event date
-  const { assignmentEventId, eventRequests } = useEventRequestContext();
+  const { eventRequests } = useEventRequestContext();
+  const { assignmentEventId } = useEventDialogState();
 
   // Find the current event request
   const currentEvent = useMemo(() => {

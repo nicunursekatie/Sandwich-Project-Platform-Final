@@ -460,14 +460,9 @@ export const NAV_ITEMS: NavItem[] = [
   // ========================================
   // DATA & REPORTS
   // ========================================
-  {
-    id: 'analytics-section',
-    label: 'Analytics & Reports',
-    icon: BarChart3,
-    href: 'analytics',
-    permission: PERMISSIONS.NAV_ANALYTICS,
-    group: 'data',
-  },
+  // Analytics Dashboard and Grant Metrics promoted to top-level items so users
+  // can find them without expanding a collapsible parent. Their previous
+  // "Analytics & Reports" parent has been removed.
   {
     id: 'analytics',
     label: 'Analytics Dashboard',
@@ -475,8 +470,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'analytics',
     permission: PERMISSIONS.NAV_ANALYTICS,
     group: 'data',
-    parentId: 'analytics-section',
-    isSubItem: true,
+    highlighted: true,
   },
   {
     id: 'grant-metrics',
@@ -485,8 +479,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'grant-metrics',
     permission: PERMISSIONS.NAV_GRANT_METRICS,
     group: 'data',
-    parentId: 'analytics-section',
-    isSubItem: true,
+    highlighted: true,
   },
   {
     id: 'weekly-monitoring',

@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { logger } from '@/lib/logger';
 import { useToast } from '@/hooks/use-toast';
+import { getOrCreateSocket, onSocketConnect } from '@/lib/socket-singleton';
 
 export interface ChatMessage {
   id: string;
@@ -36,11 +37,9 @@ export function useSocketChat() {
   );
   const [currentRoom, setCurrentRoom] = useState<string>('');
 
-  // Use refs for values needed in socket handlers
   const currentRoomRef = useRef<string>('');
   const roomsRef = useRef<ChatRoom[]>([]);
 
-  // Keep refs in sync
   useEffect(() => {
     currentRoomRef.current = currentRoom;
   }, [currentRoom]);
@@ -49,64 +48,45 @@ export function useSocketChat() {
     roomsRef.current = rooms;
   }, [rooms]);
 
-  // Initialize socket connection
   useEffect(() => {
     if (!user) return;
 
-    // Use current origin for Socket.IO connection
-    const socketUrl = window.location.origin;
-    logger.log('Connecting to Socket.IO at:', socketUrl);
+    const sharedSocket = getOrCreateSocket();
+    setSocket(sharedSocket);
 
-    const newSocket = io(socketUrl, {
-      path: '/socket.io/',
-      transports: ['polling', 'websocket'], // Try polling first, then upgrade to websocket
-      upgrade: true,
-      timeout: 30000,
-      forceNew: true,
-      autoConnect: true,
-    });
-
-    newSocket.on('connect', () => {
+    const handleConnect = () => {
       setConnected(true);
-      logger.log('Socket.io connected');
+      logger.log('[SocketChat] Connected via shared socket');
+      sharedSocket.emit('get-rooms');
+    };
 
-      // Get available rooms first
-      newSocket.emit('get-rooms');
-    });
-
-    newSocket.on('disconnect', () => {
+    const handleDisconnect = () => {
       setConnected(false);
-      logger.log('Socket.io disconnected');
-    });
+      logger.log('[SocketChat] Disconnected');
+    };
 
-    newSocket.on('rooms', ({ available }) => {
+    const handleRooms = ({ available }: { available?: ChatRoom[] }) => {
       setRooms(available || []);
       logger.log('Received rooms:', available);
 
-      // Request message history for all rooms to populate "no messages yet" correctly
       (available || []).forEach((room: ChatRoom) => {
-        newSocket.emit('get-history', room.id);
+        sharedSocket.emit('get-history', room.id);
       });
 
-      // Auto-select first room if none selected
-      if ((available || []).length > 0 && !currentRoom) {
+      if ((available || []).length > 0 && !currentRoomRef.current) {
         setCurrentRoom((available || [])[0]?.id);
       }
-    });
+    };
 
-    newSocket.on('new-message', (message: ChatMessage) => {
+    const handleNewMessage = (message: ChatMessage) => {
       setMessages((prev) => ({
         ...prev,
         [message.room]: [...(prev[message.room] || []), message],
       }));
 
-      // Trigger notification refresh for new messages
       window.dispatchEvent(new CustomEvent('refreshNotifications'));
       logger.log('New message received, triggering notification refresh');
 
-      // Show toast notification if:
-      // 1. Message is from a different user
-      // 2. Message is in a different room than the current one OR user is not on the chat page
       const isFromOtherUser = message.userId !== (user as any)?.id;
       const isInDifferentRoom = message.room !== currentRoomRef.current;
       const isOnChatPage = window.location.pathname.includes('/chat');
@@ -123,57 +103,73 @@ export function useSocketChat() {
           duration: 5000,
         });
       }
-    });
+    };
 
-    newSocket.on(
-      'message-history',
-      (data: { room: string; messages: ChatMessage[] }) => {
-        const { room, messages: roomMessages } = data;
-        setMessages((prev) => ({
-          ...prev,
-          [room]: roomMessages || [],
-        }));
-        logger.log(
-          `Received message history for ${room}:`,
-          roomMessages?.length || 0,
-          'messages'
-        );
-      }
-    );
+    const handleMessageHistory = (data: { room: string; messages: ChatMessage[] }) => {
+      const { room, messages: roomMessages } = data;
+      setMessages((prev) => ({
+        ...prev,
+        [room]: roomMessages || [],
+      }));
+      logger.log(
+        `Received message history for ${room}:`,
+        roomMessages?.length || 0,
+        'messages'
+      );
+    };
 
-    newSocket.on('joined-channel', ({ channel }) => {
+    const handleJoinedChannel = ({ channel }: { channel: string }) => {
       logger.log(`Successfully joined channel: ${channel}`);
-    });
+    };
 
-    newSocket.on('user_joined', ({ userId, username, room }) => {
+    const handleUserJoined = ({ userId, username, room }: { userId: string; username: string; room: string }) => {
       setActiveUsers((prev) => ({
         ...prev,
         [room]: [
           ...(prev[room] || []).filter((u) => u.userId !== userId),
-          { userId, username, room },
+          { userId, userName: username, room },
         ],
       }));
-    });
+    };
 
-    newSocket.on('user_left', ({ userId, room }) => {
+    const handleUserLeft = ({ userId, room }: { userId: string; room: string }) => {
       setActiveUsers((prev) => ({
         ...prev,
         [room]: (prev[room] || []).filter((u) => u.userId !== userId),
       }));
-    });
+    };
 
-    newSocket.on('error', ({ message }) => {
+    const handleError = ({ message }: { message: string }) => {
       logger.error('Socket.io error:', message);
-    });
+    };
 
-    setSocket(newSocket);
+    setConnected(sharedSocket.connected);
+    const offConnect = onSocketConnect(sharedSocket, handleConnect);
+
+    sharedSocket.on('disconnect', handleDisconnect);
+    sharedSocket.on('rooms', handleRooms);
+    sharedSocket.on('new-message', handleNewMessage);
+    sharedSocket.on('message-history', handleMessageHistory);
+    sharedSocket.on('joined-channel', handleJoinedChannel);
+    sharedSocket.on('user_joined', handleUserJoined);
+    sharedSocket.on('user_left', handleUserLeft);
+    sharedSocket.on('error', handleError);
 
     return () => {
-      newSocket.close();
+      offConnect();
+      sharedSocket.off('disconnect', handleDisconnect);
+      sharedSocket.off('rooms', handleRooms);
+      sharedSocket.off('new-message', handleNewMessage);
+      sharedSocket.off('message-history', handleMessageHistory);
+      sharedSocket.off('joined-channel', handleJoinedChannel);
+      sharedSocket.off('user_joined', handleUserJoined);
+      sharedSocket.off('user_left', handleUserLeft);
+      sharedSocket.off('error', handleError);
+      setSocket(null);
+      setConnected(false);
     };
   }, [user, toast]);
 
-  // Send message
   const sendMessage = useCallback(
     (room: string, content: string) => {
       if (socket && connected && user) {
@@ -186,7 +182,6 @@ export function useSocketChat() {
     [socket, connected, user]
   );
 
-  // Join room and get history
   const joinRoom = useCallback(
     (roomId: string) => {
       if (socket && connected && user) {

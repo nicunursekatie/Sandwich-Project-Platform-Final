@@ -149,3 +149,78 @@ export function getTransitionError(from: EventStatus, to: EventStatus): string {
 
   return `Cannot move from "${fromLabel}" to "${toLabel}". Valid next statuses are: ${allowedLabels.join(', ')}.`;
 }
+
+/**
+ * Statuses that require a reason, and the field that carries it.
+ *
+ * Single source of truth for the "needs a reason" rule — consumed by BOTH the
+ * client (to open the reason dialog) and the server (to enforce that a reason is
+ * actually recorded). Previously this list was hardcoded only on the client and
+ * the server enforced nothing, so a non-dialog path could record a declined /
+ * cancelled / non-event with no reason.
+ *
+ * NOTE: `rescheduled` is intentionally NOT here — it requires a new *date*
+ * (collected by RescheduleDialog), not a reason. `standby` / `stalled` have
+ * reason columns in the schema but reasons remain optional for them by design.
+ */
+export const STATUS_REASON_FIELD: Partial<Record<EventStatus, string>> = {
+  declined: 'declinedReason',
+  cancelled: 'cancelledReason',
+  non_event: 'nonEventReason',
+};
+
+/** Whether moving an event to `status` requires a reason to be recorded. */
+export function requiresReason(status: EventStatus): boolean {
+  // Own-property check (not `in`) so prototype keys like "toString" never match,
+  // even if called with an untrusted string at runtime.
+  return Object.prototype.hasOwnProperty.call(STATUS_REASON_FIELD, status);
+}
+
+/** The field name that carries the required reason for `status`, if any. */
+export function getReasonField(status: EventStatus): string | undefined {
+  return requiresReason(status) ? STATUS_REASON_FIELD[status] : undefined;
+}
+
+/**
+ * Fields whose presence satisfies the reason requirement, in priority order.
+ *
+ * The structured reason column is preferred (the card-action reason dialogs fill
+ * it), but the matching notes column AND the general planning/scheduling notes
+ * are also accepted — the full-form scheduling path records the reason in those
+ * free-text notes rather than the structured column. Accepting notes is a
+ * deliberate product choice: it keeps that form working, with the tradeoff that
+ * the structured reason column may stay empty for form-driven transitions.
+ */
+export const STATUS_REASON_SATISFYING_FIELDS: Partial<Record<EventStatus, string[]>> = {
+  declined: ['declinedReason', 'declinedNotes', 'planningNotes', 'schedulingNotes'],
+  cancelled: ['cancelledReason', 'cancelledNotes', 'planningNotes', 'schedulingNotes'],
+  non_event: ['nonEventReason', 'nonEventNotes', 'planningNotes', 'schedulingNotes'],
+};
+
+/** Fields that can satisfy the reason requirement for `status` (any non-empty one). */
+export function getReasonSatisfyingFields(status: EventStatus): string[] {
+  // Own-property check guards against prototype keys returning a function.
+  return Object.prototype.hasOwnProperty.call(STATUS_REASON_SATISFYING_FIELDS, status)
+    ? STATUS_REASON_SATISFYING_FIELDS[status]!
+    : [];
+}
+
+/**
+ * Pure transition side-effect: when an event becomes Scheduled with no scheduled
+ * date set yet, fall back to its desired date.
+ *
+ * Centralized here so EVERY scheduling path obeys the same rule. Previously this
+ * lived only in the client status handler, so other paths (e.g. QuickSchedule)
+ * could schedule an event without carrying a date forward. Returns the date to
+ * use, or undefined when no default applies. Impure side-effects (timestamps,
+ * acting user, auto-confirm) stay in the server handler.
+ */
+export function getScheduledDateDefault<T extends string | Date>(
+  toStatus: EventStatus,
+  currentScheduledDate: T | null | undefined,
+  desiredDate: T | null | undefined,
+): T | undefined {
+  if (toStatus !== 'scheduled') return undefined;
+  if (currentScheduledDate) return undefined;
+  return desiredDate ?? undefined;
+}

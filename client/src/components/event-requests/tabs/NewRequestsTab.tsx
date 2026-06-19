@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
@@ -28,6 +30,9 @@ export const NewRequestsTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -55,7 +60,7 @@ export const NewRequestsTab: React.FC = () => {
     setReasonDialogEventRequest,
     setShowNonEventDialog,
     setNonEventDialogEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const newRequests = filterRequestsByStatus('new');
 
@@ -265,6 +270,7 @@ export const NewRequestsTab: React.FC = () => {
           No new event requests
         </div>
       ) : (
+        <EventListBatchProviders events={newRequests}>
         <div className="space-y-4">
           {newRequests.map((request) => (
             <NewRequestCard
@@ -364,6 +370,7 @@ export const NewRequestsTab: React.FC = () => {
             />
           ))}
         </div>
+        </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
     </>

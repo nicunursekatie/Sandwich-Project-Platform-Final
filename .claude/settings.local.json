@@ -112,7 +112,14 @@
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --since=\"2 months ago\" --oneline -- server/routes/sms-users.ts server/services/sms-collection-parser.ts server/sms-providers/)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --all --oneline -S \"Couldn't understand that\" -- server/routes/sms-users.ts)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --all --oneline -S \"OPENAI_API_KEY\" -- server/services/sms-collection-parser.ts)",
-      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show --stat c8850e41e)"
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show --stat c8850e41e)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -- server/routes/meaningful-analytics.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --oneline -1 -- server/routes/index.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show e68765ea3 --stat)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show --stat e68765ea3)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final ls-files server/routes/meaningful-analytics.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log origin/main..HEAD --oneline)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --format=\"%h %ai %s\" -10)"
     ],
     "deny": [],
     "ask": [],

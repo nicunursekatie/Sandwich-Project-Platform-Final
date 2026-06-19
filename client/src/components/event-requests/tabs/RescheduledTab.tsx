@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -21,10 +22,13 @@ export const RescheduledTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const rescheduledRequests = filterRequestsByStatus('rescheduled');
 

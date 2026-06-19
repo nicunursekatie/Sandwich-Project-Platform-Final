@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorToast } from '@/hooks/use-error-toast';
-import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { logger } from '@/lib/logger';
 
 export const useEventMutations = () => {
@@ -25,7 +26,7 @@ export const useEventMutations = () => {
     setEditingScheduledId,
     setEditingField,
     setEditingValue,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const eventReportContext = () =>
     selectedEventRequest?.id
@@ -196,6 +197,14 @@ export const useEventMutations = () => {
       } else if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not save changes. Please check your internet connection and try again.';
+      } else if (isServerUnavailableError(error)) {
+        const described = describeApiError(error);
+        errorTitle = described.title;
+        errorDescription = described.description;
+      } else {
+        const described = describeApiError(error, errorDescription);
+        errorTitle = described.title === 'Error' ? errorTitle : described.title;
+        errorDescription = described.description;
       }
 
       errorToast({
