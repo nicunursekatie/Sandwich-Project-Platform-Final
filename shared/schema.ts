@@ -1194,7 +1194,8 @@ export const recipients = pgTable('recipients', {
   secondContactPersonRole: text('second_contact_person_role'), // Second contact person's role/title
   // Enhanced fields for operational tracking
   reportingGroup: text('reporting_group'), // Corresponds to host locations for operational grouping
-  estimatedSandwiches: integer('estimated_sandwiches'), // Estimated number of sandwiches needed (single number — kept for backwards compat + simple cases)
+  estimatedSandwiches: integer('estimated_sandwiches'), // Estimated sandwiches — used as the MIN of the range (or the single value when min === max)
+  estimatedSandwichesMax: integer('estimated_sandwiches_max'), // Upper bound of the range. NULL means the field is treated as a single number equal to estimatedSandwiches.
   // Planned breakdown by sandwich type. Each row = { type, min, max }.
   // Use min === max for a single number (no range). Sum of all min/max is what we plan to give.
   // This is the PLANNED distribution; actual logged counts live in sandwich_collections.

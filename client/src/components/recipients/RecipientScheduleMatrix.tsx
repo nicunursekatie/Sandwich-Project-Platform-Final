@@ -148,9 +148,9 @@ function MatrixCell({ info }: { info: CellInfo }) {
           )}
         </span>
       </TooltipTrigger>
-      <TooltipContent side="top" className="text-xs">
+      <TooltipContent side="top" className="text-sm">
         {lines.map((line) => (
-          <div key={line}>{line}</div>
+          <div key={line} className="font-medium">{line}</div>
         ))}
       </TooltipContent>
     </Tooltip>

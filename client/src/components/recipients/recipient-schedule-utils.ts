@@ -41,8 +41,7 @@ export type SortColumn =
   | 'cadence'
   | 'peopleServed'
   | 'peopleServedFrequency'
-  | 'fruit'
-  | 'snacks';
+  | 'fruitSnacks';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -137,7 +136,24 @@ export function getRecipientRegion(recipient: Recipient): string {
 }
 
 export function getEstimatedSandwiches(recipient: Recipient): number | null {
+  // Falls back to weeklyEstimate (legacy) then estimatedSandwiches.
+  // Treated as the MIN of any range — see getEstimatedSandwichesRange for the full range.
   return recipient.weeklyEstimate ?? recipient.estimatedSandwiches ?? null;
+}
+
+/**
+ * Estimated sandwiches as a range. Returns null when no number is set.
+ * If only a single number is stored, min === max.
+ */
+export function getEstimatedSandwichesRange(
+  recipient: Recipient
+): { min: number; max: number } | null {
+  const min = getEstimatedSandwiches(recipient);
+  if (min == null) return null;
+  const maxRaw = (recipient as Recipient & { estimatedSandwichesMax?: number | null })
+    .estimatedSandwichesMax;
+  const max = typeof maxRaw === 'number' && maxRaw >= min ? maxRaw : min;
+  return { min, max };
 }
 
 export type PlannedBreakdownRow = { type: string; min: number; max: number };
@@ -247,12 +263,18 @@ export function sortRecipients(
         return compareStrings(a.name || '', b.name || '');
       }
       case 'cadence': {
-        // weekly_priority → when_extras → as_needed → none, in asc.
-        const order = { weekly_priority: 0, when_extras: 1, as_needed: 2 } as const;
+        // Order: most reliable → least reliable → none.
+        const order = {
+          weekly_priority: 0,
+          as_requested_consistently: 1,
+          when_extras: 2,
+          as_requested: 3,
+          as_needed: 4,
+        } as const;
         const ca = (a as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
         const cb = (b as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
-        const ra = ca && ca in order ? order[ca as keyof typeof order] : 3;
-        const rb = cb && cb in order ? order[cb as keyof typeof order] : 3;
+        const ra = ca && ca in order ? order[ca as keyof typeof order] : 5;
+        const rb = cb && cb in order ? order[cb as keyof typeof order] : 5;
         if (ra !== rb) return compareNumbers(ra, rb);
         return compareStrings(a.name || '', b.name || '');
       }
@@ -272,14 +294,16 @@ export function sortRecipients(
         if (ra !== rb) return compareNumbers(ra, rb);
         return compareStrings(a.name || '', b.name || '');
       }
-      case 'fruit':
-      case 'snacks': {
-        // receiving (0) → interested (1) → none (2). Field set varies by column.
-        const recvField = column === 'fruit' ? 'receivingFruit' : 'receivingSnacks';
-        const wantField = column === 'fruit' ? 'wantsFruit' : 'wantsSnacks';
+      case 'fruitSnacks': {
+        // receiving (0) → interested (1) → none (2). Combined across both
+        // fruit + snacks fields since the business rule treats them as one.
         const rank = (r: Recipient) => {
-          const recv = !!(r as Recipient & Record<string, unknown>)[recvField];
-          const want = !!(r as Recipient & Record<string, unknown>)[wantField];
+          const recv =
+            !!(r as Recipient & { receivingFruit?: boolean }).receivingFruit ||
+            !!(r as Recipient & { receivingSnacks?: boolean }).receivingSnacks;
+          const want =
+            !!(r as Recipient & { wantsFruit?: boolean }).wantsFruit ||
+            !!(r as Recipient & { wantsSnacks?: boolean }).wantsSnacks;
           if (recv) return 0;
           if (want) return 1;
           return 2;
@@ -297,7 +321,12 @@ export function sortRecipients(
   return sorted;
 }
 
-export type DeliveryCadence = 'weekly_priority' | 'when_extras' | 'as_needed';
+export type DeliveryCadence =
+  | 'weekly_priority'
+  | 'as_requested_consistently'
+  | 'when_extras'
+  | 'as_requested'
+  | 'as_needed';
 
 /**
  * Delivery cadence describes HOW OFTEN we serve an org — independent of the
@@ -317,10 +346,22 @@ export const DELIVERY_CADENCE_OPTIONS: ReadonlyArray<{
     badgeClass: 'bg-[#007E8C]/15 text-[#236383] border-[#007E8C]/40',
   },
   {
+    value: 'as_requested_consistently',
+    label: 'As requested (consistent)',
+    description: 'They request reliably on a regular cadence.',
+    badgeClass: 'bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40',
+  },
+  {
     value: 'when_extras',
     label: 'When we have extras',
     description: 'Served when we have surplus / leftovers.',
     badgeClass: 'bg-[#FBAD3F]/15 text-[#B8860B] border-[#FBAD3F]/40',
+  },
+  {
+    value: 'as_requested',
+    label: 'As requested',
+    description: 'They ask occasionally; we serve when they do.',
+    badgeClass: 'bg-[#FBAD3F]/10 text-[#B8860B] border-[#FBAD3F]/30',
   },
   {
     value: 'as_needed',

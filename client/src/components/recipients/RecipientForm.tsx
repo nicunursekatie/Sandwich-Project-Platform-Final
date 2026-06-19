@@ -718,16 +718,30 @@ export function RecipientForm({
                 />
               </div>
               <div>
-                <Label htmlFor={inputId('estimatedSandwiches')}>Estimated Sandwiches (single number)</Label>
-                <Input
-                  id={inputId('estimatedSandwiches')}
-                  type="number"
-                  value={formData.estimatedSandwiches}
-                  onChange={(e) => onFieldChange('estimatedSandwiches', e.target.value)}
-                  placeholder="Number of sandwiches needed"
-                />
+                <Label htmlFor={inputId('estimatedSandwiches')}>Estimated Sandwiches</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id={inputId('estimatedSandwiches')}
+                    type="number"
+                    min={0}
+                    value={formData.estimatedSandwiches}
+                    onChange={(e) => onFieldChange('estimatedSandwiches', e.target.value)}
+                    placeholder="Min"
+                    className="w-24"
+                  />
+                  <span className="text-slate-400 text-sm">to</span>
+                  <Input
+                    id={inputId('estimatedSandwichesMax')}
+                    type="number"
+                    min={0}
+                    value={formData.estimatedSandwichesMax}
+                    onChange={(e) => onFieldChange('estimatedSandwichesMax', e.target.value)}
+                    placeholder="Max (optional)"
+                    className="w-32"
+                  />
+                </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Use this for a single total, or use the per-type breakdown below.
+                  Leave the max blank for a single number; fill both for a range (e.g., 200 to 250).
                 </p>
               </div>
               <div className="sm:col-span-2 space-y-2 p-3 rounded border border-slate-200 bg-white">

@@ -24,7 +24,7 @@ import {
   getCollectionSchedules,
   getFeedingSchedules,
   getFocusAreas,
-  getEstimatedSandwiches,
+  getEstimatedSandwichesRange,
   getContractStatus,
   getCadenceMeta,
   getPlannedSandwichBreakdown,
@@ -63,7 +63,6 @@ export function RecipientDetailDrawer({
   const focusAreas = getFocusAreas(recipient);
   const collectionSchedules = getCollectionSchedules(recipient);
   const feedingSchedules = getFeedingSchedules(recipient);
-  const estimate = getEstimatedSandwiches(recipient);
   const contractStatus = getContractStatus(recipient);
   const displayRegion = getRecipientDisplayRegion(recipient);
   const website = (recipient as Recipient & { website?: string }).website;
@@ -205,11 +204,14 @@ export function RecipientDetailDrawer({
                     </div>
                   );
                 }
-                if (estimate != null) {
+                const range = getEstimatedSandwichesRange(recipient);
+                if (range) {
                   return (
                     <div>
                       <span className="text-slate-500 text-xs block">Est. Sandwiches / week</span>
-                      {estimate.toLocaleString()}
+                      <span className="font-semibold tabular-nums">
+                        {formatRange(range.min, range.max)}
+                      </span>
                     </div>
                   );
                 }

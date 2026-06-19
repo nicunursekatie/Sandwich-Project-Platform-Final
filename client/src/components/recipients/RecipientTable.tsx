@@ -23,7 +23,7 @@ import {
   InlineEstimatedSandwichesCell,
   InlinePeopleServedCell,
   InlinePeopleServedFrequencyCell,
-  InlineFruitOrSnacksCell,
+  InlineFruitSnacksCell,
   InlineFocusAreasCell,
   InlinePrimaryContactCell,
 } from './recipient-table-inline-cells';
@@ -43,8 +43,7 @@ const COLUMNS: { id: SortColumn; label: string; className?: string; defaultWidth
   { id: 'estimatedSandwiches', label: 'Est. Sandwiches', className: 'w-[110px]', defaultWidth: 120 },
   { id: 'peopleServed', label: 'People served', className: 'w-[110px]', defaultWidth: 110 },
   { id: 'peopleServedFrequency', label: 'Freq.', className: 'w-[90px]', defaultWidth: 100 },
-  { id: 'fruit', label: 'Fruit', className: 'w-[80px]', defaultWidth: 85 },
-  { id: 'snacks', label: 'Snacks', className: 'w-[80px]', defaultWidth: 85 },
+  { id: 'fruitSnacks', label: 'Fruit & Snacks', className: 'w-[110px]', defaultWidth: 120 },
   { id: 'cadence', label: 'Cadence', className: 'min-w-[130px]', defaultWidth: 150 },
   { id: 'sandwichType', label: 'Sandwich Type', className: 'w-[110px]', defaultWidth: 120 },
   { id: 'reportingGroup', label: 'Reporting Group', className: 'min-w-[120px]', defaultWidth: 140 },
@@ -185,11 +184,13 @@ export function RecipientTable({
                   key={col.id}
                   style={{ width: getColumnWidth(col), minWidth: MIN_COLUMN_WIDTH_PX }}
                   className={`relative whitespace-nowrap text-sm font-semibold text-slate-700 ${col.className || ''} ${
-                    col.id === 'collectionDays'
-                      ? 'bg-[#007E8C]/8'
-                      : col.id === 'feedingDays'
-                        ? 'bg-[#FBAD3F]/10'
-                        : ''
+                    col.id === 'name'
+                      ? 'sticky left-0 z-20 bg-slate-50 shadow-[2px_0_3px_-1px_rgb(0_0_0/0.08)]'
+                      : col.id === 'collectionDays'
+                        ? 'bg-[#007E8C]/8'
+                        : col.id === 'feedingDays'
+                          ? 'bg-[#FBAD3F]/10'
+                          : ''
                   } ${resizingColumn?.id === col.id ? 'select-none' : ''}`}
                 >
                   <button
@@ -223,20 +224,30 @@ export function RecipientTable({
               const isHighlighted = highlightedId === recipient.id;
               const isSaving = savingId === recipient.id;
 
+              // Per-row background class for the sticky Name cell. Without an
+              // opaque background here, columns scrolling beneath would show through.
+              const rowBgClass = isHighlighted
+                ? 'bg-[#FFF7E6]'
+                : isInactive
+                  ? 'bg-slate-50'
+                  : 'bg-white';
+
               return (
                 <TableRow
                   key={recipient.id}
                   ref={isHighlighted ? highlightRowRef : undefined}
                   onClick={() => onRowClick(recipient)}
-                  className={`cursor-pointer transition-colors ${
-                    isInactive ? 'bg-slate-50/80 text-slate-500 hover:bg-slate-100/80' : 'hover:bg-[#007E8C]/5'
+                  className={`group cursor-pointer transition-colors ${
+                    isInactive ? 'text-slate-500 hover:bg-slate-100/80' : 'hover:bg-[#007E8C]/5'
                   } ${
                     isHighlighted
                       ? 'bg-[#FBAD3F]/10 ring-1 ring-inset ring-[#FBAD3F]/40'
                       : ''
                   }`}
                 >
-                  <TableCell className="font-medium">
+                  <TableCell
+                    className={`font-medium sticky left-0 z-10 ${rowBgClass} group-hover:bg-[#E6F4F6] shadow-[2px_0_3px_-1px_rgb(0_0_0/0.08)]`}
+                  >
                     <InlineTextCell
                       value={recipient.name || ''}
                       canEdit={canEdit}
@@ -288,18 +299,8 @@ export function RecipientTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <InlineFruitOrSnacksCell
+                    <InlineFruitSnacksCell
                       recipient={recipient}
-                      variant="fruit"
-                      canEdit={canEdit}
-                      isSaving={isSaving}
-                      onSave={(updates) => save(recipient, updates)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <InlineFruitOrSnacksCell
-                      recipient={recipient}
-                      variant="snacks"
                       canEdit={canEdit}
                       isSaving={isSaving}
                       onSave={(updates) => save(recipient, updates)}

@@ -23,10 +23,18 @@ export const getDefaultRecipientForm = () => ({
   secondContactPersonEmail: '',
   secondContactPersonRole: '',
   reportingGroup: '',
+  // Min of the range. Single-number entries set estimatedSandwichesMax to the same value.
   estimatedSandwiches: '',
+  estimatedSandwichesMax: '',
   // Planned per-type breakdown rows. min === max means a single number (no range).
   plannedSandwichBreakdown: [] as Array<{ type: string; min: number; max: number }>,
-  deliveryCadence: '' as '' | 'weekly_priority' | 'when_extras' | 'as_needed',
+  deliveryCadence: '' as
+    | ''
+    | 'weekly_priority'
+    | 'as_requested_consistently'
+    | 'when_extras'
+    | 'as_requested'
+    | 'as_needed',
   deliveryCadenceNote: '',
   sandwichType: '',
   focusAreas: [] as string[],
@@ -123,6 +131,7 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
         : [],
       // Convert numeric fields to strings for form inputs
       estimatedSandwiches: (recipient as any).estimatedSandwiches?.toString() || '',
+      estimatedSandwichesMax: (recipient as any).estimatedSandwichesMax?.toString() || '',
       averagePeopleServed: (recipient as any).averagePeopleServed?.toString() || '',
       partnershipYears: (recipient as any).partnershipYears?.toString() || '',
       // Convert date fields to strings for form inputs
@@ -212,10 +221,22 @@ export function useRecipientForm({ initialData, mode }: UseRecipientFormOptions)
       website: formData.website && !formData.website.startsWith('http://') && !formData.website.startsWith('https://')
         ? `https://${formData.website}`
         : formData.website,
-      // Convert string fields to appropriate types
+      // Estimated sandwiches as a range: min is the canonical number, max is the
+      // upper bound. When max is blank or < min, treat as a single number (max = min).
       estimatedSandwiches: formData.estimatedSandwiches
         ? parseInt(formData.estimatedSandwiches, 10)
         : null,
+      estimatedSandwichesMax: (() => {
+        const min = formData.estimatedSandwiches
+          ? parseInt(formData.estimatedSandwiches, 10)
+          : null;
+        const max = formData.estimatedSandwichesMax
+          ? parseInt(formData.estimatedSandwichesMax, 10)
+          : null;
+        if (min == null) return null;
+        if (max == null || Number.isNaN(max)) return min;
+        return max < min ? min : max;
+      })(),
       contractSignedDate: formData.contractSignedDate
         ? new Date(formData.contractSignedDate)
         : null,

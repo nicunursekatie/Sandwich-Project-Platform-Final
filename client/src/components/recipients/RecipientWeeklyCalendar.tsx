@@ -66,31 +66,37 @@ function DaySection({
               if (ta !== tb) return ta - tb;
               return (a.recipient.name || '').localeCompare(b.recipient.name || '');
             })
-            .map(({ recipient: r, time, notes }) => (
-              <button
-                key={`${scheduleType}-${r.id}`}
-                type="button"
-                onClick={() => onRecipientClick(r)}
-                className="w-full text-left px-2 py-1.5 rounded border border-slate-200/80 bg-white hover:border-[#007E8C] hover:bg-[#007E8C]/5 transition-colors"
-              >
-                <div className="text-sm font-medium text-slate-800 truncate">{r.name}</div>
-                {time && (
-                  <div className="text-xs text-slate-600 flex items-center gap-1 mt-0.5 font-medium">
-                    <Clock className="w-3 h-3 shrink-0" />
-                    {time}
-                  </div>
-                )}
-                {notes && (
-                  <div
-                    className="text-[11px] text-slate-500 flex items-start gap-1 mt-0.5 italic"
-                    title={notes}
-                  >
-                    <Info className="w-3 h-3 shrink-0 mt-px" />
-                    <span className="line-clamp-2">{notes}</span>
-                  </div>
-                )}
-              </button>
-            ))
+            .map(({ recipient: r, time, notes }) => {
+              const timeColor =
+                scheduleType === 'collection' ? 'text-[#0F4A52]' : 'text-[#7A5A07]';
+              return (
+                <button
+                  key={`${scheduleType}-${r.id}`}
+                  type="button"
+                  onClick={() => onRecipientClick(r)}
+                  className="w-full text-left px-2 py-1.5 rounded border border-slate-200 bg-white hover:border-[#007E8C] hover:bg-[#007E8C]/5 transition-colors"
+                >
+                  <div className="text-sm font-medium text-slate-800 truncate">{r.name}</div>
+                  {time && (
+                    <div
+                      className={`text-sm flex items-center gap-1 mt-0.5 font-semibold tabular-nums ${timeColor}`}
+                    >
+                      <Clock className="w-3.5 h-3.5 shrink-0" />
+                      {time}
+                    </div>
+                  )}
+                  {notes && (
+                    <div
+                      className="text-xs text-slate-700 flex items-start gap-1 mt-0.5 italic"
+                      title={notes}
+                    >
+                      <Info className="w-3 h-3 shrink-0 mt-0.5" />
+                      <span className="line-clamp-2">{notes}</span>
+                    </div>
+                  )}
+                </button>
+              );
+            })
         )}
       </div>
     </div>

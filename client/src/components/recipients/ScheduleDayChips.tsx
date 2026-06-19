@@ -15,14 +15,21 @@ interface ScheduleDayChipsProps {
   variant: 'collection' | 'feeding';
 }
 
+// Solid label header + lighter body — gives strong contrast on the day label
+// AND a calm background for the readable time line beneath.
 const VARIANT_STYLES = {
-  collection: 'bg-[#007E8C]/15 text-[#007E8C] border border-[#007E8C]/35 hover:bg-[#007E8C]/25',
-  feeding: 'bg-[#FBAD3F]/20 text-[#B8860B] border border-[#FBAD3F]/50 hover:bg-[#FBAD3F]/30',
-} as const;
-
-const NOTE_DOT_STYLES = {
-  collection: 'bg-[#007E8C]',
-  feeding: 'bg-[#B8860B]',
+  collection: {
+    container: 'border border-[#007E8C]/40 bg-white',
+    header: 'bg-[#007E8C] text-white',
+    timeText: 'text-[#0F4A52]',
+    noteDot: 'bg-[#007E8C]',
+  },
+  feeding: {
+    container: 'border border-[#FBAD3F]/50 bg-white',
+    header: 'bg-[#B8860B] text-white',
+    timeText: 'text-[#7A5A07]',
+    noteDot: 'bg-[#B8860B]',
+  },
 } as const;
 
 type DayDetail = { time: string; notes: string }[];
@@ -67,8 +74,10 @@ export function ScheduleDayChips({ schedules, variant }: ScheduleDayChipsProps) 
     (d) => !WEEK_DAYS.includes(d as (typeof WEEK_DAYS)[number])
   );
 
+  const styles = VARIANT_STYLES[variant];
+
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1.5">
       {[...orderedDays, ...extraDays].map((day) => {
         const details = byDay.get(day) || [];
         const label = DAY_ABBREV[day] || day.slice(0, 3);
@@ -80,26 +89,30 @@ export function ScheduleDayChips({ schedules, variant }: ScheduleDayChipsProps) 
           <Tooltip key={day}>
             <TooltipTrigger asChild>
               <div
-                className={`inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs cursor-default w-fit ${VARIANT_STYLES[variant]}`}
+                className={`inline-flex flex-col rounded overflow-hidden cursor-default w-fit min-w-[56px] ${styles.container}`}
               >
-                <span className="font-semibold">{label}</span>
+                <div className={`px-2 py-0.5 text-xs font-bold tracking-wide flex items-center gap-1 ${styles.header}`}>
+                  <span>{label}</span>
+                  {hasNote && (
+                    <span
+                      aria-label="Has frequency note"
+                      title="Has frequency / scheduling note"
+                      className="inline-block w-1.5 h-1.5 rounded-full bg-white"
+                    />
+                  )}
+                </div>
                 {timesDisplay && (
-                  <span className="font-normal text-[11px] opacity-90">{timesDisplay}</span>
-                )}
-                {hasNote && (
-                  <span
-                    aria-label="Has frequency note"
-                    title="Has frequency / scheduling note"
-                    className={`inline-block w-1.5 h-1.5 rounded-full ${NOTE_DOT_STYLES[variant]}`}
-                  />
+                  <div className={`px-2 py-0.5 text-sm font-medium tabular-nums leading-tight ${styles.timeText}`}>
+                    {timesDisplay}
+                  </div>
                 )}
               </div>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-xs">
-              <p className="font-medium text-xs mb-1">{day}</p>
+              <p className="font-medium text-sm mb-1">{day}</p>
               {details.map((d, i) => (
-                <div key={i} className="text-xs text-slate-600">
-                  {d.time && <span className="font-medium">{d.time}</span>}
+                <div key={i} className="text-sm text-slate-700">
+                  {d.time && <span className="font-semibold">{d.time}</span>}
                   {d.notes && (
                     <span className={d.time ? ' — ' : ''}>{d.notes}</span>
                   )}

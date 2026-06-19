@@ -26,6 +26,7 @@ import {
   getCollectionSchedules,
   getFeedingSchedules,
   getPlannedSandwichBreakdown,
+  getEstimatedSandwichesRange,
   sumBreakdownRange,
   formatRange,
   buildScheduleFromDaysAndTime,
@@ -288,16 +289,16 @@ export function InlineContractCell({
  */
 export function InlineEstimatedSandwichesCell({
   recipient,
-  canEdit,
-  isSaving,
-  onSave,
+  canEdit: _canEdit,
+  isSaving: _isSaving,
+  onSave: _onSave,
 }: {
   recipient: Recipient;
   onSave: SaveHandler;
 } & InlineBaseProps) {
   const breakdown = getPlannedSandwichBreakdown(recipient);
-  const fallback = recipient.weeklyEstimate ?? recipient.estimatedSandwiches ?? null;
 
+  // Per-type breakdown takes precedence when present.
   if (breakdown.length > 0) {
     const total = sumBreakdownRange(breakdown);
     return (
@@ -317,18 +318,22 @@ export function InlineEstimatedSandwichesCell({
     );
   }
 
+  const range = getEstimatedSandwichesRange(recipient);
+  if (!range) {
+    return <span className="text-xs text-slate-400 italic">—</span>;
+  }
+
   return (
-    <InlineNumberCell
-      value={fallback}
-      canEdit={canEdit}
-      isSaving={isSaving}
-      onSave={(val) =>
-        onSave({
-          weeklyEstimate: val,
-          estimatedSandwiches: val,
-        } as Partial<Recipient>)
+    <span
+      className="text-sm font-medium text-slate-800 tabular-nums"
+      title={
+        range.min === range.max
+          ? `${range.min.toLocaleString()} sandwiches`
+          : `Range: ${range.min.toLocaleString()}–${range.max.toLocaleString()} sandwiches`
       }
-    />
+    >
+      {formatRange(range.min, range.max)}
+    </span>
   );
 }
 
@@ -466,33 +471,37 @@ export function InlinePeopleServedFrequencyCell({
 }
 
 /**
- * Tri-state cell for fruit OR snacks status:
- *   receiving  → green chip "Yes"
- *   interested → amber chip "Wants"
+ * Combined fruit + snacks state.
+ * Per business rule: if we give an org fruit we also give them snacks — they
+ * always move together. The only signal is the survey-derived state:
+ *   receiving  → "Yes" chip (currently getting both)
+ *   interested → "Wants" chip (not getting, said they'd like to)
  *   none       → dim dash
- * Editor cycles: none → wants → receiving → none.
+ * Editor cycles: none → wants → receiving → none. Writes both receivingFruit/Snacks
+ * and wantsFruit/Snacks together.
  */
-export function InlineFruitOrSnacksCell({
+export function InlineFruitSnacksCell({
   recipient,
-  variant,
   canEdit,
   isSaving,
   onSave,
 }: {
   recipient: Recipient;
-  variant: 'fruit' | 'snacks';
   onSave: SaveHandler;
 } & InlineBaseProps) {
-  const recvField = variant === 'fruit' ? 'receivingFruit' : 'receivingSnacks';
-  const wantField = variant === 'fruit' ? 'wantsFruit' : 'wantsSnacks';
-  const recv = !!(recipient as Recipient & Record<string, unknown>)[recvField];
-  const want = !!(recipient as Recipient & Record<string, unknown>)[wantField];
+  // Receiving = the org gets fruit/snacks. Use OR across both legacy fields so
+  // data captured before the merge still surfaces correctly.
+  const recv =
+    !!(recipient as Recipient & { receivingFruit?: boolean }).receivingFruit ||
+    !!(recipient as Recipient & { receivingSnacks?: boolean }).receivingSnacks;
+  const want =
+    !recv &&
+    (!!(recipient as Recipient & { wantsFruit?: boolean }).wantsFruit ||
+      !!(recipient as Recipient & { wantsSnacks?: boolean }).wantsSnacks);
 
-  const labelWord = variant === 'fruit' ? 'fruit' : 'snacks';
-
-  const next = (): { recv: boolean; want: boolean } => {
+  const nextState = (): { recv: boolean; want: boolean } => {
     if (!recv && !want) return { recv: false, want: true }; // none → wants
-    if (want && !recv) return { recv: true, want: false }; // wants → receiving
+    if (want) return { recv: true, want: false }; // wants → receiving
     return { recv: false, want: false }; // receiving → none
   };
 
@@ -501,7 +510,7 @@ export function InlineFruitOrSnacksCell({
       return (
         <span
           className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40"
-          title={`Currently receiving ${labelWord}`}
+          title="Currently receiving fruit & snacks"
         >
           Yes
         </span>
@@ -511,14 +520,14 @@ export function InlineFruitOrSnacksCell({
       return (
         <span
           className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border bg-[#FBAD3F]/20 text-[#B8860B] border-[#FBAD3F]/40"
-          title={`Interested in ${labelWord}`}
+          title="Said they'd like to receive fruit & snacks"
         >
           Wants
         </span>
       );
     }
     return (
-      <span className="text-xs text-slate-400" title={`Not receiving / not interested in ${labelWord}`}>
+      <span className="text-xs text-slate-400" title="Not receiving / not interested">
         —
       </span>
     );
@@ -534,10 +543,13 @@ export function InlineFruitOrSnacksCell({
         type="button"
         disabled={isSaving}
         onClick={() => {
-          const n = next();
+          const n = nextState();
           onSave({
-            [recvField]: n.recv,
-            [wantField]: n.want,
+            // Keep both fields synced so legacy data stays consistent.
+            receivingFruit: n.recv,
+            receivingSnacks: n.recv,
+            wantsFruit: n.want,
+            wantsSnacks: n.want,
           } as unknown as Partial<Recipient>);
         }}
         className={`cursor-pointer hover:opacity-75 transition-opacity ${
