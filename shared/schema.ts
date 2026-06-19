@@ -3031,8 +3031,21 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     firstName: z.string().nullable().optional(),
     lastName: z.string().nullable().optional(),
     email: z
-      .union([z.string().email(), z.literal(''), z.null(), z.undefined()])
-      .transform((val) => val || undefined)
+      .union([z.string(), z.null(), z.undefined()])
+      // Trim first: a pasted address with leading/trailing whitespace (or a
+      // stray newline) is the most common reason a manual event silently fails
+      // to save. Empty/whitespace-only becomes undefined so the field is simply
+      // omitted, matching the previous behavior.
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      // Only enforce email format when a value is actually present, with a clear
+      // message (the create endpoint surfaces this to the user).
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid email address (e.g., name@example.com).' }
+      )
       .optional(),
     organizationName: z.string().nullable().optional(),
     manualEntrySource: z.string().nullable().optional(),

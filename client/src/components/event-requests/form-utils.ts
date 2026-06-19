@@ -117,7 +117,7 @@ export function buildEventDataForServer(
     // Contact information
     firstName: formData.firstName || null,
     lastName: formData.lastName || null,
-    email: formData.email || null,
+    email: formData.email?.trim() || null,
     phone: formData.phone || null,
     organizationName: formData.organizationName || null,
     department: formData.department || null,
