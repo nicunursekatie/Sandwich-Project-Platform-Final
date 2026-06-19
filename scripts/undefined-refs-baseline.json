@@ -1,0 +1,9 @@
+[
+  "client/src/components/event-requests/cards/CompletedCard.tsx :: TS2304 :: Cannot find name 'saveEdit'.",
+  "client/src/components/event-requests/cards/CompletedCard.tsx :: TS2304 :: Cannot find name 'startEditing'.",
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: TS2304 :: Cannot find name 'isAnimating'.",
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: TS2304 :: Cannot find name 'navigate'.",
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: TS2304 :: Cannot find name 'setIsAnimating'.",
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: TS2304 :: Cannot find name 'setShowPrompt'.",
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: TS2304 :: Cannot find name 'showPrompt'."
+]
