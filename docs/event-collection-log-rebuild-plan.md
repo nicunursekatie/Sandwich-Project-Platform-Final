@@ -199,8 +199,26 @@ Requires a production schema change.
 
 ## 5. Recommendation
 
-Ship **Variant A** unless destination tracking is a confirmed requirement. It
-converts a broken, user-reachable screen into one that shows correct,
-single-source-of-truth data with no schema risk, and clears the last
-`/api/collections` entry from the route-drift report. Revisit Variant B only if
-the destination feature is explicitly prioritized.
+Ship **Variant A**. This is not just the lower-effort option — it is the
+*correct* one, for two reasons established by inspecting the codebase:
+
+1. **`sandwichDestination` is dead.** It appears nowhere in client, server, or
+   shared code except this broken dialog and its `SandwichDestinationTracker`
+   child. No column, no other consumer, no analytics use.
+2. **Distribution is already modeled properly.** "Where an event's sandwiches
+   went" is tracked by the per-event recipient-allocation feature
+   (`RecipientAllocationEditor` / `InlineRecipientAllocationEditor` →
+   `PATCH /api/event-requests/:id/recipients`, backed by `recipients` /
+   `sandwich_distributions`).
+
+Therefore Variant B would not "complete" the feature — it would add a second,
+weaker, free-text way to record something the app already models structurally,
+plus a production column and write path for a field nothing reads. That is
+net-new scope and data-model debt, not a fix.
+
+The bug being fixed is "a user-reachable screen 404s and shows nothing." Variant
+A resolves exactly that: it shows the event's real collections with
+single-source-of-truth counts and clears the last `/api/collections` entry from
+the route-drift report. Pursue Variant B **only** if a deliberate product
+request lands for free-text per-collection destinations distinct from recipient
+allocation — which, given the above, is unlikely to be the real need.
