@@ -79,9 +79,11 @@ export function buildEventRequestsListFilterParams(
     return { status: activeTab };
   }
 
-  // "all" tab includes active statuses plus cancelled so they're not invisible
+  // "all" tab fetches every status (no filter). Without this the search bar
+  // can't find completed / declined / standby / stalled events because the
+  // client-side filter only sees what was fetched.
   if (activeTab === 'all') {
-    return { status: 'new,in_process,scheduled,rescheduled,cancelled' };
+    return {};
   }
 
   // For "my_assignments", admin_overview, planning, etc:

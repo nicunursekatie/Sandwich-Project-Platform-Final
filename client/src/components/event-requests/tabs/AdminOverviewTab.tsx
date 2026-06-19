@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { formatDateShort } from '@/lib/date-utils';
 import { LastContactAgeBadge } from '@/components/event-requests/LastContactAgeBadge';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { ActivityFeed } from '@/components/activity-feed';
 
 interface TspContactStats {
@@ -28,7 +29,8 @@ interface AdminOverviewTabProps {
 }
 
 export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
-  const { setSelectedEventRequest, setShowEventDetails, setActiveTab } = useEventRequestContext();
+  const { setActiveTab } = useEventRequestContext();
+  const { setSelectedEventRequest, setShowEventDetails } = useEventDialogState();
   const [sortBy, setSortBy] = useState<'name' | 'total' | 'new' | 'in_process'>('total');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');

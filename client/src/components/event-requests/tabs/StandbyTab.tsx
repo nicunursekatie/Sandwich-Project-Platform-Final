@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const StandbyTab: React.FC = () => {
   const { toast } = useToast();
@@ -20,6 +22,9 @@ export const StandbyTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -27,7 +32,7 @@ export const StandbyTab: React.FC = () => {
     setContactEventRequest,
     setShowLogContactDialog,
     setLogContactEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const standbyRequests = filterRequestsByStatus('standby');
 
@@ -111,7 +116,8 @@ export const StandbyTab: React.FC = () => {
             No standby events
           </div>
         ) : (
-          standbyRequests.map((request) => (
+          <EventListBatchProviders events={standbyRequests}>
+          {standbyRequests.map((request) => (
           <StandbyCard
             key={request.id}
             request={request}
@@ -159,7 +165,8 @@ export const StandbyTab: React.FC = () => {
               }
             }}
           />
-          ))
+          ))}
+          </EventListBatchProviders>
         )}
       </div>
     </>

@@ -42,163 +42,10 @@ interface EventRequestContextType {
   itemsPerPage: number;
   setItemsPerPage: (items: number) => void;
 
-  // Selected event and editing
-  selectedEventRequest: EventRequest | null;
-  setSelectedEventRequest: (event: EventRequest | null) => void;
-  isEditing: boolean;
-  setIsEditing: (editing: boolean) => void;
-
-  // Dialog visibility states
-  showEventDetails: boolean;
-  setShowEventDetails: (show: boolean) => void;
-  showEventDetailsPreview: boolean;
-  setShowEventDetailsPreview: (show: boolean) => void;
-  showSchedulingDialog: boolean;
-  setShowSchedulingDialog: (show: boolean) => void;
-  showToolkitSentDialog: boolean;
-  setShowToolkitSentDialog: (show: boolean) => void;
-  showScheduleCallDialog: boolean;
-  setShowScheduleCallDialog: (show: boolean) => void;
-  showOneDayFollowUpDialog: boolean;
-  setShowOneDayFollowUpDialog: (show: boolean) => void;
-  showOneMonthFollowUpDialog: boolean;
-  setShowOneMonthFollowUpDialog: (show: boolean) => void;
-  showContactOrganizerDialog: boolean;
-  setShowContactOrganizerDialog: (show: boolean) => void;
-  showCollectionLog: boolean;
-  setShowCollectionLog: (show: boolean) => void;
-  showAssignmentDialog: boolean;
-  setShowAssignmentDialog: (show: boolean) => void;
-  showTspContactAssignmentDialog: boolean;
-  setShowTspContactAssignmentDialog: (show: boolean) => void;
-  showSandwichPlanningModal: boolean;
-  setShowSandwichPlanningModal: (show: boolean) => void;
-  showStaffingPlanningModal: boolean;
-  setShowStaffingPlanningModal: (show: boolean) => void;
-  showLogContactDialog: boolean;
-  setShowLogContactDialog: (show: boolean) => void;
-  showEditContactDialog: boolean;
-  setShowEditContactDialog: (show: boolean) => void;
-  showAiDateSuggestionDialog: boolean;
-  setShowAiDateSuggestionDialog: (show: boolean) => void;
-  showAiIntakeAssistantDialog: boolean;
-  setShowAiIntakeAssistantDialog: (show: boolean) => void;
-  showIntakeCallDialog: boolean;
-  setShowIntakeCallDialog: (show: boolean) => void;
-  showDeclineDialog: boolean;
-  setShowDeclineDialog: (show: boolean) => void;
-  showCancelDialog: boolean;
-  setShowCancelDialog: (show: boolean) => void;
-  showNonEventDialog: boolean;
-  setShowNonEventDialog: (show: boolean) => void;
-  showRescheduleDialog: boolean;
-  setShowRescheduleDialog: (show: boolean) => void;
-
-  // Event being acted upon
-  schedulingEventRequest: EventRequest | null;
-  setSchedulingEventRequest: (event: EventRequest | null) => void;
-  toolkitEventRequest: EventRequest | null;
-  setToolkitEventRequest: (event: EventRequest | null) => void;
-  collectionLogEventRequest: EventRequest | null;
-  setCollectionLogEventRequest: (event: EventRequest | null) => void;
-  contactEventRequest: EventRequest | null;
-  setContactEventRequest: (event: EventRequest | null) => void;
-  tspContactEventRequest: EventRequest | null;
-  setTspContactEventRequest: (event: EventRequest | null) => void;
-  logContactEventRequest: EventRequest | null;
-  setLogContactEventRequest: (event: EventRequest | null) => void;
-  editContactEventRequest: EventRequest | null;
-  setEditContactEventRequest: (event: EventRequest | null) => void;
-  editContactAttemptData: any | null;
-  setEditContactAttemptData: (data: any | null) => void;
-  aiSuggestionEventRequest: EventRequest | null;
-  setAiSuggestionEventRequest: (event: EventRequest | null) => void;
-  aiIntakeAssistantEventRequest: EventRequest | null;
-  setAiIntakeAssistantEventRequest: (event: EventRequest | null) => void;
-  intakeCallEventRequest: EventRequest | null;
-  setIntakeCallEventRequest: (event: EventRequest | null) => void;
-  reasonDialogEventRequest: EventRequest | null;
-  setReasonDialogEventRequest: (event: EventRequest | null) => void;
-  nonEventDialogEventRequest: EventRequest | null;
-  setNonEventDialogEventRequest: (event: EventRequest | null) => void;
-  rescheduleDialogEventRequest: EventRequest | null;
-  setRescheduleDialogEventRequest: (event: EventRequest | null) => void;
-  showNextActionDialog: boolean;
-  setShowNextActionDialog: (show: boolean) => void;
-  nextActionEventRequest: EventRequest | null;
-  setNextActionEventRequest: (event: EventRequest | null) => void;
-  nextActionMode: 'add' | 'edit' | 'complete';
-  setNextActionMode: (mode: 'add' | 'edit' | 'complete') => void;
-
-  // Assignment state
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
-  setAssignmentType: (type: 'driver' | 'speaker' | 'volunteer' | null) => void;
-  assignmentEventId: number | null;
-  setAssignmentEventId: (id: number | null) => void;
-  selectedAssignees: string[];
-  setSelectedAssignees: (assignees: string[]) => void;
-  isEditingAssignment: boolean;
-  setIsEditingAssignment: (editing: boolean) => void;
-  editingAssignmentPersonId: string | null;
-  setEditingAssignmentPersonId: (id: string | null) => void;
-  isVanDriverAssignment: boolean;
-  setIsVanDriverAssignment: (isVan: boolean) => void;
-
-  // Schedule call state
-  scheduleCallDate: string;
-  setScheduleCallDate: (date: string) => void;
-  scheduleCallTime: string;
-  setScheduleCallTime: (time: string) => void;
-
-  // Follow-up notes
-  followUpNotes: string;
-  setFollowUpNotes: (notes: string) => void;
-
-  // Inline editing state for scheduled events
-  editingScheduledId: number | null;
-  setEditingScheduledId: (id: number | null) => void;
-  editingField: string | null;
-  setEditingField: (field: string | null) => void;
-  editingValue: string;
-  setEditingValue: (value: string) => void;
-
-  // Inline sandwich editing states
-  inlineSandwichMode: 'total' | 'types' | 'range';
-  setInlineSandwichMode: (mode: 'total' | 'types' | 'range') => void;
-  inlineTotalCount: number;
-  setInlineTotalCount: (count: number) => void;
-  inlineSandwichTypes: Array<{type: string, quantity: number}>;
-  setInlineSandwichTypes: (types: Array<{type: string, quantity: number}>) => void;
-  inlineRangeMin: number;
-  setInlineRangeMin: (value: number) => void;
-  inlineRangeMax: number;
-  setInlineRangeMax: (value: number) => void;
-  inlineRangeType: string;
-  setInlineRangeType: (value: string) => void;
-
-  // Modal sandwich editing states
-  modalSandwichMode: 'total' | 'types';
-  setModalSandwichMode: (mode: 'total' | 'types') => void;
-  modalTotalCount: number;
-  setModalTotalCount: (count: number) => void;
-  modalSandwichTypes: Array<{type: string, quantity: number}>;
-  setModalSandwichTypes: (types: Array<{type: string, quantity: number}>) => void;
-
-  // Completed event inline editing
-  editingCompletedId: number | null;
-  setEditingCompletedId: (id: number | null) => void;
-  completedEdit: any;
-  setCompletedEdit: (edit: any) => void;
-
-  // Custom person data for assignment
-  customPersonData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    vanCapable: boolean;
-  };
-  setCustomPersonData: (data: any) => void;
+  // NOTE: dialog / inline-editing / assignment / sandwich-edit state lives
+  // ONLY on EventDialogContext now. Consume it via useEventDialogState().
+  // The Strangler pass-through that re-exported those fields here was removed
+  // so consumers subscribe to just the context they need (fewer re-renders).
 
   // Computed data
   requestsByStatus: Record<string, EventRequest[]>;
@@ -236,9 +83,10 @@ interface EventRequestProviderProps {
 }
 
 /**
- * Public provider. Wraps the inner provider in EventDialogProvider so the
- * inner can `useEventDialogState()` and pass dialog fields through on the
- * existing EventRequestContext value (Strangler Pattern, PR 1 of 3).
+ * Public provider. Wraps the tree in EventDialogProvider so components can call
+ * useEventDialogState() for dialog/inline-edit state, while this provider serves
+ * data/view/pagination via useEventRequestContext(). (The two were previously
+ * merged; the dialog state was split out and the pass-through removed.)
  */
 export const EventRequestProvider: React.FC<EventRequestProviderProps> = (props) => (
   <EventDialogProvider>
@@ -644,11 +492,11 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     }
   }, [initialTab, initialEventId, eventRequests, hasHandledInitialEvent]);
 
-  // Memoize context value. Dialog/inline-editing fields come from the
-  // separate EventDialogContext via `dialog` and are spread here so existing
-  // consumers see the same shape (Strangler Pattern pass-through). PR 2 will
-  // switch consumers to call useEventDialogState() directly and remove the
-  // dialog spread, which is where the re-render perf win lands.
+  // Memoize context value. This context now owns ONLY data / view / pagination
+  // state — dialog and inline-editing state lives on EventDialogContext and is
+  // consumed directly via useEventDialogState(). The Strangler pass-through that
+  // used to spread those fields here was removed (that's where the re-render win
+  // landed: consumers subscribe to just the context they need).
   const value: EventRequestContextType = useMemo(() => ({
     // ---- Fields owned by this context ----
     // Data
@@ -686,11 +534,6 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     itemsPerPage,
     setItemsPerPage,
 
-    // ---- Pass-through from EventDialogContext ----
-    // Spread last so the field shape matches what consumers expect today.
-    // Strip the helper-only `openEventDetails` field — it's part of the
-    // EventDialogContext API, not the back-compat surface.
-    ...(({ openEventDetails: _omit, ...rest }) => rest)(dialog),
   }), [
     // Query results / data this context owns
     eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
@@ -700,10 +543,6 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,
     // Pagination
     currentPage, itemsPerPage,
-    // Pass-through. We only need to depend on the dialog object identity
-    // because EventDialogProvider already memoizes its own value with the
-    // full sub-deps; if any dialog field changes, `dialog` is a new object.
-    dialog,
   ]);
 
   return (

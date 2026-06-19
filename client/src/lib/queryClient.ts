@@ -1,6 +1,19 @@
 import { QueryClient, QueryFunction } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
 import { getSocketInstance } from '@/lib/socket-singleton';
+import {
+  isServerUnavailableBody,
+  RATE_LIMITED_MESSAGE,
+  SERVER_UNAVAILABLE_MESSAGE,
+} from '@/lib/api-errors';
+
+export {
+  describeApiError,
+  isServerUnavailableBody,
+  isServerUnavailableError,
+  RATE_LIMITED_MESSAGE,
+  SERVER_UNAVAILABLE_MESSAGE,
+} from '@/lib/api-errors';
 
 /**
  * Custom error class that preserves server response details.
@@ -16,14 +29,25 @@ export class ApiError extends Error {
   constructor(status: number, statusText: string, body: string, data?: any) {
     // Determine error code for retry logic
     let code = `${status}: ${body || statusText}`;
-    if (status === 401) code = 'AUTH_EXPIRED';
+    let userMessage: string | undefined;
+
+    if (isServerUnavailableBody(body)) {
+      code = 'SERVER_UNAVAILABLE';
+      userMessage = SERVER_UNAVAILABLE_MESSAGE;
+    } else if (status === 429) {
+      code = 'RATE_LIMITED';
+      userMessage = RATE_LIMITED_MESSAGE;
+    } else if (status === 401) code = 'AUTH_EXPIRED';
     else if (status === 403) code = 'PERMISSION_DENIED';
     else if (status === 404) code = 'DATA_LOADING_ERROR';
-    else if (status >= 500) code = 'DATABASE_ERROR';
+    else if (status === 502 || status === 503 || status === 504) {
+      code = 'SERVER_UNAVAILABLE';
+      userMessage = SERVER_UNAVAILABLE_MESSAGE;
+    } else if (status >= 500) code = 'DATABASE_ERROR';
     else if (typeof navigator !== 'undefined' && !navigator.onLine) code = 'NETWORK_ERROR';
 
-    // Use the server's error message if available, otherwise fall back to code
-    const serverMessage = data?.message || data?.error || body || statusText;
+    const serverMessage =
+      userMessage || data?.message || data?.error || body || statusText;
     super(serverMessage);
 
     this.name = 'ApiError';
@@ -153,6 +177,9 @@ export const getQueryFn: <T>(options: {
     const contentType = res.headers.get('content-type') || '';
     if (!contentType.includes('application/json')) {
       const preview = await res.text().catch(() => '');
+      if (isServerUnavailableBody(preview)) {
+        throw new ApiError(res.status, res.statusText, preview);
+      }
       logger.warn('DATA_LOADING_ERROR: Non-JSON API response', { 
         url: res.url, 
         status: res.status, 

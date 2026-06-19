@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -383,6 +384,10 @@ const formatAddress = (input: string): string => {
 export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> = ({ onEventDateClick, openAssignmentDialog }) => {
   const {
     eventRequests,
+    setActiveTab,
+  } = useEventRequestContext();
+
+  const {
     editingScheduledId,
     setEditingScheduledId,
     editingField,
@@ -390,8 +395,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     editingValue,
     setEditingValue,
     setSelectedEventRequest,
-    setActiveTab,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const { updateEventRequestMutation, updateScheduledFieldMutation } = useEventMutations();
   const { resolveUserName } = useEventAssignments();

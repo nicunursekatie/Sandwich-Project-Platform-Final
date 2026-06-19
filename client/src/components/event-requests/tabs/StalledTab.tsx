@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 
 export const StalledTab: React.FC = () => {
   const { toast } = useToast();
@@ -20,6 +22,9 @@ export const StalledTab: React.FC = () => {
 
   const {
     isLoading,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -29,7 +34,7 @@ export const StalledTab: React.FC = () => {
     setLogContactEventRequest,
     setShowDeclineDialog,
     setReasonDialogEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   const stalledRequests = filterRequestsByStatus('stalled');
 
@@ -113,7 +118,8 @@ export const StalledTab: React.FC = () => {
             No stalled events
           </div>
         ) : (
-          stalledRequests.map((request) => (
+          <EventListBatchProviders events={stalledRequests}>
+          {stalledRequests.map((request) => (
           <StalledCard
             key={request.id}
             request={request}
@@ -159,7 +165,8 @@ export const StalledTab: React.FC = () => {
               }
             }}
           />
-          ))
+          ))}
+          </EventListBatchProviders>
         )}
       </div>
     </>

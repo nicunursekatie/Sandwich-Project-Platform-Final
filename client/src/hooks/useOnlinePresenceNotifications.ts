@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { logger } from '@/lib/logger';
+import { getOrCreateSocket, onSocketConnect } from '@/lib/socket-singleton';
 
 interface OnlineUser {
   id: string;
@@ -52,7 +53,6 @@ export function useOnlinePresenceNotifications() {
   const [wsConnected, setWsConnected] = useState(false);
   const [wsOnlineUsers, setWsOnlineUsers] = useState<Map<string, WebSocketOnlineUser>>(new Map());
 
-  // Send heartbeat to mark user as active
   const sendHeartbeat = useCallback(async () => {
     if (!currentUser) return;
     try {
@@ -61,95 +61,69 @@ export function useOnlinePresenceNotifications() {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
-    } catch (error) {
+    } catch {
       // Silently ignore heartbeat errors
     }
   }, [currentUser]);
 
-  // Send heartbeat every 2 minutes to keep user marked as active
   useEffect(() => {
     if (!currentUser) return;
 
-    // Send initial heartbeat
     sendHeartbeat();
-
-    // Set up interval for subsequent heartbeats
-    const heartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000); // 2 minutes
-
+    const heartbeatInterval = setInterval(sendHeartbeat, 2 * 60 * 1000);
     return () => clearInterval(heartbeatInterval);
   }, [currentUser, sendHeartbeat]);
 
-  // WebSocket connection for real-time presence updates
   useEffect(() => {
     if (!currentUser) return;
 
-    const socketUrl = window.location.origin;
-    logger.log('[OnlinePresence] Connecting WebSocket to:', socketUrl);
+    const sharedSocket = getOrCreateSocket();
+    setSocket(sharedSocket);
 
-    const newSocket = io(socketUrl, {
-      path: '/socket.io/',
-      transports: ['polling', 'websocket'],
-      upgrade: true,
-      timeout: 30000,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    });
+    const userName = currentUser.firstName || currentUser.email || 'Anonymous';
 
-    newSocket.on('connect', () => {
-      logger.log('[OnlinePresence] ✅ WebSocket connected');
+    const handleConnect = () => {
+      logger.log('[OnlinePresence] Connected via shared socket');
       setWsConnected(true);
-
-      // Join a presence channel to register this user and trigger user-online broadcast
-      const userName = currentUser.firstName || currentUser.email || 'Anonymous';
-      newSocket.emit('join-channel', {
+      sharedSocket.emit('join-channel', {
         channel: 'presence',
         userId: String(currentUser.id),
-        userName: userName,
+        userName,
       });
+      sharedSocket.emit('get-online-users');
+    };
 
-      // Request current online users list
-      newSocket.emit('get-online-users');
-    });
-
-    newSocket.on('disconnect', () => {
-      logger.log('[OnlinePresence] ❌ WebSocket disconnected');
+    const handleDisconnect = () => {
+      logger.log('[OnlinePresence] Disconnected');
       setWsConnected(false);
-    });
+    };
 
-    newSocket.on('connect_error', (error) => {
+    const handleConnectError = (error: Error) => {
       logger.error('[OnlinePresence] Connection error:', error);
       setWsConnected(false);
-    });
+    };
 
-    // Handle initial online users list
-    newSocket.on('online-users-list', (users: WebSocketOnlineUser[]) => {
+    const handleOnlineUsersList = (users: WebSocketOnlineUser[]) => {
       logger.log('[OnlinePresence] Received online users list:', users.length);
       const userMap = new Map<string, WebSocketOnlineUser>();
       users.forEach((u) => userMap.set(u.id, u));
       setWsOnlineUsers(userMap);
-      
-      // Initialize previousOnlineIdsRef with current users to avoid notifications on connect
+
       if (isFirstLoadRef.current) {
         previousOnlineIdsRef.current = new Set(users.map((u) => u.id));
       }
-    });
+    };
 
-    // Handle user coming online - show toast notification immediately
-    newSocket.on('user-online', (data: UserOnlineEvent) => {
+    const handleUserOnline = (data: UserOnlineEvent) => {
       logger.log('[OnlinePresence] User online:', data.userName, data.id);
 
-      // Add to local state
       setWsOnlineUsers((prev) => {
         const updated = new Map(prev);
         updated.set(data.id, { id: data.id, userName: data.userName });
         return updated;
       });
 
-      // Show toast notification if not the current user and not first load
       if (data.id !== String(currentUser.id) && !isFirstLoadRef.current) {
-        // Check if this user wasn't already in our previous set (truly new)
         if (!previousOnlineIdsRef.current.has(data.id)) {
           toast({
             title: `${data.userName} is now online`,
@@ -159,65 +133,64 @@ export function useOnlinePresenceNotifications() {
         }
       }
 
-      // Update previous IDs
       previousOnlineIdsRef.current.add(data.id);
 
-      // Invalidate the online users query with a small delay to ensure DB commit completes
-      // This fixes the race condition where the dropdown queries before the database
-      // updateUserLastActive() transaction commits on the server
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
-      }, 250); // 250ms delay allows DB write to complete
-    });
+      }, 250);
+    };
 
-    // Handle user going offline
-    newSocket.on('user-offline', (data: UserOfflineEvent) => {
+    const handleUserOffline = (data: UserOfflineEvent) => {
       logger.log('[OnlinePresence] User offline:', data.userName, data.id);
 
-      // Remove from local state
       setWsOnlineUsers((prev) => {
         const updated = new Map(prev);
         updated.delete(data.id);
         return updated;
       });
 
-      // Remove from previous IDs
       previousOnlineIdsRef.current.delete(data.id);
 
-      // Invalidate the online users query with a small delay for consistency
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['/api/users/online'] });
       }, 250);
-    });
+    };
 
-    setSocket(newSocket);
+    setWsConnected(sharedSocket.connected);
+    const offConnect = onSocketConnect(sharedSocket, handleConnect);
+
+    sharedSocket.on('disconnect', handleDisconnect);
+    sharedSocket.on('connect_error', handleConnectError);
+    sharedSocket.on('online-users-list', handleOnlineUsersList);
+    sharedSocket.on('user-online', handleUserOnline);
+    sharedSocket.on('user-offline', handleUserOffline);
 
     return () => {
-      logger.log('[OnlinePresence] Cleaning up WebSocket');
-      newSocket.disconnect();
+      offConnect();
+      sharedSocket.off('disconnect', handleDisconnect);
+      sharedSocket.off('connect_error', handleConnectError);
+      sharedSocket.off('online-users-list', handleOnlineUsersList);
+      sharedSocket.off('user-online', handleUserOnline);
+      sharedSocket.off('user-offline', handleUserOffline);
       setSocket(null);
       setWsConnected(false);
     };
   }, [currentUser, toast, queryClient]);
 
-  // Fallback polling - reduced to 5 minutes since WebSocket handles real-time updates
   const { data: polledOnlineUsers = [] } = useQuery<OnlineUser[]>({
     queryKey: ['/api/users/online'],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/users/online');
       return Array.isArray(response) ? response : [];
     },
-    refetchInterval: 5 * 60 * 1000, // 5 minutes fallback polling (was 30 seconds)
+    refetchInterval: 5 * 60 * 1000,
     enabled: !!currentUser,
   });
 
-  // Handle fallback polling notifications (only if WebSocket is not connected)
   useEffect(() => {
     if (!currentUser || polledOnlineUsers.length === 0) return;
 
-    // If WebSocket is connected, skip polling-based notifications
     if (wsConnected) {
-      // Just update the first load flag if needed
       if (isFirstLoadRef.current) {
         isFirstLoadRef.current = false;
         previousOnlineIdsRef.current = new Set(polledOnlineUsers.map((u) => u.id));
@@ -227,20 +200,17 @@ export function useOnlinePresenceNotifications() {
 
     const currentOnlineIds = new Set(polledOnlineUsers.map((u) => u.id));
 
-    // Skip notifications on first load
     if (isFirstLoadRef.current) {
       isFirstLoadRef.current = false;
       previousOnlineIdsRef.current = currentOnlineIds;
       return;
     }
 
-    // Find new users who weren't online before (fallback when WebSocket is down)
     const newUsers = polledOnlineUsers.filter(
       (user) =>
         user.id !== String(currentUser.id) && !previousOnlineIdsRef.current.has(user.id)
     );
 
-    // Show toast for each new user (limit to avoid spam)
     if (newUsers.length > 0) {
       if (newUsers.length === 1) {
         toast({
@@ -264,12 +234,10 @@ export function useOnlinePresenceNotifications() {
       }
     }
 
-    // Update previous state
     previousOnlineIdsRef.current = currentOnlineIds;
   }, [polledOnlineUsers, currentUser, toast, wsConnected]);
 
-  // Return combined online users - prefer polled data for full user info, supplemented by WebSocket
-  return { 
+  return {
     onlineUsers: polledOnlineUsers,
     wsConnected,
     wsOnlineUserCount: wsOnlineUsers.size,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
 import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
@@ -10,6 +11,7 @@ import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { CompletedCard } from '../cards/CompletedCard';
 import { InProcessCard } from '../cards/InProcessCard';
 import { DeclinedCard } from '../cards/DeclinedCard';
+import { EventListBatchProviders } from '../EventListBatchProviders';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Filter } from 'lucide-react';
@@ -44,6 +46,11 @@ export const MyAssignmentsTab: React.FC = () => {
 
   const {
     isLoading,
+    myAssignmentsStatusFilter,
+    setMyAssignmentsStatusFilter,
+  } = useEventRequestContext();
+
+  const {
     setSelectedEventRequest,
     setIsEditing,
     setShowEventDetails,
@@ -67,8 +74,6 @@ export const MyAssignmentsTab: React.FC = () => {
     setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-    myAssignmentsStatusFilter,
-    setMyAssignmentsStatusFilter,
 
     // Inline editing states for scheduled events
     editingScheduledId,
@@ -101,7 +106,7 @@ export const MyAssignmentsTab: React.FC = () => {
     setReasonDialogEventRequest,
     setShowNonEventDialog,
     setNonEventDialogEventRequest,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   // Helper functions for ScheduledCardEnhanced
   const quickToggleBoolean = (id: number, field: 'isConfirmed' | 'addedToOfficialSheet' | 'showOnVolunteerHub', currentValue: boolean) => {
@@ -638,6 +643,7 @@ export const MyAssignmentsTab: React.FC = () => {
           </div>
         </div>
       ) : (
+        <EventListBatchProviders events={myAssignments}>
         <div className="space-y-4">
           {myAssignments.map((request) => (
             <div
@@ -648,6 +654,7 @@ export const MyAssignmentsTab: React.FC = () => {
             </div>
           ))}
         </div>
+        </EventListBatchProviders>
       )}
     </div>
   );

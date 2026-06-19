@@ -16,6 +16,8 @@ export {
   VALID_STATUS_TRANSITIONS,
   isValidTransition,
   getTransitionError,
+  requiresReason,
+  getReasonField,
 } from '@shared/event-status-workflow';
 export type { EventStatus } from '@shared/event-status-workflow';
 

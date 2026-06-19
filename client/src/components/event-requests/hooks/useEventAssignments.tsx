@@ -2,13 +2,14 @@ import React from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventRequestContext } from '../context/EventRequestContext';
+import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventMutations } from './useEventMutations';
 import { useEventQueries } from './useEventQueries';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
-import { isValidTransition, getTransitionError, STATUS_DEFINITIONS } from '../constants';
+import { isValidTransition, getTransitionError, requiresReason, STATUS_DEFINITIONS } from '../constants';
 import type { EventStatus } from '@shared/event-status-workflow';
 
 export const useEventAssignments = () => {
@@ -21,6 +22,8 @@ export const useEventAssignments = () => {
   const { updateEventRequestMutation, assignRecipientsMutation } = useEventMutations();
   const {
     eventRequests,
+  } = useEventRequestContext();
+  const {
     setShowAssignmentDialog,
     setAssignmentType,
     setAssignmentEventId,
@@ -28,7 +31,7 @@ export const useEventAssignments = () => {
     setEditingAssignmentPersonId,
     setSelectedAssignees,
     setIsVanDriverAssignment,
-  } = useEventRequestContext();
+  } = useEventDialogState();
 
   // Helper function to safely parse PostgreSQL arrays
   const parsePostgresArray = (assignments: any): string[] => {
@@ -648,8 +651,10 @@ export const useEventAssignments = () => {
       return 'blocked';
     }
 
-    // For declined, cancelled, non_event, and rescheduled: signal to caller to open reason/date dialog
-    if (status === 'declined' || status === 'cancelled' || status === 'non_event' || status === 'rescheduled') {
+    // Signal to caller to open the reason/date dialog. Reason-required statuses
+    // come from the shared workflow (single source of truth, also enforced
+    // server-side); rescheduled is special — it needs a new date, not a reason.
+    if (requiresReason(targetStatus) || targetStatus === 'rescheduled') {
       return 'needs_reason';
     }
 
@@ -679,14 +684,10 @@ export const useEventAssignments = () => {
       if (!confirmed) return 'blocked';
     }
 
+    // The "scheduled → default to desired date" rule now lives in the shared
+    // workflow and is applied server-side (getScheduledDateDefault), so every
+    // scheduling path gets it consistently — no need to set it here.
     const data: any = { status, ...additionalData };
-
-    // When marking as scheduled, set scheduledEventDate to desiredEventDate if not already set
-    if (status === 'scheduled') {
-      if (request && !request.scheduledEventDate && request.desiredEventDate) {
-        data.scheduledEventDate = request.desiredEventDate;
-      }
-    }
 
     try {
       await updateEventRequestMutation.mutateAsync({
