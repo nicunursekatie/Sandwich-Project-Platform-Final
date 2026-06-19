@@ -396,7 +396,6 @@ export const InProcessTab: React.FC = () => {
               request={request}
               resolveUserName={resolveUserName}
               isStale={isStale(request)}
-              followUpStatus={getFollowUpStatus(request)}
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
