@@ -48,6 +48,13 @@ function collect() {
     // are on stdout.
     out = `${e.stdout || ''}${e.stderr || ''}`;
   }
+  
+  // If we got no output at all, tsc did not run successfully (spawn error, etc.)
+  if (!out || out.trim().length === 0) {
+    console.error('❌ TypeScript compiler produced no output — the check cannot verify undefined references.');
+    process.exit(1);
+  }
+  
   const re = /^(.+?\.tsx?)\((\d+),(\d+)\): error (TS\d+): (.+)$/;
   const found = new Map(); // key -> {file, code, message}
   for (const line of out.split('\n')) {
