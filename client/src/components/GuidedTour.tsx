@@ -7,6 +7,7 @@ import {
   Search,
   FolderOpen,
   Calendar,
+  Clock,
   BarChart3,
   ListTodo,
   Users,

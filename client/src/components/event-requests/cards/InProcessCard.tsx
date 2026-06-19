@@ -172,6 +172,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   returningOrgData,
   onAddNextAction,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const isMobile = useIsMobile();
   const StatusIcon =
     statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
