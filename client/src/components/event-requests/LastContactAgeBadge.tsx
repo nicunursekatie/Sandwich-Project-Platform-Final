@@ -35,12 +35,15 @@ interface LastContactAgeBadgeProps {
   className?: string;
 }
 
-// Stale tiers (>= 1 week since last contact) ARE the "follow-up needed" signal,
-// so they escalate through the brand palette: gold (#FBAD3F) for the early weeks,
-// shifting to the accent maroon (#A31C41) as it gets seriously overdue. Text uses
-// the dark brand teal (#236383) on gold for contrast.
+// This map is only consulted for STALE tiers (>= 1 week): getContactAgeBadge()
+// returns null for < 1 week, so `fresh` is never actually rendered from here.
+// The stale tiers ARE the "follow-up needed" signal, so they escalate through the
+// brand palette: gold (#FBAD3F) for the early weeks, shifting to the accent maroon
+// (#A31C41) as it gets seriously overdue, with dark brand teal (#236383) text on
+// gold for contrast. `fresh` is kept neutral (not a warning color) purely for
+// type completeness in case that threshold ever changes.
 const TIER_STYLES: Record<ContactAgeTier, { className: string; variant: 'outline' | 'default' }> = {
-  fresh: { variant: 'outline', className: 'bg-[#FBAD3F]/10 text-[#236383] border-[#FBAD3F]' },
+  fresh: { variant: 'outline', className: 'bg-transparent text-[#236383] border-[#236383]/30' },
   wk1: { variant: 'outline', className: 'bg-[#FBAD3F]/15 text-[#236383] border-[#FBAD3F]' },
   wk2: { variant: 'outline', className: 'bg-[#FBAD3F]/25 text-[#236383] border-[#FBAD3F]' },
   wk3: { variant: 'outline', className: 'bg-[#FBAD3F]/40 text-[#236383] border-[#FBAD3F]' },
