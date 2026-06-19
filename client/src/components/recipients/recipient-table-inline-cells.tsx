@@ -419,10 +419,88 @@ export function InlinePeopleServedCell({
 }
 
 const PEOPLE_SERVED_FREQ_OPTIONS = [
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
+  { value: 'daily', label: 'Daily', short: 'daily' },
+  { value: 'weekly', label: 'Weekly', short: 'weekly' },
+  { value: 'monthly', label: 'Monthly', short: 'monthly' },
 ] as const;
+
+/**
+ * Combined "People served" cell: count + frequency rendered together as
+ * "~80 weekly". Conceptually one piece of info — # people on what cadence.
+ * Editor stacks two compact inputs (number + dropdown) inside the cell.
+ */
+export function InlinePeopleServedCombinedCell({
+  recipient,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  recipient: Recipient;
+  onSave: SaveHandler;
+} & InlineBaseProps) {
+  const count = (recipient as Recipient & { averagePeopleServed?: number | null })
+    .averagePeopleServed;
+  const freq = (recipient as Recipient & { peopleServedFrequency?: string | null })
+    .peopleServedFrequency;
+  const freqShort = PEOPLE_SERVED_FREQ_OPTIONS.find((o) => o.value === freq)?.short;
+
+  if (!canEdit) {
+    if (count == null && !freq) {
+      return <span className="text-xs text-slate-400 italic">—</span>;
+    }
+    return (
+      <span className="text-sm text-slate-800">
+        {count != null && (
+          <span className="font-semibold tabular-nums">~{count.toLocaleString()}</span>
+        )}
+        {count != null && freqShort && <span> </span>}
+        {freqShort && <span className="text-slate-600">{freqShort}</span>}
+      </span>
+    );
+  }
+
+  return (
+    <div onClick={stopRowClick} className="flex items-center gap-1">
+      <Input
+        type="number"
+        min={0}
+        value={count ?? ''}
+        disabled={isSaving}
+        onChange={(e) => {
+          const v = e.target.value;
+          onSave({
+            averagePeopleServed: v === '' ? null : Math.max(0, parseInt(v, 10) || 0),
+          } as Partial<Recipient>);
+        }}
+        placeholder="—"
+        className="h-7 text-xs w-[60px] tabular-nums"
+        aria-label="People served"
+      />
+      <Select
+        value={freq || 'none'}
+        disabled={isSaving}
+        onValueChange={(v) =>
+          onSave({ peopleServedFrequency: v === 'none' ? null : v } as Partial<Recipient>)
+        }
+      >
+        <SelectTrigger
+          className="h-7 text-xs w-[78px] border-dashed"
+          aria-label="Frequency"
+        >
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">—</SelectItem>
+          {PEOPLE_SERVED_FREQ_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function InlinePeopleServedFrequencyCell({
   recipient,
