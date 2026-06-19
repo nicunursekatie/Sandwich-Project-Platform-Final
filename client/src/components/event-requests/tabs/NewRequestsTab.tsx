@@ -127,7 +127,7 @@ export const NewRequestsTab: React.FC = () => {
           if (editingField.startsWith('partnerOrg_')) {
             // Editing a single partner organization (name + optional department)
             const index = parseInt(editingField.split('_')[1]);
-            const currentEvent = eventRequests.find(r => r.id === editingNewRequestId);
+            const currentEvent = newRequests.find(r => r.id === editingNewRequestId);
             const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
               ? (currentEvent.partnerOrganizations as any[]) 
               : [];

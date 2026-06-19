@@ -72,7 +72,6 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
                 value={formData.message}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setLastNotesEditValue(value);
                   setFormData((prev: any) => ({ ...prev, message: value }));
                 }}
                 placeholder="Original request message from the organizer"
