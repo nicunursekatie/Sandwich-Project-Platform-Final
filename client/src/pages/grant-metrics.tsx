@@ -67,6 +67,52 @@ import { normalizeFocusArea, sortFocusAreaEntries } from '@/lib/focus-area-group
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
+// =====================================================================
+// EXTERNAL REFERENCE FIGURES — update annually before grant submissions.
+// These are used in dollar-value and inflation callouts on this page.
+//
+// Both come from external sources that publish on their own cadence;
+// neither updates automatically. When either source publishes a new
+// figure, update the constant AND the YEAR/AS_OF label so the page
+// citation stays honest.
+// =====================================================================
+
+/**
+ * Independent Sector's "Value of Volunteer Time" — informally called the
+ * "IRS volunteer rate." Used to compute the dollar value of volunteer
+ * hours for grant reporting.
+ *
+ * Source: Independent Sector (https://independentsector.org/value-of-volunteer-time/)
+ * Effective for: 2025
+ * Announced: 2026-04-21
+ * Previous value: $33.49 (2024 rate)
+ *
+ * NEXT UPDATE: Independent Sector typically announces the new annual
+ * figure each April. Check independentsector.org and bump this constant
+ * + the year label below.
+ */
+const IRS_VOLUNTEER_RATE_USD_PER_HOUR = 36.14;
+const IRS_VOLUNTEER_RATE_YEAR = 2025;
+
+/**
+ * Cumulative food price inflation (Consumer Price Index — Food) since
+ * early 2022. Used on the "Growth Despite Rising Costs" callout card.
+ *
+ * Source: Bureau of Labor Statistics CPI Food index
+ *         (https://www.bls.gov/cpi/) — May 2026 release
+ * As of: 2026-05
+ * Methodology: CPI Food index moved from ~282 (Jan 2022) to 349.0
+ *              (May 2026) — roughly +24% cumulative using a January
+ *              2022 baseline. (A 2022-annual-average baseline yields
+ *              closer to +14%; we use the early-2022 baseline.)
+ * Previous value: +26%
+ *
+ * NEXT UPDATE: BLS releases monthly. Refresh quarterly or before
+ * any grant submission that cites this figure.
+ */
+const FOOD_CPI_INFLATION_PCT_SINCE_2022 = 24;
+const FOOD_CPI_AS_OF_LABEL = 'BLS CPI Food index, May 2026';
+
 export default function GrantMetrics() {
   const { trackView } = useActivityTracker();
   const [yearType, setYearType] = useState<'fiscal' | 'calendar'>(() => {
@@ -434,8 +480,10 @@ export default function GrantMetrics() {
 
     const totalVolunteerHours = Math.round(makingHours + hostHours + adminHours + driverHours);
 
-    // IRS values volunteer time at $33.49/hour (2024 rate)
-    const economicValue = Math.round(totalVolunteerHours * 33.49);
+    // Independent Sector "Value of Volunteer Time" — see constant declaration.
+    const economicValue = Math.round(
+      totalVolunteerHours * IRS_VOLUNTEER_RATE_USD_PER_HOUR
+    );
 
     return {
       estimatedParticipants,
@@ -1235,8 +1283,15 @@ export default function GrantMetrics() {
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                   <div className="flex-shrink-0 text-center md:text-left">
-                    <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">+26%</div>
-                    <div className="text-sm text-white/80">food price inflation<br />since 2022 (BLS CPI)</div>
+                    <div className="text-4xl md:text-5xl font-black text-[#fbad3f]">
+                      +{FOOD_CPI_INFLATION_PCT_SINCE_2022}%
+                    </div>
+                    <div className="text-sm text-white/80">
+                      food price inflation<br />since 2022
+                    </div>
+                    <div className="text-[10px] text-white/60 mt-1">
+                      {FOOD_CPI_AS_OF_LABEL}
+                    </div>
                   </div>
                   <div className="flex-grow">
                     <h3 className="text-xl font-bold mb-2">Growth Despite Rising Costs — Absorbed by Volunteers</h3>
@@ -1368,7 +1423,7 @@ export default function GrantMetrics() {
                   Economic value (IRS rate)
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  @$33.49/hour (2024)
+                  @${IRS_VOLUNTEER_RATE_USD_PER_HOUR.toFixed(2)}/hour ({IRS_VOLUNTEER_RATE_YEAR})
                 </p>
               </div>
 
