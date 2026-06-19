@@ -31,42 +31,66 @@ const BASELINE = path.join(__dirname, 'undefined-refs-baseline.json');
 // Runtime-fatal "this name/binding doesn't exist" diagnostics:
 //   TS2304 Cannot find name 'X'
 //   TS2552 Cannot find name 'X'. Did you mean 'Y'?
-//   TS2305 Module has no exported member 'X'
-//   TS2724 has no exported member named 'X'
+//   TS2305 Module '...' has no exported member 'X'
+//   TS2724 '...' has no exported member named 'X'
 const FATAL_CODES = new Set(['TS2304', 'TS2552', 'TS2305', 'TS2724']);
 
 // Only shipped client code crashes users; skip tests.
 const isShippedClient = (p) =>
   p.startsWith('client/src/') && !/\.(test|spec)\.|\/__tests__\/|\/test\//.test(p);
 
+// Canonicalize so the baseline survives environment differences. TS reports the
+// SAME missing name as TS2304 or TS2552 ("Did you mean 'Y'?") depending on which
+// lib/global suggestions are available (this differs between CI and local), and
+// the suggestion text itself varies. Collapse the code and strip the suggestion
+// so a given offender hashes to one stable key everywhere.
+function canonicalKey(rel, code, message) {
+  const kind =
+    code === 'TS2304' || code === 'TS2552'
+      ? 'cannot-find-name'
+      : code === 'TS2305' || code === 'TS2724'
+        ? 'no-exported-member'
+        : code;
+  const core = message.replace(/\s*Did you mean .*$/i, '').trim().replace(/\.$/, '');
+  return `${rel} :: ${kind} :: ${core}`;
+}
+
 function collect() {
   let out = '';
+  let threw = false;
   try {
-    out = execSync('npx tsc --noEmit', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    out = execSync('npx tsc --noEmit', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      maxBuffer: 256 * 1024 * 1024, // tsc emits a lot; never truncate to <1MB
+    });
   } catch (e) {
-    // tsc exits non-zero whenever there are any errors (expected); diagnostics
-    // are on stdout.
+    // tsc exits non-zero whenever there are any errors (expected here); its
+    // diagnostics are on stdout.
+    threw = true;
     out = `${e.stdout || ''}${e.stderr || ''}`;
   }
-  
-  // If we got no output at all, tsc did not run successfully (spawn error, etc.)
-  if (!out || out.trim().length === 0) {
-    console.error('❌ TypeScript compiler produced no output — the check cannot verify undefined references.');
-    process.exit(1);
+
+  // If tsc exited non-zero but produced no parseable diagnostics, the run itself
+  // failed (spawn error, OOM, maxBuffer overflow, bad flags). Fail loudly —
+  // never treat "couldn't read diagnostics" as "no problems".
+  if (threw && !/error TS\d+/.test(out)) {
+    console.error('❌ Could not obtain TypeScript diagnostics — tsc did not run cleanly.');
+    console.error(out.slice(0, 4000) || '(no output captured)');
+    process.exit(2);
   }
-  
+
   const re = /^(.+?\.tsx?)\((\d+),(\d+)\): error (TS\d+): (.+)$/;
-  const found = new Map(); // key -> {file, code, message}
+  const keys = new Set();
   for (const line of out.split('\n')) {
     const m = re.exec(line.trim());
     if (!m) continue;
     const [, file, , , code, message] = m;
     const rel = file.replaceAll(path.sep, '/');
     if (!FATAL_CODES.has(code) || !isShippedClient(rel)) continue;
-    // Key without line/column so the baseline survives unrelated edits.
-    found.set(`${rel} :: ${code} :: ${message}`, { file: rel, code, message });
+    keys.add(canonicalKey(rel, code, message));
   }
-  return [...found.keys()].sort();
+  return [...keys].sort();
 }
 
 const current = collect();
