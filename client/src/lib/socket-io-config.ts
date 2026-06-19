@@ -36,8 +36,10 @@ export function getDefaultSocketIoOptions(
     upgrade: !pollingOnly,
     timeout: 30000,
     reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
+    // Back off aggressively in production to avoid reconnect storms during outages (429s).
+    reconnectionDelay: pollingOnly ? 3000 : 1000,
+    reconnectionDelayMax: pollingOnly ? 60000 : 5000,
+    randomizationFactor: 0.5,
     reconnectionAttempts: pollingOnly ? Infinity : 10,
     autoConnect: true,
     ...overrides,

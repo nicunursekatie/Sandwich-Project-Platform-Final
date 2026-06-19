@@ -1521,12 +1521,8 @@ const EventRequestsManagementContent: React.FC = () => {
                   : `${assignmentType}s assigned successfully`,
               });
             } catch (error) {
+              // onError on updateEventRequestMutation already shows a user-facing toast
               logger.error('Assignment error:', error);
-              toast({
-                title: 'Error',
-                description: `Failed to assign ${assignmentType}s`,
-                variant: 'destructive',
-              });
             }
           }}
         />
