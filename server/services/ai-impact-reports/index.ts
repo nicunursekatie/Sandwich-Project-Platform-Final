@@ -12,6 +12,7 @@ import { and, eq, gte, lt } from 'drizzle-orm';
 import { logger } from '../../utils/production-safe-logger';
 import { parseJsonStrict } from '../../utils/safe-json';
 import { getReportableSandwichCount } from '../../../shared/sandwich-count-utils';
+import { getEffectiveEventDate } from '../../../shared/event-validation-utils';
 
 // Lazy-initialize OpenAI client to avoid crashing app if API key is not configured
 let openai: OpenAI | null = null;
@@ -177,7 +178,7 @@ async function gatherReportData(startDate: Date, endDate: Date) {
 
   // Filter events by date range and exclude cancelled/declined (same as component does client-side)
   const events = allEventRequests.filter(e => {
-    const eventDate = e.scheduledEventDate || e.desiredEventDate;
+    const eventDate = getEffectiveEventDate(e);
     if (!eventDate) return false;
     // Exclude events that didn't happen (cancelled, declined)
     if (e.status && EXCLUDED_STATUSES.includes(e.status)) return false;

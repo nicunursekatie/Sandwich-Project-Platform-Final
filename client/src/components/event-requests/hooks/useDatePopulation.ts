@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { EventRequest } from '@shared/schema';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 export interface DatePopulationInfo {
   scheduledCount: number;
@@ -68,7 +69,7 @@ export function useDatePopulation() {
       const status = event.status || '';
 
       // Use scheduledEventDate if available, otherwise desiredEventDate
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       const normalizedDate = normalizeDate(eventDate);
 
       if (!normalizedDate) continue;
@@ -121,7 +122,7 @@ export function useDatePopulation() {
       const excludedEvent = allActiveEvents.find((e) => e.id === excludeEventId);
       if (excludedEvent) {
         const excludedDate = normalizeDate(
-          excludedEvent.scheduledEventDate || excludedEvent.desiredEventDate
+          getEffectiveEventDate(excludedEvent)
         );
         if (excludedDate === normalizedDate) {
           if (excludedEvent.status === 'scheduled') {

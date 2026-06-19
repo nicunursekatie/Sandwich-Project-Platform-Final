@@ -69,6 +69,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -231,7 +232,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
 
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
@@ -523,7 +524,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                 date once set so a rescheduled event doesn't keep a stale badge
                 from its original desiredEventDate. */}
             <TrafficConflictBadge
-              dates={[request.scheduledEventDate || request.desiredEventDate]}
+              dates={[getEffectiveEventDate(request)]}
             />
           </div>
           <div className="text-sm text-[#007E8C] mt-1 space-y-1">
@@ -893,7 +894,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
   // Date population hook - to show warnings for busy dates
   const { getDatePopulation } = useDatePopulation();
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
   const datePopulationInfo = getDatePopulation(displayDate, request.id);
 
   // Mutation for toggling date confirmation

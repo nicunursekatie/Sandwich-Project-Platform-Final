@@ -1318,11 +1318,14 @@ ${userEmail}`;
 </html>`;
   };
 
-  // Format event details for template insertion
+  // Format event details for template insertion.
+  // Prefer the actual scheduled date once it exists — `desiredEventDate` is
+  // only the originally requested date and may be stale after scheduling.
   const formatEventDetails = () => {
     const details = [];
-    if (eventRequest.desiredEventDate) {
-      const date = new Date(eventRequest.desiredEventDate + 'T12:00:00');
+    const effectiveDateStr = getEffectiveEventDate(eventRequest as any);
+    if (effectiveDateStr) {
+      const date = new Date(effectiveDateStr + 'T12:00:00');
       details.push(
         `Date: ${date.toLocaleDateString('en-US', {
           weekday: 'long',

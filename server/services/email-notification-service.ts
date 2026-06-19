@@ -9,6 +9,7 @@ import { sendChatMentionSMS, sendTSPContactAssignmentSMS, sendTeamBoardAssignmen
 import { getAppBaseUrl } from '../config/constants';
 import { ALERT_TYPES } from '@shared/alert-catalog';
 import { getEffectivePrefs } from './notifications/preferences';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 // Initialize SendGrid
 if (!process.env.SENDGRID_API_KEY) {
@@ -1106,7 +1107,7 @@ To unsubscribe from these emails, please contact us at katie@thesandwichproject.
       }
 
       // Format event date
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       const formattedEventDate = eventDate
         ? new Date(eventDate + 'T12:00:00').toLocaleDateString('en-US', {
             weekday: 'long',

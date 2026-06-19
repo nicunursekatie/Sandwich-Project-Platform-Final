@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface DeclinedCardProps {
   request: EventRequest;
@@ -97,7 +98,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
 
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;

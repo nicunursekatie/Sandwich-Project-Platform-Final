@@ -34,6 +34,7 @@ import {
 import { useEventAssignments } from '@/components/event-requests/hooks/useEventAssignments';
 import { getUnfilledCounts } from '@/lib/assignment-utils';
 import { getTrafficConflict } from '@shared/traffic-conflicts';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -459,7 +460,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
 
     filteredEvents.forEach((event) => {
       // Use scheduledEventDate if available, otherwise use desiredEventDate
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       if (!eventDate) return;
 
       const dateStr = new Date(eventDate).toISOString().split('T')[0];

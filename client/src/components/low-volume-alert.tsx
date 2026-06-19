@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface LowVolumeAlertProps {
   onNavigateToEvents?: () => void;
@@ -183,7 +184,7 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
       // Get events for this week (new, in_process, and scheduled)
       const eventsThisWeek = eventRequests.filter((event) => {
         // Use scheduledEventDate if available, otherwise desiredEventDate
-        const eventDateStr = event.scheduledEventDate || event.desiredEventDate;
+        const eventDateStr = getEffectiveEventDate(event);
         if (!eventDateStr) return false;
 
         // Include new, in_process, and scheduled events
@@ -196,7 +197,7 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
       // Calculate total sandwiches for this week
       const eventsWithCounts = eventsThisWeek.map(event => {
         const { count, isRange } = getEventSandwichCount(event);
-        const eventDateStr = event.scheduledEventDate || event.desiredEventDate;
+        const eventDateStr = getEffectiveEventDate(event);
         return {
           id: event.id,
           organizationName: event.organizationName,

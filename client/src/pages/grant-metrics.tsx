@@ -66,6 +66,7 @@ import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
 import { normalizeFocusArea, sortFocusAreaEntries } from '@/lib/focus-area-groups';
 import { logger } from '@/lib/logger';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // =====================================================================
 // EXTERNAL REFERENCE FIGURES — update annually before grant submissions.
@@ -273,7 +274,7 @@ export default function GrantMetrics() {
       const selectedYear = parseInt(selectedFiscalYear);
       eventsToAnalyze = eventsToAnalyze.filter((e: any) => {
         if (!e.scheduledEventDate && !e.desiredEventDate) return false;
-        const eventDate = new Date(e.scheduledEventDate || e.desiredEventDate);
+        const eventDate = new Date(getEffectiveEventDate(e));
         if (Number.isNaN(eventDate.getTime())) return false;
 
         const year = eventDate.getFullYear();

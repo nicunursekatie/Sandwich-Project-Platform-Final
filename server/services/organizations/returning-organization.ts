@@ -13,6 +13,7 @@ import { eventRequests, sandwichCollections } from '../../../shared/schema';
 import { sql } from 'drizzle-orm';
 import { canonicalizeOrgName, calculateSimilarity, organizationNamesMatch } from '../../utils/organization-canonicalization';
 import { logger } from '../../utils/production-safe-logger';
+import { getEffectiveEventDate } from '../../../shared/event-validation-utils';
 
 export interface DuplicatePair {
   /** First organization name */
@@ -767,7 +768,7 @@ export async function checkReturningOrganization(
       pastDepartments,
       mostRecentEvent: effectiveIsReturning && mostRecentEvent ? {
         id: mostRecentEvent.id,
-        eventDate: mostRecentEvent.scheduledEventDate || mostRecentEvent.desiredEventDate,
+        eventDate: getEffectiveEventDate(mostRecentEvent),
         status: mostRecentEvent.status,
       } : undefined,
       mostRecentCollection: effectiveIsReturning && mostRecentCollection ? {

@@ -89,6 +89,7 @@ import {
 } from 'recharts';
 import { AIInsightsChat } from '@/components/ai-insights-chat';
 import { getReportableSandwichCount } from '@shared/sandwich-count-utils';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Helper to parse date strings in local timezone (avoids UTC midnight timezone shift)
 function parseLocalDate(dateInput: string | Date | null | undefined): Date | null {
@@ -792,8 +793,8 @@ export default function EventImpactReports() {
       let comparison = 0;
       switch (sortField) {
         case 'date':
-          const dateA = parseLocalDate(a.scheduledEventDate || a.desiredEventDate) || new Date(0);
-          const dateB = parseLocalDate(b.scheduledEventDate || b.desiredEventDate) || new Date(0);
+          const dateA = parseLocalDate(getEffectiveEventDate(a)) || new Date(0);
+          const dateB = parseLocalDate(getEffectiveEventDate(b)) || new Date(0);
           comparison = dateA.getTime() - dateB.getTime();
           break;
         case 'organization':
@@ -905,7 +906,7 @@ export default function EventImpactReports() {
       });
 
       // Monthly data
-      const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
+      const eventDate = parseLocalDate(getEffectiveEventDate(event)) || new Date();
       const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
       const monthLabel = eventDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 
@@ -945,7 +946,7 @@ export default function EventImpactReports() {
       Sunday: 0, Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0,
     };
     filteredEvents.forEach((event: any) => {
-      const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
+      const eventDate = parseLocalDate(getEffectiveEventDate(event)) || new Date();
       const weekday = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
       const sandwichCount = getEventSandwichCount(event);
       weekdaySandwichData[weekday] = (weekdaySandwichData[weekday] || 0) + sandwichCount;
@@ -992,7 +993,7 @@ export default function EventImpactReports() {
     const categoryTrendsMap = new Map<string, Map<string, { events: number; sandwiches: number }>>();
     filteredEvents.forEach((event: any) => {
       const category = normalizeOrganizationCategory(event.organizationCategory);
-      const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
+      const eventDate = parseLocalDate(getEffectiveEventDate(event)) || new Date();
       const monthKey = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}`;
       const sandwichCount = getEventSandwichCount(event);
 
@@ -1062,7 +1063,7 @@ export default function EventImpactReports() {
     }>();
     filteredEvents.forEach((event: any) => {
       if (event.organizationName) {
-        const eventDate = parseLocalDate(event.scheduledEventDate || event.desiredEventDate) || new Date();
+        const eventDate = parseLocalDate(getEffectiveEventDate(event)) || new Date();
         const existing = orgEventCounts.get(event.organizationName) || {
           count: 0,
           sandwiches: 0,
@@ -1245,7 +1246,7 @@ export default function EventImpactReports() {
       ['EVENT DETAILS'],
       ['Date', 'Organization', 'Category', 'Status', 'Sandwiches (Est)', 'Sandwiches (Actual)', 'Event Time', 'Address'],
       ...processedData.filteredEvents.map((e: any) => [
-        (parseLocalDate(e.scheduledEventDate || e.desiredEventDate) || new Date()).toLocaleDateString(),
+        (parseLocalDate(getEffectiveEventDate(e)) || new Date()).toLocaleDateString(),
         e.organizationName || 'N/A',
         getCategoryLabel(e.organizationCategory),
         e.status || 'N/A',
@@ -1920,7 +1921,7 @@ export default function EventImpactReports() {
                               onKeyDown={handleExpandKeyDown(event.id)}
                             >
                               <TableCell className="font-medium">
-                                {formatEventDate(event.scheduledEventDate || event.desiredEventDate)}
+                                {formatEventDate(getEffectiveEventDate(event))}
                               </TableCell>
                               <TableCell>
                                 <div className="font-medium">{event.organizationName || 'N/A'}</div>
@@ -2871,7 +2872,7 @@ export default function EventImpactReports() {
                                       {event.department && <span className="text-gray-500 font-normal"> • {event.department}</span>}
                                     </TableCell>
                                     <TableCell>
-                                      {formatEventDateSimple(event.scheduledEventDate || event.desiredEventDate)}
+                                      {formatEventDateSimple(getEffectiveEventDate(event))}
                                     </TableCell>
                                     <TableCell>{getEventSandwichCount(event) || '-'}</TableCell>
                                     <TableCell>

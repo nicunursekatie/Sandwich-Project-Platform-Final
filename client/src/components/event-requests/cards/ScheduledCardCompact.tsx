@@ -35,6 +35,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface ScheduledCardCompactProps {
   request: EventRequest;
@@ -71,7 +72,7 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
   const [showAuditLog, setShowAuditLog] = useState(false);
 
   // Get display date
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
 
   // Calculate staffing

@@ -36,6 +36,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface AttentionItem {
   id: number;
@@ -185,7 +186,7 @@ export default function EventOperationalDashboard() {
   // Calculate this week's metrics
   const thisWeekMetrics = useMemo(() => {
     const scheduledEvents = events.filter(
-      (e) => e.status === 'scheduled' && isThisWeek(e.scheduledEventDate || e.desiredEventDate)
+      (e) => e.status === 'scheduled' && isThisWeek(getEffectiveEventDate(e))
     );
 
     const eventsCount = scheduledEvents.length;
@@ -248,7 +249,7 @@ export default function EventOperationalDashboard() {
     const incompleteScheduled: AttentionItem[] = events
       .filter((e) => {
         if (e.status !== 'scheduled') return false;
-        const eventDate = e.scheduledEventDate || e.desiredEventDate;
+        const eventDate = getEffectiveEventDate(e);
         if (!isWithinDays(eventDate, 14)) return false;
 
         // Check for missing fields
@@ -290,8 +291,8 @@ export default function EventOperationalDashboard() {
         return {
           id: e.id,
           organizationName: e.organizationName || 'Unknown',
-          eventDate: e.scheduledEventDate || e.desiredEventDate
-            ? new Date(e.scheduledEventDate || e.desiredEventDate!).toLocaleDateString()
+          eventDate: getEffectiveEventDate(e)
+            ? new Date(getEffectiveEventDate(e)!).toLocaleDateString()
             : 'TBD',
           missingFields: missing,
         };
@@ -319,8 +320,8 @@ export default function EventOperationalDashboard() {
         return {
           id: e.id,
           organizationName: e.organizationName || 'Unknown',
-          eventDate: e.scheduledEventDate || e.desiredEventDate
-            ? new Date(e.scheduledEventDate || e.desiredEventDate!).toLocaleDateString()
+          eventDate: getEffectiveEventDate(e)
+            ? new Date(getEffectiveEventDate(e)!).toLocaleDateString()
             : 'Unknown',
           missingPostEvent: missing,
         };

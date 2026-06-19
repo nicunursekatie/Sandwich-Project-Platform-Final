@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { EventRequest } from '@shared/schema';
 import { parseCollectionDate } from '@/lib/analytics-utils';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface LargeEventLogisticsModalProps {
   open: boolean;
@@ -47,7 +48,7 @@ export default function LargeEventLogisticsModal({
   };
 
   const needsPlacement = (event: EventRequest) => {
-    const dayOfWeek = getDayOfWeek(event.scheduledEventDate || event.desiredEventDate);
+    const dayOfWeek = getDayOfWeek(getEffectiveEventDate(event));
     if (!dayOfWeek) return null; // Unknown - no valid date
     return dayOfWeek !== 'Wednesday' && dayOfWeek !== 'Thursday';
   };
@@ -98,7 +99,7 @@ export default function LargeEventLogisticsModal({
                         <div>
                           <p className="text-sm font-medium text-gray-700">Event Date</p>
                           <p className="text-sm text-gray-900">
-                            {formatDate(event.scheduledEventDate || event.desiredEventDate)}
+                            {formatDate(getEffectiveEventDate(event))}
                           </p>
                         </div>
                       </div>
@@ -245,7 +246,7 @@ export default function LargeEventLogisticsModal({
                             <div className="flex-1">
                               <p className="font-medium text-red-900">⚠️ Recipient Organization Placement Required</p>
                               <p className="text-sm text-red-700">
-                                Event is on <strong>{getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}</strong> (not Wednesday/Thursday).
+                                Event is on <strong>{getDayOfWeek(getEffectiveEventDate(event))}</strong> (not Wednesday/Thursday).
                                 These {event.estimatedSandwichCount?.toLocaleString()} sandwiches <strong>cannot be absorbed into regular
                                 Wednesday collection/Thursday distribution workflow</strong>. Must coordinate placement with a recipient
                                 organization in advance.
@@ -260,7 +261,7 @@ export default function LargeEventLogisticsModal({
                             <div className="flex-1">
                               <p className="font-medium text-green-900">Regular Collection Day - No Special Placement Needed</p>
                               <p className="text-sm text-green-700">
-                                Event is on <strong>{getDayOfWeek(event.scheduledEventDate || event.desiredEventDate)}</strong>.
+                                Event is on <strong>{getDayOfWeek(getEffectiveEventDate(event))}</strong>.
                                 These {event.estimatedSandwichCount?.toLocaleString()} sandwiches can be absorbed into the regular
                                 Wednesday collection/Thursday distribution workflow. Verify capacity with regular recipients.
                               </p>

@@ -119,7 +119,12 @@
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final show --stat e68765ea3)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final ls-files server/routes/meaningful-analytics.ts)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log origin/main..HEAD --oneline)",
-      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --format=\"%h %ai %s\" -10)"
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final log --format=\"%h %ai %s\" -10)",
+      "Bash(awk -F: '{print $1}')",
+      "Bash(node /tmp/migrate-event-date.mjs)",
+      "Bash(node /tmp/add-imports.mjs)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash pop)"
     ],
     "deny": [],
     "ask": [],

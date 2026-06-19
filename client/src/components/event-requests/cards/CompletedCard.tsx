@@ -92,6 +92,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 /**
  * Only http(s) links are allowed for the social-media post link. Guards against
@@ -213,7 +214,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   // Hide requested date once there's a scheduled date (keep requested date in database but don't display)
-  const displayDate = request.scheduledEventDate || request.desiredEventDate;
+  const displayDate = getEffectiveEventDate(request);
 
   // Format the date for display
   const dateInfo = displayDate ? formatEventDate(displayDate.toString()) : null;
@@ -2393,7 +2394,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
   const assignedRecipientInfo = getRecipientDisplayInfo((request as EventRequest & { assignedRecipientIds?: unknown }).assignedRecipientIds);
 
   // Get event date and time for display
-  const eventDate = request.scheduledEventDate || request.desiredEventDate;
+  const eventDate = getEffectiveEventDate(request);
   const eventDateDisplay = eventDate ? formatEventDate(eventDate.toString()).text : 'No date set';
   const eventTimeDisplay = request.eventStartTime
     ? `${formatTime12Hour(request.eventStartTime)}${request.eventEndTime ? ` - ${formatTime12Hour(request.eventEndTime)}` : ''}`

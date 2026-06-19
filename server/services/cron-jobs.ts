@@ -22,6 +22,7 @@ import { processPredictionAlerts } from './prediction-alert-service';
 import { processCheckInReminders } from './check-in-reminder-service';
 import { ALERT_TYPES } from '@shared/alert-catalog';
 import { getEffectivePrefs } from './notifications/preferences';
+import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 
 const cronLogger = createServiceLogger('cron');
 
@@ -788,7 +789,7 @@ export async function notifyPastDateInProcessEvents(): Promise<{
         }
 
         // Determine which date to use
-        const eventDate = event.scheduledEventDate || event.desiredEventDate;
+        const eventDate = getEffectiveEventDate(event);
 
         // Send notification to each TSP contact
         for (const contactId of uniqueContactIds) {

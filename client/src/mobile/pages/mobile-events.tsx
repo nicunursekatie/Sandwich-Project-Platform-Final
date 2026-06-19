@@ -12,6 +12,7 @@ import {
 import { MobileShell } from '../components/mobile-shell';
 import { cn } from '@/lib/utils';
 import { format, isToday, isTomorrow, isThisWeek } from 'date-fns';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 /**
  * Parse a date string as a local date to avoid timezone shift issues.
@@ -48,7 +49,7 @@ export function MobileEvents() {
   // Filter events based on selected filter
   const filteredEvents = events?.filter((event: any) => {
     // Use scheduledEventDate first, fall back to desiredEventDate
-    const dateField = event.scheduledEventDate || event.desiredEventDate;
+    const dateField = getEffectiveEventDate(event);
     if (!dateField) return filter === 'all';
     
     const eventDate = parseLocalDate(dateField);
@@ -67,7 +68,7 @@ export function MobileEvents() {
 
   // Group events by date
   const groupedEvents = filteredEvents.reduce((acc: any, event: any) => {
-    const dateField = event.scheduledEventDate || event.desiredEventDate;
+    const dateField = getEffectiveEventDate(event);
     const dateKey = dateField
       ? format(parseLocalDate(dateField), 'yyyy-MM-dd')
       : 'no-date';

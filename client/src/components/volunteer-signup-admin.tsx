@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeForDisplay } from '@/lib/date-utils';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import {
   CheckCircle,
   XCircle,
@@ -90,7 +91,7 @@ function SignupCard({ signup, onUpdateStatus }: {
   signup: SignupWithEvent;
   onUpdateStatus: (id: number, status: string) => void;
 }) {
-  const eventDate = signup.event.scheduledEventDate || signup.event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(signup.event);
 
   return (
     <Card className="border border-gray-200 hover:shadow-md transition-shadow">

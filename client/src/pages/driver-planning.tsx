@@ -55,6 +55,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from '@/components/ui/resizable';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -730,7 +731,7 @@ function getEventDepartureTime(event: EventMapData | null): string {
   if (!event) return 'now';
 
   // Use scheduled date, falling back to desired date
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   if (!eventDate) return 'now';
 
   // Use pickup time if available, otherwise use event start time
@@ -969,7 +970,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
 type SMSDriver = { id: string | number; name: string; phone?: string | null };
 
 const generateDriverSMS = (event: EventMapData, driver: SMSDriver): string => {
-  const eventDate = event.scheduledEventDate || event.desiredEventDate;
+  const eventDate = getEffectiveEventDate(event);
   const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'EEEE, MMMM d') : 'TBD';
   const time = event.pickupTime || event.eventStartTime;
   const formattedTime = time ? formatTime12Hour(time) : 'TBD';
@@ -1846,7 +1847,7 @@ export default function DriverPlanningDashboard() {
         if (!isScheduled && !(showPendingEvents && isNewOrInProcess)) return false;
 
         // Must have a date
-        const dateStr = event.scheduledEventDate || event.desiredEventDate;
+        const dateStr = getEffectiveEventDate(event);
         if (!dateStr) return false;
 
         // If showing all events, just check it's today or future
@@ -1857,8 +1858,8 @@ export default function DriverPlanningDashboard() {
         return isWithinInterval(eventDate, { start: today, end: endDate! });
       })
       .sort((a, b) => {
-        const dateA = parseLocalDate(a.scheduledEventDate || a.desiredEventDate!);
-        const dateB = parseLocalDate(b.scheduledEventDate || b.desiredEventDate!);
+        const dateA = parseLocalDate(getEffectiveEventDate(a)!);
+        const dateB = parseLocalDate(getEffectiveEventDate(b)!);
         return dateA.getTime() - dateB.getTime();
       });
   }, [allEvents, weeksAhead, showPendingEvents]);
@@ -1902,7 +1903,7 @@ export default function DriverPlanningDashboard() {
     }
 
     // Get the selected event's date
-    const selectedDate = selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate;
+    const selectedDate = getEffectiveEventDate(selectedEvent);
     if (!selectedDate) {
       // If selected event has no date, just show that event
       return upcomingEventsWithCoords.filter(e => e.id === selectedEvent.id);
@@ -1910,7 +1911,7 @@ export default function DriverPlanningDashboard() {
 
     // Filter to only events on the same date as the selected event
     return upcomingEventsWithCoords.filter(event => {
-      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+      const eventDate = getEffectiveEventDate(event);
       return eventDate === selectedDate;
     });
   }, [upcomingEventsWithCoords, selectedEvent]);
@@ -2897,7 +2898,7 @@ export default function DriverPlanningDashboard() {
             <div className="p-3 space-y-2">
               {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
-                const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                const eventDate = getEffectiveEventDate(event);
                 const regularDriversAssigned = getDriverCount(event);
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
@@ -3241,7 +3242,7 @@ export default function DriverPlanningDashboard() {
             {/* zIndexOffset keeps event pins on top of host/driver/recipient pins so they
                 stay visible when locations overlap; selected event gets an even higher offset */}
             {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
-              const eventDate = event.scheduledEventDate || event.desiredEventDate;
+              const eventDate = getEffectiveEventDate(event);
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
               return (
@@ -5326,7 +5327,7 @@ export default function DriverPlanningDashboard() {
             <div className="p-2 space-y-2">
               {events.map((event) => {
                 const isSelected = selectedEvent?.id === event.id;
-                const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                const eventDate = getEffectiveEventDate(event);
                 const driversAssigned = getDriverCount(event);
                 const driversTentative = event.tentativeDriverIds?.length || 0;
                 const driversNeeded = event.driversNeeded || 0;
@@ -5506,7 +5507,7 @@ export default function DriverPlanningDashboard() {
             <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
-              const eventDate = event.scheduledEventDate || event.desiredEventDate;
+              const eventDate = getEffectiveEventDate(event);
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
               return (
@@ -5902,7 +5903,7 @@ export default function DriverPlanningDashboard() {
             <MapResizeObserver />
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
-              const eventDate = event.scheduledEventDate || event.desiredEventDate;
+              const eventDate = getEffectiveEventDate(event);
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
               const isSelected = selectedEvent?.id === event.id;
               return (
@@ -6276,8 +6277,8 @@ export default function DriverPlanningDashboard() {
                   <div className="flex items-center gap-2 text-xs text-gray-600 mt-1">
                     <Calendar className="w-3 h-3 flex-shrink-0" />
                     <span>
-                      {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
-                        ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEE, MMM d')
+                      {getEffectiveEventDate(selectedEvent)
+                        ? format(parseLocalDate(getEffectiveEventDate(selectedEvent)!), 'EEE, MMM d')
                         : 'No date'}
                     </span>
                     {(() => {
@@ -6447,8 +6448,8 @@ export default function DriverPlanningDashboard() {
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
                         <span>
-                          {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
-                            ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEEE, MMMM d, yyyy')
+                          {getEffectiveEventDate(selectedEvent)
+                            ? format(parseLocalDate(getEffectiveEventDate(selectedEvent)!), 'EEEE, MMMM d, yyyy')
                             : 'No date'}
                         </span>
                       </div>
@@ -6720,7 +6721,7 @@ export default function DriverPlanningDashboard() {
                   /* Events List View - When no event is selected */
                   <div className="p-3 space-y-2">
                     {events.map((event) => {
-                      const eventDate = event.scheduledEventDate || event.desiredEventDate;
+                      const eventDate = getEffectiveEventDate(event);
                       const driversAssigned = getDriverCount(event);
                       const driversTentative = event.tentativeDriverIds?.length || 0;
                       const driversNeeded = event.driversNeeded || 0;
@@ -6912,8 +6913,8 @@ export default function DriverPlanningDashboard() {
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="w-4 h-4 text-gray-500" />
                     <span>
-                      {selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate
-                        ? format(parseLocalDate(selectedEvent.scheduledEventDate || selectedEvent.desiredEventDate!), 'EEEE, MMMM d, yyyy')
+                      {getEffectiveEventDate(selectedEvent)
+                        ? format(parseLocalDate(getEffectiveEventDate(selectedEvent)!), 'EEEE, MMMM d, yyyy')
                         : 'No date'}
                     </span>
                   </div>
