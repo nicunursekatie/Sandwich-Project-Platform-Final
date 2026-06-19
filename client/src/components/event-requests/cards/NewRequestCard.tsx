@@ -223,6 +223,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   datePopulationInfo,
   returningOrgData,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
   // Get the proper status label from constants instead of just replacing underscores
