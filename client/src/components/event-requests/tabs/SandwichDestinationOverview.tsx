@@ -23,6 +23,7 @@ import { format, addWeeks, startOfWeek, endOfWeek, addDays, isWithinInterval, is
 import { useEventQueries } from '../hooks/useEventQueries';
 import { parsePostgresArray } from '../utils';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface SandwichDestinationOverviewProps {
   eventRequests: EventRequest[];
@@ -404,7 +405,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
                     <Badge
                       variant="outline"
                       className={`text-xs ${
-                        event.status === 'scheduled'
+                        isScheduledOrRescheduled(event.status)
                           ? 'border-green-300 text-green-700 bg-green-50'
                           : 'border-amber-300 text-amber-700 bg-amber-50'
                       }`}
@@ -462,7 +463,7 @@ export function SandwichDestinationOverview({ eventRequests }: SandwichDestinati
                     <Badge
                       variant="outline"
                       className={`text-xs ${
-                        event.status === 'scheduled'
+                        isScheduledOrRescheduled(event.status)
                           ? 'border-green-300 text-green-700 bg-green-50'
                           : 'border-amber-300 text-amber-700 bg-amber-50'
                       }`}

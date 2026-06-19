@@ -36,6 +36,7 @@ import {
   Legend,
 } from 'recharts';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -474,7 +475,7 @@ export function FloatingAIChat({
           const sortedData = [...limitedContext.rawData].sort((a, b) => {
             // Prioritize scheduled and in_process events
             const statusPriority = (status: string) => {
-              if (status === 'scheduled') return 0;
+              if (isScheduledOrRescheduled(status)) return 0;
               if (status === 'in_process') return 1;
               if (status === 'new') return 2;
               return 3;

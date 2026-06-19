@@ -25,6 +25,7 @@ import { eventRequests, users, tspContactFollowups } from '@shared/schema';
 import { and, eq, sql, gte, lte, isNull, or, inArray } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { getUserMetadata, getUserPhoneNumber } from '@shared/types';
+import { isScheduledOrRescheduled } from '../../shared/event-status-workflow';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import { EmailNotificationService } from './email-notification-service';
 import { getMissingIntakeInfo, getPrimaryContextualAction } from '@shared/event-validation-utils';
@@ -236,8 +237,8 @@ function getPreferredChannel(user: any): 'sms' | 'email' {
  * Check if event has had any activity (notes, contact logs, status changes)
  */
 function hasRecentActivity(event: any, sinceDate: Date): boolean {
-  // Check if status changed to scheduled
-  if (event.status === 'scheduled') {
+  // Check if status changed to scheduled (or rescheduled)
+  if (isScheduledOrRescheduled(event.status)) {
     return true;
   }
 

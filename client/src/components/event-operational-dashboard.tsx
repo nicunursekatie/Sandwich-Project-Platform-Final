@@ -37,6 +37,8 @@ import {
 } from 'recharts';
 import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+import { parseEventDate } from '@/lib/date-utils';
 
 interface AttentionItem {
   id: number;
@@ -67,10 +69,15 @@ const getWeekEnd = (): Date => {
   return sunday;
 };
 
-// Helper to check if a date is within this week
+// Helper to check if a date is within this week.
+// IMPORTANT: use parseEventDate, not new Date(). Event dates are stored as
+// UTC-midnight timestamps; bare `new Date(isoString)` parses them in UTC,
+// which in Eastern time shifts to 8 PM the prior day — so Monday events
+// would silently fall outside a Monday-Sunday window. See date-utils.ts and
+// the project_date_offset_bug memory.
 const isThisWeek = (dateInput: string | Date | null | undefined): boolean => {
-  if (!dateInput) return false;
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const date = parseEventDate(dateInput);
+  if (!date) return false;
   const weekStart = getWeekStart();
   const weekEnd = getWeekEnd();
   return date >= weekStart && date <= weekEnd;
@@ -78,8 +85,8 @@ const isThisWeek = (dateInput: string | Date | null | undefined): boolean => {
 
 // Helper to check if date is within next N days
 const isWithinDays = (dateInput: string | Date | null | undefined, days: number): boolean => {
-  if (!dateInput) return false;
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  const date = parseEventDate(dateInput);
+  if (!date) return false;
   const now = new Date();
   const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
   return date >= now && date <= futureDate;
@@ -186,7 +193,7 @@ export default function EventOperationalDashboard() {
   // Calculate this week's metrics
   const thisWeekMetrics = useMemo(() => {
     const scheduledEvents = events.filter(
-      (e) => e.status === 'scheduled' && isThisWeek(getEffectiveEventDate(e))
+      (e) => isScheduledOrRescheduled(e.status) && isThisWeek(getEffectiveEventDate(e))
     );
 
     const eventsCount = scheduledEvents.length;
@@ -248,7 +255,7 @@ export default function EventOperationalDashboard() {
     // Incomplete scheduled events: missing critical fields within 14 days
     const incompleteScheduled: AttentionItem[] = events
       .filter((e) => {
-        if (e.status !== 'scheduled') return false;
+        if (!isScheduledOrRescheduled(e.status)) return false;
         const eventDate = getEffectiveEventDate(e);
         if (!isWithinDays(eventDate, 14)) return false;
 

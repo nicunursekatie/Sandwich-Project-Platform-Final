@@ -12,6 +12,7 @@ import { Calendar, CheckCircle2 } from 'lucide-react';
 import { EventConflictWarnings } from '../EventConflictWarnings';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import type { EventFormData } from './types';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface EventScheduleSectionProps {
   formData: EventFormData;
@@ -77,7 +78,7 @@ export const EventScheduleSection: React.FC<EventScheduleSectionProps> = ({
               const newDate = e.target.value;
               // Trigger confirmation dialog when changing date on a scheduled event
               if (onScheduledDateChange &&
-                  eventRequest?.status === 'scheduled' &&
+                  isScheduledOrRescheduled(eventRequest?.status) &&
                   formatDateForInput(eventRequest.desiredEventDate) !== newDate &&
                   formatDateForInput(eventRequest.desiredEventDate) !== '' &&
                   newDate !== formatDateForInput(eventRequest.desiredEventDate)) {

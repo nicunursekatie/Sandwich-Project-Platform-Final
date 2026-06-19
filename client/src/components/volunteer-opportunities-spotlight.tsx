@@ -6,6 +6,7 @@ import { formatDateShort } from '@/lib/date-utils';
 import { getVolunteerCount, getTotalDriverCount, getSpeakerCount } from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface VolunteerOpportunitiesSpotlightProps {
   onNavigate: (section: string) => void;
@@ -46,7 +47,7 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
   });
 
   const opportunities = eventRequests
-    .filter((request) => request.status === 'scheduled')
+    .filter((request) => isScheduledOrRescheduled(request.status))
     .filter((request) => {
       const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
       return needsSpeaker || needsVolunteer || needsDriver;
@@ -163,8 +164,8 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
 
       <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {opportunities.length < eventRequests.filter(r => r.status === 'scheduled' && (getUnfilledNeeds(r).needsSpeaker || getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length
-            ? `Showing ${opportunities.length} of ${eventRequests.filter(r => r.status === 'scheduled' && (getUnfilledNeeds(r).needsSpeaker || getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length} opportunities`
+          {opportunities.length < eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsSpeaker || getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length
+            ? `Showing ${opportunities.length} of ${eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsSpeaker || getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length} opportunities`
             : `${opportunities.length} upcoming opportunity${opportunities.length !== 1 ? 'ies' : 'y'}`}
         </p>
         <button

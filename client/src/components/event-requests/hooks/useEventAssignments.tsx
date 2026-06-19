@@ -10,7 +10,7 @@ import { logger } from '@/lib/logger';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { isValidTransition, getTransitionError, requiresReason, STATUS_DEFINITIONS } from '../constants';
-import type { EventStatus } from '@shared/event-status-workflow';
+import { isScheduledOrRescheduled, type EventStatus } from '@shared/event-status-workflow';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();
@@ -488,7 +488,7 @@ export const useEventAssignments = () => {
         }
       } else if (type === 'volunteer') {
         if (!eventRequest.volunteersNeeded || eventRequest.volunteersNeeded <= 0) {
-          if (eventRequest.status !== 'scheduled') {
+          if (!isScheduledOrRescheduled(eventRequest.status)) {
             toast({
               title: 'Volunteers not needed',
               description: 'This event does not require volunteers',
@@ -579,7 +579,7 @@ export const useEventAssignments = () => {
       return !currentSpeakerDetails[user.id] &&
         (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
     } else if (type === 'volunteer') {
-      if (eventRequest.status === 'scheduled') {
+      if (isScheduledOrRescheduled(eventRequest.status)) {
         const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
         return !currentVolunteers.includes(user.id);
       }

@@ -23,6 +23,37 @@ export const EVENT_STATUSES = [
 export type EventStatus = typeof EVENT_STATUSES[number];
 
 /**
+ * Return true if a status represents a scheduled event — either freshly
+ * scheduled or rescheduled to a new date. `rescheduled` is semantically a
+ * scheduled event whose date was moved; everywhere the UI/services care
+ * about "is this event on the calendar" should use this helper, not
+ * `status === 'scheduled'`.
+ *
+ * Why a helper: a single safeguard ('rescheduled' should appear alongside
+ * 'scheduled') used to live only in the Scheduled tab's list query. Every
+ * other callsite (operational dashboard counts, Quick Filter buttons,
+ * volunteer opportunities, staffing forecast, reminder cron jobs, AI intake
+ * checks) used `status === 'scheduled'` and silently dropped rescheduled
+ * events. That caused dashboards to undercount and — worse — reminders to
+ * skip rescheduled events entirely.
+ *
+ * When you SHOULD NOT use this helper:
+ *   - When you specifically want to detect the act of rescheduling (e.g.,
+ *     audit-log entries that say "rescheduled to ..."). Use the literal
+ *     status check there.
+ *   - When you're about to WRITE a status value, not read one. Setting a
+ *     status of 'scheduled' is different from setting 'rescheduled'.
+ *
+ * For all other cases — filtering, counting, reminders, capacity planning,
+ * conflict detection, calendar/map display — use this helper.
+ */
+export function isScheduledOrRescheduled(
+  status: string | null | undefined
+): boolean {
+  return status === 'scheduled' || status === 'rescheduled';
+}
+
+/**
  * Status definitions with descriptions for intake team.
  * Each status has a label, a short definition, and contextual guidance.
  */
