@@ -29,7 +29,9 @@
     "test:coverage": "jest --coverage --config jest.config.js && jest --coverage --config jest.config.client.js",
     "test:coverage:client": "jest --coverage --config jest.config.client.js",
     "test:coverage:server": "jest --coverage --config jest.config.js",
-    "test:ci": "npm run test:unit && npm run test:integration"
+    "test:ci": "npm run test:unit && npm run test:integration",
+    "inventory:routes": "node scripts/route-inventory.js",
+    "inventory:routes:check": "node scripts/route-inventory.js --check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
