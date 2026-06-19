@@ -89,7 +89,6 @@ interface InProcessCardProps {
   request: EventRequest;
   resolveUserName?: (id: string) => string;
   isStale?: boolean;
-  followUpStatus?: 'toolkit' | 'contact' | null;
   onEdit: () => void;
   onDelete: () => void;
   onSchedule: () => void;
@@ -941,7 +940,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   request,
   resolveUserName,
   isStale = false,
-  followUpStatus = null,
   onEdit,
   onDelete,
   onSchedule,
