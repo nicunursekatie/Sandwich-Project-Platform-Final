@@ -40,7 +40,7 @@ export default function SimpleNav({
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
     // State for expanded parent items (like TSP Network)
-    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections', 'chat']));
+    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections', 'calendars', 'chat']));
 
     // Get Gmail inbox unread count
     const { data: gmailUnreadCount = 0 } = useQuery({

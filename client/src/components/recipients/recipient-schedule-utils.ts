@@ -207,3 +207,107 @@ export function sortRecipients(
 
   return sorted;
 }
+
+export const RECIPIENT_FOCUS_AREAS = [
+  'Youth',
+  'Veterans',
+  'Seniors',
+  'Families',
+  'Unhoused',
+  'Refugees',
+  'Disabilities',
+  'Other',
+] as const;
+
+export type WeeklyScheduleBuckets = {
+  collection: Record<string, Recipient[]>;
+  feeding: Record<string, Recipient[]>;
+  collectionUnscheduled: Recipient[];
+  feedingUnscheduled: Recipient[];
+};
+
+function emptyDayBuckets(): Record<string, Recipient[]> {
+  return {
+    Monday: [],
+    Tuesday: [],
+    Wednesday: [],
+    Thursday: [],
+    Friday: [],
+    Saturday: [],
+    Sunday: [],
+  };
+}
+
+/** Bucket recipients into collection + feeding day columns for the weekly calendar. */
+export function buildWeeklyScheduleBuckets(recipients: Recipient[]): WeeklyScheduleBuckets {
+  const collection = emptyDayBuckets();
+  const feeding = emptyDayBuckets();
+  const collectionUnscheduled: Recipient[] = [];
+  const feedingUnscheduled: Recipient[] = [];
+
+  for (const recipient of recipients) {
+    const collectionDays = getRecipientCollectionDays(recipient);
+    const feedingDays = getRecipientFeedingDays(recipient);
+
+    if (collectionDays.length === 0) {
+      collectionUnscheduled.push(recipient);
+    } else {
+      for (const day of collectionDays) {
+        if (collection[day]) collection[day].push(recipient);
+      }
+    }
+
+    if (feedingDays.length === 0) {
+      feedingUnscheduled.push(recipient);
+    } else {
+      for (const day of feedingDays) {
+        if (feeding[day]) feeding[day].push(recipient);
+      }
+    }
+  }
+
+  return { collection, feeding, collectionUnscheduled, feedingUnscheduled };
+}
+
+/** Time string for a specific weekday within a schedule list. */
+export function getTimeForDayOnSchedule(
+  schedules: ScheduleEntry[],
+  day: string
+): string | undefined {
+  for (const entry of schedules) {
+    const matchedDays = extractDaysFromText(entry.day);
+    if (matchedDays.includes(day)) {
+      return entry.time || undefined;
+    }
+  }
+  return undefined;
+}
+
+/** Build schedule array from day chip selection + time (table inline edit). */
+export function buildScheduleFromDaysAndTime(
+  days: string[],
+  time: string
+): ScheduleEntry[] {
+  const sortedDays = [...days].sort(
+    (a, b) =>
+      WEEK_DAYS.indexOf(a as (typeof WEEK_DAYS)[number]) -
+      WEEK_DAYS.indexOf(b as (typeof WEEK_DAYS)[number])
+  );
+  if (sortedDays.length === 0 && !time.trim()) return [];
+  return [{ day: sortedDays.join(', '), time: time.trim() }];
+}
+
+/** Parse existing schedules into selected weekdays + shared time for inline editor. */
+export function parseScheduleForInlineEdit(schedules: ScheduleEntry[]): {
+  days: string[];
+  time: string;
+} {
+  const days = new Set<string>();
+  let time = '';
+  for (const entry of schedules) {
+    for (const d of extractDaysFromText(entry.day)) days.add(d);
+    if (!time && entry.time) time = entry.time;
+  }
+  const sorted = WEEK_DAYS.filter((d) => days.has(d));
+  return { days: sorted, time };
+}
