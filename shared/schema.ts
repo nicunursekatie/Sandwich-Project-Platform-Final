@@ -3241,27 +3241,11 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
-  })
-  .refine(
-    (data) => {
-      // Require at least ONE identifier so the record isn't completely blank,
-      // but never require email or phone specifically — any single field is
-      // enough (org name, a contact name, email, OR phone).
-      const hasOrgName =
-        data.organizationName && data.organizationName.trim().length > 0;
-      const hasContactInfo =
-        (data.firstName && data.firstName.trim().length > 0) ||
-        (data.lastName && data.lastName.trim().length > 0) ||
-        (data.email && data.email.trim().length > 0) ||
-        (data.phone && data.phone.trim().length > 0);
-      return hasOrgName || hasContactInfo;
-    },
-    {
-      message:
-        'Please enter at least one of: organization name, contact name, email, or phone.',
-      path: ['organizationName'],
-    }
-  );
+  });
+// NOTE: No "must have at least one identifier" refine. Manual entries are
+// intentionally allowed to be created fully blank (no org name, contact name,
+// email, or phone) and filled in later as intake details come in. Email format
+// is still validated when an email IS provided (see the `email` field above).
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
   .omit({
