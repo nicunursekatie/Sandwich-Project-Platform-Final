@@ -124,7 +124,7 @@ export function LastContactAgeBadge({ request, className = '' }: LastContactAgeB
 
   const style = TIER_STYLES[ageBadge.tier];
   const tooltipText = lastTs
-    ? `Last contact attempt: ${lastTs.toLocaleDateString()} (${ageBadge.weeks} week${ageBadge.weeks === 1 ? '' : 's'} ago)`
+    ? `Last contact attempt: ${lastTs.toLocaleDateString()} (${ageBadge.weeks} week${ageBadge.weeks === 1 ? '' : 's'} ago) — follow-up needed`
     : ageBadge.label;
 
   return (
@@ -137,7 +137,7 @@ export function LastContactAgeBadge({ request, className = '' }: LastContactAgeB
             data-testid="badge-last-contact-age"
           >
             <AlertTriangle className="w-3 h-3" />
-            {ageBadge.label}
+            {ageBadge.label} · follow-up needed
           </Badge>
         </TooltipTrigger>
         <TooltipContent>
