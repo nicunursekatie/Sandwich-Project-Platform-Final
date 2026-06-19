@@ -3152,7 +3152,10 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
             if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
               throw new Error('Invalid date format, expected YYYY-MM-DD');
             }
-            const date = new Date(str);
+            // Parse at local noon (NOT bare `new Date(str)`, which is midnight UTC
+            // and renders/compares a day early in America/New_York). Mirrors the
+            // toolkitSentDate coercion above.
+            const date = new Date(str + 'T12:00:00');
             return isNaN(date.getTime()) ? null : date;
           }),
         z.null(),
