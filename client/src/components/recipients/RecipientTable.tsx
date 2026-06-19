@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import {
   TableBody,
@@ -23,18 +24,26 @@ import {
   InlinePrimaryContactCell,
 } from './recipient-table-inline-cells';
 
-const COLUMNS: { id: SortColumn; label: string; className?: string }[] = [
-  { id: 'name', label: 'Name', className: 'min-w-[160px]' },
-  { id: 'collectionDays', label: 'Collection Days', className: 'min-w-[130px]' },
-  { id: 'feedingDays', label: 'Feeding Days', className: 'min-w-[120px]' },
-  { id: 'estimatedSandwiches', label: 'Est. Sandwiches', className: 'w-[110px]' },
-  { id: 'sandwichType', label: 'Sandwich Type', className: 'w-[110px]' },
-  { id: 'reportingGroup', label: 'Reporting Group', className: 'min-w-[120px]' },
-  { id: 'tspContact', label: 'TSP Contact', className: 'min-w-[120px]' },
-  { id: 'focusArea', label: 'Focus Area', className: 'min-w-[140px]' },
-  { id: 'region', label: 'Region', className: 'min-w-[120px]' },
-  { id: 'primaryContact', label: 'Primary Contact', className: 'min-w-[160px]' },
-  { id: 'contract', label: 'Contract', className: 'w-[100px]' },
+// localStorage key for persisted column widths. Bump the suffix if column
+// IDs ever change so stale persisted widths don't break a new layout.
+const COLUMN_WIDTHS_STORAGE_KEY = 'recipientTableColumnWidths.v1';
+
+// Minimum column width while resizing — small enough to be useful, large
+// enough to keep the resize handle clickable.
+const MIN_COLUMN_WIDTH_PX = 80;
+
+const COLUMNS: { id: SortColumn; label: string; className?: string; defaultWidth: number }[] = [
+  { id: 'name', label: 'Name', className: 'min-w-[160px]', defaultWidth: 200 },
+  { id: 'collectionDays', label: 'Collection Days', className: 'min-w-[130px]', defaultWidth: 150 },
+  { id: 'feedingDays', label: 'Feeding Days', className: 'min-w-[120px]', defaultWidth: 140 },
+  { id: 'estimatedSandwiches', label: 'Est. Sandwiches', className: 'w-[110px]', defaultWidth: 120 },
+  { id: 'sandwichType', label: 'Sandwich Type', className: 'w-[110px]', defaultWidth: 120 },
+  { id: 'reportingGroup', label: 'Reporting Group', className: 'min-w-[120px]', defaultWidth: 140 },
+  { id: 'tspContact', label: 'TSP Contact', className: 'min-w-[120px]', defaultWidth: 140 },
+  { id: 'focusArea', label: 'Focus Area', className: 'min-w-[140px]', defaultWidth: 160 },
+  { id: 'region', label: 'Region', className: 'min-w-[120px]', defaultWidth: 140 },
+  { id: 'primaryContact', label: 'Primary Contact', className: 'min-w-[160px]', defaultWidth: 180 },
+  { id: 'contract', label: 'Contract', className: 'w-[100px]', defaultWidth: 110 },
 ];
 
 interface RecipientTableProps {
@@ -86,6 +95,70 @@ export function RecipientTable({
     onUpdateRecipient(recipient, updates);
   };
 
+  // ── Column resize ──────────────────────────────────────────────────────
+  // Pattern mirrors ScheduledSpreadsheetView: per-column width persisted to
+  // localStorage, mouse-driven drag handle on the right edge of each header.
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(COLUMN_WIDTHS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [resizingColumn, setResizingColumn] = useState<
+    { id: SortColumn; startX: number; startWidth: number } | null
+  >(null);
+
+  const getColumnWidth = (col: typeof COLUMNS[number]): number =>
+    columnWidths[col.id] ?? col.defaultWidth;
+
+  const handleResizeStart = (e: React.MouseEvent, col: typeof COLUMNS[number]) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingColumn({
+      id: col.id,
+      startX: e.clientX,
+      startWidth: getColumnWidth(col),
+    });
+  };
+
+  useEffect(() => {
+    if (!resizingColumn) return;
+
+    const handleMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizingColumn.startX;
+      const newWidth = Math.max(MIN_COLUMN_WIDTH_PX, resizingColumn.startWidth + deltaX);
+      setColumnWidths((prev) => ({ ...prev, [resizingColumn.id]: newWidth }));
+    };
+
+    const handleUp = () => {
+      // Persist using the latest state (functional update closes over latest).
+      setColumnWidths((prev) => {
+        try {
+          localStorage.setItem(COLUMN_WIDTHS_STORAGE_KEY, JSON.stringify(prev));
+        } catch {
+          // Quota or disabled storage — silently skip persistence.
+        }
+        return prev;
+      });
+      setResizingColumn(null);
+    };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [resizingColumn]);
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
       {canEdit && (
@@ -100,13 +173,14 @@ export function RecipientTable({
               {COLUMNS.map((col) => (
                 <TableHead
                   key={col.id}
-                  className={`whitespace-nowrap text-sm font-semibold text-slate-700 ${col.className || ''} ${
+                  style={{ width: getColumnWidth(col), minWidth: MIN_COLUMN_WIDTH_PX }}
+                  className={`relative whitespace-nowrap text-sm font-semibold text-slate-700 ${col.className || ''} ${
                     col.id === 'collectionDays'
                       ? 'bg-[#007E8C]/8'
                       : col.id === 'feedingDays'
                         ? 'bg-[#FBAD3F]/10'
                         : ''
-                  }`}
+                  } ${resizingColumn?.id === col.id ? 'select-none' : ''}`}
                 >
                   <button
                     type="button"
@@ -116,6 +190,19 @@ export function RecipientTable({
                     {col.label}
                     <SortIcon column={col.id} sortColumn={sortColumn} sortDirection={sortDirection} />
                   </button>
+                  {/* Resize handle — thin strip on the right edge. Stops
+                      propagation so it doesn't trigger the sort button. */}
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={`Resize ${col.label} column`}
+                    onMouseDown={(e) => handleResizeStart(e, col)}
+                    onClick={(e) => e.stopPropagation()}
+                    className={`absolute top-0 right-0 bottom-0 w-1.5 cursor-col-resize hover:bg-[#007E8C]/40 active:bg-[#007E8C]/60 transition-colors ${
+                      resizingColumn?.id === col.id ? 'bg-[#007E8C]/60' : ''
+                    }`}
+                    title="Drag to resize column"
+                  />
                 </TableHead>
               ))}
             </TableRow>
