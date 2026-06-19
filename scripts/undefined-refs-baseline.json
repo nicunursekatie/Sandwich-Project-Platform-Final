@@ -1,9 +1,9 @@
-[
-  "client/src/components/event-requests/cards/CompletedCard.tsx :: cannot-find-name :: Cannot find name 'saveEdit'",
-  "client/src/components/event-requests/cards/CompletedCard.tsx :: cannot-find-name :: Cannot find name 'startEditing'",
-  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: Cannot find name 'isAnimating'",
-  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: Cannot find name 'navigate'",
-  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: Cannot find name 'setIsAnimating'",
-  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: Cannot find name 'setShowPrompt'",
-  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: Cannot find name 'showPrompt'"
-]
+{
+  "client/src/components/event-requests/cards/CompletedCard.tsx :: cannot-find-name :: saveEdit": 2,
+  "client/src/components/event-requests/cards/CompletedCard.tsx :: cannot-find-name :: startEditing": 3,
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: isAnimating": 1,
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: navigate": 1,
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: setIsAnimating": 2,
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: setShowPrompt": 2,
+  "client/src/mobile/components/mobile-layout-prompt.tsx :: cannot-find-name :: showPrompt": 1
+}
