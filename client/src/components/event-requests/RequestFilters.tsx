@@ -21,8 +21,6 @@ import {
   Star,
   Pause,
   BarChart3,
-  ClipboardList,
-  Truck,
   LayoutList,
   Hourglass,
   AlertCircle,
@@ -135,24 +133,10 @@ export default function RequestFilters({
     });
   }
 
-  if (hasAdminOverviewPermission && children.planning) {
-    navTabs.push({
-      value: 'planning',
-      label: 'Planning',
-      shortLabel: 'Planning',
-      icon: ClipboardList,
-    });
-  }
-
-  // Add sandwich destination overview tab if user has permission
-  if (hasAdminOverviewPermission && children.sandwich_overview) {
-    navTabs.push({
-      value: 'sandwich_overview',
-      label: 'Sandwich Destinations',
-      shortLabel: 'Destinations',
-      icon: Truck,
-    });
-  }
+  // Planning and Sandwich Destinations live in the sidebar nav (deep-links
+  // to ?tab=planning and ?tab=sandwich_overview) so they don't crowd the
+  // tab bar — but if a user navigates directly to one of those tabs, the
+  // tab still renders. We just don't surface a tab button for it here.
 
   navTabs.push({
     value: 'my_assignments',
