@@ -149,13 +149,38 @@ function extractClientAppRoutes() {
   if (!fs.existsSync(appPath)) return new Map();
   const text = fs.readFileSync(appPath, 'utf8');
   const routes = new Map();
-  const routePattern = /<Route\s+path=["']([^"']+)["']/g;
+
+  // Tokenize <Route ...>, self-closing <Route .../>, and </Route> in document
+  // order, tracking a stack of `nest` prefixes. wouter's `<Route path="/m" nest>`
+  // wraps child routes, so nested paths must be recorded with their parent prefix
+  // (e.g. /m/collections) rather than as bare top-level paths that collide with
+  // the desktop routes of the same name.
+  const tokenPattern = /<Route\b([^>]*?)(\/?)>|<\/Route>/g;
+  const prefixStack = [];
   let match;
-  while ((match = routePattern.exec(text))) {
-    addOccurrence(routes, match[1], {
-      file: rel(appPath),
-      line: lineNumberAt(text, match.index),
-    });
+  while ((match = tokenPattern.exec(text))) {
+    if (match[0] === '</Route>') {
+      prefixStack.pop();
+      continue;
+    }
+    const attrs = match[1] || '';
+    const selfClosing = match[2] === '/';
+    const pathMatch = attrs.match(/path=["']([^"']+)["']/);
+    const prefix = prefixStack.join('');
+    if (pathMatch) {
+      let fullPath = `${prefix}${pathMatch[1]}`.replace(/\/{2,}/g, '/');
+      if (fullPath.length > 1) fullPath = fullPath.replace(/\/+$/, '');
+      addOccurrence(routes, fullPath, {
+        file: rel(appPath),
+        line: lineNumberAt(text, match.index),
+      });
+    }
+    if (!selfClosing) {
+      // Only `nest` routes contribute a URL prefix to their children; every other
+      // open route pushes '' purely to stay balanced with its closing </Route>.
+      const isNest = /\bnest\b/.test(attrs);
+      prefixStack.push(isNest && pathMatch ? pathMatch[1].replace(/\/+$/, '') : '');
+    }
   }
   return routes;
 }
@@ -228,12 +253,15 @@ const unmatched = likelyUnmatchedApiRefs(apiRefs, serverRoutes);
 const report = buildReport({ apiRefs, apiRequestMismatches, serverRoutes, appRoutes, unmatched });
 
 const existing = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
+// Normalize line endings before comparing so a CRLF checkout (Windows /
+// core.autocrlf) doesn't fail --check when the route data is unchanged.
+const existingNormalized = existing === null ? null : existing.replace(/\r\n/g, '\n');
 
 if (!checkMode) {
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
   console.log(`Route inventory written to ${rel(reportPath)}`);
-} else if (existing !== report) {
+} else if (existingNormalized !== report) {
   console.error(`Route inventory is out of date. Run: npm run inventory:routes`);
   process.exit(1);
 }
