@@ -63,17 +63,14 @@ export function PermissionDenied({
 
     setIsSubmitting(true);
     try {
-      await apiRequest('/api/permission-requests', {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: user.id,
-          userEmail: user.email,
-          userName: user.displayName || user.firstName || user.email,
-          requestedAction: action || 'Unknown action',
-          requiredPermission: requiredPermission || 'Unknown permission',
-          userMessage: requestMessage,
-          requestedAt: new Date().toISOString(),
-        }),
+      await apiRequest('POST', '/api/permission-requests', {
+        userId: user.id,
+        userEmail: user.email,
+        userName: user.displayName || user.firstName || user.email,
+        requestedAction: action || 'Unknown action',
+        requiredPermission: requiredPermission || 'Unknown permission',
+        userMessage: requestMessage,
+        requestedAt: new Date().toISOString(),
       });
 
       setRequestSent(true);

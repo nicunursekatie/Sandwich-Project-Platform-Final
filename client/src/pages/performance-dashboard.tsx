@@ -105,11 +105,7 @@ export default function PerformanceDashboard() {
 
   const optimizeMutation = useMutation({
     mutationFn: (action: string) =>
-      apiRequest(`/api/performance/optimize`, {
-        method: 'POST',
-        body: JSON.stringify({ action }),
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      apiRequest('POST', '/api/performance/optimize', { action }),
     onSuccess: (data) => {
       toast({
         title: 'Optimization Complete',

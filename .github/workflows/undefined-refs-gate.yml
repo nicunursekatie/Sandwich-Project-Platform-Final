@@ -1,0 +1,23 @@
+name: Undefined-reference gate
+
+# Fails a PR when it introduces a NEW "Cannot find name" / bad-import error in
+# shipped client code — the bug class that crashed event-requests in production
+# (used-but-not-imported identifier → runtime ReferenceError the Vite build does
+# not catch). Pre-existing offenders are baselined in
+# scripts/undefined-refs-baseline.json and do not fail the build.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  undefined-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run check:undefined-refs
