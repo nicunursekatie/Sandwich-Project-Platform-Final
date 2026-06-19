@@ -207,7 +207,7 @@ export function useErrorHandler() {
           break;
 
         case 'checkNetworkStatus':
-          fetch('/api/health-check')
+          fetch('/api/health')
             .then((res) => {
               if (res.ok) {
                 toast({

@@ -300,7 +300,7 @@ export function useDynamicError() {
         break;
       case 'checkNetworkStatus':
         // Simple network check
-        fetch('/api/health-check')
+        fetch('/api/health')
           .then(() => alert('Network connection is working properly.'))
           .catch(() => alert('Network connection appears to be down.'));
         break;
