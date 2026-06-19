@@ -281,10 +281,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // it everywhere below. A full-form save is blocked (in performSubmit) until the
   // full record loads, so a partial record can never blank the omitted columns.
   const recordIsPartial = !!rawEventRequest?.id && !isFullEventRecord(rawEventRequest);
-  const { data: hydratedEventRequest } = useQuery<EventRequest>({
+  const { data: hydratedEventRequest, isError: hydrationFailed, refetch: refetchHydration } = useQuery<EventRequest>({
     queryKey: ['/api/event-requests', rawEventRequest?.id, 'full'],
     queryFn: () => apiRequest('GET', `/api/event-requests/${rawEventRequest!.id}`),
     enabled: dialogOpen && recordIsPartial,
+    // Always refetch fresh on open: surgical saves no longer write this 'full'
+    // cache key, so a cached copy could be stale when reopening from the map.
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
   const eventRequest = recordIsPartial ? (hydratedEventRequest ?? rawEventRequest) : rawEventRequest;
 
@@ -906,8 +910,22 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     // toolkit, follow-up) with blanks.
     if (recordIsPartial && !hydratedEventRequest) {
       setIsSubmitting(false);
-      logger.log('⛔ Save blocked: full record not hydrated yet');
-      toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to load before saving.', variant: 'destructive' });
+      if (hydrationFailed) {
+        // The full-record fetch failed (not just still loading). Don't leave the
+        // user stuck behind a "loading" message — retry and tell them plainly.
+        // Saving stays blocked so a partial payload can't overwrite real data.
+        logger.log('⛔ Save blocked: full event failed to load; retrying');
+        refetchHydration();
+        toast({
+          title: "Couldn't load this event",
+          description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or reopen it from the list.",
+          variant: 'destructive',
+          duration: Number.POSITIVE_INFINITY,
+        });
+      } else {
+        logger.log('⛔ Save blocked: full record not hydrated yet');
+        toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to load before saving.', variant: 'destructive' });
+      }
       return;
     }
 
