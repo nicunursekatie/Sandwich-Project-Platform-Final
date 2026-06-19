@@ -139,7 +139,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient, applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
@@ -908,12 +908,16 @@ export default function EventMapView() {
         eventAddress: address,
       });
     },
-    onSuccess: () => {
+    onSuccess: async (updated) => {
       toast({
         title: 'Address Updated',
         description: 'Event address has been updated successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+      // Refresh event-request list/cards too (not just the map): eventAddress is
+      // a tracked field, so this also invalidates the map + volunteer hub.
+      await applyPatchResponseToCache(queryClient, updated as any, {
+        touchedFields: ['eventAddress'],
+      });
       setEditingEvent(null);
       setEditedAddress('');
     },
