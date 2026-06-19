@@ -1120,8 +1120,10 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </div>
             ) : null}
 
-            {/* Previous Host Status */}
-            {typeof request.hasHostedBefore !== 'undefined' && (
+            {/* Previous Host Status — derived from the real previouslyHosted
+                column (the list used to send a computed hasHostedBefore, which
+                went away when /list switched to full records). */}
+            {request.previouslyHosted !== undefined && (
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-sm uppercase font-bold tracking-wide text-[#236383]">
@@ -1129,12 +1131,12 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                   </span>
                   <Badge
                     className={
-                      request.hasHostedBefore
+                      request.previouslyHosted === 'yes'
                         ? 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#007E8C] text-white border-0 shadow-lg hover:bg-[#47B3CB] transition-all duration-200 text-sm'
                         : 'inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-[#236383] text-white border-0 shadow-lg hover:bg-[#007E8C] transition-all duration-200 text-sm'
                     }
                   >
-                    {request.hasHostedBefore ? 'Yes' : 'No - First Time'}
+                    {request.previouslyHosted === 'yes' ? 'Yes' : 'No - First Time'}
                   </Badge>
                 </div>
               </div>

@@ -359,7 +359,6 @@ export async function applyEventRequestSaveToCache(
   const id = updatedEvent.id;
 
   qc.setQueryData(['/api/event-requests', id], eventData);
-  qc.setQueryData(['/api/event-requests', id, 'full'], eventData);
 
   if (options.statusChanged) {
     await refreshEventRequestListAndCounts(qc);

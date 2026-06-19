@@ -17,7 +17,6 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
 import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
-import { toLightweightEventRequest } from '@shared/event-list-projection';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
@@ -1251,51 +1250,6 @@ router.get(
   }
 );
 
-/*
- * ============================================================================
- * LIGHTWEIGHT ENDPOINT FIELD CONTRACT
- * ============================================================================
- * This endpoint serves these UI components:
- *   - NewRequestCard.tsx
- *   - ScheduledCard.tsx
- *   - ScheduledCardEnhanced.tsx
- *   - CompletedCard.tsx
- *   - InProcessCard.tsx
- *   - DeclinedCard.tsx
- *   - PostponedCard.tsx
- *   - EventEditDialog.tsx
- *   - AssignmentDialog.tsx
- *   - ScheduledSpreadsheetView.tsx
- *   - IntakeCallDialog.tsx
- *
- * NOTE: The field list now lives in ONE place — shared/event-list-projection.ts
- * (`toLightweightEventRequest`), which also exports `LightweightEventRequest`.
- * Once the client adopts that type, the server payload and client type can no
- * longer drift (TypeScript would flag a card reading a field the projection
- * omits). That client adoption is deferred for now; today this just centralizes
- * the shape. Add new list fields in the projection. The notes below are kept for
- * historical reference only.
- *
- * FIELD REQUIREMENTS BY COMPONENT:
- *   - ALL CARDS: id, organizationName, department, status, scheduledEventDate,
- *                desiredEventDate, firstName, lastName, email, phone, partnerOrganizations
- *   - NewRequestCard: backupDates, sandwichTypes, backupContact*, message, nextAction,
- *                     contactAttempts, lastContactAttempt, hasHostedBefore
- *   - ScheduledCard/Enhanced: eventStartTime, eventEndTime, pickupTime, pickupDateTime,
- *                             eventAddress, estimatedSandwichCount, sandwichTypes,
- *                             driversNeeded, speakersNeeded, volunteersNeeded,
- *                             assignedDriverIds, assignedVanDriverId, assignedVolunteerIds,
- *                             speakerDetails, driverDetails, volunteerDetails, isDhlVan,
- *                             vanDriverNeeded, selfTransport, overnightHoldingLocation,
- *                             externalId, tspContact, customTspContact, tspContactAssignedDate,
- *                             addedToOfficialSheet, isConfirmed, planningNotes, schedulingNotes,
- *                             recipientAllocations, isMlkDayEvent, customVanDriverName,
- *                             assignedRecipientIds, contactAttemptsLog, various notes fields
- *   - CompletedCard: sandwichTypes, backupContact*, speakerDetails
- *   - PostponedCard: tentativeNewDate, postponementReason
- *   - EventEditDialog: pickupTimeWindow, tspContact, customTspContact
- * ============================================================================
- */
 router.get(
   '/list',
   isAuthenticated,
@@ -1413,20 +1367,13 @@ router.get(
         eventRequests = eventRequests.filter(event => event.isCorporatePriority === true);
       }
 
-      // Map to the lightweight list shape. SINGLE SOURCE OF TRUTH:
-      // shared/event-list-projection.ts — it also exports LightweightEventRequest.
-      // Once the client adopts that type, the server payload and client type can
-      // no longer drift (this was "Cause B": a field a card read but the list
-      // didn't send rendered blank). Client adoption is deferred; for now this
-      // centralizes the shape. Add new list fields in the projection.
-      const lightweightEvents = eventRequests.map((event) =>
-        toLightweightEventRequest(event as any)
-      );
-
-      logger.info(`📋 List endpoint returning ${lightweightEvents.length} lightweight events`);
-      res.json(lightweightEvents);
+      // Return the full event records so cards, dialogs, and the scheduling
+      // form all share one event shape. This intentionally removes the old
+      // lightweight-list/full-record split that let fields drift between views.
+      logger.info(`📋 List endpoint returning ${eventRequests.length} full event records`);
+      res.json(eventRequests);
     } catch (error) {
-      logger.error('Failed to fetch lightweight event list', error);
+      logger.error('Failed to fetch event request list', error);
       res.status(500).json({ message: 'Failed to fetch event requests' });
     }
   }
