@@ -251,8 +251,19 @@ interface EventSchedulingFormProps {
   mode?: 'schedule' | 'edit' | 'create';
 }
 
+/**
+ * A record is "full" when it carries columns the partial sources omit. The
+ * event map (/api/event-map) hands the form a PARTIAL record (a subset of
+ * columns), and a full-form save from that would blank the omitted fields.
+ * Detect partial records via sentinel columns the map never selects, so we can
+ * hydrate the full record before allowing a save.
+ */
+function isFullEventRecord(e: any): boolean {
+  return !!e && e.planningNotes !== undefined && e.createdAt !== undefined;
+}
+
 const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
-  eventRequest,
+  eventRequest: rawEventRequest,
   isVisible,
   isOpen,
   onClose,
@@ -263,6 +274,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 }) => {
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
+
+  // Hydrate partial records before the form uses them. Most sources (the list)
+  // already pass a full record, so this fetch is skipped. The event map passes a
+  // PARTIAL record (subset of columns); we fetch the full record by id and use
+  // it everywhere below. A full-form save is blocked (in performSubmit) until the
+  // full record loads, so a partial record can never blank the omitted columns.
+  const recordIsPartial = !!rawEventRequest?.id && !isFullEventRecord(rawEventRequest);
+  const { data: hydratedEventRequest } = useQuery<EventRequest>({
+    queryKey: ['/api/event-requests', rawEventRequest?.id, 'full'],
+    queryFn: () => apiRequest('GET', `/api/event-requests/${rawEventRequest!.id}`),
+    enabled: dialogOpen && recordIsPartial,
+  });
+  const eventRequest = recordIsPartial ? (hydratedEventRequest ?? rawEventRequest) : rawEventRequest;
 
   // Event requests now use a single full-record shape from the list query.
   // Do not refetch a second "full" copy here; the form initializes from eventRequest.
@@ -520,7 +544,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // The list endpoint now returns full event records, so the form has one
       // authoritative data source and no partial→full upgrade path.
       const currentEventId = eventRequest?.id || 'new';
-      const sessionKey = String(currentEventId);
+      // Include hydration readiness so the form re-initializes once a partial
+      // record (e.g. from the map) is hydrated into the full record.
+      const sessionKey = `${currentEventId}-${recordIsPartial && !hydratedEventRequest ? 'partial' : 'full'}`;
 
       if (formInitSessionRef.current === sessionKey && formInitialized) return;
 
@@ -871,6 +897,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       logger.log('⛔ Save blocked: form not initialized');
       toast({ title: 'Please wait', description: 'Form is still loading. Please try again in a moment.', variant: 'destructive' });
+      return;
+    }
+
+    // Block saving a partial record (e.g. opened from the map) until the full
+    // record has hydrated — a full-form save from a partial record would
+    // overwrite the columns the partial source omitted (notes, backup contacts,
+    // toolkit, follow-up) with blanks.
+    if (recordIsPartial && !hydratedEventRequest) {
+      setIsSubmitting(false);
+      logger.log('⛔ Save blocked: full record not hydrated yet');
+      toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to load before saving.', variant: 'destructive' });
       return;
     }
 
