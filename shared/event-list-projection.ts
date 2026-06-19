@@ -142,7 +142,7 @@ export function toLightweightEventRequest(event: EventRequest) {
     socialMediaPostRequestedDate: event.socialMediaPostRequestedDate,
     socialMediaPostCompleted: event.socialMediaPostCompleted,
     socialMediaPostCompletedDate: event.socialMediaPostCompletedDate,
-    socialMediaPostLink: (event as any).socialMediaPostLink,
+    socialMediaPostLink: event.socialMediaPostLink,
 
     // ========== RECIPIENT ALLOCATION (ScheduledCard, SpreadsheetView) ==========
     assignedRecipientIds: event.assignedRecipientIds,

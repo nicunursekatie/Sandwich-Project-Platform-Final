@@ -2500,6 +2500,7 @@ export const eventRequests = pgTable(
     ), // Whether they completed the post
     socialMediaPostCompletedDate: timestamp('social_media_post_completed_date'), // When they completed the post
     socialMediaPostNotes: text('social_media_post_notes'), // Notes about social media posts
+    socialMediaPostLink: text('social_media_post_link'), // Link to the published post (requires the 20260618 migration)
 
     // Event attendance tracking for completed events
     actualAttendance: integer('actual_attendance'), // Actual number of people who attended the event
