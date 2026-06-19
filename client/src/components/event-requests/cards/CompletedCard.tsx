@@ -93,6 +93,24 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+/**
+ * Only http(s) links are allowed for the social-media post link. Guards against
+ * stored-XSS: the value is rendered into an <a href>, so a stored
+ * `javascript:`/`data:` URL would execute on click. Returns a normalized URL
+ * (prepending https:// when the scheme is missing) or null if it isn't a safe
+ * web URL.
+ */
+function toSafeHttpUrl(value: string | null | undefined): string | null {
+  const v = (value || '').trim();
+  if (!v) return null;
+  try {
+    const url = new URL(v.includes('://') ? v : `https://${v}`);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 interface CompletedCardProps {
   request: EventRequest;
   onView: () => void;
@@ -1240,8 +1258,20 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
 
   // Update post link
   const handleUpdatePostLink = () => {
+    const trimmed = postLink.trim();
+    const normalized = toSafeHttpUrl(trimmed);
+    // Reject anything that isn't a valid web (http/https) URL — prevents storing
+    // javascript:/data: links that would be unsafe when rendered as an <a href>.
+    if (trimmed && !normalized) {
+      toast({
+        title: 'Invalid link',
+        description: 'Please enter a valid web link (http:// or https://).',
+        variant: 'destructive',
+      });
+      return;
+    }
     updateSocialMediaMutation.mutate({
-      socialMediaPostLink: postLink.trim() || null,
+      socialMediaPostLink: normalized,
     });
     setEditingPostLink(false);
   };
@@ -1529,9 +1559,14 @@ const SocialMediaTracking: React.FC<SocialMediaTrackingProps> = ({ request }) =>
                       className="p-1 rounded border border-[#47b3cb]/30 bg-white/50 cursor-pointer hover:bg-white/70 transition-colors truncate"
                     >
                       {request.socialMediaPostLink ? (
-                        <a href={request.socialMediaPostLink} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
-                          View post
-                        </a>
+                        toSafeHttpUrl(request.socialMediaPostLink) ? (
+                          <a href={toSafeHttpUrl(request.socialMediaPostLink)!} target="_blank" rel="noopener noreferrer" className="text-[#007e8c] underline text-xs">
+                            View post
+                          </a>
+                        ) : (
+                          // Stored value isn't a safe web URL — show inert text, never a clickable href.
+                          <span className="text-gray-500 text-xs" title={request.socialMediaPostLink}>Invalid link</span>
+                        )
                       ) : (
                         <span className="text-gray-500">Add link</span>
                       )}
