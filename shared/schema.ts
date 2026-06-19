@@ -3031,8 +3031,21 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     firstName: z.string().nullable().optional(),
     lastName: z.string().nullable().optional(),
     email: z
-      .union([z.string().email(), z.literal(''), z.null(), z.undefined()])
-      .transform((val) => val || undefined)
+      .union([z.string(), z.null(), z.undefined()])
+      // Trim first: a pasted address with leading/trailing whitespace (or a
+      // stray newline) is the most common reason a manual event silently fails
+      // to save. Empty/whitespace-only becomes undefined so the field is simply
+      // omitted, matching the previous behavior.
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      // Only enforce email format when a value is actually present, with a clear
+      // message (the create endpoint surfaces this to the user).
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid email address (e.g., name@example.com).' }
+      )
       .optional(),
     organizationName: z.string().nullable().optional(),
     manualEntrySource: z.string().nullable().optional(),
@@ -3228,24 +3241,11 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
-  })
-  .refine(
-    (data) => {
-      // Require at least organization name OR some contact information
-      const hasOrgName =
-        data.organizationName && data.organizationName.trim().length > 0;
-      const hasContactInfo =
-        (data.firstName && data.firstName.trim().length > 0) ||
-        (data.lastName && data.lastName.trim().length > 0) ||
-        (data.email && data.email.trim().length > 0);
-      return hasOrgName || hasContactInfo;
-    },
-    {
-      message:
-        'Either organization name or contact information (name/email) is required',
-      path: ['organizationName'],
-    }
-  );
+  });
+// NOTE: No "must have at least one identifier" refine. Manual entries are
+// intentionally allowed to be created fully blank (no org name, contact name,
+// email, or phone) and filled in later as intake details come in. Email format
+// is still validated when an email IS provided (see the `email` field above).
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
   .omit({
