@@ -50,10 +50,7 @@ export function MobileHoldingZoneAdd() {
       urgent?: boolean;
       dueDate?: string;
     }) => {
-      return apiRequest('/api/team-board', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/team-board', data);
     },
     onSuccess: () => {
       toast({ title: 'Item added to holding zone' });

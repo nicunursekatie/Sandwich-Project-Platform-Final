@@ -80,10 +80,7 @@ export function MobileCollectionEntry() {
       collectionDate: string;
       notes?: string;
     }) => {
-      return apiRequest('/api/collections', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/collections', data);
     },
     onSuccess: () => {
       toast({
