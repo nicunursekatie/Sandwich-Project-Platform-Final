@@ -80,14 +80,20 @@ export function MobileCollectionEntry() {
       collectionDate: string;
       notes?: string;
     }) => {
-      return apiRequest('POST', '/api/collections', data);
+      return apiRequest('POST', '/api/sandwich-collections', data);
     },
     onSuccess: () => {
       toast({
         title: 'Collection logged!',
         description: `${sandwichCount} sandwiches from ${selectedHost?.name}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      // The collections list bakes query params into queryKey[0]
+      // (e.g. '/api/sandwich-collections?limit=100'), so match by prefix.
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/api/sandwich-collections'),
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       navigate('/collections');
     },
