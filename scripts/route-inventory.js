@@ -23,12 +23,19 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
 const args = new Set(process.argv.slice(2));
-const outArgIndex = process.argv.indexOf('--out');
-const reportPath = path.resolve(
-  repoRoot,
-  outArgIndex >= 0 ? process.argv[outArgIndex + 1] : 'docs/route-inventory.md'
-);
 const checkMode = args.has('--check');
+
+const outArgIndex = process.argv.indexOf('--out');
+let outArg = 'docs/route-inventory.md';
+if (outArgIndex >= 0) {
+  const value = process.argv[outArgIndex + 1];
+  if (!value || value.startsWith('--')) {
+    console.error('Error: --out requires a file path, e.g. --out docs/route-inventory.md');
+    process.exit(1);
+  }
+  outArg = value;
+}
+const reportPath = path.resolve(repoRoot, outArg);
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 const SOURCE_ROOTS = ['client/src', 'server', 'tests'];
@@ -208,10 +215,10 @@ const appRoutes = extractClientAppRoutes();
 const unmatched = likelyUnmatchedApiRefs(apiRefs, serverRoutes);
 const report = buildReport({ apiRefs, apiRequestMismatches, serverRoutes, appRoutes, unmatched });
 
-fs.mkdirSync(path.dirname(reportPath), { recursive: true });
 const existing = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
 
 if (!checkMode) {
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
   console.log(`Route inventory written to ${rel(reportPath)}`);
 } else if (existing !== report) {
