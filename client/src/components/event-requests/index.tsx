@@ -671,8 +671,12 @@ const EventRequestsManagementContent: React.FC = () => {
               View as:
             </span>
           <div className="flex items-center gap-1 bg-[#007E8C]/10 border border-[#007E8C]/20 rounded-lg p-0.5">
-            {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
-            {activeTab === 'scheduled' && viewMode === 'list' ? (
+            {/* On the Scheduled tab, Cards/Spreadsheet stay visible alongside
+                Calendar/Map so the user can see all four view options at once
+                — and so switching to Calendar/Map doesn't make the Cards
+                button vanish (it was confusing). On other tabs we show the
+                generic "List" button instead. */}
+            {activeTab === 'scheduled' ? (
               <>
                 <button
                   onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}

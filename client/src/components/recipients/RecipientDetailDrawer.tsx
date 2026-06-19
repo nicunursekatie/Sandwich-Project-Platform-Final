@@ -24,8 +24,12 @@ import {
   getCollectionSchedules,
   getFeedingSchedules,
   getFocusAreas,
-  getEstimatedSandwiches,
+  getEstimatedSandwichesRange,
   getContractStatus,
+  getCadenceMeta,
+  getPlannedSandwichBreakdown,
+  sumBreakdownRange,
+  formatRange,
 } from './recipient-schedule-utils';
 import { ScheduleDayChips } from './ScheduleDayChips';
 
@@ -59,7 +63,6 @@ export function RecipientDetailDrawer({
   const focusAreas = getFocusAreas(recipient);
   const collectionSchedules = getCollectionSchedules(recipient);
   const feedingSchedules = getFeedingSchedules(recipient);
-  const estimate = getEstimatedSandwiches(recipient);
   const contractStatus = getContractStatus(recipient);
   const displayRegion = getRecipientDisplayRegion(recipient);
   const website = (recipient as Recipient & { website?: string }).website;
@@ -173,12 +176,67 @@ export function RecipientDetailDrawer({
                   {recipient.reportingGroup}
                 </div>
               )}
-              {estimate != null && (
-                <div>
-                  <span className="text-slate-500 text-xs block">Est. Sandwiches / week</span>
-                  {estimate.toLocaleString()}
-                </div>
-              )}
+              {(() => {
+                const breakdown = getPlannedSandwichBreakdown(recipient);
+                if (breakdown.length > 0) {
+                  const total = sumBreakdownRange(breakdown);
+                  return (
+                    <div className="col-span-2">
+                      <span className="text-slate-500 text-xs block">Planned breakdown by type</span>
+                      <div className="mt-1 space-y-0.5 text-sm">
+                        {breakdown.map((row, i) => (
+                          <div key={i} className="flex items-baseline gap-2">
+                            <span className="font-semibold tabular-nums text-slate-800 min-w-[70px]">
+                              {formatRange(row.min, row.max)}
+                            </span>
+                            <span className="text-slate-600">{row.type}</span>
+                          </div>
+                        ))}
+                        {total && (
+                          <div className="pt-1 mt-1 border-t border-slate-200 text-sm">
+                            <span className="text-slate-500 text-xs">Total: </span>
+                            <span className="font-semibold tabular-nums text-slate-800">
+                              {formatRange(total.min, total.max)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                const range = getEstimatedSandwichesRange(recipient);
+                if (range) {
+                  return (
+                    <div>
+                      <span className="text-slate-500 text-xs block">Est. Sandwiches / week</span>
+                      <span className="font-semibold tabular-nums">
+                        {formatRange(range.min, range.max)}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              {(() => {
+                const cadence = (recipient as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
+                const note = (recipient as Recipient & { deliveryCadenceNote?: string | null })
+                  .deliveryCadenceNote;
+                const cadenceMeta = getCadenceMeta(cadence);
+                if (!cadenceMeta && !note) return null;
+                return (
+                  <div className="col-span-2">
+                    <span className="text-slate-500 text-xs block">Delivery cadence</span>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {cadenceMeta && (
+                        <Badge className={`text-xs ${cadenceMeta.badgeClass}`}>
+                          {cadenceMeta.label}
+                        </Badge>
+                      )}
+                      {note && <span className="text-xs text-slate-600 italic">{note}</span>}
+                    </div>
+                  </div>
+                );
+              })()}
               {recipient.sandwichType && (
                 <div>
                   <span className="text-slate-500 text-xs block">Sandwich Type</span>
@@ -274,6 +332,36 @@ export function RecipientDetailDrawer({
                   </div>
                 </div>
               )}
+              {Array.isArray(
+                (recipient as typeof recipient & { addresses?: Array<{ label: string; address: string }> })
+                  .addresses
+              ) &&
+                (recipient as typeof recipient & { addresses?: Array<{ label: string; address: string }> })
+                  .addresses!.filter((a) => a && a.address)
+                  .map((extra, idx) => {
+                    const extraMapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(extra.address)}`;
+                    return (
+                      <div key={`extra-${idx}`} className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-slate-400" />
+                        <div>
+                          {extra.label && (
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              {extra.label}
+                            </div>
+                          )}
+                          <span>{extra.address}</span>
+                          <a
+                            href={extraMapUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-xs text-[#007E8C] hover:underline mt-1"
+                          >
+                            Open in Google Maps
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
               {displayRegion && (
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 shrink-0" />

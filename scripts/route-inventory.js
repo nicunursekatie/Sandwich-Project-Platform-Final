@@ -3,7 +3,7 @@
 /**
  * Route Inventory
  *
- * Phase 1 architecture audit helper. It inventories app/test API references,
+ * Phase 1 architecture audit helper. It inventories client API references,
  * server API mount points, client application routes, and likely apiRequest
  * signature mismatches. It writes a Markdown report by default so route drift
  * can be reviewed before making behavioral changes.
@@ -23,12 +23,19 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
 const args = new Set(process.argv.slice(2));
-const outArgIndex = process.argv.indexOf('--out');
-const reportPath = path.resolve(
-  repoRoot,
-  outArgIndex >= 0 ? process.argv[outArgIndex + 1] : 'docs/route-inventory.md'
-);
 const checkMode = args.has('--check');
+
+const outArgIndex = process.argv.indexOf('--out');
+let outArg = 'docs/route-inventory.md';
+if (outArgIndex >= 0) {
+  const value = process.argv[outArgIndex + 1];
+  if (!value || value.startsWith('--')) {
+    console.error('Error: --out requires a file path, e.g. --out docs/route-inventory.md');
+    process.exit(1);
+  }
+  outArg = value;
+}
+const reportPath = path.resolve(repoRoot, outArg);
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 const SOURCE_ROOTS = ['client/src', 'server', 'tests'];
@@ -37,10 +44,11 @@ const SERVER_ROUTE_METHODS = ['use', 'get', 'post', 'put', 'patch', 'delete'];
 
 function walk(dir, files = []) {
   if (!fs.existsSync(dir)) return files;
+  // Sort entries so traversal order is stable across OS/filesystems; otherwise
+  // readdirSync ordering can make the generated report (and --check) flaky.
   const entries = fs
     .readdirSync(dir, { withFileTypes: true })
     .sort((a, b) => a.name.localeCompare(b.name));
-
   for (const entry of entries) {
     if (IGNORE_DIRS.has(entry.name)) continue;
     const fullPath = path.join(dir, entry.name);
@@ -72,12 +80,10 @@ function addOccurrence(map, key, occurrence) {
 }
 
 function readSourceFiles(rootNames) {
-  return rootNames
-    .flatMap((rootName) => walk(path.join(repoRoot, rootName)))
-    .sort((a, b) => rel(a).localeCompare(rel(b)));
+  return rootNames.flatMap((rootName) => walk(path.join(repoRoot, rootName)));
 }
 
-function extractApiReferences(files) {
+function extractClientApiReferences(files) {
   const references = new Map();
   const patterns = [
     /['"`]((?:\/api\/)[^'"`\s)]+)['"`]/g,
@@ -143,13 +149,38 @@ function extractClientAppRoutes() {
   if (!fs.existsSync(appPath)) return new Map();
   const text = fs.readFileSync(appPath, 'utf8');
   const routes = new Map();
-  const routePattern = /<Route\s+path=["']([^"']+)["']/g;
+
+  // Tokenize <Route ...>, self-closing <Route .../>, and </Route> in document
+  // order, tracking a stack of `nest` prefixes. wouter's `<Route path="/m" nest>`
+  // wraps child routes, so nested paths must be recorded with their parent prefix
+  // (e.g. /m/collections) rather than as bare top-level paths that collide with
+  // the desktop routes of the same name.
+  const tokenPattern = /<Route\b([^>]*?)(\/?)>|<\/Route>/g;
+  const prefixStack = [];
   let match;
-  while ((match = routePattern.exec(text))) {
-    addOccurrence(routes, match[1], {
-      file: rel(appPath),
-      line: lineNumberAt(text, match.index),
-    });
+  while ((match = tokenPattern.exec(text))) {
+    if (match[0] === '</Route>') {
+      prefixStack.pop();
+      continue;
+    }
+    const attrs = match[1] || '';
+    const selfClosing = match[2] === '/';
+    const pathMatch = attrs.match(/path=["']([^"']+)["']/);
+    const prefix = prefixStack.join('');
+    if (pathMatch) {
+      let fullPath = `${prefix}${pathMatch[1]}`.replace(/\/{2,}/g, '/');
+      if (fullPath.length > 1) fullPath = fullPath.replace(/\/+$/, '');
+      addOccurrence(routes, fullPath, {
+        file: rel(appPath),
+        line: lineNumberAt(text, match.index),
+      });
+    }
+    if (!selfClosing) {
+      // Only `nest` routes contribute a URL prefix to their children; every other
+      // open route pushes '' purely to stay balanced with its closing </Route>.
+      const isNest = /\bnest\b/.test(attrs);
+      prefixStack.push(isNest && pathMatch ? pathMatch[1].replace(/\/+$/, '') : '');
+    }
   }
   return routes;
 }
@@ -171,8 +202,9 @@ function likelyUnmatchedApiRefs(apiRefs, serverRoutes) {
 }
 
 function occurrencesSummary(occurrences, limit = 4) {
-  return occurrences
-    .slice()
+  // Sort by file/line so the "first locations" shown are deterministic and don't
+  // depend on filesystem walk order (keeps --check stable across machines).
+  return [...occurrences]
     .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
     .slice(0, limit)
     .map((occ) => `${occ.file}:${occ.line}`)
@@ -202,36 +234,39 @@ function buildReport({ apiRefs, apiRequestMismatches, serverRoutes, appRoutes, u
   const mismatchRows = apiRequestMismatches.map((item) => [item.url, `${item.file}:${item.line}`]);
   const unmatchedRows = unmatched.map((route) => [route, occurrencesSummary(apiRefs.get(route) || [])]);
 
-  return `# Route Inventory\n\nGenerated by \`npm run inventory:routes\`.\n\n## Summary\n\n- App/test API references: **${apiRefs.size}** unique paths\n- Server API route/mount references: **${serverRoutes.size}** unique paths\n- Client app routes in \`App.tsx\`: **${appRoutes.size}** unique paths\n- Likely URL-first \`apiRequest\` calls: **${apiRequestMismatches.length}**\n- API references without a specific server mount prefix: **${unmatched.length}**\n\n## Likely URL-first apiRequest calls\n\nThese call sites appear to pass \`apiRequest(url, options)\`, but the current helper signature is \`apiRequest(method, url, body?, timeoutMs?)\`. Review these first because they can masquerade as routing bugs.\n\n${mismatchRows.length ? markdownTable(['API path', 'Location'], mismatchRows) : '_None found._'}\n\n## API references without a specific server mount prefix\n\nThis is heuristic. It intentionally ignores the broad \`/api\` catch-all because that would hide drift. Dynamic template strings may need manual review.\n\n${unmatchedRows.length ? markdownTable(['API path', 'First locations'], unmatchedRows) : '_None found._'}\n\n## Server API route and mount references\n\n${markdownTable(['Route or mount', 'Occurrences', 'Locations'], serverRouteRows)}\n\n## App/test API references\n\n${markdownTable(['API path', 'Occurrences', 'First locations'], apiRefRows)}\n\n## Client app routes\n\n${markdownTable(['Route', 'Occurrences', 'Locations'], appRouteRows)}\n`;
+  return `# Route Inventory\n\nGenerated by \`npm run inventory:routes\`.\n\n## Summary\n\n- Client API references: **${apiRefs.size}** unique paths\n- Server API route/mount references: **${serverRoutes.size}** unique paths\n- Client app routes in \`App.tsx\`: **${appRoutes.size}** unique paths\n- Likely URL-first \`apiRequest\` calls: **${apiRequestMismatches.length}**\n- API references without a specific server mount prefix: **${unmatched.length}**\n\n## Likely URL-first apiRequest calls\n\nThese call sites appear to pass \`apiRequest(url, options)\`, but the current helper signature is \`apiRequest(method, url, body?, timeoutMs?)\`. Review these first because they can masquerade as routing bugs.\n\n${mismatchRows.length ? markdownTable(['API path', 'Location'], mismatchRows) : '_None found._'}\n\n## API references without a specific server mount prefix\n\nThis is heuristic. It intentionally ignores the broad \`/api\` catch-all because that would hide drift. Dynamic template strings may need manual review.\n\n${unmatchedRows.length ? markdownTable(['API path', 'First locations'], unmatchedRows) : '_None found._'}\n\n## Server API route and mount references\n\n${markdownTable(['Route or mount', 'Occurrences', 'Locations'], serverRouteRows)}\n\n## Client API references\n\n${markdownTable(['API path', 'Occurrences', 'First locations'], apiRefRows)}\n\n## Client app routes\n\n${markdownTable(['Route', 'Occurrences', 'Locations'], appRouteRows)}\n`;
 }
 
 const allFiles = readSourceFiles(SOURCE_ROOTS);
-const clientFiles = allFiles.filter((file) => rel(file).startsWith('client/src/'));
-const apiReferenceFiles = allFiles.filter((file) => {
-  const relativePath = rel(file);
-  return relativePath.startsWith('client/src/') || relativePath.startsWith('tests/');
-});
 const serverFiles = allFiles.filter((file) => rel(file).startsWith('server/'));
+// Client API references / apiRequest mismatches are collected from client code
+// AND tests, so /api/... usages in integration tests are part of the inventory.
+const clientApiScanFiles = allFiles.filter(
+  (file) => rel(file).startsWith('client/src/') || rel(file).startsWith('tests/')
+);
 
-const apiRefs = extractApiReferences(apiReferenceFiles);
-const apiRequestMismatches = extractApiRequestMismatches(clientFiles);
+const apiRefs = extractClientApiReferences(clientApiScanFiles);
+const apiRequestMismatches = extractApiRequestMismatches(clientApiScanFiles);
 const serverRoutes = extractServerApiRoutes(serverFiles);
 const appRoutes = extractClientAppRoutes();
 const unmatched = likelyUnmatchedApiRefs(apiRefs, serverRoutes);
 const report = buildReport({ apiRefs, apiRequestMismatches, serverRoutes, appRoutes, unmatched });
 
-fs.mkdirSync(path.dirname(reportPath), { recursive: true });
 const existing = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8') : null;
+// Normalize line endings before comparing so a CRLF checkout (Windows /
+// core.autocrlf) doesn't fail --check when the route data is unchanged.
+const existingNormalized = existing === null ? null : existing.replace(/\r\n/g, '\n');
 
 if (!checkMode) {
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
   console.log(`Route inventory written to ${rel(reportPath)}`);
-} else if (existing !== report) {
+} else if (existingNormalized !== report) {
   console.error(`Route inventory is out of date. Run: npm run inventory:routes`);
   process.exit(1);
 }
 
-console.log(`App/test API references: ${apiRefs.size}`);
+console.log(`Client API references: ${apiRefs.size}`);
 console.log(`Server API routes/mounts: ${serverRoutes.size}`);
 console.log(`Client app routes: ${appRoutes.size}`);
 console.log(`Likely URL-first apiRequest calls: ${apiRequestMismatches.length}`);

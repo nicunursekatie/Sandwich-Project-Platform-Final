@@ -172,6 +172,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   returningOrgData,
   onAddNextAction,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const isMobile = useIsMobile();
   const StatusIcon =
     statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
@@ -1502,82 +1503,115 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </div>
             )}
 
-            {/* Event Times - Start, End, and Pickup */}
-            {(request.eventStartTime || request.eventEndTime || request.pickupTime || request.pickupDateTime) && (
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-2">
-                  Event Times
-                </p>
-                {request.eventStartTime && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-[#007E8C]" />
-                    <span className="font-medium text-gray-700">Start:</span>
-                    <span className="text-gray-900">{formatTime12Hour(request.eventStartTime)}</span>
-                  </div>
-                )}
-                {request.eventEndTime && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-[#007E8C]" />
-                    <span className="font-medium text-gray-700">End:</span>
-                    <span className="text-gray-900">{formatTime12Hour(request.eventEndTime)}</span>
-                  </div>
-                )}
-                {(request.pickupTime || request.pickupDateTime) && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Package className="w-4 h-4 text-[#007E8C]" />
-                    <span className="font-medium text-gray-700">Pickup:</span>
-                    <span className="text-gray-900">
-                      {request.pickupDateTime 
-                        ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
-                        : request.pickupTime 
-                        ? formatTime12Hour(request.pickupTime)
-                        : ''}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Event Times + Sandwich Info — side-by-side to avoid wasted vertical space */}
+            {(() => {
+              const hasEventTimes =
+                request.eventStartTime ||
+                request.eventEndTime ||
+                request.pickupTime ||
+                request.pickupDateTime;
+              const hasSandwichInfo =
+                request.actualSandwichCount ||
+                request.actualSandwichTypes ||
+                request.estimatedSandwichCount ||
+                request.sandwichTypes;
 
-            {/* Sandwich Info - Show actual if available, otherwise estimated */}
-            {((request.actualSandwichCount || request.actualSandwichTypes) || (request.estimatedSandwichCount || request.sandwichTypes)) && (
-              <div className="bg-amber-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Package className="w-4 h-4 text-amber-600" />
-                  <span className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
-                    {request.actualSandwichCount || request.actualSandwichTypes ? 'Actual Sandwiches' : 'Estimated Sandwiches'}
-                  </span>
-                </div>
-                <div className="text-sm">
-                  {request.actualSandwichCount || request.actualSandwichTypes ? (
-                    <div>
-                      {request.actualSandwichTypes && Array.isArray(request.actualSandwichTypes) && request.actualSandwichTypes.length > 0 ? (
-                        <div className="space-y-1">
-                          <div className="font-medium text-amber-900">
-                            {formatSandwichTypesDisplay(request.actualSandwichTypes, request.actualSandwichCount ?? undefined)}
+              if (!hasEventTimes && !hasSandwichInfo) return null;
+
+              return (
+                <div
+                  className={`grid gap-3 ${
+                    hasEventTimes && hasSandwichInfo ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
+                  }`}
+                >
+                  {hasEventTimes && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-2">
+                        Event Times
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        {request.eventStartTime && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Clock className="w-4 h-4 text-[#007E8C] shrink-0" />
+                            <span className="font-medium text-gray-700">Start:</span>
+                            <span className="text-gray-900">{formatTime12Hour(request.eventStartTime)}</span>
                           </div>
-                          {request.actualSandwichCount && (
-                            <div className="text-xs text-amber-700">
-                              Total: {request.actualSandwichCount} sandwiches
-                            </div>
-                          )}
-                        </div>
-                      ) : request.actualSandwichCount ? (
-                        <div className="font-medium text-amber-900">
-                          {request.actualSandwichCount} sandwiches
-                        </div>
-                      ) : null}
+                        )}
+                        {request.eventEndTime && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Clock className="w-4 h-4 text-[#007E8C] shrink-0" />
+                            <span className="font-medium text-gray-700">End:</span>
+                            <span className="text-gray-900">{formatTime12Hour(request.eventEndTime)}</span>
+                          </div>
+                        )}
+                        {(request.pickupTime || request.pickupDateTime) && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Package className="w-4 h-4 text-[#007E8C] shrink-0" />
+                            <span className="font-medium text-gray-700">Pickup:</span>
+                            <span className="text-gray-900">
+                              {request.pickupDateTime
+                                ? formatTime12Hour(
+                                    new Date(request.pickupDateTime).toTimeString().slice(0, 5)
+                                  )
+                                : request.pickupTime
+                                  ? formatTime12Hour(request.pickupTime)
+                                  : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="font-medium text-amber-900">
-                      {formatSandwichTypesDisplay(
-                        request.sandwichTypes,
-                        request.estimatedSandwichCount ?? undefined
-                      )}
+                  )}
+
+                  {hasSandwichInfo && (
+                    <div className="bg-amber-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
+                          {request.actualSandwichCount || request.actualSandwichTypes
+                            ? 'Actual Sandwiches'
+                            : 'Estimated Sandwiches'}
+                        </span>
+                      </div>
+                      <div className="text-sm">
+                        {request.actualSandwichCount || request.actualSandwichTypes ? (
+                          <div>
+                            {request.actualSandwichTypes &&
+                            Array.isArray(request.actualSandwichTypes) &&
+                            request.actualSandwichTypes.length > 0 ? (
+                              <div className="space-y-1">
+                                <div className="font-medium text-amber-900">
+                                  {formatSandwichTypesDisplay(
+                                    request.actualSandwichTypes,
+                                    request.actualSandwichCount ?? undefined
+                                  )}
+                                </div>
+                                {request.actualSandwichCount && (
+                                  <div className="text-xs text-amber-700">
+                                    Total: {request.actualSandwichCount} sandwiches
+                                  </div>
+                                )}
+                              </div>
+                            ) : request.actualSandwichCount ? (
+                              <div className="font-medium text-amber-900">
+                                {request.actualSandwichCount} sandwiches
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="font-medium text-amber-900">
+                            {formatSandwichTypesDisplay(
+                              request.sandwichTypes,
+                              request.estimatedSandwichCount ?? undefined
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Right Column - Contact Info & TSP Contact */}

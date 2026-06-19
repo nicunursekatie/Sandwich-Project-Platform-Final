@@ -1172,7 +1172,10 @@ export const recipients = pgTable('recipients', {
   website: text('website'), // Organization website URL
   instagramHandle: text('instagram_handle'), // Instagram handle for social media tracking
   ein: text('ein'), // Employer Identification Number (tax ID) for the organization
-  address: text('address'), // Actual street address
+  address: text('address'), // Actual street address (primary — also drives map + region detection)
+  // Optional extra addresses (e.g., second site, warehouse, summer location). Each entry is a free-form labeled address.
+  // The primary `address` field above stays authoritative for geocoding and map pins.
+  addresses: jsonb('addresses').$type<Array<{ label: string; address: string }>>().default([]),
   region: text('region'), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text('preferences'), // Legacy field - keeping for backward compatibility
   weeklyEstimate: integer('weekly_estimate'), // Estimated weekly sandwich count
@@ -1191,7 +1194,21 @@ export const recipients = pgTable('recipients', {
   secondContactPersonRole: text('second_contact_person_role'), // Second contact person's role/title
   // Enhanced fields for operational tracking
   reportingGroup: text('reporting_group'), // Corresponds to host locations for operational grouping
-  estimatedSandwiches: integer('estimated_sandwiches'), // Estimated number of sandwiches needed
+  estimatedSandwiches: integer('estimated_sandwiches'), // Estimated sandwiches — used as the MIN of the range (or the single value when min === max)
+  estimatedSandwichesMax: integer('estimated_sandwiches_max'), // Upper bound of the range. NULL means the field is treated as a single number equal to estimatedSandwiches.
+  // Planned breakdown by sandwich type. Each row = { type, min, max }.
+  // Use min === max for a single number (no range). Sum of all min/max is what we plan to give.
+  // This is the PLANNED distribution; actual logged counts live in sandwich_collections.
+  plannedSandwichBreakdown: jsonb('planned_sandwich_breakdown')
+    .$type<Array<{ type: string; min: number; max: number }>>()
+    .default([]),
+  // How often we serve this org — NOT tied to the sandwich count itself.
+  // 'weekly_priority' = regular committed orgs.
+  // 'when_extras'     = leftover-driven; only served when we have surplus.
+  // 'as_needed'       = irregular / special-circumstance orgs.
+  // Free-text deliveryCadenceNote captures nuance not in the tier.
+  deliveryCadence: text('delivery_cadence'), // 'weekly_priority' | 'when_extras' | 'as_needed' | null
+  deliveryCadenceNote: text('delivery_cadence_note'),
   sandwichType: text('sandwich_type'), // Type of sandwiches preferred (replaces old "preferences" field)
   tspContact: text('tsp_contact'), // TSP contact person (may be a user within our app)
   tspContactUserId: varchar('tsp_contact_user_id'), // Link to users table if TSP contact is an app user

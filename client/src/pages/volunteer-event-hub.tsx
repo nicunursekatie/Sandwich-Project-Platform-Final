@@ -2277,19 +2277,19 @@ export default function VolunteerEventHub() {
                 </div>
               </div>
 
-              <CardContent className="p-4 sm:p-6">
-                <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-5">
+              <CardContent className="p-4 sm:p-5 lg:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-5">
                   <div className="space-y-3">
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="text-center text-[11px] sm:text-sm font-bold text-[#236383] py-2">
+                        <div key={day} className="text-center text-[11px] md:text-xs lg:text-sm font-bold text-[#236383] py-2">
                           {day}
                         </div>
                       ))}
 
                       {paddedDays.map((day, idx) => {
                         if (!day) {
-                          return <div key={`empty-${idx}`} className="min-h-[76px] sm:min-h-[120px]" />;
+                          return <div key={`empty-${idx}`} className="min-h-[60px] sm:min-h-[76px] lg:min-h-[120px]" />;
                         }
 
                         const dateKey = format(day, 'yyyy-MM-dd');
@@ -2308,7 +2308,7 @@ export default function VolunteerEventHub() {
                             onClick={() => hasEvents && setSelectedCalendarDate(dateKey)}
                             disabled={!hasEvents}
                             className={cn(
-                              'relative min-h-[76px] sm:min-h-[120px] rounded-xl border p-2 text-left transition-all',
+                              'relative min-h-[60px] sm:min-h-[76px] lg:min-h-[120px] rounded-xl border p-2 text-left transition-all',
                               hasEvents
                                 ? 'bg-white border-[#47B3CB]/35 hover:border-[#007E8C] hover:shadow-md cursor-pointer'
                                 : 'bg-gray-50 border-gray-100 cursor-default',
@@ -2366,7 +2366,7 @@ export default function VolunteerEventHub() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 min-h-[360px]">
+                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 lg:min-h-[360px]">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-bold text-[#236383]">{selectedDateLabel}</h3>
