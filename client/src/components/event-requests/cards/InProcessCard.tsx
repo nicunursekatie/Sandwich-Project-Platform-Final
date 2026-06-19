@@ -518,7 +518,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <TooltipTrigger asChild>
                 <Badge
                   variant="outline"
-                  className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap cursor-help"
+                  className="bg-[#FBAD3F]/15 text-[#236383] border-[#FBAD3F] whitespace-nowrap cursor-help"
                 >
                   <AlertTriangle className="w-3 h-3 mr-1" />
                   Needs follow-up
@@ -1062,28 +1062,13 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 <div className="mt-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge className="bg-red-500 text-white border-red-400 px-3 py-1 cursor-help">
+                      <Badge className="bg-[#A31C41] text-white border-[#A31C41] px-3 py-1 cursor-help">
                         <AlertTriangle className="w-4 h-4 mr-1" />
                         Follow-up needed - Over 1 week since toolkit sent
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>{indicatorTooltips.toolkitFollowUp}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
-              {followUpStatus === 'contact' && (
-                <div className="mt-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge className="bg-orange-500 text-white border-orange-400 px-3 py-1 cursor-help">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Follow-up needed - Over 1 week since last contact
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{indicatorTooltips.contactFollowUp}</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
