@@ -40,10 +40,10 @@ const COLUMNS: { id: SortColumn; label: string; className?: string; defaultWidth
   { id: 'collectionDays', label: 'Collection Days', className: 'min-w-[130px]', defaultWidth: 150 },
   { id: 'feedingDays', label: 'Feeding Days', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'estimatedSandwiches', label: 'Est. Sandwiches', className: 'w-[110px]', defaultWidth: 120 },
+  { id: 'sandwichType', label: 'Sandwich Type', className: 'w-[110px]', defaultWidth: 120 },
   { id: 'cadence', label: 'Cadence', className: 'min-w-[130px]', defaultWidth: 150 },
   { id: 'peopleServed', label: 'People served', className: 'min-w-[130px]', defaultWidth: 140 },
   { id: 'fruitSnacks', label: 'Fruit & Snacks', className: 'w-[110px]', defaultWidth: 120 },
-  { id: 'sandwichType', label: 'Sandwich Type', className: 'w-[110px]', defaultWidth: 120 },
   { id: 'reportingGroup', label: 'Reporting Group', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'tspContact', label: 'TSP Contact', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'focusArea', label: 'Focus Area', className: 'min-w-[140px]', defaultWidth: 160 },
@@ -281,6 +281,17 @@ export function RecipientTable({
                     />
                   </TableCell>
                   <TableCell>
+                    <InlineTextCell
+                      value={recipient.sandwichType || ''}
+                      placeholder="—"
+                      canEdit={canEdit}
+                      isSaving={isSaving}
+                      onSave={(sandwichType) =>
+                        save(recipient, { sandwichType: sandwichType || null })
+                      }
+                    />
+                  </TableCell>
+                  <TableCell>
                     <InlineCadenceCell
                       recipient={recipient}
                       canEdit={canEdit}
@@ -302,17 +313,6 @@ export function RecipientTable({
                       canEdit={canEdit}
                       isSaving={isSaving}
                       onSave={(updates) => save(recipient, updates)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <InlineTextCell
-                      value={recipient.sandwichType || ''}
-                      placeholder="—"
-                      canEdit={canEdit}
-                      isSaving={isSaving}
-                      onSave={(sandwichType) =>
-                        save(recipient, { sandwichType: sandwichType || null })
-                      }
                     />
                   </TableCell>
                   <TableCell>

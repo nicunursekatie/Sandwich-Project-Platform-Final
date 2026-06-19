@@ -474,6 +474,38 @@ export function RecipientForm({
                 />
               </div>
               <div>
+                <Label className="text-sm">Status</Label>
+                <p className="text-xs text-slate-500 mb-1.5">
+                  Inactive orgs are hidden from default filters but kept for history.
+                </p>
+                <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => onFieldChange('status', 'active')}
+                    aria-pressed={formData.status === 'active'}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                      formData.status === 'active'
+                        ? 'bg-[#47B3CB]/20 text-[#236383] border border-[#47B3CB]/40'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onFieldChange('status', 'inactive')}
+                    aria-pressed={formData.status === 'inactive'}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                      formData.status === 'inactive'
+                        ? 'bg-slate-200 text-slate-800 border border-slate-300'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    Inactive
+                  </button>
+                </div>
+              </div>
+              <div>
                 <Label htmlFor={inputId('phone')}>Phone Number *</Label>
                 <Input
                   id={inputId('phone')}

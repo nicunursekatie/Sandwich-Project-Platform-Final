@@ -13,7 +13,7 @@ export const getDefaultRecipientForm = () => ({
   addresses: [] as Array<{ label: string; address: string }>,
   region: '',
   preferences: '',
-  status: 'active' as const,
+  status: 'active' as 'active' | 'inactive',
   contactPersonName: '',
   contactPersonPhone: '',
   contactPersonEmail: '',
