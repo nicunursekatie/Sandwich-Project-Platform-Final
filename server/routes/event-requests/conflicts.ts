@@ -119,6 +119,30 @@ router.get('/van-requests-for-date', isAuthenticated, async (req, res) => {
 });
 
 /**
+ * Whole-calendar scan for van scheduling conflicts.
+ * GET /api/event-requests/van-conflict-dates
+ *
+ * Returns every date that has 2+ in-process / scheduled / rescheduled events
+ * promised the org van, grouped into:
+ *   - `confirmed`: 2+ events with vanDriverNeeded=true (must resolve)
+ *   - `potential`: 2+ van events including at least one vanNeededLikely
+ *
+ * Excludes self-transport orgs and DHL-van events (they don't use TSP's van).
+ */
+router.get('/van-conflict-dates', isAuthenticated, async (_req, res) => {
+  try {
+    const { getAllVanConflictDates } = await import('../../services/event-conflict-detection');
+    const result = await getAllVanConflictDates();
+    res.json(result);
+  } catch (error) {
+    logger.error('Error scanning van conflict dates:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
  * Get weekly capacity summary for a date range
  * GET /api/event-requests/weekly-capacity?start=2026-03-01&end=2026-04-30
  *

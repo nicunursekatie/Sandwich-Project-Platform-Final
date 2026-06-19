@@ -47,6 +47,7 @@ import {
 
 // Import existing components that we'll reuse
 import RequestFilters from '@/components/event-requests/RequestFilters';
+import { VanConflictsButton } from '@/components/event-requests/VanConflictsButton';
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
@@ -622,6 +623,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   {!isMobile && 'Sync'}
                 </button>
               )}
+              <VanConflictsButton isMobile={isMobile} />
               <button
                 onClick={openManualEventRequest}
                 className="premium-btn-outline text-sm"

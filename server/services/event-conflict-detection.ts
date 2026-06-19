@@ -647,6 +647,161 @@ export async function getOtherVanRequestsOnDate(
   }
 }
 
+// ============================================================================
+// Whole-calendar van conflict scan
+// ============================================================================
+
+export interface VanConflictEvent {
+  id: number;
+  organizationName: string | null;
+  status: string;
+  vanDriverNeeded: boolean;
+  vanNeededLikely: boolean;
+  eventDate: string; // ISO date string YYYY-MM-DD
+  eventStartTime: string | null;
+}
+
+export interface VanConflictDate {
+  date: string; // YYYY-MM-DD
+  events: VanConflictEvent[];
+  confirmedCount: number;
+  possiblyCount: number;
+}
+
+export interface VanConflictsResult {
+  /** Dates with 2+ events where ALL are vanDriverNeeded=true. Must-resolve. */
+  confirmed: VanConflictDate[];
+  /** Dates with 2+ van events including at least one vanNeededLikely. Worth watching. */
+  potential: VanConflictDate[];
+  /** Total events scanned (across all active statuses, excluding DHL + self-transport). */
+  totalEventsScanned: number;
+  /** When the scan ran (server time, ISO). */
+  scannedAt: string;
+}
+
+/**
+ * Scan every in-process / scheduled / rescheduled event request that has the
+ * org van promised (confirmed or possibly), group by effective event date,
+ * and return any dates with 2+ events on them.
+ *
+ * - "confirmed" bucket: every event on the date has vanDriverNeeded=true.
+ *   These are double-bookings that must be resolved.
+ * - "potential" bucket: at least one event is vanNeededLikely. Worth flagging
+ *   while still soft — possibly resolved before scheduling.
+ *
+ * Excludes self-transport orgs (they bring their own) and DHL-van events
+ * (DHL provides the vehicle, not TSP's van).
+ */
+export async function getAllVanConflictDates(): Promise<VanConflictsResult> {
+  const effectiveDate = sql<string>`to_char(COALESCE(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}), 'YYYY-MM-DD')`;
+
+  try {
+    const rows = await db
+      .select({
+        id: eventRequests.id,
+        organizationName: eventRequests.organizationName,
+        status: eventRequests.status,
+        vanDriverNeeded: eventRequests.vanDriverNeeded,
+        vanNeededLikely: eventRequests.vanNeededLikely,
+        eventDate: effectiveDate,
+        eventStartTime: eventRequests.eventStartTime,
+        selfTransport: eventRequests.selfTransport,
+        isDhlVan: eventRequests.isDhlVan,
+      })
+      .from(eventRequests)
+      .where(
+        and(
+          or(
+            eq(eventRequests.status, 'in_process'),
+            eq(eventRequests.status, 'scheduled'),
+            eq(eventRequests.status, 'rescheduled')
+          ),
+          or(
+            eq(eventRequests.vanDriverNeeded, true),
+            eq(eventRequests.vanNeededLikely, true)
+          )
+        )
+      );
+
+    // Drop self-transport and DHL van events — they don't compete for the org van.
+    const eligible = rows.filter(
+      (row) => row.selfTransport !== true && row.isDhlVan !== true && !!row.eventDate
+    );
+
+    // Group by date.
+    const byDate = new Map<string, VanConflictEvent[]>();
+    for (const row of eligible) {
+      const dateKey = row.eventDate as string;
+      if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+      byDate.get(dateKey)!.push({
+        id: row.id,
+        organizationName: row.organizationName,
+        status: row.status,
+        vanDriverNeeded: row.vanDriverNeeded === true,
+        vanNeededLikely: row.vanNeededLikely === true,
+        eventDate: dateKey,
+        eventStartTime: row.eventStartTime,
+      });
+    }
+
+    const confirmed: VanConflictDate[] = [];
+    const potential: VanConflictDate[] = [];
+
+    for (const [date, events] of byDate.entries()) {
+      if (events.length < 2) continue;
+
+      const confirmedCount = events.filter((e) => e.vanDriverNeeded).length;
+      const possiblyCount = events.filter(
+        (e) => !e.vanDriverNeeded && e.vanNeededLikely
+      ).length;
+
+      // Sort events on the date by time (nulls last), then by id for stable order.
+      events.sort((a, b) => {
+        const ta = a.eventStartTime ?? '99:99';
+        const tb = b.eventStartTime ?? '99:99';
+        if (ta !== tb) return ta < tb ? -1 : 1;
+        return a.id - b.id;
+      });
+
+      const entry: VanConflictDate = {
+        date,
+        events,
+        confirmedCount,
+        possiblyCount,
+      };
+
+      // Confirmed bucket: ALL events on this date are confirmed van-needed.
+      // (Two confirmed + any possibly is still a confirmed double-booking, so
+      // we count it as confirmed any time confirmedCount >= 2.)
+      if (confirmedCount >= 2) {
+        confirmed.push(entry);
+      } else if (confirmedCount + possiblyCount >= 2) {
+        // At least one is still "possibly" — not yet a hard conflict.
+        potential.push(entry);
+      }
+    }
+
+    // Sort buckets chronologically (soonest first).
+    confirmed.sort((a, b) => (a.date < b.date ? -1 : 1));
+    potential.sort((a, b) => (a.date < b.date ? -1 : 1));
+
+    return {
+      confirmed,
+      potential,
+      totalEventsScanned: eligible.length,
+      scannedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    logger.error('Error scanning van conflicts:', error);
+    return {
+      confirmed: [],
+      potential: [],
+      totalEventsScanned: 0,
+      scannedAt: new Date().toISOString(),
+    };
+  }
+}
+
 /**
  * Get weekly capacity summary for a date range.
  * Returns sandwich totals and event counts per week (Mon–Sun).
