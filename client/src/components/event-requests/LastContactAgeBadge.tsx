@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { CalendarClock, Check, Clock } from 'lucide-react';
+import { CalendarClock, Check, AlertTriangle } from 'lucide-react';
 import {
   getContactAgeBadge,
   getLastContactTimestamp,
@@ -35,13 +35,17 @@ interface LastContactAgeBadgeProps {
   className?: string;
 }
 
+// Stale tiers (>= 1 week since last contact) ARE the "follow-up needed" signal,
+// so they escalate through the brand palette: gold (#FBAD3F) for the early weeks,
+// shifting to the accent maroon (#A31C41) as it gets seriously overdue. Text uses
+// the dark brand teal (#236383) on gold for contrast.
 const TIER_STYLES: Record<ContactAgeTier, { className: string; variant: 'outline' | 'default' }> = {
-  fresh: { variant: 'outline', className: 'bg-transparent text-slate-500 border-slate-300' },
-  wk1: { variant: 'outline', className: 'bg-transparent text-slate-600 border-slate-300' },
-  wk2: { variant: 'outline', className: 'bg-slate-50 text-slate-700 border-slate-400' },
-  wk3: { variant: 'outline', className: 'bg-amber-50 text-amber-700 border-amber-300' },
-  mo1: { variant: 'default', className: 'bg-amber-500 text-white border-amber-600' },
-  wk6: { variant: 'outline', className: 'bg-red-50 text-red-700 border-red-300' },
+  fresh: { variant: 'outline', className: 'bg-[#FBAD3F]/10 text-[#236383] border-[#FBAD3F]' },
+  wk1: { variant: 'outline', className: 'bg-[#FBAD3F]/15 text-[#236383] border-[#FBAD3F]' },
+  wk2: { variant: 'outline', className: 'bg-[#FBAD3F]/25 text-[#236383] border-[#FBAD3F]' },
+  wk3: { variant: 'outline', className: 'bg-[#FBAD3F]/40 text-[#236383] border-[#FBAD3F]' },
+  mo1: { variant: 'outline', className: 'bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/50' },
+  wk6: { variant: 'outline', className: 'bg-[#A31C41]/15 text-[#A31C41] border-[#A31C41]' },
   mo2plus: { variant: 'default', className: 'bg-[#A31C41] text-white border-[#A31C41]' },
 };
 
@@ -129,7 +133,7 @@ export function LastContactAgeBadge({ request, className = '' }: LastContactAgeB
             className={`whitespace-nowrap cursor-help inline-flex items-center gap-1 ${style.className} ${className}`}
             data-testid="badge-last-contact-age"
           >
-            <Clock className="w-3 h-3" />
+            <AlertTriangle className="w-3 h-3" />
             {ageBadge.label}
           </Badge>
         </TooltipTrigger>
