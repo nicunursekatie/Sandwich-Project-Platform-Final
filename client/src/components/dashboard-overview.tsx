@@ -557,10 +557,10 @@ export default function DashboardOverview({
         {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
         <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
 
-        {/* TSP External Tools Section */}
+        {/* TSP Additional Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
           <h3 className="premium-text-h3 text-brand-primary mb-6">
-            TSP External Tools
+            TSP Additional Tools
           </h3>
           <p className="premium-text-body-sm text-gray-600 mb-6">
             External platforms we've built to support TSP operations
@@ -575,7 +575,7 @@ export default function DashboardOverview({
                 </div>
                 <div>
                   <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Hour Hero Magic
+                    Service Hours Sign-Off Portal
                   </h4>
                 </div>
               </div>
@@ -587,7 +587,7 @@ export default function DashboardOverview({
                 className="premium-btn-accent w-full text-sm"
               >
                 <ExternalLink className="w-4 h-4" />
-                Open Service Hours Portal
+                Open Hour Hero Magic
               </button>
             </div>
 
@@ -599,7 +599,7 @@ export default function DashboardOverview({
                 </div>
                 <div>
                   <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Bread & Butter Donors
+                    Donor Management Platform
                   </h4>
                 </div>
               </div>
@@ -611,7 +611,7 @@ export default function DashboardOverview({
                 className="premium-btn-primary w-full text-sm"
               >
                 <ExternalLink className="w-4 h-4" />
-                Open Donor Platform
+                Open Bread & Butter Donors
               </button>
             </div>
 
@@ -623,7 +623,7 @@ export default function DashboardOverview({
                 </div>
                 <div>
                   <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Grant Manager
+                    Grant Tracking & Application Manager
                   </h4>
                 </div>
               </div>
@@ -635,7 +635,7 @@ export default function DashboardOverview({
                 className="premium-btn-secondary w-full text-sm"
               >
                 <ExternalLink className="w-4 h-4" />
-                Open Grant Manager
+                Open TSP Grant Manager
               </button>
             </div>
 
@@ -647,7 +647,7 @@ export default function DashboardOverview({
                 </div>
                 <div>
                   <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Sandwich Steward
+                    Host Onboarding Tracker
                   </h4>
                 </div>
               </div>
@@ -659,7 +659,7 @@ export default function DashboardOverview({
                 className="premium-btn-outline w-full text-sm"
               >
                 <ExternalLink className="w-4 h-4" />
-                Open Host Tracker
+                Open Sandwich Steward
               </button>
             </div>
 
@@ -671,7 +671,7 @@ export default function DashboardOverview({
                 </div>
                 <div>
                   <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Receipt Generator
+                    Donation Receipt Generator
                   </h4>
                 </div>
               </div>
