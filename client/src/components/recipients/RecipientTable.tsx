@@ -89,7 +89,7 @@ export function RecipientTable({
   return (
     <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
       {canEdit && (
-        <div className="px-3 py-1.5 bg-[#FBAD3F]/10 border-b border-[#FBAD3F]/20 text-[11px] text-slate-600">
+        <div className="px-3 py-2 bg-[#FBAD3F]/10 border-b border-[#FBAD3F]/20 text-sm text-slate-600">
           Click any cell to edit inline. Row click opens full details.
         </div>
       )}
@@ -100,7 +100,7 @@ export function RecipientTable({
               {COLUMNS.map((col) => (
                 <TableHead
                   key={col.id}
-                  className={`whitespace-nowrap text-xs font-semibold text-slate-700 ${col.className || ''} ${
+                  className={`whitespace-nowrap text-sm font-semibold text-slate-700 ${col.className || ''} ${
                     col.id === 'collectionDays'
                       ? 'bg-[#007E8C]/8'
                       : col.id === 'feedingDays'
@@ -221,7 +221,7 @@ export function RecipientTable({
                       onSave={(updates) => save(recipient, updates)}
                     />
                   </TableCell>
-                  <TableCell className="text-xs text-slate-600 max-w-[120px] truncate">
+                  <TableCell className="text-sm text-slate-600 max-w-[120px] truncate">
                     {getRecipientRegion(recipient)}
                   </TableCell>
                   <TableCell>

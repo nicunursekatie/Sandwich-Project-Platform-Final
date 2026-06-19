@@ -126,7 +126,8 @@
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash)",
       "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final stash pop)",
       "Bash(/)",
-      "Bash(awk '/router\\\\.get/' /Users/kathrynelong/Sandwich-Project-Platform-Final/server/routes/event-requests-legacy.ts)"
+      "Bash(awk '/router\\\\.get/' /Users/kathrynelong/Sandwich-Project-Platform-Final/server/routes/event-requests-legacy.ts)",
+      "Bash(git -C /Users/kathrynelong/Sandwich-Project-Platform-Final diff client/src/components/recipients/recipient-table-inline-cells.tsx)"
     ],
     "deny": [],
     "ask": [],

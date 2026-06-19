@@ -67,7 +67,7 @@ export function InlineTextCell({
 
   if (!canEdit) {
     return (
-      <span className={`text-xs text-slate-600 truncate block ${className}`}>
+      <span className={`text-sm text-slate-600 truncate block ${className}`}>
         {value || placeholder}
       </span>
     );
@@ -100,7 +100,7 @@ export function InlineTextCell({
         stopRowClick(e);
         setEditing(true);
       }}
-      className={`group text-left text-xs w-full truncate rounded px-1 py-0.5 hover:bg-white hover:ring-1 hover:ring-[#007E8C]/30 ${className}`}
+      className={`group text-left text-sm w-full truncate rounded px-1 py-0.5 hover:bg-white hover:ring-1 hover:ring-[#007E8C]/30 ${className}`}
     >
       {isSaving ? (
         <Loader2 className="w-3 h-3 animate-spin inline" />
@@ -143,7 +143,7 @@ export function InlineNumberCell({
 
   if (!canEdit) {
     return (
-      <span className="text-xs text-slate-700 tabular-nums">
+      <span className="text-sm text-slate-700 tabular-nums">
         {value != null ? value.toLocaleString() : '—'}
       </span>
     );
@@ -177,7 +177,7 @@ export function InlineNumberCell({
         stopRowClick(e);
         setEditing(true);
       }}
-      className="group text-xs tabular-nums rounded px-1 py-0.5 hover:bg-white hover:ring-1 hover:ring-[#007E8C]/30"
+      className="group text-sm tabular-nums rounded px-1 py-0.5 hover:bg-white hover:ring-1 hover:ring-[#007E8C]/30"
     >
       {isSaving ? (
         <Loader2 className="w-3 h-3 animate-spin" />
@@ -202,7 +202,7 @@ export function InlineStatusSelect({
 } & InlineBaseProps) {
   if (!canEdit) {
     return (
-      <Badge variant={status === 'active' ? 'default' : 'secondary'} className="text-[10px]">
+      <Badge variant={status === 'active' ? 'default' : 'secondary'} className="text-xs">
         {status}
       </Badge>
     );
@@ -215,7 +215,7 @@ export function InlineStatusSelect({
         disabled={isSaving}
         onValueChange={(v) => onSave(v as 'active' | 'inactive')}
       >
-        <SelectTrigger className="h-7 text-[10px] w-[88px] border-dashed">
+        <SelectTrigger className="h-7 text-xs w-[88px] border-dashed">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -261,7 +261,7 @@ export function InlineContractCell({
           });
         }}
       >
-        <SelectTrigger className="h-7 text-[10px] w-[90px] border-dashed">
+        <SelectTrigger className="h-7 text-xs w-[90px] border-dashed">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -382,7 +382,7 @@ function ScheduleInlineEditor({
               key={day}
               type="button"
               onClick={() => toggleDay(day)}
-              className={`px-2 py-0.5 text-[10px] font-semibold rounded border ${chipClass}`}
+              className={`px-2 py-1 text-xs font-semibold rounded border ${chipClass}`}
             >
               {DAY_ABBREV[day]}
             </button>
@@ -431,13 +431,13 @@ export function InlineFocusAreasCell({
           <Badge
             key={area}
             variant="outline"
-            className="text-[10px] bg-brand-primary-lighter/50 text-brand-primary border-brand-primary-border px-1.5 py-0"
+            className="text-xs bg-brand-primary-lighter/50 text-brand-primary border-brand-primary-border px-1.5 py-0"
           >
             {area}
           </Badge>
         ))
       ) : (
-        <span className="text-xs text-slate-400">—</span>
+        <span className="text-sm text-slate-400">—</span>
       )}
     </div>
   );
@@ -464,7 +464,7 @@ export function InlineFocusAreasCell({
               <Badge
                 key={area}
                 variant={selected ? 'default' : 'outline'}
-                className="cursor-pointer text-[10px]"
+                className="cursor-pointer text-xs"
                 onClick={() => {
                   const next = selected
                     ? areas.filter((a) => a !== area)
@@ -566,10 +566,10 @@ export function InlinePrimaryContactCell({
   if (!canEdit) {
     return (
       <div className="space-y-0.5">
-        {name && <div className="text-xs font-medium truncate">{name}</div>}
-        {phone && <div className="text-[11px] text-slate-500 truncate">{phone}</div>}
+        {name && <div className="text-sm font-medium truncate">{name}</div>}
+        {phone && <div className="text-xs text-slate-500 truncate">{phone}</div>}
         {!name && !phone && !email && (
-          <span className="text-xs text-slate-400 italic">—</span>
+          <span className="text-sm text-slate-400 italic">—</span>
         )}
       </div>
     );
@@ -588,12 +588,12 @@ export function InlinePrimaryContactCell({
           ) : (
             <>
               {name ? (
-                <div className="text-xs font-medium truncate">{name}</div>
+                <div className="text-sm font-medium truncate">{name}</div>
               ) : (
-                <span className="text-xs text-slate-400 italic">Add contact</span>
+                <span className="text-sm text-slate-400 italic">Add contact</span>
               )}
               {phone && (
-                <div className="text-[11px] text-slate-500 truncate">{phone}</div>
+                <div className="text-xs text-slate-500 truncate">{phone}</div>
               )}
             </>
           )}

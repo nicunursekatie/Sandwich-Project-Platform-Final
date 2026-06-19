@@ -26,7 +26,7 @@ export function ScheduleDayChips({ schedules, variant }: ScheduleDayChipsProps) 
 
   if (dayDetails.size === 0) {
     return (
-      <span className="text-xs text-slate-400 italic" title="No schedule entered">
+      <span className="text-sm text-slate-400 italic" title="No schedule entered">
         not set
       </span>
     );
@@ -45,7 +45,7 @@ export function ScheduleDayChips({ schedules, variant }: ScheduleDayChipsProps) 
             <TooltipTrigger asChild>
               <Badge
                 variant="outline"
-                className={`px-1.5 py-0 text-[10px] font-semibold cursor-default ${VARIANT_STYLES[variant]}`}
+                className={`px-2 py-0.5 text-xs font-semibold cursor-default ${VARIANT_STYLES[variant]}`}
               >
                 {label}
               </Badge>

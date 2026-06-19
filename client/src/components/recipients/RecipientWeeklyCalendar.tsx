@@ -37,14 +37,14 @@ function DaySection({
   return (
     <div className={`rounded-md border ${borderClass} overflow-hidden flex-1 min-h-0 flex flex-col`}>
       <div className={`px-2 py-1.5 flex items-center justify-between ${headerClass}`}>
-        <span className="text-[10px] font-semibold uppercase tracking-wide">{title}</span>
-        <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+        <span className="text-xs font-semibold uppercase tracking-wide">{title}</span>
+        <Badge variant="secondary" className="text-xs h-5 px-1.5">
           {count}
         </Badge>
       </div>
-      <div className="p-1.5 space-y-1 flex-1 overflow-y-auto max-h-[220px]">
+      <div className="p-1.5 space-y-1 flex-1 overflow-y-auto max-h-[260px]">
         {recipients.length === 0 ? (
-          <p className="text-[10px] text-slate-400 italic px-1 py-1">None</p>
+          <p className="text-xs text-slate-400 italic px-1 py-1">None</p>
         ) : (
           recipients.map((r) => {
             const schedules =
@@ -57,12 +57,12 @@ function DaySection({
                 key={`${scheduleType}-${r.id}`}
                 type="button"
                 onClick={() => onRecipientClick(r)}
-                className="w-full text-left px-2 py-1 rounded border border-slate-200/80 bg-white hover:border-[#007E8C] hover:bg-[#007E8C]/5 transition-colors"
+                className="w-full text-left px-2 py-1.5 rounded border border-slate-200/80 bg-white hover:border-[#007E8C] hover:bg-[#007E8C]/5 transition-colors"
               >
-                <div className="text-[11px] font-medium text-slate-800 truncate">{r.name}</div>
+                <div className="text-sm font-medium text-slate-800 truncate">{r.name}</div>
                 {time && (
-                  <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
-                    <Clock className="w-2.5 h-2.5 shrink-0" />
+                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3 h-3 shrink-0" />
                     {time}
                   </div>
                 )}
@@ -99,10 +99,10 @@ export function RecipientWeeklyCalendar({
             >
               <div className="px-3 py-2 bg-white border-b border-slate-200 flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-semibold text-slate-800">{DAY_ABBREV[day]}</span>
-                  <span className="text-xs text-slate-500 ml-1 hidden sm:inline">{day}</span>
+                  <span className="text-base font-semibold text-slate-800">{DAY_ABBREV[day]}</span>
+                  <span className="text-sm text-slate-500 ml-1 hidden sm:inline">{day}</span>
                 </div>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-xs">
                   {collectionList.length + feedingList.length}
                 </Badge>
               </div>
@@ -137,7 +137,7 @@ export function RecipientWeeklyCalendar({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {collectionUnscheduled.length > 0 && (
             <div className="border border-dashed border-[#007E8C]/30 rounded-lg p-3 bg-[#007E8C]/5">
-              <p className="text-xs font-medium text-[#007E8C] mb-2">
+              <p className="text-sm font-medium text-[#007E8C] mb-2">
                 No collection day set ({collectionUnscheduled.length})
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -146,7 +146,7 @@ export function RecipientWeeklyCalendar({
                     key={`c-unsched-${r.id}`}
                     type="button"
                     onClick={() => onRecipientClick(r)}
-                    className="text-xs px-2 py-1 rounded bg-white border border-[#007E8C]/20 hover:border-[#007E8C] transition-colors"
+                    className="text-sm px-2.5 py-1 rounded bg-white border border-[#007E8C]/20 hover:border-[#007E8C] transition-colors"
                   >
                     {r.name}
                   </button>
@@ -156,7 +156,7 @@ export function RecipientWeeklyCalendar({
           )}
           {feedingUnscheduled.length > 0 && (
             <div className="border border-dashed border-[#FBAD3F]/40 rounded-lg p-3 bg-[#FBAD3F]/10">
-              <p className="text-xs font-medium text-[#B8860B] mb-2">
+              <p className="text-sm font-medium text-[#B8860B] mb-2">
                 No feeding day set ({feedingUnscheduled.length})
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -165,7 +165,7 @@ export function RecipientWeeklyCalendar({
                     key={`f-unsched-${r.id}`}
                     type="button"
                     onClick={() => onRecipientClick(r)}
-                    className="text-xs px-2 py-1 rounded bg-white border border-[#FBAD3F]/30 hover:border-[#FBAD3F] transition-colors"
+                    className="text-sm px-2.5 py-1 rounded bg-white border border-[#FBAD3F]/30 hover:border-[#FBAD3F] transition-colors"
                   >
                     {r.name}
                   </button>
