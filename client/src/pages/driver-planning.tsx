@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/sheet';
 import { EventEditDialog } from '@/components/event-requests/dialogs/EventEditDialog';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
+import { applyPatchResponseToCache } from '@/lib/queryClient';
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -1387,8 +1388,13 @@ export default function DriverPlanningDashboard() {
   const updateEventMutation = useMutation({
     mutationFn: async (data: { id: number; updates: Record<string, any> }) =>
       patchEventRequestVerified(data.id, data.updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/event-map'] });
+    onSuccess: async (updated, variables) => {
+      // Refresh event-request list/counts in addition to the map. touchedFields
+      // = the keys this dialog actually changed, so map/volunteer-hub get
+      // invalidated only when a relevant field (address, date, status…) moved.
+      await applyPatchResponseToCache(queryClient, updated as any, {
+        touchedFields: Object.keys(variables.updates),
+      });
       toast({ title: 'Event updated', description: 'Changes saved successfully' });
       setEditDialogOpen(false);
     },
