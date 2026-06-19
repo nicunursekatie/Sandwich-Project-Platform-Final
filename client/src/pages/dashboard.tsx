@@ -472,7 +472,7 @@ export default function Dashboard({
       staleTime: 2 * 60 * 1000, // 2 minutes
     });
 
-    // Prefetch the lightweight list for the user's role default tab.
+    // Prefetch the event list for the user's role default tab.
     // (Admins default to 'scheduled', drivers/volunteers default to 'my_assignments', etc.)
     if (user?.role) {
       const defaults = getEventRequestDefaults(user.role, user.id);

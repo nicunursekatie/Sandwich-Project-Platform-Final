@@ -264,23 +264,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
 
-  // ── Data Fetching ──────────────────────────────────────────────────
-
-  const { data: fullEventRequest, isError: fullEventRequestError, refetch: refetchFullEventRequest } = useQuery<EventRequest>({
-    queryKey: ['/api/event-requests', eventRequest?.id, 'full'],
-    queryFn: async () => {
-      const response = await fetch(`/api/event-requests/${eventRequest!.id}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch full event data');
-      return response.json();
-    },
-    enabled: dialogOpen && !!eventRequest?.id,
-    staleTime: 30 * 1000,
-    gcTime: 60 * 1000,
-  });
-
-  const effectiveEventRequest = fullEventRequest || eventRequest;
+  // Event requests now use a single full-record shape from the list query.
+  // Do not refetch a second "full" copy here; the form initializes from eventRequest.
 
   // ── Form State ─────────────────────────────────────────────────────
 
@@ -419,7 +404,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     setHasRecoveredData(false);
     skipRecoveryRef.current = true;
 
-    const sourceEvent = effectiveEventRequest || eventRequest;
+    const sourceEvent = eventRequest;
     if (!sourceEvent) return;
 
     // Use the shared helper instead of duplicating all field mappings
@@ -444,7 +429,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     setFormInitialized(true);
 
     toast({ title: 'Changes discarded', description: 'Form has been reset to the last saved version.' });
-  }, [effectiveEventRequest, eventRequest, clearAutoSave, toast]);
+  }, [eventRequest, clearAutoSave, toast]);
 
   // ── Auto-save effect ───────────────────────────────────────────────
 
@@ -532,66 +517,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   useEffect(() => {
     if (dialogOpen) {
-      // Include whether we have full data in the session key so the form
-      // re-initializes when fullEventRequest loads (not just the partial prop)
-      const currentEventId = effectiveEventRequest?.id || 'new';
-      const sessionKey = `${currentEventId}-${fullEventRequest ? 'full' : 'partial'}`;
+      // The list endpoint now returns full event records, so the form has one
+      // authoritative data source and no partial→full upgrade path.
+      const currentEventId = eventRequest?.id || 'new';
+      const sessionKey = String(currentEventId);
 
       if (formInitSessionRef.current === sessionKey && formInitialized) return;
-
-      // UPGRADE PATH: When transitioning from partial → full data, preserve user edits
-      // instead of wiping the form. Only update the baseline (originalFormDataRef) so
-      // change detection works against the complete server data.
-      const prevSessionKey = formInitSessionRef.current || '';
-      const prevEventId = prevSessionKey.replace(/-(?:partial|full)$/, '');
-      const currentEventIdStr = String(currentEventId);
-      const isPartialToFull = prevEventId === currentEventIdStr && prevSessionKey.endsWith('-partial') && sessionKey.endsWith('-full') && formInitialized;
-      if (isPartialToFull) {
-        const fullServerData = buildFormDataFromEventRequest(
-          effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
-        );
-        const oldBaseline = originalFormDataRef.current || {};
-
-        // Find fields the user has changed since the partial init
-        const userEdits: Record<string, any> = {};
-        Object.keys(formData).forEach(key => {
-          const currentVal = (formData as any)[key];
-          const baselineVal = oldBaseline[key];
-          // Normalize for comparison
-          const norm = (v: any) => (v === '' || v === null || v === undefined) ? null : v;
-          if (Array.isArray(currentVal) && Array.isArray(baselineVal)) {
-            if (JSON.stringify(currentVal) !== JSON.stringify(baselineVal)) {
-              userEdits[key] = currentVal;
-            }
-          } else if (norm(currentVal) !== norm(baselineVal)) {
-            userEdits[key] = currentVal;
-          }
-        });
-
-        // Update baseline to full server data
-        originalFormDataRef.current = fullServerData;
-        formInitSessionRef.current = sessionKey;
-
-        // Re-apply user edits on top of full server data
-        if (Object.keys(userEdits).length > 0) {
-          setFormData({ ...fullServerData, ...userEdits } as any);
-          logger.log('🔄 Upgraded form to full data, preserved user edits:', Object.keys(userEdits));
-        } else {
-          setFormData(fullServerData as any);
-        }
-
-        // Update modes from full data
-        setSandwichMode(determineSandwichMode(
-          effectiveEventRequest?.sandwichTypes,
-          (effectiveEventRequest as any)?.estimatedSandwichCountMin,
-          (effectiveEventRequest as any)?.estimatedSandwichCountMax
-        ));
-        setActualSandwichMode(determineActualSandwichMode(effectiveEventRequest?.actualSandwichTypes));
-        const hasBreakdown = ((effectiveEventRequest as any)?.adultCount || 0) > 0 || ((effectiveEventRequest as any)?.childrenCount || 0) > 0;
-        setAttendeeMode(hasBreakdown ? 'breakdown' : 'total');
-        setShowCompletedDetails(effectiveEventRequest?.status === 'completed');
-        return;
-      }
 
       formInitSessionRef.current = sessionKey;
       setFormInitialized(false);
@@ -615,14 +546,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             const savedAt = new Date(savedData.savedAt);
             const hoursSinceSave = (Date.now() - savedAt.getTime()) / (1000 * 60 * 60);
             const savedStatus = savedData.formData?.status;
-            const serverStatus = effectiveEventRequest?.status;
+            const serverStatus = eventRequest?.status;
             const statusMismatch = savedStatus && serverStatus && savedStatus !== serverStatus;
 
             if (statusMismatch) {
               clearAutoSave();
             } else if (hoursSinceSave < 24) {
               const currentServerData = buildFormDataFromEventRequest(
-                effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
+                eventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
               );
               const { mergedData, conflicts, serverUpdates, userChangesPreserved } = intelligentMergeFormData(
                 savedData.formData, savedData.originalServerData, currentServerData
@@ -669,34 +600,32 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // If no recovery, populate from server data
       if (!recoveredFromStorage) {
         const serverFormData = buildFormDataFromEventRequest(
-          effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
+          eventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
         );
         // When the user opens this dialog via "Mark Scheduled" (mode === 'schedule')
         // and the event isn't already scheduled, pre-set the form's status to
         // 'scheduled' so the dropdown reflects the user's intent. The baseline
         // (originalFormDataRef.current below) keeps the true server status, so
-        // change detection still sees the in_process → scheduled transition.
+        // full-form save still sees the in_process → scheduled transition.
         if (mode === 'schedule' && serverFormData.status !== 'scheduled') {
           serverFormData.status = 'scheduled';
         }
         setFormData(serverFormData as any);
         setSandwichMode(determineSandwichMode(
-          effectiveEventRequest?.sandwichTypes,
-          (effectiveEventRequest as any)?.estimatedSandwichCountMin,
-          (effectiveEventRequest as any)?.estimatedSandwichCountMax
+          eventRequest?.sandwichTypes,
+          (eventRequest as any)?.estimatedSandwichCountMin,
+          (eventRequest as any)?.estimatedSandwichCountMax
         ));
-        setActualSandwichMode(determineActualSandwichMode(effectiveEventRequest?.actualSandwichTypes));
-        const hasBreakdown = ((effectiveEventRequest as any)?.adultCount || 0) > 0 || ((effectiveEventRequest as any)?.childrenCount || 0) > 0;
+        setActualSandwichMode(determineActualSandwichMode(eventRequest?.actualSandwichTypes));
+        const hasBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
         setAttendeeMode(hasBreakdown ? 'breakdown' : 'total');
-        setShowCompletedDetails(effectiveEventRequest?.status === 'completed');
+        setShowCompletedDetails(eventRequest?.status === 'completed');
       }
 
       // Set originalFormDataRef to server data (the true DB baseline).
       // This must ALWAYS reflect what the server has — never the user's recovered/merged changes.
-      // Using merged data here caused detectChangedFields to see no diff on recovered data,
-      // silently dropping saves (e.g. vanDriverNeeded checkbox would never persist).
-      originalFormDataRef.current = buildFormDataFromEventRequest(
-        effectiveEventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
+      originalFormDataRef.current = mergedOriginalFormDataRef ?? buildFormDataFromEventRequest(
+        eventRequest, formatDateForInput, getPickupDateTimeForInput, parsePostgresArray
       );
       setFormInitialized(true);
     } else {
@@ -712,7 +641,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         }
       }
     }
-  }, [isVisible, isOpen, effectiveEventRequest, fullEventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
+  }, [isVisible, isOpen, eventRequest, mode, getAutoSaveKey, clearAutoSave, toast]);
 
   // Auto-expand contact info in create mode
   useEffect(() => {
@@ -1000,38 +929,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
 
       // FULL-FORM SAVE (B5): send the entire built payload, not a change-detected
-      // subset. Removes the silent-dropped-field bug class (van flags, baseline
-      // drift) at the root.
-      // GUARD: never send a full payload until the form has been INITIALIZED FROM
-      // the full record — not merely until the full query resolved. The full
-      // query (fullEventRequest) can become available one render before the
-      // partial→full init effect runs; saving in that window would build the
-      // payload from lightweight-list/default values and overwrite fields that
-      // are missing from the list prop. formInitSessionRef ends with '-full' only
-      // after that init effect has run, so it is the authoritative signal here.
-      // (formInitialized goes true on partial init, so it is NOT sufficient.
-      // Create mode has no eventRequest and never reaches this branch.)
-      if (!fullEventRequest || !formInitSessionRef.current?.endsWith('-full')) {
-        if (fullEventRequestError) {
-          // The full-record fetch FAILED (not just still loading). Don't leave
-          // the user stuck behind a misleading "still loading" message — kick a
-          // retry and tell them plainly. Saving stays blocked so a partial
-          // payload can't overwrite real data.
-          logger.log('⛔ Save blocked: full event data failed to load; retrying');
-          refetchFullEventRequest();
-          toast({
-            title: "Couldn't load this event",
-            description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or refresh the page if this keeps happening.",
-            variant: 'destructive',
-            duration: Number.POSITIVE_INFINITY,
-          });
-        } else {
-          logger.log('⛔ Save blocked: form not yet initialized from full event data');
-          toast({ title: 'Please wait', description: 'Still loading the full event details — please try again in a moment.', variant: 'destructive' });
-        }
-        setIsSubmitting(false);
-        return;
-      }
+      // subset. The event list now provides the full record shape, so the form has
+      // one authoritative server baseline instead of a partial→full upgrade path.
 
       // The single date box maps to BOTH desiredEventDate and scheduledEventDate.
       // In edit mode, if the user didn't change the date box, omit both date

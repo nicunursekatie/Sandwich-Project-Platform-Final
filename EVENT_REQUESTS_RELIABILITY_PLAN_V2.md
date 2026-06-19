@@ -1,12 +1,12 @@
 # Event Requests Reliability Plan (v2)
 
 > Supersedes `EVENT_REQUESTS_RELIABILITY_PLAN.md` (kept for history).
-> Last updated: 2026-06-18 (B5 shipped PR #418; post-merge smoke checklist §B5)
+> Last updated: 2026-06-18 (post-audit sync: Unit 1/3 verified; Units 2/7/8/9 remain)
 > Author: Katie + Claude, after end-to-end codebase walkthrough.
 >
 > **Companion docs** (still authoritative for their narrow topic):
 > - `docs/event-requests-behavior-contract.md` — what current behavior must be preserved during refactors
-> - `docs/canonical-field-contracts.md` — lightweight-list vs full-record field contract
+> - `docs/canonical-field-contracts.md` — canonical naming/DTO field decisions (the old lightweight-list/full-record split was removed in Unit 7)
 > - `docs/event-request-api-audit.md` — query inventory (30+ API calls on page load)
 > - `docs/event-requests-lazy-loading-plan.md` — DB-level status filtering proposal
 > - `docs/development/EVENT_REQUESTS_PERFORMANCE_PLAN.md` — payload-size work (mostly done)
@@ -55,11 +55,11 @@ These are the bugs that produce most of the "it ate my edit / it told me there w
 2. **Socket invalidation on every PATCH** *(own-echo fixed §1.5; cross-tab PATCH now surgical via `applyEventRequestUpdateById` — Unit 1)*.
    Server middleware at [server/routes/event-requests/index.ts:57-74](server/routes/event-requests/index.ts) wraps `res.json` to emit `event_request_updated` on any 2xx PATCH/PUT across all sub-routers. Client at [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) handles cross-tab updates with a single GET + surgical cache patch. Create/delete socket events still use full invalidation. Before PR #416, your own save also triggered a second full refetch (save → socket echo → invalidate again).
 
-3. **Optimistic updates target dead cache keys.**
-   List query reads from `['/api/event-requests/list', filterParams, quickFilter, 'v3']` ([eventRequestsListQuery.ts:102](client/src/components/event-requests/lib/eventRequestsListQuery.ts)). Optimistic patches in `useEventMutations` set `['/api/event-requests']` and `['/api/event-requests', 'v2']` ([useEventMutations.tsx:368-369](client/src/components/event-requests/hooks/useEventMutations.tsx)). **The keys never overlap.** The optimistic-update layer is effectively dead code; `onSettled` then runs the sledgehammer anyway. **History:** added Dec 2025 for inline scheduled edits; list migrated to `/list` … `v3` keys afterward — optimistic path was never rewired (classic AI-accretion half-fix).
+3. **Optimistic updates previously targeted dead cache keys** *(active dead-key writes no longer found; Unit 2 is now a keep/delete decision).*
+   List query reads from `['/api/event-requests/list', filterParams, quickFilter, 'v3']` ([eventRequestsListQuery.ts:102](client/src/components/event-requests/lib/eventRequestsListQuery.ts)). The original reliability bug was optimistic patches writing to `['/api/event-requests']` / `['/api/event-requests', 'v2']`, which never overlapped the active list cache. Current audit shows the remaining inline scheduled-field optimistic patch now targets the correct `/api/event-requests/list` cache family via `patchEventInListCaches`; decide in Unit 2 whether to keep that correct-key optimistic feedback or delete it and rely on the Unit 1 success patch.
 
 4. **Row-level `_expectedVersion` check → spurious 409s** *(row-level gate **removed** PR #417 — see §1.5)*.
-   PATCH at [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) now **strips** `_expectedVersion` and does not 409 on `updatedAt` drift. `EventSchedulingForm`'s send was removed with full-form save (PR #418); [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx) and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx) still send the now-ignored field — dead code cleanup pending (§B8).
+   PATCH at [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) now **strips** `_expectedVersion` and does not 409 on `updatedAt` drift. Current audit shows active client PATCH sends have been removed/avoided in `EventSchedulingForm`, `useEventMutations`, and `EventEditDialog`; only defensive server stripping, comments, and generic non-`_expectedVersion` 409 handling remain (§B8 / Unit 3).
 
    **Historical 409 triggers** (pre-#417; scratchpad removed §1.6):
 
@@ -70,10 +70,10 @@ These are the bugs that produce most of the "it ate my edit / it told me there w
    | Sheets message backfill (rare) | Sets `updatedAt` on empty-message backfill |
    | Real two-human same-field edit | Was blocked whole row; now last-write-wins unless field-level check added later |
 
-   **Remaining work (§B8):** don't bump `updatedAt` on backfill-only sync writes; strip dead `_expectedVersion` from client.
+   **Remaining work (§B8 / Unit 3):** active client `_expectedVersion` sends are stripped; keep server-side stripping for stale clients and handle any future true conflicts at field level, not row level. Separately, evaluate whether backfill-only sync writes should avoid bumping `updatedAt` if they still create user-visible churn.
 
-5. **Partial/full payload split with a hand-maintained contract.**
-   Cards read from `/api/event-requests/list` (lightweight, ~30 fields). Edit form refetches via `/api/event-requests/:id` (full record) — see [EventSchedulingForm.tsx:274-288](client/src/components/event-requests/EventSchedulingForm.tsx). The contract is documented as comments at [event-requests-legacy.ts:1248-1268](server/routes/event-requests-legacy.ts). Past bugs (e.g., `vanDriverNeeded` not persisting) trace to this split — when a field is missing from the lightweight contract, cards show wrong data; when baseline comparison goes wrong, saves drop fields silently.
+5. **Partial/full payload split removed (Unit 7, 2026-06-19).**
+   `/api/event-requests/list` now returns full event records, and `EventSchedulingForm` initializes from the passed `eventRequest` without a second `['/api/event-requests', id, 'full']` query. The former lightweight projection and hand-maintained field contract were deleted, closing the main dual-shape bug gap.
 
 6. **Two edit paths.**
    `EventSchedulingForm` is the primary edit dialog. `EventEditDialog` is a parallel edit path used by driver planning ([driver-planning.tsx:51, :7371](client/src/pages/driver-planning.tsx)). Different PATCH payloads, different cache handling, different error UX.
@@ -88,7 +88,7 @@ These are the bugs that produce most of the "it ate my edit / it told me there w
    `EventRequestContext` owns ~50 state fields and spreads in `EventDialogContext` via `...rest` ([EventRequestContext.tsx:664-668](client/src/components/event-requests/context/EventRequestContext.tsx)). The comment in the code apologizes for this. Opening any dialog re-renders the whole tree.
 
 10. **Eight status-change paths, one entity.**
-    Status moves through separate code with different PATCH shapes — not one function. Verified paths include: `handleStatusChange` in [useEventAssignments.tsx](client/src/components/event-requests/hooks/useEventAssignments.tsx) (most tab buttons), `EventSchedulingForm` save via `detectChangedFields`, [QuickScheduleButton.tsx](client/src/components/event-requests/QuickScheduleButton.tsx) (comment: *"Emergency workaround… Bypasses the full form submission flow"*), [RescheduleDialog](client/src/components/event-requests/dialogs/RescheduleDialog.tsx), [NonEventDialog](client/src/components/event-requests/dialogs/NonEventDialog.tsx), [StatusReasonDialog](client/src/components/event-requests/dialogs/StatusReasonDialog.tsx), [DuplicateEventDialog](client/src/components/event-requests/dialogs/DuplicateEventDialog.tsx), [IntakeCallDialog](client/src/components/event-requests/IntakeCallDialog.tsx), inline paths in [index.tsx](client/src/components/event-requests/index.tsx). "Status won't move" and "didn't save" overlap here — different buttons, different failure modes.
+    Status moves through separate code with different PATCH shapes — not one function. Verified paths include: `handleStatusChange` in [useEventAssignments.tsx](client/src/components/event-requests/hooks/useEventAssignments.tsx) (most tab buttons), `EventSchedulingForm` full-form save path (formerly `detectChangedFields`), [QuickScheduleButton.tsx](client/src/components/event-requests/QuickScheduleButton.tsx) (comment: *"Emergency workaround… Bypasses the full form submission flow"*), [RescheduleDialog](client/src/components/event-requests/dialogs/RescheduleDialog.tsx), [NonEventDialog](client/src/components/event-requests/dialogs/NonEventDialog.tsx), [StatusReasonDialog](client/src/components/event-requests/dialogs/StatusReasonDialog.tsx), [DuplicateEventDialog](client/src/components/event-requests/dialogs/DuplicateEventDialog.tsx), [IntakeCallDialog](client/src/components/event-requests/IntakeCallDialog.tsx), inline paths in [index.tsx](client/src/components/event-requests/index.tsx). "Status won't move" and "didn't save" overlap here — different buttons, different failure modes.
 
 11. **Stale list cache → false "invalid status change."**
     `handleStatusChange` reads `request.status` from the **list cache** ([useEventAssignments.tsx:632-640](client/src/components/event-requests/hooks/useEventAssignments.tsx)) and validates client-side before PATCH. Server validates `originalEvent.status → requested status` from DB. If UI is stale (DB moved to B, UI still shows A), user can get blocked with a transition error they didn't cause. Calmer cache + fresh status before status PATCH addresses this; consolidating status paths is the long-term fix.
@@ -126,12 +126,12 @@ This deserves its own writeup because it was the daily complaint that produced Q
 | Underlying cause | Mechanism | Plan reference |
 |---|---|---|
 | Stale list cache during status transition | User clicks Mark Scheduled → status PATCH starts → refetch storm refetches the list with old status → form opens in "wrong" state | §1.2 #1, #11 → fixed by **Unit 1** (surgical cache) |
-| Form pre-fill race | `EventSchedulingForm` opens before full-record fetch completes; the `status: 'scheduled'` intent gets lost in the partial→full merge ([EventSchedulingForm.tsx:541-548](client/src/components/event-requests/EventSchedulingForm.tsx)) | §1.2 #5 → fixed by **Unit 6** (form init race) + **Unit 7** (collapse partial/full) |
+| Form pre-fill race | Formerly: `EventSchedulingForm` opened before the full-record fetch completed, and `status: 'scheduled'` could get lost in the partial→full merge. Unit 7 removed that second-fetch upgrade path. | §1.2 #5 → **Unit 7 shipped**; Unit 6 may still clean up remaining generic form-init/debug state |
 | Partial PATCH drops `status` field | Server's `_droppedFields` pipeline rejects the status change as an "invalid transition" because it compared against stale baseline | §1.2 #7, #11 → reduced by **Unit 1**, eliminated by **Unit 7** |
 | Eight status paths, one of them broken | Mark Scheduled goes through `handleStatusChange` in [useEventAssignments.tsx](client/src/components/event-requests/hooks/useEventAssignments.tsx); other status buttons go through different paths; if `handleStatusChange` regresses, only Mark Scheduled breaks | §1.2 #10 → fixed by **Unit 9** (consolidate status paths) |
 | Socket echo wiped the form | Pre-PR #416: user clicks Mark Scheduled, save starts, server emits `event_request_updated`, client refetches and resets the form before save completes | §1.2 #2 → **own-echo fixed PR #416**; cross-tab refetch storm fixed **Unit 1** |
 
-**Why it sporadic, not consistent:** It depends on whether a refetch is in flight when you click, whether the partial→full merge has completed, whether the sync just bumped `updatedAt`, and whether another user happened to save anything in the last few seconds. None of those things are visible to the user. From their POV, "sometimes the button works, sometimes it doesn't" — which is exactly what they report.
+**Why it was sporadic, not consistent:** Before Unit 7, it depended on whether a refetch was in flight when you clicked, whether the partial→full merge had completed, whether the sync just bumped `updatedAt`, and whether another user happened to save anything in the last few seconds. None of those things were visible to the user. From their POV, "sometimes the button works, sometimes it doesn't" — which is exactly what they reported.
 
 **Why QuickScheduleButton "fixed" it (and why it's a confession):**
 [QuickScheduleButton.tsx](client/src/components/event-requests/QuickScheduleButton.tsx) bypasses the form entirely. It sends a minimal status PATCH and skips the partial/full load, the merge logic, and the form initialization race. So it works more reliably — but it works by *avoiding* the broken path, not by fixing it. It also means users learned "if Mark Scheduled fails, use the other button," which is not a workflow you want to teach.
@@ -151,7 +151,7 @@ After Units 1, 6, 7, and 9 ship, QuickScheduleButton should be deletable. Until 
 These are **not** causing event-management wipes in the current code:
 
 - **No 60-second polling** on event lists or the scheduling form (`refetchInterval: false` globally; [EventRequestContext.tsx:330](client/src/components/event-requests/context/EventRequestContext.tsx) sets `refetchOnWindowFocus: false`).
-- **Not every background refresh re-initializes the form** — `EventSchedulingForm` guards re-init with `formInitSessionRef` / `${eventId}-partial|full` ([EventSchedulingForm.tsx:541-548](client/src/components/event-requests/EventSchedulingForm.tsx)) plus partial→full merge logic. Wipes still happen from refetch/version races, but not from a timer.
+- **Not every background refresh re-initializes the form** — after Unit 7, `EventSchedulingForm` has one full-record source and no partial→full merge path. Remaining form re-init concerns are generic dialog/form state, not dual-shape data loading.
 - **Sheets sync is not continuously rewriting in-progress events** — insert-only except empty-message backfill (§1.2 #4).
 
 ### 1.5 Already shipped (2026-06-18, PRs #416–#419 + Unit 1)
@@ -163,14 +163,14 @@ Do not rebuild these:
 | Ignore own socket echo | `b20a1e220` | `X-Socket-Id` on [apiRequest](client/src/lib/queryClient.ts); server echoes `originSocketId`; [useEventRequestSocket.ts](client/src/hooks/useEventRequestSocket.ts) skips matching id. Removes redundant refetch on your own save. Fails safe if socket not connected. |
 | Scratchpad list sync without refetch storm | `13f049395` | Surgical list-cache patch in scratchpad (component since removed §1.6). Pattern reimplemented in `queryClient.ts` for Unit 1. |
 | Intake paths surgical cache | Unit 1 | [IntakeCallDialog.tsx](client/src/components/event-requests/IntakeCallDialog.tsx) uses `applyPatchResponseToCache` after save-notes / move-to-non-event (was sledgehammer post-#416). |
-| Remove row-level version gate on PATCH | `4c2ff41fd` (PR #417) | [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) strips `_expectedVersion`; no 409 on `updatedAt` drift. **Unblocks Cause A root fix** (§2.5, §B5) — partial saves no longer needed to avoid row-level collisions. Form send removed in PR #418; `_expectedVersion` still sent from 2 remaining client paths; delete in §B8. |
-| Full-form save (Cause A root fix) | `08ca814a7` (PR #418) | [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) PATCHes full `buildEventDataForServer()` output; `detectChangedFields` deleted. Guards: must init from full record (`formInitSessionRef` ends `-full`); edit mode omits date columns when date box unchanged. |
-| List read contract (#419) | PR #419 | [shared/event-list-projection.ts](shared/event-list-projection.ts) + `toLightweightEventRequest()`; fixed blank Non-Event fields + missing `vanNeededLikely` on list cards. |
+| Remove row-level version gate on PATCH | `4c2ff41fd` (PR #417) | [event-requests-legacy.ts:2637-2649](server/routes/event-requests-legacy.ts) strips `_expectedVersion`; no 409 on `updatedAt` drift. **Unblocks Cause A root fix** (§2.5, §B5) — partial saves no longer needed to avoid row-level collisions. Follow-up audit verified active client sends are removed/avoided in the main remaining PATCH paths; keep the server strip defensively (§B8 / Unit 3). |
+| Full-form save (Cause A root fix) | `08ca814a7` (PR #418) | [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) PATCHes full `buildEventDataForServer()` output; `detectChangedFields` deleted. Unit 7 later removed the partial→full form-load guard by making the list provide full records. |
+| List read contract (#419) | PR #419 / superseded by Unit 7 | Originally centralized the lightweight list projection; Unit 7 later removed the separate projection by making `/api/event-requests/list` return full event records. |
 | **Surgical cache invalidation (Unit 1 / B1)** | *(this commit)* | [queryClient.ts](client/src/lib/queryClient.ts): `patchEventInListCaches`, `applyEventRequestSaveToCache`, `applyPatchResponseToCache`, `applyEventRequestUpdateById`. Migrated ~20 PATCH save callsites; sledgehammer kept for create/delete/restore/Sheets sync/bulk. Status moves refresh list + counts only; volunteer hub / event map invalidate only when touched fields require it. |
 | Call Notes Scratchpad removed | `4f46dcd3e` | See §1.6 — ~400 lines deleted; audit showed zero usage. |
 | Resources Open button fix | `188fd17eb` | [resources.tsx](client/src/pages/resources.tsx) — URL priority + anchor click for reliable open. |
 
-**Still open after Unit 1:** dead optimistic keys (§1.2 #3, §B6 / Unit 2), list/card shape split compile-time enforcement (§2.5 Cause B, §B9 / Unit 4), eight status paths (§1.2 #10, §B11 / Unit 9), dead client `_expectedVersion` sends (§B8 / Unit 3). **Post-merge:** run §B5 + Unit 1 smoke checklists in production.
+**Still open after Unit 7:** remaining correct-key optimistic inline edit behavior needs a keep/delete decision (§B6 / Unit 2), status paths still need consolidation (§1.2 #10, §B11 / Unit 9), and production smoke checks for B5 + Unit 1/7. Dead client `_expectedVersion` sends have been stripped (§B8 / Unit 3); only server-side stripping/comments and generic conflict handling remain.
 
 ### 1.6 Removed (2026-06-18) — Call Notes Scratchpad
 
@@ -265,7 +265,7 @@ GROUP BY status ORDER BY status;
 
 - `message` field in `NotesSection` (“Initial Request Message” from organizer)
 - `planningNotes` / `schedulingNotes` in form + `IntakeCallDialog`
-- `_expectedVersion` on form save (`callNotesExpectedVersionRef` — misnamed; applies to all form fields)
+- Historical `_expectedVersion` form-save state (`callNotesExpectedVersionRef` — misnamed; applied to all form fields before client sends were removed/avoided)
 - Own socket echo suppression (PR #416)
 - `event-save-verification.ts` / `_droppedFields` handling
 
@@ -280,7 +280,7 @@ GROUP BY status ORDER BY status;
 
 - **List 3:** scratchpad marked ✅ removed (skipped 60-day hide — audit proved zero usage)
 - **§1.2 #4:** scratchpad removed from 409 trigger ranking
-- **§1.2 #4 / §B8:** scratchpad 409 source gone; strip dead client `_expectedVersion`; Sheets backfill if needed
+- **§1.2 #4 / §B8:** scratchpad 409 source gone; active client `_expectedVersion` sends stripped; Sheets backfill `updatedAt` behavior only if it still creates churn
 - **B1:** ✅ shipped Unit 1 — surgical helpers in [queryClient.ts](client/src/lib/queryClient.ts); PATCH saves no longer sledgehammer
 
 ### 1.7 UI-room problems (visible chaos)
@@ -390,7 +390,7 @@ Each major complaint class has two fixes. **Bandaids add or maintain complexity;
 
 #### Recommendation (2026-06-18)
 
-Do **Unit 2 (delete dead optimistic keys)** next — now that B1 is shipped. Cause B (§B9 / Unit 4) follows once saves + cache are trustworthy in production. ~~Cause A (§B5)~~ ✅ shipped PR #418. ~~B1 surgical invalidation~~ ✅ shipped Unit 1.
+Do **Unit 2 (decide keep/delete for remaining correct-key optimistic inline edit)** next — now that B1 is shipped. Cause B (§B9 / Unit 7) follows once saves + cache are trustworthy in production. ~~Cause A (§B5)~~ ✅ shipped PR #418. ~~B1 surgical invalidation~~ ✅ shipped Unit 1.
 
 ---
 
@@ -419,7 +419,7 @@ These work today, don't add to them, don't extend them without reverting.
 - The calendar view (kept; light usage)
 - The spreadsheet view (kept; light usage)
 - The Collaboration / presence indicators (kept; rarely two editors at once but harmless when one)
-- The optimistic locking with `_expectedVersion` (server gate removed PR #417; client sends are dead code — strip in §B8)
+- The optimistic locking with `_expectedVersion` (server gate removed PR #417; active client sends removed/avoided in §B8 / Unit 3)
 
 ### List 3 — Hidden (turn off in UI, leave code, observe)
 
@@ -439,10 +439,10 @@ These items exist because there's an underlying bug. Removing the visible defens
 | Item | Underlying bug | Right action |
 |---|---|---|
 | `event-save-verification.ts` | Server's PATCH silently drops fields (`_droppedFields`) + partial save omits fields client-side | **Root:** full-form save (§B5) eliminates client-side omission; keep `getDroppedServerFields` until server drops are fixed; delete heuristic `findMismatchedSavedFields` blocking later |
-| Scary 409 toasts | Was row-level version check (fixed #417) | Strip dead client `_expectedVersion`; fix Sheets backfill `updatedAt` if needed |
+| Scary 409 toasts | Was row-level version check (fixed #417) | Client `_expectedVersion` sends are stripped; fix Sheets backfill `updatedAt` only if still causing visible churn |
 | Auto-save & form-init race defenses | Two-phase load (list → full record) and socket-driven refetches collide with open forms | Collapse partial/full split OR silence socket-driven invalidation on records under edit |
 | Form initialization race flag | Same root cause | Fix in Phase B as part of cache work |
-| Dead optimistic update code | Wrong query keys + sledgehammer invalidation make it useless | Delete after Phase B (key mismatch fix + surgical invalidation) |
+| Remaining optimistic inline edit patch | Original wrong-key optimistic writes appear gone; one correct-key patch remains | Decide keep/delete after Unit 1 production smoke |
 
 ---
 
@@ -502,17 +502,17 @@ Stop sending only changed fields from `EventSchedulingForm`. Send the full `buil
 
 | Question | Answer |
 |---|---|
-| Who uses `detectChangedFields`? | **Only** [EventSchedulingForm.tsx:966](client/src/components/event-requests/EventSchedulingForm.tsx) + [mark-scheduled-save.test.ts](client/src/components/event-requests/__tests__/mark-scheduled-save.test.ts) |
+| Who used `detectChangedFields` before PR #418? | **Only** [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) + [mark-scheduled-save.test.ts](client/src/components/event-requests/__tests__/mark-scheduled-save.test.ts); current code has deleted the runtime helper |
 | Who stays partial PATCH? | Card toggles (`useEventMutations`), status buttons, intake/reschedule/decline dialogs, assignments — **unchanged** |
 | Blocked by version lock? | **No** — PR #417 (`4c2ff41fd`) removed server 409 on `updatedAt` drift |
-| What gets deleted? | `detectChangedFields()` (~80 lines), `ALWAYS_INCLUDE_FIELDS`, schedule-mode strip logic inside it, client `_expectedVersion` sends in form mutation |
+| What got deleted? | `detectChangedFields()` (~80 lines), `ALWAYS_INCLUDE_FIELDS`, schedule-mode strip logic inside it, and the main form's client `_expectedVersion` send |
 | What stays? | `buildEventDataForServer()` (single serialization source), `getDroppedServerFields()` (server `_droppedFields` still authoritative), `originalFormDataRef` (form init + localStorage recovery) |
 
 **Implementation (1 PR):**
 
 1. [EventSchedulingForm.tsx](client/src/components/event-requests/EventSchedulingForm.tsx) `performSubmit`: PATCH `eventData` instead of `detectChangedFields(eventData, originalFormDataRef.current, mode)`
 2. Delete `detectChangedFields` from [form-utils.ts](client/src/components/event-requests/form-utils.ts)
-3. Remove `callNotesExpectedVersionRef` + `_expectedVersion` from form mutation (server ignores it anyway)
+3. Remove `callNotesExpectedVersionRef` + `_expectedVersion` from form mutation (server ignores it anyway) — completed in the main form path
 4. Rewrite [mark-scheduled-save.test.ts](client/src/components/event-requests/__tests__/mark-scheduled-save.test.ts) to assert `buildEventDataForServer` output includes critical booleans (van flags, status, dates)
 5. Update [replit.md](replit.md) — remove `ALWAYS_INCLUDE_FIELDS` rule (obsolete)
 
@@ -590,9 +590,9 @@ Priority 1–2 pass on real events over 2–3 days of normal use → B5 is doing
 - Smoke (regression): save a field; confirm no *second* full refetch from own echo in Network panel.
 
 **B8. Strip dead client `_expectedVersion` + Sheets backfill fix**
-- Server already strips `_expectedVersion` (PR #417). `EventSchedulingForm`'s send already removed (PR #418); remove the remaining sends from [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx) and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx).
+- Server already strips `_expectedVersion` (PR #417). Current audit shows active sends are removed/avoided in `EventSchedulingForm`, [useEventMutations.tsx](client/src/components/event-requests/hooks/useEventMutations.tsx), and [EventEditDialog.tsx](client/src/components/event-requests/dialogs/EventEditDialog.tsx); keep the server strip defensively for stale clients.
 - If needed: don't bump `updatedAt` on Sheets backfill-only writes.
-- Partially overlaps §B5 step 3 — do together.
+- Formerly overlapped §B5 step 3; current audit treats active client sends as complete and leaves only server defensive stripping / any Sheets backfill behavior decision.
 
 **B9. One read shape — Cause B root fix** *(bigger lift; after B5)*
 - Option 1 (bigger): make `/api/event-requests/list` return enough fields that the edit form doesn't need a second fetch. Larger payload, simpler client.
@@ -632,7 +632,7 @@ For each, why:
 
 - **Per-user feature flags before Phase A.** Dev environment is enough isolation. Flags become a maintenance burden if every change carries one.
 - **Full UI duplicate ("renovation in the next room") for Phase A.** The engine room is shared. A duplicate UI doesn't fix engine bugs, and doubles the maintenance surface for the duration.
-- **Remove `_expectedVersion` optimistic locking outright.** Row-level gate already removed server-side (PR #417). Strip dead client sends (§B8); do not reinstate row-level 409s.
+- **Remove `_expectedVersion` optimistic locking outright.** Row-level gate already removed server-side (PR #417). Active client sends are removed/avoided (§B8 / Unit 3); do not reinstate row-level 409s.
 - **Add retry logic / auto-retry on 409.** Defensive layer on a defensive stack. If saves fail, fix the trigger or the save path.
 - **Reduce TanStack Query stale time from 5min → 2min.** Runs counter to "calmer cache" direction.
 - **Build a new monitoring stack.** The `application_error_logs` table from the SMS investigation work is enough infrastructure for now.
@@ -765,18 +765,19 @@ Each item is a self-contained work unit. You can pick one up cold, do it, ship i
 
 ---
 
-### Unit 2 — Delete the dead optimistic-update code (was B6)
+### Unit 2 — Decide whether to keep the remaining optimistic inline-edit patch (was B6)
 
 **Closes:** #3 (optimistic updates on dead keys)
 
-**Status:** [ ] Not started
+**Status:** [~] Partially superseded by Unit 1 cleanup (2026-06-18 audit)
 
-**Why now:** With Unit 1 done, optimistic updates targeting `['/api/event-requests']` and `['/api/event-requests', 'v2']` are confirmed dead. Delete them. If Unit 1's surgical patches feel slow, *then* rewire optimistic updates to the correct key — but only if needed.
+**Why now:** With Unit 1 done, the original dead-key optimistic updates targeting `['/api/event-requests']` and `['/api/event-requests', 'v2']` appear gone from the active event-request mutation path. The remaining inline scheduled-field optimistic patch now targets the correct `/api/event-requests/list` cache family via `patchEventInListCaches`. Decide whether that correct-key optimistic patch is still useful, or delete it if Unit 1's surgical success patch is fast enough.
 
 **Scope:**
-1. Remove all `queryClient.setQueryData(['/api/event-requests'], ...)` and `(['/api/event-requests', 'v2'], ...)` calls from `useEventMutations.tsx`.
-2. Remove the corresponding `onMutate` / `onError` rollback handlers tied to these keys.
-3. Check no other file (search: `grep -rn "/api/event-requests'\]" client/src`) still uses the dead keys.
+1. Verify no active event-request mutation still writes optimistic data to `['/api/event-requests']` or `['/api/event-requests', 'v2']`.
+2. Audit the remaining `updateScheduledFieldMutation.onMutate` path, which patches `/api/event-requests/list` caches correctly.
+3. Either keep it and document why inline scheduled edits need pre-response feedback, or delete the `onMutate` / rollback pair and rely on `applyEventRequestSaveToCache` in `onSuccess`.
+4. Check no other file (search: `rg -n "setQueryData\(\[['\"]/api/event-requests['\"]" client/src`) still uses the old dead keys for event-request list data.
 
 **Files:**
 - `client/src/components/event-requests/hooks/useEventMutations.tsx` (lines around 354–400)
@@ -789,7 +790,8 @@ Each item is a self-contained work unit. You can pick one up cold, do it, ship i
 - Confirm the UI doesn't get noticeably slower (the optimistic layer was supposed to provide instant feedback; Unit 1's surgical patches should serve the same role).
 
 **Exit criteria:**
-- Grep for `/api/event-requests']` and `/api/event-requests', 'v2']` returns zero matches outside of test files.
+- No active event-request list optimistic update targets `['/api/event-requests']` or `['/api/event-requests', 'v2']`.
+- The remaining inline scheduled edit path is intentionally either kept on correct `/list` keys or removed.
 - No new "save feels slow" complaints in the week after.
 
 **Estimated effort:** 1–2 hours. Mostly deletion.
@@ -797,7 +799,7 @@ Each item is a self-contained work unit. You can pick one up cold, do it, ship i
 **Risk:** low.
 
 **Notes after shipping:**
-_[fill in]_
+- 2026-06-18 audit: old dead-key writes were not found in the active `useEventMutations` inline edit path; remaining optimistic patch targets `/api/event-requests/list` through `patchEventInListCaches`. Treat this unit as a small keep/delete decision, not a dead-key rewrite.
 
 ---
 
@@ -805,14 +807,14 @@ _[fill in]_
 
 **Closes:** the dead-code half of #4 (server-side gate already removed in PR #417)
 
-**Status:** [ ] Not started
+**Status:** [x] Shipped / verified in code (2026-06-18 audit)
 
-**Why now:** Server already ignores `_expectedVersion`. Client still sends it from three places. Remove the dead transmission so future devs don't think it does something.
+**Why now:** Server already ignores `_expectedVersion`. The three planned client sends have been removed/avoided: the main scheduling form no longer sends it, `useEventMutations` sends a clean payload, and `EventEditDialog` documents that client-side `_expectedVersion` is no longer sent. Keep the server strip as defensive cleanup so stale clients cannot write the field.
 
 **Scope:**
-1. Find every `_expectedVersion` in `client/src/`.
-2. Remove from `EventSchedulingForm.tsx`, `useEventMutations.tsx`, `EventEditDialog.tsx`.
-3. Remove any 409-specific error handling that's no longer reachable.
+1. Find every `_expectedVersion` in `client/src/`. ✅
+2. Remove from `EventSchedulingForm.tsx`, `useEventMutations.tsx`, `EventEditDialog.tsx`. ✅
+3. Leave only generic 409 handling if it can still be reached by a non-`_expectedVersion` server-side conflict guard; otherwise remove it during the next cleanup pass.
 
 **Files:**
 - `client/src/components/event-requests/EventSchedulingForm.tsx`
@@ -828,15 +830,16 @@ _[fill in]_
 - Verify the 409 error toast is no longer reachable (search and confirm no codepath calls it).
 
 **Exit criteria:**
-- Grep for `_expectedVersion` in `client/src/` returns zero matches.
-- No 409-specific UI code remains.
+- No active client PATCH payload adds `_expectedVersion`. ✅
+- Any remaining `_expectedVersion` references in `client/src/` are comments only, or are removed during cleanup.
+- No `_expectedVersion`-specific 409 UI remains; generic conflict handling may stay if it documents a reachable non-version conflict.
 
 **Estimated effort:** 30–60 minutes.
 
 **Risk:** very low.
 
 **Notes after shipping:**
-_[fill in]_
+- 2026-06-18 audit: `EventSchedulingForm` explicitly no longer sends `_expectedVersion`; `useEventMutations` strips legacy skip/version noise and sends a clean payload; `EventEditDialog` keeps only generic conflict UX and notes that client-side `_expectedVersion` is no longer sent.
 
 ---
 
@@ -961,7 +964,7 @@ _[fill in]_
 
 **Closes:** #5 (LIGHTWEIGHT contract), reduces #7 (silent field drops)
 
-**Status:** [ ] Not started
+**Status:** [x] Shipped 2026-06-19
 
 **Why now:** This is the biggest structural simplification remaining. After Units 1–6 the engine is calm and the UI is sane. Now address the dual-shape data problem.
 
@@ -1003,7 +1006,7 @@ _[fill in]_
 **Risk:** medium. Larger payloads could slow list load; mitigate by measuring before/after. Cards may have edge-case logic depending on field-absent vs field-empty.
 
 **Notes after shipping:**
-_[fill in]_
+- 2026-06-19: `/api/event-requests/list` now returns the full event records directly. Removed `shared/event-list-projection.ts`, deleted the legacy lightweight field-contract comment block, removed the second full-record fetch from `EventSchedulingForm`, and simplified form initialization to one server baseline.
 
 ---
 
@@ -1207,7 +1210,7 @@ _[fill in]_
 | Unit | Effort | Cumulative | Cumulative engine improvement |
 |---|---|---|---|
 | 1 — Surgical cache | 4–6h | 6h | Massive — closes the loudest bug |
-| 2 — Delete dead optimistic | 1–2h | 8h | Cleanup |
+| 2 — Optimistic keep/delete | 1–2h | 8h | Cleanup / decision |
 | 3 — Strip `_expectedVersion` client code | 30–60m | 9h | Cleanup |
 | 4 — Sync `updatedAt` fix | 2–3h | 12h | Future-proofing |
 | 5 — Dialog state collapse | 3–4h | 16h | Visible UI calm |
@@ -1229,13 +1232,13 @@ If you do one unit per week, that's 12 weeks. If you do one per month, that's a 
 
 | Unit | Status | Shipped date | Notes |
 |---|---|---|---|
-| 1 — Surgical cache | [ ] | | |
-| 2 — Delete dead optimistic | [ ] | | |
-| 3 — Strip `_expectedVersion` | [ ] | | |
+| 1 — Surgical cache | [x] | 2026-06-18 | Implemented in `queryClient.ts`; production smoke still called out in §1.5. |
+| 2 — Optimistic keep/delete | [~] | 2026-06-18 audit | Old dead-key target appears gone; remaining correct-key inline optimistic patch needs keep/delete decision. |
+| 3 — Strip `_expectedVersion` | [x] | 2026-06-18 audit | Client sends removed/avoided; server strip remains defensive. |
 | 4 — Sync `updatedAt` fix | [ ] | | |
 | 5 — Dialog state collapse | [ ] | | |
 | 6 — Form init race | [ ] | | |
-| 7 — Partial/full collapse | [ ] | | |
+| 7 — Partial/full collapse | [x] | 2026-06-19 | `/list` returns full records; form second fetch removed; lightweight projection deleted. |
 | 8 — Retire EventEditDialog | [ ] | | |
 | 9 — Consolidate status paths | [ ] | | |
 | 10 — Reason dialogs | [ ] | | |
