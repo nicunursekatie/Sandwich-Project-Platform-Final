@@ -88,6 +88,7 @@ import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/qu
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -1733,7 +1734,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
               return {
                 totalEvents: eventRequests.length,
-                scheduledEvents: eventRequests.filter(e => e.status === 'scheduled').length,
+                scheduledEvents: eventRequests.filter(e => isScheduledOrRescheduled(e.status)).length,
                 inProcessEvents: eventRequests.filter(e => e.status === 'in_process').length,
                 newRequests: eventRequests.filter(e => e.status === 'new').length,
                 completedEvents: eventRequests.filter(e => e.status === 'completed').length,

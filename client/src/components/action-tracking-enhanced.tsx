@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import { format, isValid, subDays, subMonths } from 'date-fns';
 import { logger } from '@/lib/logger';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface Project {
   id: number;
@@ -133,7 +134,7 @@ const ActionTracking = () => {
       if (event) {
         if (event.status === 'completed') {
           tab = 'completed';
-        } else if (event.status === 'scheduled') {
+        } else if (isScheduledOrRescheduled(event.status)) {
           tab = 'scheduled';
         } else if (event.status === 'in_process') {
           tab = 'in_process';

@@ -50,18 +50,18 @@ export function buildEventRequestsListFilterParams(
   }
 
   if (quickFilter === 'needsDriver') {
-    // Show ALL scheduled events that need drivers (no date restriction)
-    return { status: 'scheduled', needsDriver: 'true' };
+    // Show ALL scheduled (or rescheduled) events that need drivers (no date restriction)
+    return { status: 'scheduled,rescheduled', needsDriver: 'true' };
   }
 
   if (quickFilter === 'needsVan') {
-    // Show ALL scheduled events that need a van (no date restriction)
-    return { status: 'scheduled', needsVan: 'true' };
+    // Show ALL scheduled (or rescheduled) events that need a van (no date restriction)
+    return { status: 'scheduled,rescheduled', needsVan: 'true' };
   }
 
   if (quickFilter === 'corporatePriority') {
     // Show ALL corporate priority events across all active statuses
-    return { status: 'new,in_process,scheduled', corporatePriority: 'true' };
+    return { status: 'new,in_process,scheduled,rescheduled', corporatePriority: 'true' };
   }
 
   // Status-based tabs (no date restrictions)
@@ -87,9 +87,9 @@ export function buildEventRequestsListFilterParams(
   }
 
   // For "my_assignments", admin_overview, planning, etc:
-  // Only load active events (new, in_process, scheduled) by default.
+  // Only load active events (new, in_process, scheduled, rescheduled) by default.
   // Completed/declined events are lazy-loaded when those tabs are clicked.
-  return { status: 'new,in_process,scheduled' };
+  return { status: 'new,in_process,scheduled,rescheduled' };
 }
 
 export function buildEventRequestsListQuery(activeTab: string, quickFilter: EventRequestsQuickFilter) {

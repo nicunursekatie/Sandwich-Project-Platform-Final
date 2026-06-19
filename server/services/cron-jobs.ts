@@ -51,7 +51,8 @@ async function sendVolunteerReminders(): Promise<{
         and(
           sql`${eventRequests.scheduledEventDate} >= ${now}`,
           sql`${eventRequests.scheduledEventDate} <= ${fortyEightHoursFromNow}`,
-          eq(eventRequests.status, 'scheduled'),
+          // Include 'rescheduled' — rescheduled events still need reminders.
+          inArray(eventRequests.status, ['scheduled', 'rescheduled']),
           isNull(eventRequests.deletedAt)
         )
       );

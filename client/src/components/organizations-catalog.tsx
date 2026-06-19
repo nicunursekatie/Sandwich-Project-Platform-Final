@@ -49,6 +49,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface OrganizationContact {
   organizationName: string;
@@ -151,7 +152,7 @@ function isFutureEvent(org: OrganizationContact): boolean {
   if (!org.eventDate) return false;
   const eventDate = new Date(org.eventDate);
   const now = new Date();
-  return (org.status === 'scheduled' || org.status === 'in_process') && eventDate > now;
+  return (isScheduledOrRescheduled(org.status) || org.status === 'in_process') && eventDate > now;
 }
 
 export default function GroupCatalog({

@@ -35,6 +35,7 @@ import { useEventAssignments } from '@/components/event-requests/hooks/useEventA
 import { getUnfilledCounts } from '@/lib/assignment-utils';
 import { getTrafficConflict } from '@shared/traffic-conflicts';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
@@ -277,9 +278,10 @@ const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
   const relevantEvents = dayEvents.filter(
     e => e.status === 'new' || e.status === 'in_process' || e.status === 'scheduled' || e.status === 'rescheduled'
   );
-  // For van/driver conflicts, only check scheduled events (locked in dates)
+  // For van/driver conflicts, only check scheduled (or rescheduled) events —
+  // both have locked-in dates.
   const scheduledEvents = dayEvents.filter(
-    e => e.status === 'scheduled'
+    e => isScheduledOrRescheduled(e.status)
   );
 
   let vanConflicts = 0;

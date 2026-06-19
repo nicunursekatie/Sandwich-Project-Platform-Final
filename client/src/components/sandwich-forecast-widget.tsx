@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour } from '@/components/event-requests/utils';
 import { exportSandwichPlanning } from '@/lib/planning-pdf-export';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface SandwichForecastWidgetProps {
   hideHeader?: boolean;
@@ -205,7 +206,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
 
     relevantEvents.forEach((request) => {
       try {
-        const dateToUse = (request.status === 'scheduled' || request.status === 'completed') && request.scheduledEventDate
+        const dateToUse = (isScheduledOrRescheduled(request.status) || request.status === 'completed') && request.scheduledEventDate
           ? request.scheduledEventDate
           : request.desiredEventDate;
 
@@ -248,7 +249,7 @@ export default function SandwichForecastWidget({ hideHeader = false }: SandwichF
         const sandwichCount = getSandwichCount(request);
         week.totalEstimated += sandwichCount;
 
-        if (request.status === 'completed' || request.status === 'scheduled') {
+        if (request.status === 'completed' || isScheduledOrRescheduled(request.status)) {
           week.confirmedCount += sandwichCount;
         } else {
           week.pendingCount += sandwichCount;

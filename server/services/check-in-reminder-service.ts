@@ -19,6 +19,7 @@ import { logger } from '../utils/production-safe-logger';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getAppBaseUrl } from '../config/constants';
 import { getUserMetadata, getCheckInReminderPreferences } from '@shared/types';
+import { isScheduledOrRescheduled } from '../../shared/event-status-workflow';
 import { sendTSPFollowupReminderSMS } from '../sms-service';
 import {
   calculateNextDue,
@@ -117,7 +118,7 @@ function evaluateRuleCondition(
 
     case REMINDER_RULE_TYPES.DATE_APPROACHING_SCHEDULED: {
       // Only applies to scheduled events
-      if (event.status !== 'scheduled') return false;
+      if (!isScheduledOrRescheduled(event.status)) return false;
       const scheduledDate = event.scheduledEventDate ? new Date(event.scheduledEventDate) : null;
       if (!scheduledDate) return false;
       const daysUntilDate = (scheduledDate.getTime() - now.getTime()) / msPerDay;
@@ -126,7 +127,7 @@ function evaluateRuleCondition(
 
     case REMINDER_RULE_TYPES.STAFFING_UNMET: {
       // Only applies to scheduled events with staffing needs
-      if (event.status !== 'scheduled') return false;
+      if (!isScheduledOrRescheduled(event.status)) return false;
       const scheduledDate = event.scheduledEventDate ? new Date(event.scheduledEventDate) : null;
       if (!scheduledDate) return false;
       const daysUntilDate = (scheduledDate.getTime() - now.getTime()) / msPerDay;
@@ -152,7 +153,7 @@ function evaluateRuleCondition(
 
     case REMINDER_RULE_TYPES.MISSING_DETAILS: {
       // Only applies to scheduled events
-      if (event.status !== 'scheduled') return false;
+      if (!isScheduledOrRescheduled(event.status)) return false;
       const scheduledDate = event.scheduledEventDate ? new Date(event.scheduledEventDate) : null;
       if (!scheduledDate) return false;
       const daysUntilDate = (scheduledDate.getTime() - now.getTime()) / msPerDay;

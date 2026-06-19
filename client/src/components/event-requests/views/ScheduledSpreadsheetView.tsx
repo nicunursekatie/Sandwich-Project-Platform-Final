@@ -70,6 +70,7 @@ import {
 } from '@/lib/assignment-utils';
 import { SANDWICH_TYPES } from '../constants';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 interface Column {
   id: string;
@@ -479,7 +480,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
 
   // Filter to scheduled events only
   const scheduledEvents = useMemo(() => {
-    return eventRequests.filter(req => req.status === 'scheduled');
+    return eventRequests.filter(req => isScheduledOrRescheduled(req.status));
   }, [eventRequests]);
 
   // Filter by date range
