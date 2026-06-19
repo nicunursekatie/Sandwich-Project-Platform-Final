@@ -112,24 +112,6 @@ function toSafeHttpUrl(value: string | null | undefined): string | null {
   }
 }
 
-/**
- * Only http(s) links are allowed for the social-media post link. Guards against
- * stored-XSS: the value is rendered into an <a href>, so a stored
- * `javascript:`/`data:` URL would execute on click. Returns a normalized URL
- * (prepending https:// when the scheme is missing) or null if it isn't a safe
- * web URL.
- */
-function toSafeHttpUrl(value: string | null | undefined): string | null {
-  const v = (value || '').trim();
-  if (!v) return null;
-  try {
-    const url = new URL(v.includes('://') ? v : `https://${v}`);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
 interface CompletedCardProps {
   request: EventRequest;
   onView: () => void;

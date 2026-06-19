@@ -886,30 +886,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return;
     }
 
-    // Block saving a partial record (e.g. opened from the map) until the FULL
-    // record is freshly hydrated. Also block while a hydration fetch is in flight
-    // or has errored: refetchOnMount serves the stale cached copy during the
-    // background refetch, and saving then would build the payload from stale
-    // values. A full-form save from a partial/stale record would overwrite the
-    // columns the partial source omitted (notes, backup contacts, toolkit, etc.).
-    if (recordIsPartial && (!hydratedEventRequest || hydrationFetching || hydrationFailed)) {
+    // Block saving a partial record (e.g. opened from the map). A full-form save
+    // from a partial record would overwrite columns the partial source omitted
+    // (notes, backup contacts, toolkit, etc.) with empty/default values.
+    if (eventRequest && !isFullEventRecord(eventRequest)) {
       setIsSubmitting(false);
-      if (hydrationFailed && !hydrationFetching) {
-        // The full-record fetch failed and isn't already retrying. Don't leave
-        // the user stuck behind a "loading" message — retry and tell them plainly.
-        // Saving stays blocked so a partial/stale payload can't overwrite data.
-        logger.log('⛔ Save blocked: full event failed to load; retrying');
-        refetchHydration();
-        toast({
-          title: "Couldn't load this event",
-          description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or reopen it from the list.",
-          variant: 'destructive',
-          duration: Number.POSITIVE_INFINITY,
-        });
-      } else {
-        logger.log('⛔ Save blocked: full record not freshly hydrated yet');
-        toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to finish loading before saving.', variant: 'destructive' });
-      }
+      logger.log('⛔ Save blocked: partial event record detected (missing fields)');
+      toast({
+        title: "Can't save from map view",
+        description: "This event was opened from the map and doesn't have all fields loaded. Please close this and reopen the event from the list to edit it.",
+        variant: 'destructive',
+        duration: 10000,
+      });
       return;
     }
 
