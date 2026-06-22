@@ -111,3 +111,6 @@ backups/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Claude Code personal/local settings (machine-specific, should not be tracked)
+.claude/settings.local.json
