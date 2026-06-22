@@ -789,9 +789,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       saveToLocalStorage();
       const serverMessage = error?.data?.message || error?.message;
+      const validationDetail = Array.isArray(error?.data?.details)
+        ? error.data.details[0]?.message
+        : undefined;
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       let errorTitle = 'Creation Failed';
-      let errorDescription = serverMessage || 'Failed to create event. Please try again.';
+      let errorDescription =
+        validationDetail || serverMessage || 'Failed to create event. Please try again.';
       if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not create event. Check your connection.';
@@ -1154,7 +1158,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
+          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form" noValidate>
 
             {/* Lifecycle & Core Scheduling */}
             <div className="bg-white border rounded-lg p-4 space-y-4">
@@ -1397,8 +1401,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
               {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
-                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...')
-                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
+                ? (isCreateMode ? 'Creating...' : mode === 'edit' ? 'Saving...' : 'Scheduling...')
+                : (isCreateMode ? 'Create Event' : mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
             </Button>
           </div>
         </div>

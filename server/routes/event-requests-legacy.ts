@@ -1779,7 +1779,7 @@ router.post(
         return res.status(400).json({
           error: 'Validation failed',
           details: errorDetails,
-          message: specificMessage || 'Please check your input and try again. Make sure you provide at least an organization name or contact information.'
+          message: specificMessage || 'Please check your input and try again.',
         });
       }
 

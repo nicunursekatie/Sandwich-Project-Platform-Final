@@ -115,20 +115,20 @@ export function buildEventDataForServer(
     manualEntrySource: formData.manualEntrySource || null,
 
     // Contact information
-    firstName: formData.firstName || null,
-    lastName: formData.lastName || null,
+    firstName: formData.firstName?.trim() || null,
+    lastName: formData.lastName?.trim() || null,
     email: formData.email?.trim() || null,
-    phone: formData.phone || null,
-    organizationName: formData.organizationName || null,
+    phone: formData.phone?.trim() || null,
+    organizationName: formData.organizationName?.trim() || null,
     department: formData.department || null,
     organizationCategory: formData.organizationCategory || null,
     schoolClassification: formData.schoolClassification || null,
 
     // Backup contact
-    backupContactFirstName: formData.backupContactFirstName || null,
-    backupContactLastName: formData.backupContactLastName || null,
-    backupContactEmail: formData.backupContactEmail || null,
-    backupContactPhone: formData.backupContactPhone || null,
+    backupContactFirstName: formData.backupContactFirstName?.trim() || null,
+    backupContactLastName: formData.backupContactLastName?.trim() || null,
+    backupContactEmail: formData.backupContactEmail?.trim() || null,
+    backupContactPhone: formData.backupContactPhone?.trim() || null,
     backupContactRole: formData.backupContactRole || null,
 
     // Misc

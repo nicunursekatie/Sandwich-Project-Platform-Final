@@ -3058,6 +3058,31 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         { message: 'Please enter a valid email address (e.g., name@example.com).' }
       )
       .optional(),
+    phone: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .optional(),
+    backupContactEmail: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid backup contact email address.' }
+      )
+      .optional(),
+    backupContactPhone: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .optional(),
     organizationName: z.string().nullable().optional(),
     manualEntrySource: z.string().nullable().optional(),
     previouslyHosted: z.string().optional(),
