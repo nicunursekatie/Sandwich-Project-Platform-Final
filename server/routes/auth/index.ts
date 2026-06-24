@@ -404,6 +404,11 @@ export function createAuthRouter() {
         willingToVolunteer: updatedUser.willingToVolunteer ?? true,
         willingToSpeak: updatedUser.willingToSpeak ?? false,
         willingToDrive: updatedUser.willingToDrive ?? false,
+        // Mirror GET /profile's shape — include the (read-only) approval flags so
+        // clients can rely on a consistent payload after a save.
+        speakerApproved: updatedUser.speakerApproved ?? false,
+        driverApproved: updatedUser.driverApproved ?? false,
+        vanApproved: updatedUser.vanApproved ?? false,
       });
     } catch (error) {
       logger.error('Update profile error:', error);

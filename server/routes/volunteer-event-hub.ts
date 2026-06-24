@@ -27,7 +27,7 @@ import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
-import { isEligibleForRole, type EventRole } from '../../shared/event-role-eligibility';
+import { isEligibleForRole, getIneligibilityReason, type EventRole } from '../../shared/event-role-eligibility';
 
 const router = Router();
 
@@ -1260,13 +1260,24 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
         (r) => !isEligibleForRole(user, r as EventRole)
       );
       if (ineligible.length > 0) {
-        return res.status(403).json({
-          error:
-            ineligible.includes('speaker') || ineligible.includes('driver')
-              ? 'You are not yet approved for that role. Speaker and driver roles require coordinator approval — update what you are willing to do in your profile, and a coordinator can approve you.'
-              : 'You are not set up for that role. Update the roles you are willing to do in your profile.',
-          ineligibleRoles: ineligible,
-        });
+        // Tailor the message to WHY it's blocked: not opted-in (willingness) vs
+        // opted-in but awaiting coordinator approval. Keying off the role name
+        // alone would tell a not-willing user they need "approval", which is wrong.
+        const reasons = ineligible.map((r) => getIneligibilityReason(user, r as EventRole));
+        const needsApproval = reasons.includes('not_approved');
+        const needsWillingness = reasons.includes('not_willing');
+        let error: string;
+        if (needsApproval && !needsWillingness) {
+          error =
+            "That role needs coordinator approval. You've said you're willing — a coordinator just needs to approve you before you can sign up.";
+        } else if (needsWillingness && !needsApproval) {
+          error =
+            "You haven't opted into that role yet. Update the roles you're willing to do in your profile.";
+        } else {
+          error =
+            "You're not set up for that role yet. Update the roles you're willing to do in your profile — speaker and driver also need coordinator approval.";
+        }
+        return res.status(403).json({ error, ineligibleRoles: ineligible });
       }
     }
 

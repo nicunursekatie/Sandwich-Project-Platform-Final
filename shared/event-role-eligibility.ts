@@ -87,3 +87,23 @@ export function getEligibleEventRoles(
     isEligibleForRole(user, role)
   );
 }
+
+/**
+ * Why a user isn't eligible for a role, or null if they are. Lets callers give
+ * an accurate message instead of guessing from the role name — a user who just
+ * hasn't opted in ('not_willing') is a different case from one who's willing but
+ * awaiting coordinator approval ('not_approved').
+ */
+export type IneligibilityReason = 'not_willing' | 'not_approved';
+
+export function getIneligibilityReason(
+  user: UserRoleCapabilities | null | undefined,
+  role: EventRole
+): IneligibilityReason | null {
+  const rule = ROLE_RULES[role];
+  if (!rule) return null;
+  if (!flag(user?.[rule.willing], rule.willingDefaultsTrue)) return 'not_willing';
+  if (rule.approval && !flag(user?.[rule.approval], false)) return 'not_approved';
+  return null;
+}
+
