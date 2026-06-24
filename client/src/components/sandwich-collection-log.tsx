@@ -916,10 +916,25 @@ export default function SandwichCollectionLog() {
     };
   };
 
-  // Determine if we're showing filtered data and get all data for calculations
-  const hasActiveFilters = Object.values(debouncedSearchFilters).some(
-    (v) => v && v.trim() !== ''
-  );
+  // Determine if we're showing filtered data and get all data for calculations.
+  // Include quick-filter chips — they filter the dataset the same way as search
+  // filters but live in separate state.
+  const hasActiveFilters =
+    quickFilter !== 'all' ||
+    Object.values(debouncedSearchFilters).some((v) => v && v.trim() !== '');
+
+  const quickFilterLabel =
+    quickFilter === 'host'
+      ? 'Host Collections'
+      : quickFilter === 'group'
+        ? 'Group Collections'
+        : quickFilter === 'thisMonth'
+          ? 'This Month'
+          : quickFilter === 'last30Days'
+            ? 'Last 30 Days'
+            : quickFilter === 'mine'
+              ? 'My Submissions'
+              : null;
 
   // Calculate current statistics to display
   // Priority: filtered collections from main query > global stats (only when no filters)
@@ -2573,7 +2588,9 @@ export default function SandwichCollectionLog() {
                   <span className="font-medium">
                     {currentStats.hostName
                       ? `Statistics for ${currentStats.hostName}`
-                      : 'Filtered Statistics'}
+                      : quickFilterLabel
+                        ? `Statistics for ${quickFilterLabel}`
+                        : 'Filtered Statistics'}
                   </span>
                 </div>
                 {currentStats.dateRange && (

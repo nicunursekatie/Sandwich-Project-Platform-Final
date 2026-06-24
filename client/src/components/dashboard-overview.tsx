@@ -43,7 +43,9 @@ import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
 import DashboardActionTracker from '@/components/dashboard-action-tracker';
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
-import { DashboardSearch } from '@/components/dashboard-search';
+// DashboardSearch import removed — its UI consolidated into UnifiedTopSearch
+// in the persistent top navigation header. The endpoint it called
+// (/api/people/search) is now used by the unified bar.
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
 import { LowVolumeAlert } from '@/components/low-volume-alert';
@@ -418,10 +420,11 @@ export default function DashboardOverview({
             without scrolling. The brand still anchors the page via the
             sidebar — standard SaaS convention (Slack, Linear, Notion). */}
 
-        {/* Universal Search */}
-        <div className="mx-4">
-          <DashboardSearch onNavigate={onSectionChange} />
-        </div>
+        {/* The large in-dashboard search card that used to live here was
+            removed — its functionality moved into UnifiedTopSearch in the
+            persistent top navigation header so a single bar is available on
+            every page. Reclaiming this vertical slot pulls the Collection
+            CTA + impact milestone higher up the dashboard. */}
 
         {/* Collection Call-to-Action */}
         {(COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN) && (
