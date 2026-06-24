@@ -177,13 +177,17 @@ collectionsRouter.get('/', async (req, res) => {
   try {
     // Event-scoped view: return the (unpaginated) collections linked to a single
     // event request as a bare array. Used by the event Collection Log dialog.
-    const eventRequestId = req.query.eventRequestId
-      ? parseInt(req.query.eventRequestId as string)
-      : undefined;
-    if (eventRequestId !== undefined) {
-      if (isNaN(eventRequestId)) {
+    const rawEventRequestId = req.query.eventRequestId;
+    if (rawEventRequestId !== undefined) {
+      // Strict parse: only accept a positive-integer string. parseInt would
+      // accept '123abc' as 123 and arrays would slip through `as string`.
+      if (
+        typeof rawEventRequestId !== 'string' ||
+        !/^\d+$/.test(rawEventRequestId)
+      ) {
         return res.status(400).json({ message: 'Invalid eventRequestId' });
       }
+      const eventRequestId = Number(rawEventRequestId);
       const eventCollections =
         await storage.getSandwichCollectionsByEventRequestId(eventRequestId);
       return res.json(eventCollections);

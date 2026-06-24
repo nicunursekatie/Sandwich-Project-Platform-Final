@@ -580,6 +580,19 @@ class StorageWrapper implements IStorage {
     );
   }
 
+  async getSandwichCollectionsByEventRequestId(eventRequestId: number) {
+    return await this.executeWithFallback(
+      () =>
+        this.primaryStorage.getSandwichCollectionsByEventRequestId(
+          eventRequestId
+        ),
+      () =>
+        this.fallbackStorage.getSandwichCollectionsByEventRequestId(
+          eventRequestId
+        )
+    );
+  }
+
   async getSandwichCollectionById(id: number) {
     return await this.executeWithFallback(
       () => this.primaryStorage.getSandwichCollectionById(id),

@@ -1765,9 +1765,14 @@ export class MemStorage implements IStorage {
   ): Promise<SandwichCollection[]> {
     return Array.from(this.sandwichCollections.values())
       .filter((c: any) => c.eventRequestId === eventRequestId && !c.deletedAt)
-      .sort((a: any, b: any) =>
-        a.collectionDate < b.collectionDate ? 1 : -1
-      );
+      .sort((a: any, b: any) => {
+        // Newest first; return 0 on equal dates to honor the Array.sort
+        // comparator contract (stable, engine-independent ordering).
+        const av = a.collectionDate ?? '';
+        const bv = b.collectionDate ?? '';
+        if (av === bv) return 0;
+        return av < bv ? 1 : -1;
+      });
   }
 
   async getSandwichCollectionsCount(): Promise<number> {

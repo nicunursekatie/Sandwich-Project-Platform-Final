@@ -8,6 +8,7 @@ import {
   calculateGroupSandwiches,
   calculateTotalTypeBreakdown,
 } from '@/lib/analytics-utils';
+import { parseCollectionDate } from '@/lib/date-utils';
 
 // Event Collection Log Component
 //
@@ -137,6 +138,11 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
               <h3 className="text-sm font-semibold">Collection Records</h3>
               {collections.map((collection) => {
                 const breakdown = calculateTotalTypeBreakdown(collection);
+                // Parse the date-only collectionDate as a LOCAL date so US
+                // timezones don't render the previous day (UTC off-by-one).
+                const collectionDate = parseCollectionDate(
+                  collection.collectionDate
+                );
                 return (
                   <Card key={collection.id} className="p-4">
                     <div className="space-y-3">
@@ -145,15 +151,14 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                           <div className="flex items-center space-x-2">
                             <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
                             <span className="font-medium text-sm sm:text-base">
-                              {new Date(collection.collectionDate).toLocaleDateString(
-                                'en-US',
-                                {
-                                  weekday: 'long',
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                }
-                              )}
+                              {collectionDate
+                                ? collectionDate.toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  })
+                                : 'Unknown date'}
                             </span>
                           </div>
                           <Badge

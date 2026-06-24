@@ -42,7 +42,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/conversations?type=group | client/src/components/group-messaging.tsx:119 |
 | /api/core/monitoring/weekly-status | client/src/components/predictive-forecasts.tsx:68 |
 | /api/core/monitoring/weekly-status/0 | client/src/components/predictive-forecasts.tsx:70 |
-| /api/dashboard/stats | client/src/mobile/pages/mobile-collection-entry.tsx:97<br>client/src/mobile/pages/mobile-home.tsx:40 |
+| /api/dashboard/stats | client/src/mobile/pages/mobile-collection-entry.tsx:95<br>client/src/mobile/pages/mobile-home.tsx:40 |
 | /api/drafts | client/src/components/gmail-style-inbox.tsx:320<br>client/src/components/gmail-style-inbox.tsx:364<br>client/src/components/gmail-style-inbox.tsx:368 |
 | /api/drafts/${draft.id} | client/src/components/gmail-style-inbox.tsx:362 |
 | /api/export/collections | tests/integration/routes/permissions.test.ts:33 |
@@ -270,7 +270,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/dashboard-documents | 4 | client/src/components/dashboard-document-selector.tsx:45<br>client/src/components/dashboard-document-selector.tsx:72<br>client/src/components/dashboard-document-selector.tsx:83<br>client/src/components/dashboard-overview.tsx:227 |
 | /api/dashboard-documents/${doc} | 1 | client/src/components/dashboard-document-selector.tsx:68 |
 | /api/dashboard-documents/reorder | 1 | client/src/components/dashboard-document-selector.tsx:79 |
-| /api/dashboard/stats | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:97<br>client/src/mobile/pages/mobile-home.tsx:40 |
+| /api/dashboard/stats | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:95<br>client/src/mobile/pages/mobile-home.tsx:40 |
 | /api/data-management/bulk/deduplicate-hosts | 1 | client/src/components/data-management-dashboard.tsx:150 |
 | /api/data-management/export/collections?format=${exportFormat} | 1 | client/src/components/data-management-dashboard.tsx:71 |
 | /api/data-management/export/full-dataset | 1 | client/src/components/data-management-dashboard.tsx:651 |
@@ -668,8 +668,8 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/resources/user/favorites | 3 | client/src/mobile/pages/mobile-resources.tsx:63<br>client/src/mobile/pages/mobile-resources.tsx:74<br>client/src/pages/resources.tsx:711 |
 | /api/resources/user/recent?limit=5 | 2 | client/src/components/recently-accessed-resources.tsx:30<br>client/src/pages/resources.tsx:712 |
 | /api/sandwich-collections | 33 | client/src/components/bulk-data-manager.tsx:107<br>client/src/components/bulk-data-manager.tsx:142<br>client/src/components/compact-collection-form.tsx:225<br>client/src/components/compact-collection-form.tsx:236 |
-| /api/sandwich-collections?eventRequestId=${eventRequest?.id} | 1 | client/src/components/event-requests/EventCollectionLog.tsx:43 |
-| /api/sandwich-collections?limit=100 | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:91<br>client/src/mobile/pages/mobile-collections.tsx:33 |
+| /api/sandwich-collections?eventRequestId=${eventRequest?.id} | 1 | client/src/components/event-requests/EventCollectionLog.tsx:44 |
+| /api/sandwich-collections?limit=100 | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:89<br>client/src/mobile/pages/mobile-collections.tsx:33 |
 | /api/sandwich-collections?limit=10000 | 1 | client/src/components/sandwich-collection-log.tsx:1528 |
 | /api/sandwich-collections?limit=5000 | 6 | client/src/components/action-center.tsx:95<br>client/src/components/low-volume-alert.tsx:117<br>client/src/components/modals/next-month-planning-modal.tsx:52<br>client/src/components/modals/week-outlook-modal.tsx:70 |
 | /api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam} | 1 | client/src/components/sandwich-collection-log.tsx:706 |
