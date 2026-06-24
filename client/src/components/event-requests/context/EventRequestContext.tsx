@@ -140,6 +140,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
 
   // Build list query key + URL in one place (also used by Dashboard prefetch)
   const { queryKey: listQueryKey, listUrl: listQueryUrl, fullUrl: fullQueryUrl } = useMemo(
@@ -248,28 +249,6 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
       setActiveTab('new');
     }
   }, [location, activeTab]);
-  // Drill-down support: other surfaces (e.g. the dashboard Operational
-  // Overview's "11 events need drivers") can stash a target tab + quick
-  // filter in sessionStorage right before navigating here, so we land on the
-  // filtered view instead of a generic list. Read and clear it once on mount
-  // (this view remounts on each navigation from the dashboard).
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem('eventRequests.pendingFilter');
-      if (!raw) return;
-      sessionStorage.removeItem('eventRequests.pendingFilter');
-      const { tab, filter } = JSON.parse(raw) as { tab?: string; filter?: string };
-      const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'];
-      const validFilters = ['week', 'today', 'needsDriver', 'needsVan', 'corporatePriority'];
-      if (tab && validTabs.includes(tab)) setActiveTab(tab);
-      if (filter && validFilters.includes(filter)) setQuickFilter(filter as typeof quickFilter);
-    } catch {
-      // ignore malformed/unavailable sessionStorage
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
 
   // Pre-fill issue report context when working on event requests
   useEffect(() => {
@@ -418,13 +397,38 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // Sync state with role defaults when user loads (handles async user fetch)
   // Only applies defaults if no explicit initialTab was provided (respects URL navigation)
+  // and no dashboard drill-down filter is pending (Operational Overview / My Assignments).
   useEffect(() => {
-    if (!initialTab) {
-      setActiveTab(roleDefaults.defaultTab);
-      setConfirmationFilter(roleDefaults.defaultConfirmationFilter);
-      setSortBy(roleDefaults.defaultSort);
-      setItemsPerPage(roleDefaults.itemsPerPage);
+    if (initialTab) return;
+
+    try {
+      const raw = sessionStorage.getItem('eventRequests.pendingFilter');
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          tab?: string;
+          filter?: string;
+          myAssignmentsStatuses?: string[];
+        };
+        sessionStorage.removeItem('eventRequests.pendingFilter');
+        const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'];
+        const validFilters = ['week', 'today', 'needsDriver', 'needsVan', 'corporatePriority'];
+        if (parsed.tab && validTabs.includes(parsed.tab)) setActiveTab(parsed.tab);
+        if (parsed.filter && validFilters.includes(parsed.filter)) {
+          setQuickFilter(parsed.filter as typeof quickFilter);
+        }
+        if (parsed.myAssignmentsStatuses?.length) {
+          setMyAssignmentsStatusFilter(parsed.myAssignmentsStatuses);
+        }
+        return;
+      }
+    } catch {
+      // ignore malformed/unavailable sessionStorage
     }
+
+    setActiveTab(roleDefaults.defaultTab);
+    setConfirmationFilter(roleDefaults.defaultConfirmationFilter);
+    setSortBy(roleDefaults.defaultSort);
+    setItemsPerPage(roleDefaults.itemsPerPage);
   }, [roleDefaults.defaultTab, roleDefaults.defaultConfirmationFilter, roleDefaults.defaultSort, roleDefaults.itemsPerPage, initialTab]);
 
   // Synchronize statusFilter with activeTab (only for status-based tabs)
