@@ -7,9 +7,6 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { StandbyCard } from '../cards/StandbyCard';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 
@@ -36,30 +33,6 @@ export const StandbyTab: React.FC = () => {
 
   const standbyRequests = filterRequestsByStatus('standby');
 
-  const handleExport = async () => {
-    if (standbyRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no standby events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(standbyRequests, 'standby');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${standbyRequests.length} standby event${standbyRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
 
@@ -83,21 +56,11 @@ export const StandbyTab: React.FC = () => {
 
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${standbyRequests.length} standby event${standbyRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={standbyRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       {/* Info banner explaining standby status */}

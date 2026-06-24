@@ -1258,10 +1258,12 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               - PRIMARY (left): the 1-2 most likely "next" actions — Assign TSP
                 Contact (when missing) and Edit (always). These keep their full
                 size and labels so they're impossible to miss.
-              - SECONDARY (right of primaries): supporting actions that the
-                user uses occasionally — collapsed to icon-only chips with
-                tooltips. Smaller (h-8 w-8) and visually muted so they don't
-                compete for attention.
+              - SECONDARY (right of primaries): supporting intake actions.
+                Visually lighter (ghost, muted) than the primaries but each
+                carries a text label so the action is clear without hovering —
+                the two AI buttons in particular share the same Sparkles icon
+                and are indistinguishable icon-only. Tooltips keep the longer
+                descriptions.
             Order matches the typical intake flow left → right. */}
         <TooltipProvider>
           <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t">
@@ -1285,21 +1287,21 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </Tooltip>
             )}
 
-            {/* SECONDARY actions — icon-only, smaller, visually de-emphasized */}
-            <div className="flex items-center gap-1">
+            {/* SECONDARY actions — labeled, visually de-emphasized (ghost) */}
+            <div className="flex flex-wrap items-center gap-1">
               {/* AI Date Suggestion */}
               {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
+                      size="sm"
                       variant="ghost"
                       onClick={onAiSuggest}
-                      className="h-8 w-8 text-[#236383] hover:bg-[#236383]/10"
+                      className="h-8 text-[#236383] hover:bg-[#236383]/10"
                       data-testid="button-ai-suggest-date"
-                      aria-label="AI Date Suggest"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4 mr-1.5" />
+                      AI Dates
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1313,14 +1315,14 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
+                      size="sm"
                       variant="ghost"
                       onClick={onAiIntakeAssist}
-                      className="h-8 w-8 text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                      className="h-8 text-[#47B3CB] hover:bg-[#47B3CB]/10"
                       data-testid="button-ai-intake-assist"
-                      aria-label="AI Intake Check"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4 mr-1.5" />
+                      AI Intake
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -1333,13 +1335,13 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="icon"
+                    size="sm"
                     variant="ghost"
                     onClick={onScheduleCall}
-                    className="h-8 w-8 text-slate-600 hover:bg-slate-100"
-                    aria-label="Schedule Call"
+                    className="h-8 text-slate-600 hover:bg-slate-100"
                   >
-                    <Phone className="w-4 h-4" />
+                    <Phone className="w-4 h-4 mr-1.5" />
+                    Schedule Call
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1351,13 +1353,13 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="icon"
+                    size="sm"
                     variant="ghost"
                     onClick={onLogContact}
-                    className="h-8 w-8 text-[#007E8C] hover:bg-[#007E8C]/10"
-                    aria-label="Log Contact"
+                    className="h-8 text-[#007E8C] hover:bg-[#007E8C]/10"
                   >
-                    <MessageSquare className="w-4 h-4" />
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    Log Contact
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1377,14 +1379,14 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="icon"
+                      size="sm"
                       variant="ghost"
                       onClick={onNonEvent}
-                      className="h-8 w-8 text-stone-500 hover:bg-stone-100"
+                      className="h-8 text-stone-500 hover:bg-stone-100"
                       data-testid="button-non-event"
-                      aria-label="Mark as Non-Event"
                     >
-                      <Ban className="w-4 h-4" />
+                      <Ban className="w-4 h-4 mr-1.5" />
+                      Non-Event
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
