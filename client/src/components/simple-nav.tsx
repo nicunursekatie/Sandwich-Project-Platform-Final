@@ -13,10 +13,16 @@ import { apiRequest } from '@/lib/queryClient';
 import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
 import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
-import tsp_wordmark from '@assets/LOGOS/TSP_transparent.png';
+// tsp_wordmark import removed — the sidebar brand block was redundant with
+// the TSP logo + name already shown in the top navigation bar. Convention:
+// brand anchors in the top-left top-nav slot (already present in dashboard.tsx),
+// the sidebar is for navigation. Removing the duplicate frees ~70px of
+// vertical space so primary nav items sit higher up the screen.
 import { logger } from '@/lib/logger';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { SmartSearch } from '@/components/SmartSearch';
+// SmartSearch import removed — its UI was consolidated into UnifiedTopSearch
+// in the top navigation header. The endpoint it called
+// (/api/smart-search/fuzzy) is now used by the unified bar.
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
 
@@ -357,53 +363,18 @@ export default function SimpleNav({
 
     return (
       <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
-        {/* Brand block — top-left anchor.
-            The logo previously lived as a large centered card on the dashboard,
-            consuming above-the-fold space that should belong to actionable
-            content. Moving it to the sidebar follows the standard SaaS
-            convention (Slack, Linear, Notion, etc.) and lets the dashboard
-            promote the Universal Search / Collection CTA into the top slot.
-            Clicking the block routes to the dashboard so it doubles as a
-            "home" anchor. Hidden in the icon-only collapsed state — the
-            existing sidebar header outside this component handles brand in
-            that mode. */}
-        {!isCollapsed && (
-          <button
-            type="button"
-            onClick={() => {
-              onSectionChange('dashboard');
-              if (typeof window !== 'undefined') {
-                window.history.pushState({}, '', '/dashboard');
-              }
-            }}
-            className="flex items-center gap-2.5 px-2 py-2 mb-3 rounded-lg hover:bg-slate-100 transition-colors group"
-            aria-label="The Sandwich Project — go to dashboard"
-            data-testid="sidebar-brand"
-          >
-            <img
-              src={tsp_wordmark}
-              alt=""
-              className="h-9 w-auto flex-shrink-0"
-              width="36"
-              height="36"
-            />
-            <div className="flex flex-col items-start min-w-0 leading-tight">
-              <span className="text-[15px] font-bold text-brand-primary truncate">
-                The Sandwich Project
-              </span>
-              <span className="text-[11px] text-slate-500 truncate italic">
-                Nourish The Hungry. Feed The Soul.
-              </span>
-            </div>
-          </button>
-        )}
+        {/* Sidebar brand block removed — the TSP logo + name already live in
+            the top-left of the top navigation bar (see dashboard.tsx). Standard
+            SaaS convention is one brand anchor in the top-nav slot; the
+            sidebar is reserved for navigation. Removing the duplicate frees
+            ~70px of vertical space so the search field and primary nav items
+            sit higher up the screen. */}
 
-        {/* AI-Powered Smart Search */}
-        {!isCollapsed && (
-          <div className="mb-3 px-1">
-            <SmartSearch />
-          </div>
-        )}
+        {/* Sidebar SmartSearch removed — consolidated into the unified
+            search bar in the persistent top navigation header (see
+            UnifiedTopSearch). That bar searches BOTH app pages/actions AND
+            people/orgs from a single, predictable spot that doesn't shift
+            between Dashboard, Calendars, Collection Log, etc. */}
 
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {

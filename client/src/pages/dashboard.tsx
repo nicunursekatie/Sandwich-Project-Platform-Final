@@ -84,6 +84,7 @@ import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { ReviewerBanner } from '@/components/reviewer-banner';
 import { CommandPalette, useCommandPalette } from '@/components/command-palette';
 import { QuickCalculator } from '@/components/QuickCalculator';
+import { UnifiedTopSearch } from '@/components/UnifiedTopSearch';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -949,43 +950,32 @@ export default function Dashboard({
 
           {/* Right side container - optimized for tablets/mobile */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Compact user indicator for tablets - hidden on very small screens */}
-            {user && (
-              <div className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-white/15 rounded-lg border border-white/20 max-w-[100px] sm:max-w-[150px] md:max-w-none">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-medium text-white">
-                    {(user as any)?.firstName?.charAt(0) ||
-                      (user as any)?.email?.charAt(0) ||
-                      'U'}
-                  </span>
-                </div>
-                <div className="hidden lg:flex flex-col min-w-0">
-                  <span className="text-xs font-medium text-white truncate">
-                    {(user as any)?.firstName
-                      ? `${(user as any).firstName} ${
-                          (user as any)?.lastName || ''
-                        }`.trim()
-                      : (user as any)?.email}
-                  </span>
-                  <span className="text-xs text-white/70 truncate">
-                    {(user as any)?.email}
-                  </span>
-                </div>
-                <div className="lg:hidden min-w-0 flex-1">
-                  <span className="text-xs font-medium text-white truncate block">
-                    {(user as any)?.firstName
-                      ? `${(user as any).firstName}`
-                      : (user as any)?.email?.split('@')[0] || 'User'}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* The standalone "K Katie Long" gray badge that used to live here
+                was removed — it duplicated identity already conveyed by the
+                circular user-avatar dropdown on the far right. The avatar
+                menu now shows the user's full name + email at the top of its
+                dropdown, plus Account Settings + Logout. One identity slot,
+                less header noise. */}
 
             {/* Header actions - organized into logical groups */}
             <TooltipProvider delayDuration={300}>
             <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
-              
-              {/* Group 1: Communication */}
+
+              {/* Unified search — replaces the dashboard's large search card
+                  AND the sidebar's smart search. Searches both pages/actions
+                  and people/orgs in one box. Hidden on the smallest screens
+                  to keep the header clean on mobile; users can still reach
+                  search via the global Cmd/Ctrl+K shortcut (which focuses
+                  this input when present, no-ops otherwise). */}
+              <div className="hidden md:block">
+                <UnifiedTopSearch />
+              </div>
+
+              {/* Communications cluster — all "is something happening?" tools
+                  share a single translucent tray so they read as one group:
+                  Chat, Threads, Who's Online, Notifications. Operational
+                  tools (Calculator) live outside the tray with a visible
+                  separator to mark the function-type switch. */}
               <div className="flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1044,10 +1034,10 @@ export default function Dashboard({
                     <TooltipContent side="bottom" sideOffset={8}>Who's Online</TooltipContent>
                   </Tooltip>
                 </div>
-              </div>
 
-              {/* Group 2: Notifications */}
-              <div className="flex items-center gap-0.5">
+                {/* Notifications — pulled into the comms tray so all
+                    "is something happening?" tools cluster as one group
+                    instead of sitting in their own separate slot. */}
                 {typeof window !== 'undefined' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1060,7 +1050,18 @@ export default function Dashboard({
                 )}
               </div>
 
-              {/* Quick Calculator */}
+              {/* Thin vertical separator — marks the function-type switch
+                  from communications (left) to operational tools (right).
+                  Hidden on mobile where space is tight and the gap between
+                  groups is already implied by smaller padding. */}
+              <div
+                aria-hidden="true"
+                className="hidden sm:block w-px h-6 bg-white/20 mx-0.5"
+              />
+
+              {/* Quick Calculator — operational tool, sits outside the comms
+                  tray. The vertical separator above visually distinguishes
+                  its role from chat/threads/notifications. */}
               <div className="flex items-center">
                 <QuickCalculator />
               </div>
