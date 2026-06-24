@@ -16,6 +16,7 @@ import {
 } from './recipient-schedule-utils';
 import {
   InlineTextCell,
+  InlineAddressCell,
   InlineContractCell,
   InlineScheduleCell,
   InlineSurveyCell,
@@ -44,7 +45,7 @@ const COLUMNS: { id: SortColumn; label: string; className?: string; defaultWidth
   { id: 'cadence', label: 'Cadence', className: 'min-w-[130px]', defaultWidth: 150 },
   { id: 'peopleServed', label: 'People served', className: 'min-w-[130px]', defaultWidth: 140 },
   { id: 'fruitSnacks', label: 'Fruit & Snacks', className: 'w-[110px]', defaultWidth: 120 },
-  { id: 'reportingGroup', label: 'Reporting Group', className: 'min-w-[120px]', defaultWidth: 140 },
+  { id: 'address', label: 'Address', className: 'min-w-[180px]', defaultWidth: 220 },
   { id: 'tspContact', label: 'TSP Contact', className: 'min-w-[120px]', defaultWidth: 140 },
   { id: 'focusArea', label: 'Focus Area', className: 'min-w-[140px]', defaultWidth: 160 },
   { id: 'region', label: 'Region', className: 'min-w-[120px]', defaultWidth: 140 },
@@ -316,13 +317,18 @@ export function RecipientTable({
                     />
                   </TableCell>
                   <TableCell>
-                    <InlineTextCell
-                      value={recipient.reportingGroup || ''}
-                      placeholder="—"
+                    {/* Address column — replaces the old Reporting Group
+                        column. Renders the address as a Google Maps link so a
+                        single click opens the location for navigation. The
+                        underlying reportingGroup field is unchanged in the
+                        data model; it's still editable from the detail
+                        drawer / form. */}
+                    <InlineAddressCell
+                      value={recipient.address || ''}
                       canEdit={canEdit}
                       isSaving={isSaving}
-                      onSave={(reportingGroup) =>
-                        save(recipient, { reportingGroup: reportingGroup || null })
+                      onSave={(address) =>
+                        save(recipient, { address: address || null })
                       }
                     />
                   </TableCell>
