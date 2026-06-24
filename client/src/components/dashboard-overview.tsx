@@ -46,7 +46,9 @@ import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
-import DashboardActionTracker from '@/components/dashboard-action-tracker';
+// DashboardActionTracker import removed — the "My Action Tracker" widget
+// was removed from the dashboard per user request. The component itself
+// still exists at @/components/dashboard-action-tracker for use elsewhere.
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
 // DashboardSearch import removed — its UI consolidated into UnifiedTopSearch
 // in the persistent top navigation header. The endpoint it called
@@ -686,11 +688,9 @@ export default function DashboardOverview({
         {/* Operational Overview - Key metrics and urgent items */}
         <OperationalOverview onNavigate={onSectionChange || (() => {})} />
 
-        {/* Action Tracker — your assigned tasks, events, and messages (moved up
-            from below the tools grid: it belongs with today's priorities). */}
-        <div className="mx-4 mb-8 max-w-full">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
+        {/* My Action Tracker widget removed from the dashboard per user
+            request. The component is still imported by other places if
+            needed; just not surfaced here. */}
 
         {/* Continue where you left off — people reopen the same resources constantly. */}
         <div className="mx-4 mb-8 max-w-full">

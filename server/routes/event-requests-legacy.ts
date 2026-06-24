@@ -5088,6 +5088,115 @@ router.get(
         rescheduled: activeEvents.filter(e => e.status === 'rescheduled').length,
       };
 
+      // ── My TSP-contact assignments ───────────────────────────────────
+      // When the logged-in user is assigned as the TSP contact on one or
+      // more events, surface a personalized snapshot. The fields below let
+      // the client decide whether to render the generic Operational Overview
+      // (no assignments) or the personalized snapshot (any assignments).
+      //
+      // Matching strategy: an event "belongs to" the current user when
+      // their user id appears in EITHER the canonical tspContactUserId
+      // field OR the tspContactAssigned column (which can hold either a
+      // user id or a free-text name depending on how it was assigned). We
+      // match against `req.user.id` and also their email-derived id form to
+      // catch both shapes.
+      const currentUserId = (req.user as any)?.id;
+      let myAssignments: any = null;
+      if (currentUserId) {
+        const userIdStr = String(currentUserId);
+        const isAssignedToMe = (event: any): boolean => {
+          if (!event) return false;
+          if (event.tspContactUserId && String(event.tspContactUserId) === userIdStr) return true;
+          if (event.tspContactAssigned && String(event.tspContactAssigned) === userIdStr) return true;
+          if (event.tspContact && String(event.tspContact) === userIdStr) return true;
+          return false;
+        };
+
+        // Only consider ACTIVE statuses for the personalized snapshot —
+        // completed/declined/cancelled aren't "things that need attention."
+        const myEvents = activeEvents.filter(isAssignedToMe);
+
+        // Stale in-process: no lastContactAttempt in the past 7 days. Treats
+        // missing lastContactAttempt as stale too, since the user has never
+        // logged contact on an in-process event they own.
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const isStaleInProcess = (event: any): boolean => {
+          if (event.status !== 'in_process') return false;
+          if (!event.lastContactAttempt) return true;
+          const last = new Date(event.lastContactAttempt);
+          if (Number.isNaN(last.getTime())) return true;
+          return last < sevenDaysAgo;
+        };
+
+        // New requests assigned to me — highest priority, surfaced first.
+        const myNewRequests = myEvents
+          .filter((e) => e.status === 'new')
+          .sort((a, b) => {
+            // Newest desired/scheduled date first so urgent ones bubble up.
+            const dA = parseDateOnly(getEffectiveEventDate(a))?.getTime() || 0;
+            const dB = parseDateOnly(getEffectiveEventDate(b))?.getTime() || 0;
+            return dA - dB;
+          })
+          .map((e) => ({
+            id: e.id,
+            organizationName: e.organizationName,
+            status: e.status,
+            eventDate: getEffectiveEventDate(e),
+            lastContactAttempt: e.lastContactAttempt || null,
+          }));
+
+        const myInProcessStale = myEvents
+          .filter(isStaleInProcess)
+          .map((e) => ({
+            id: e.id,
+            organizationName: e.organizationName,
+            status: e.status,
+            eventDate: getEffectiveEventDate(e),
+            lastContactAttempt: e.lastContactAttempt || null,
+          }));
+
+        // Full breakdown by status for the snapshot summary.
+        const byStatus = {
+          new: myEvents.filter((e) => e.status === 'new').length,
+          in_process: myEvents.filter((e) => e.status === 'in_process').length,
+          scheduled: myEvents.filter((e) => e.status === 'scheduled').length,
+          rescheduled: myEvents.filter((e) => e.status === 'rescheduled').length,
+        };
+
+        // Top-line list of every event this user owns, lightweight payload.
+        const allMyEvents = myEvents
+          .map((e) => ({
+            id: e.id,
+            organizationName: e.organizationName,
+            status: e.status,
+            eventDate: getEffectiveEventDate(e),
+            lastContactAttempt: e.lastContactAttempt || null,
+          }))
+          .sort((a, b) => {
+            // Order by status priority (new > in_process > scheduled/rescheduled),
+            // then by event date ascending.
+            const statusRank: Record<string, number> = { new: 0, in_process: 1, scheduled: 2, rescheduled: 2 };
+            const rA = statusRank[a.status || ''] ?? 9;
+            const rB = statusRank[b.status || ''] ?? 9;
+            if (rA !== rB) return rA - rB;
+            const dA = parseDateOnly(a.eventDate)?.getTime() || 0;
+            const dB = parseDateOnly(b.eventDate)?.getTime() || 0;
+            return dA - dB;
+          });
+
+        myAssignments = {
+          total: myEvents.length,
+          newRequestsCount: myNewRequests.length,
+          inProcessStaleCount: myInProcessStale.length,
+          byStatus,
+          newRequests: myNewRequests,
+          inProcessStale: myInProcessStale,
+          allMyEvents,
+        };
+      }
+
       res.json({
         thisWeekEventsCount: thisWeekEvents.length,
         eventsNeedingDrivers: eventsNeedingDrivers.length,
@@ -5104,6 +5213,7 @@ router.get(
         tomorrowEventsCount: upcomingDeadlines.filter(e => !e.isToday).length,
         activeEventsCount: activeEvents.length,
         statusCounts,
+        myAssignments,
       });
     } catch (error) {
       logger.error('Failed to fetch operational stats', error);
