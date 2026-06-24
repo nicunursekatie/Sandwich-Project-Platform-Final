@@ -29,7 +29,7 @@ export function GoogleSheetsViewer({
   const FIXED_SHEET_URL =
     'https://docs.google.com/spreadsheets/d/1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8/edit?gid=1218710353#gid=1218710353';
   const FIXED_VIEWER_URL =
-    'https://docs.google.com/spreadsheets/d/1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8/edit?usp=sharing&embedded=true';
+    'https://docs.google.com/spreadsheets/d/1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8/edit?usp=sharing&embedded=true&gid=1218710353#gid=1218710353';
 
   const [isLoading, setIsLoading] = useState(true);
   // Bump to force the iframe to reload the latest sheet contents.

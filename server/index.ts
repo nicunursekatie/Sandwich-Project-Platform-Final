@@ -350,7 +350,7 @@ async function bootstrap() {
             name: 'Messages',
             short_name: 'Messages',
             description: 'View team messages and notifications',
-            url: baseUrl + '/?section=real-time-messages',
+            url: baseUrl + '/?section=gmail-inbox',
             icons: [
               {
                 src: '/attached_assets/LOGOS/TSP_transparent.png',
