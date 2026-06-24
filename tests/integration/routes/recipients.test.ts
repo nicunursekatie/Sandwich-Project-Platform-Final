@@ -355,7 +355,7 @@ describe('Recipients Routes', () => {
 
     it('should prevent deletion if recipient has active collections', async () => {
       // Create a collection associated with this recipient
-      await adminAgent.post('/api/collections').send({
+      await adminAgent.post('/api/sandwich-collections').send({
         recipientId: testRecipient.id,
         collectionDate: '2025-10-25',
         sandwichesCollected: 100,
@@ -384,7 +384,7 @@ describe('Recipients Routes', () => {
 
     it('should return collections for a recipient', async () => {
       // Create some collections for this recipient
-      await adminAgent.post('/api/collections').send({
+      await adminAgent.post('/api/sandwich-collections').send({
         recipientId: testRecipient.id,
         collectionDate: '2025-10-25',
         sandwichesCollected: 100,

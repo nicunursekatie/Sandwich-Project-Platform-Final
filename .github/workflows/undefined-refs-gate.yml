@@ -21,3 +21,17 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run check:undefined-refs
+
+  # Fails a PR when client/server route references drift out of sync with the
+  # committed docs/route-inventory.md. Regenerate locally with
+  # `npm run inventory:routes` and commit the result.
+  route-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run inventory:routes:check
