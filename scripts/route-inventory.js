@@ -265,11 +265,20 @@ const existing = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8')
 // core.autocrlf) doesn't fail --check when the route data is unchanged.
 const existingNormalized = existing === null ? null : existing.replace(/\r\n/g, '\n');
 
+// For --check, ignore the `:line` suffixes in location cells. Unrelated edits
+// constantly shift line numbers (and the repo gets frequent auto-commits that
+// don't regenerate this doc), so gating on exact line numbers makes CI red on
+// cosmetic churn. Genuine route drift — a new/removed/renamed API path or mount —
+// changes the route set itself and still fails the check.
+function checkSignature(text) {
+  return text === null ? null : text.replace(/:\d+/g, ':L');
+}
+
 if (!checkMode) {
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
   console.log(`Route inventory written to ${rel(reportPath)}`);
-} else if (existingNormalized !== report) {
+} else if (checkSignature(existingNormalized) !== checkSignature(report)) {
   console.error(`Route inventory is out of date. Run: npm run inventory:routes`);
   process.exit(1);
 }
