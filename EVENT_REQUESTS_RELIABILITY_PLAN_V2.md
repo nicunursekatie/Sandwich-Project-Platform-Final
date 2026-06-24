@@ -884,7 +884,15 @@ _[fill in]_
 
 **Closes:** the visible side of #9 (god-context re-renders), part of UI chaos
 
-**Status:** [ ] Not started
+**Status:** [x] Shipped 2026-06-24 — the 23 `showXDialog` booleans in `EventDialogContext`
+collapsed into a single `activeDialog` discriminated union with `openDialog()` /
+`closeDialog(only?)` actions. `closeDialog` takes an optional dialog name so
+"open A, close B" sequences stay order-independent (closing B is a no-op once A
+is open), preserving the old independent-boolean semantics. Per-dialog event
+refs (`schedulingEventRequest`, etc.) intentionally stay separate — several are
+shared across dialogs, so folding them into the union would duplicate, not
+simplify. ~16 consumers migrated; net 0 new TypeScript errors; build green.
+**Still requires manual dialog click-through in dev before merge.**
 
 **Why now:** This is the biggest UI cleanup payoff. After Units 1–4 the engine is calm; now the orchestrator's 40+ boolean dialog flags become the main remaining source of "weird state" bugs. Collapse them.
 
@@ -1236,7 +1244,7 @@ If you do one unit per week, that's 12 weeks. If you do one per month, that's a 
 | 2 — Optimistic keep/delete | [~] | 2026-06-18 audit | Old dead-key target appears gone; remaining correct-key inline optimistic patch needs keep/delete decision. |
 | 3 — Strip `_expectedVersion` | [x] | 2026-06-18 audit | Client sends removed/avoided; server strip remains defensive. |
 | 4 — Sync `updatedAt` fix | [ ] | | |
-| 5 — Dialog state collapse | [ ] | | |
+| 5 — Dialog state collapse | [x] | 2026-06-24 | 23 `showXDialog` booleans → one `activeDialog` discriminated union + `openDialog`/`closeDialog` in `EventDialogContext`; ~16 consumers migrated. Type-clean (net 0 new tsc errors) + build green. **Manual click-through of every dialog still pending in dev.** |
 | 6 — Form init race | [ ] | | |
 | 7 — Partial/full collapse | [x] | 2026-06-19 | `/list` returns full records; form second fetch removed; lightweight projection deleted. |
 | 8 — Retire EventEditDialog | [ ] | | |

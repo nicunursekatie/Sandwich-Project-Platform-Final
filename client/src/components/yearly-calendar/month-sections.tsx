@@ -1,13 +1,41 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Copy,
   Edit2,
+  GraduationCap,
+  PartyPopper,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
+
+// localStorage key for which sections are collapsed. Versioned so we can
+// safely re-default in the future without users carrying old state.
+const SECTION_COLLAPSE_KEY = 'yearlyCalendar.monthSection.collapsed.v1';
+
+function loadCollapsedSections(): Set<string> {
+  try {
+    const raw = localStorage.getItem(SECTION_COLLAPSE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed.filter((v): v is string => typeof v === 'string')) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function persistCollapsedSections(next: Set<string>) {
+  try {
+    localStorage.setItem(SECTION_COLLAPSE_KEY, JSON.stringify(Array.from(next)));
+  } catch {
+    // localStorage disabled or full — fall back to in-session state.
+  }
+}
 
 export type MonthSectionKey =
   | 'external'
@@ -29,12 +57,24 @@ export const MONTH_SECTIONS: Array<{
   { key: 'leadership', label: 'Leadership Availability', emoji: '👥' },
 ];
 
-const TRACKED_CATEGORIES = new Set([
+export const RENDERABLE_TRACKED_CATEGORIES = new Set([
   'school_breaks',
   'school_markers',
   'religious_holidays',
   'holiday',
 ]);
+
+/** Count tracked items that appear under External Factors (matches buildMonthSections). */
+export function countRenderableTrackedItems(
+  monthTrackedItems: Record<string, unknown[]>,
+): number {
+  let count = 0;
+  for (const [category, items] of Object.entries(monthTrackedItems)) {
+    if (!RENDERABLE_TRACKED_CATEGORIES.has(category) && category) continue;
+    count += items.length;
+  }
+  return count;
+}
 
 export function yearlyItemSection(category: string): MonthSectionKey {
   switch (category) {
@@ -137,7 +177,7 @@ function buildMonthSections<
   }
 
   for (const [category, items] of Object.entries(monthTrackedItems)) {
-    if (!TRACKED_CATEGORIES.has(category) && category) continue;
+    if (!RENDERABLE_TRACKED_CATEGORIES.has(category) && category) continue;
     sections.external.tracked.push(...items);
   }
 
@@ -146,6 +186,44 @@ function buildMonthSections<
   );
 
   return sections;
+}
+
+/**
+ * Map a tracked external-factor item to its visual treatment.
+ * School breaks (carry a districts list) get a slate/blue card with a
+ * graduation cap. Religious holidays (carry a tradition) get violet with
+ * sparkles. Everything else (federal holidays / observances) gets warm
+ * amber with party popper. This gives External Factors visual weight that
+ * matches the colored TSP Activity cards next to them.
+ */
+function trackedItemStyle<TTracked extends TrackedCalendarItemRow>(item: TTracked) {
+  const districts = item.metadata?.districts || [];
+  const tradition = item.metadata?.tradition;
+  if (districts.length > 0) {
+    return {
+      kind: 'school' as const,
+      borderClass: 'border-l-4 border-l-sky-500 border-sky-200',
+      iconBg: 'bg-sky-100 text-sky-700',
+      Icon: GraduationCap,
+      label: 'School',
+    };
+  }
+  if (tradition) {
+    return {
+      kind: 'religious' as const,
+      borderClass: 'border-l-4 border-l-violet-500 border-violet-200',
+      iconBg: 'bg-violet-100 text-violet-700',
+      Icon: Sparkles,
+      label: tradition,
+    };
+  }
+  return {
+    kind: 'holiday' as const,
+    borderClass: 'border-l-4 border-l-amber-500 border-amber-200',
+    iconBg: 'bg-amber-100 text-amber-700',
+    Icon: PartyPopper,
+    label: 'Holiday',
+  };
 }
 
 function TrackedItemLine<TTracked extends TrackedCalendarItemRow>({
@@ -162,50 +240,82 @@ function TrackedItemLine<TTracked extends TrackedCalendarItemRow>({
   onDeleteTracked: (item: TTracked) => void;
 }) {
   const districts = item.metadata?.districts || [];
-  const tradition = item.metadata?.tradition;
+  const style = trackedItemStyle(item);
+  const Icon = style.Icon;
 
   return (
-    <li className="group/tr flex items-start gap-2 py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
-      <span className="text-[11px] font-medium text-gray-500 shrink-0 pt-0.5 min-w-[4.5rem]">
-        {formatDateRange(item.startDate, item.endDate)}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-snug">
-          {item.title}
-        </p>
-        {(districts.length > 0 || tradition) && (
-          <div className="flex flex-wrap gap-1 mt-1">
-            {districts.map((district) => (
-              <Badge key={district} variant="outline" className="text-[10px] px-1.5 py-0">
-                {district}
-              </Badge>
-            ))}
-            {tradition && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-violet-50 text-violet-700">
-                {tradition}
-              </Badge>
-            )}
+    <li
+      className={`group/tr rounded-md border bg-white dark:bg-gray-900 p-2.5 ${style.borderClass}`}
+    >
+      <div className="flex items-start gap-2.5">
+        <div
+          className={`mt-0.5 w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${style.iconBg}`}
+          aria-hidden="true"
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">
+            {item.title}
+          </p>
+          <div className="flex items-center gap-1 mt-1">
+            <CalendarDays className="h-3.5 w-3.5 text-[#236383]" />
+            <span className="text-xs font-semibold text-[#236383]">
+              {formatDateRange(item.startDate, item.endDate)}
+            </span>
+          </div>
+          {(districts.length > 0 || style.kind === 'religious' || style.kind === 'holiday') && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {style.kind === 'school' &&
+                districts.map((district) => (
+                  <Badge
+                    key={district}
+                    variant="outline"
+                    className="text-[10px] px-1.5 py-0 bg-sky-50 text-sky-700 border-sky-200"
+                  >
+                    {district}
+                  </Badge>
+                ))}
+              {style.kind === 'religious' && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 bg-violet-50 text-violet-700 border-violet-200"
+                >
+                  {style.label}
+                </Badge>
+              )}
+              {style.kind === 'holiday' && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200"
+                >
+                  Holiday
+                </Badge>
+              )}
+            </div>
+          )}
+          {item.notes && (
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 leading-snug">
+              {item.notes}
+            </p>
+          )}
+        </div>
+        {canEditAll && (
+          <div className="opacity-0 group-hover/tr:opacity-100 flex gap-0.5 shrink-0">
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onEditTracked(item)}>
+              <Edit2 className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-red-500"
+              onClick={() => onDeleteTracked(item)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
         )}
-        {item.notes && (
-          <p className="text-xs text-gray-500 italic mt-0.5">{item.notes}</p>
-        )}
       </div>
-      {canEditAll && (
-        <div className="opacity-0 group-hover/tr:opacity-100 flex gap-0.5 shrink-0">
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onEditTracked(item)}>
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 text-red-500"
-            onClick={() => onDeleteTracked(item)}
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
     </li>
   );
 }
@@ -328,45 +438,81 @@ export function MonthSectionsContent<
 }: MonthSectionsProps<TYearly, TTracked>) {
   const sections = buildMonthSections(monthItems, monthTrackedItems);
 
+  // Section collapse state — defaults to all-open (empty set) and persists
+  // the user's choice across renders and reloads.
+  const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsedSections);
+
+  const toggleSection = useCallback((key: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      persistCollapsedSections(next);
+      return next;
+    });
+  }, []);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {MONTH_SECTIONS.map(({ key, label, emoji }) => {
         const { yearly, tracked } = sections[key];
         if (yearly.length === 0 && tracked.length === 0) return null;
+        const isOpen = !collapsed.has(key);
+        const itemCount = yearly.length + tracked.length;
+        const sectionId = `month-section-${key}`;
 
         return (
-          <section key={key} className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+          <section key={key}>
+            <button
+              type="button"
+              onClick={() => toggleSection(key)}
+              aria-expanded={isOpen}
+              aria-controls={sectionId}
+              className="w-full flex items-center gap-1.5 py-1.5 px-1 text-left rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              data-testid={`toggle-${key}`}
+            >
+              {isOpen ? (
+                <ChevronDown className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
+              )}
               <span aria-hidden>{emoji}</span>
-              {label}
-            </h4>
-            <ul className="space-y-1.5 list-none m-0 p-0">
-              {tracked.map((item) => (
-                <TrackedItemLine
-                  key={`tracked-${item.id}`}
-                  item={item}
-                  formatDateRange={formatDateRange}
-                  canEditAll={canEditAll}
-                  onEditTracked={onEditTracked}
-                  onDeleteTracked={onDeleteTracked}
-                />
-              ))}
-              {yearly.map((item) => (
-                <YearlyItemLine
-                  key={`yearly-${item.id}`}
-                  item={item}
-                  categoryColors={categoryColors}
-                  priorityColors={priorityColors}
-                  formatDateRangeWithWeekday={formatDateRangeWithWeekday}
-                  canEdit={canEditItem(item)}
-                  canDelete={canDeleteItem(item)}
-                  onEditYearly={onEditYearly}
-                  onToggleComplete={onToggleComplete}
-                  onDeleteYearly={onDeleteYearly}
-                  onCopyYearly={onCopyYearly}
-                />
-              ))}
-            </ul>
+              <h4 className="text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300 m-0">
+                {label}
+              </h4>
+              <span className="text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full ml-1">
+                {itemCount}
+              </span>
+            </button>
+            {isOpen && (
+              <ul id={sectionId} className="space-y-1.5 list-none m-0 p-0 mt-1.5">
+                {tracked.map((item) => (
+                  <TrackedItemLine
+                    key={`tracked-${item.id}`}
+                    item={item}
+                    formatDateRange={formatDateRange}
+                    canEditAll={canEditAll}
+                    onEditTracked={onEditTracked}
+                    onDeleteTracked={onDeleteTracked}
+                  />
+                ))}
+                {yearly.map((item) => (
+                  <YearlyItemLine
+                    key={`yearly-${item.id}`}
+                    item={item}
+                    categoryColors={categoryColors}
+                    priorityColors={priorityColors}
+                    formatDateRangeWithWeekday={formatDateRangeWithWeekday}
+                    canEdit={canEditItem(item)}
+                    canDelete={canDeleteItem(item)}
+                    onEditYearly={onEditYearly}
+                    onToggleComplete={onToggleComplete}
+                    onDeleteYearly={onDeleteYearly}
+                    onCopyYearly={onCopyYearly}
+                  />
+                ))}
+              </ul>
+            )}
           </section>
         );
       })}

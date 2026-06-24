@@ -21,7 +21,7 @@ export const NonEventTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
+    openDialog,
   } = useEventDialogState();
 
   const nonEventRequests = filterRequestsByStatus('non_event');
@@ -51,12 +51,12 @@ export const NonEventTab: React.FC = () => {
               onView={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(false);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onDelete={() => {
                 if (window.confirm('Are you sure you want to permanently delete this non-event?')) {

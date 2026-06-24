@@ -295,7 +295,7 @@ export function UnifiedTopSearch() {
           onFocus={() => {
             if (flatResults.length > 0) setIsOpen(true);
           }}
-          className="w-full h-9 pl-8 pr-16 rounded-md text-sm bg-white/10 text-white placeholder:text-white/50 border border-white/15 focus:outline-none focus:bg-white/20 focus:border-white/30 transition-colors"
+          className="w-full h-9 pl-8 pr-16 rounded-md text-sm bg-white/10 text-white placeholder:text-white placeholder:opacity-80 placeholder:font-normal border border-white/15 focus:outline-none focus:bg-white/20 focus:border-white/30 transition-colors"
           aria-label="Universal search"
           data-testid="unified-top-search"
         />

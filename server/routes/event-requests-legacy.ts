@@ -30,7 +30,7 @@ import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
-import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { getEffectiveEventDate, getAssignmentUrgentGaps, daysSinceSubmitted, daysUntilEventDate } from '../../shared/event-validation-utils';
 
 const router = Router();
 
@@ -5125,7 +5125,7 @@ router.get(
         const LARGE_SANDWICH_THRESHOLD = 500;
 
         const mapMyAssignmentEvent = (event: any) => {
-          const eventDate = getEffectiveEventDate(event);
+          const eventDate = toDateOnlyString(getEffectiveEventDate(event));
           const lastContact = event.lastContactAttempt || null;
           let needsFollowUp = false;
           if (event.status === 'in_process') {
@@ -5143,11 +5143,20 @@ router.get(
             (typeof count === 'number' && count >= LARGE_SANDWICH_THRESHOLD) ||
             (typeof countMax === 'number' && countMax >= LARGE_SANDWICH_THRESHOLD);
 
+          const submittedDays = daysSinceSubmitted(event.createdAt, today);
+          const untilEvent = daysUntilEventDate(eventDate, today);
+          const urgentGaps = getAssignmentUrgentGaps(event, 7, today);
+
           return {
             id: event.id,
             organizationName: event.organizationName,
             status: event.status,
             eventDate,
+            createdAt: event.createdAt ?? null,
+            daysSinceSubmitted: submittedDays,
+            daysUntilEvent: untilEvent,
+            urgentGaps,
+            needsUrgentDetails: urgentGaps.length > 0,
             lastContactAttempt: lastContact,
             estimatedSandwichCount: count,
             estimatedSandwichCountMin: event.estimatedSandwichCountMin ?? null,
@@ -5176,10 +5185,30 @@ router.get(
           return dA - dB;
         };
 
+        const toDateOnlyString = (value: unknown): string | null => {
+          if (!value) return null;
+          if (value instanceof Date) return value.toISOString().slice(0, 10);
+          if (typeof value === 'string') return value.slice(0, 10);
+          return null;
+        };
+
+        const sortRawEventsByDateAsc = (a: any, b: any) => {
+          const dA =
+            parseDateOnly(toDateOnlyString(getEffectiveEventDate(a)))?.getTime() || 0;
+          const dB =
+            parseDateOnly(toDateOnlyString(getEffectiveEventDate(b)))?.getTime() || 0;
+          return dA - dB;
+        };
+
         // New requests assigned to me — highest priority, surfaced first.
         const myNewRequests = myEvents
           .filter((e) => e.status === 'new')
-          .sort(sortByDateAsc)
+          .sort((a, b) => {
+            const daysA = daysSinceSubmitted(a.createdAt, today) ?? 0;
+            const daysB = daysSinceSubmitted(b.createdAt, today) ?? 0;
+            if (daysB !== daysA) return daysB - daysA;
+            return sortRawEventsByDateAsc(a, b);
+          })
           .map(mapMyAssignmentEvent);
 
         const myInProcessStale = myEvents
@@ -5195,10 +5224,10 @@ router.get(
         };
 
         const byStatusEvents = {
-          new: myEvents.filter((e) => e.status === 'new').sort(sortByDateAsc).map(mapMyAssignmentEvent),
-          in_process: myEvents.filter((e) => e.status === 'in_process').sort(sortByDateAsc).map(mapMyAssignmentEvent),
-          scheduled: myEvents.filter((e) => e.status === 'scheduled').sort(sortByDateAsc).map(mapMyAssignmentEvent),
-          rescheduled: myEvents.filter((e) => e.status === 'rescheduled').sort(sortByDateAsc).map(mapMyAssignmentEvent),
+          new: myEvents.filter((e) => e.status === 'new').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+          in_process: myEvents.filter((e) => e.status === 'in_process').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+          scheduled: myEvents.filter((e) => e.status === 'scheduled').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+          rescheduled: myEvents.filter((e) => e.status === 'rescheduled').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
         };
 
         // Top-line list of every event this user owns, lightweight payload.
@@ -5212,14 +5241,26 @@ router.get(
             return sortByDateAsc(a, b);
           });
 
+        const urgentDetailEvents = myEvents
+          .map(mapMyAssignmentEvent)
+          .filter((e) => e.needsUrgentDetails)
+          .sort((a, b) => {
+            const daysA = a.daysUntilEvent ?? 999;
+            const daysB = b.daysUntilEvent ?? 999;
+            if (daysA !== daysB) return daysA - daysB;
+            return (b.urgentGaps?.length ?? 0) - (a.urgentGaps?.length ?? 0);
+          });
+
         myAssignments = {
           total: myEvents.length,
           newRequestsCount: myNewRequests.length,
           inProcessStaleCount: myInProcessStale.length,
+          urgentDetailGapsCount: urgentDetailEvents.length,
           byStatus,
           byStatusEvents,
           newRequests: myNewRequests,
           inProcessStale: myInProcessStale,
+          urgentDetailEvents,
           allMyEvents,
         };
       }

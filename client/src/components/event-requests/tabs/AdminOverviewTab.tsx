@@ -32,7 +32,10 @@ interface AdminOverviewTabProps {
 
 export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const { setActiveTab } = useEventRequestContext();
-  const { setSelectedEventRequest, setShowEventDetails } = useEventDialogState();
+  const {
+    setSelectedEventRequest,
+    openDialog,
+  } = useEventDialogState();
   const [sortBy, setSortBy] = useState<'name' | 'total' | 'new' | 'in_process'>('total');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'in_process' | 'scheduled'>('all');
@@ -68,7 +71,7 @@ export function AdminOverviewTab({ eventRequests }: AdminOverviewTabProps) {
   const handleViewEvent = (event: EventRequest) => {
     setSelectedEventRequest(event);
     setActiveTab(event.status || 'new');
-    setShowEventDetails(true);
+    openDialog('eventDetails');
   };
 
   const tspContactStats = useMemo(() => {

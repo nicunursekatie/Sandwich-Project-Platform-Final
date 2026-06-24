@@ -13,19 +13,15 @@ export const useEventMutations = () => {
   const {
     selectedEventRequest,
     setSelectedEventRequest,
-    setShowEventDetails,
     setIsEditing,
-    setShowToolkitSentDialog,
     setToolkitEventRequest,
-    setShowScheduleCallDialog,
     setScheduleCallDate,
     setScheduleCallTime,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
     setFollowUpNotes,
     setEditingScheduledId,
     setEditingField,
     setEditingValue,
+    closeDialog,
   } = useEventDialogState();
 
   const eventReportContext = () =>
@@ -71,7 +67,7 @@ export const useEventMutations = () => {
         ),
       });
       await invalidateEventRequestQueries(queryClient);
-      setShowEventDetails(false);
+      closeDialog('eventDetails');
       setSelectedEventRequest(null);
     },
     onError: (error: any) => {
@@ -143,7 +139,7 @@ export const useEventMutations = () => {
         touchedFields: Object.keys(variables.data || {}),
       });
 
-      setShowEventDetails(false);
+      closeDialog('eventDetails');
       setSelectedEventRequest(null);
       setIsEditing(false);
 
@@ -244,7 +240,7 @@ export const useEventMutations = () => {
       // Await query invalidation so the list reflects the new event
       await invalidateEventRequestQueries(queryClient);
 
-      setShowEventDetails(false);
+      closeDialog('eventDetails');
       setSelectedEventRequest(null);
       setIsEditing(false);
     },
@@ -309,7 +305,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowToolkitSentDialog(false);
+      closeDialog('toolkitSent');
       setToolkitEventRequest(null);
     },
     onError: (error: any) => {
@@ -347,7 +343,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowScheduleCallDialog(false);
+      closeDialog('scheduleCall');
       setScheduleCallDate('');
       setScheduleCallTime('');
     },
@@ -466,7 +462,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowOneDayFollowUpDialog(false);
+      closeDialog('oneDayFollowUp');
       setFollowUpNotes('');
     },
     onError: (error: any) => {
@@ -500,7 +496,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowOneMonthFollowUpDialog(false);
+      closeDialog('oneMonthFollowUp');
       setFollowUpNotes('');
     },
     onError: (error: any) => {
