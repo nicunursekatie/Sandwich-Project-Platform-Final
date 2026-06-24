@@ -2679,7 +2679,7 @@ export default function DriverPlanningDashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100dvh-140px)] lg:h-[calc(100dvh-80px)] min-h-[400px] flex items-center justify-center">
+      <div className="h-full min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <Skeleton className="h-12 w-12 rounded-full mx-auto mb-4" />
           <Skeleton className="h-6 w-48 mx-auto" />
@@ -2689,7 +2689,7 @@ export default function DriverPlanningDashboard() {
   }
 
   return (
-    <div className="h-[calc(100dvh-140px)] lg:h-[calc(100dvh-80px)] min-h-[400px] flex flex-col">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden">
       {/* Header - Desktop */}
       <div className="flex-shrink-0 p-4 bg-white border-b hidden lg:block">
         <PageBreadcrumbs
@@ -2752,7 +2752,7 @@ export default function DriverPlanningDashboard() {
       </div>
 
       {/* Main Content - Desktop 3-Panel Layout */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1 hidden lg:flex overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0 hidden lg:flex overflow-hidden">
         {/* Left Panel - Event List */}
         <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
         <div className="h-full border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list" onClick={() => setFocusedItem(null)}>
@@ -3205,14 +3205,13 @@ export default function DriverPlanningDashboard() {
         <ResizableHandle withHandle />
 
         {/* Center Panel - Map */}
-        <ResizablePanel defaultSize={55} minSize={30}>
-        <div className="h-full flex flex-col" data-testid="driver-planning-map">
-          <div className="relative flex-1">
+        <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
+        <div className="h-full min-h-0 flex flex-col overflow-hidden" data-testid="driver-planning-map">
+          <div className="relative flex-1 min-h-0 w-full">
           <MapContainer
             center={mapCenter}
             zoom={10}
-            style={{ height: '100%', width: '100%' }}
-            className="z-0"
+            className="absolute inset-0 z-0"
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -3949,133 +3948,141 @@ export default function DriverPlanningDashboard() {
             </div>
           )}
 
-          </div>
-
-          <div className="border-t bg-white px-4 py-3 overflow-x-auto">
-            <div className="flex flex-nowrap items-start gap-3 min-w-max">
-              <div className="bg-white rounded-lg shadow-sm border inline-block flex-shrink-0" data-testid="driver-planning-legend">
+          {/* Legend overlay — on the map so trip-planning footer doesn't shrink map height */}
+          <div
+            className="absolute bottom-4 left-4 z-[1000] max-w-[min(540px,calc(100%-2rem))] max-h-[min(240px,40%)] overflow-y-auto bg-white rounded-lg shadow-lg border"
+            data-testid="driver-planning-legend"
+          >
+            <button
+              onClick={() => setDesktopLegendCollapsed(!desktopLegendCollapsed)}
+              className="flex items-center gap-1.5 w-full p-2 text-xs font-semibold hover:bg-gray-50 rounded-lg sticky top-0 bg-white z-10"
+            >
+              <span>Legend</span>
+              <svg
+                className={`w-3 h-3 transition-transform ${desktopLegendCollapsed ? '' : 'rotate-180'}`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            {!desktopLegendCollapsed && (
+              <div className="text-xs px-2 pb-2">
+                <p className="text-[11px] leading-tight text-gray-500 mb-1.5">
+                  Checked items are visible. Click a row to show or hide those pins.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 items-center">
                 <button
-                  onClick={() => setDesktopLegendCollapsed(!desktopLegendCollapsed)}
-                  className="flex items-center gap-1.5 w-full p-2 text-xs font-semibold hover:bg-gray-50 rounded-lg"
+                  type="button"
+                  onClick={() => toggleLayer('events')}
+                  className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.events ? '' : 'opacity-60'}`}
+                  title={layerVisibility.events ? 'Click to hide Event pins' : 'Click to show Event pins'}
+                  aria-pressed={layerVisibility.events}
+                  data-testid="toggle-layer-events"
                 >
-                  <span>Legend</span>
-                  <svg
-                    className={`w-3 h-3 transition-transform ${desktopLegendCollapsed ? '' : 'rotate-180'}`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <LayerToggleCheck checked={layerVisibility.events} />
+                  <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
                   </svg>
+                  <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
                 </button>
-                {!desktopLegendCollapsed && (
-                  <div className="text-xs px-2 pb-2">
-                    <p className="text-[11px] leading-tight text-gray-500 mb-1.5">
-                      Checked items are visible. Click a row to show or hide those pins.
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 items-center">
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 12 18" className="w-3.5 h-5" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="1"/>
+                    <circle cx="6" cy="6" r="2.5" fill="white"/>
+                    <circle cx="6" cy="6" r="1.2" fill="#ff0000"/>
+                  </svg>
+                  <span className="font-semibold">Selected Event (pulses)</span>
+                </div>
+                {effectiveSelectedEvent && (
+                  <>
                     <button
                       type="button"
-                      onClick={() => toggleLayer('events')}
-                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.events ? '' : 'opacity-60'}`}
-                      title={layerVisibility.events ? 'Click to hide Event pins' : 'Click to show Event pins'}
-                      aria-pressed={layerVisibility.events}
-                      data-testid="toggle-layer-events"
+                      onClick={() => toggleLayer('hosts')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.hosts ? '' : 'opacity-60'}`}
+                      title={layerVisibility.hosts ? 'Click to hide Host pins' : 'Click to show Host pins'}
+                      aria-pressed={layerVisibility.hosts}
+                      data-testid="toggle-layer-hosts"
                     >
-                      <LayerToggleCheck checked={layerVisibility.events} />
-                      <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                      <LayerToggleCheck checked={layerVisibility.hosts} />
+                      <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
+                      <span>Host (circle){layerVisibility.hosts ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('recipients')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.recipients ? '' : 'opacity-60'}`}
+                      title={layerVisibility.recipients ? 'Click to hide Recipient pins' : 'Click to show Recipient pins'}
+                      aria-pressed={layerVisibility.recipients}
+                      data-testid="toggle-layer-recipients"
+                    >
+                      <LayerToggleCheck checked={layerVisibility.recipients} />
+                      <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
+                      <span>Recipient (diamond){layerVisibility.recipients ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('drivers')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.drivers ? '' : 'opacity-60'}`}
+                      title={layerVisibility.drivers ? 'Click to hide Driver pins' : 'Click to show Driver pins'}
+                      aria-pressed={layerVisibility.drivers}
+                      data-testid="toggle-layer-drivers"
+                    >
+                      <LayerToggleCheck checked={layerVisibility.drivers} />
+                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
+                      <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowVolunteersSpeakers((v) => !v)}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
+                      title={showVolunteersSpeakers ? 'Click to hide Volunteer/Speaker pins' : 'Click to show Volunteer/Speaker pins'}
+                      aria-pressed={showVolunteersSpeakers}
+                      data-testid="toggle-layer-volunteers"
+                    >
+                      <LayerToggleCheck checked={showVolunteersSpeakers} />
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
+                      <span>Speakers/Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTeamMembers((v) => !v)}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showTeamMembers ? '' : 'opacity-60'}`}
+                      title={showTeamMembers ? 'Click to hide Team Member pins' : 'Click to show Team Member pins'}
+                      aria-pressed={showTeamMembers}
+                      data-testid="toggle-layer-team-members"
+                    >
+                      <LayerToggleCheck checked={showTeamMembers} />
+                      <div className="w-3.5 h-3.5 rounded-[4px] bg-red-500 border border-white shadow-sm" />
+                      <span>Team Members (rounded square){showTeamMembers ? '' : ' (hidden)'}</span>
                     </button>
                     <div className="flex items-center gap-2">
-                      <svg viewBox="0 0 12 18" className="w-3.5 h-5" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="1"/>
-                        <circle cx="6" cy="6" r="2.5" fill="white"/>
-                        <circle cx="6" cy="6" r="1.2" fill="#ff0000"/>
+                      <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                        <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span className="font-semibold">Selected Event (pulses)</span>
+                      <span>Host+Driver</span>
                     </div>
-                    {effectiveSelectedEvent && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => toggleLayer('hosts')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.hosts ? '' : 'opacity-60'}`}
-                          title={layerVisibility.hosts ? 'Click to hide Host pins' : 'Click to show Host pins'}
-                          aria-pressed={layerVisibility.hosts}
-                          data-testid="toggle-layer-hosts"
-                        >
-                          <LayerToggleCheck checked={layerVisibility.hosts} />
-                          <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
-                          <span>Host (circle){layerVisibility.hosts ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleLayer('recipients')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.recipients ? '' : 'opacity-60'}`}
-                          title={layerVisibility.recipients ? 'Click to hide Recipient pins' : 'Click to show Recipient pins'}
-                          aria-pressed={layerVisibility.recipients}
-                          data-testid="toggle-layer-recipients"
-                        >
-                          <LayerToggleCheck checked={layerVisibility.recipients} />
-                          <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                          <span>Recipient (diamond){layerVisibility.recipients ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleLayer('drivers')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.drivers ? '' : 'opacity-60'}`}
-                          title={layerVisibility.drivers ? 'Click to hide Driver pins' : 'Click to show Driver pins'}
-                          aria-pressed={layerVisibility.drivers}
-                          data-testid="toggle-layer-drivers"
-                        >
-                          <LayerToggleCheck checked={layerVisibility.drivers} />
-                          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
-                          <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowVolunteersSpeakers((v) => !v)}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
-                          title={showVolunteersSpeakers ? 'Click to hide Volunteer/Speaker pins' : 'Click to show Volunteer/Speaker pins'}
-                          aria-pressed={showVolunteersSpeakers}
-                          data-testid="toggle-layer-volunteers"
-                        >
-                          <LayerToggleCheck checked={showVolunteersSpeakers} />
-                          <svg viewBox="0 0 24 24" className="w-4 h-4 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
-                          </svg>
-                          <span>Speakers/Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowTeamMembers((v) => !v)}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showTeamMembers ? '' : 'opacity-60'}`}
-                          title={showTeamMembers ? 'Click to hide Team Member pins' : 'Click to show Team Member pins'}
-                          aria-pressed={showTeamMembers}
-                          data-testid="toggle-layer-team-members"
-                        >
-                          <LayerToggleCheck checked={showTeamMembers} />
-                          <div className="w-3.5 h-3.5 rounded-[4px] bg-red-500 border border-white shadow-sm" />
-                          <span>Team Members (rounded square){showTeamMembers ? '' : ' (hidden)'}</span>
-                        </button>
-                        <div className="flex items-center gap-2">
-                          <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
-                            <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
-                          </svg>
-                          <span>Host+Driver</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-                          <span>Selected item = orange</span>
-                        </div>
-                      </>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
+                      <span>Selected item = orange</span>
                     </div>
-                  </div>
+                  </>
                 )}
+                </div>
               </div>
+            )}
+          </div>
+
+          </div>
+
+          {(fullTripRoute && selectedDriver && selectedDestination) ||
+          (((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute) ||
+          (drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination) ? (
+          <div className="border-t bg-white px-4 py-2 overflow-x-auto flex-shrink-0">
+            <div className="flex flex-nowrap items-start gap-3 min-w-max">
 
               {fullTripRoute && selectedDriver && selectedDestination && (
                 <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px] flex-shrink-0">
@@ -4446,6 +4453,7 @@ export default function DriverPlanningDashboard() {
               )}
             </div>
           </div>
+          ) : null}
         </div>
         </ResizablePanel>
 

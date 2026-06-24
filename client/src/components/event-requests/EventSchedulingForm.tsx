@@ -674,6 +674,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
 
+      // Status-transition diagnostic on the response side. If the server
+      // accepted the save but didn't actually persist the status change, that
+      // shows up here as a mismatch between what we sent and what came back.
+      const requestedStatus = variables.data?.status;
+      if (requestedStatus && updatedEvent?.status !== requestedStatus) {
+        logger.error('⚠️ STATUS MISMATCH after save', {
+          eventId: eventRequest?.id,
+          requested: requestedStatus,
+          actualOnResponse: updatedEvent?.status,
+          originalStatus: eventRequest?.status,
+        });
+        // Surface this to the user so it's not a silent revert.
+        errorToast({
+          title: 'Status change did not save',
+          description: `You tried to move "${orgName}" to ${requestedStatus}, but the server reports the status is still ${updatedEvent?.status || 'unchanged'}. Try again, and if it keeps failing, the event may be locked by another process — refresh and reopen the card to see the latest state.`,
+          duration: Number.POSITIVE_INFINITY,
+          report: {
+            whatDoing: `Move event to ${requestedStatus}`,
+            expectedOutcome: `Event status updates to ${requestedStatus}.`,
+            actualOutcome: `Save returned with status still ${updatedEvent?.status || 'unchanged'}.`,
+            ...(eventRequest?.id
+              ? {
+                  recordType: 'event_request',
+                  recordId: String(eventRequest.id),
+                  recordLabel: eventRequest.organizationName || formData.organizationName,
+                }
+              : {}),
+          },
+        });
+        // Keep the form open so the user can see the failure and retry.
+        return;
+      }
+
       // Only the server-reported dropped fields are authoritative enough to block
       // save completion. The heuristic round-trip comparison below is logged for
       // diagnostics but must NOT keep the dialog open — treating its false
@@ -975,6 +1008,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
 
       logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
+      // Extra status-transition diagnostic: any standby-related save logs the
+      // exact status payload being sent. Helps debug the "save closes but
+      // status reverts" symptom when it shows up in production.
+      if (eventData.status && eventData.status !== eventRequest.status) {
+        logger.log('🔁 STATUS TRANSITION in payload:', {
+          from: eventRequest.status,
+          to: eventData.status,
+          standbyExpectedDate: eventData.standbyExpectedDate,
+          eventId: eventRequest.id,
+        });
+      }
       updateEventRequestMutation.mutate({ id: eventRequest.id, data: eventData });
     } else {
       logger.log('➕ Creating new event');
@@ -1008,13 +1052,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         .catch(() => { setVanConflictChecked(true); });
     }
 
-    // Standby follow-up date prompt
+    // Standby follow-up date prompt — fires for EVERY transition into standby
+    // from another status, regardless of whether standbyExpectedDate already has
+    // a value. Previously this check skipped the dialog when standbyExpectedDate
+    // was truthy, which broke the flow when an event had a leftover date from a
+    // prior standby episode: the dialog never appeared, but the save sometimes
+    // landed in a state where the status reverted to scheduled without warning.
+    // Always confirming the follow-up date with the user keeps intent explicit
+    // for the current standby episode.
     const originalStatus = eventRequest?.status || 'new';
-    if (formData.status === 'standby' && originalStatus !== 'standby' && !formData.standbyExpectedDate) {
-      const oneWeekFromNow = new Date();
-      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
-      setStandbyFollowUpMode('one_week');
+    if (formData.status === 'standby' && originalStatus !== 'standby') {
+      // Pre-fill: use the existing standbyExpectedDate if present (so users
+      // don't have to retype a date they already set), otherwise default to
+      // one week from today.
+      const existingDate = formData.standbyExpectedDate;
+      if (existingDate) {
+        setStandbyFollowUpDate(existingDate);
+        setStandbyFollowUpMode('specific');
+      } else {
+        const oneWeekFromNow = new Date();
+        oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+        setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+        setStandbyFollowUpMode('one_week');
+      }
+      logger.log('🟡 Standby transition detected: opening follow-up dialog', {
+        originalStatus,
+        targetStatus: formData.status,
+        existingDate,
+      });
       setShowStandbyFollowUpDialog(true);
       return;
     }

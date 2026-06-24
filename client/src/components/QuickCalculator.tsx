@@ -188,10 +188,11 @@ export function QuickCalculator() {
         <TooltipTrigger asChild>
           <DialogTrigger asChild>
             <button
-              className="p-1.5 sm:p-2 rounded-md transition-colors text-white/80 hover:bg-white/15 hover:text-white"
+              className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium text-white/80 hover:bg-white/15 hover:text-white"
               aria-label="Calculator"
             >
               <Calculator className="w-4 h-4" />
+              <span className="hidden lg:inline">Calculator</span>
             </button>
           </DialogTrigger>
         </TooltipTrigger>
