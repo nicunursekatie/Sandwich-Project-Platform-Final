@@ -65,9 +65,9 @@ export default function PredictiveForecasts() {
 
   // Fetch weekly monitoring status to check if core hosts have reported
   const { data: weeklyMonitoring } = useQuery<any[]>({
-    queryKey: ['/api/core/monitoring/weekly-status', 0], // 0 = current week
+    queryKey: ['/api/monitoring/weekly-status', 0], // 0 = current week
     queryFn: async () => {
-      const response = await fetch('/api/core/monitoring/weekly-status/0');
+      const response = await fetch('/api/monitoring/weekly-status/0');
       if (!response.ok) throw new Error('Failed to fetch weekly monitoring');
       return response.json();
     },

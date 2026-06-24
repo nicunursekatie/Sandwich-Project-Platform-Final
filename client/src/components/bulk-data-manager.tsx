@@ -68,27 +68,30 @@ export default function BulkDataManager({
 
   // Fetch collection statistics
   const { data: stats, isLoading: statsLoading } = useQuery<any>({
-    queryKey: ['/api/collection-stats'],
+    queryKey: ['/api/data-management/collection-stats'],
     refetchInterval: 120000, // Reduced from 5 seconds to 2 minutes
   });
 
   // Fetch host mapping distribution
   const { data: mappingStats, isLoading: mappingLoading } = useQuery<any>({
-    queryKey: ['/api/host-mapping-stats'],
+    queryKey: ['/api/data-management/host-mapping-stats'],
     refetchInterval: 120000, // Reduced from 5 seconds to 2 minutes
   });
 
   // Fetch collections for selected host
   const { data: hostCollections, isLoading: hostCollectionsLoading } = useQuery(
     {
-      queryKey: ['/api/collections-by-host', selectedHost],
+      queryKey: ['/api/data-management/collections-by-host', selectedHost],
       queryFn: async () => {
         if (!selectedHost) return [];
         const response = await fetch(
-          `/api/collections-by-host/${encodeURIComponent(selectedHost)}`
+          `/api/data-management/collections-by-host/${encodeURIComponent(selectedHost)}`
         );
         if (!response.ok) throw new Error('Failed to fetch host collections');
-        return response.json();
+        const json = await response.json();
+        // Route returns a paginated object { data, total, ... }; the UI
+        // consumes hostCollections as an array (.map / .length), so unwrap it.
+        return Array.isArray(json) ? json : (json?.data ?? []);
       },
       enabled: !!selectedHost,
     }
@@ -97,12 +100,13 @@ export default function BulkDataManager({
   // Run bulk mapping
   const bulkMapMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/bulk-map-hosts', {});
-      return response.json();
+      // apiRequest already parses and returns the JSON body (not a Response),
+      // so return it directly — calling .json() on it would throw.
+      return await apiRequest('POST', '/api/data-management/bulk-map-hosts', {});
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/collection-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/host-mapping-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/data-management/collection-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/data-management/host-mapping-stats'] });
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections'],
       });
@@ -137,7 +141,7 @@ export default function BulkDataManager({
         title: 'Data Issues Fixed',
         description: `Successfully fixed ${data.fixedCount} data corruption issues out of ${data.totalChecked} records checked.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/collection-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/data-management/collection-stats'] });
       queryClient.invalidateQueries({
         queryKey: ['/api/sandwich-collections'],
       });

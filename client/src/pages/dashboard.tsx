@@ -78,7 +78,6 @@ import { QuickCalculator } from '@/components/QuickCalculator';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
-const WeeklySandwichForm = lazyWithRetry(() => import('@/components/weekly-sandwich-form'));
 // CommitteeChat removed - consolidated into StreamChatRooms (Team Chat)
 const GoogleDriveLinks = lazyWithRetry(() => import('@/components/google-drive-links'));
 const DashboardOverview = lazyWithRetry(() => import('@/components/dashboard-overview'));
