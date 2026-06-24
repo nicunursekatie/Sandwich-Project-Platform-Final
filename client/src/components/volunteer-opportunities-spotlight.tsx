@@ -40,6 +40,25 @@ const getUnfilledNeeds = (request: EventRequest): UnfilledNeeds => {
   return { needsSpeaker, needsVolunteer, needsDriver, speakersNeeded, volunteersNeeded, driversNeeded };
 };
 
+// Color-code each opportunity by how soon it is, so understaffed events that
+// are nearly here read as urgent at a glance: Red = within 3 days (critical),
+// Amber = within a week (needs help soon), teal = further out.
+type Urgency = { level: 'critical' | 'soon' | 'upcoming'; label: string; badgeClass: string; borderClass: string };
+
+const getUrgency = (request: EventRequest): Urgency => {
+  const date = getEffectiveEventDate(request);
+  const days = date
+    ? Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : Infinity;
+  if (days <= 3) {
+    return { level: 'critical', label: 'Critical', badgeClass: 'bg-red-100 text-red-800', borderClass: 'border-l-red-500' };
+  }
+  if (days <= 7) {
+    return { level: 'soon', label: 'Needs help soon', badgeClass: 'bg-amber-100 text-amber-800', borderClass: 'border-l-amber-500' };
+  }
+  return { level: 'upcoming', label: 'Upcoming', badgeClass: 'bg-[#007E8C]/10 text-[#007E8C]', borderClass: 'border-l-[#007E8C]' };
+};
+
 export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportunitiesSpotlightProps) {
   const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
@@ -79,7 +98,21 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
   }
 
   if (opportunities.length === 0) {
-    return null;
+    return (
+      <div className="premium-card-elevated p-6 mx-4 mb-8" style={{ borderTop: '4px solid #007E8C' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <Users className="w-6 h-6 text-green-600" />
+          </div>
+          <div>
+            <h3 className="premium-text-h4 text-[#007E8C]">Volunteer Opportunities</h3>
+            <p className="premium-text-body-sm text-gray-600">
+              🎉 Every upcoming event is fully staffed — nothing needs volunteers right now.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -112,19 +145,27 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
       <div className="space-y-3">
         {opportunities.map((event) => {
           const needs = getUnfilledNeeds(event);
+          const urgency = getUrgency(event);
           return (
             <Card
               key={event.id}
-              className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-[#007E8C]"
+              className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${urgency.borderClass}`}
               onClick={() => onNavigate('event-requests')}
               data-testid={`opportunity-card-${event.id}`}
             >
               <CardContent className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-[#236383] truncate">
-                      {event.organizationName}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-[#236383] truncate">
+                        {event.organizationName}
+                      </h4>
+                      {urgency.level !== 'upcoming' && (
+                        <Badge className={`${urgency.badgeClass} flex-shrink-0`}>
+                          {urgency.label}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
