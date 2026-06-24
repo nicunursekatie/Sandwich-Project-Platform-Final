@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, ExternalLink, FileText, Link2, Folder } from 'lucide-react';
+import { Clock, ExternalLink, ArrowRight, FileText, Link2, Folder } from 'lucide-react';
 
 interface Resource {
   resource: {
@@ -106,7 +106,7 @@ export function RecentlyAccessedResources() {
             className="inline-flex items-center gap-1 text-sm text-[#236383] hover:text-[#007E8C] font-medium"
           >
             Browse resources
-            <ExternalLink className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" />
           </a>
         </div>
       </div>
@@ -159,7 +159,7 @@ export function RecentlyAccessedResources() {
           className="text-sm text-[#236383] hover:text-[#007E8C] font-medium flex items-center justify-center gap-1"
         >
           View all resources
-          <ExternalLink className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4" />
         </a>
       </div>
     </div>
