@@ -16,7 +16,6 @@ import type { EventRequest } from '@shared/schema';
 import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
 import { Button } from '@/components/ui/button';
 import { LayoutGrid, Table2, Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import { EventListSkeleton } from '../EventCardSkeleton';
 
@@ -461,30 +460,6 @@ export const ScheduledTab: React.FC = () => {
     await createEventRequestMutation.mutateAsync(newEventData);
     setShowDuplicateDialog(false);
     setDuplicateSourceRequest(null);
-  };
-
-  const handleExport = async () => {
-    if (scheduledRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no scheduled events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(scheduledRequests, 'scheduled');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
   };
 
   return (

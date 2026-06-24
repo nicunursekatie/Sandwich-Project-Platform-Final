@@ -9,9 +9,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { InProcessCard } from '../cards/InProcessCard';
 import { Button } from '@/components/ui/button';
-import { EyeOff, Eye, CalendarX, Download } from 'lucide-react';
+import { EyeOff, Eye, CalendarX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
@@ -298,47 +297,13 @@ export const InProcessTab: React.FC = () => {
     setEditingValue('');
   };
 
-  const handleExport = async () => {
-    if (inProcessRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no events in process to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(inProcessRequests, 'in_process');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={inProcessRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       {/* Toggle button for hiding past-date events */}

@@ -47,6 +47,7 @@ import {
   Trash2,
   Upload,
   Plus,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   Dialog,
@@ -54,6 +55,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -68,6 +85,37 @@ import { useToast } from '@/hooks/use-toast';
 import type { HostResource } from '@shared/schema';
 
 // Brand colors: #236383 (dark teal), #47b3cb (light teal), #007e8c (primary teal), #a31c41 (burgundy), #fbad3f (gold)
+
+// Admin-only overflow menu — delete is server-restricted to admin/super_admin as well
+function ResourceAdminMenu({ onDelete }: { onDelete: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 px-2"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="More actions"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="text-red-600 focus:text-red-600"
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete resource
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 // Resource card component
 function ResourceCard({
@@ -233,19 +281,7 @@ function ImageGuideCard({
           >
             <Share2 className="w-4 h-4" />
           </Button>
-          {onDelete && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={(e) => {
-                e.preventDefault();
-                onDelete();
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+          {onDelete && <ResourceAdminMenu onDelete={onDelete} />}
         </div>
       </CardContent>
     </Card>
@@ -428,20 +464,7 @@ function DocumentCard({
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Share</span>
                 </Button>
-                {onDelete && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete();
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Delete</span>
-                  </Button>
-                )}
+                {onDelete && <ResourceAdminMenu onDelete={onDelete} />}
               </div>
             </div>
           </div>
@@ -645,6 +668,7 @@ export default function HostResources() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [uploadOpen, setUploadOpen] = React.useState(false);
+  const [resourceToDelete, setResourceToDelete] = React.useState<{ id: number; title: string } | null>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -683,10 +707,15 @@ export default function HostResources() {
     },
   });
 
-  const handleDelete = (id: number, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
-      deleteMutation.mutate(id);
-    }
+  const requestDelete = (id: number, title: string) => {
+    setResourceToDelete({ id, title });
+  };
+
+  const confirmDelete = () => {
+    if (!resourceToDelete) return;
+    deleteMutation.mutate(resourceToDelete.id, {
+      onSettled: () => setResourceToDelete(null),
+    });
   };
 
   // Admins can delete any resource (all resources now have real DB IDs)
@@ -823,7 +852,7 @@ export default function HostResources() {
                 description={doc.description}
                 fileType={doc.fileType}
                 downloadUrl={doc.fileUrl}
-                onDelete={canDelete ? () => handleDelete(doc.id, doc.title) : undefined}
+                onDelete={canDelete ? () => requestDelete(doc.id, doc.title) : undefined}
               />
             ))
           )}
@@ -856,7 +885,7 @@ export default function HostResources() {
                 description={img.description}
                 imageUrl={img.fileUrl}
                 fileName={img.fileName}
-                onDelete={canDelete ? () => handleDelete(img.id, img.title) : undefined}
+                onDelete={canDelete ? () => requestDelete(img.id, img.title) : undefined}
               />
             ))
           )}
@@ -940,6 +969,37 @@ export default function HostResources() {
           </CardContent>
         </Card>
       </section>
+
+      <AlertDialog
+        open={!!resourceToDelete}
+        onOpenChange={(open) => {
+          if (!open) setResourceToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resourceToDelete
+                ? `"${resourceToDelete.title}" will be permanently removed. This cannot be undone.`
+                : 'This resource will be permanently removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

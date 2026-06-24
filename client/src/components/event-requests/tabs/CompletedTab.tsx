@@ -7,9 +7,6 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { CompletedCard } from '../cards/CompletedCard';
 import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import type { EventRequest } from '@shared/schema';
@@ -56,47 +53,13 @@ export const CompletedTab: React.FC = () => {
 
   const completedRequests = filterRequestsByStatus('completed') || [];
 
-  const handleExport = async () => {
-    if (completedRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no completed events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(completedRequests, 'completed');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={completedRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       <div className="space-y-4">
