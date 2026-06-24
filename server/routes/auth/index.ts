@@ -344,9 +344,11 @@ export function createAuthRouter() {
       // Self-declared willingness only. Users can say what they want to do; they
       // cannot grant themselves the approval flags (speaker/driver/van) — those
       // are coordinator-controlled in user management.
-      if (willingToVolunteer !== undefined) updateData.willingToVolunteer = !!willingToVolunteer;
-      if (willingToSpeak !== undefined) updateData.willingToSpeak = !!willingToSpeak;
-      if (willingToDrive !== undefined) updateData.willingToDrive = !!willingToDrive;
+      // Only a literal boolean true counts as "willing" — coerce strictly so a
+      // crafted body like { willingToSpeak: 'false' } can't flip the flag on.
+      if (willingToVolunteer !== undefined) updateData.willingToVolunteer = willingToVolunteer === true;
+      if (willingToSpeak !== undefined) updateData.willingToSpeak = willingToSpeak === true;
+      if (willingToDrive !== undefined) updateData.willingToDrive = willingToDrive === true;
       if (address !== undefined) {
         updateData.address = address;
         // Auto-geocode when address changes

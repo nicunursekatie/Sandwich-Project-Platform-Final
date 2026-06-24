@@ -1809,7 +1809,10 @@ export default function VolunteerEventHub() {
             (myEligibleRoles.includes('driver') &&
               event.driversUnfilled > 0 &&
               !event.selfTransport &&
-              !event.vanDriverNeeded);
+              !event.vanDriverNeeded) ||
+            // Van is its own opening (vanDriverNeeded), separate from regular
+            // driver slots — a van-approved volunteer should still see these.
+            (myEligibleRoles.includes('van') && event.vanDriverNeeded);
           if (!matchesMyRole) return false;
         }
         return true;

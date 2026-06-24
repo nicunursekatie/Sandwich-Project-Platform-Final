@@ -27,7 +27,7 @@ import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
-import { isEligibleForRole, getEligibleEventRoles, type EventRole } from '../../shared/event-role-eligibility';
+import { isEligibleForRole, type EventRole } from '../../shared/event-role-eligibility';
 
 const router = Router();
 

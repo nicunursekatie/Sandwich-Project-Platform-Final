@@ -217,20 +217,23 @@ export class UserService implements IUserService {
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.isActive !== undefined)
         updateData.isActive = profileData.isActive;
-      // Coordinator-granted event-role approvals. Stamp the audit columns when
-      // any of them is touched so we can trace who vetted a speaker/driver.
+      // Coordinator-granted event-role approvals. The user-management dialog
+      // sends all three flags on every profile save, so presence alone doesn't
+      // mean a change. Compare against the stored values and only re-stamp the
+      // audit columns when an approval actually flips — otherwise editing a
+      // name would overwrite "who vetted this speaker/driver".
       let eventRoleApprovalChanged = false;
       if (profileData.vanApproved !== undefined) {
         updateData.vanApproved = profileData.vanApproved;
-        eventRoleApprovalChanged = true;
+        if (!!oldUser?.vanApproved !== !!profileData.vanApproved) eventRoleApprovalChanged = true;
       }
       if (profileData.speakerApproved !== undefined) {
         updateData.speakerApproved = profileData.speakerApproved;
-        eventRoleApprovalChanged = true;
+        if (!!oldUser?.speakerApproved !== !!profileData.speakerApproved) eventRoleApprovalChanged = true;
       }
       if (profileData.driverApproved !== undefined) {
         updateData.driverApproved = profileData.driverApproved;
-        eventRoleApprovalChanged = true;
+        if (!!oldUser?.driverApproved !== !!profileData.driverApproved) eventRoleApprovalChanged = true;
       }
       if (eventRoleApprovalChanged) {
         updateData.eventRolesModifiedAt = new Date();
