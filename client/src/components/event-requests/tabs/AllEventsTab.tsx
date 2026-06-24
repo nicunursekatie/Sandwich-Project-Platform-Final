@@ -68,13 +68,13 @@ export const AllEventsTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
+    openDialog,
   } = useEventDialogState();
 
   const openEvent = (request: EventRequest) => {
     setSelectedEventRequest(request);
     setIsEditing(false);
-    setShowEventDetails(true);
+    openDialog('eventDetails');
   };
 
   // Handle status filter change and reset to page 1

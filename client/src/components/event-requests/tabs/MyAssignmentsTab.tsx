@@ -53,29 +53,15 @@ export const MyAssignmentsTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowScheduleCallDialog,
     setToolkitEventRequest,
-    setShowToolkitSentDialog,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowTspContactAssignmentDialog,
     setTspContactEventRequest,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
-    setShowCollectionLog,
     setCollectionLogEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowIntakeCallDialog,
     setIntakeCallEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-
-    // Inline editing states for scheduled events
     editingScheduledId,
     setEditingScheduledId,
     editingField,
@@ -94,18 +80,13 @@ export const MyAssignmentsTab: React.FC = () => {
     setInlineRangeMax,
     inlineRangeType,
     setInlineRangeType,
-
-    // Completed editing
     editingCompletedId,
     setEditingCompletedId,
     completedEdit,
     setCompletedEdit,
-
-    // Status reason dialogs
-    setShowDeclineDialog,
     setReasonDialogEventRequest,
-    setShowNonEventDialog,
     setNonEventDialogEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   // Helper functions for ScheduledCardEnhanced
@@ -180,13 +161,13 @@ export const MyAssignmentsTab: React.FC = () => {
       onEdit: () => {
         setSelectedEventRequest(request);
         setIsEditing(true);
-        setShowEventDetails(true);
+        openDialog('eventDetails');
       },
       onDelete: () => deleteEventRequestMutation.mutate(request.id),
       onCall: () => handleCall(request),
       onContact: () => {
         setContactEventRequest(request);
-        setShowContactOrganizerDialog(true);
+        openDialog('contactOrganizer');
       },
     };
 
@@ -197,58 +178,58 @@ export const MyAssignmentsTab: React.FC = () => {
             {...commonProps}
             onIntakeCall={() => {
               setIntakeCallEventRequest(request);
-              setShowIntakeCallDialog(true);
+              openDialog('intakeCall');
             }}
             onToolkit={() => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);
-              setShowToolkitSentDialog(true);
+              openDialog('toolkitSent');
             }}
             onScheduleCall={() => {
               setSelectedEventRequest(request);
-              setShowScheduleCallDialog(true);
+              openDialog('scheduleCall');
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onApprove={() => handleStatusChange(request.id, 'in_process')}
             onDecline={async () => {
                 const result = await handleStatusChange(request.id, 'declined');
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
-                  setShowDeclineDialog(true);
+                  openDialog('decline');
                 }
               }}
             onNonEvent={async () => {
                 const result = await handleStatusChange(request.id, 'non_event');
                 if (result === 'needs_reason') {
                   setNonEventDialogEventRequest(request);
-                  setShowNonEventDialog(true);
+                  openDialog('nonEvent');
                 }
               }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onAddNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('add');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onEditNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('edit');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onCompleteNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('complete');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onToggleCorporatePriority={(isCorporatePriority) => {
               toggleCorporatePriorityMutation.mutate({
@@ -267,43 +248,43 @@ export const MyAssignmentsTab: React.FC = () => {
             onSchedule={() => {
               setSelectedEventRequest(request);
               setSchedulingEventRequest(request);
-              setShowSchedulingDialog(true);
+              openDialog('scheduling');
             }}
             onScheduleCall={() => {
               setSelectedEventRequest(request);
-              setShowScheduleCallDialog(true);
+              openDialog('scheduleCall');
             }}
             onResendToolkit={() => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);
-              setShowToolkitSentDialog(true);
+              openDialog('toolkitSent');
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onAddNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('add');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onEditNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('edit');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onCompleteNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('complete');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
           />
         );
@@ -325,27 +306,27 @@ export const MyAssignmentsTab: React.FC = () => {
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onDelete={() => deleteEventRequestMutation.mutate(request.id)}
             onContact={() => {
               setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onReschedule={() => {
               // Handle reschedule if needed
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             startEditing={(field, value) => {
               setEditingScheduledId(request.id);
@@ -387,17 +368,17 @@ export const MyAssignmentsTab: React.FC = () => {
             onAddNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('add');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onEditNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('edit');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onCompleteNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('complete');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
           />
         );
@@ -409,19 +390,19 @@ export const MyAssignmentsTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onFollowUp1Day={() => {
               setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
+              openDialog('oneDayFollowUp');
             }}
             onFollowUp1Month={() => {
               setSelectedEventRequest(request);
-              setShowOneMonthFollowUpDialog(true);
+              openDialog('oneMonthFollowUp');
             }}
             onViewCollectionLog={() => {
               setCollectionLogEventRequest(request);
-              setShowCollectionLog(true);
+              openDialog('collectionLog');
             }}
             onReschedule={() => {
               if (window.confirm('Do you want to create a new event request based on this completed event?')) {
@@ -430,15 +411,15 @@ export const MyAssignmentsTab: React.FC = () => {
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             resolveUserName={resolveUserName}
             openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
@@ -457,12 +438,12 @@ export const MyAssignmentsTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onReactivate={() => {
               if (window.confirm('Do you want to reactivate this event request?')) {
@@ -475,7 +456,7 @@ export const MyAssignmentsTab: React.FC = () => {
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             resolveUserName={resolveUserName}
           />
@@ -487,58 +468,58 @@ export const MyAssignmentsTab: React.FC = () => {
             {...commonProps}
             onIntakeCall={() => {
               setIntakeCallEventRequest(request);
-              setShowIntakeCallDialog(true);
+              openDialog('intakeCall');
             }}
             onToolkit={() => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);
-              setShowToolkitSentDialog(true);
+              openDialog('toolkitSent');
             }}
             onScheduleCall={() => {
               setSelectedEventRequest(request);
-              setShowScheduleCallDialog(true);
+              openDialog('scheduleCall');
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onApprove={() => handleStatusChange(request.id, 'in_process')}
             onDecline={async () => {
                 const result = await handleStatusChange(request.id, 'declined');
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
-                  setShowDeclineDialog(true);
+                  openDialog('decline');
                 }
               }}
             onNonEvent={async () => {
                 const result = await handleStatusChange(request.id, 'non_event');
                 if (result === 'needs_reason') {
                   setNonEventDialogEventRequest(request);
-                  setShowNonEventDialog(true);
+                  openDialog('nonEvent');
                 }
               }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onAddNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('add');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onEditNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('edit');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onCompleteNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('complete');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onToggleCorporatePriority={(isCorporatePriority) => {
               toggleCorporatePriorityMutation.mutate({

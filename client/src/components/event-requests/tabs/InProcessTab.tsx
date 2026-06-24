@@ -39,30 +39,19 @@ export const InProcessTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowScheduleCallDialog,
     setToolkitEventRequest,
-    setShowToolkitSentDialog,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
     setTspContactEventRequest,
-    setShowTspContactAssignmentDialog,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowEditContactDialog,
     setEditContactEventRequest,
     setEditContactAttemptData,
-    setShowAiDateSuggestionDialog,
     setAiSuggestionEventRequest,
-    setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-    setShowIntakeCallDialog,
     setIntakeCallEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
@@ -364,42 +353,42 @@ export const InProcessTab: React.FC = () => {
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onDelete={() => deleteEventRequestMutation.mutate(request.id)}
               onSchedule={() => {
                 setSchedulingEventRequest(request);
-                setShowSchedulingDialog(true);
+                openDialog('scheduling');
               }}
               onCall={() => handleCall(request)}
               onIntakeCall={() => {
                 setIntakeCallEventRequest(request);
-                setShowIntakeCallDialog(true);
+                openDialog('intakeCall');
               }}
               onContact={() => {
                 setContactEventRequest(request);
-                setShowContactOrganizerDialog(true);
+                openDialog('contactOrganizer');
               }}
               onScheduleCall={() => {
                 setSelectedEventRequest(request);
-                setShowScheduleCallDialog(true);
+                openDialog('scheduleCall');
               }}
               onResendToolkit={() => {
                 setSelectedEventRequest(request);
                 setToolkitEventRequest(request);
-                setShowToolkitSentDialog(true);
+                openDialog('toolkitSent');
               }}
               onAssignTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onEditTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onLogContact={() => {
                 setLogContactEventRequest(request);
-                setShowLogContactDialog(true);
+                openDialog('logContact');
               }}
               onEditContactAttempt={(attemptNumber) => {
                 // Find the contact attempt to edit
@@ -409,7 +398,7 @@ export const InProcessTab: React.FC = () => {
                 if (attempt) {
                   setEditContactEventRequest(request);
                   setEditContactAttemptData(attempt);
-                  setShowEditContactDialog(true);
+                  openDialog('editContact');
                 }
               }}
               onDeleteContactAttempt={async (attemptNumber) => {
@@ -445,26 +434,26 @@ export const InProcessTab: React.FC = () => {
               }}
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
-                setShowAiDateSuggestionDialog(true);
+                openDialog('aiDateSuggestion');
               }}
               onAiIntakeAssist={() => {
                 setAiIntakeAssistantEventRequest(request);
-                setShowAiIntakeAssistantDialog(true);
+                openDialog('aiIntakeAssistant');
               }}
               onAddNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('add');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onEditNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('edit');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onCompleteNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('complete');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}
