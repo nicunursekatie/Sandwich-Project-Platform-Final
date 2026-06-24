@@ -649,7 +649,16 @@ const EventRequestsManagementContent: React.FC = () => {
                 <button
                   onClick={async () => {
                     try {
-                      const rows = filterRequestsByStatus(activeTab, { skipPagination: true });
+                      // The Declined tab shows declined AND cancelled events,
+                      // so its export must include both. Every other tab's
+                      // displayed set maps 1:1 to filterRequestsByStatus
+                      // (scheduled already includes rescheduled).
+                      const rows = activeTab === 'declined'
+                        ? [
+                            ...filterRequestsByStatus('declined', { skipPagination: true }),
+                            ...filterRequestsByStatus('cancelled', { skipPagination: true }),
+                          ]
+                        : filterRequestsByStatus(activeTab, { skipPagination: true });
                       if (rows.length === 0) {
                         toast({ title: 'Nothing to export', description: 'No events match the current view.' });
                         return;
