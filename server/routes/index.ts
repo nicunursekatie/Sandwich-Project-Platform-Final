@@ -57,6 +57,7 @@ import { createHostsRouter } from './hosts';
 import { createEventRemindersRouter } from './event-reminders';
 import eventCheckInRemindersRouter from './event-check-in-reminders';
 import { createEmailRouter } from './email-routes';
+import { createEmailDraftsRouter } from './email-drafts';
 import { createAdminMigrationsRouter } from './admin-migrations';
 import { createAdminEventsRouter } from './admin-events';
 import { createOnboardingRouter } from './onboarding';
@@ -1109,6 +1110,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     emailRouter
   );
   router.use('/api/emails', createErrorHandler('emails'));
+
+  // Email drafts (Project Threads compose auto-save)
+  const emailDraftsRouter = createEmailDraftsRouter(deps);
+  router.use(
+    '/api/drafts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    emailDraftsRouter
+  );
+  router.use('/api/drafts', createErrorHandler('email-drafts'));
 
   // Admin migrations (one-time data fixes)
   const adminMigrationsRouter = createAdminMigrationsRouter({ isAuthenticated: deps.isAuthenticated });

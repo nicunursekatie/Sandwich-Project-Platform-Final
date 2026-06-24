@@ -534,12 +534,12 @@ export default function GmailStyleInbox() {
     },
   });
 
-  // Delete permanently mutation - use conversation delete
+  // Delete permanently mutation - delete the underlying email rows
   const deleteMutation = useMutation({
     mutationFn: async (messageIds: number[]) => {
-      // Delete conversation messages one by one
+      // Delete emails one by one (this inbox is backed by /api/emails)
       const deletePromises = messageIds.map((id) =>
-        apiRequest('DELETE', `/api/messages/${id}`)
+        apiRequest('DELETE', `/api/emails/${id}`)
       );
       return Promise.all(deletePromises);
     },
