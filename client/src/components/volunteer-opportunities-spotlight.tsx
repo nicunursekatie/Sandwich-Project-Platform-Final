@@ -7,7 +7,7 @@ import { getVolunteerCount, getTotalDriverCount, getSpeakerCount } from '@/lib/a
 import type { EventRequest } from '@shared/schema';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
-import { parseDateOnly } from '@shared/date-utils';
+import { parseDateOnly, getTodayString } from '@shared/date-utils';
 
 // Whole-day difference between an event's date and today, parsing the
 // date-only value as a local date (parseDateOnly) so YYYY-MM-DD isn't shifted
@@ -16,9 +16,14 @@ const daysUntil = (request: EventRequest): number => {
   const date = getEffectiveEventDate(request);
   const parsed = date ? parseDateOnly(date) : null;
   if (!parsed) return Infinity;
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  return Math.round((parsed.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
+  // Anchor "today" on the same local-noon basis as the event date (parseDateOnly
+  // returns noon, and getTodayString gives today's date in Eastern Time) so both
+  // timestamps share a noon reference. Otherwise a midnight "today" leaves a
+  // half-day offset that rounds same-day events up to 1 and skews the urgency
+  // thresholds.
+  const today = parseDateOnly(getTodayString());
+  if (!today) return Infinity;
+  return Math.round((parsed.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
 
 interface VolunteerOpportunitiesSpotlightProps {

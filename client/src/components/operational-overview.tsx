@@ -169,7 +169,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                 ? 'border-amber-300 hover:border-amber-500 bg-amber-50'
                 : 'border-gray-200 hover:border-brand-primary'
             }`}
-            onClick={() => drillToEvents('scheduled')}
+            onClick={() => drillToEvents('all')}
           >
             <div className="flex items-center gap-2 mb-2">
               <Mic2 className={`w-5 h-5 ${stats.eventsNeedingSpeakers > 0 ? 'text-amber-500' : 'text-brand-light-blue'}`} />
