@@ -24,11 +24,9 @@ export const DeclinedTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const declinedRequests = filterRequestsByStatus('declined');
@@ -90,12 +88,12 @@ export const DeclinedTab: React.FC = () => {
                   onView={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(false);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onEdit={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(true);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onDelete={() => {
                     if (window.confirm('Are you sure you want to permanently delete this declined event?')) {
@@ -104,7 +102,7 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onContact={() => {
                     setContactEventRequest(request);
-                    setShowContactOrganizerDialog(true);
+                    openDialog('contactOrganizer');
                   }}
                   onCall={() => handleCall(request)}
                   onReactivate={() => {
@@ -118,7 +116,7 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onLogContact={() => {
                     setLogContactEventRequest(request);
-                    setShowLogContactDialog(true);
+                    openDialog('logContact');
                   }}
                 />
               ))}
@@ -140,12 +138,12 @@ export const DeclinedTab: React.FC = () => {
                   onView={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(false);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onEdit={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(true);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onDelete={() => {
                     if (window.confirm('Are you sure you want to permanently delete this cancelled event?')) {
@@ -154,7 +152,7 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onContact={() => {
                     setContactEventRequest(request);
-                    setShowContactOrganizerDialog(true);
+                    openDialog('contactOrganizer');
                   }}
                   onCall={() => handleCall(request)}
                   onReactivate={() => {
@@ -168,7 +166,7 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onLogContact={() => {
                     setLogContactEventRequest(request);
-                    setShowLogContactDialog(true);
+                    openDialog('logContact');
                   }}
                 />
               ))}

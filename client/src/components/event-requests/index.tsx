@@ -155,59 +155,10 @@ const EventRequestsManagementContent: React.FC = () => {
   } = useEventRequestContext();
 
   const {
-    // Dialog states
-    showEventDetails,
-    setShowEventDetails,
-    showEventDetailsPreview,
-    setShowEventDetailsPreview,
-    showSchedulingDialog,
-    setShowSchedulingDialog,
-    showToolkitSentDialog,
-    setShowToolkitSentDialog,
-    showScheduleCallDialog,
-    setShowScheduleCallDialog,
-    showOneDayFollowUpDialog,
-    setShowOneDayFollowUpDialog,
-    showOneMonthFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
-    showContactOrganizerDialog,
-    setShowContactOrganizerDialog,
-    showCollectionLog,
-    setShowCollectionLog,
-    showTspContactAssignmentDialog,
-    setShowTspContactAssignmentDialog,
-    showAssignmentDialog,
-    setShowAssignmentDialog,
-    showSandwichPlanningModal,
-    setShowSandwichPlanningModal,
-    showStaffingPlanningModal,
-    setShowStaffingPlanningModal,
-    showLogContactDialog,
-    setShowLogContactDialog,
-    showEditContactDialog,
-    setShowEditContactDialog,
-    showAiDateSuggestionDialog,
-    setShowAiDateSuggestionDialog,
-    showAiIntakeAssistantDialog,
-    setShowAiIntakeAssistantDialog,
-    showIntakeCallDialog,
-    setShowIntakeCallDialog,
-    showDeclineDialog,
-    setShowDeclineDialog,
-    showCancelDialog,
-    setShowCancelDialog,
-    showNonEventDialog,
-    setShowNonEventDialog,
-    showRescheduleDialog,
-    setShowRescheduleDialog,
-    showNextActionDialog,
-    setShowNextActionDialog,
     nextActionEventRequest,
     setNextActionEventRequest,
     nextActionMode,
     setNextActionMode,
-
-    // Assignment dialog state
     assignmentType,
     setAssignmentType,
     assignmentEventId,
@@ -216,8 +167,6 @@ const EventRequestsManagementContent: React.FC = () => {
     setSelectedAssignees,
     isVanDriverAssignment,
     setIsVanDriverAssignment,
-
-    // Selected events
     selectedEventRequest,
     setSelectedEventRequest,
     isEditing,
@@ -250,14 +199,15 @@ const EventRequestsManagementContent: React.FC = () => {
     setNonEventDialogEventRequest,
     rescheduleDialogEventRequest,
     setRescheduleDialogEventRequest,
-
-    // Other states
     scheduleCallDate,
     setScheduleCallDate,
     scheduleCallTime,
     setScheduleCallTime,
     followUpNotes,
     setFollowUpNotes,
+    activeDialog,
+    openDialog,
+    closeDialog,
   } = useEventDialogState();
 
   // Fetch ALL active events (scheduled + in_process + rescheduled) for dashboard cards
@@ -321,21 +271,18 @@ const EventRequestsManagementContent: React.FC = () => {
   const isMobile = useIsMobile();
 
   const openManualEventRequest = useCallback(() => {
-    setShowScheduleCallDialog(false);
-    setShowOneDayFollowUpDialog(false);
-    setShowOneMonthFollowUpDialog(false);
-    setShowToolkitSentDialog(false);
+    closeDialog('scheduleCall');
+    closeDialog('oneDayFollowUp');
+    closeDialog('oneMonthFollowUp');
+    closeDialog('toolkitSent');
     setSelectedEventRequest(null);
     setIsEditing(true);
-    setShowEventDetails(true);
+    openDialog('eventDetails');
   }, [
-    setShowScheduleCallDialog,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
-    setShowToolkitSentDialog,
+    closeDialog,
+    openDialog,
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
   ]);
 
   useEffect(() => {
@@ -886,7 +833,7 @@ const EventRequestsManagementContent: React.FC = () => {
           <EventCalendarView
             onEventClick={(event) => {
               setSelectedEventRequest(event);
-              setShowEventDetailsPreview(true);
+              openDialog('eventDetailsPreview');
             }}
           />
         ) : viewMode === 'map' ? (
@@ -894,7 +841,7 @@ const EventRequestsManagementContent: React.FC = () => {
             <EventMapView
               onEventClick={(event: any) => {
                 setSelectedEventRequest(event);
-                setShowEventDetailsPreview(true);
+                openDialog('eventDetailsPreview');
               }}
             />
           </React.Suspense>
@@ -928,14 +875,14 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* Event Details Preview Dialog */}
         <EventDetailsDialog
           event={selectedEventRequest}
-          isOpen={showEventDetailsPreview}
+          isOpen={(activeDialog === 'eventDetailsPreview')}
           onClose={() => {
-            setShowEventDetailsPreview(false);
+            closeDialog('eventDetailsPreview');
             setSelectedEventRequest(null);
           }}
           onEdit={() => {
-            setShowEventDetailsPreview(false);
-            setShowEventDetails(true);
+            closeDialog('eventDetailsPreview');
+            openDialog('eventDetails');
             setIsEditing(false);
           }}
           resolveUserName={resolveUserName}
@@ -943,18 +890,18 @@ const EventRequestsManagementContent: React.FC = () => {
         />
 
         {/* Event Details Edit Modal */}
-        {showEventDetails && (selectedEventRequest || isEditing) && (
+        {(activeDialog === 'eventDetails') && (selectedEventRequest || isEditing) && (
           <EventSchedulingForm
             eventRequest={selectedEventRequest}
-            isOpen={showEventDetails}
+            isOpen={(activeDialog === 'eventDetails')}
             mode={selectedEventRequest ? 'edit' : 'create'}
             onClose={() => {
-              setShowEventDetails(false);
+              closeDialog('eventDetails');
               setSelectedEventRequest(null);
               setIsEditing(false);
             }}
             onEventScheduled={() => {
-              setShowEventDetails(false);
+              closeDialog('eventDetails');
               setSelectedEventRequest(null);
               setIsEditing(false);
             }}
@@ -962,16 +909,16 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Event Scheduling Dialog */}
-        {showSchedulingDialog && schedulingEventRequest && (
+        {(activeDialog === 'scheduling') && schedulingEventRequest && (
           <EventSchedulingForm
             eventRequest={schedulingEventRequest}
-            isOpen={showSchedulingDialog}
+            isOpen={(activeDialog === 'scheduling')}
             onClose={() => {
-              setShowSchedulingDialog(false);
+              closeDialog('scheduling');
               setSchedulingEventRequest(null);
             }}
             onEventScheduled={() => {
-              setShowSchedulingDialog(false);
+              closeDialog('scheduling');
               setSchedulingEventRequest(null);
             }}
           />
@@ -979,24 +926,24 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Collection Log Dialog */}
         {/* Collection Log Dialog */}
-        {showCollectionLog && collectionLogEventRequest && (
+        {(activeDialog === 'collectionLog') && collectionLogEventRequest && (
           <EventCollectionLog
             eventRequest={collectionLogEventRequest}
-            isVisible={showCollectionLog}
+            isVisible={(activeDialog === 'collectionLog')}
             onClose={() => {
-              setShowCollectionLog(false);
+              closeDialog('collectionLog');
               setCollectionLogEventRequest(null);
             }}
           />
         )}
 
         {/* Toolkit Sent Dialog */}
-        {showToolkitSentDialog && toolkitEventRequest && (
+        {(activeDialog === 'toolkitSent') && toolkitEventRequest && (
           <ToolkitSentDialog
             eventRequest={toolkitEventRequest}
-            isOpen={showToolkitSentDialog}
+            isOpen={(activeDialog === 'toolkitSent')}
             onClose={() => {
-              setShowToolkitSentDialog(false);
+              closeDialog('toolkitSent');
               setToolkitEventRequest(null);
             }}
             onToolkitSent={(toolkitSentDate: string, contactAttempt?: { method: string; outcome: string; notes?: string }) => {
@@ -1015,8 +962,8 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Schedule Call Dialog */}
         <ScheduleCallDialog
-          isOpen={showScheduleCallDialog}
-          onClose={() => setShowScheduleCallDialog(false)}
+          isOpen={(activeDialog === 'scheduleCall')}
+          onClose={() => closeDialog('scheduleCall')}
           eventRequest={selectedEventRequest}
           onCallScheduled={handleScheduleCall}
           isLoading={scheduleCallMutation.isPending}
@@ -1028,9 +975,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* 1-Day Follow-up Dialog */}
         <FollowUpDialog
-          isOpen={showOneDayFollowUpDialog}
+          isOpen={(activeDialog === 'oneDayFollowUp')}
           onClose={() => {
-            setShowOneDayFollowUpDialog(false);
+            closeDialog('oneDayFollowUp');
             setFollowUpNotes(''); // Clear notes when dialog closes
           }}
           eventRequest={selectedEventRequest}
@@ -1051,9 +998,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* 1-Month Follow-up Dialog */}
         <FollowUpDialog
-          isOpen={showOneMonthFollowUpDialog}
+          isOpen={(activeDialog === 'oneMonthFollowUp')}
           onClose={() => {
-            setShowOneMonthFollowUpDialog(false);
+            closeDialog('oneMonthFollowUp');
             setFollowUpNotes(''); // Clear notes when dialog closes
           }}
           eventRequest={selectedEventRequest}
@@ -1074,9 +1021,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Contact Organizer Dialog */}
         <ContactOrganizerDialog
-          isOpen={showContactOrganizerDialog}
+          isOpen={(activeDialog === 'contactOrganizer')}
           onClose={() => {
-            setShowContactOrganizerDialog(false);
+            closeDialog('contactOrganizer');
             setContactEventRequest(null);
           }}
           eventRequest={contactEventRequest}
@@ -1084,9 +1031,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Log Contact Attempt Dialog */}
         <LogContactAttemptDialog
-          isOpen={showLogContactDialog}
+          isOpen={(activeDialog === 'logContact')}
           onClose={() => {
-            setShowLogContactDialog(false);
+            closeDialog('logContact');
             setLogContactEventRequest(null);
           }}
           eventRequest={logContactEventRequest}
@@ -1101,9 +1048,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Edit Contact Attempt Dialog */}
         <EditContactAttemptDialog
-          isOpen={showEditContactDialog}
+          isOpen={(activeDialog === 'editContact')}
           onClose={() => {
-            setShowEditContactDialog(false);
+            closeDialog('editContact');
             setEditContactEventRequest(null);
             setEditContactAttemptData(null);
           }}
@@ -1121,17 +1068,17 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* AI Date Suggestion Dialog */}
         {aiSuggestionEventRequest && (
           <AiDateSuggestionDialog
-            open={showAiDateSuggestionDialog}
+            open={(activeDialog === 'aiDateSuggestion')}
             onClose={() => {
-              setShowAiDateSuggestionDialog(false);
+              closeDialog('aiDateSuggestion');
               setAiSuggestionEventRequest(null);
             }}
             eventRequest={aiSuggestionEventRequest}
             onSelectDate={(date) => {
               // Automatically open scheduling dialog with the recommended date
               setSchedulingEventRequest(aiSuggestionEventRequest);
-              setShowSchedulingDialog(true);
-              setShowAiDateSuggestionDialog(false);
+              openDialog('scheduling');
+              closeDialog('aiDateSuggestion');
               setAiSuggestionEventRequest(null);
             }}
           />
@@ -1140,9 +1087,9 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* AI Intake Assistant Dialog */}
         {aiIntakeAssistantEventRequest && (
           <AiIntakeAssistantDialog
-            open={showAiIntakeAssistantDialog}
+            open={(activeDialog === 'aiIntakeAssistant')}
             onClose={() => {
-              setShowAiIntakeAssistantDialog(false);
+              closeDialog('aiIntakeAssistant');
               setAiIntakeAssistantEventRequest(null);
             }}
             eventRequest={aiIntakeAssistantEventRequest}
@@ -1154,12 +1101,12 @@ const EventRequestsManagementContent: React.FC = () => {
             onLogContact={() => {
               // Open log contact dialog
               setLogContactEventRequest(aiIntakeAssistantEventRequest);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onScheduleCall={() => {
               // Open contact organizer dialog for scheduling a call
               setSelectedEventRequest(aiIntakeAssistantEventRequest);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onAddNote={() => {
               // Open edit dialog to add notes
@@ -1170,70 +1117,70 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Decline Reason Dialog */}
-        {reasonDialogEventRequest && showDeclineDialog && (
+        {reasonDialogEventRequest && (activeDialog === 'decline') && (
           <StatusReasonDialog
-            isOpen={showDeclineDialog}
+            isOpen={(activeDialog === 'decline')}
             onClose={() => {
-              setShowDeclineDialog(false);
+              closeDialog('decline');
               setReasonDialogEventRequest(null);
             }}
             request={reasonDialogEventRequest}
             type="declined"
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowDeclineDialog(false);
+              closeDialog('decline');
               setReasonDialogEventRequest(null);
             }}
           />
         )}
 
         {/* Cancel Reason Dialog */}
-        {reasonDialogEventRequest && showCancelDialog && (
+        {reasonDialogEventRequest && (activeDialog === 'cancel') && (
           <StatusReasonDialog
-            isOpen={showCancelDialog}
+            isOpen={(activeDialog === 'cancel')}
             onClose={() => {
-              setShowCancelDialog(false);
+              closeDialog('cancel');
               setReasonDialogEventRequest(null);
             }}
             request={reasonDialogEventRequest}
             type="cancelled"
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowCancelDialog(false);
+              closeDialog('cancel');
               setReasonDialogEventRequest(null);
             }}
           />
         )}
 
         {/* Non-Event Dialog */}
-        {nonEventDialogEventRequest && showNonEventDialog && (
+        {nonEventDialogEventRequest && (activeDialog === 'nonEvent') && (
           <NonEventDialog
-            isOpen={showNonEventDialog}
+            isOpen={(activeDialog === 'nonEvent')}
             onClose={() => {
-              setShowNonEventDialog(false);
+              closeDialog('nonEvent');
               setNonEventDialogEventRequest(null);
             }}
             request={nonEventDialogEventRequest}
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowNonEventDialog(false);
+              closeDialog('nonEvent');
               setNonEventDialogEventRequest(null);
             }}
           />
         )}
 
         {/* Reschedule Dialog */}
-        {rescheduleDialogEventRequest && showRescheduleDialog && (
+        {rescheduleDialogEventRequest && (activeDialog === 'reschedule') && (
           <RescheduleDialog
-            isOpen={showRescheduleDialog}
+            isOpen={(activeDialog === 'reschedule')}
             onClose={() => {
-              setShowRescheduleDialog(false);
+              closeDialog('reschedule');
               setRescheduleDialogEventRequest(null);
             }}
             request={rescheduleDialogEventRequest}
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowRescheduleDialog(false);
+              closeDialog('reschedule');
               setRescheduleDialogEventRequest(null);
             }}
           />
@@ -1242,9 +1189,9 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* Intake Call Dialog */}
         {intakeCallEventRequest && (
           <IntakeCallDialog
-            isOpen={showIntakeCallDialog}
+            isOpen={(activeDialog === 'intakeCall')}
             onClose={() => {
-              setShowIntakeCallDialog(false);
+              closeDialog('intakeCall');
               setIntakeCallEventRequest(null);
             }}
             eventRequest={intakeCallEventRequest}
@@ -1263,9 +1210,9 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* Next Action Dialog */}
         {nextActionEventRequest && (
           <NextActionDialog
-            isOpen={showNextActionDialog}
+            isOpen={(activeDialog === 'nextAction')}
             onClose={() => {
-              setShowNextActionDialog(false);
+              closeDialog('nextAction');
               setNextActionEventRequest(null);
               setNextActionMode('add');
             }}
@@ -1276,9 +1223,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* TSP Contact Assignment Dialog */}
         <TspContactAssignmentDialog
-          isOpen={showTspContactAssignmentDialog}
+          isOpen={(activeDialog === 'tspContactAssignment')}
           onClose={() => {
-            setShowTspContactAssignmentDialog(false);
+            closeDialog('tspContactAssignment');
             setTspContactEventRequest(null);
           }}
           eventRequestId={tspContactEventRequest?.id || 0}
@@ -1289,9 +1236,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* General Assignment Dialog for Drivers/Speakers/Volunteers */}
         <AssignmentDialog
-          isOpen={showAssignmentDialog}
+          isOpen={(activeDialog === 'assignment')}
           onClose={() => {
-            setShowAssignmentDialog(false);
+            closeDialog('assignment');
             setAssignmentType(null);
             setAssignmentEventId(null);
             setSelectedAssignees([]);
@@ -1579,7 +1526,7 @@ const EventRequestsManagementContent: React.FC = () => {
               logger.log('Update result:', result);
 
               // Close the dialog
-              setShowAssignmentDialog(false);
+              closeDialog('assignment');
               setAssignmentType(null);
               setAssignmentEventId(null);
               setSelectedAssignees([]);
@@ -1599,8 +1546,8 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Sandwich Planning Modal */}
         <Dialog
-          open={showSandwichPlanningModal}
-          onOpenChange={setShowSandwichPlanningModal}
+          open={(activeDialog === 'sandwichPlanning')}
+          onOpenChange={(open) => (open ? openDialog('sandwichPlanning') : closeDialog('sandwichPlanning'))}
         >
           <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -1643,7 +1590,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
             <div className="flex justify-end mt-6 pt-4 border-t">
               <Button
-                onClick={() => setShowSandwichPlanningModal(false)}
+                onClick={() => closeDialog('sandwichPlanning')}
                 className="text-white"
                 style={{ backgroundColor: '#236383' }}
               >
@@ -1679,8 +1626,8 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Staffing Planning Modal */}
         <Dialog
-          open={showStaffingPlanningModal}
-          onOpenChange={setShowStaffingPlanningModal}
+          open={(activeDialog === 'staffingPlanning')}
+          onOpenChange={(open) => (open ? openDialog('staffingPlanning') : closeDialog('staffingPlanning'))}
         >
           <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -1724,7 +1671,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
             <div className="flex justify-end mt-6 pt-4 border-t">
               <Button
-                onClick={() => setShowStaffingPlanningModal(false)}
+                onClick={() => closeDialog('staffingPlanning')}
                 className="text-white"
                 style={{ backgroundColor: '#236383' }}
               >

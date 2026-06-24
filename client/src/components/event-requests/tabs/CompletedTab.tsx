@@ -35,20 +35,13 @@ export const CompletedTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowCollectionLog,
     setCollectionLogEventRequest,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
     setTspContactEventRequest,
-    setShowTspContactAssignmentDialog,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
+    openDialog,
   } = useEventDialogState();
 
   const completedRequests = filterRequestsByStatus('completed') || [];
@@ -79,12 +72,12 @@ export const CompletedTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onDelete={() => {
               if (
@@ -112,19 +105,19 @@ export const CompletedTab: React.FC = () => {
             }}
             onContact={() => {
               setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onFollowUp1Day={() => {
               setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
+              openDialog('oneDayFollowUp');
             }}
             onFollowUp1Month={() => {
               setSelectedEventRequest(request);
-              setShowOneMonthFollowUpDialog(true);
+              openDialog('oneMonthFollowUp');
             }}
             onViewCollectionLog={() => {
               setCollectionLogEventRequest(request);
-              setShowCollectionLog(true);
+              openDialog('collectionLog');
             }}
             onReschedule={() => {
               if (
@@ -141,30 +134,30 @@ export const CompletedTab: React.FC = () => {
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onAddNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('add');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onEditNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('edit');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onCompleteNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('complete');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}

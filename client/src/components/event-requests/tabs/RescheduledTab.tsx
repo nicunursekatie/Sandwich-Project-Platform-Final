@@ -27,7 +27,7 @@ export const RescheduledTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
+    openDialog,
   } = useEventDialogState();
 
   const rescheduledRequests = filterRequestsByStatus('rescheduled');
@@ -64,7 +64,7 @@ export const RescheduledTab: React.FC = () => {
                 onClick={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(false);
-                  setShowEventDetails(true);
+                  openDialog('eventDetails');
                 }}
               >
                 <CardContent className="p-4">
@@ -98,7 +98,7 @@ export const RescheduledTab: React.FC = () => {
                         onClick={() => {
                           setSelectedEventRequest(request);
                           setIsEditing(true);
-                          setShowEventDetails(true);
+                          openDialog('eventDetails');
                         }}
                         className="h-8"
                         title="Edit details"

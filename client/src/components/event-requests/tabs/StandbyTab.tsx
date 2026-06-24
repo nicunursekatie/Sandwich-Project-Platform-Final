@@ -24,11 +24,9 @@ export const StandbyTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const standbyRequests = filterRequestsByStatus('standby');
@@ -88,12 +86,12 @@ export const StandbyTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onDelete={() => {
               if (window.confirm('Are you sure you want to permanently delete this standby event?')) {
@@ -102,7 +100,7 @@ export const StandbyTab: React.FC = () => {
             }}
             onContact={() => {
               setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onCall={() => handleCall(request)}
             onReactivate={() => {
@@ -116,7 +114,7 @@ export const StandbyTab: React.FC = () => {
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onMoveToStalled={() => {
               if (window.confirm('Move this event to Stalled? This is for events where you have not received any response after multiple attempts.')) {

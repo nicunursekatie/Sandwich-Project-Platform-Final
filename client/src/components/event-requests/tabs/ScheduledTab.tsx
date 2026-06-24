@@ -94,27 +94,14 @@ export const ScheduledTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowCollectionLog,
     setCollectionLogEventRequest,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
     setTspContactEventRequest,
-    setShowTspContactAssignmentDialog,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
-    // Next Action dialog state
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-
-    // Inline editing states - IMPORTANT for scheduled tab
     editingScheduledId,
     setEditingScheduledId,
     editingField,
@@ -133,6 +120,7 @@ export const ScheduledTab: React.FC = () => {
     setInlineRangeMax,
     inlineRangeType,
     setInlineRangeType,
+    openDialog,
   } = useEventDialogState();
 
   // Include both 'scheduled' and 'rescheduled' events on the Scheduled tab
@@ -526,16 +514,16 @@ export const ScheduledTab: React.FC = () => {
                 onEdit={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(true);
-                  setShowEventDetails(true);
+                  openDialog('eventDetails');
                 }}
                 onDelete={() => deleteEventRequestMutation.mutate(request.id)}
                 onContact={() => {
                   setContactEventRequest(request);
-                  setShowContactOrganizerDialog(true);
+                  openDialog('contactOrganizer');
                 }}
                 onLogContact={() => {
                   setLogContactEventRequest(request);
-                  setShowLogContactDialog(true);
+                  openDialog('logContact');
                 }}
                 onReschedule={() => {
                   setRescheduleRequest(request);
@@ -547,15 +535,15 @@ export const ScheduledTab: React.FC = () => {
                 }}
                 onAssignTspContact={() => {
                   setTspContactEventRequest(request);
-                  setShowTspContactAssignmentDialog(true);
+                  openDialog('tspContactAssignment');
                 }}
                 onEditTspContact={() => {
                   setTspContactEventRequest(request);
-                  setShowTspContactAssignmentDialog(true);
+                  openDialog('tspContactAssignment');
                 }}
                 onAiIntakeAssist={() => {
                   setAiIntakeAssistantEventRequest(request);
-                  setShowAiIntakeAssistantDialog(true);
+                  openDialog('aiIntakeAssistant');
                 }}
                 startEditing={(field, value) => startEditing(request.id, field, value)}
                 saveEdit={saveEdit}
@@ -588,17 +576,17 @@ export const ScheduledTab: React.FC = () => {
                 onAddNextAction={() => {
                   setNextActionEventRequest(request);
                   setNextActionMode('add');
-                  setShowNextActionDialog(true);
+                  openDialog('nextAction');
                 }}
                 onEditNextAction={() => {
                   setNextActionEventRequest(request);
                   setNextActionMode('edit');
-                  setShowNextActionDialog(true);
+                  openDialog('nextAction');
                 }}
                 onCompleteNextAction={() => {
                   setNextActionEventRequest(request);
                   setNextActionMode('complete');
-                  setShowNextActionDialog(true);
+                  openDialog('nextAction');
                 }}
               />
               </div>

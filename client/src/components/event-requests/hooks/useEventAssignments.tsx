@@ -24,13 +24,13 @@ export const useEventAssignments = () => {
     eventRequests,
   } = useEventRequestContext();
   const {
-    setShowAssignmentDialog,
     setAssignmentType,
     setAssignmentEventId,
     setIsEditingAssignment,
     setEditingAssignmentPersonId,
     setSelectedAssignees,
     setIsVanDriverAssignment,
+    openDialog,
   } = useEventDialogState();
 
   // Helper function to safely parse PostgreSQL arrays
@@ -251,7 +251,7 @@ export const useEventAssignments = () => {
     setEditingAssignmentPersonId(null);
     setSelectedAssignees([]);
     setIsVanDriverAssignment(isVanDriver);
-    setShowAssignmentDialog(true);
+    openDialog('assignment');
   };
 
   // Open assignment dialog in edit mode
@@ -265,7 +265,7 @@ export const useEventAssignments = () => {
     setIsEditingAssignment(true);
     setEditingAssignmentPersonId(personId);
     setSelectedAssignees([personId]);
-    setShowAssignmentDialog(true);
+    openDialog('assignment');
   };
 
   // Handle removing assignment with undo capability
