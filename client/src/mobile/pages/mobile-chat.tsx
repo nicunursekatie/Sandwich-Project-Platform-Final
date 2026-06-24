@@ -10,6 +10,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { MobileShell } from '../components/mobile-shell';
+import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -32,17 +33,36 @@ export function MobileChat() {
   const [activeTab, setActiveTab] = useState<'channels' | 'direct'>('channels');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch unread counts
-  const { data: unreadCounts } = useQuery({
-    queryKey: ['/api/chat/unread'],
-    staleTime: 30000,
-  });
+  // Per-channel unread counts come from Stream Chat (the same source the
+  // desktop uses); roomDetails[].id matches our channel ids (general,
+  // core-team, host, driver, recipient).
+  const { roomDetails } = useStreamChatUnread();
+  const unreadCounts = roomDetails.reduce<Record<string, number>>(
+    (acc, room) => {
+      acc[room.id] = room.unread;
+      return acc;
+    },
+    {}
+  );
 
-  // Fetch direct message conversations
-  const { data: conversations } = useQuery({
-    queryKey: ['/api/messages/conversations'],
+  // Direct message conversations — reuse the existing instant-messages
+  // endpoint and reshape each entry for the conversation list.
+  const { data: conversations = [] } = useQuery({
+    queryKey: ['/api/instant-messages/conversations/recent'],
     staleTime: 30000,
     enabled: activeTab === 'direct',
+    select: (raw: any[]) =>
+      (raw || []).map((c) => ({
+        id: c.user?.id,
+        participantName:
+          c.user?.displayName ||
+          `${c.user?.firstName ?? ''} ${c.user?.lastName ?? ''}`.trim() ||
+          c.user?.email ||
+          'Unknown',
+        lastMessage: c.lastMessage?.content || 'No messages yet',
+        lastMessageAt: c.lastMessage?.createdAt || null,
+        unread: (c.unreadCount || 0) > 0,
+      })),
   });
 
   return (
