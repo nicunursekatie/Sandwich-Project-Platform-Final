@@ -254,6 +254,17 @@ export default function SandwichCollectionLog() {
 
   const [sortConfig, setSortConfig] = useState(getInitialSortConfig());
   const [showFilters, setShowFilters] = useState(false);
+  // One-tap quick-filter chip below the global search. Each chip applies an
+  // additive filter to the same client-side filtering pipeline that the
+  // search input + advanced filters use.
+  //   'all'         — no chip filter active (default)
+  //   'host'        — records with an individual sandwich count > 0
+  //   'group'       — records with at least one group collection entry
+  //   'thisMonth'   — collectionDate within the current calendar month
+  //   'last30Days'  — collectionDate within the past 30 days
+  //   'mine'        — records the current user submitted (createdBy === user.id)
+  type QuickFilter = 'all' | 'host' | 'group' | 'thisMonth' | 'last30Days' | 'mine';
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(collectionDefaults.itemsPerPage);
   const [editFormData, setEditFormData] = useState({
@@ -434,9 +445,14 @@ export default function SandwichCollectionLog() {
 
   // Memoize expensive computations using debounced filters
   // Only fetch all data when we need client-side filtering/sorting, not for basic pagination
+  // Also triggers when a quick-filter chip is active so the chip can filter
+  // across the full dataset, not just the current paginated slice.
   const needsAllData = useMemo(
-    () => showFilters || Object.values(debouncedSearchFilters).some((v) => v),
-    [showFilters, debouncedSearchFilters]
+    () =>
+      showFilters ||
+      quickFilter !== 'all' ||
+      Object.values(debouncedSearchFilters).some((v) => v),
+    [showFilters, quickFilter, debouncedSearchFilters]
   );
 
   const queryKey = useMemo(
@@ -447,6 +463,7 @@ export default function SandwichCollectionLog() {
       itemsPerPage, // Always include to trigger refetch when items per page changes
       debouncedSearchFilters,
       sortConfig,
+      quickFilter, // Re-evaluate when the chip changes
     ],
     [
       needsAllData,
@@ -454,6 +471,7 @@ export default function SandwichCollectionLog() {
       itemsPerPage,
       debouncedSearchFilters,
       sortConfig,
+      quickFilter,
     ]
   );
 
@@ -524,15 +542,30 @@ export default function SandwichCollectionLog() {
           const searchTerm = debouncedSearchFilters.globalSearch.toLowerCase();
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) => {
-              // Search in host name
+              // Search in host name (also serves as the "collection location"
+              // for individual/host drop-offs).
               const hostNameMatch = c.hostName
                 ?.toLowerCase()
                 .includes(searchTerm);
 
-              // Search in group names using the getGroupCollections function
+              // Search in submitter name (createdByName) so the user can
+              // find "all the collections Katie submitted" in one query.
+              const submitterMatch = (c as any).createdByName
+                ?.toLowerCase()
+                .includes(searchTerm) ?? false;
+
+              // Search in group names AND the group's department/organization
+              // — a "Cox Enterprises" search should find a Cox group whose
+              // groupName is the company and whose department is the team.
               const groupData = getGroupCollections(c);
               const groupNameMatch = groupData.some((group) =>
                 group.groupName?.toLowerCase().includes(searchTerm)
+              );
+              // getGroupCollections returns a union type where the legacy
+              // fallback branch lacks `department` — only the JSONB branch has
+              // it. Cast to any to read it safely; missing values just no-op.
+              const organizationMatch = groupData.some((group) =>
+                (group as any).department?.toLowerCase().includes(searchTerm)
               );
 
               // Search in collection date - check multiple formats
@@ -581,7 +614,13 @@ export default function SandwichCollectionLog() {
                 }
               }
 
-              return hostNameMatch || groupNameMatch || dateMatch;
+              return (
+                hostNameMatch ||
+                submitterMatch ||
+                groupNameMatch ||
+                organizationMatch ||
+                dateMatch
+              );
             }
           );
           logger.log(
@@ -602,6 +641,68 @@ export default function SandwichCollectionLog() {
           );
           logger.log(
             `Group name filter '${searchTerm}' applied: ${filteredCollections.length} results`
+          );
+        }
+
+        // Quick-filter chip — applied last so it composes additively with
+        // search + advanced filters. A user can search for "Smith" AND
+        // narrow to This Month with the chip.
+        if (quickFilter !== 'all') {
+          const beforeCount = filteredCollections.length;
+          if (quickFilter === 'host') {
+            // Records with individual sandwich pickups (host drop-offs).
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => (c.individualSandwiches || 0) > 0
+            );
+          } else if (quickFilter === 'group') {
+            // Records with at least one group collection entry.
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => getGroupCollections(c).length > 0
+            );
+          } else if (quickFilter === 'thisMonth') {
+            // collectionDate within the current calendar month, in user's local time.
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => {
+                if (!c.collectionDate) return false;
+                const dateStr = c.collectionDate;
+                const date = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+                  ? new Date(dateStr + 'T12:00:00')
+                  : new Date(dateStr);
+                if (isNaN(date.getTime())) return false;
+                return date >= monthStart && date <= monthEnd;
+              }
+            );
+          } else if (quickFilter === 'last30Days') {
+            // collectionDate within the past 30 days.
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            cutoff.setHours(0, 0, 0, 0);
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => {
+                if (!c.collectionDate) return false;
+                const dateStr = c.collectionDate;
+                const date = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+                  ? new Date(dateStr + 'T12:00:00')
+                  : new Date(dateStr);
+                if (isNaN(date.getTime())) return false;
+                return date >= cutoff;
+              }
+            );
+          } else if (quickFilter === 'mine') {
+            // Records the current user submitted. Requires a logged-in user.
+            if (user?.id) {
+              filteredCollections = filteredCollections.filter(
+                (c: SandwichCollection) => String((c as any).createdBy) === String(user.id)
+              );
+            } else {
+              filteredCollections = [];
+            }
+          }
+          logger.log(
+            `Quick filter '${quickFilter}' applied: ${beforeCount} → ${filteredCollections.length} results`
           );
         }
 
@@ -725,6 +826,7 @@ export default function SandwichCollectionLog() {
       sortConfig,
       collectionDefaults.showOwnFirst,
       user?.id,
+      quickFilter,
     ]),
   });
 
@@ -2390,7 +2492,7 @@ export default function SandwichCollectionLog() {
             <Input
               data-testid="input-global-search"
               type="text"
-              placeholder="Search collections (host names, groups, dates...)"
+              placeholder="Search hosts, organizations, submitters..."
               value={searchFilters.globalSearch}
               onChange={(e) =>
                 setSearchFilters((prev) => ({
@@ -2414,9 +2516,50 @@ export default function SandwichCollectionLog() {
           </div>
           {searchFilters.globalSearch && (
             <p className="text-center text-base text-slate-600 mt-2">
-              Searching across host names, group names, and dates
+              Searching across hosts, organizations, submitters, group names, and dates
             </p>
           )}
+
+          {/* Quick-filter chips — one-tap shortcuts that compose with the
+              global search and advanced filters above. Each chip narrows the
+              current result set; selecting a different chip swaps the filter
+              rather than stacking (single-select). "All" is the default. */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {(
+              [
+                { value: 'all', label: 'All' },
+                { value: 'host', label: 'Host Collections' },
+                { value: 'group', label: 'Group Collections' },
+                { value: 'thisMonth', label: 'This Month' },
+                { value: 'last30Days', label: 'Last 30 Days' },
+                { value: 'mine', label: 'My Submissions' },
+              ] as Array<{ value: typeof quickFilter; label: string }>
+            ).map(({ value, label }) => {
+              const isActive = quickFilter === value;
+              // Hide "My Submissions" if there's no signed-in user — clicking
+              // it would otherwise just produce an empty list.
+              if (value === 'mine' && !user?.id) return null;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setQuickFilter(value);
+                    setCurrentPage(1); // Reset pagination so the user sees results from the top
+                  }}
+                  data-testid={`chip-quick-filter-${value}`}
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                    isActive
+                      ? 'bg-[#007E8C] text-white border-[#007E8C] shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-300 hover:border-[#007E8C] hover:text-[#007E8C]'
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
@@ -2869,7 +3012,7 @@ export default function SandwichCollectionLog() {
             )}
           </div>
         )}
-        <div className="space-y-3 sm:space-y-4" data-tour="collections-table">
+        <div className="space-y-2" data-tour="collections-table">
           {paginatedCollections.map((collection: SandwichCollection) => {
             const groupData = getGroupCollections(collection);
             const totalSandwiches = calculateTotal(collection);
@@ -2884,7 +3027,8 @@ export default function SandwichCollectionLog() {
             return (
               <div
                 key={collection.id}
-                className={`border-b py-4 px-3 hover:bg-slate-50 transition-colors ${
+                // py-4 → py-3 trims 8px per card; gap reduced inside.
+                className={`border-b py-3 px-3 hover:bg-slate-50 transition-colors ${
                   isSelected
                     ? 'bg-brand-primary-lighter'
                     : isInactiveHost
@@ -2892,8 +3036,9 @@ export default function SandwichCollectionLog() {
                       : ''
                 }`}
               >
-                {/* Responsive layout: vertical stack for all rows */}
-                <div className="flex flex-col gap-3">
+                {/* Responsive layout: vertical stack for all rows.
+                    gap-3 → gap-2 saves 4px per card across 3 row breaks. */}
+                <div className="flex flex-col gap-2">
                   {/* First Row: Checkbox, Date, Host */}
                   <div className="flex items-center gap-3 flex-wrap">
                     {/* Checkbox */}
@@ -2940,12 +3085,17 @@ export default function SandwichCollectionLog() {
                     </div>
                   </div>
 
-                  {/* Second Row: Individual & Groups (locked columns for alignment) */}
-                  <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] sm:min-h-[88px] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
-                    {/* Individual - show placeholder to keep column alignment when empty */}
-                    <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
-                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Individual</div>
-                      {collection.individualSandwiches > 0 ? (
+                  {/* Second Row: Individual & Group Event.
+                      Empty columns now collapse instead of reserving 64px of
+                      placeholder space, and the min-h-[88px] anchor is gone —
+                      content drives height. A record with only Individual or
+                      only Group Event no longer carries dead air in the other
+                      column. Saves roughly 64-88px on any single-type card. */}
+                  <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                    {/* Individual — render only when there's a value */}
+                    {collection.individualSandwiches > 0 && (
+                      <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
+                        <div className="text-xs text-slate-500 mb-0.5 font-semibold uppercase tracking-wide">Individual</div>
                         <div className="text-base lg:text-lg font-bold">
                           {(() => {
                             const hasTypes = collection.individualDeli || collection.individualPbj || (collection as any).individualGeneric;
@@ -2961,23 +3111,27 @@ export default function SandwichCollectionLog() {
                             return collection.individualSandwiches;
                           })()}
                         </div>
-                      ) : (
-                        <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />
+                      </div>
+                    )}
+                    {/* If the Individual column is empty but Group Event is
+                        present, render an empty spacer ONLY in sm+ layouts so
+                        the CSS grid columns stay aligned. On mobile (single
+                        column) the spacer is unnecessary. */}
+                    {!(collection.individualSandwiches > 0) &&
+                      calculateGroupTotal(collection) > 0 &&
+                      groupData.length > 0 && (
+                        <div className="hidden sm:block" aria-hidden="true" />
                       )}
-                    </div>
 
-                    {/* Group Event - inline breakdown when available; keeps its column even if Individuals missing */}
-                    <div className="w-full sm:min-w-[200px] sm:pl-3 md:pl-4">
-                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Group Event</div>
-                      <div className="text-base lg:text-lg font-bold">
-                        {(() => {
-                          if (calculateGroupTotal(collection) <= 0 || groupData.length === 0) {
-                            return <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />;
-                          }
-
-                          return (
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                              {groupData.map((group: any, index: number) => {
+                    {/* Group Event — render only when there's data */}
+                    {calculateGroupTotal(collection) > 0 && groupData.length > 0 && (
+                      <div className="w-full sm:min-w-[200px] sm:pl-3 md:pl-4">
+                        <div className="text-xs text-slate-500 mb-0.5 font-semibold uppercase tracking-wide">Group Event</div>
+                        <div className="text-base lg:text-lg font-bold">
+                          {(() => {
+                            return (
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                {groupData.map((group: any, index: number) => {
                                 const hasTypes = group.deli || group.pbj || group.generic;
                                 const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
                                 const colorIndex = index % colors.length;
@@ -3013,14 +3167,17 @@ export default function SandwichCollectionLog() {
                         })()}
                       </div>
                     </div>
+                    )}
                   </div>
 
                   {/* Third Row: Total & Actions */}
                   <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4 ml-4 sm:ml-20 md:ml-28 lg:ml-32">
-                    {/* Total */}
+                    {/* Total — slightly downsized so the card height drops
+                        without sacrificing legibility. text-xl on mobile,
+                        text-xl on desktop (down from text-2xl). */}
                     <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0 justify-self-end">
                       <div className="text-xs text-slate-500 font-semibold">Total:</div>
-                      <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
+                      <div className="text-lg lg:text-xl font-bold">{totalSandwiches}</div>
                     </div>
 
                     {/* Actions */}
@@ -3080,7 +3237,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Submission info - small footer detail */}
-                  <div className="mt-2 ml-4 sm:ml-20 md:ml-28 lg:ml-32 text-xs text-slate-500 leading-snug">
+                  <div className="mt-1 ml-4 sm:ml-20 md:ml-28 lg:ml-32 text-xs text-slate-500 leading-snug">
                     Submitted {formatSubmittedAt(collection.submittedAt)}
                     {collection.createdByName && (
                       <span className="ml-1 font-medium">
