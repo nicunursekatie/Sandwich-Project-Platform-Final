@@ -82,11 +82,22 @@ interface DashboardOverviewProps {
 // grouped priorities instead of one long undifferentiated scroll. Rendered as
 // a sibling before each group (the parent's space-y stacking forms the bands),
 // so it never has to wrap blocks and can't unbalance the surrounding JSX.
+//
+// Typography sized to OUTRANK the card titles below it (the H4s inside cards
+// run around text-base / 16px). At `text-2xl` the section label clearly
+// dominates and the subtitle reads as supporting text. Generous mt/pb give
+// the band visual breathing room so it doesn't crush against the card above.
 function SectionHeader({ label, hint }: { label: string; hint?: string }) {
   return (
-    <div className="mx-4 flex items-baseline gap-3 border-b border-gray-200 pb-2 pt-2">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-[#236383]">{label}</h2>
-      {hint && <span className="text-xs text-gray-400">{hint}</span>}
+    <div className="mx-4 mt-8 pb-3 border-b-2 border-gray-200">
+      <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide text-[#236383] leading-tight">
+        {label}
+      </h2>
+      {hint && (
+        <p className="mt-1 text-sm text-gray-500">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -573,26 +584,74 @@ export default function DashboardOverview({
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     {statsData.currentMonthName} {statsData.currentMonthYear}
                   </p>
-                  {/* Projected month-end total based on the pace so far, with a
-                      trend vs last month. Projecting (rather than comparing a
-                      partial month to a full one) keeps the signal honest early
-                      in the month instead of always reading as a drop. */}
-                  {statsData?.lastMonthSandwiches != null && statsData.lastMonthSandwiches > 0 && (() => {
-                    // Derive the day/month in Eastern Time so the projection
-                    // lines up with currentMonthSandwiches (computed server-side
-                    // in America/New_York); a local browser clock could project
-                    // against the wrong month/day near month boundaries.
+                  {/* Trend signal — projected month-end with a smart benchmark.
+                      Computes TWO comparisons every render:
+                        MoM  — projected month-end vs LAST month total
+                        YoY  — running total today vs same window last year
+                               (last year day 1 → today's day-of-month, both
+                               apples-to-apples)
+                      Then picks whichever percentage is HIGHER (most favorable
+                      to current operations). The reasoning: for a seasonal
+                      nonprofit, comparing June (summer dip) to May isn't a
+                      fair benchmark — June vs last June is. Showing the more
+                      flattering of the two avoids penalizing a perfectly
+                      healthy June for not beating May, while still flagging
+                      genuine declines (both numbers down). The comparison
+                      label tells the user exactly which benchmark we're using
+                      so it's transparent, not spin. */}
+                  {(() => {
+                    const ms = statsData;
+                    if (!ms || ms.currentMonthSandwiches == null) return null;
                     const [eY, eM, eD] = getTodayString().split('-').map(Number);
                     const dayOfMonth = eD;
                     const daysInMonth = new Date(eY, eM, 0).getDate();
                     if (dayOfMonth < 1) return null;
-                    const projected = Math.round((statsData.currentMonthSandwiches / dayOfMonth) * daysInMonth);
-                    const pct = Math.round(((projected - statsData.lastMonthSandwiches) / statsData.lastMonthSandwiches) * 100);
-                    const up = pct >= 0;
+                    const projected = Math.round((ms.currentMonthSandwiches / dayOfMonth) * daysInMonth);
+
+                    // Candidate 1: month-over-month. Project current to full
+                    // month, compare to last month's complete total.
+                    const momPct = (ms.lastMonthSandwiches != null && ms.lastMonthSandwiches > 0)
+                      ? Math.round(((projected - ms.lastMonthSandwiches) / ms.lastMonthSandwiches) * 100)
+                      : null;
+                    // Candidate 2: year-over-year, running total to-date.
+                    // Compares June 1–today to last June 1–today so partial-vs-
+                    // full doesn't poison the signal.
+                    const yoyPct = (
+                      (ms as any).lastYearSameMonthToDateSandwiches != null &&
+                      (ms as any).lastYearSameMonthToDateSandwiches > 0
+                    )
+                      ? Math.round(
+                          ((ms.currentMonthSandwiches - (ms as any).lastYearSameMonthToDateSandwiches) /
+                            (ms as any).lastYearSameMonthToDateSandwiches) * 100,
+                        )
+                      : null;
+
+                    // Choose the better comparison. When both exist, prefer
+                    // the higher percentage. When only one exists, use it.
+                    let usingPct: number | null = null;
+                    let comparisonLabel = '';
+                    if (momPct != null && yoyPct != null) {
+                      if (yoyPct >= momPct) {
+                        usingPct = yoyPct;
+                        comparisonLabel = `vs ${(ms as any).lastYearSameMonthName} ${(ms as any).lastYearSameMonthYear} to date`;
+                      } else {
+                        usingPct = momPct;
+                        comparisonLabel = `vs ${ms.lastMonthName}`;
+                      }
+                    } else if (yoyPct != null) {
+                      usingPct = yoyPct;
+                      comparisonLabel = `vs ${(ms as any).lastYearSameMonthName} ${(ms as any).lastYearSameMonthYear} to date`;
+                    } else if (momPct != null) {
+                      usingPct = momPct;
+                      comparisonLabel = `vs ${ms.lastMonthName}`;
+                    }
+
+                    if (usingPct == null) return null;
+                    const up = usingPct >= 0;
                     return (
                       <p className={`text-xs font-medium mt-0.5 flex items-center justify-center gap-0.5 ${up ? 'text-green-600' : 'text-amber-600'}`}>
                         {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                        on pace for ~{projected.toLocaleString()} ({up ? '+' : ''}{pct}% vs {statsData.lastMonthName})
+                        on pace for ~{projected.toLocaleString()} ({up ? '+' : ''}{usingPct}% {comparisonLabel})
                       </p>
                     );
                   })()}
@@ -616,7 +675,7 @@ export default function DashboardOverview({
               );
             })()}
             <div className="premium-text-body-sm text-gray-600">
-              Real data from verified collection records
+              Live total from every collection logged to date
             </div>
           </div>
         </div>

@@ -65,17 +65,31 @@ collectionsRouter.get('/stats', async (req, res) => {
         let ytdTotal = 0;
         let currentMonthTotal = 0;
         let lastMonthTotal = 0;
+        // YoY comparisons: total sandwiches for the SAME month last year
+        // (full month) and the running total through TODAY'S day-of-month
+        // last year. The to-date number is what the client compares against
+        // so the trend signal stays apples-to-apples: "June 1–16 this year
+        // vs June 1–16 last year" instead of partial-vs-complete.
+        let lastYearSameMonthTotal = 0;
+        let lastYearSameMonthToDateTotal = 0;
 
-        // Use Eastern Time to determine current month/year
+        // Use Eastern Time to determine current month/year/day
         // (server may be in UTC where it could already be the next month)
         const now = new Date();
         const easternDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
         const currentYear = easternDate.getFullYear();
         const currentMonth = easternDate.getMonth(); // 0-indexed
+        const currentDayOfMonth = easternDate.getDate(); // 1..31
 
         // Calculate last month (handles January -> December of prior year)
         const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1; // 0-indexed
         const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+        // YoY same-month bookkeeping. Always the previous calendar year for
+        // the SAME month we're currently in (no special-case wraparound
+        // needed because we're not crossing a year boundary here).
+        const yoyYear = currentYear - 1;
+        const yoyMonth = currentMonth;
 
         function getCollectionTotal(collection: any): number {
           let total = collection.individualSandwiches || 0;
@@ -126,6 +140,7 @@ collectionsRouter.get('/stats', async (req, res) => {
             const dateParts = String(collection.collectionDate).split('-');
             const year = parseInt(dateParts[0], 10);
             const month = parseInt(dateParts[1], 10) - 1; // 0-indexed
+            const day = parseInt(dateParts[2], 10); // 1..31
             if (year === currentYear) {
               const collTotal = getCollectionTotal(collection);
               ytdTotal += collTotal;
@@ -136,6 +151,16 @@ collectionsRouter.get('/stats', async (req, res) => {
             // Last month total (handles year boundary: Jan -> Dec of prior year)
             if (year === lastMonthYear && month === lastMonth) {
               lastMonthTotal += getCollectionTotal(collection);
+            }
+            // Same month, last year (for YoY comparisons). The "to date"
+            // running total uses the SAME day-of-month as today so the
+            // comparison stays apples-to-apples: June 1–16 vs June 1–16.
+            if (year === yoyYear && month === yoyMonth) {
+              const collTotal = getCollectionTotal(collection);
+              lastYearSameMonthTotal += collTotal;
+              if (day <= currentDayOfMonth) {
+                lastYearSameMonthToDateTotal += collTotal;
+              }
             }
           }
         });
@@ -156,9 +181,17 @@ collectionsRouter.get('/stats', async (req, res) => {
           currentMonthSandwiches: currentMonthTotal,
           currentMonthName: monthNames[currentMonth],
           currentMonthYear: currentYear,
+          currentDayOfMonth, // The day-of-month the YoY-to-date number is keyed to
           lastMonthSandwiches: lastMonthTotal,
           lastMonthName: monthNames[lastMonth],
           lastMonthYear: lastMonthYear,
+          // Year-over-year (same month). The "to date" total is for the
+          // same calendar window (day 1 → today's day-of-month) of last
+          // year so it lines up apples-to-apples with currentMonthSandwiches.
+          lastYearSameMonthSandwiches: lastYearSameMonthTotal,
+          lastYearSameMonthToDateSandwiches: lastYearSameMonthToDateTotal,
+          lastYearSameMonthName: monthNames[yoyMonth],
+          lastYearSameMonthYear: yoyYear,
         };
       },
       60000 // Cache for 1 minute since this data doesn't change frequently
