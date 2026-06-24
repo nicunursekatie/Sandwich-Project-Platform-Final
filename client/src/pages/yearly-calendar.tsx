@@ -10,15 +10,9 @@ import {
   Loader2,
   Plus,
   Calendar,
-  CheckCircle2,
-  Edit2,
-  Trash2,
-  Copy,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
-  ChevronDown,
-  ChevronUp,
   Upload,
   Filter,
   CalendarDays,
@@ -33,8 +27,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { MonthlyCalendarGrid } from '@/components/monthly-calendar-grid';
+import {
+  MonthSectionsContent,
+  chipKeyForTrackedCategory,
+  chipKeyForYearlyCategory,
+  type CalendarSectionChipKey,
+} from '@/components/yearly-calendar/month-sections';
 import { PermissionDenied } from '@/components/permission-denied';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 
@@ -94,6 +93,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'event-rush': 'bg-red-100 text-red-800 border-red-300',
   staffing: 'bg-orange-100 text-orange-800 border-orange-300',
   board: 'bg-purple-100 text-purple-800 border-purple-300',
+  leadership_availability: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   seasonal: 'bg-green-100 text-green-800 border-green-300',
   other: 'bg-gray-100 text-gray-800 border-gray-300',
   // Tracked calendar categories
@@ -169,48 +169,6 @@ function formatDateRangeWithWeekday(startDate: string, endDate: string): string 
   return `${startLabel} - ${endLabel}`;
 }
 
-// Group similar tracked items together (same title, dates within same month or close)
-function groupSimilarItems(items: TrackedCalendarItem[]): TrackedCalendarItem[][] {
-  const groups: TrackedCalendarItem[][] = [];
-  const processed = new Set<number>();
-  
-  items.forEach(item => {
-    if (processed.has(item.id)) return;
-    
-    const group = [item];
-    processed.add(item.id);
-    
-    // Find similar items (same title, dates within 3 weeks - captures overlapping breaks)
-    items.forEach(other => {
-      if (processed.has(other.id) || other.id === item.id) return;
-      if (other.title !== item.title) return;
-      
-      const itemStart = parseDateSafe(item.startDate);
-      const itemEnd = parseDateSafe(item.endDate);
-      const otherStart = parseDateSafe(other.startDate);
-      const otherEnd = parseDateSafe(other.endDate);
-      
-      // Check if dates overlap or are within 3 weeks of each other
-      const daysDiff = Math.abs((itemStart.getTime() - otherStart.getTime()) / (1000 * 60 * 60 * 24));
-      const overlaps = (itemStart <= otherEnd && itemEnd >= otherStart);
-      
-      if (overlaps || daysDiff <= 21) {
-        group.push(other);
-        processed.add(other.id);
-      }
-    });
-    
-    // Sort group by start date
-    group.sort((a, b) => 
-      parseDateSafe(a.startDate).getTime() - parseDateSafe(b.startDate).getTime()
-    );
-    
-    groups.push(group);
-  });
-  
-  return groups;
-}
-
 export default function YearlyCalendar() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -227,25 +185,11 @@ export default function YearlyCalendar() {
   // header. Each chip represents a logical grouping; toggling a chip OFF
   // hides every item whose underlying category falls into that bucket.
   // All chips default ON so the calendar feels welcoming on first load.
-  //
-  // Mapping (chip key → underlying categories):
-  //   action_items  → action_item
-  //   tsp_events    → event, event-rush, staffing, seasonal
-  //   planning      → board, preparation, planning, other
-  //   school_breaks → school_breaks, school_markers (tracked)
-  //   religious     → religious_holidays (tracked)
-  //   holidays      → holiday (tracked)
-  type ChipKey =
-    | 'action_items'
-    | 'tsp_events'
-    | 'planning'
-    | 'school_breaks'
-    | 'religious'
-    | 'holidays';
-  const [activeChips, setActiveChips] = useState<Set<ChipKey>>(
-    new Set(['action_items', 'tsp_events', 'planning', 'school_breaks', 'religious', 'holidays'])
+  // Filter chips mirror the four month sections (see month-sections.tsx).
+  const [activeChips, setActiveChips] = useState<Set<CalendarSectionChipKey>>(
+    new Set(['external', 'tsp_activities', 'planning_reminders', 'leadership']),
   );
-  const toggleChip = (key: ChipKey) => {
+  const toggleChip = (key: CalendarSectionChipKey) => {
     setActiveChips((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -261,7 +205,6 @@ export default function YearlyCalendar() {
   const [trackedEndDate, setTrackedEndDate] = useState('');
   const [trackedCategory, setTrackedCategory] = useState('school_breaks');
   const [trackedDistrict, setTrackedDistrict] = useState('');
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
   const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -359,39 +302,10 @@ export default function YearlyCalendar() {
     });
   }, [items]);
 
-  // Map any item's raw category to its chip bucket. Returns null when the
-  // category is unrecognized — those items default to the "planning" bucket
-  // so they don't disappear when nothing matches.
-  const chipForCategory = (category: string | null | undefined): ChipKey => {
-    switch (category) {
-      case 'action_item':
-        return 'action_items';
-      case 'event':
-      case 'event-rush':
-      case 'staffing':
-      case 'seasonal':
-        return 'tsp_events';
-      case 'board':
-      case 'preparation':
-      case 'planning':
-      case 'other':
-        return 'planning';
-      case 'school_breaks':
-      case 'school_markers':
-        return 'school_breaks';
-      case 'religious_holidays':
-        return 'religious';
-      case 'holiday':
-        return 'holidays';
-      default:
-        return 'planning';
-    }
-  };
-
   // Filter manual yearly items: chip filter, then optional search.
   const filteredYearlyItems = useMemo(() => {
     let filtered = deduplicatedItems.filter((item) =>
-      activeChips.has(chipForCategory(item.category)),
+      activeChips.has(chipKeyForYearlyCategory(item.category)),
     );
     if (!searchQuery.trim()) return filtered;
     const query = searchQuery.toLowerCase();
@@ -405,7 +319,7 @@ export default function YearlyCalendar() {
   // Filter tracked items: chip filter, then optional search.
   const filteredTrackedItems = useMemo(() => {
     let filtered = trackedItems.filter((item) =>
-      activeChips.has(chipForCategory(item.category)),
+      activeChips.has(chipKeyForTrackedCategory(item.category)),
     );
 
     if (!searchQuery.trim()) return filtered;
@@ -497,14 +411,6 @@ export default function YearlyCalendar() {
 
     return grouped;
   }, [filteredTrackedItems, selectedYear]);
-
-  // Toggle category collapse
-  const toggleCategory = (category: string) => {
-    setCollapsedCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
-  };
 
   // Create item mutation
   const createItemMutation = useMutation({
@@ -665,11 +571,11 @@ export default function YearlyCalendar() {
     },
     onSuccess: (result: { created: number; updated: number; errors: string[] }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
-      // Make sure the Holidays chip is on so the just-imported items appear.
+      // Make sure External Factors is on so the just-imported items appear.
       setActiveChips((prev) => {
-        if (prev.has('holidays')) return prev;
+        if (prev.has('external')) return prev;
         const next = new Set(prev);
-        next.add('holidays');
+        next.add('external');
         return next;
       });
       toast({
@@ -1031,17 +937,15 @@ export default function YearlyCalendar() {
               translucent so it's obvious what's filtered out at a glance. */}
           {(() => {
             const chips: Array<{
-              key: ChipKey;
+              key: CalendarSectionChipKey;
               label: string;
               activeBg: string;
               activeText: string;
             }> = [
-              { key: 'action_items', label: 'Action Items', activeBg: 'bg-[#A31C41]', activeText: 'text-white' },
-              { key: 'tsp_events', label: 'TSP Events', activeBg: 'bg-teal-600', activeText: 'text-white' },
-              { key: 'planning', label: 'Planning', activeBg: 'bg-sky-600', activeText: 'text-white' },
-              { key: 'holidays', label: 'Holidays', activeBg: 'bg-rose-500', activeText: 'text-white' },
-              { key: 'school_breaks', label: 'School Breaks', activeBg: 'bg-amber-500', activeText: 'text-white' },
-              { key: 'religious', label: 'Religious', activeBg: 'bg-violet-500', activeText: 'text-white' },
+              { key: 'external', label: 'External Factors', activeBg: 'bg-amber-500', activeText: 'text-white' },
+              { key: 'tsp_activities', label: 'TSP Activities', activeBg: 'bg-teal-600', activeText: 'text-white' },
+              { key: 'planning_reminders', label: 'Planning Reminders', activeBg: 'bg-sky-600', activeText: 'text-white' },
+              { key: 'leadership', label: 'Leadership', activeBg: 'bg-indigo-600', activeText: 'text-white' },
             ];
             return (
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1216,7 +1120,7 @@ export default function YearlyCalendar() {
               >
                 <CardHeader className="pb-3 flex-shrink-0">
                   <CardTitle className="text-lg flex items-center justify-between gap-3">
-                    <span>{monthName}</span>
+                    <span className="uppercase tracking-wide">{monthName}</span>
                     <div className="flex items-center gap-1">
                       {monthItems.length > 0 && (
                         <Badge variant="secondary" className="ml-2">
@@ -1250,337 +1154,27 @@ export default function YearlyCalendar() {
                       No items planned
                     </p>
                   ) : (
-                    <>
-                    {/* Tracked Items (School Breaks, etc.) - Collapsible by category */}
-                    {trackedCategories.map(category => {
-                      const categoryItems = monthTrackedItems[category];
-                      const categoryLabel = TRACKED_CATEGORY_LABELS[category] || category;
-                      const isCollapsed = collapsedCategories[`${monthNumber}-${category}`];
-                      
-                      // Group similar items together
-                      const groupedItems = groupSimilarItems(categoryItems);
-                      
-                      // Create summary for collapsed state
-                      const summaryText = groupedItems.length === 1 
-                        ? `${categoryItems.length} ${categoryItems[0].title.toLowerCase()}`
-                        : `${categoryItems.length} items across ${groupedItems.length} periods`;
-
-                      return (
-                        <Collapsible
-                          key={`tracked-${monthNumber}-${category}`}
-                          open={!isCollapsed}
-                          onOpenChange={() => toggleCategory(`${monthNumber}-${category}`)}
-                        >
-                          <CollapsibleTrigger asChild>
-                            <div className={`p-2 rounded-lg border cursor-pointer hover:bg-opacity-80 transition-colors ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <span className="font-medium text-sm">{categoryLabel}</span>
-                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
-                                    {categoryItems.length}
-                                  </Badge>
-                                  {isCollapsed && (
-                                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate ml-1">
-                                      {summaryText}
-                                    </span>
-                                  )}
-                                </div>
-                                {isCollapsed ? (
-                                  <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                                ) : (
-                                  <ChevronUp className="h-4 w-4 flex-shrink-0" />
-                                )}
-                              </div>
-                            </div>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="space-y-2 mt-1">
-                            {groupedItems.map((group, groupIdx) => {
-                              // If group has multiple items, show them grouped
-                              if (group.length > 1) {
-                                const allDistricts = new Set<string>();
-                                group.forEach(item => {
-                                  if (item.metadata?.districts) {
-                                    item.metadata.districts.forEach((d: string) => allDistricts.add(d));
-                                  }
-                                });
-                                const sortedDistricts = Array.from(allDistricts).sort();
-                                
-                                return (
-                                  <div
-                                    key={`group-${groupIdx}`}
-                                    className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other}`}
-                                  >
-                                    <div className="mb-2">
-                                      <h4 className="text-sm font-semibold mb-1.5">{group[0].title}</h4>
-                                      {sortedDistricts.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                          {sortedDistricts.map(district => (
-                                            <Badge 
-                                              key={district} 
-                                              variant="outline" 
-                                              className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
-                                            >
-                                              {district}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="space-y-2">
-                                      {group.map(item => {
-                                        const itemDistricts = item.metadata?.districts || [];
-                                        return (
-                                          <div
-                                            key={`tracked-${item.id}`}
-                                            className="flex items-start gap-2 p-1.5 rounded bg-gray-50 dark:bg-gray-800/50 group/gitem"
-                                          >
-                                            <Badge
-                                              variant="outline"
-                                              className="text-xs font-semibold px-2 py-0.5 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 flex-shrink-0"
-                                            >
-                                              {formatDateRange(item.startDate, item.endDate)}
-                                            </Badge>
-                                            <div className="flex-1 min-w-0">
-                                              {itemDistricts.length > 0 && (
-                                                <div className="flex flex-wrap gap-1 mb-1">
-                                                  {itemDistricts.map(district => (
-                                                    <Badge
-                                                      key={district}
-                                                      variant="outline"
-                                                      className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
-                                                    >
-                                                      {district}
-                                                    </Badge>
-                                                  ))}
-                                                </div>
-                                              )}
-                                              {item.notes && (
-                                                <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                                                  {item.notes}
-                                                </p>
-                                              )}
-                                            </div>
-                                            {canEditAll && (
-                                              <div className="opacity-0 group-hover/gitem:opacity-100 transition-opacity flex gap-0.5 flex-shrink-0">
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className="h-6 w-6 p-0"
-                                                  onClick={() => handleEditTrackedItem(item)}
-                                                >
-                                                  <Edit2 className="h-3 w-3" />
-                                                </Button>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                                  onClick={() => handleDeleteTrackedItem(item)}
-                                                >
-                                                  <Trash2 className="h-3 w-3" />
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              
-                              // Single item - show compactly
-                              const item = group[0];
-                              const districts = item.metadata?.districts || [];
-                              const tradition = (item.metadata as any)?.tradition as string | undefined;
-
-                              return (
-                                <div
-                                  key={`tracked-${item.id}`}
-                                  className={`p-2.5 rounded border-l-4 bg-white dark:bg-gray-900 ${CATEGORY_COLORS[category] || CATEGORY_COLORS.other} group/tracked`}
-                                >
-                                  <div className="flex items-start gap-2 mb-2">
-                                    <Badge
-                                      variant="outline"
-                                      className="text-xs font-semibold px-2 py-1 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 flex-shrink-0"
-                                    >
-                                      {formatDateRange(item.startDate, item.endDate)}
-                                    </Badge>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1">
-                                        <h4 className="text-sm font-semibold mb-1 flex-1">{item.title}</h4>
-                                        {canEditAll && (
-                                          <div className="opacity-0 group-hover/tracked:opacity-100 transition-opacity flex gap-0.5 flex-shrink-0">
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-6 w-6 p-0"
-                                              onClick={() => handleEditTrackedItem(item)}
-                                            >
-                                              <Edit2 className="h-3 w-3" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="sm"
-                                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                              onClick={() => handleDeleteTrackedItem(item)}
-                                            >
-                                              <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        )}
-                                      </div>
-                                      {districts.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                          {districts.map(district => (
-                                            <Badge
-                                              key={district}
-                                              variant="outline"
-                                              className="text-xs px-1.5 py-0 bg-white dark:bg-gray-800"
-                                            >
-                                              {district}
-                                            </Badge>
-                                          ))}
-                                        </div>
-                                      )}
-                                      {tradition && (
-                                        <Badge
-                                          variant="outline"
-                                          className="text-xs px-1.5 py-0 bg-violet-50 text-violet-700 border-violet-300"
-                                        >
-                                          {tradition}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {item.notes && (
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 italic border-t border-gray-200 dark:border-gray-700 pt-1.5 mt-1.5">
-                                      {item.notes}
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    })}
-
-                    {/* Regular Calendar Items */}
-                    {monthItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`p-3 rounded-lg border ${
-                          item.isCompleted ? 'opacity-60 bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'
-                        } ${CATEGORY_COLORS[item.category] || CATEGORY_COLORS.other}`}
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {item.isCompleted && (
-                                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                              )}
-                              <h4 className={`text-sm font-semibold ${item.isCompleted ? 'line-through' : ''}`}>
-                                {item.title}
-                              </h4>
-                            </div>
-                            {item.startDate && (
-                              <div className="flex items-center gap-1.5 mb-1.5">
-                                <CalendarDays className="h-4 w-4 text-[#236383]" />
-                                <span className="text-sm font-semibold text-[#236383]">
-                                  {formatDateRangeWithWeekday(item.startDate, item.endDate || item.startDate)}
-                                </span>
-                              </div>
-                            )}
-                            {item.description && (
-                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
-                                {item.description}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                              <Badge variant="outline" className="text-xs">
-                                {item.category}
-                              </Badge>
-                              <span className={`text-xs font-medium ${PRIORITY_COLORS[item.priority] || PRIORITY_COLORS.medium}`}>
-                                {item.priority}
-                              </span>
-                              {item.isRecurring && (
-                                <Badge variant="outline" className="text-xs">
-                                  Recurring
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {(() => {
-                          const itemCanEdit = canEditItem(item);
-                          const itemCanDelete = canDeleteItem(item);
-                          const showActions = itemCanEdit || itemCanDelete;
-
-                          return showActions && (
-                            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                              {itemCanEdit && (
-                                <>
-                                  {/* Complete / Undo is gated to Action Items.
-                                      Other categories (board meetings, event
-                                      rushes, holidays, etc.) are calendar
-                                      reference data — "completing" a board
-                                      meeting isn't how anyone thinks about
-                                      a calendar. Existing items that were
-                                      already marked complete still render
-                                      with their checkmark + strikethrough so
-                                      no data is lost; the button just goes
-                                      away for them. */}
-                                  {item.category === 'action_item' && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-7 px-2 text-xs"
-                                      onClick={() => handleToggleComplete(item)}
-                                    >
-                                      {item.isCompleted ? 'Undo' : 'Complete'}
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => handleEdit(item)}
-                                  >
-                                    <Edit2 className="h-3 w-3" />
-                                  </Button>
-                                </>
-                              )}
-                              {itemCanDelete && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
-                                  onClick={() => {
-                                    if (window.confirm('Are you sure you want to delete this item?')) {
-                                      deleteItemMutation.mutate(item.id);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              )}
-                              {itemCanEdit && item.isRecurring && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 px-2 text-xs"
-                                  onClick={() => copyToNextYearMutation.mutate(item.id)}
-                                  title="Copy to next year"
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    ))}
-                    </>
+                    <MonthSectionsContent
+                      monthItems={monthItems}
+                      monthTrackedItems={monthTrackedItems}
+                      categoryColors={CATEGORY_COLORS}
+                      priorityColors={PRIORITY_COLORS}
+                      formatDateRange={formatDateRange}
+                      formatDateRangeWithWeekday={formatDateRangeWithWeekday}
+                      canEditAll={canEditAll}
+                      canEditItem={canEditItem}
+                      canDeleteItem={canDeleteItem}
+                      onEditYearly={handleEdit}
+                      onToggleComplete={handleToggleComplete}
+                      onDeleteYearly={(id) => {
+                        if (window.confirm('Are you sure you want to delete this item?')) {
+                          deleteItemMutation.mutate(id);
+                        }
+                      }}
+                      onCopyYearly={(id) => copyToNextYearMutation.mutate(id)}
+                      onEditTracked={handleEditTrackedItem}
+                      onDeleteTracked={handleDeleteTrackedItem}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -1666,6 +1260,7 @@ export default function YearlyCalendar() {
                     <SelectItem value="preparation">Preparation</SelectItem>
                     <SelectItem value="event-rush">Event Rush Period</SelectItem>
                     <SelectItem value="planning">Planning</SelectItem>
+                    <SelectItem value="leadership_availability">Leadership Availability</SelectItem>
                     <SelectItem value="seasonal">Seasonal</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
@@ -1836,6 +1431,7 @@ export default function YearlyCalendar() {
                     <SelectItem value="planning">Planning</SelectItem>
                     <SelectItem value="staffing">Staffing</SelectItem>
                     <SelectItem value="board">Board/Governance</SelectItem>
+                    <SelectItem value="leadership_availability">Leadership Availability</SelectItem>
                     <SelectItem value="seasonal">Seasonal Planning</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>

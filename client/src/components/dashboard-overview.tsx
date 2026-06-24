@@ -322,9 +322,16 @@ export default function DashboardOverview({
         totalLifetimeSandwiches: 'Loading...',
         peakWeekRecord: 'Loading...',
         peakWeekDate: 'Loading...',
+        annualGoalNumber: 0,
         currentAnnualCapacity: 'Loading...',
+        weeklyAverageNumber: 0,
+        weeklyAverage: 'Loading...',
         weeklyBaseline: 'Loading...',
+        weeklyBaselineMin: 'Loading...',
+        weeklyBaselineMax: 'Loading...',
         surgingCapacity: 'Loading...',
+        surgeMin: 'Loading...',
+        surgeMax: 'Loading...',
         operationalYears: 'Loading...',
         growthMultiplier: 'Loading...',
         individualSandwiches: 'Loading...',
@@ -426,9 +433,16 @@ export default function DashboardOverview({
       totalLifetimeSandwiches: totalSandwiches.toLocaleString(),
       peakWeekRecord: peakWeekRecord.toLocaleString(),
       peakWeekDate: peakWeekDate,
+      annualGoalNumber: annualGoal,
       currentAnnualCapacity: annualGoal.toLocaleString(),
+      weeklyAverageNumber: Math.round(weeklyAverage),
+      weeklyAverage: Math.round(weeklyAverage).toLocaleString(),
       weeklyBaseline: `${baselineMin.toLocaleString()}-${baselineMax.toLocaleString()}`,
+      weeklyBaselineMin: baselineMin.toLocaleString(),
+      weeklyBaselineMax: baselineMax.toLocaleString(),
       surgingCapacity: `${surgeMin.toLocaleString()}-${surgeMax.toLocaleString()}`,
+      surgeMin: surgeMin.toLocaleString(),
+      surgeMax: surgeMax.toLocaleString(),
       operationalYears: operationalYears.toString(),
       growthMultiplier: `${growthMultiplier}x`,
       individualSandwiches: individual.toLocaleString(),
@@ -1191,68 +1205,106 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Operational Capacity - Clean Design with Brand Color Accents.
-            Each card's small caption now spells out the time period the
-            number reflects (Peak Week → all-time + date, Annual Goal →
-            dynamic current-year target, Baseline/Surge → rolling weekly
-            averages excluding holiday weeks) so the user isn't left
-            guessing what window the number represents. */}
+        {/* Operational Capacity — Narrative-forward storytelling cards.
+            Each card leads with an emoji + headline, anchors the big number
+            visually, and closes with a supporting sentence that explains
+            what the number means and the window it reflects. */}
         <div className="mx-4 mb-6 sm:mb-8 max-w-full">
           <div className="premium-card p-4 sm:p-6 max-w-full">
             <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
-              {/* Peak Week - Burgundy accent — all-time record */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-burgundy mb-1">
-                  {organizationalStats.peakWeekRecord}
+              {/* Peak Week — Our Best Week Ever (Burgundy) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-burgundy uppercase tracking-wide">
+                  <span aria-hidden="true">🏆</span> Our Best Week Ever
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Peak Week
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-burgundy leading-none">
+                    {organizationalStats.peakWeekRecord}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  All-time record · {organizationalStats.peakWeekDate}
-                </div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  Our highest single-week total ever, set on{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.peakWeekDate}
+                  </span>
+                  .
+                </p>
               </div>
 
-              {/* Annual Goal - Orange accent — current calendar year target */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-orange mb-1">
-                  {organizationalStats.currentAnnualCapacity}
+              {/* Annual Goal — This Year's Goal (Orange) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-orange uppercase tracking-wide">
+                  <span aria-hidden="true">🎯</span> This Year's Goal
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Annual Goal
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-orange leading-none">
+                    {organizationalStats.currentAnnualCapacity}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  {new Date().getFullYear()} target
-                </div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  What we're aiming to collect together in{' '}
+                  <span className="font-semibold">
+                    {new Date().getFullYear()}
+                  </span>
+                  .
+                </p>
               </div>
 
-              {/* Weekly Baseline - Light Blue accent — rolling weekly avg */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-light-blue mb-1">
-                  {organizationalStats.weeklyBaseline}
+              {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
+                  <span aria-hidden="true">📦</span> A Typical Week
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Weekly Baseline
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-light-blue leading-none">
+                    ~{organizationalStats.weeklyAverage}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  Typical week (avg ±30%)
-                </div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  On any given week, most weeks fall between{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.weeklyBaselineMin}
+                  </span>{' '}
+                  and{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.weeklyBaselineMax}
+                  </span>
+                  . Every single week, thousands are fed because of this team.
+                </p>
               </div>
 
-              {/* Surge Capacity - Dark Teal accent — based on all-time avg */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-teal mb-1">
-                  {organizationalStats.surgingCapacity}
+              {/* Surge Capacity — When We Mobilize (Dark Teal) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
+                  <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Surge Capacity
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-teal leading-none">
+                    {organizationalStats.surgeMin}
+                  </span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-brand-teal leading-none">
+                    –{organizationalStats.surgeMax}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  Peak-week range (3–5× avg)
-                </div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  What we've reached when the call goes out — 3 to 5 times a
+                  normal week's pace.
+                </p>
               </div>
             </div>
           </div>
