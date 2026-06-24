@@ -2539,6 +2539,7 @@ export default function SandwichCollectionLog() {
                   trigger="hover"
                 >
                   <Button
+                    data-tour="add-collection"
                     onClick={() => setShowSubmitForm(!showSubmitForm)}
                     variant="default"
                     size="sm"
@@ -2868,7 +2869,7 @@ export default function SandwichCollectionLog() {
             )}
           </div>
         )}
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3 sm:space-y-4" data-tour="collections-table">
           {paginatedCollections.map((collection: SandwichCollection) => {
             const groupData = getGroupCollections(collection);
             const totalSandwiches = calculateTotal(collection);

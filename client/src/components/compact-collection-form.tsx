@@ -712,7 +712,7 @@ export default function CompactCollectionForm({
 
   return (
     <TooltipProvider>
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm">
+      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm" data-tour="collection-form">
         {/* Compact header */}
         <div className="bg-gradient-to-r from-brand-primary to-brand-teal text-white text-center py-4 px-4">
           <h1 className="text-xl md:text-lg font-semibold mb-1">

@@ -394,6 +394,10 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-map',
     permission: PERMISSIONS.NAV_MAPS,
     group: 'network',
+    // Maps has its own page (event-map) and a child (route-map / Locations Map),
+    // so clicking it should navigate to the Event Map *and* expand to reveal the
+    // child — without this it would only toggle expansion and never navigate.
+    navigateAndExpand: true,
   },
   {
     id: 'route-map',

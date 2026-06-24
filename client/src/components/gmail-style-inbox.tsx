@@ -910,6 +910,7 @@ export default function GmailStyleInbox() {
           </div>
           <ButtonTooltip explanation="Write a new message to send to team members. You can choose who to send it to and what it's about.">
             <Button
+              data-tour="compose-button"
               onClick={() => setShowCompose(true)}
               className="w-full gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-['Roboto'] font-medium shadow-lg hover:shadow-xl transition-all duration-200"
             >
@@ -920,10 +921,11 @@ export default function GmailStyleInbox() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="px-2">
+          <div className="px-2" data-tour="inbox-folders">
             {folders.map((folder) => (
               <button
                 key={folder.id}
+                data-tour={folder.id === 'kudos' ? 'folder-kudos' : undefined}
                 onClick={() => {
                   setActiveFolder(folder.id);
                   // On mobile, collapse sidebar when selecting a folder to show content
