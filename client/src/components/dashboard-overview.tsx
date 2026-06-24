@@ -692,7 +692,7 @@ export default function DashboardOverview({
             request. The component is still imported by other places if
             needed; just not surfaced here. */}
 
-        {/* Continue where you left off — people reopen the same resources constantly. */}
+        {/* Recently Visited Items — people reopen the same resources constantly. */}
         <div className="mx-4 mb-8 max-w-full">
           <RecentlyAccessedResources />
         </div>
@@ -703,8 +703,8 @@ export default function DashboardOverview({
         {/* Volunteer Opportunities Spotlight */}
         <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
 
-        {/* ── OPERATIONS ── */}
-        <SectionHeader label="Operations" hint="Forecast and capacity" />
+        {/* ── GROUP EVENT FORECAST ── */}
+        <SectionHeader label="Group Event Forecast" />
 
         {/* Group Event Forecast - current week progress and upcoming weeks */}
         <div className="mx-4">
@@ -1140,6 +1140,9 @@ export default function DashboardOverview({
             <p className="premium-text-body-sm text-gray-600">
               Personal contributions
             </p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
 
           <div className="premium-card premium-interactive p-4 sm:p-6">
@@ -1164,6 +1167,9 @@ export default function DashboardOverview({
             <p className="premium-text-body-sm text-gray-600">
               Organization donations
             </p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
 
           <div className="premium-card premium-interactive p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
@@ -1179,17 +1185,25 @@ export default function DashboardOverview({
               <AnimatedCounter value={statsData?.totalEntries || 0} />
             </div>
             <p className="premium-text-body-sm text-gray-600">Data submissions</p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
         </div>
 
-        {/* Operational Capacity - Clean Design with Brand Color Accents */}
+        {/* Operational Capacity - Clean Design with Brand Color Accents.
+            Each card's small caption now spells out the time period the
+            number reflects (Peak Week → all-time + date, Annual Goal →
+            dynamic current-year target, Baseline/Surge → rolling weekly
+            averages excluding holiday weeks) so the user isn't left
+            guessing what window the number represents. */}
         <div className="mx-4 mb-6 sm:mb-8 max-w-full">
           <div className="premium-card p-4 sm:p-6 max-w-full">
             <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
-              {/* Peak Week - Burgundy accent */}
+              {/* Peak Week - Burgundy accent — all-time record */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h3 text-brand-burgundy mb-1">
                   {organizationalStats.peakWeekRecord}
@@ -1197,10 +1211,12 @@ export default function DashboardOverview({
                 <div className="premium-text-body-sm text-gray-700 font-medium">
                   Peak Week
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
+                <div className="premium-text-caption text-gray-600 mt-1">
+                  All-time record · {organizationalStats.peakWeekDate}
+                </div>
               </div>
 
-              {/* Annual Goal - Orange accent */}
+              {/* Annual Goal - Orange accent — current calendar year target */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h3 text-brand-orange mb-1">
                   {organizationalStats.currentAnnualCapacity}
@@ -1208,10 +1224,12 @@ export default function DashboardOverview({
                 <div className="premium-text-body-sm text-gray-700 font-medium">
                   Annual Goal
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
+                <div className="premium-text-caption text-gray-600 mt-1">
+                  {new Date().getFullYear()} target
+                </div>
               </div>
 
-              {/* Weekly Baseline - Light Blue accent */}
+              {/* Weekly Baseline - Light Blue accent — rolling weekly avg */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h4 text-brand-light-blue mb-1">
                   {organizationalStats.weeklyBaseline}
@@ -1219,10 +1237,12 @@ export default function DashboardOverview({
                 <div className="premium-text-body-sm text-gray-700 font-medium">
                   Weekly Baseline
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">Regular ops</div>
+                <div className="premium-text-caption text-gray-600 mt-1">
+                  Typical week (avg ±30%)
+                </div>
               </div>
 
-              {/* Surge Capacity - Dark Teal accent */}
+              {/* Surge Capacity - Dark Teal accent — based on all-time avg */}
               <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
                 <div className="premium-text-h4 text-brand-teal mb-1">
                   {organizationalStats.surgingCapacity}
@@ -1231,7 +1251,7 @@ export default function DashboardOverview({
                   Surge Capacity
                 </div>
                 <div className="premium-text-caption text-gray-600 mt-1">
-                  Peak mobilization
+                  Peak-week range (3–5× avg)
                 </div>
               </div>
             </div>

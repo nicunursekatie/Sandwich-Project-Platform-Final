@@ -5122,6 +5122,46 @@ router.get(
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+        const LARGE_SANDWICH_THRESHOLD = 500;
+
+        const mapMyAssignmentEvent = (event: any) => {
+          const eventDate = getEffectiveEventDate(event);
+          const lastContact = event.lastContactAttempt || null;
+          let needsFollowUp = false;
+          if (event.status === 'in_process') {
+            if (!lastContact) {
+              needsFollowUp = true;
+            } else {
+              const last = new Date(lastContact);
+              needsFollowUp = Number.isNaN(last.getTime()) || last < sevenDaysAgo;
+            }
+          }
+
+          const count = event.estimatedSandwichCount ?? null;
+          const countMax = event.estimatedSandwichCountMax ?? null;
+          const isLargeEvent =
+            (typeof count === 'number' && count >= LARGE_SANDWICH_THRESHOLD) ||
+            (typeof countMax === 'number' && countMax >= LARGE_SANDWICH_THRESHOLD);
+
+          return {
+            id: event.id,
+            organizationName: event.organizationName,
+            status: event.status,
+            eventDate,
+            lastContactAttempt: lastContact,
+            estimatedSandwichCount: count,
+            estimatedSandwichCountMin: event.estimatedSandwichCountMin ?? null,
+            estimatedSandwichCountMax: countMax,
+            sandwichTypes: event.sandwichTypes ?? null,
+            needsFollowUp,
+            vanNeeded: !!(event.vanDriverNeeded || event.vanNeededLikely),
+            vanDriverNeeded: !!event.vanDriverNeeded,
+            vanNeededLikely: !!event.vanNeededLikely,
+            isLargeEvent,
+            isCorporatePriority: !!event.isCorporatePriority,
+          };
+        };
+
         const isStaleInProcess = (event: any): boolean => {
           if (event.status !== 'in_process') return false;
           if (!event.lastContactAttempt) return true;
@@ -5130,32 +5170,21 @@ router.get(
           return last < sevenDaysAgo;
         };
 
+        const sortByDateAsc = (a: { eventDate: string | null }, b: { eventDate: string | null }) => {
+          const dA = parseDateOnly(a.eventDate)?.getTime() || 0;
+          const dB = parseDateOnly(b.eventDate)?.getTime() || 0;
+          return dA - dB;
+        };
+
         // New requests assigned to me — highest priority, surfaced first.
         const myNewRequests = myEvents
           .filter((e) => e.status === 'new')
-          .sort((a, b) => {
-            // Newest desired/scheduled date first so urgent ones bubble up.
-            const dA = parseDateOnly(getEffectiveEventDate(a))?.getTime() || 0;
-            const dB = parseDateOnly(getEffectiveEventDate(b))?.getTime() || 0;
-            return dA - dB;
-          })
-          .map((e) => ({
-            id: e.id,
-            organizationName: e.organizationName,
-            status: e.status,
-            eventDate: getEffectiveEventDate(e),
-            lastContactAttempt: e.lastContactAttempt || null,
-          }));
+          .sort(sortByDateAsc)
+          .map(mapMyAssignmentEvent);
 
         const myInProcessStale = myEvents
           .filter(isStaleInProcess)
-          .map((e) => ({
-            id: e.id,
-            organizationName: e.organizationName,
-            status: e.status,
-            eventDate: getEffectiveEventDate(e),
-            lastContactAttempt: e.lastContactAttempt || null,
-          }));
+          .map(mapMyAssignmentEvent);
 
         // Full breakdown by status for the snapshot summary.
         const byStatus = {
@@ -5165,25 +5194,22 @@ router.get(
           rescheduled: myEvents.filter((e) => e.status === 'rescheduled').length,
         };
 
+        const byStatusEvents = {
+          new: myEvents.filter((e) => e.status === 'new').sort(sortByDateAsc).map(mapMyAssignmentEvent),
+          in_process: myEvents.filter((e) => e.status === 'in_process').sort(sortByDateAsc).map(mapMyAssignmentEvent),
+          scheduled: myEvents.filter((e) => e.status === 'scheduled').sort(sortByDateAsc).map(mapMyAssignmentEvent),
+          rescheduled: myEvents.filter((e) => e.status === 'rescheduled').sort(sortByDateAsc).map(mapMyAssignmentEvent),
+        };
+
         // Top-line list of every event this user owns, lightweight payload.
         const allMyEvents = myEvents
-          .map((e) => ({
-            id: e.id,
-            organizationName: e.organizationName,
-            status: e.status,
-            eventDate: getEffectiveEventDate(e),
-            lastContactAttempt: e.lastContactAttempt || null,
-          }))
+          .map(mapMyAssignmentEvent)
           .sort((a, b) => {
-            // Order by status priority (new > in_process > scheduled/rescheduled),
-            // then by event date ascending.
             const statusRank: Record<string, number> = { new: 0, in_process: 1, scheduled: 2, rescheduled: 2 };
             const rA = statusRank[a.status || ''] ?? 9;
             const rB = statusRank[b.status || ''] ?? 9;
             if (rA !== rB) return rA - rB;
-            const dA = parseDateOnly(a.eventDate)?.getTime() || 0;
-            const dB = parseDateOnly(b.eventDate)?.getTime() || 0;
-            return dA - dB;
+            return sortByDateAsc(a, b);
           });
 
         myAssignments = {
@@ -5191,6 +5217,7 @@ router.get(
           newRequestsCount: myNewRequests.length,
           inProcessStaleCount: myInProcessStale.length,
           byStatus,
+          byStatusEvents,
           newRequests: myNewRequests,
           inProcessStale: myInProcessStale,
           allMyEvents,
