@@ -25,7 +25,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
@@ -712,36 +712,51 @@ const EventRequestsManagementContent: React.FC = () => {
               View as:
             </span>
           <div className="flex items-center gap-1 bg-[#007E8C]/10 border border-[#007E8C]/20 rounded-lg p-0.5">
-            {/* On the Scheduled tab, Cards/Spreadsheet stay visible alongside
-                Calendar/Map so the user can see all four view options at once
-                — and so switching to Calendar/Map doesn't make the Cards
-                button vanish (it was confusing). On other tabs we show the
-                generic "List" button instead. */}
+            {/* Consistent view switcher on every tab: Cards, Spreadsheet,
+                Calendar, Map always appear in the same order and place so the
+                controls don't reshuffle when you change tabs. The Spreadsheet
+                view only exists for the Scheduled tab, so on other tabs it
+                stays visible but greyed-out (with a tooltip explaining why)
+                rather than silently disappearing. */}
+            <button
+              onClick={() => {
+                setViewMode('list');
+                if (activeTab === 'scheduled') {
+                  setScheduledViewMode('card');
+                  localStorage.setItem('scheduledTabViewMode', 'card');
+                }
+              }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && (activeTab !== 'scheduled' || scheduledViewMode === 'card') ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              {!isMobile && 'Cards'}
+            </button>
             {activeTab === 'scheduled' ? (
-              <>
-                <button
-                  onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  {!isMobile && 'Cards'}
-                </button>
-                <button
-                  onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <Table2 className="w-4 h-4" />
-                  {!isMobile && 'Spreadsheet'}
-                </button>
-              </>
-            ) : (
               <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
               >
-                <List className="w-4 h-4" />
-                {!isMobile && 'List'}
+                <Table2 className="w-4 h-4" />
+                {!isMobile && 'Spreadsheet'}
               </button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button
+                      disabled
+                      aria-disabled="true"
+                      className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 text-gray-400 opacity-60 cursor-not-allowed"
+                    >
+                      <Table2 className="w-4 h-4" />
+                      {!isMobile && 'Spreadsheet'}
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Spreadsheet view is only available on the Scheduled tab</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             <button
               data-tour="calendar-tab"
