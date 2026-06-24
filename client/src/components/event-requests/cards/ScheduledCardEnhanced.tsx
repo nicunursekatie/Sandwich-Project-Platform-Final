@@ -1369,13 +1369,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </Badge>
             )}
 
-            {request.externalId && request.externalId.startsWith('manual-') && (
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium">
-                <FileText className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Manual Entry</span>
-                <span className="sm:hidden">Manual</span>
-              </Badge>
-            )}
+            {/* Manual entry indicator moved to a subtle footer line below the
+                Activity History section so it doesn't compete visually with the
+                operational badges (van/staffing/etc.). It's a helpful note, not
+                an alert. */}
 
             {/* Only show staffing badges if NOT self-transport */}
             {!request.selfTransport && (
@@ -1393,12 +1390,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                       </Badge>
                     )}
-                    {/* Show Van badge when van driver is needed but not yet assigned */}
-                    {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
-                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        Van needed
-                      </Badge>
+                    {/* Van Needed badge — unified.
+                        The badge means "this event requires a van" regardless of
+                        whether a driver has been assigned yet. It also surfaces
+                        the same-day count of OTHER events needing a van that day,
+                        which matters for fleet planning. Uses the shared
+                        VanNeededBadgeAndButton (teal #007E8C) to match the badge
+                        on InProcessCard. DHL-provided vans get their own badge
+                        below since that's separate context (who supplies the van),
+                        not whether one is needed. */}
+                    {request.vanDriverNeeded && !request.isDhlVan && (
+                      <VanNeededBadgeAndButton
+                        eventRequestId={request.id}
+                        vanDriverNeeded={request.vanDriverNeeded}
+                        vanNeededLikely={(request as any).vanNeededLikely}
+                        eventDate={displayDate}
+                        canEdit={!!canEdit}
+                        simpleToggle
+                        mode="badge"
+                      />
                     )}
                     {speakerNeeded > speakerAssigned && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
@@ -1415,11 +1425,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </>
                 )}
 
-                {request.assignedVanDriverId && (
-                  <Badge className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium">
-                    🚐 Van
-                  </Badge>
-                )}
+                {/* Redundant "🚐 Van" assigned-driver badge removed — the unified
+                    Van Needed badge above already conveys "this event needs a van"
+                    regardless of assignment, and the dedicated Van slot lower in
+                    the card shows who's assigned. The earlier badge added clutter
+                    without surfacing new operational info. */}
 
                 {request.isDhlVan && (
                   <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-medium">
@@ -1521,6 +1531,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               eventRequestId={request.id}
               vanDriverNeeded={request.vanDriverNeeded}
               vanNeededLikely={(request as any).vanNeededLikely}
+              eventDate={displayDate}
               canEdit={!!canEdit}
               simpleToggle
               mode="badge"
@@ -4809,6 +4820,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
         {/* Email Log - shows if any template emails have been sent */}
         <EventEmailLogDisplay eventId={request.id} compact />
+
+        {/* Manual entry origin — a quiet note, NOT a status badge. Lives at the
+            bottom of the card so it stays discoverable for context without
+            competing with operational alerts at the top. */}
+        {request.externalId && request.externalId.startsWith('manual-') && (
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+            <FileText className="w-3 h-3 text-gray-400" aria-hidden="true" />
+            <span>Created via manual entry</span>
+          </div>
+        )}
       </CardContent>
 
       {/* Message Composer Dialog */}
