@@ -37,6 +37,7 @@ export type SortColumn =
   | 'tspContact'
   | 'contract'
   | 'reportingGroup'
+  | 'address'
   | 'survey'
   | 'cadence'
   | 'peopleServed'
@@ -255,6 +256,9 @@ export function sortRecipients(
       }
       case 'reportingGroup':
         return compareStrings(a.reportingGroup || '', b.reportingGroup || '');
+      case 'address':
+        // Alphabetical sort by address; blank addresses sink to the bottom.
+        return compareStrings(a.address || '￿', b.address || '￿');
       case 'survey': {
         // Submitted before not-submitted in ascending order.
         const sa = (a as Recipient & { surveySubmitted?: boolean }).surveySubmitted ? 0 : 1;

@@ -495,7 +495,7 @@ export default function SandwichCollectionLog() {
           const searchTerm = debouncedSearchFilters.hostName.toLowerCase();
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) =>
-              c.hostName?.toLowerCase().includes(searchTerm)
+              c.hostName?.toLowerCase()?.includes(searchTerm)
           );
           logger.log(
             `Host name filter '${searchTerm}' applied: ${filteredCollections.length} results`
@@ -546,26 +546,26 @@ export default function SandwichCollectionLog() {
               // for individual/host drop-offs).
               const hostNameMatch = c.hostName
                 ?.toLowerCase()
-                .includes(searchTerm);
+                ?.includes(searchTerm) ?? false;
 
               // Search in submitter name (createdByName) so the user can
               // find "all the collections Katie submitted" in one query.
-              const submitterMatch = (c as any).createdByName
+              const submitterMatch = c.createdByName
                 ?.toLowerCase()
-                .includes(searchTerm) ?? false;
+                ?.includes(searchTerm) ?? false;
 
               // Search in group names AND the group's department/organization
               // — a "Cox Enterprises" search should find a Cox group whose
               // groupName is the company and whose department is the team.
               const groupData = getGroupCollections(c);
               const groupNameMatch = groupData.some((group) =>
-                group.groupName?.toLowerCase().includes(searchTerm)
+                group.groupName?.toLowerCase()?.includes(searchTerm)
               );
               // getGroupCollections returns a union type where the legacy
               // fallback branch lacks `department` — only the JSONB branch has
               // it. Cast to any to read it safely; missing values just no-op.
               const organizationMatch = groupData.some((group) =>
-                (group as any).department?.toLowerCase().includes(searchTerm)
+                (group as any).department?.toLowerCase()?.includes(searchTerm)
               );
 
               // Search in collection date - check multiple formats
@@ -610,7 +610,7 @@ export default function SandwichCollectionLog() {
                   }
                 } catch (error) {
                   // If date parsing fails, fall back to string matching on the raw date string
-                  dateMatch = c.collectionDate?.toLowerCase().includes(searchTerm) || false;
+                  dateMatch = c.collectionDate?.toLowerCase()?.includes(searchTerm) ?? false;
                 }
               }
 
@@ -635,7 +635,7 @@ export default function SandwichCollectionLog() {
             (c: SandwichCollection) => {
               const groupData = getGroupCollections(c);
               return groupData.some((group) =>
-                group.groupName?.toLowerCase().includes(searchTerm)
+                group.groupName?.toLowerCase()?.includes(searchTerm)
               );
             }
           );

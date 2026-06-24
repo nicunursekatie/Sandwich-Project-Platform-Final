@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, Loader2, Pencil } from 'lucide-react';
+import { Check, ExternalLink, Loader2, MapPin, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -120,6 +120,138 @@ export function InlineTextCell({
         </>
       )}
     </button>
+  );
+}
+
+/**
+ * Address cell — renders the address as a clickable Google Maps link when
+ * present, with an inline-edit affordance for editors. Mirrors
+ * InlineTextCell's keyboard/blur commit behavior but uses an `<a>` for the
+ * default read view so users can jump to Maps without entering edit mode.
+ * The pencil shows on hover to enter edit mode for changing the value.
+ */
+export function InlineAddressCell({
+  value,
+  canEdit,
+  isSaving,
+  onSave,
+}: {
+  value: string;
+  onSave: (value: string) => void;
+} & InlineBaseProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  const commit = () => {
+    setEditing(false);
+    if (draft !== value) onSave(draft);
+  };
+
+  const mapsUrl = value
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(value)}`
+    : null;
+
+  // Read-only view: just the Maps link, no edit affordance.
+  if (!canEdit) {
+    if (!value) {
+      return <span className="text-sm text-slate-400 italic">—</span>;
+    }
+    return (
+      <a
+        href={mapsUrl!}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={stopRowClick}
+        className="text-sm text-[#007E8C] hover:text-[#236383] hover:underline inline-flex items-center gap-1 truncate"
+        title={`Open ${value} in Google Maps`}
+      >
+        <MapPin className="w-3 h-3 shrink-0" />
+        <span className="truncate">{value}</span>
+        <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-60" />
+      </a>
+    );
+  }
+
+  // Edit mode: text input identical to InlineTextCell's edit shape.
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onClick={stopRowClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') {
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+        placeholder="123 Main St, City, State 12345"
+        className="h-7 text-xs"
+      />
+    );
+  }
+
+  // Editable read view: the address itself is a Google Maps link (click goes
+  // to Maps), and a small pencil chip beside it enters edit mode. This keeps
+  // the navigation action (Maps) one click away without forcing a route
+  // through edit mode just to view the location.
+  if (!value) {
+    // No address yet — render an empty pencil-triggered editor like InlineTextCell.
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          stopRowClick(e);
+          setEditing(true);
+        }}
+        className="group text-left text-sm w-full truncate rounded px-1 py-0.5 hover:bg-white hover:ring-1 hover:ring-[#007E8C]/30"
+      >
+        {isSaving ? (
+          <Loader2 className="w-3 h-3 animate-spin inline" />
+        ) : (
+          <>
+            <span className="text-slate-400 italic">— add address —</span>
+            <Pencil className="w-3 h-3 inline ml-1 opacity-0 group-hover:opacity-50" />
+          </>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <div className="group flex items-center gap-1 min-w-0" onClick={stopRowClick}>
+      <a
+        href={mapsUrl!}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-[#007E8C] hover:text-[#236383] hover:underline inline-flex items-center gap-1 min-w-0 flex-1"
+        title={`Open ${value} in Google Maps`}
+      >
+        <MapPin className="w-3 h-3 shrink-0" />
+        <span className="truncate">{value}</span>
+        <ExternalLink className="w-2.5 h-2.5 shrink-0 opacity-60" />
+      </a>
+      {isSaving ? (
+        <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="shrink-0 p-0.5 rounded hover:bg-slate-200 opacity-0 group-hover:opacity-100 transition-opacity"
+          title="Edit address"
+          aria-label="Edit address"
+        >
+          <Pencil className="w-3 h-3 text-slate-500" />
+        </button>
+      )}
+    </div>
   );
 }
 
