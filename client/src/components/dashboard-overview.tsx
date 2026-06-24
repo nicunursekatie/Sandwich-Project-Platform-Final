@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Card,
   CardContent,
@@ -542,6 +543,22 @@ export default function DashboardOverview({
                 </div>
               )}
             </div>
+            {/* Progress toward the annual goal — turns the bare YTD number and
+                the "Annual Goal" target into an at-a-glance progress bar. */}
+            {statsData?.ytdSandwiches != null && annualSandwichGoal > 0 && (() => {
+              const goalPct = Math.min(100, Math.round((statsData.ytdSandwiches / annualSandwichGoal) * 100));
+              return (
+                <div className="max-w-md mx-auto mb-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-1">
+                    <span>{statsData.ytdYear} progress toward goal</span>
+                    <span className="font-semibold text-brand-primary">
+                      {statsData.ytdSandwiches.toLocaleString()} / {annualSandwichGoal.toLocaleString()} ({goalPct}%)
+                    </span>
+                  </div>
+                  <Progress value={goalPct} className="h-2" />
+                </div>
+              );
+            })()}
             <div className="premium-text-body-sm text-gray-600">
               Real data from verified collection records
             </div>
