@@ -717,6 +717,7 @@ export default function LocationsMapView() {
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Side Panel */}
         <div
+          data-tour="host-list-panel"
           className={`
             ${isPanelOpen ? 'w-96' : 'w-0'}
             transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
@@ -780,6 +781,7 @@ export default function LocationsMapView() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
+                      data-tour="host-search"
                       placeholder="Search hosts..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -993,7 +995,7 @@ export default function LocationsMapView() {
         </Button>
 
         {/* Map */}
-        <div className="flex-1 relative min-h-0 min-w-0">
+        <div className="flex-1 relative min-h-0 min-w-0" data-tour="host-map-container">
           <MapContainer
             center={initialMapCenter}
             zoom={11}

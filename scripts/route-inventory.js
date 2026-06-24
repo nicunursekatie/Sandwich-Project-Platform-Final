@@ -42,13 +42,21 @@ const SOURCE_ROOTS = ['client/src', 'server', 'tests'];
 const IGNORE_DIRS = new Set(['node_modules', 'dist', 'build', '.git', '.venv', 'coverage']);
 const SERVER_ROUTE_METHODS = ['use', 'get', 'post', 'put', 'patch', 'delete'];
 
+// Deterministic, locale-independent string ordering. localeCompare depends on
+// the runtime's ICU/collation data, which differs across machines (e.g. a dev
+// box vs. CI), so using it for sort order makes the generated report — and thus
+// `--check` — flaky. Compare by UTF-16 code unit instead.
+function byString(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function walk(dir, files = []) {
   if (!fs.existsSync(dir)) return files;
   // Sort entries so traversal order is stable across OS/filesystems; otherwise
   // readdirSync ordering can make the generated report (and --check) flaky.
   const entries = fs
     .readdirSync(dir, { withFileTypes: true })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => byString(a.name, b.name));
   for (const entry of entries) {
     if (IGNORE_DIRS.has(entry.name)) continue;
     const fullPath = path.join(dir, entry.name);
@@ -120,7 +128,7 @@ function extractApiRequestMismatches(files) {
     }
   }
 
-  return findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+  return findings.sort((a, b) => byString(a.file, b.file) || a.line - b.line);
 }
 
 function extractServerApiRoutes(files) {
@@ -205,7 +213,7 @@ function occurrencesSummary(occurrences, limit = 4) {
   // Sort by file/line so the "first locations" shown are deterministic and don't
   // depend on filesystem walk order (keeps --check stable across machines).
   return [...occurrences]
-    .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line)
+    .sort((a, b) => byString(a.file, b.file) || a.line - b.line)
     .slice(0, limit)
     .map((occ) => `${occ.file}:${occ.line}`)
     .join('<br>');
@@ -220,15 +228,15 @@ function markdownTable(headers, rows) {
 
 function buildReport({ apiRefs, apiRequestMismatches, serverRoutes, appRoutes, unmatched }) {
   const serverRouteRows = [...serverRoutes.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => byString(a, b))
     .map(([route, occurrences]) => [route, occurrences.length, occurrencesSummary(occurrences)]);
 
   const apiRefRows = [...apiRefs.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => byString(a, b))
     .map(([route, occurrences]) => [route, occurrences.length, occurrencesSummary(occurrences)]);
 
   const appRouteRows = [...appRoutes.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => byString(a, b))
     .map(([route, occurrences]) => [route, occurrences.length, occurrencesSummary(occurrences)]);
 
   const mismatchRows = apiRequestMismatches.map((item) => [item.url, `${item.file}:${item.line}`]);
@@ -257,11 +265,20 @@ const existing = fs.existsSync(reportPath) ? fs.readFileSync(reportPath, 'utf8')
 // core.autocrlf) doesn't fail --check when the route data is unchanged.
 const existingNormalized = existing === null ? null : existing.replace(/\r\n/g, '\n');
 
+// For --check, ignore the `:line` suffixes in location cells. Unrelated edits
+// constantly shift line numbers (and the repo gets frequent auto-commits that
+// don't regenerate this doc), so gating on exact line numbers makes CI red on
+// cosmetic churn. Genuine route drift — a new/removed/renamed API path or mount —
+// changes the route set itself and still fails the check.
+function checkSignature(text) {
+  return text === null ? null : text.replace(/:\d+/g, ':L');
+}
+
 if (!checkMode) {
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, report);
   console.log(`Route inventory written to ${rel(reportPath)}`);
-} else if (existingNormalized !== report) {
+} else if (checkSignature(existingNormalized) !== checkSignature(report)) {
   console.error(`Route inventory is out of date. Run: npm run inventory:routes`);
   process.exit(1);
 }

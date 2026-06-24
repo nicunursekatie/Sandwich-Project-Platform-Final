@@ -724,6 +724,7 @@ const EventRequestsManagementContent: React.FC = () => {
               </button>
             )}
             <button
+              data-tour="calendar-tab"
               onClick={() => setViewMode('calendar')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
             >

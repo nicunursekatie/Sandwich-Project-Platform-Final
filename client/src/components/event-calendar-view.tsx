@@ -574,7 +574,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
 
   return (
     <TooltipProvider>
-    <Card className="w-full">
+    <Card className="w-full" data-tour="calendar-view">
       <CardHeader className="pb-2 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl">

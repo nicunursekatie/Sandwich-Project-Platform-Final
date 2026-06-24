@@ -1225,6 +1225,7 @@ export function Resources() {
               {/* Filters Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
+                data-tour="resources-filters-toggle"
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
               >
                 <Filter className="w-5 h-5" />
@@ -1261,6 +1262,7 @@ export function Resources() {
                       return (
                         <button
                           key={cat.id}
+                          data-tour={`category-${cat.id}`}
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5 ${
                             selectedCategory === cat.id
