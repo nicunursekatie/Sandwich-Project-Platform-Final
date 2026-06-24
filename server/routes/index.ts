@@ -87,6 +87,7 @@ import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createAppSettingsRouter } from './app-settings';
+import { createNavUserViewRouter } from './nav-user-view';
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
@@ -1102,6 +1103,15 @@ export function createMainRoutes(deps: RouterDependencies) {
     appSettingsRouter
   );
   router.use('/api/app-settings', createErrorHandler('app-settings'));
+
+  const navUserViewRouter = createNavUserViewRouter(deps);
+  router.use(
+    '/api/nav-user-view-config',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    navUserViewRouter
+  );
+  router.use('/api/nav-user-view-config', createErrorHandler('nav-user-view-config'));
 
   // AI alert generation
   const aiAlertRouter = createAIAlertRouter(deps);

@@ -24,6 +24,7 @@ import {
   CalendarDays,
   X,
   Search,
+  Check,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -83,6 +84,10 @@ const MONTH_NAMES = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
+  // Action items — the only category that exposes a Complete/Undo button.
+  // Burgundy nods to the brand alert palette so users notice these as
+  // to-dos rather than reference entries.
+  action_item: 'bg-[#A31C41]/10 text-[#A31C41] border-[#A31C41]/30',
   event: 'bg-teal-100 text-teal-800 border-teal-300',
   preparation: 'bg-blue-100 text-blue-800 border-blue-300',
   planning: 'bg-sky-100 text-sky-800 border-sky-300',
@@ -217,9 +222,37 @@ export default function YearlyCalendar() {
   const [isImportHolidaysDialogOpen, setIsImportHolidaysDialogOpen] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
   const [importHolidaysJsonText, setImportHolidaysJsonText] = useState('');
-  const [showTrackedItems, setShowTrackedItems] = useState(true);
-  const [showReligiousHolidays, setShowReligiousHolidays] = useState(true);
-  const [showHolidays, setShowHolidays] = useState(true);
+  // ── Chip-based category filter ──────────────────────────────────────
+  // Replaces the three "Hide X" toggle buttons that used to live in the
+  // header. Each chip represents a logical grouping; toggling a chip OFF
+  // hides every item whose underlying category falls into that bucket.
+  // All chips default ON so the calendar feels welcoming on first load.
+  //
+  // Mapping (chip key → underlying categories):
+  //   action_items  → action_item
+  //   tsp_events    → event, event-rush, staffing, seasonal
+  //   planning      → board, preparation, planning, other
+  //   school_breaks → school_breaks, school_markers (tracked)
+  //   religious     → religious_holidays (tracked)
+  //   holidays      → holiday (tracked)
+  type ChipKey =
+    | 'action_items'
+    | 'tsp_events'
+    | 'planning'
+    | 'school_breaks'
+    | 'religious'
+    | 'holidays';
+  const [activeChips, setActiveChips] = useState<Set<ChipKey>>(
+    new Set(['action_items', 'tsp_events', 'planning', 'school_breaks', 'religious', 'holidays'])
+  );
+  const toggleChip = (key: ChipKey) => {
+    setActiveChips((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
   const [isAddTrackedItemDialogOpen, setIsAddTrackedItemDialogOpen] = useState(false);
   const [isEditTrackedItemDialogOpen, setIsEditTrackedItemDialogOpen] = useState(false);
   const [editingTrackedItem, setEditingTrackedItem] = useState<TrackedCalendarItem | null>(null);
@@ -326,26 +359,54 @@ export default function YearlyCalendar() {
     });
   }, [items]);
 
-  // Filter items based on search query
+  // Map any item's raw category to its chip bucket. Returns null when the
+  // category is unrecognized — those items default to the "planning" bucket
+  // so they don't disappear when nothing matches.
+  const chipForCategory = (category: string | null | undefined): ChipKey => {
+    switch (category) {
+      case 'action_item':
+        return 'action_items';
+      case 'event':
+      case 'event-rush':
+      case 'staffing':
+      case 'seasonal':
+        return 'tsp_events';
+      case 'board':
+      case 'preparation':
+      case 'planning':
+      case 'other':
+        return 'planning';
+      case 'school_breaks':
+      case 'school_markers':
+        return 'school_breaks';
+      case 'religious_holidays':
+        return 'religious';
+      case 'holiday':
+        return 'holidays';
+      default:
+        return 'planning';
+    }
+  };
+
+  // Filter manual yearly items: chip filter, then optional search.
   const filteredYearlyItems = useMemo(() => {
-    if (!searchQuery.trim()) return deduplicatedItems;
+    let filtered = deduplicatedItems.filter((item) =>
+      activeChips.has(chipForCategory(item.category)),
+    );
+    if (!searchQuery.trim()) return filtered;
     const query = searchQuery.toLowerCase();
-    return deduplicatedItems.filter(item =>
+    return filtered.filter(item =>
       item.title.toLowerCase().includes(query) ||
       (item.description && item.description.toLowerCase().includes(query)) ||
       item.category.toLowerCase().includes(query)
     );
-  }, [deduplicatedItems, searchQuery]);
+  }, [deduplicatedItems, searchQuery, activeChips]);
 
-  // Filter tracked items based on search query and toggle states
+  // Filter tracked items: chip filter, then optional search.
   const filteredTrackedItems = useMemo(() => {
-    // First filter by toggle states
-    let filtered = trackedItems.filter(item => {
-      if (item.category === 'religious_holidays') return showReligiousHolidays;
-      if (item.category === 'holiday') return showHolidays;
-      // school_breaks and school_markers follow the showTrackedItems toggle
-      return showTrackedItems;
-    });
+    let filtered = trackedItems.filter((item) =>
+      activeChips.has(chipForCategory(item.category)),
+    );
 
     if (!searchQuery.trim()) return filtered;
     const query = searchQuery.toLowerCase();
@@ -368,7 +429,7 @@ export default function YearlyCalendar() {
       if (holidayTerms.some(ht => ht.includes(query) && (item.title.toLowerCase().includes(ht) || (item.metadata as any)?.tradition?.toLowerCase().includes(ht)))) return true;
       return false;
     });
-  }, [trackedItems, searchQuery, showTrackedItems, showReligiousHolidays, showHolidays]);
+  }, [trackedItems, searchQuery, activeChips]);
 
   // Group items by month and sort them (uses filtered items)
   const itemsByMonth = useMemo(() => {
@@ -604,7 +665,13 @@ export default function YearlyCalendar() {
     },
     onSuccess: (result: { created: number; updated: number; errors: string[] }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/tracked-calendar'] });
-      setShowHolidays(true);
+      // Make sure the Holidays chip is on so the just-imported items appear.
+      setActiveChips((prev) => {
+        if (prev.has('holidays')) return prev;
+        const next = new Set(prev);
+        next.add('holidays');
+        return next;
+      });
       toast({
         title: 'Holidays added',
         description: `Created: ${result.created}, Updated: ${result.updated}${result.errors.length > 0 ? `, Errors: ${result.errors.length}` : ''}`,
@@ -957,33 +1024,49 @@ export default function YearlyCalendar() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          <Button
-            variant={showTrackedItems ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowTrackedItems(!showTrackedItems)}
-            className={showTrackedItems ? 'bg-amber-500 hover:bg-amber-600' : ''}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showTrackedItems ? 'Hide' : 'Show'} School Breaks
-          </Button>
-          <Button
-            variant={showReligiousHolidays ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowReligiousHolidays(!showReligiousHolidays)}
-            className={showReligiousHolidays ? 'bg-violet-500 hover:bg-violet-600' : ''}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showReligiousHolidays ? 'Hide' : 'Show'} Religious Holidays
-          </Button>
-          <Button
-            variant={showHolidays ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowHolidays(!showHolidays)}
-            className={showHolidays ? 'bg-rose-500 hover:bg-rose-600' : ''}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            {showHolidays ? 'Hide' : 'Show'} Holidays
-          </Button>
+          {/* Filter chips — replaces three "Hide / Show X" toggle buttons
+              that felt like developer toggles. Each chip is on by default.
+              Click toggles whether items in that bucket are visible. Active
+              chips show a colored fill + checkmark; inactive chips are
+              translucent so it's obvious what's filtered out at a glance. */}
+          {(() => {
+            const chips: Array<{
+              key: ChipKey;
+              label: string;
+              activeBg: string;
+              activeText: string;
+            }> = [
+              { key: 'action_items', label: 'Action Items', activeBg: 'bg-[#A31C41]', activeText: 'text-white' },
+              { key: 'tsp_events', label: 'TSP Events', activeBg: 'bg-teal-600', activeText: 'text-white' },
+              { key: 'planning', label: 'Planning', activeBg: 'bg-sky-600', activeText: 'text-white' },
+              { key: 'holidays', label: 'Holidays', activeBg: 'bg-rose-500', activeText: 'text-white' },
+              { key: 'school_breaks', label: 'School Breaks', activeBg: 'bg-amber-500', activeText: 'text-white' },
+              { key: 'religious', label: 'Religious', activeBg: 'bg-violet-500', activeText: 'text-white' },
+            ];
+            return (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {chips.map((chip) => {
+                  const isActive = activeChips.has(chip.key);
+                  return (
+                    <button
+                      key={chip.key}
+                      type="button"
+                      onClick={() => toggleChip(chip.key)}
+                      aria-pressed={isActive}
+                      className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-medium border transition-colors ${
+                        isActive
+                          ? `${chip.activeBg} ${chip.activeText} border-transparent hover:opacity-90`
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {isActive && <Check className="h-3 w-3" />}
+                      {chip.label}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
           <Button
             variant="outline"
             size="sm"
@@ -1095,7 +1178,7 @@ export default function YearlyCalendar() {
           </Badge>
           <span className="text-sm text-gray-600">
             Found {filteredYearlyItems.length} calendar item{filteredYearlyItems.length !== 1 ? 's' : ''}
-            {(showTrackedItems || showReligiousHolidays || showHolidays) && ` and ${filteredTrackedItems.length} tracked item${filteredTrackedItems.length !== 1 ? 's' : ''}`}
+            {filteredTrackedItems.length > 0 && ` and ${filteredTrackedItems.length} ${filteredTrackedItems.length === 1 ? 'tracked item' : 'tracked items'}`}
           </span>
           <button
             onClick={() => setSearchQuery('')}
@@ -1437,14 +1520,26 @@ export default function YearlyCalendar() {
                             <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                               {itemCanEdit && (
                                 <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 px-2 text-xs"
-                                    onClick={() => handleToggleComplete(item)}
-                                  >
-                                    {item.isCompleted ? 'Undo' : 'Complete'}
-                                  </Button>
+                                  {/* Complete / Undo is gated to Action Items.
+                                      Other categories (board meetings, event
+                                      rushes, holidays, etc.) are calendar
+                                      reference data — "completing" a board
+                                      meeting isn't how anyone thinks about
+                                      a calendar. Existing items that were
+                                      already marked complete still render
+                                      with their checkmark + strikethrough so
+                                      no data is lost; the button just goes
+                                      away for them. */}
+                                  {item.category === 'action_item' && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() => handleToggleComplete(item)}
+                                    >
+                                      {item.isCompleted ? 'Undo' : 'Complete'}
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -1564,6 +1659,7 @@ export default function YearlyCalendar() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="action_item">Action Item (requires completion)</SelectItem>
                     <SelectItem value="event">Event</SelectItem>
                     <SelectItem value="board">Board / Governance</SelectItem>
                     <SelectItem value="staffing">Staffing</SelectItem>
@@ -1733,6 +1829,7 @@ export default function YearlyCalendar() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="action_item">Action Item (requires completion)</SelectItem>
                     <SelectItem value="preparation">Preparation</SelectItem>
                     <SelectItem value="event-rush">Event Rush Preparation</SelectItem>
                     <SelectItem value="event">Event</SelectItem>
@@ -2157,9 +2254,7 @@ export default function YearlyCalendar() {
             selectedYear,
             expandedMonth,
             searchQuery: searchQuery || undefined,
-            showTrackedItems,
-            showReligiousHolidays,
-            showHolidays,
+            activeChips: Array.from(activeChips),
           },
           summaryStats: {
             totalItems: filteredYearlyItems.length,

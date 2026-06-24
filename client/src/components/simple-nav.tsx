@@ -25,6 +25,7 @@ import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 // (/api/smart-search/fuzzy) is now used by the unified bar.
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
+import { useNavViewModeOptional } from '@/contexts/nav-view-mode-context';
 
 export default function SimpleNav({
   navigationItems,
@@ -39,6 +40,7 @@ export default function SimpleNav({
 }) {
   try {
     const { user } = useAuth();
+    const navViewMode = useNavViewModeOptional();
     const [location, setLocation] = useLocation();
     const { unreadCounts, totalUnread } = useMessaging();
     const { totalUnread: streamChatUnread, dmsUnread, groupsUnread, roomsUnread } = useStreamChatUnread();
@@ -170,6 +172,10 @@ export default function SimpleNav({
       return hasVisibleChildren;
     });
 
+    // User View preview — admin-only; further limits visible tabs
+    const displayNavigationItems = navViewMode?.applyUserViewFilter(filteredNavigationItems)
+      ?? filteredNavigationItems;
+
     // Toggle section collapse
     const toggleSection = (group: string) => {
       const newCollapsed = new Set(collapsedSections);
@@ -235,8 +241,8 @@ export default function SimpleNav({
     };
 
     // Group items for visual separation
-    const groupedItems = filteredNavigationItems.reduce((acc, item, index) => {
-      const prevItem = filteredNavigationItems[index - 1];
+    const groupedItems = displayNavigationItems.reduce((acc, item, index) => {
+      const prevItem = displayNavigationItems[index - 1];
       const showSeparator =
         prevItem && prevItem.group !== item.group && item.group;
 
@@ -358,7 +364,7 @@ export default function SimpleNav({
     const [hasShownFirstBadge, setHasShownFirstBadge] = useState(false);
 
     // Find the first item with a badge to show the intro tooltip
-    const firstItemWithBadge = filteredNavigationItems.find(item => getBadgeCount(item.id) > 0);
+    const firstItemWithBadge = displayNavigationItems.find(item => getBadgeCount(item.id) > 0);
     const showNavBadgeIntro = firstItemWithBadge && shouldShowStep('nav-badge-intro') && !hasShownFirstBadge;
 
     return (
@@ -375,6 +381,18 @@ export default function SimpleNav({
             UnifiedTopSearch). That bar searches BOTH app pages/actions AND
             people/orgs from a single, predictable spot that doesn't shift
             between Dashboard, Calendars, Collection Log, etc. */}
+
+        {navViewMode?.isUserViewActive && !isCollapsed && (
+          <div
+            className="mx-1 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900"
+            data-testid="nav-user-view-banner"
+          >
+            <span className="font-semibold">User View preview</span>
+            <span className="block text-amber-800/90 mt-0.5">
+              Showing tabs configured for typical users. Toggle Admin View in the header to see your full nav.
+            </span>
+          </div>
+        )}
 
         {groupedItems.map((groupItem, index) => {
           if (groupItem.type === 'separator') {
@@ -418,7 +436,7 @@ export default function SimpleNav({
           }
 
           // Check if this item has children
-          const hasChildren = filteredNavigationItems.some(navItem => navItem.parentId === item.id);
+          const hasChildren = displayNavigationItems.some(navItem => navItem.parentId === item.id);
           const isExpanded = expandedParents.has(item.id);
 
           // Hide sub-items if their parent is not expanded

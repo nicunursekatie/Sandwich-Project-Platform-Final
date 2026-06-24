@@ -85,6 +85,8 @@ import { ReviewerBanner } from '@/components/reviewer-banner';
 import { CommandPalette, useCommandPalette } from '@/components/command-palette';
 import { QuickCalculator } from '@/components/QuickCalculator';
 import { UnifiedTopSearch } from '@/components/UnifiedTopSearch';
+import { NavViewModeProvider } from '@/contexts/nav-view-mode-context';
+import { NavViewModeToggle } from '@/components/nav-view-mode-toggle';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -897,6 +899,7 @@ export default function Dashboard({
   }
 
   return (
+    <NavViewModeProvider>
     <>
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
@@ -1065,6 +1068,8 @@ export default function Dashboard({
               <div className="flex items-center">
                 <QuickCalculator />
               </div>
+
+              <NavViewModeToggle />
 
               {/* Group 3: Support dropdown — consolidates Help, Suggestions,
                   and Report Issue under a single ? icon. These actions are
@@ -1407,5 +1412,6 @@ export default function Dashboard({
         </MultiViewProvider>
       </DashboardNavigationProvider>
     </>
+    </NavViewModeProvider>
   );
 }
