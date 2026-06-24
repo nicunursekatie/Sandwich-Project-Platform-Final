@@ -925,7 +925,6 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Collection Log Dialog */}
-        {/* Collection Log Dialog */}
         {(activeDialog === 'collectionLog') && collectionLogEventRequest && (
           <EventCollectionLog
             eventRequest={collectionLogEventRequest}
