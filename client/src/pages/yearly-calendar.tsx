@@ -32,6 +32,7 @@ import {
   MonthSectionsContent,
   chipKeyForTrackedCategory,
   chipKeyForYearlyCategory,
+  countRenderableTrackedItems,
   type CalendarSectionChipKey,
 } from '@/components/yearly-calendar/month-sections';
 import { PermissionDenied } from '@/components/permission-denied';
@@ -1104,8 +1105,7 @@ export default function YearlyCalendar() {
             const monthNumber = index + 1;
             const monthItems = itemsByMonth[monthNumber] || [];
             const monthTrackedItems = trackedItemsByMonth[monthNumber] || {};
-            const trackedCategories = Object.keys(monthTrackedItems);
-            const totalTrackedCount = trackedCategories.reduce((sum, cat) => sum + monthTrackedItems[cat].length, 0);
+            const totalTrackedCount = countRenderableTrackedItems(monthTrackedItems);
             const isCurrentMonth = new Date().getMonth() + 1 === monthNumber && new Date().getFullYear() === selectedYear;
             const isPastMonth = selectedYear < new Date().getFullYear() ||
               (selectedYear === new Date().getFullYear() && monthNumber < new Date().getMonth() + 1);
@@ -1145,7 +1145,7 @@ export default function YearlyCalendar() {
                     }
                   >
                     <CalendarDays className="h-4 w-4 mr-2" />
-                    {isExpanded ? 'Close Calendar View' : 'View Month Calendar'}
+                    {isExpanded ? 'Close Calendar View' : 'View Single Month Grid'}
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-2 flex-1 overflow-y-auto max-h-[500px] min-h-[100px]">
