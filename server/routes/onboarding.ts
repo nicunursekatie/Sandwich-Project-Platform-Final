@@ -202,7 +202,7 @@ router.post('/admin/send-announcement', isAuthenticated, async (req: any, res) =
     </ol>
 
     <p style="text-align: center;">
-      <a href="${process.env.APP_URL || 'https://sandwichproject.org'}/dashboard" class="cta-button">
+      <a href="${process.env.APP_URL || 'https://app.thesandwichproject.org'}/dashboard" class="cta-button">
         View Challenges
       </a>
     </p>
