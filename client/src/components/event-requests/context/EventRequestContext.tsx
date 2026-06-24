@@ -248,6 +248,27 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
       setActiveTab('new');
     }
   }, [location, activeTab]);
+  // Drill-down support: other surfaces (e.g. the dashboard Operational
+  // Overview's "11 events need drivers") can stash a target tab + quick
+  // filter in sessionStorage right before navigating here, so we land on the
+  // filtered view instead of a generic list. Read and clear it once on mount
+  // (this view remounts on each navigation from the dashboard).
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('eventRequests.pendingFilter');
+      if (!raw) return;
+      sessionStorage.removeItem('eventRequests.pendingFilter');
+      const { tab, filter } = JSON.parse(raw) as { tab?: string; filter?: string };
+      const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'];
+      const validFilters = ['week', 'today', 'needsDriver', 'needsVan', 'corporatePriority'];
+      if (tab && validTabs.includes(tab)) setActiveTab(tab);
+      if (filter && validFilters.includes(filter)) setQuickFilter(filter as typeof quickFilter);
+    } catch {
+      // ignore malformed/unavailable sessionStorage
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
 
   // Pre-fill issue report context when working on event requests
