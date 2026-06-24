@@ -2178,11 +2178,7 @@ export default function VolunteerEventHub() {
                 </Select>
               </div>
 
-              {view === 'calendar' ? (
-                <div className="rounded-lg border border-[#FBAD3F]/30 bg-[#FAF8F4] px-3 py-2 text-sm text-[#236383]">
-                  Calendar shows all upcoming events. Open spots are highlighted first.
-                </div>
-              ) : (
+              {view !== 'calendar' && (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="showOnlyNeeds"
@@ -2199,6 +2195,7 @@ export default function VolunteerEventHub() {
 
           <div className="flex-1" />
 
+          <div className="flex w-full flex-col gap-1 sm:w-auto sm:items-end">
           <div className="flex w-full flex-wrap gap-1 rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-1 sm:w-auto">
             <Button
               variant="ghost"
@@ -2272,6 +2269,12 @@ export default function VolunteerEventHub() {
                 </Button>
               </>
             )}
+          </div>
+          {view === 'calendar' && (
+            <p className="text-xs text-[#236383]/75 leading-snug px-1 text-center sm:text-right max-w-md">
+              Calendar shows all upcoming events. Open spots are highlighted first.
+            </p>
+          )}
           </div>
         </div>
 

@@ -36,11 +36,59 @@ export default function SimpleNav({
     const { unreadCounts, totalUnread } = useMessaging();
     const { totalUnread: streamChatUnread, dmsUnread, groupsUnread, roomsUnread } = useStreamChatUnread();
 
-    // State for collapsible sections
-    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+    // ── Persisted sidebar state ────────────────────────────────────────
+    // Both collapsedSections and expandedParents are persisted to
+    // localStorage so the sidebar's shape stays consistent across reloads
+    // and tabs. Previously these reset to defaults on every page load, which
+    // made the sidebar feel like it was "context-switching" because
+    // different parent items would be expanded depending on when the page
+    // was loaded.
+    //
+    // Versioned keys (`v1` suffix): bump if the default sets change so an
+    // old persisted state doesn't trap a user in a stale shape.
+    const COLLAPSED_SECTIONS_KEY = 'sidebar.collapsedSections.v1';
+    const EXPANDED_PARENTS_KEY = 'sidebar.expandedParents.v1';
 
-    // State for expanded parent items (like TSP Network)
-    const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set(['tsp-network', 'collections', 'calendars', 'chat']));
+    const loadPersistedSet = (key: string, fallback: string[]): Set<string> => {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return new Set(fallback);
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return new Set(fallback);
+        return new Set(parsed.filter((v): v is string => typeof v === 'string'));
+      } catch {
+        return new Set(fallback);
+      }
+    };
+
+    const persistSet = (key: string, value: Set<string>) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(Array.from(value)));
+      } catch {
+        // localStorage may be disabled / over quota — fail silently so the
+        // sidebar still works in-session.
+      }
+    };
+
+    // State for collapsible sections — default to all-expanded (empty Set).
+    const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+      () => loadPersistedSet(COLLAPSED_SECTIONS_KEY, [])
+    );
+
+    // State for expanded parent items (like TSP Network). Default opens the
+    // most commonly accessed parents so first-time visitors see useful
+    // content. Returning users get whatever state they left it in.
+    const [expandedParents, setExpandedParents] = useState<Set<string>>(
+      () => loadPersistedSet(EXPANDED_PARENTS_KEY, ['tsp-network', 'collections', 'calendars', 'chat'])
+    );
+
+    // Persist on change.
+    useEffect(() => {
+      persistSet(COLLAPSED_SECTIONS_KEY, collapsedSections);
+    }, [collapsedSections]);
+    useEffect(() => {
+      persistSet(EXPANDED_PARENTS_KEY, expandedParents);
+    }, [expandedParents]);
 
     // Get Gmail inbox unread count
     const { data: gmailUnreadCount = 0 } = useQuery({
