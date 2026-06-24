@@ -209,6 +209,16 @@ export const NAV_ITEMS: NavItem[] = [
   // EVENTS & VOLUNTEERS
   // ========================================
   {
+    id: 'event-ops-dashboard',
+    label: 'Ops Dashboard',
+    icon: Gauge,
+    href: 'event-ops-dashboard',
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    group: 'events',
+    highlighted: true,
+    accentColor: '#007E8C',
+  },
+  {
     id: 'event-requests',
     label: 'Event Requests',
     icon: Calendar,
@@ -217,16 +227,6 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'events',
     highlighted: true,
     navigateAndExpand: true,
-  },
-  {
-    id: 'event-ops-dashboard',
-    label: 'Ops Dashboard',
-    icon: Gauge,
-    href: 'event-ops-dashboard',
-    permission: PERMISSIONS.NAV_EVENT_PLANNING,
-    group: 'events',
-    parentId: 'event-requests',
-    isSubItem: true,
   },
   {
     id: 'admin-overview',

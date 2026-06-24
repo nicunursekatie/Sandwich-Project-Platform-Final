@@ -32,6 +32,7 @@ import {
   MapPin,
   HelpCircle,
   ArrowRight,
+  Gauge,
 } from 'lucide-react';
 import { NAV_ITEMS } from '@/nav.config';
 
@@ -44,6 +45,7 @@ interface CommandPaletteProps {
 // Routes must match App.tsx - most pages are dashboard sections accessed via /dashboard?section=X
 const QUICK_NAV_SHORTCUTS: Record<string, { label: string; href: string; icon: React.ElementType }> = {
   d: { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  o: { label: 'Ops Dashboard', href: '/dashboard?section=event-ops-dashboard', icon: Gauge },
   e: { label: 'Event Requests', href: '/event-requests', icon: Calendar },
   v: { label: 'Volunteers', href: '/dashboard?section=volunteers', icon: Users },
   r: { label: 'Drivers', href: '/dashboard?section=drivers', icon: Car },
@@ -66,6 +68,7 @@ const NAV_CATEGORIES = [
     label: 'Quick Access',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: 'D' },
+      { label: 'Ops Dashboard', href: '/dashboard?section=event-ops-dashboard', icon: Gauge, shortcut: 'O' },
       { label: 'Event Requests', href: '/event-requests', icon: Calendar, shortcut: 'E' },
       { label: 'Driver Planning', href: '/driver-planning', icon: Truck, shortcut: 'T' },
       { label: 'Meetings', href: '/meetings', icon: ClipboardList, shortcut: 'M' },

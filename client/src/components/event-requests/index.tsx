@@ -625,6 +625,27 @@ const EventRequestsManagementContent: React.FC = () => {
                 </button>
               )}
               <VanConflictsButton isMobile={isMobile} />
+              {/* Export — only meaningful for list views of scheduled/completed
+                  tabs (the spreadsheet export depends on the same dataset).
+                  Lives in the top-right action group with Add Event because
+                  it's a one-off action that downloads a file, not a view. */}
+              {(activeTab === 'scheduled' || activeTab === 'completed') && viewMode === 'list' && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await exportEventRequestsToExcel(eventRequests, activeTab);
+                      toast({ title: 'Export complete' });
+                    } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
+                  }}
+                  disabled={eventRequests.length === 0}
+                  className="premium-btn-outline text-sm disabled:opacity-50"
+                  data-testid="button-export-events"
+                  title="Download a spreadsheet of the events on this tab"
+                >
+                  <Download className="w-4 h-4" />
+                  {!isMobile && 'Export'}
+                </button>
+              )}
               <button
                 onClick={openManualEventRequest}
                 className="premium-btn-outline text-sm"
@@ -719,22 +740,10 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
           </div>
 
-          {/* Export — shown on scheduled and completed tabs in list view */}
-          {(activeTab === 'scheduled' || activeTab === 'completed') && viewMode === 'list' && (
-            <button
-              onClick={async () => {
-                try {
-                  await exportEventRequestsToExcel(eventRequests, activeTab);
-                  toast({ title: 'Export complete' });
-                } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
-              }}
-              disabled={eventRequests.length === 0}
-              className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {!isMobile && 'Export'}
-            </button>
-          )}
+          {/* Export was previously slotted here between Map and Driver Planning,
+              but it's an ACTION (downloads a file), not a view. Moved to the
+              top-right header action group near Add Event so the view toggles
+              read consistently as "ways to view data." */}
 
           {/* Driver Planning Map link */}
           <Link href="/driver-planning">

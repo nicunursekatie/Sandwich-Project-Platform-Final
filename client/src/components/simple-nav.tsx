@@ -79,7 +79,7 @@ export default function SimpleNav({
     // most commonly accessed parents so first-time visitors see useful
     // content. Returning users get whatever state they left it in.
     const [expandedParents, setExpandedParents] = useState<Set<string>>(
-      () => loadPersistedSet(EXPANDED_PARENTS_KEY, ['tsp-network', 'collections', 'calendars', 'chat'])
+      () => loadPersistedSet(EXPANDED_PARENTS_KEY, ['tsp-network', 'collections', 'calendars', 'chat', 'event-requests'])
     );
 
     // Persist on change.
