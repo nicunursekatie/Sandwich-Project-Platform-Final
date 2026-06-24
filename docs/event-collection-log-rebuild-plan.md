@@ -1,6 +1,7 @@
 # EventCollectionLog Rebuild — Implementation Plan
 
-Status: **proposal / awaiting decision** (no code written yet)
+Status: **Variant A implemented** (commit on this branch). Variant B remains a
+future option only if free-text per-collection destinations are ever requested.
 Author: route-drift cleanup follow-up
 Related: `docs/route-inventory.md`, route-drift bucket B
 
