@@ -1410,6 +1410,21 @@ export class DatabaseStorage implements IStorage {
     return result[0] || null;
   }
 
+  async getSandwichCollectionsByEventRequestId(
+    eventRequestId: number
+  ): Promise<SandwichCollection[]> {
+    return await db
+      .select()
+      .from(sandwichCollections)
+      .where(
+        and(
+          eq(sandwichCollections.eventRequestId, eventRequestId),
+          isNull(sandwichCollections.deletedAt) // Exclude soft-deleted records
+        )
+      )
+      .orderBy(desc(sandwichCollections.collectionDate));
+  }
+
   async getSandwichCollectionsCount(): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })

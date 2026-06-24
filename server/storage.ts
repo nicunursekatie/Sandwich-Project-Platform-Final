@@ -320,6 +320,9 @@ export interface IStorage {
     sortOrder?: string
   ): Promise<SandwichCollection[]>;
   getSandwichCollectionById(id: number): Promise<SandwichCollection | null>;
+  getSandwichCollectionsByEventRequestId(
+    eventRequestId: number
+  ): Promise<SandwichCollection[]>;
   getSandwichCollectionsCount(): Promise<number>;
   getCollectionStats(): Promise<{
     totalEntries: number;
@@ -1755,6 +1758,16 @@ export class MemStorage implements IStorage {
     id: number
   ): Promise<SandwichCollection | null> {
     return this.sandwichCollections.get(id) || null;
+  }
+
+  async getSandwichCollectionsByEventRequestId(
+    eventRequestId: number
+  ): Promise<SandwichCollection[]> {
+    return Array.from(this.sandwichCollections.values())
+      .filter((c: any) => c.eventRequestId === eventRequestId && !c.deletedAt)
+      .sort((a: any, b: any) =>
+        a.collectionDate < b.collectionDate ? 1 : -1
+      );
   }
 
   async getSandwichCollectionsCount(): Promise<number> {

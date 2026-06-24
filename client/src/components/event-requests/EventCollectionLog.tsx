@@ -1,122 +1,58 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Calendar, CheckCircle, X } from 'lucide-react';
+import type { EventRequest, SandwichCollection } from '@shared/schema';
 import {
-  Calendar,
-  CheckCircle,
-  Edit,
-  X,
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
-import type { EventRequest } from '@shared/schema';
-import { getSandwichTypesSummary } from './utils';
-import SandwichDestinationTracker from './SandwichDestinationTracker';
-import { logger } from '@/lib/logger';
+  calculateGroupSandwiches,
+  calculateTotalTypeBreakdown,
+} from '@/lib/analytics-utils';
 
 // Event Collection Log Component
+//
+// Read-only view of the sandwich collections linked to a single event request
+// (via sandwich_collections.eventRequestId). Counts use the centralized
+// analytics-utils formula — the single source of truth for sandwich totals.
 interface EventCollectionLogProps {
   eventRequest: EventRequest | null;
   isVisible: boolean;
   onClose: () => void;
 }
 
+/** Per-record total: individual sandwiches + all group counts. */
+function recordTotal(collection: SandwichCollection): number {
+  return (collection.individualSandwiches || 0) + calculateGroupSandwiches(collection);
+}
+
+const TYPE_LABELS: Array<{ key: 'deli' | 'turkey' | 'ham' | 'pbj'; label: string }> = [
+  { key: 'deli', label: 'Deli' },
+  { key: 'turkey', label: 'Turkey' },
+  { key: 'ham', label: 'Ham' },
+  { key: 'pbj', label: 'PB&J' },
+];
+
 const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
   eventRequest,
   isVisible,
   onClose,
 }) => {
-  const [collections, setCollections] = useState<any[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [selectedCollectionId, setSelectedCollectionId] = useState<
-    number | null
-  >(null);
-
-  // State for editing collection destinations
-  const [editingDestination, setEditingDestination] = useState<{
-    id: number;
-    value: string;
-  } | null>(null);
-
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // Fetch collections for this event request
-  const { data: collectionsData, refetch: refetchCollections } = useQuery({
-    queryKey: ['/api/collections', { eventRequestId: eventRequest?.id }],
+  // Fetch collections linked to this event request. The default queryFn uses
+  // queryKey[0] as the URL, so the event id must live in the string itself.
+  const { data: collectionsData } = useQuery<SandwichCollection[]>({
+    queryKey: [`/api/sandwich-collections?eventRequestId=${eventRequest?.id}`],
     enabled: isVisible && !!eventRequest?.id,
   });
 
-  useEffect(() => {
-    if (Array.isArray(collectionsData)) {
-      setCollections(collectionsData);
-    } else if (collectionsData && typeof collectionsData === 'object') {
-      setCollections([collectionsData]);
-    } else {
-      setCollections([]);
-    }
-  }, [collectionsData]);
-  const handleDestinationEdit = (
-    collectionId: number,
-    currentValue: string
-  ) => {
-    setEditingDestination({ id: collectionId, value: currentValue || '' });
-  };
-
-  const handleDestinationSave = async () => {
-    if (!editingDestination) return;
-
-    try {
-      await apiRequest('PATCH', `/api/collections/${editingDestination.id}`, {
-        sandwichDestination: editingDestination.value,
-      });
-
-      // Update local state
-      setCollections(
-        collections.map((collection) =>
-          collection.id === editingDestination.id
-            ? { ...collection, sandwichDestination: editingDestination.value }
-            : collection
-        )
-      );
-
-      setEditingDestination(null);
-      queryClient.invalidateQueries({
-        queryKey: ['/api/collections'],
-      });
-
-      toast({
-        title: 'Destination Updated',
-        description: 'Sandwich destination has been updated successfully.',
-      });
-    } catch (error) {
-      logger.error('Error updating destination:', error);
-      toast({
-        title: 'Update Failed',
-        description: 'Failed to update sandwich destination.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDestinationCancel = () => {
-    setEditingDestination(null);
-  };
+  const collections = Array.isArray(collectionsData) ? collectionsData : [];
 
   if (!isVisible || !eventRequest) return null;
 
-  const totals = collections.reduce(
-    (acc, collection) => {
-      acc.totalSandwiches += collection.sandwichCount || 0;
-      return acc;
-    },
-    { totalSandwiches: 0 }
+  const totalSandwiches = collections.reduce(
+    (sum, collection) => sum + recordTotal(collection),
+    0
   );
+
   return (
     <div
       className="fixed inset-0 bg-[#236383] bg-opacity-50 z-50 flex items-center justify-center p-4"
@@ -159,7 +95,7 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
                   <div>
                     <p className="text-sm text-[#236383]">Total Sandwiches</p>
                     <p className="text-2xl font-bold text-brand-primary">
-                      {totals.totalSandwiches.toLocaleString()}
+                      {totalSandwiches.toLocaleString()}
                     </p>
                   </div>
                 </div>
@@ -199,91 +135,63 @@ const EventCollectionLog: React.FC<EventCollectionLogProps> = ({
           {collections.length > 0 ? (
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Collection Records</h3>
-              {collections.map((collection) => (
-                <Card key={collection.id} className="p-4">
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
-                          <span className="font-medium text-sm sm:text-base">
-                            {new Date(
-                              collection.collectionDate
-                            ).toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className="bg-brand-primary text-white self-start sm:self-auto"
-                        >
-                          {collection.sandwichCount || 0} sandwiches
-                        </Badge>
-                      </div>
-
-                      {/* Sandwich Types Breakdown */}
-                      {collection.sandwichTypes && (
-                        <div className="ml-0 sm:ml-8 pl-7 sm:pl-0">
-                          <p className="text-sm text-[#236383]">
-                            Types:{' '}
-                            {getSandwichTypesSummary(collection).breakdown}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Destination with inline editing */}
-                      <div className="ml-0 sm:ml-8 pl-7 sm:pl-0 flex flex-col sm:flex-row sm:items-center gap-2">
-                        {editingDestination?.id === collection.id ? (
-                          <SandwichDestinationTracker
-                            value={editingDestination?.value || ''}
-                            onChange={(value) =>
-                              setEditingDestination((prev) =>
-                                prev ? { ...prev, value } : null
-                              )
-                            }
-                            onSave={handleDestinationSave}
-                            onCancel={handleDestinationCancel}
-                          />
-                        ) : (
-                          <div className="flex items-center flex-wrap gap-2">
-                            <span className="text-sm text-[#236383]">
-                              <strong>Destination:</strong>{' '}
-                              {collection.sandwichDestination ||
-                                'Not specified'}
+              {collections.map((collection) => {
+                const breakdown = calculateTotalTypeBreakdown(collection);
+                return (
+                  <Card key={collection.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="w-5 h-5 text-brand-primary flex-shrink-0" />
+                            <span className="font-medium text-sm sm:text-base">
+                              {new Date(collection.collectionDate).toLocaleDateString(
+                                'en-US',
+                                {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                }
+                              )}
                             </span>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                handleDestinationEdit(
-                                  collection.id,
-                                  collection.sandwichDestination || ''
+                          </div>
+                          <Badge
+                            variant="secondary"
+                            className="bg-brand-primary text-white self-start sm:self-auto"
+                          >
+                            {recordTotal(collection).toLocaleString()} sandwiches
+                          </Badge>
+                        </div>
+
+                        {/* Host */}
+                        {collection.hostName && (
+                          <div className="ml-0 sm:ml-8 pl-7 sm:pl-0">
+                            <p className="text-sm text-[#236383]">
+                              <strong>Host:</strong> {collection.hostName}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Sandwich Types Breakdown (from real type fields) */}
+                        {breakdown.total > 0 && (
+                          <div className="ml-0 sm:ml-8 pl-7 sm:pl-0">
+                            <p className="text-sm text-[#236383]">
+                              Types:{' '}
+                              {TYPE_LABELS.filter(({ key }) => breakdown[key] > 0)
+                                .map(
+                                  ({ key, label }) =>
+                                    `${label}: ${breakdown[key].toLocaleString()}`
                                 )
-                              }
-                              className="text-brand-primary hover:bg-brand-primary hover:text-white"
-                              data-testid={`button-edit-destination-${collection.id}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
+                                .join(', ')}
+                            </p>
                           </div>
                         )}
                       </div>
-
-                      {collection.notes && (
-                        <div className="ml-0 sm:ml-8 pl-7 sm:pl-0">
-                          <p className="text-sm text-[#236383]">
-                            <strong>Notes:</strong> {collection.notes}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">

@@ -175,6 +175,20 @@ collectionsRouter.get('/stats', async (req, res) => {
 // Sandwich Collections
 collectionsRouter.get('/', async (req, res) => {
   try {
+    // Event-scoped view: return the (unpaginated) collections linked to a single
+    // event request as a bare array. Used by the event Collection Log dialog.
+    const eventRequestId = req.query.eventRequestId
+      ? parseInt(req.query.eventRequestId as string)
+      : undefined;
+    if (eventRequestId !== undefined) {
+      if (isNaN(eventRequestId)) {
+        return res.status(400).json({ message: 'Invalid eventRequestId' });
+      }
+      const eventCollections =
+        await storage.getSandwichCollectionsByEventRequestId(eventRequestId);
+      return res.json(eventCollections);
+    }
+
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = (page - 1) * limit;
