@@ -3,6 +3,7 @@
  * Used by both client and server for consistent validation logic
  */
 import type { EventRequest } from './schema';
+import { parseDateOnly, getTodayString } from './date-utils';
 
 // ============================================================================
 // EVENT DATE RESOLUTION
@@ -230,6 +231,104 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
   }
 
   return missing;
+}
+
+// ============================================================================
+// MY ASSIGNMENTS DASHBOARD WARNINGS
+// ============================================================================
+
+/** Calendar-day difference: end minus start (can be negative). */
+export function calendarDaysBetween(start: Date, end: Date): number {
+  const msPerDay = 86400000;
+  const startNorm = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endNorm = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.round((endNorm.getTime() - startNorm.getTime()) / msPerDay);
+}
+
+/** Whole days elapsed since the request was submitted (Eastern calendar days). */
+export function daysSinceSubmitted(
+  createdAt: Date | string | null | undefined,
+  today = parseDateOnly(getTodayString()),
+): number | null {
+  if (!createdAt || !today) return null;
+  const created =
+    createdAt instanceof Date ? createdAt : new Date(createdAt);
+  if (Number.isNaN(created.getTime())) return null;
+  const createdDay =
+    parseDateOnly(created.toISOString().slice(0, 10)) ??
+    new Date(created.getFullYear(), created.getMonth(), created.getDate());
+  return Math.max(0, calendarDaysBetween(createdDay, today));
+}
+
+/** Whole days until the effective event date (negative if in the past). */
+export function daysUntilEventDate(
+  eventDateInput: string | Date | null | undefined,
+  today = parseDateOnly(getTodayString()),
+): number | null {
+  if (!eventDateInput || !today) return null;
+  const eventDate =
+    eventDateInput instanceof Date
+      ? parseDateOnly(eventDateInput.toISOString().slice(0, 10))
+      : parseDateOnly(eventDateInput);
+  if (!eventDate) return null;
+  return calendarDaysBetween(today, eventDate);
+}
+
+/**
+ * Gaps that need attention for in-process / scheduled events happening within
+ * the next N days — missing time, location, or sandwich info.
+ */
+export function getAssignmentUrgentGaps(
+  event: EventRequest,
+  withinDays = 7,
+  today = parseDateOnly(getTodayString()),
+): string[] {
+  const status = event.status;
+  if (
+    status !== 'in_process' &&
+    status !== 'scheduled' &&
+    status !== 'rescheduled'
+  ) {
+    return [];
+  }
+
+  const eventDateStr = getEffectiveEventDate(event);
+  const daysUntil = daysUntilEventDate(eventDateStr, today);
+  if (daysUntil === null || daysUntil > withinDays || daysUntil < 0) {
+    return [];
+  }
+
+  const gaps: string[] = [];
+
+  const hasEventTimes = !!(event.eventStartTime && event.eventEndTime);
+  const hasPickupTime = !!(event.pickupTime || event.pickupDateTime);
+  if (!hasEventTimes && !hasPickupTime) {
+    gaps.push('Missing time');
+  }
+
+  const hasLocation =
+    !!(event.eventAddress && event.eventAddress.trim()) ||
+    !!(event.deliveryDestination && event.deliveryDestination.trim()) ||
+    !!(event.overnightHoldingLocation && event.overnightHoldingLocation.trim());
+  if (!hasLocation) {
+    gaps.push('Missing location');
+  }
+
+  const hasSandwichCount =
+    (typeof event.estimatedSandwichCount === 'number' &&
+      event.estimatedSandwichCount > 0) ||
+    (typeof event.estimatedSandwichCountMin === 'number' &&
+      event.estimatedSandwichCountMin > 0) ||
+    (typeof event.estimatedSandwichCountMax === 'number' &&
+      event.estimatedSandwichCountMax > 0);
+  const sandwichTypes = event.sandwichTypes as unknown[] | null;
+  const hasSandwichTypes =
+    Array.isArray(sandwichTypes) && sandwichTypes.length > 0;
+  if (!hasSandwichCount && !hasSandwichTypes) {
+    gaps.push('Missing sandwich info');
+  }
+
+  return gaps;
 }
 
 // ============================================================================

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
   ChevronUp,
   Truck,
   Sandwich,
+  MapPin,
 } from 'lucide-react';
 import { format, isValid, formatDistanceToNowStrict } from 'date-fns';
 import { parseDateOnly } from '@shared/date-utils';
@@ -42,6 +43,11 @@ interface MyAssignmentItem {
   organizationName: string | null;
   status: string | null;
   eventDate: string | null;
+  createdAt: string | null;
+  daysSinceSubmitted: number | null;
+  daysUntilEvent: number | null;
+  urgentGaps: string[];
+  needsUrgentDetails: boolean;
   lastContactAttempt: string | null;
   estimatedSandwichCount: number | null;
   estimatedSandwichCountMin: number | null;
@@ -59,6 +65,7 @@ interface MyAssignments {
   total: number;
   newRequestsCount: number;
   inProcessStaleCount: number;
+  urgentDetailGapsCount: number;
   byStatus: {
     new: number;
     in_process: number;
@@ -73,6 +80,7 @@ interface MyAssignments {
   };
   newRequests: MyAssignmentItem[];
   inProcessStale: MyAssignmentItem[];
+  urgentDetailEvents: MyAssignmentItem[];
   allMyEvents: MyAssignmentItem[];
 }
 
@@ -118,10 +126,22 @@ interface OperationalOverviewProps {
 type AssignmentStatusKey = 'new' | 'in_process' | 'scheduled' | 'rescheduled';
 
 const statusStyle: Record<string, string> = {
-  new: 'bg-[#FBAD3F]/15 text-[#B8860B] border-[#FBAD3F]/40',
-  in_process: 'bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40',
-  scheduled: 'bg-[#007E8C]/15 text-[#007E8C] border-[#007E8C]/40',
-  rescheduled: 'bg-[#007E8C]/15 text-[#007E8C] border-[#007E8C]/40',
+  new: 'bg-[#FBAD3F] text-[#3d2800] border-[#E8960C] shadow-md hover:shadow-lg',
+  in_process: 'bg-[#236383] text-white border-[#1a4d63] shadow-md hover:shadow-lg',
+  scheduled: 'bg-[#007E8C] text-white border-[#005f6b] shadow-md hover:shadow-lg',
+  rescheduled: 'bg-[#47B3CB] text-[#0d3d4d] border-[#007E8C] shadow-md hover:shadow-lg',
+};
+const statusBadgeStyle: Record<string, string> = {
+  new: 'bg-[#FBAD3F] text-[#3d2800] border-[#E8960C]',
+  in_process: 'bg-[#236383] text-white border-[#236383]',
+  scheduled: 'bg-[#007E8C] text-white border-[#007E8C]',
+  rescheduled: 'bg-[#47B3CB] text-[#0d3d4d] border-[#007E8C]',
+};
+const statusRowAccent: Record<string, string> = {
+  new: 'border-l-[#FBAD3F]',
+  in_process: 'border-l-[#47B3CB]',
+  scheduled: 'border-l-[#007E8C]',
+  rescheduled: 'border-l-[#236383]',
 };
 const statusLabel: Record<string, string> = {
   new: 'New',
@@ -161,6 +181,38 @@ function formatLastContact(ts: string | null): string {
   }
 }
 
+function formatDaysSinceSubmitted(days: number | null | undefined): string | null {
+  if (days == null) return null;
+  if (days === 0) return 'Submitted today';
+  if (days === 1) return 'Submitted 1 day ago';
+  return `Submitted ${days} days ago`;
+}
+
+function formatDaysUntilEvent(days: number | null | undefined): string | null {
+  if (days == null) return null;
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  return `In ${days} days`;
+}
+
+function UrgentGapBadge({ gap }: { gap: string }) {
+  const isTime = gap.toLowerCase().includes('time');
+  const isLocation = gap.toLowerCase().includes('location');
+  const Icon = isTime ? Clock : isLocation ? MapPin : Sandwich;
+  const className = isTime
+    ? 'border-red-600 text-white bg-red-600'
+    : isLocation
+      ? 'border-orange-600 text-white bg-orange-600'
+      : 'border-[#A31C41] text-white bg-[#A31C41]';
+
+  return (
+    <Badge className={`text-[10px] font-semibold border-0 shadow-sm ${className}`}>
+      <Icon className="w-3 h-3 mr-1" />
+      {gap}
+    </Badge>
+  );
+}
+
 function getSandwichSummary(event: MyAssignmentItem): string {
   return formatSandwichTypesDisplay(
     event.sandwichTypes,
@@ -172,30 +224,40 @@ function AssignmentEventRow({
   event,
   onOpen,
   showStatus = false,
+  emphasizeSubmittedAge = false,
 }: {
   event: MyAssignmentItem;
   onOpen: (event: MyAssignmentItem) => void;
   showStatus?: boolean;
+  emphasizeSubmittedAge?: boolean;
 }) {
   const dateParts = formatEventDateParts(event.eventDate);
   const sandwichSummary = getSandwichSummary(event);
   const hasSandwichInfo = sandwichSummary !== 'Not specified';
+  const submittedLabel = formatDaysSinceSubmitted(event.daysSinceSubmitted);
+  const untilEventLabel = formatDaysUntilEvent(event.daysUntilEvent);
+  const isUrgent = event.needsUrgentDetails;
+  const rowAccent = statusRowAccent[event.status || ''] || 'border-l-gray-300';
 
   return (
     <button
       type="button"
       onClick={() => onOpen(event)}
-      className="w-full text-left p-3 rounded-lg bg-white border border-gray-200 hover:border-brand-primary hover:bg-gray-50 transition-colors"
+      className={`w-full text-left p-3 rounded-lg border-l-4 transition-all shadow-sm hover:shadow-md ${
+        isUrgent
+          ? 'border-l-red-600 bg-red-50 border-y border-r border-red-400 ring-2 ring-red-200 hover:bg-red-100'
+          : `${rowAccent} bg-white border-y border-r border-[#47B3CB]/50 hover:border-[#007E8C] hover:bg-[#e8f4f8]/60`
+      }`}
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-[4.5rem] text-center rounded-lg bg-[#007E8C]/10 border border-[#007E8C]/20 px-2 py-2">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-[#007E8C]">
+        <div className="shrink-0 w-[4.5rem] text-center rounded-lg bg-gradient-to-b from-[#007E8C] to-[#236383] border border-[#005f6b] px-2 py-2 shadow-sm">
+          <div className="text-[10px] font-bold uppercase tracking-wide text-[#FBAD3F]">
             {dateParts.month}
           </div>
-          <div className="text-2xl font-bold leading-none text-[#007E8C] mt-0.5">
+          <div className="text-2xl font-bold leading-none text-white mt-0.5">
             {dateParts.day}
           </div>
-          <div className="text-[10px] font-medium text-gray-500 mt-0.5">
+          <div className="text-[10px] font-semibold text-[#47B3CB] mt-0.5">
             {dateParts.weekday}
           </div>
         </div>
@@ -205,61 +267,206 @@ function AssignmentEventRow({
             <div className="min-w-0">
               {showStatus && (
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border mb-1 ${statusStyle[event.status || ''] || 'bg-gray-100 text-gray-700 border-gray-300'}`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border mb-1 shadow-sm ${statusBadgeStyle[event.status || ''] || 'bg-gray-600 text-white border-gray-600'}`}
                 >
                   {statusLabel[event.status || ''] || event.status}
                 </span>
               )}
-              <div className="font-semibold text-gray-900 truncate">
+              <div className="font-bold text-gray-900 truncate">
                 {event.organizationName || 'Untitled organization'}
               </div>
-              <div className="text-sm font-medium text-gray-600 mt-0.5">
+              {(emphasizeSubmittedAge || event.status === 'new') && submittedLabel && (
+                <div className="mt-1">
+                  <Badge
+                    className={`text-[10px] font-bold border-0 shadow-sm ${
+                      (event.daysSinceSubmitted ?? 0) >= 3
+                        ? 'bg-[#A31C41] text-white'
+                        : 'bg-[#FBAD3F] text-[#3d2800]'
+                    }`}
+                  >
+                    <Clock className="w-3 h-3 mr-1" />
+                    {submittedLabel}
+                  </Badge>
+                </div>
+              )}
+              <div className="text-sm font-semibold text-[#236383] mt-0.5">
                 {dateParts.full}
+                {untilEventLabel && event.needsUrgentDetails && (
+                  <span className="ml-2 text-red-700 font-bold">· {untilEventLabel}</span>
+                )}
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-gray-400 shrink-0 mt-1" />
+            <ArrowRight className="w-4 h-4 text-[#007E8C] shrink-0 mt-1" />
           </div>
 
           {hasSandwichInfo && (
-            <div className="flex items-center gap-1.5 text-sm text-gray-700 mt-2">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-[#236383] mt-2">
               <Sandwich className="w-3.5 h-3.5 text-[#FBAD3F] shrink-0" />
               <span>{sandwichSummary}</span>
             </div>
           )}
 
           <div className="flex flex-wrap gap-1.5 mt-2">
+            {event.urgentGaps?.map((gap) => (
+              <UrgentGapBadge key={gap} gap={gap} />
+            ))}
             {event.needsFollowUp && (
-              <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-800 bg-amber-50">
+              <Badge className="text-[10px] font-semibold border-0 bg-amber-500 text-white shadow-sm">
                 <AlertTriangle className="w-3 h-3 mr-1" />
                 No contact in 7+ days
               </Badge>
             )}
             {event.vanNeeded && (
-              <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-800 bg-orange-50">
+              <Badge className="text-[10px] font-semibold border-0 bg-orange-600 text-white shadow-sm">
                 <Truck className="w-3 h-3 mr-1" />
                 {event.vanDriverNeeded ? 'Van needed' : 'Van likely needed'}
               </Badge>
             )}
             {event.isLargeEvent && (
-              <Badge variant="outline" className="text-[10px] border-purple-300 text-purple-800 bg-purple-50">
+              <Badge className="text-[10px] font-semibold border-0 bg-purple-600 text-white shadow-sm">
                 Large event (500+)
               </Badge>
             )}
             {event.isCorporatePriority && (
-              <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-900 bg-amber-50">
+              <Badge className="text-[10px] font-semibold border-0 bg-[#A31C41] text-white shadow-sm">
                 Corporate priority
               </Badge>
             )}
           </div>
 
           {event.lastContactAttempt != null && (
-            <div className="text-xs text-gray-500 mt-2">
+            <div className="text-xs font-medium text-[#236383]/80 mt-2">
               Last contact {formatLastContact(event.lastContactAttempt)}
             </div>
           )}
         </div>
       </div>
     </button>
+  );
+}
+
+type AssignmentActionSectionId = 'new-requests' | 'stale-followup' | 'urgent-details';
+
+function AssignmentActionBar({
+  my,
+  onOpenEvent,
+  onScrollToSection,
+}: {
+  my: MyAssignments;
+  onOpenEvent: (event: MyAssignmentItem) => void;
+  onScrollToSection: (sectionId: AssignmentActionSectionId) => void;
+}) {
+  const actions = useMemo(() => {
+    const items: Array<{
+      id: AssignmentActionSectionId;
+      label: string;
+      className: string;
+      icon: ReactNode;
+      onClick: () => void;
+    }> = [];
+
+    if (my.newRequestsCount > 0) {
+      const top = my.newRequests[0];
+      const days = top?.daysSinceSubmitted;
+      const ageHint =
+        days != null && days > 0 ? ` (oldest: ${days} day${days === 1 ? '' : 's'})` : '';
+      items.push({
+        id: 'new-requests',
+        label:
+          my.newRequestsCount === 1
+            ? `Make first contact — ${top?.organizationName || 'new request'}${ageHint}`
+            : `Make first contact on ${my.newRequestsCount} new requests${ageHint}`,
+        className: 'bg-[#FBAD3F] text-[#3d2800] hover:bg-[#E8960C] border-[#E8960C]',
+        icon: <Sparkles className="w-3.5 h-3.5 shrink-0" />,
+        onClick: () => {
+          if (top) {
+            onOpenEvent(top);
+            return;
+          }
+          onScrollToSection('new-requests');
+        },
+      });
+    }
+
+    if (my.inProcessStaleCount > 0) {
+      const top = my.inProcessStale[0];
+      items.push({
+        id: 'stale-followup',
+        label:
+          my.inProcessStaleCount === 1
+            ? `Follow up — no contact in 7+ days (${top?.organizationName || 'in process'})`
+            : `Follow up on ${my.inProcessStaleCount} events with no contact in 7+ days`,
+        className: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-600',
+        icon: <AlertTriangle className="w-3.5 h-3.5 shrink-0" />,
+        onClick: () => {
+          if (top) {
+            onOpenEvent(top);
+            return;
+          }
+          onScrollToSection('stale-followup');
+        },
+      });
+    }
+
+    const urgentCount = my.urgentDetailGapsCount ?? 0;
+    if (urgentCount > 0) {
+      const top = my.urgentDetailEvents[0];
+      const when =
+        top?.daysUntilEvent === 0
+          ? 'today'
+          : top?.daysUntilEvent === 1
+            ? 'tomorrow'
+            : top?.daysUntilEvent != null
+              ? `in ${top.daysUntilEvent} days`
+              : 'soon';
+      const gapHint = top?.urgentGaps?.length
+        ? ` — needs ${top.urgentGaps.join(', ').toLowerCase()}`
+        : '';
+      items.push({
+        id: 'urgent-details',
+        label:
+          urgentCount === 1
+            ? `Add missing details before event ${when}${gapHint}`
+            : `Add missing details on ${urgentCount} events happening within 7 days`,
+        className: 'bg-red-600 text-white hover:bg-red-700 border-red-700',
+        icon: <AlertCircle className="w-3.5 h-3.5 shrink-0" />,
+        onClick: () => {
+          if (top) {
+            onOpenEvent(top);
+            return;
+          }
+          onScrollToSection('urgent-details');
+        },
+      });
+    }
+
+    return items;
+  }, [my, onOpenEvent, onScrollToSection]);
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="mb-6 rounded-xl border-2 border-[#A31C41]/40 bg-[#A31C41]/5 p-3 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wide text-[#A31C41] mb-2">
+        Your next steps
+      </p>
+      <div className="flex flex-col gap-2">
+        {actions.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            onClick={action.onClick}
+            className={`w-full inline-flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border-2 text-left text-sm font-bold shadow-sm transition-all hover:shadow-md hover:scale-[1.01] ${action.className}`}
+          >
+            <span className="inline-flex items-center gap-2 min-w-0">
+              {action.icon}
+              <span className="leading-snug">{action.label}</span>
+            </span>
+            <ArrowRight className="w-4 h-4 shrink-0" />
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -273,6 +480,18 @@ function MyAssignmentsView({
   drillToEvents: (tab: string, filter?: string) => void;
 }) {
   const [expandedStatus, setExpandedStatus] = useState<AssignmentStatusKey | null>(null);
+  const newRequestsRef = useRef<HTMLDivElement>(null);
+  const staleFollowupRef = useRef<HTMLDivElement>(null);
+  const urgentDetailsRef = useRef<HTMLDivElement>(null);
+
+  const scrollToActionSection = (sectionId: AssignmentActionSectionId) => {
+    const refMap = {
+      'new-requests': newRequestsRef,
+      'stale-followup': staleFollowupRef,
+      'urgent-details': urgentDetailsRef,
+    };
+    refMap[sectionId].current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const openAssignmentEvent = (event: MyAssignmentItem) => {
     try {
@@ -319,44 +538,56 @@ function MyAssignmentsView({
 
   return (
     <div className="mx-4 mb-8">
-      <div className="premium-card-elevated p-6" style={{ borderTop: '4px solid #007E8C' }}>
+      <div
+        className="premium-card-elevated p-6 bg-gradient-to-br from-white via-[#e8f4f8]/40 to-white"
+        style={{ borderTop: '5px solid #007E8C', boxShadow: '0 4px 24px rgba(35, 99, 131, 0.12)' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center">
-              <Star className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="premium-text-h4 text-brand-primary">My Assignments</h3>
-              <p className="premium-text-body-sm text-gray-600">
-                {my.total} {my.total === 1 ? 'event' : 'events'} you're the TSP contact for
-              </p>
-            </div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-11 h-11 bg-gradient-to-br from-[#007E8C] to-[#236383] rounded-xl flex items-center justify-center shadow-md">
+            <Star className="w-5 h-5 text-[#FBAD3F]" />
           </div>
-          {(my.newRequestsCount > 0 || my.inProcessStaleCount > 0) && (
-            <Badge variant="destructive" className="animate-pulse">
-              <AlertCircle className="w-3 h-3 mr-1" />
-              Needs Action
-            </Badge>
-          )}
+          <div>
+            <h3 className="premium-text-h4 text-[#236383] font-bold">My Assignments</h3>
+            <p className="premium-text-body-sm text-[#007E8C] font-medium">
+              {my.total} {my.total === 1 ? 'event' : 'events'} you're the TSP contact for
+            </p>
+          </div>
         </div>
+
+        <AssignmentActionBar
+          my={my}
+          onOpenEvent={openAssignmentEvent}
+          onScrollToSection={scrollToActionSection}
+        />
 
         {/* PRIORITY 1: New requests assigned to me — first contact owed */}
         {my.newRequests.length > 0 && (
-          <div className="mb-6 rounded-lg border border-[#FBAD3F]/40 bg-[#FBAD3F]/[0.04] p-4">
-            <h4 className="text-sm font-semibold text-[#B8860B] mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+          <div
+            ref={newRequestsRef}
+            id="my-assignments-new-requests"
+            className="mb-6 rounded-xl border-2 border-[#FBAD3F] bg-gradient-to-br from-[#FBAD3F]/30 to-[#FBAD3F]/10 p-4 shadow-sm scroll-mt-4"
+          >
+            <h4 className="text-sm font-bold text-[#3d2800] mb-3 flex items-center gap-2">
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#FBAD3F] shadow-sm">
+                <Sparkles className="w-4 h-4 text-[#3d2800]" />
+              </span>
               {my.newRequests.length === 1 ? 'New request' : `${my.newRequests.length} new requests`} assigned to you
-              <span className="text-xs font-normal text-[#B8860B]/80">
+              <span className="text-xs font-semibold text-[#A31C41]">
                 — make first contact
               </span>
             </h4>
             <div className="space-y-2">
               {my.newRequests.slice(0, 5).map((e) => (
-                <AssignmentEventRow key={e.id} event={e} onOpen={openAssignmentEvent} />
+                <AssignmentEventRow
+                  key={e.id}
+                  event={e}
+                  onOpen={openAssignmentEvent}
+                  emphasizeSubmittedAge
+                />
               ))}
               {my.newRequests.length > 5 && (
-                <div className="text-xs text-[#B8860B]/80 pl-3">
+                <div className="text-xs font-semibold text-[#3d2800] pl-3">
                   + {my.newRequests.length - 5} more
                 </div>
               )}
@@ -366,13 +597,19 @@ function MyAssignmentsView({
 
         {/* PRIORITY 2: In-process events with no contact in the last 7 days */}
         {my.inProcessStale.length > 0 && (
-          <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50/60 p-4">
-            <h4 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" />
+          <div
+            ref={staleFollowupRef}
+            id="my-assignments-stale-followup"
+            className="mb-6 rounded-xl border-2 border-amber-500 bg-gradient-to-br from-amber-200 to-amber-50 p-4 shadow-sm scroll-mt-4"
+          >
+            <h4 className="text-sm font-bold text-amber-950 mb-3 flex items-center gap-2">
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500 shadow-sm">
+                <AlertTriangle className="w-4 h-4 text-white" />
+              </span>
               {my.inProcessStale.length === 1
                 ? 'In-process event needs follow-up'
                 : `${my.inProcessStale.length} in-process events need follow-up`}
-              <span className="text-xs font-normal text-amber-700">
+              <span className="text-xs font-semibold text-amber-900">
                 — no contact in 7+ days
               </span>
             </h4>
@@ -381,7 +618,7 @@ function MyAssignmentsView({
                 <AssignmentEventRow key={e.id} event={e} onOpen={openAssignmentEvent} />
               ))}
               {my.inProcessStale.length > 5 && (
-                <div className="text-xs text-amber-700 pl-3">
+                <div className="text-xs font-semibold text-amber-950 pl-3">
                   + {my.inProcessStale.length - 5} more
                 </div>
               )}
@@ -389,13 +626,44 @@ function MyAssignmentsView({
           </div>
         )}
 
+        {/* PRIORITY 2b: Events within 7 days missing time, location, or sandwich info */}
+        {(my.urgentDetailEvents?.length ?? 0) > 0 && (
+          <div
+            ref={urgentDetailsRef}
+            id="my-assignments-urgent-details"
+            className="mb-6 rounded-xl border-2 border-red-600 bg-gradient-to-br from-red-200 to-red-50 p-4 shadow-md scroll-mt-4"
+          >
+            <h4 className="text-sm font-bold text-red-950 mb-3 flex items-center gap-2">
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-600 shadow-sm animate-pulse">
+                <AlertCircle className="w-4 h-4 text-white" />
+              </span>
+              {my.urgentDetailGapsCount === 1
+                ? 'Event needs details before it happens'
+                : `${my.urgentDetailGapsCount} events need details before they happen`}
+              <span className="text-xs font-semibold text-red-900">
+                — within 7 days, missing time, location, or sandwich info
+              </span>
+            </h4>
+            <div className="space-y-2">
+              {my.urgentDetailEvents.slice(0, 5).map((e) => (
+                <AssignmentEventRow key={e.id} event={e} onOpen={openAssignmentEvent} showStatus />
+              ))}
+              {my.urgentDetailEvents.length > 5 && (
+                <div className="text-xs font-semibold text-red-950 pl-3">
+                  + {my.urgentDetailEvents.length - 5} more
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* PRIORITY 3: Status breakdown — click a tile to expand event details */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h4 className="text-sm font-semibold text-gray-700 mb-1 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
+        <div className="rounded-xl border-2 border-[#47B3CB]/50 bg-gradient-to-br from-[#e8f4f8] to-white p-4 mb-6 shadow-sm">
+          <h4 className="text-sm font-bold text-[#236383] mb-1 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#007E8C]" />
             Your assignments by status
           </h4>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs font-medium text-[#007E8C] mb-3">
             Click a status to expand details. Click an event to open it in Event Requests.
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -409,19 +677,19 @@ function MyAssignmentsView({
                   type="button"
                   onClick={() => toggleStatusExpand(key)}
                   aria-expanded={isExpanded}
-                  className={`px-3 py-2 rounded-md border text-left transition-all hover:shadow-sm ${statusStyle[key]} ${
-                    isExpanded ? 'ring-2 ring-offset-1 ring-brand-primary shadow-sm' : ''
+                  className={`px-3 py-3 rounded-lg border-2 text-left transition-all ${statusStyle[key]} ${
+                    isExpanded ? 'ring-4 ring-offset-2 ring-[#FBAD3F] scale-[1.02]' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <div className="text-2xl font-bold leading-none">{count}</div>
-                      <div className="text-xs font-medium mt-0.5">{statusLabel[key]}</div>
+                      <div className="text-3xl font-black leading-none">{count}</div>
+                      <div className="text-xs font-bold mt-1 uppercase tracking-wide">{statusLabel[key]}</div>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 shrink-0 opacity-70" />
+                      <ChevronUp className="w-4 h-4 shrink-0 opacity-90" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 shrink-0 opacity-70" />
+                      <ChevronDown className="w-4 h-4 shrink-0 opacity-90" />
                     )}
                   </div>
                 </button>
@@ -430,15 +698,15 @@ function MyAssignmentsView({
           </div>
 
           {expandedStatus && byStatusEvents[expandedStatus]?.length > 0 && (
-            <div className="mt-4 space-y-2 border-t border-gray-200 pt-4">
+            <div className="mt-4 space-y-2 border-t-2 border-[#47B3CB]/30 pt-4">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <h5 className="text-sm font-semibold text-gray-800">
+                <h5 className="text-sm font-bold text-[#236383]">
                   {statusLabel[expandedStatus]} events
                 </h5>
                 <button
                   type="button"
                   onClick={() => drillToStatusTab(expandedStatus)}
-                  className="text-xs text-brand-primary hover:underline shrink-0"
+                  className="text-xs font-bold text-[#007E8C] hover:text-[#236383] hover:underline shrink-0"
                 >
                   Open in Event Requests →
                 </button>
@@ -458,9 +726,9 @@ function MyAssignmentsView({
             for tidiness — when total ≤ 8 just show them all; otherwise show
             the top 8 with a link to the full list). */}
         {my.allMyEvents.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <Clock className="w-4 h-4" />
+          <div className="mb-6 rounded-xl border border-[#47B3CB]/40 bg-white p-4 shadow-sm">
+            <h4 className="text-sm font-bold text-[#236383] mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[#007E8C]" />
               All your events
             </h4>
             <div className="space-y-2">
@@ -476,7 +744,7 @@ function MyAssignmentsView({
                 <button
                   type="button"
                   onClick={() => onNavigate('event-requests')}
-                  className="w-full text-center text-sm text-brand-primary hover:underline py-2"
+                  className="w-full text-center text-sm font-bold text-[#007E8C] hover:text-[#236383] hover:underline py-2"
                 >
                   View all {my.allMyEvents.length} of your events →
                 </button>
@@ -489,7 +757,7 @@ function MyAssignmentsView({
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={() => onNavigate('event-requests')}
-            className="bg-brand-primary hover:bg-brand-primary-dark"
+            className="bg-[#236383] hover:bg-[#007E8C] text-white font-bold shadow-md"
           >
             <Calendar className="w-4 h-4 mr-2" />
             Open Event Requests
@@ -497,7 +765,7 @@ function MyAssignmentsView({
           <Button
             variant="outline"
             onClick={() => onNavigate('volunteer-hub')}
-            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
+            className="border-2 border-[#007E8C] text-[#007E8C] font-bold hover:bg-[#007E8C] hover:text-white"
           >
             <Users className="w-4 h-4 mr-2" />
             Volunteer Hub
