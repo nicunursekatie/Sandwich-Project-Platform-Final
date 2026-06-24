@@ -232,7 +232,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/auth/approve-user/${userId} | 1 | client/src/components/user-management-redesigned.tsx:158 |
 | /api/auth/change-password | 1 | client/src/components/user-profile.tsx:178 |
 | /api/auth/login | 2 | client/src/pages/login.tsx:57<br>tests/setup/test-server.ts:180 |
-| /api/auth/logout | 1 | client/src/pages/dashboard.tsx:1151 |
+| /api/auth/logout | 1 | client/src/pages/dashboard.tsx:1156 |
 | /api/auth/pending-registrations | 3 | client/src/components/user-management-redesigned.tsx:144<br>client/src/components/user-management-redesigned.tsx:146<br>client/src/components/user-management-redesigned.tsx:171 |
 | /api/auth/profile | 3 | client/src/components/user-profile.tsx:126<br>client/src/components/user-profile.tsx:156<br>client/src/components/user-profile.tsx:160 |
 | /api/auth/request-initial-password | 2 | client/src/pages/login.tsx:79<br>client/src/pages/set-password.tsx:89 |
@@ -244,9 +244,9 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/auth/verify-initial-password-token/${tokenToVerify} | 1 | client/src/pages/set-password.tsx:72 |
 | /api/auto-form-filler/process | 1 | client/src/pages/auto-form-filler.tsx:46 |
 | /api/availability | 7 | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:489<br>client/src/pages/my-availability.tsx:90<br>client/src/pages/my-availability.tsx:97<br>client/src/pages/my-availability.tsx:99 |
-| /api/availability?startDate=${eventDate}&endDate=${eventDate} | 1 | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:493 |
 | /api/availability/${id} | 2 | client/src/pages/my-availability.tsx:108<br>client/src/pages/my-availability.tsx:120 |
 | /api/availability/events | 1 | client/src/pages/team-availability.tsx:110 |
+| /api/availability?startDate=${eventDate}&endDate=${eventDate} | 1 | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:493 |
 | /api/bulk-map-hosts | 1 | client/src/components/bulk-data-manager.tsx:100 |
 | /api/chat-messages/${numericMessageId}/like | 2 | client/src/components/chat-message-like-button.tsx:69<br>client/src/components/chat-message-like-button.tsx:74 |
 | /api/chat-messages/${numericMessageId}/likes | 1 | client/src/components/chat-message-like-button.tsx:54 |
@@ -255,10 +255,10 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/collection-stats | 3 | client/src/components/bulk-data-manager.tsx:71<br>client/src/components/bulk-data-manager.tsx:104<br>client/src/components/bulk-data-manager.tsx:140 |
 | /api/collections-by-host | 1 | client/src/components/bulk-data-manager.tsx:84 |
 | /api/conversations | 7 | client/src/components/group-messaging.tsx:160<br>client/src/components/group-messaging.tsx:184<br>client/src/components/group-messaging.tsx:205<br>client/src/components/group-messaging.tsx:290 |
-| /api/conversations?type=group | 1 | client/src/components/group-messaging.tsx:119 |
 | /api/conversations/${groupConversation.id}/messages | 2 | client/src/components/group-messaging.tsx:187<br>client/src/components/group-messaging.tsx:285 |
 | /api/conversations/${selectedGroup.id}/participants | 1 | client/src/components/group-messaging.tsx:163 |
 | /api/conversations/groups | 1 | client/src/components/group-messaging.tsx:116 |
+| /api/conversations?type=group | 1 | client/src/components/group-messaging.tsx:119 |
 | /api/cooler-inventory | 6 | client/src/pages/cooler-tracking.tsx:142<br>client/src/pages/cooler-tracking.tsx:180<br>client/src/pages/cooler-tracking.tsx:187<br>client/src/pages/cooler-tracking.tsx:235 |
 | /api/cooler-inventory/${entryId} | 1 | client/src/pages/cooler-tracking.tsx:291 |
 | /api/cooler-inventory/admin-add | 2 | client/src/pages/cooler-tracking.tsx:227<br>client/src/pages/cooler-tracking.tsx:259 |
@@ -311,8 +311,6 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/email-templates/sections/${id} | 1 | client/src/pages/admin/email-templates.tsx:41 |
 | /api/email-templates/sections/${id}/reset | 1 | client/src/pages/admin/email-templates.tsx:61 |
 | /api/emails | 10 | client/src/components/event-email-composer.tsx:1476<br>client/src/components/gmail-style-inbox.tsx:273<br>client/src/components/gmail-style-inbox.tsx:326<br>client/src/components/gmail-style-inbox.tsx:344 |
-| /api/emails?folder=${activeFolder} | 1 | client/src/components/gmail-style-inbox.tsx:298 |
-| /api/emails?folder=inbox | 1 | client/src/components/gmail-style-inbox.tsx:760 |
 | /api/emails/${id} | 3 | client/src/components/gmail-style-inbox.tsx:453<br>client/src/components/gmail-style-inbox.tsx:496<br>client/src/components/gmail-style-inbox.tsx:519 |
 | /api/emails/${kudoId}/read | 1 | client/src/components/gmail-style-inbox.tsx:840 |
 | /api/emails/${selectedMessage.id}/thread | 1 | client/src/components/gmail-style-inbox.tsx:331 |
@@ -320,8 +318,9 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/emails/event/${eventRequest.id}/drafts | 1 | client/src/components/event-email-composer.tsx:146 |
 | /api/emails/kudos | 3 | client/src/components/gmail-style-inbox.tsx:281<br>client/src/components/gmail-style-inbox.tsx:761<br>client/src/components/gmail-style-inbox.tsx:846 |
 | /api/emails/unread-count | 3 | client/src/components/gmail-style-inbox.tsx:351<br>client/src/components/simple-nav.tsx:47<br>client/src/components/simple-nav.tsx:51 |
+| /api/emails?folder=${activeFolder} | 1 | client/src/components/gmail-style-inbox.tsx:298 |
+| /api/emails?folder=inbox | 1 | client/src/components/gmail-style-inbox.tsx:760 |
 | /api/enhanced-user-activity | 2 | client/src/components/detailed-activity-analytics.tsx:106<br>client/src/components/individual-user-activity.tsx:115 |
-| /api/enhanced-user-activity?${params} | 2 | client/src/components/detailed-activity-analytics.tsx:124<br>client/src/components/individual-user-activity.tsx:128 |
 | /api/enhanced-user-activity/detailed-users?days=${timeRange} | 1 | client/src/components/user-management/UserActivityMonitor.tsx:169 |
 | /api/enhanced-user-activity/enhanced-stats?days=${timeRange} | 1 | client/src/components/user-management/UserActivityMonitor.tsx:157 |
 | /api/enhanced-user-activity/logs | 1 | client/src/components/user-management/UserActivityTab.tsx:26 |
@@ -330,6 +329,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/enhanced-user-activity/track | 1 | client/src/hooks/useUserActivityTracking.ts:24 |
 | /api/enhanced-user-activity/user-stats | 1 | client/src/components/user-management/UserActivityTab.tsx:15 |
 | /api/enhanced-user-activity/user-stats/${userId}?days=30 | 1 | client/src/components/user-management/UserActivityTab.tsx:17 |
+| /api/enhanced-user-activity?${params} | 2 | client/src/components/detailed-activity-analytics.tsx:124<br>client/src/components/individual-user-activity.tsx:128 |
 | /api/error-logs | 1 | client/src/hooks/useErrorHandler.ts:34 |
 | /api/event-check-in-reminders/${eventRequestId} | 1 | client/src/components/event-requests/ReminderRulesManager.tsx:230 |
 | /api/event-check-in-reminders/${eventRequestId}/${ruleType} | 1 | client/src/components/event-requests/ReminderRulesManager.tsx:684 |
@@ -344,8 +344,6 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-reminders/${id} | 1 | client/src/components/event-reminders-management.tsx:164 |
 | /api/event-reminders/count | 4 | client/src/components/event-reminders-management.tsx:141<br>client/src/components/event-reminders-management.tsx:173<br>client/src/components/simple-nav.tsx:65<br>client/src/components/simple-nav.tsx:69 |
 | /api/event-requests | 30 | client/src/components/action-center.tsx:103<br>client/src/components/event-calendar-view.tsx:370<br>client/src/components/event-operational-dashboard.tsx:176<br>client/src/components/event-requests/EventSchedulingForm.tsx:811 |
-| /api/event-requests?${queryString} | 1 | client/src/components/event-requests/lib/eventRequestsListQuery.ts:100 |
-| /api/event-requests?all=true | 6 | client/src/components/action-center.tsx:105<br>client/src/components/modals/next-month-planning-modal.tsx:62<br>client/src/components/modals/week-outlook-modal.tsx:80<br>client/src/components/predictive-forecasts.tsx:60 |
 | /api/event-requests/${deletedId}/restore | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:52 |
 | /api/event-requests/${event.id} | 1 | client/src/components/event-requests/dialogs/EventEditDialog.tsx:597 |
 | /api/event-requests/${eventId} | 5 | client/src/components/event-requests/QuickScheduleButton.tsx:72<br>client/src/components/modals/follow-up-events-modal.tsx:38<br>client/src/lib/event-save-verification.ts:143<br>client/src/lib/queryClient.ts:418 |
@@ -358,13 +356,13 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/${eventId}/post-event-notes | 2 | client/src/components/event-requests/PostEventNotes.tsx:28<br>client/src/components/event-requests/PostEventNotes.tsx:36 |
 | /api/event-requests/${eventId}/post-event-notes/${noteId} | 2 | client/src/components/event-requests/PostEventNotes.tsx:52<br>client/src/components/event-requests/PostEventNotes.tsx:69 |
 | /api/event-requests/${eventId}/recipients | 2 | client/src/components/event-requests/InlineRecipientAllocationEditor.tsx:83<br>client/src/components/event-requests/RecipientAllocationEditor.tsx:120 |
-| /api/event-requests/${eventRequest?.id} | 1 | client/src/components/event-requests/IntakeCallDialog.tsx:1003 |
-| /api/event-requests/${eventRequest?.id}/send-correction-sms | 1 | client/src/components/event-requests/dialogs/SendCorrectionSMSDialog.tsx:48 |
-| /api/event-requests/${eventRequest?.id}/send-details-sms | 1 | client/src/components/event-requests/dialogs/SendEventDetailsSMSDialog.tsx:46 |
-| /api/event-requests/${eventRequest.id} | 3 | client/src/components/event-requests/dialogs/AiIntakeAssistantDialog.tsx:123<br>client/src/components/event-requests/IntakeCallDialog.tsx:716<br>client/src/components/event-requests/NextActionDialog.tsx:70 |
+| /api/event-requests/${eventRequest.id} | 3 | client/src/components/event-requests/IntakeCallDialog.tsx:716<br>client/src/components/event-requests/NextActionDialog.tsx:70<br>client/src/components/event-requests/dialogs/AiIntakeAssistantDialog.tsx:123 |
 | /api/event-requests/${eventRequest.id}/ai-intake-assist | 1 | client/src/components/event-requests/dialogs/AiIntakeAssistantDialog.tsx:104 |
 | /api/event-requests/${eventRequest.id}/ai-suggest-dates | 1 | client/src/components/event-requests/dialogs/AiDateSuggestionDialog.tsx:67 |
 | /api/event-requests/${eventRequest.id}/send-email | 1 | client/src/components/ScheduledEventEmailComposer.tsx:70 |
+| /api/event-requests/${eventRequest?.id} | 1 | client/src/components/event-requests/IntakeCallDialog.tsx:1003 |
+| /api/event-requests/${eventRequest?.id}/send-correction-sms | 1 | client/src/components/event-requests/dialogs/SendCorrectionSMSDialog.tsx:48 |
+| /api/event-requests/${eventRequest?.id}/send-details-sms | 1 | client/src/components/event-requests/dialogs/SendEventDetailsSMSDialog.tsx:46 |
 | /api/event-requests/${eventRequestId} | 1 | client/src/components/event-requests/VanNeededBadgeAndButton.tsx:148 |
 | /api/event-requests/${id} | 9 | client/src/components/event-requests/EventSchedulingForm.tsx:670<br>client/src/components/event-requests/EventSchedulingForm.tsx:846<br>client/src/components/event-requests/hooks/useEventMutations.tsx:42<br>client/src/components/event-requests/hooks/useEventMutations.tsx:99 |
 | /api/event-requests/${id}/corporate-priority | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:688 |
@@ -387,8 +385,8 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/audit-logs | 1 | client/src/components/event-request-audit-log.tsx:156 |
 | /api/event-requests/audit-logs?${params} | 1 | client/src/components/event-request-audit-log.tsx:174 |
 | /api/event-requests/check-conflicts | 2 | client/src/components/event-requests/EventConflictWarnings.tsx:139<br>client/src/components/event-requests/EventConflictWarnings.tsx:343 |
-| /api/event-requests/check-returning-org?${params} | 1 | client/src/hooks/use-returning-organization.ts:51 |
 | /api/event-requests/check-returning-org/bulk | 2 | client/src/hooks/use-batched-returning-org.ts:59<br>client/src/hooks/use-batched-returning-org.ts:62 |
+| /api/event-requests/check-returning-org?${params} | 1 | client/src/hooks/use-returning-organization.ts:51 |
 | /api/event-requests/collaboration/bulk | 2 | client/src/hooks/use-batched-collaboration.ts:56<br>client/src/hooks/use-batched-collaboration.ts:64 |
 | /api/event-requests/conflicts-for-date?date=${dateStr} | 1 | client/src/components/event-requests/EventsOnDayBadge.tsx:41 |
 | /api/event-requests/conflicts-for-date?date=${formData.eventDate} | 1 | client/src/components/event-requests/EventSchedulingForm.tsx:887 |
@@ -402,12 +400,14 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/sync/from-sheets | 1 | client/src/components/event-requests/index.tsx:289 |
 | /api/event-requests/van-conflict-dates | 2 | client/src/components/event-requests/VanConflictsButton.tsx:167<br>client/src/components/event-requests/VanConflictsButton.tsx:169 |
 | /api/event-requests/van-requests-for-date?${params} | 1 | client/src/components/event-requests/VanNeededBadgeAndButton.tsx:99 |
+| /api/event-requests?${queryString} | 1 | client/src/components/event-requests/lib/eventRequestsListQuery.ts:100 |
+| /api/event-requests?all=true | 6 | client/src/components/action-center.tsx:105<br>client/src/components/modals/next-month-planning-modal.tsx:62<br>client/src/components/modals/week-outlook-modal.tsx:80<br>client/src/components/predictive-forecasts.tsx:60 |
 | /api/events/${eventId}/email-logs | 3 | client/src/components/event-email-log-display.tsx:47<br>client/src/components/event-email-log-display.tsx:49<br>client/src/components/event-send-template-email-dialog.tsx:131 |
 | /api/events/${eventId}/send-email | 1 | client/src/components/event-send-template-email-dialog.tsx:112 |
 | /api/expenses | 1 | client/src/components/expenses/ExpenseForm.tsx:125 |
-| /api/expenses?${queryParams} | 1 | client/src/components/expenses/ExpensesList.tsx:117 |
 | /api/expenses/${expenseId} | 1 | client/src/components/expenses/ExpensesList.tsx:147 |
 | /api/expenses/${expenseId}/approve | 1 | client/src/components/expenses/ExpensesList.tsx:176 |
+| /api/expenses?${queryParams} | 1 | client/src/components/expenses/ExpensesList.tsx:117 |
 | /api/export/collections | 1 | tests/integration/routes/permissions.test.ts:33 |
 | /api/feature-flags | 1 | client/src/components/event-requests/feature-flags.ts:5 |
 | /api/feature-flags/check-multiple | 2 | client/src/hooks/useFeatureFlag.ts:76<br>client/src/hooks/useFeatureFlag.ts:79 |
@@ -429,9 +429,9 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/group-engagement/scores | 1 | client/src/components/groups-insights-dashboard.tsx:1337 |
 | /api/group-engagement/scores?${params} | 1 | client/src/components/groups-insights-dashboard.tsx:1344 |
 | /api/groups-catalog | 11 | client/src/components/organizations-catalog.tsx:217<br>client/src/components/organizations-catalog.tsx:240<br>client/src/components/organizations-catalog.tsx:279<br>client/src/pages/historical-import.tsx:160 |
-| /api/groups-catalog?viewMode=${viewMode} | 1 | client/src/components/organizations-catalog.tsx:220 |
 | /api/groups-catalog/rename | 1 | client/src/components/organizations-catalog.tsx:265 |
 | /api/groups-catalog/upsert | 1 | client/src/components/organizations-catalog.tsx:232 |
+| /api/groups-catalog?viewMode=${viewMode} | 1 | client/src/components/organizations-catalog.tsx:220 |
 | /api/health | 2 | client/src/components/dynamic-error-message.tsx:303<br>client/src/hooks/useErrorHandler.ts:210 |
 | /api/holding-zone/categories | 4 | client/src/mobile/pages/mobile-holding-zone-add.tsx:39<br>client/src/pages/HoldingZone.tsx:648<br>client/src/pages/HoldingZone.tsx:792<br>client/src/pages/HoldingZone.tsx:795 |
 | /api/host-contacts | 6 | client/src/components/event-requests/hooks/useEventQueries.ts:61<br>client/src/components/event-requests/hooks/useEventQueries.ts:64<br>client/src/components/hosts-management-consolidated.tsx:582<br>client/src/components/hosts-management-consolidated.tsx:749 |
@@ -495,8 +495,8 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/meetings/agenda-items | 1 | client/src/components/meetings/dashboard/hooks/useAgenda.ts:73 |
 | /api/meetings/finalize-agenda-pdf | 1 | client/src/components/meetings/dashboard/hooks/useProjects.ts:554 |
 | /api/meetings/notes | 11 | client/src/components/meetings/dashboard/hooks/useNotes.ts:62<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:85<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:96<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:99 |
-| /api/meetings/notes/${id} | 5 | client/src/components/meetings/dashboard/hooks/useNotes.ts:87<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:117<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:138<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:160 |
 | /api/meetings/notes${queryString} | 1 | client/src/components/meetings/dashboard/hooks/useNotes.ts:65 |
+| /api/meetings/notes/${id} | 5 | client/src/components/meetings/dashboard/hooks/useNotes.ts:87<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:117<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:138<br>client/src/components/meetings/dashboard/hooks/useNotes.ts:160 |
 | /api/message-groups | 10 | client/src/components/group-messaging.tsx:219<br>client/src/components/group-messaging.tsx:228<br>client/src/components/group-messaging.tsx:273<br>client/src/components/group-messaging.tsx:274 |
 | /api/message-groups/${data.groupId}/members | 1 | client/src/components/group-messaging.tsx:263 |
 | /api/message-groups/${groupId} | 1 | client/src/components/group-messaging.tsx:416 |
@@ -545,7 +545,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/monitoring/test-sms | 1 | client/src/components/weekly-monitoring-dashboard.tsx:218 |
 | /api/monitoring/weekly-status | 3 | client/src/components/weekly-monitoring-dashboard.tsx:141<br>client/src/components/weekly-monitoring-dashboard.tsx:167<br>client/src/components/weekly-monitoring-dashboard.tsx:179 |
 | /api/monitoring/weekly-status/${selectedWeek} | 1 | client/src/components/weekly-monitoring-dashboard.tsx:143 |
-| /api/notifications | 48 | client/src/components/enhanced-notifications.tsx:166<br>client/src/components/enhanced-notifications.tsx:185<br>client/src/components/enhanced-notifications.tsx:189<br>client/src/components/enhanced-notifications.tsx:196 |
+| /api/notifications | 48 | client/src/components/NotificationActionButton.tsx:75<br>client/src/components/enhanced-notifications.tsx:166<br>client/src/components/enhanced-notifications.tsx:185<br>client/src/components/enhanced-notifications.tsx:189 |
 | /api/notifications/${adminNotification.body.id} | 1 | tests/integration/routes/notifications.test.ts:316 |
 | /api/notifications/${adminNotification.body.id}/read | 1 | tests/integration/routes/notifications.test.ts:214 |
 | /api/notifications/${id}/read | 2 | client/src/mobile/pages/mobile-notifications.tsx:99<br>client/src/pages/notifications.tsx:128 |
@@ -561,7 +561,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/notifications/analytics/overview?period=${period} | 1 | client/src/components/NotificationAnalyticsDashboard.tsx:49 |
 | /api/notifications/bulk/read | 1 | client/src/components/enhanced-notifications.tsx:283 |
 | /api/notifications/clear-all | 3 | tests/integration/routes/notifications.test.ts:355<br>tests/integration/routes/notifications.test.ts:360<br>tests/integration/routes/notifications.test.ts:377 |
-| /api/notifications/counts | 9 | client/src/components/enhanced-notifications.tsx:159<br>client/src/components/enhanced-notifications.tsx:220<br>client/src/components/enhanced-notifications.tsx:274<br>client/src/components/enhanced-notifications.tsx:289 |
+| /api/notifications/counts | 9 | client/src/components/NotificationActionButton.tsx:76<br>client/src/components/enhanced-notifications.tsx:159<br>client/src/components/enhanced-notifications.tsx:220<br>client/src/components/enhanced-notifications.tsx:274 |
 | /api/notifications/mark-all-read | 2 | client/src/mobile/pages/mobile-notifications.tsx:78<br>client/src/pages/notifications.tsx:106 |
 | /api/notifications/read-all | 3 | tests/integration/routes/notifications.test.ts:244<br>tests/integration/routes/notifications.test.ts:249<br>tests/integration/routes/notifications.test.ts:269 |
 | /api/notifications/unread-count | 2 | tests/integration/routes/notifications.test.ts:98<br>tests/integration/routes/notifications.test.ts:103 |
@@ -589,12 +589,12 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/photo-scanner/scan-base64 | 1 | client/src/pages/photo-scanner.tsx:86 |
 | /api/placeholder/32/32 | 2 | client/src/pages/performance-dashboard.tsx:182<br>client/src/pages/performance-dashboard.tsx:230 |
 | /api/planning-sheet-proposals | 1 | client/src/components/planning-sheet-proposals.tsx:174 |
-| /api/planning-sheet-proposals?status=${activeTab} | 1 | client/src/components/planning-sheet-proposals.tsx:175 |
 | /api/planning-sheet-proposals/${id}/approve | 1 | client/src/components/planning-sheet-proposals.tsx:185 |
 | /api/planning-sheet-proposals/${id}/reject | 1 | client/src/components/planning-sheet-proposals.tsx:207 |
 | /api/planning-sheet-proposals/batch/approve | 1 | client/src/components/planning-sheet-proposals.tsx:233 |
 | /api/planning-sheet-proposals/preview/${eventId} | 1 | client/src/components/propose-to-sheet-button.tsx:93 |
 | /api/planning-sheet-proposals/push-event/${eventId} | 1 | client/src/components/propose-to-sheet-button.tsx:166 |
+| /api/planning-sheet-proposals?status=${activeTab} | 1 | client/src/components/planning-sheet-proposals.tsx:175 |
 | /api/project-data/current | 2 | client/src/components/google-sheets-viewer.tsx:99<br>client/src/components/google-sheets-viewer.tsx:251 |
 | /api/project-data/status | 1 | client/src/components/google-sheets-viewer.tsx:59 |
 | /api/project-data/upload | 1 | client/src/components/google-sheets-viewer.tsx:88 |
@@ -633,14 +633,14 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/promotion-graphics/upload | 1 | client/src/pages/promotion-graphics.tsx:451 |
 | /api/quick-sms/send | 1 | client/src/pages/quick-sms-links.tsx:49 |
 | /api/real-time-messages | 4 | client/src/components/email-style-messaging.tsx:346<br>client/src/components/email-style-messaging.tsx:400<br>client/src/components/email-style-messaging.tsx:468<br>client/src/components/email-style-messaging.tsx:482 |
-| /api/real-time-messages?folder=${activeFolder} | 1 | client/src/components/email-style-messaging.tsx:348 |
 | /api/real-time-messages/${messageId} | 1 | client/src/components/email-style-messaging.tsx:465 |
 | /api/real-time-messages/${messageId}/read | 1 | client/src/components/email-style-messaging.tsx:479 |
+| /api/real-time-messages?folder=${activeFolder} | 1 | client/src/components/email-style-messaging.tsx:348 |
 | /api/recipient-tsp-contacts | 6 | client/src/components/tsp-contact-manager.tsx:66<br>client/src/components/tsp-contact-manager.tsx:83<br>client/src/components/tsp-contact-manager.tsx:94<br>client/src/components/tsp-contact-manager.tsx:98 |
 | /api/recipient-tsp-contacts/${id} | 2 | client/src/components/tsp-contact-manager.tsx:122<br>client/src/components/tsp-contact-manager.tsx:146 |
 | /api/recipient-tsp-contacts/${recipientId} | 1 | client/src/components/tsp-contact-manager.tsx:68 |
 | /api/recipient-tsp-contacts/1 | 1 | tests/integration/routes/auth.test.ts:28 |
-| /api/recipients | 41 | client/src/components/donation-tracking.tsx:120<br>client/src/components/donation-tracking.tsx:121<br>client/src/components/event-requests/dialogs/EventEditDialog.tsx:400<br>client/src/components/event-requests/hooks/useEventQueries.ts:48 |
+| /api/recipients | 41 | client/src/components/donation-tracking.tsx:120<br>client/src/components/donation-tracking.tsx:121<br>client/src/components/event-requests/RecipientAllocationEditor.tsx:61<br>client/src/components/event-requests/dialogs/EventEditDialog.tsx:400 |
 | /api/recipients/${id} | 3 | client/src/components/recipients-management.tsx:350<br>client/src/components/recipients-management.tsx:373<br>client/src/components/recipients-management.tsx:387 |
 | /api/recipients/${testRecipient.id} | 11 | tests/integration/routes/recipients.test.ts:232<br>tests/integration/routes/recipients.test.ts:240<br>tests/integration/routes/recipients.test.ts:249<br>tests/integration/routes/recipients.test.ts:262 |
 | /api/recipients/${testRecipient.id}/collections | 2 | tests/integration/routes/recipients.test.ts:394<br>tests/integration/routes/recipients.test.ts:406 |
@@ -657,7 +657,6 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/reports/weekly-collections?startDate=${startDate}&endDate=${endDate}&exactDates=${useExactDates} | 1 | client/src/pages/weekly-collections-report.tsx:86 |
 | /api/reset-password | 1 | client/src/pages/reset-password.tsx:121 |
 | /api/resources | 2 | client/src/components/resource-admin-modal.tsx:204<br>client/src/mobile/pages/mobile-resources.tsx:57 |
-| /api/resources?${params} | 1 | client/src/pages/resources.tsx:710 |
 | /api/resources/${existingResource.resource.id} | 1 | client/src/components/resource-admin-modal.tsx:203 |
 | /api/resources/${resource.resource.id} | 1 | client/src/pages/resources.tsx:784 |
 | /api/resources/${resource.resource.id}/access | 1 | client/src/components/recently-accessed-resources.tsx:48 |
@@ -667,15 +666,8 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/resources/tags/all | 1 | client/src/pages/resources.tsx:713 |
 | /api/resources/user/favorites | 3 | client/src/mobile/pages/mobile-resources.tsx:63<br>client/src/mobile/pages/mobile-resources.tsx:74<br>client/src/pages/resources.tsx:711 |
 | /api/resources/user/recent?limit=5 | 2 | client/src/components/recently-accessed-resources.tsx:30<br>client/src/pages/resources.tsx:712 |
+| /api/resources?${params} | 1 | client/src/pages/resources.tsx:710 |
 | /api/sandwich-collections | 33 | client/src/components/bulk-data-manager.tsx:107<br>client/src/components/bulk-data-manager.tsx:142<br>client/src/components/compact-collection-form.tsx:225<br>client/src/components/compact-collection-form.tsx:236 |
-| /api/sandwich-collections?eventRequestId=${eventRequest?.id} | 1 | client/src/components/event-requests/EventCollectionLog.tsx:44 |
-| /api/sandwich-collections?limit=100 | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:89<br>client/src/mobile/pages/mobile-collections.tsx:33 |
-| /api/sandwich-collections?limit=10000 | 1 | client/src/components/sandwich-collection-log.tsx:1528 |
-| /api/sandwich-collections?limit=5000 | 6 | client/src/components/action-center.tsx:95<br>client/src/components/low-volume-alert.tsx:117<br>client/src/components/modals/next-month-planning-modal.tsx:52<br>client/src/components/modals/week-outlook-modal.tsx:70 |
-| /api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam} | 1 | client/src/components/sandwich-collection-log.tsx:706 |
-| /api/sandwich-collections?page=1&limit=1000 | 1 | client/src/pages/landing.tsx:49 |
-| /api/sandwich-collections?page=1&limit=10000 | 2 | client/src/components/pace-comparison-analytics.tsx:239<br>client/src/pages/grant-metrics.tsx:147 |
-| /api/sandwich-collections?page=1&limit=5000 | 4 | client/src/components/dashboard-overview.tsx:270<br>client/src/components/monthly-comparison-analytics.tsx:85<br>client/src/hooks/useCollectionsData.ts:57<br>client/src/hooks/useMonthlyAnalytics.ts:32 |
 | /api/sandwich-collections/${collectionId} | 1 | client/src/mobile/pages/mobile-collection-detail.tsx:28 |
 | /api/sandwich-collections/${data.id} | 1 | client/src/components/sandwich-collection-log.tsx:1105 |
 | /api/sandwich-collections/${data.id}/restore | 1 | client/src/components/sandwich-collection-log.tsx:1180 |
@@ -694,6 +686,14 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/sandwich-collections/hybrid-stats | 1 | client/src/hooks/useCollectionsData.ts:74 |
 | /api/sandwich-collections/stats | 17 | client/src/components/compact-collection-form.tsx:239<br>client/src/components/dashboard-overview.tsx:207<br>client/src/components/dashboard-overview.tsx:209<br>client/src/components/dashboard-overview.tsx:476 |
 | /api/sandwich-collections/unlinked-groups | 1 | client/src/pages/event-impact-reports.tsx:440 |
+| /api/sandwich-collections?eventRequestId=${eventRequest?.id} | 1 | client/src/components/event-requests/EventCollectionLog.tsx:44 |
+| /api/sandwich-collections?limit=100 | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:89<br>client/src/mobile/pages/mobile-collections.tsx:33 |
+| /api/sandwich-collections?limit=10000 | 1 | client/src/components/sandwich-collection-log.tsx:1528 |
+| /api/sandwich-collections?limit=5000 | 6 | client/src/components/action-center.tsx:95<br>client/src/components/low-volume-alert.tsx:117<br>client/src/components/modals/next-month-planning-modal.tsx:52<br>client/src/components/modals/week-outlook-modal.tsx:70 |
+| /api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam} | 1 | client/src/components/sandwich-collection-log.tsx:706 |
+| /api/sandwich-collections?page=1&limit=1000 | 1 | client/src/pages/landing.tsx:49 |
+| /api/sandwich-collections?page=1&limit=10000 | 2 | client/src/components/pace-comparison-analytics.tsx:239<br>client/src/pages/grant-metrics.tsx:147 |
+| /api/sandwich-collections?page=1&limit=5000 | 4 | client/src/components/dashboard-overview.tsx:270<br>client/src/components/monthly-comparison-analytics.tsx:85<br>client/src/hooks/useCollectionsData.ts:57<br>client/src/hooks/useMonthlyAnalytics.ts:32 |
 | /api/sandwich-distributions | 7 | client/src/components/donation-tracking.tsx:108<br>client/src/components/donation-tracking.tsx:109<br>client/src/components/donation-tracking.tsx:127<br>client/src/components/donation-tracking.tsx:130 |
 | /api/sandwich-distributions/${id} | 2 | client/src/components/donation-tracking.tsx:148<br>client/src/components/donation-tracking.tsx:169 |
 | /api/search | 1 | client/src/components/data-management-dashboard.tsx:63 |
@@ -720,7 +720,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/storage/confidential | 4 | client/src/components/confidential-documents.tsx:74<br>client/src/components/confidential-documents.tsx:91<br>client/src/components/confidential-documents.tsx:94<br>client/src/components/confidential-documents.tsx:123 |
 | /api/storage/confidential/${doc.id}/download | 1 | client/src/components/confidential-documents.tsx:222 |
 | /api/storage/confidential/${id} | 1 | client/src/components/confidential-documents.tsx:120 |
-| /api/storage/documents | 2 | client/src/components/event-email-composer.tsx:137<br>client/src/components/ScheduledEventEmailComposer.tsx:63 |
+| /api/storage/documents | 2 | client/src/components/ScheduledEventEmailComposer.tsx:63<br>client/src/components/event-email-composer.tsx:137 |
 | /api/stream/channels | 2 | client/src/components/stream-chat-rooms.tsx:594<br>client/src/components/stream-chat-rooms.tsx:635 |
 | /api/stream/channels/${channel.type}/${channel.id}/members | 1 | client/src/components/stream-chat-rooms.tsx:468 |
 | /api/stream/credentials | 2 | client/src/components/stream-chat-rooms.tsx:698<br>client/src/hooks/useStreamChatUnread.ts:50 |
@@ -759,12 +759,12 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/team-board/users | 1 | client/src/pages/HoldingZone.tsx:1156 |
 | /api/threads/${threadId}/my-status | 1 | client/src/components/group-messaging.tsx:341 |
 | /api/tracked-calendar | 8 | client/src/pages/yearly-calendar.tsx:297<br>client/src/pages/yearly-calendar.tsx:560<br>client/src/pages/yearly-calendar.tsx:583<br>client/src/pages/yearly-calendar.tsx:606 |
-| /api/tracked-calendar?year=${selectedYear} | 1 | client/src/pages/yearly-calendar.tsx:299 |
 | /api/tracked-calendar/${data.id} | 1 | client/src/pages/yearly-calendar.tsx:665 |
 | /api/tracked-calendar/${id} | 1 | client/src/pages/yearly-calendar.tsx:687 |
 | /api/tracked-calendar/import-religious-holidays | 1 | client/src/pages/yearly-calendar.tsx:580 |
 | /api/tracked-calendar/import-school-breaks | 1 | client/src/pages/yearly-calendar.tsx:557 |
 | /api/tracked-calendar/import-us-holidays | 1 | client/src/pages/yearly-calendar.tsx:603 |
+| /api/tracked-calendar?year=${selectedYear} | 1 | client/src/pages/yearly-calendar.tsx:299 |
 | /api/uploads/request-url | 2 | client/src/hooks/use-upload.ts:65<br>client/src/hooks/use-upload.ts:165 |
 | /api/user-issue-reports | 1 | client/src/components/ReportIssueDialog.tsx:84 |
 | /api/user-issue-reports/admin | 1 | client/src/components/user-issue-reports-log.tsx:46 |
@@ -786,7 +786,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/users/${userId}/status | 1 | client/src/hooks/useUserManagement.ts:47 |
 | /api/users/99999999 | 1 | tests/integration/routes/users.test.ts:488 |
 | /api/users/basic | 7 | client/src/components/event-requests/dialogs/EventEditDialog.tsx:395<br>client/src/components/event-requests/hooks/useEventQueries.ts:15<br>client/src/mobile/pages/mobile-driver-planning.tsx:110<br>client/src/pages/driver-planning.tsx:1553 |
-| /api/users/for-assignments | 28 | client/src/components/EditContactAttemptDialog.tsx:93<br>client/src/components/EditContactAttemptDialog.tsx:96<br>client/src/components/email-style-messaging.tsx:354<br>client/src/components/email-style-messaging.tsx:355 |
+| /api/users/for-assignments | 28 | client/src/components/EditContactAttemptDialog.tsx:93<br>client/src/components/EditContactAttemptDialog.tsx:96<br>client/src/components/LogContactAttemptDialog.tsx:91<br>client/src/components/LogContactAttemptDialog.tsx:94 |
 | /api/users/heartbeat | 1 | client/src/hooks/useOnlinePresenceNotifications.ts:59 |
 | /api/users/map | 3 | client/src/hooks/useUserManagement.ts:139<br>client/src/pages/driver-planning.tsx:1617<br>client/src/pages/driver-planning.tsx:1619 |
 | /api/users/online | 6 | client/src/components/online-users.tsx:88<br>client/src/components/online-users.tsx:90<br>client/src/hooks/useOnlinePresenceNotifications.ts:139<br>client/src/hooks/useOnlinePresenceNotifications.ts:155 |
@@ -822,9 +822,9 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/work-logs | 5 | client/src/pages/work-log.tsx:52<br>client/src/pages/work-log.tsx:55<br>client/src/pages/work-log.tsx:71<br>client/src/pages/work-log.tsx:87 |
 | /api/work-logs/${id} | 1 | client/src/pages/work-log.tsx:94 |
 | /api/yearly-calendar | 6 | client/src/pages/yearly-calendar.tsx:288<br>client/src/pages/yearly-calendar.tsx:461<br>client/src/pages/yearly-calendar.tsx:464<br>client/src/pages/yearly-calendar.tsx:495 |
-| /api/yearly-calendar?year=${selectedYear} | 1 | client/src/pages/yearly-calendar.tsx:290 |
 | /api/yearly-calendar/${id} | 2 | client/src/pages/yearly-calendar.tsx:492<br>client/src/pages/yearly-calendar.tsx:515 |
 | /api/yearly-calendar/${id}/copy-to-next-year | 1 | client/src/pages/yearly-calendar.tsx:536 |
+| /api/yearly-calendar?year=${selectedYear} | 1 | client/src/pages/yearly-calendar.tsx:290 |
 
 ## Client app routes
 
