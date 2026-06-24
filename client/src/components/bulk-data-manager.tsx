@@ -88,7 +88,10 @@ export default function BulkDataManager({
           `/api/data-management/collections-by-host/${encodeURIComponent(selectedHost)}`
         );
         if (!response.ok) throw new Error('Failed to fetch host collections');
-        return response.json();
+        const json = await response.json();
+        // Route returns a paginated object { data, total, ... }; the UI
+        // consumes hostCollections as an array (.map / .length), so unwrap it.
+        return Array.isArray(json) ? json : (json?.data ?? []);
       },
       enabled: !!selectedHost,
     }
