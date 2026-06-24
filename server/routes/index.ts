@@ -58,6 +58,7 @@ import { createEventRemindersRouter } from './event-reminders';
 import eventCheckInRemindersRouter from './event-check-in-reminders';
 import { createEmailRouter } from './email-routes';
 import { createEmailDraftsRouter } from './email-drafts';
+import { createMobileDashboardRouter } from './mobile-dashboard';
 import { createAdminMigrationsRouter } from './admin-migrations';
 import { createAdminEventsRouter } from './admin-events';
 import { createOnboardingRouter } from './onboarding';
@@ -1051,6 +1052,17 @@ export function createMainRoutes(deps: RouterDependencies) {
     hostsRouter
   );
   router.use('/api/hosts*', createErrorHandler('hosts'));
+
+  // Mobile home dashboard: /api/dashboard/stats + /api/activity/recent
+  const mobileDashboardRouter = createMobileDashboardRouter(deps);
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    mobileDashboardRouter
+  );
+  router.use('/api/dashboard*', createErrorHandler('dashboard'));
+  router.use('/api/activity*', createErrorHandler('activity'));
 
   // Event reminders
   const eventRemindersRouter = createEventRemindersRouter(deps);
