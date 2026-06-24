@@ -340,7 +340,7 @@ View full dashboard: {{dashboardLink}}
 
       const emailData = {
         to: recipients,
-        from: process.env.FROM_EMAIL || 'noreply@sandwichproject.org',
+        from: process.env.FROM_EMAIL || 'katie@thesandwichproject.org',
         subject,
         html: htmlContent + EMAIL_FOOTER_HTML,
         text: textContent + EMAIL_FOOTER_TEXT,
