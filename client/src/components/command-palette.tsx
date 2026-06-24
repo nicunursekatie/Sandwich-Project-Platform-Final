@@ -231,7 +231,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <span>Close</span>
             </div>
             <div>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-muted rounded border">⌘K</kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-muted rounded border">⌘⇧K</kbd>
               <span className="ml-1">to open</span>
             </div>
           </div>
@@ -248,8 +248,11 @@ export function useCommandPalette() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K or Ctrl+K to open command palette
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      // Cmd+Shift+K or Ctrl+Shift+K to open the command palette.
+      // Plain Cmd/Ctrl+K is owned by the sidebar SmartSearch (the global
+      // AI search), which has a visible trigger advertising that shortcut —
+      // so the palette uses the Shift variant to avoid both opening at once.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setOpen((prev) => !prev);
       }

@@ -343,7 +343,7 @@ export default function Dashboard({
   // Show toast notifications when other users come online
   useOnlinePresenceNotifications();
 
-  // Command palette for quick navigation (Cmd+K)
+  // Command palette for quick navigation (Cmd+Shift+K; plain Cmd+K is the sidebar SmartSearch)
   const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
 
   // Parse URL query parameters - track search string changes independently
@@ -903,7 +903,7 @@ export default function Dashboard({
       <TextIdeaAnnouncementModal />
       <WhatsNewModal />
 
-      {/* Command Palette for quick navigation (Cmd+K) */}
+      {/* Command Palette for quick navigation (Cmd+Shift+K) */}
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
