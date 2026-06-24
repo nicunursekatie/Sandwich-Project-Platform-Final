@@ -5,6 +5,7 @@ import {
   FileText,
   TrendingUp,
   TrendingDown,
+  ArrowRight,
   Calendar,
   Award,
   Download,
