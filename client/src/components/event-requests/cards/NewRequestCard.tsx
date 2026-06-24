@@ -1253,10 +1253,19 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons
+            Tiered layout:
+              - PRIMARY (left): the 1-2 most likely "next" actions — Assign TSP
+                Contact (when missing) and Edit (always). These keep their full
+                size and labels so they're impossible to miss.
+              - SECONDARY (right of primaries): supporting actions that the
+                user uses occasionally — collapsed to icon-only chips with
+                tooltips. Smaller (h-8 w-8) and visually muted so they don't
+                compete for attention.
+            Order matches the typical intake flow left → right. */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-            {/* TSP Contact Assignment - only show if not already assigned and user has permission */}
+          <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t">
+            {/* PRIMARY: Assign TSP Contact when missing — high-priority intake step */}
             {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1276,111 +1285,118 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </Tooltip>
             )}
 
-            {/* AI Date Suggestion - show if there are dates to analyze */}
-            {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+            {/* SECONDARY actions — icon-only, smaller, visually de-emphasized */}
+            <div className="flex items-center gap-1">
+              {/* AI Date Suggestion */}
+              {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={onAiSuggest}
+                      className="h-8 w-8 text-[#236383] hover:bg-[#236383]/10"
+                      data-testid="button-ai-suggest-date"
+                      aria-label="AI Date Suggest"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>AI date suggestions</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* AI Intake Assistant */}
+              {onAiIntakeAssist && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={onAiIntakeAssist}
+                      className="h-8 w-8 text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                      data-testid="button-ai-intake-assist"
+                      aria-label="AI Intake Check"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>AI intake check</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Schedule Call */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onAiSuggest}
-                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
-                    data-testid="button-ai-suggest-date"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    AI Date Suggest
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Get AI suggestions for the best event date</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            {/* AI Intake Assistant - always available */}
-            {onAiIntakeAssist && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onAiIntakeAssist}
-                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10"
-                    data-testid="button-ai-intake-assist"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    AI Intake Check
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Use AI to check intake information</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onScheduleCall}
-                 
-                >
-                  <Phone className="w-4 h-4 mr-1" />
-                  Schedule Call
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Schedule a call with the organizer</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onLogContact}
-                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
-                >
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Log Contact
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Log a contact attempt or conversation</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <ReminderRulesManager
-              eventRequestId={request.id}
-              tspContactUserId={request.tspContact || request.tspContactAssigned}
-              eventStatus={request.status}
-            />
-
-            {onNonEvent && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
+                    size="icon"
                     variant="ghost"
-                    onClick={onNonEvent}
-                    className="text-stone-500 hover:text-stone-700 hover:bg-stone-100"
-                    data-testid="button-non-event"
+                    onClick={onScheduleCall}
+                    className="h-8 w-8 text-slate-600 hover:bg-slate-100"
+                    aria-label="Schedule Call"
                   >
-                    <Ban className="w-4 h-4 mr-1" />
-                    Non-Event
+                    <Phone className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Mark as non-event (not a real event request)</p>
+                  <p>Schedule a call with the organizer</p>
                 </TooltipContent>
               </Tooltip>
-            )}
+
+              {/* Log Contact */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={onLogContact}
+                    className="h-8 w-8 text-[#007E8C] hover:bg-[#007E8C]/10"
+                    aria-label="Log Contact"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Log a contact attempt or conversation</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Reminders (component renders its own button) */}
+              <ReminderRulesManager
+                eventRequestId={request.id}
+                tspContactUserId={request.tspContact || request.tspContactAssigned}
+                eventStatus={request.status}
+              />
+
+              {/* Non-Event */}
+              {onNonEvent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={onNonEvent}
+                      className="h-8 w-8 text-stone-500 hover:bg-stone-100"
+                      data-testid="button-non-event"
+                      aria-label="Mark as Non-Event"
+                    >
+                      <Ban className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Mark as non-event (not a real event request)</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
 
             <div className="flex-1" />
 
-            {/* Edit Button - Always show for new requests */}
+            {/* PRIMARY: Edit Button — always-visible "next action" anchor */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

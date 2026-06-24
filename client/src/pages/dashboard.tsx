@@ -994,7 +994,7 @@ export default function Dashboard({
                         setActiveSection('chat');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'chat'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1002,6 +1002,7 @@ export default function Dashboard({
                       aria-label="Team Chat"
                     >
                       <Hash className="w-4 h-4" />
+                      <span className="hidden lg:inline">Chat</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Team Chat</TooltipContent>
@@ -1016,7 +1017,7 @@ export default function Dashboard({
                         setActiveSection('gmail-inbox');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'gmail-inbox'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1024,6 +1025,7 @@ export default function Dashboard({
                       aria-label="Project Threads"
                     >
                       <Inbox className="w-4 h-4" />
+                      <span className="hidden lg:inline">Threads</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Project Threads</TooltipContent>
@@ -1083,7 +1085,7 @@ export default function Dashboard({
                             }
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`p-2 rounded-md transition-colors ${
+                          className={`flex items-center gap-1.5 px-2 py-2 rounded-md transition-colors text-sm font-medium ${
                             activeSection === item.href
                               ? 'bg-white text-brand-primary shadow-sm'
                               : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1091,6 +1093,7 @@ export default function Dashboard({
                           aria-label={item.label}
                         >
                           {Icon && <Icon className="w-4 h-4" />}
+                          <span className="hidden xl:inline">{item.label}</span>
                         </button>
                       </TooltipTrigger>
                       <TooltipContent side="bottom" sideOffset={8}>{item.label}</TooltipContent>
@@ -1111,10 +1114,11 @@ export default function Dashboard({
                         trackButtonClick('report_issue', 'dashboard_header');
                         openReportDialog();
                       }}
-                      className="p-1.5 sm:p-2 rounded-md transition-colors text-white/80 hover:bg-white/15 hover:text-white"
+                      className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium text-white/80 hover:bg-white/15 hover:text-white"
                       aria-label="Report an issue"
                     >
                       <AlertCircle className="w-4 h-4" />
+                      <span className="hidden xl:inline">Report Issue</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Report an issue</TooltipContent>
@@ -1131,7 +1135,7 @@ export default function Dashboard({
                         window.history.pushState({}, '', '/dashboard?section=profile');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'profile'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1139,6 +1143,7 @@ export default function Dashboard({
                       aria-label="Account Settings"
                     >
                       <UserCog className="w-4 h-4" />
+                      <span className="hidden xl:inline">Account</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Account Settings</TooltipContent>
@@ -1159,11 +1164,11 @@ export default function Dashboard({
                       window.location.href = '/login';
                     }
                   }}
-                  className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1.5 text-white/80 hover:text-red-200 rounded-md hover:bg-white/10 transition-colors text-sm font-medium"
+                  className="flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1.5 sm:py-2 text-white/80 hover:text-red-200 rounded-md hover:bg-white/10 transition-colors text-sm font-medium"
                   aria-label="Logout"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span className="hidden md:inline">Logout</span>
+                  <span className="hidden xl:inline">Logout</span>
                 </button>
               </div>
             </div>

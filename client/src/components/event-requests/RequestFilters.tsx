@@ -29,6 +29,27 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { Info } from 'lucide-react';
+
+/**
+ * Per-tab guidance tip — shown as an inline banner under the active status tab
+ * so new team members can see at a glance what action is expected at that stage.
+ * Wording mirrors STATUS_DEFINITIONS.guidance in shared/event-status-workflow.ts
+ * but condensed for an at-a-glance read.
+ */
+const STATUS_TAB_TIPS: Record<string, string> = {
+  new: 'Review the details and make first contact. Move to In Process once you’ve sent the toolkit, or Non-Event if it isn’t a real event request.',
+  in_process: 'Work with the contact to finalize event details. Move to Scheduled once a date is locked in, or Standby/Stalled if you’re waiting on them.',
+  scheduled: 'Assign drivers, speakers, and volunteers. Confirm logistics. Move to Completed after the event date, or Cancelled/Rescheduled if plans change.',
+  rescheduled: 'Treat like a Scheduled event. Re-confirm assignments for the new date.',
+  completed: 'Finish 1-day and 1-month follow-ups, and request a social media post if applicable.',
+  declined: 'Record the reason. Can be reactivated if they come back later.',
+  cancelled: 'Make sure the cancellation reason is documented in the notes.',
+  non_event: 'Terminal status — applies to requests that turned out not to be real events.',
+  standby: 'Follow up closely. Move back to In Process or Scheduled once they’re ready, or to Stalled/Declined if they don’t respond.',
+  stalled: 'Continue periodic outreach. Move back to In Process if they respond, or Declined if they confirm they’re no longer interested.',
+  all: 'All events across every status — useful for searching or auditing.',
+};
 
 interface RequestFiltersProps {
   // Search and filter states
@@ -365,6 +386,21 @@ export default function RequestFilters({
             </TabsList>
           </div>
         </Tabs>
+
+        {/* Per-tab guidance banner — actionable tip for what to do at each
+            stage. Hidden when the user is on a non-status filter (e.g.,
+            navTabs like Planning) since those don't map to a workflow stage. */}
+        {STATUS_TAB_TIPS[activeTab] && (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-[#007E8C]/8 border border-[#007E8C]/20 text-[13px] text-[#236383] leading-snug">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-[#007E8C]" aria-hidden="true" />
+            <p>
+              <span className="font-semibold">
+                {tabConfig.find((t) => t.value === activeTab)?.label}:
+              </span>{' '}
+              {STATUS_TAB_TIPS[activeTab]}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Top Pagination - Shown on all screen sizes when there are multiple pages */}
