@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -9,20 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   ExternalLink,
-  Eye,
   FileSpreadsheet,
-  AlertCircle,
   RefreshCw,
-  Upload,
-  Download,
 } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
-import { useAuth } from '@/hooks/useAuth';
-import { hasPermission } from '@shared/unified-auth-utils';
-import { logger } from '@/lib/logger';
 
 interface GoogleSheetsViewerProps {
   initialUrl?: string;
@@ -31,86 +20,28 @@ interface GoogleSheetsViewerProps {
 }
 
 export function GoogleSheetsViewer({
-  initialUrl = '',
   title = 'Google Sheets Viewer',
   height = 600,
 }: GoogleSheetsViewerProps) {
-  // Fixed URL for the specific spreadsheet
+  // Fixed URLs for the sandwich totals spreadsheet. This viewer is read-only:
+  // it embeds the live Google Sheet directly (no backend), so there is nothing
+  // to upload or proxy — admins edit the sheet in Google.
   const FIXED_SHEET_URL =
     'https://docs.google.com/spreadsheets/d/1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8/edit?gid=1218710353#gid=1218710353';
   const FIXED_VIEWER_URL =
     'https://docs.google.com/spreadsheets/d/1mjx5o6boluo8mNx8tzAV76NBGS6tF0um2Rq9bIdxPo8/edit?usp=sharing&embedded=true';
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showFallback, setShowFallback] = useState(false);
-  const [fallbackFileStatus, setFallbackFileStatus] = useState<any>(null);
-  const [uploading, setUploading] = useState(false);
-  const [sheetLoadError, setSheetLoadError] = useState(false);
-  const { user } = useAuth();
-
-  // Check fallback file status on component mount
-  useEffect(() => {
-    checkFallbackStatus();
-  }, []);
-
-  const checkFallbackStatus = async () => {
-    try {
-      const response = await apiRequest('GET', '/api/project-data/status');
-      setFallbackFileStatus(response);
-    } catch (error) {
-      logger.error('Failed to check fallback status:', error);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(true);
+  // Bump to force the iframe to reload the latest sheet contents.
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRefresh = () => {
     setIsLoading(true);
-    // Force refresh by updating the URL with a timestamp
-    const refreshUrl = `${FIXED_VIEWER_URL}&t=${Date.now()}`;
-    setTimeout(() => setIsLoading(false), 1000);
+    setRefreshKey((k) => k + 1);
   };
 
   const openInNewTab = () => {
-    window.open(FIXED_SHEET_URL, '_blank');
-  };
-
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      await apiRequest('POST', '/api/project-data/upload', formData);
-      await checkFallbackStatus(); // Refresh status
-      setError('');
-    } catch (error) {
-      setError('Failed to upload file. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const downloadFallbackFile = () => {
-    window.open('/api/project-data/current', '_blank');
-  };
-
-  const handleSheetError = () => {
-    setSheetLoadError(true);
-    if (fallbackFileStatus?.hasFile) {
-      setShowFallback(true);
-      setError(
-        'Google Sheets access restricted. Showing static version instead.'
-      );
-    } else {
-      setError(
-        'Unable to load Google Sheet and no fallback file is available.'
-      );
-    }
+    window.open(FIXED_SHEET_URL, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -122,8 +53,8 @@ export function GoogleSheetsViewer({
             {title}
           </CardTitle>
           <CardDescription>
-            Displays the most recent copy of our sandwich totals spreadsheet.
-            This is a static file that shows our complete collection data.
+            A read-only view of our sandwich totals spreadsheet, showing the
+            complete collection data. Edits are made directly in Google Sheets.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -139,82 +70,24 @@ export function GoogleSheetsViewer({
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                onClick={downloadFallbackFile}
-                title="Download spreadsheet"
+                onClick={handleRefresh}
+                title="Reload the sheet"
               >
-                <Download className="h-4 w-4" />
-                Download
+                <RefreshCw
+                  className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
+                />
+                Refresh
               </Button>
               <Button
                 variant="outline"
-                onClick={downloadFallbackFile}
-                title="Open in new tab"
+                onClick={openInNewTab}
+                title="Open in Google Sheets"
               >
                 <ExternalLink className="h-4 w-4" />
                 Open
               </Button>
             </div>
           </div>
-
-          {!fallbackFileStatus?.hasFile && (
-            <Alert variant="default">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                No sandwich data file is currently available. Please contact an
-                administrator to upload the latest spreadsheet.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* File upload section - only for admins */}
-          {hasPermission(user, 'manage_files') && (
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-sm font-medium">Update Sandwich Data</p>
-                  <p className="text-xs text-gray-500">
-                    Upload the latest sandwich totals spreadsheet
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Label htmlFor="file-upload" className="cursor-pointer">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={uploading}
-                    className="flex items-center gap-2"
-                    asChild
-                  >
-                    <span>
-                      <Upload className="h-4 w-4" />
-                      {uploading ? 'Uploading...' : 'Upload New File'}
-                    </span>
-                  </Button>
-                </Label>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  accept=".xlsx,.xls,.csv,.pdf"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                {fallbackFileStatus?.hasFile && (
-                  <span className="text-xs text-green-600">
-                    Current: {fallbackFileStatus.fileName}
-                  </span>
-                )}
-              </div>
-
-              {error && uploading && (
-                <Alert variant="destructive" className="mt-3">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -229,56 +102,36 @@ export function GoogleSheetsViewer({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {fallbackFileStatus?.hasFile ? (
-            <>
-              <div
-                className="border rounded-lg overflow-hidden relative"
-                onWheel={(e) => {
-                  // Prevent parent scrolling when scrolling within the iframe container
-                  e.stopPropagation();
-                }}
-                onTouchMove={(e) => {
-                  // Prevent parent scrolling on mobile
-                  e.stopPropagation();
-                }}
-                style={{
-                  height: `${height}px`,
-                  overflow: 'hidden',
-                  isolation: 'isolate',
-                }}
-              >
-                <iframe
-                  src="/api/project-data/current"
-                  width="100%"
-                  height={height}
-                  style={{
-                    border: 'none',
-                    display: 'block',
-                    overflow: 'hidden',
-                  }}
-                  title="Sandwich Totals Data Sheet"
-                  onLoad={() => setIsLoading(false)}
-                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                />
-              </div>
-
-              <div className="mt-2 text-center">
-                <p className="text-sm text-brand-primary">
-                  File: {fallbackFileStatus.fileName}
-                </p>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg">
-              <div className="text-center">
-                <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">No sandwich data file available</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  Contact an administrator to upload the spreadsheet
-                </p>
-              </div>
-            </div>
-          )}
+          <div
+            className="border rounded-lg overflow-hidden relative"
+            onWheel={(e) => {
+              // Prevent parent scrolling when scrolling within the iframe container
+              e.stopPropagation();
+            }}
+            onTouchMove={(e) => {
+              // Prevent parent scrolling on mobile
+              e.stopPropagation();
+            }}
+            style={{
+              height: `${height}px`,
+              overflow: 'hidden',
+              isolation: 'isolate',
+            }}
+          >
+            <iframe
+              key={refreshKey}
+              src={FIXED_VIEWER_URL}
+              width="100%"
+              height={height}
+              style={{
+                border: 'none',
+                display: 'block',
+                overflow: 'hidden',
+              }}
+              title="Sandwich Totals Data Sheet"
+              onLoad={() => setIsLoading(false)}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

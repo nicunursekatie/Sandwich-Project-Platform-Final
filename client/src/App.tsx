@@ -171,48 +171,6 @@ function Router() {
           </Suspense>
         </Route>
         <Route path="/login" component={LoginPage} />
-        <Route path="/stream-messages">
-          {() => (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-              <div className="max-w-md p-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 text-center backdrop-blur-sm">
-                <div className="w-12 h-12 bg-brand-primary/10 dark:bg-brand-primary/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-6 h-6 text-brand-primary"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6V5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v1"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
-                  Authentication Required
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                  Please log in to access the messaging system and continue your
-                  work.
-                </p>
-                <button
-                  onClick={() => (window.location.href = '/login')}
-                  className="w-full px-6 py-3 bg-brand-primary hover:bg-brand-primary-dark active:bg-brand-primary-dark text-white font-medium rounded-xl transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-brand-primary/20"
-                >
-                  Login to Continue
-                </button>
-              </div>
-            </div>
-          )}
-        </Route>
         <Route path="/">
           {() => {
             // Redirect unauthenticated users directly to login page
@@ -384,9 +342,6 @@ function Router() {
         {/* Desktop App Routes */}
         <Route path="/messages">
           {() => <Dashboard initialSection="messages" />}
-        </Route>
-        <Route path="/stream-messages">
-          {() => <Dashboard initialSection="stream-messages" />}
         </Route>
         <Route path="/inbox">{() => <Dashboard initialSection="inbox" />}</Route>
         <Route path="/notifications">

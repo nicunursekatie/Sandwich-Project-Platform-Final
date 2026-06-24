@@ -110,7 +110,6 @@ const WorkLogPage = lazyWithRetry(() => import('@/pages/work-log'));
 const SuggestionsPortal = lazyWithRetry(() => import('@/pages/suggestions'));
 const GoogleSheetsPage = lazyWithRetry(() => import('@/pages/google-sheets'));
 const PlanningSheetProposalsPage = lazyWithRetry(() => import('@/pages/planning-sheet-proposals'));
-const RealTimeMessages = lazyWithRetry(() => import('@/pages/real-time-messages'));
 const GmailStyleInbox = lazyWithRetry(() => import('@/components/gmail-style-inbox'));
 const MessagingInbox = lazyWithRetry(() => import('@/pages/messaging-inbox'));
 const ToolkitTabs = lazyWithRetry(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
@@ -253,7 +252,6 @@ const HELP_BUTTON_HIDDEN_SECTIONS = [
   'chat',
   'messages',
   'inbox',
-  'stream-messages',
   'gmail-inbox',
 ];
 
@@ -590,8 +588,6 @@ export default function Dashboard({
       case 'projects':
         logger.log('Rendering ProjectsManagement component');
         return <ProjectsManagement />;
-      case 'real-time-messages':
-        return <RealTimeMessages />;
       case 'messages':
         return <GmailStyleInbox />;
       case 'gmail-inbox':
@@ -600,8 +596,6 @@ export default function Dashboard({
         return <GmailStyleInbox />;
       case 'messaging-inbox':
         return <MessagingInbox />;
-      case 'stream-messages':
-        return <RealTimeMessages />;
       case 'chat':
         return (
           <div className="h-full flex flex-col">
