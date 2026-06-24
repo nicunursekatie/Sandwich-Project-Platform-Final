@@ -41,7 +41,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { getTodayString } from '@shared/date-utils';
 import { useToast } from '@/hooks/use-toast';
 import { calculateActualWeeklyAverage, calculateWeeklyData } from '@/lib/analytics-utils';
-import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -460,10 +460,30 @@ export default function DashboardOverview({
       .filter((w) => w.isComplete)
       .slice(-12)
       .map((w) => ({
-        week: w.weekLabel.split(' - ')[0], // short Friday label
+        week: w.weekLabel.split(' - ')[0], // short Friday label for x-axis
+        weekFull: w.weekLabel, // full label (e.g. "Jan 12 - Jan 18") for tooltip
         sandwiches: w.totalSandwiches,
       }));
   }, [allCollectionsData]);
+
+  // Min/max for the trend chart — used in the legend strip so the reader
+  // has the line's scale even without inspecting the y-axis.
+  const weeklyTrendStats = React.useMemo(() => {
+    if (!weeklyTrend.length) return null;
+    const totals = weeklyTrend.map((w) => w.sandwiches);
+    return {
+      min: Math.min(...totals),
+      max: Math.max(...totals),
+      avg: Math.round(totals.reduce((a, b) => a + b, 0) / totals.length),
+    };
+  }, [weeklyTrend]);
+
+  // Compact y-axis tick formatter — 12,500 → "12.5k", keeps the axis from
+  // taking too much horizontal real estate.
+  const formatCompactNumber = (n: number) => {
+    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+    return String(n);
+  };
 
   return (
     <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
@@ -1100,33 +1120,93 @@ export default function DashboardOverview({
         {weeklyTrend.length > 1 && (
           <div className="mx-4 mb-8 max-w-full">
             <div className="premium-card p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="premium-text-caption text-brand-primary uppercase">
-                  Weekly Collections — last {weeklyTrend.length} weeks
-                </h3>
+              <div className="flex items-start justify-between mb-1 gap-2">
+                <div>
+                  <h3 className="premium-text-caption text-brand-primary uppercase">
+                    Weekly Collections — last {weeklyTrend.length} weeks
+                  </h3>
+                  <p className="text-sm text-gray-700 mt-0.5">
+                    Total sandwiches collected each week (individual + group)
+                  </p>
+                </div>
                 <button
                   onClick={() => onSectionChange?.('analytics')}
-                  className="text-sm text-brand-primary hover:underline flex items-center gap-1"
+                  className="text-sm text-brand-primary hover:underline flex items-center gap-1 flex-shrink-0 mt-1"
                 >
                   Full analytics <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
+
+              {/* Legend strip — color swatch makes the line's meaning explicit
+                  and the min/avg/max anchors give the reader scale before
+                  they hover any point. */}
+              {weeklyTrendStats && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-gray-600">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="inline-block w-3 h-3 rounded-sm"
+                      style={{ backgroundColor: '#007E8C' }}
+                      aria-hidden="true"
+                    />
+                    <span>Sandwiches per week</span>
+                  </span>
+                  <span className="text-gray-300" aria-hidden="true">·</span>
+                  <span>
+                    Low <span className="font-semibold text-gray-800">{weeklyTrendStats.min.toLocaleString()}</span>
+                  </span>
+                  <span>
+                    Avg <span className="font-semibold text-gray-800">{weeklyTrendStats.avg.toLocaleString()}</span>
+                  </span>
+                  <span>
+                    High <span className="font-semibold text-gray-800">{weeklyTrendStats.max.toLocaleString()}</span>
+                  </span>
+                </div>
+              )}
+
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 4, bottom: 4 }}>
                   <defs>
                     <linearGradient id="dashTrendFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#007E8C" stopOpacity={0.35} />
                       <stop offset="100%" stopColor="#007E8C" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#6b7280' }} interval="preserveStartEnd" />
+                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    interval="preserveStartEnd"
+                    label={{
+                      value: 'Week ending (Friday)',
+                      position: 'insideBottom',
+                      offset: -2,
+                      style: { fontSize: 10, fill: '#9ca3af' },
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    tickFormatter={formatCompactNumber}
+                    width={44}
+                    label={{
+                      value: 'Sandwiches',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 12,
+                      style: { fontSize: 10, fill: '#9ca3af', textAnchor: 'middle' },
+                    }}
+                  />
                   <RechartsTooltip
-                    formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']}
+                    formatter={(value: number) => [`${value.toLocaleString()} sandwiches`, 'Total collected']}
+                    labelFormatter={(_label, payload) => {
+                      const full = (payload?.[0]?.payload as { weekFull?: string } | undefined)?.weekFull;
+                      return full ? `Week of ${full}` : '';
+                    }}
                     labelStyle={{ color: '#236383', fontWeight: 600 }}
                   />
                   <Area
                     type="monotone"
                     dataKey="sandwiches"
+                    name="Sandwiches collected"
                     stroke="#007E8C"
                     strokeWidth={2}
                     fill="url(#dashTrendFill)"
