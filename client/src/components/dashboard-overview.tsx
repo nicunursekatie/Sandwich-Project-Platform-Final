@@ -71,6 +71,20 @@ interface DashboardOverviewProps {
   onSectionChange: (section: string) => void;
 }
 
+// Standalone section band header — gives the dashboard a clear hierarchy
+// (TODAY / VOLUNTEERS / OPERATIONS / TOOLS / INSIGHTS) so the page reads as
+// grouped priorities instead of one long undifferentiated scroll. Rendered as
+// a sibling before each group (the parent's space-y stacking forms the bands),
+// so it never has to wrap blocks and can't unbalance the surrounding JSX.
+function SectionHeader({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <div className="mx-4 flex items-baseline gap-3 border-b border-gray-200 pb-2 pt-2">
+      <h2 className="text-xs font-bold uppercase tracking-wider text-[#236383]">{label}</h2>
+      {hint && <span className="text-xs text-gray-400">{hint}</span>}
+    </div>
+  );
+}
+
 export default function DashboardOverview({
   onSectionChange,
 }: {
@@ -565,22 +579,39 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
-        <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
-        </div>
+        {/* ── TODAY: the things that need attention right now ── */}
+        <SectionHeader label="Today" hint="What needs your attention right now" />
 
         {/* Operational Overview - Key metrics and urgent items */}
         <OperationalOverview onNavigate={onSectionChange || (() => {})} />
 
-        {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
-        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+        {/* Action Tracker — your assigned tasks, events, and messages (moved up
+            from below the tools grid: it belongs with today's priorities). */}
+        <div className="mx-4 mb-8 max-w-full">
+          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
+        </div>
 
-        {/* Continue where you left off — kept near the top since people reopen
-            the same resources constantly (moved up from below the tools grid). */}
+        {/* Continue where you left off — people reopen the same resources constantly. */}
         <div className="mx-4 mb-8 max-w-full">
           <RecentlyAccessedResources />
         </div>
+
+        {/* ── VOLUNTEERS ── */}
+        <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
+
+        {/* Volunteer Opportunities Spotlight */}
+        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+
+        {/* ── OPERATIONS ── */}
+        <SectionHeader label="Operations" hint="Forecast and capacity" />
+
+        {/* Group Event Forecast - current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+        </div>
+
+        {/* ── TOOLS ── */}
+        <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
 
         {/* TSP Additional Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
@@ -920,10 +951,8 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
+        {/* ── INSIGHTS ── (Action Tracker moved up to the Today section) */}
+        <SectionHeader label="Insights" hint="Totals, capacity, and resources" />
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 mb-6 sm:mb-8 max-w-full">
