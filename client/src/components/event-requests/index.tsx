@@ -63,6 +63,7 @@ import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 import { useEventMutations } from './hooks/useEventMutations';
 import { useEventQueries } from './hooks/useEventQueries';
 import { useEventAssignments } from './hooks/useEventAssignments';
+import { useEventFilters } from './hooks/useEventFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -89,6 +90,10 @@ import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+
+// Tabs that render aggregate dashboards rather than a flat list of event
+// rows — the Export action (a row-level spreadsheet) doesn't apply to them.
+const EXPORT_EXCLUDED_TABS = ['admin_overview', 'planning', 'sandwich_overview'];
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -280,6 +285,11 @@ const EventRequestsManagementContent: React.FC = () => {
   } = useEventMutations();
 
   const { resolveUserName, resolveRecipientName } = useEventAssignments();
+
+  // Per-tab row filtering — single source of truth for "what this tab shows".
+  // Used by Export so the spreadsheet matches the visible rows (e.g. My
+  // Assignments exports only the current user's events, not the raw cache).
+  const { filterRequestsByStatus } = useEventFilters();
 
   const queryClient = useQueryClient();
 
@@ -625,25 +635,32 @@ const EventRequestsManagementContent: React.FC = () => {
                 </button>
               )}
               <VanConflictsButton isMobile={isMobile} />
-              {/* Export — available on any list view. The export utility has
-                  tailored columns per tab (new/in_process/scheduled/completed/
-                  declined/my_assignments) and falls back to the "new" columns
-                  for the rest, so it works on every tab. Hidden in Calendar/Map
-                  views since those render their own data, not this list dataset.
-                  Lives in the top-right action group with Add Event because
-                  it's a one-off action that downloads a file, not a view. */}
-              {viewMode === 'list' && (
+              {/* Export — available on any list-view tab. We export the same
+                  rows the tab displays (via filterRequestsByStatus, skipping
+                  pagination) rather than the raw eventRequests cache, because
+                  "virtual" tabs like My Assignments fetch all active events and
+                  filter client-side — exporting the raw cache would leak every
+                  active request. Hidden on the dashboard tabs (admin overview /
+                  planning / sandwich overview), which aren't flat row lists, and
+                  in Calendar/Map views which render their own data. Lives in the
+                  top-right action group with Add Event because it's a one-off
+                  action that downloads a file, not a view. */}
+              {viewMode === 'list' && !EXPORT_EXCLUDED_TABS.includes(activeTab) && (
                 <button
                   onClick={async () => {
                     try {
-                      await exportEventRequestsToExcel(eventRequests, activeTab);
+                      const rows = filterRequestsByStatus(activeTab, { skipPagination: true });
+                      if (rows.length === 0) {
+                        toast({ title: 'Nothing to export', description: 'No events match the current view.' });
+                        return;
+                      }
+                      await exportEventRequestsToExcel(rows, activeTab);
                       toast({ title: 'Export complete' });
                     } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
                   }}
-                  disabled={eventRequests.length === 0}
                   className="premium-btn-outline text-sm disabled:opacity-50"
                   data-testid="button-export-events"
-                  title="Download a spreadsheet of the events on this tab"
+                  title="Download a spreadsheet of the events shown on this tab"
                 >
                   <Download className="w-4 h-4" />
                   {!isMobile && 'Export'}

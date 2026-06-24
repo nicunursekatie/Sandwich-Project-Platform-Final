@@ -530,14 +530,17 @@ export const useEventFilters = () => {
     startIndex + itemsPerPage
   );
 
-  // Filter by status for tab display
-  const filterRequestsByStatus = (status: string) => {
+  // Filter by status for tab display.
+  // `skipPagination` returns the full filtered+sorted set (no page slice) —
+  // used by the Export action so the spreadsheet contains every matching row,
+  // not just the current page.
+  const filterRequestsByStatus = (status: string, options?: { skipPagination?: boolean }) => {
     const source =
       status === 'all' || status === 'my_assignments'
         ? eventRequests
         : eventRequests.filter((req: EventRequest) => req.status === status || (status === 'scheduled' && req.status === 'rescheduled'));
 
-    return source
+    const sorted = source
       .filter((request: EventRequest) => {
         let matchesStatus = true;
 
@@ -649,8 +652,13 @@ export const useEventFilters = () => {
           default:
             return 0;
         }
-      })
-      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+      });
+
+    if (options?.skipPagination) {
+      return sorted;
+    }
+
+    return sorted.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   };
 
   return {
