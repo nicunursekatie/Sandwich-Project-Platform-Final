@@ -48,6 +48,26 @@ interface GuidedTourProps {
   onClose?: () => void;
 }
 
+// Read an in-progress tour persisted before a full-page navigation. Returns null
+// (rather than a partially-restored state) if the tour no longer exists or the
+// saved step index is out of range — e.g. after a tour's steps changed — so we
+// never restore an activeTour whose currentStep would be undefined and leave the
+// overlay stuck with no way to continue or complete.
+function readPersistedTour(): { tour: Tour; stepIndex: number } | null {
+  try {
+    const stored = localStorage.getItem('guided-tour-active');
+    if (!stored) return null;
+    const { tourId, stepIndex } = JSON.parse(stored);
+    const tour = getTourById(tourId);
+    if (!tour) return null;
+    const idx = typeof stepIndex === 'number' ? stepIndex : 0;
+    if (idx < 0 || idx >= tour.steps.length) return null;
+    return { tour, stepIndex: idx };
+  } catch {
+    return null;
+  }
+}
+
 export function GuidedTour({ onClose }: GuidedTourProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -55,25 +75,8 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
   // a route that isn't a sidebar item (e.g. Event Reminders), which requires a
   // real page load — without this, the active tour would be lost on the way there.
   // Persisted to localStorage by the "Save tour progress" effect below.
-  const [activeTour, setActiveTour] = useState<Tour | null>(() => {
-    try {
-      const stored = localStorage.getItem('guided-tour-active');
-      if (!stored) return null;
-      return getTourById(JSON.parse(stored).tourId) ?? null;
-    } catch {
-      return null;
-    }
-  });
-  const [currentStepIndex, setCurrentStepIndex] = useState(() => {
-    try {
-      const stored = localStorage.getItem('guided-tour-active');
-      if (!stored) return 0;
-      const { stepIndex } = JSON.parse(stored);
-      return typeof stepIndex === 'number' ? stepIndex : 0;
-    } catch {
-      return 0;
-    }
-  });
+  const [activeTour, setActiveTour] = useState<Tour | null>(() => readPersistedTour()?.tour ?? null);
+  const [currentStepIndex, setCurrentStepIndex] = useState(() => readPersistedTour()?.stepIndex ?? 0);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<TourCategory | null>(null);
   const [completedTours, setCompletedTours] = useState<string[]>([]);

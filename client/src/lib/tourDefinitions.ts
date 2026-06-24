@@ -103,9 +103,22 @@ export const TOURS: Tour[] = [
         highlightPadding: 8,
         waitForElement: true,
         beforeShow: () => {
-          const cat = document.querySelector('[data-tour="category-brand_marketing"]');
-          if (cat instanceof HTMLElement) {
-            cat.click();
+          // Category buttons live inside the Filters panel, which is collapsed by
+          // default on a fresh Resources page — open it first so the button mounts.
+          const clickCategory = () => {
+            const cat = document.querySelector('[data-tour="category-brand_marketing"]');
+            if (cat instanceof HTMLElement) {
+              cat.click();
+              return true;
+            }
+            return false;
+          };
+          if (!clickCategory()) {
+            const toggle = document.querySelector('[data-tour="resources-filters-toggle"]');
+            if (toggle instanceof HTMLElement) {
+              toggle.click();
+            }
+            setTimeout(clickCategory, 200);
           }
         }
       },
@@ -120,12 +133,21 @@ export const TOURS: Tour[] = [
       }
     ],
     afterComplete: () => {
-      // Auto-filter to the Brand & Marketing category
+      // Auto-filter to the Brand & Marketing category (opening Filters if needed)
       setTimeout(() => {
-        const cat = document.querySelector('[data-tour="category-brand_marketing"]');
-        if (cat instanceof HTMLElement) {
-          cat.click();
+        let cat = document.querySelector('[data-tour="category-brand_marketing"]');
+        if (!(cat instanceof HTMLElement)) {
+          const toggle = document.querySelector('[data-tour="resources-filters-toggle"]');
+          if (toggle instanceof HTMLElement) {
+            toggle.click();
+          }
         }
+        setTimeout(() => {
+          cat = document.querySelector('[data-tour="category-brand_marketing"]');
+          if (cat instanceof HTMLElement) {
+            cat.click();
+          }
+        }, 200);
       }, 300);
     }
   },
@@ -170,10 +192,22 @@ export const TOURS: Tour[] = [
         highlightPadding: 8,
         waitForElement: true,
         beforeShow: () => {
-          // Click Forms & Templates category and wait for it to load
-          const formsButton = document.querySelector('[data-tour="category-forms_templates"]');
-          if (formsButton instanceof HTMLElement) {
-            formsButton.click();
+          // Category buttons live inside the Filters panel, which is collapsed by
+          // default on a fresh Resources page — open it first so the button mounts.
+          const clickCategory = () => {
+            const formsButton = document.querySelector('[data-tour="category-forms_templates"]');
+            if (formsButton instanceof HTMLElement) {
+              formsButton.click();
+              return true;
+            }
+            return false;
+          };
+          if (!clickCategory()) {
+            const toggle = document.querySelector('[data-tour="resources-filters-toggle"]');
+            if (toggle instanceof HTMLElement) {
+              toggle.click();
+            }
+            setTimeout(clickCategory, 200);
           }
         }
       },
@@ -188,12 +222,21 @@ export const TOURS: Tour[] = [
       }
     ],
     afterComplete: () => {
-      // After tour completes, automatically open the Forms & Templates category
+      // After tour completes, open the Forms & Templates category (opening Filters if needed)
       setTimeout(() => {
-        const formsButton = document.querySelector('[data-tour="category-forms_templates"]');
-        if (formsButton instanceof HTMLElement) {
-          formsButton.click();
+        let formsButton = document.querySelector('[data-tour="category-forms_templates"]');
+        if (!(formsButton instanceof HTMLElement)) {
+          const toggle = document.querySelector('[data-tour="resources-filters-toggle"]');
+          if (toggle instanceof HTMLElement) {
+            toggle.click();
+          }
         }
+        setTimeout(() => {
+          formsButton = document.querySelector('[data-tour="category-forms_templates"]');
+          if (formsButton instanceof HTMLElement) {
+            formsButton.click();
+          }
+        }, 200);
       }, 300);
     }
   },
@@ -660,10 +703,14 @@ export const TOURS: Tour[] = [
         highlightPadding: 16,
         waitForElement: true,
         beforeShow: () => {
-          // Open the entry form so the fields are visible
-          const addButton = document.querySelector('[data-tour="add-collection"]');
-          if (addButton instanceof HTMLElement) {
-            addButton.click();
+          // Open the entry form so the fields are visible. The Add button toggles
+          // the form, so only click it when the form isn't already showing —
+          // otherwise we'd close it and the tour would lose its target.
+          if (!document.querySelector('[data-tour="collection-form"]')) {
+            const addButton = document.querySelector('[data-tour="add-collection"]');
+            if (addButton instanceof HTMLElement) {
+              addButton.click();
+            }
           }
         }
       },
