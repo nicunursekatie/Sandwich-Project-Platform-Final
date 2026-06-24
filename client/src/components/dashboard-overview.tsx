@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
   TrendingUp,
+  TrendingDown,
   Calendar,
   Award,
   Download,
@@ -554,6 +555,25 @@ export default function DashboardOverview({
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     {statsData.currentMonthName} {statsData.currentMonthYear}
                   </p>
+                  {/* Projected month-end total based on the pace so far, with a
+                      trend vs last month. Projecting (rather than comparing a
+                      partial month to a full one) keeps the signal honest early
+                      in the month instead of always reading as a drop. */}
+                  {statsData?.lastMonthSandwiches != null && statsData.lastMonthSandwiches > 0 && (() => {
+                    const now = new Date();
+                    const dayOfMonth = now.getDate();
+                    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                    if (dayOfMonth < 1) return null;
+                    const projected = Math.round((statsData.currentMonthSandwiches / dayOfMonth) * daysInMonth);
+                    const pct = Math.round(((projected - statsData.lastMonthSandwiches) / statsData.lastMonthSandwiches) * 100);
+                    const up = pct >= 0;
+                    return (
+                      <p className={`text-xs font-medium mt-0.5 flex items-center justify-center gap-0.5 ${up ? 'text-green-600' : 'text-amber-600'}`}>
+                        {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        on pace for ~{projected.toLocaleString()} ({up ? '+' : ''}{pct}% vs {statsData.lastMonthName})
+                      </p>
+                    );
+                  })()}
                 </div>
               )}
             </div>
