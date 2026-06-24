@@ -625,11 +625,14 @@ const EventRequestsManagementContent: React.FC = () => {
                 </button>
               )}
               <VanConflictsButton isMobile={isMobile} />
-              {/* Export — only meaningful for list views of scheduled/completed
-                  tabs (the spreadsheet export depends on the same dataset).
+              {/* Export — available on any list view. The export utility has
+                  tailored columns per tab (new/in_process/scheduled/completed/
+                  declined/my_assignments) and falls back to the "new" columns
+                  for the rest, so it works on every tab. Hidden in Calendar/Map
+                  views since those render their own data, not this list dataset.
                   Lives in the top-right action group with Add Event because
                   it's a one-off action that downloads a file, not a view. */}
-              {(activeTab === 'scheduled' || activeTab === 'completed') && viewMode === 'list' && (
+              {viewMode === 'list' && (
                 <button
                   onClick={async () => {
                     try {
