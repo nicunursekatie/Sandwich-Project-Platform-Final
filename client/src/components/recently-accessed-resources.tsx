@@ -79,7 +79,7 @@ export function RecentlyAccessedResources() {
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <Clock className="w-5 h-5 text-[#47B3CB]" />
-          <h2 className="font-semibold text-gray-900">Recently Accessed</h2>
+          <h2 className="font-semibold text-gray-900">Continue where you left off</h2>
         </div>
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
@@ -95,11 +95,20 @@ export function RecentlyAccessedResources() {
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <Clock className="w-5 h-5 text-[#47B3CB]" />
-          <h2 className="font-semibold text-gray-900">Recently Accessed</h2>
+          <h2 className="font-semibold text-gray-900">Continue where you left off</h2>
         </div>
-        <p className="text-sm text-gray-500 text-center py-4">
-          No recently accessed resources
-        </p>
+        <div className="text-center py-4">
+          <p className="text-sm text-gray-500 mb-3">
+            Nothing here yet — the files and links you open will show up here for quick access.
+          </p>
+          <a
+            href="/resources"
+            className="inline-flex items-center gap-1 text-sm text-[#236383] hover:text-[#007E8C] font-medium"
+          >
+            Browse resources
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
       </div>
     );
   }
@@ -108,7 +117,7 @@ export function RecentlyAccessedResources() {
     <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex items-center gap-2 mb-3">
         <Clock className="w-5 h-5 text-[#47B3CB]" />
-        <h2 className="font-semibold text-gray-900">Recently Accessed</h2>
+        <h2 className="font-semibold text-gray-900">Continue where you left off</h2>
       </div>
 
       <div className="space-y-1">

@@ -559,6 +559,12 @@ export default function DashboardOverview({
         {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
         <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
 
+        {/* Continue where you left off — kept near the top since people reopen
+            the same resources constantly (moved up from below the tools grid). */}
+        <div className="mx-4 mb-8 max-w-full">
+          <RecentlyAccessedResources />
+        </div>
+
         {/* TSP Additional Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
           <h3 className="premium-text-h3 text-brand-primary mb-6">
@@ -900,11 +906,6 @@ export default function DashboardOverview({
         {/* Action Tracker Widget */}
         <div className="mx-4 mb-8 max-w-full">
           <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
-
-        {/* Recently Accessed Resources Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <RecentlyAccessedResources />
         </div>
 
         {/* Key Metrics Grid */}
