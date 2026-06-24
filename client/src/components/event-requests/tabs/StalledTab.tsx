@@ -7,9 +7,6 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { StalledCard } from '../cards/StalledCard';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 
@@ -38,30 +35,6 @@ export const StalledTab: React.FC = () => {
 
   const stalledRequests = filterRequestsByStatus('stalled');
 
-  const handleExport = async () => {
-    if (stalledRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no stalled events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(stalledRequests, 'stalled');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${stalledRequests.length} stalled event${stalledRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
 
@@ -85,21 +58,11 @@ export const StalledTab: React.FC = () => {
 
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${stalledRequests.length} stalled event${stalledRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={stalledRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       {/* Info banner explaining stalled status */}

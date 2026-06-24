@@ -25,7 +25,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
@@ -63,6 +63,7 @@ import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 import { useEventMutations } from './hooks/useEventMutations';
 import { useEventQueries } from './hooks/useEventQueries';
 import { useEventAssignments } from './hooks/useEventAssignments';
+import { useEventFilters } from './hooks/useEventFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -89,6 +90,10 @@ import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+
+// Tabs that render aggregate dashboards rather than a flat list of event
+// rows — the Export action (a row-level spreadsheet) doesn't apply to them.
+const EXPORT_EXCLUDED_TABS = ['admin_overview', 'planning', 'sandwich_overview'];
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -280,6 +285,11 @@ const EventRequestsManagementContent: React.FC = () => {
   } = useEventMutations();
 
   const { resolveUserName, resolveRecipientName } = useEventAssignments();
+
+  // Per-tab row filtering — single source of truth for "what this tab shows".
+  // Used by Export so the spreadsheet matches the visible rows (e.g. My
+  // Assignments exports only the current user's events, not the raw cache).
+  const { filterRequestsByStatus } = useEventFilters();
 
   const queryClient = useQueryClient();
 
@@ -625,22 +635,41 @@ const EventRequestsManagementContent: React.FC = () => {
                 </button>
               )}
               <VanConflictsButton isMobile={isMobile} />
-              {/* Export — only meaningful for list views of scheduled/completed
-                  tabs (the spreadsheet export depends on the same dataset).
-                  Lives in the top-right action group with Add Event because
-                  it's a one-off action that downloads a file, not a view. */}
-              {(activeTab === 'scheduled' || activeTab === 'completed') && viewMode === 'list' && (
+              {/* Export — available on any list-view tab. We export the same
+                  rows the tab displays (via filterRequestsByStatus, skipping
+                  pagination) rather than the raw eventRequests cache, because
+                  "virtual" tabs like My Assignments fetch all active events and
+                  filter client-side — exporting the raw cache would leak every
+                  active request. Hidden on the dashboard tabs (admin overview /
+                  planning / sandwich overview), which aren't flat row lists, and
+                  in Calendar/Map views which render their own data. Lives in the
+                  top-right action group with Add Event because it's a one-off
+                  action that downloads a file, not a view. */}
+              {viewMode === 'list' && !EXPORT_EXCLUDED_TABS.includes(activeTab) && (
                 <button
                   onClick={async () => {
                     try {
-                      await exportEventRequestsToExcel(eventRequests, activeTab);
+                      // The Declined tab shows declined AND cancelled events,
+                      // so its export must include both. Every other tab's
+                      // displayed set maps 1:1 to filterRequestsByStatus
+                      // (scheduled already includes rescheduled).
+                      const rows = activeTab === 'declined'
+                        ? [
+                            ...filterRequestsByStatus('declined', { skipPagination: true }),
+                            ...filterRequestsByStatus('cancelled', { skipPagination: true }),
+                          ]
+                        : filterRequestsByStatus(activeTab, { skipPagination: true });
+                      if (rows.length === 0) {
+                        toast({ title: 'Nothing to export', description: 'No events match the current view.' });
+                        return;
+                      }
+                      await exportEventRequestsToExcel(rows, activeTab);
                       toast({ title: 'Export complete' });
                     } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
                   }}
-                  disabled={eventRequests.length === 0}
                   className="premium-btn-outline text-sm disabled:opacity-50"
                   data-testid="button-export-events"
-                  title="Download a spreadsheet of the events on this tab"
+                  title="Download a spreadsheet of the events shown on this tab"
                 >
                   <Download className="w-4 h-4" />
                   {!isMobile && 'Export'}
@@ -692,36 +721,51 @@ const EventRequestsManagementContent: React.FC = () => {
               View as:
             </span>
           <div className="flex items-center gap-1 bg-[#007E8C]/10 border border-[#007E8C]/20 rounded-lg p-0.5">
-            {/* On the Scheduled tab, Cards/Spreadsheet stay visible alongside
-                Calendar/Map so the user can see all four view options at once
-                — and so switching to Calendar/Map doesn't make the Cards
-                button vanish (it was confusing). On other tabs we show the
-                generic "List" button instead. */}
+            {/* Consistent view switcher on every tab: Cards, Spreadsheet,
+                Calendar, Map always appear in the same order and place so the
+                controls don't reshuffle when you change tabs. The Spreadsheet
+                view only exists for the Scheduled tab, so on other tabs it
+                stays visible but greyed-out (with a tooltip explaining why)
+                rather than silently disappearing. */}
+            <button
+              onClick={() => {
+                setViewMode('list');
+                if (activeTab === 'scheduled') {
+                  setScheduledViewMode('card');
+                  localStorage.setItem('scheduledTabViewMode', 'card');
+                }
+              }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && (activeTab !== 'scheduled' || scheduledViewMode === 'card') ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              {!isMobile && 'Cards'}
+            </button>
             {activeTab === 'scheduled' ? (
-              <>
-                <button
-                  onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  {!isMobile && 'Cards'}
-                </button>
-                <button
-                  onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <Table2 className="w-4 h-4" />
-                  {!isMobile && 'Spreadsheet'}
-                </button>
-              </>
-            ) : (
               <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
               >
-                <List className="w-4 h-4" />
-                {!isMobile && 'List'}
+                <Table2 className="w-4 h-4" />
+                {!isMobile && 'Spreadsheet'}
               </button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button
+                      disabled
+                      aria-disabled="true"
+                      className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 text-gray-400 opacity-60 cursor-not-allowed"
+                    >
+                      <Table2 className="w-4 h-4" />
+                      {!isMobile && 'Spreadsheet'}
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Spreadsheet view is only available on the Scheduled tab</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             <button
               data-tour="calendar-tab"
