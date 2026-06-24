@@ -288,7 +288,7 @@ export function UnifiedTopSearch() {
         <input
           ref={inputRef}
           type="text"
-          placeholder="Search people, orgs, pages..."
+          placeholder="Search events, volunteers, or hosts..."
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
           onKeyDown={handleKeyDown}
