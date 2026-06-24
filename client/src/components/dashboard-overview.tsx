@@ -38,7 +38,8 @@ import { usePermissions } from '@/hooks/useResourcePermissions';
 import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { useToast } from '@/hooks/use-toast';
-import { calculateActualWeeklyAverage } from '@/lib/analytics-utils';
+import { calculateActualWeeklyAverage, calculateWeeklyData } from '@/lib/analytics-utils';
+import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -419,7 +420,19 @@ export default function DashboardOverview({
     };
   }, [statsData, allCollectionsData, annualSandwichGoal]);
 
-  // Remove fake mini chart data - only use real data
+  // Last 12 completed weeks of real collection totals for the dashboard trend
+  // chart. Excludes the in-progress week so the line doesn't dip artificially.
+  const weeklyTrend = React.useMemo(() => {
+    const collections = allCollectionsData?.collections;
+    if (!collections?.length) return [];
+    return calculateWeeklyData(collections)
+      .filter((w) => w.isComplete)
+      .slice(-12)
+      .map((w) => ({
+        week: w.weekLabel.split(' - ')[0], // short Friday label
+        sandwiches: w.totalSandwiches,
+      }));
+  }, [allCollectionsData]);
 
   return (
     <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
@@ -973,6 +986,49 @@ export default function DashboardOverview({
 
         {/* ── INSIGHTS ── (Action Tracker moved up to the Today section) */}
         <SectionHeader label="Insights" hint="Totals, capacity, and resources" />
+
+        {/* Weekly collections trend — a compact 12-week chart so the dashboard
+            shows momentum visually, not just as numbers. Full analytics live on
+            the dedicated pages; this is the at-a-glance snapshot. */}
+        {weeklyTrend.length > 1 && (
+          <div className="mx-4 mb-8 max-w-full">
+            <div className="premium-card p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="premium-text-caption text-brand-primary uppercase">
+                  Weekly Collections — last {weeklyTrend.length} weeks
+                </h3>
+                <button
+                  onClick={() => onSectionChange?.('analytics')}
+                  className="text-sm text-brand-primary hover:underline flex items-center gap-1"
+                >
+                  Full analytics <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="dashTrendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#007E8C" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#007E8C" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#6b7280' }} interval="preserveStartEnd" />
+                  <RechartsTooltip
+                    formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']}
+                    labelStyle={{ color: '#236383', fontWeight: 600 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sandwiches"
+                    stroke="#007E8C"
+                    strokeWidth={2}
+                    fill="url(#dashTrendFill)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 mb-6 sm:mb-8 max-w-full">
