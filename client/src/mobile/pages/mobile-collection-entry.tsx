@@ -37,7 +37,6 @@ export function MobileCollectionEntry() {
   const [showHostPicker, setShowHostPicker] = useState(false);
   const [sandwichCount, setSandwichCount] = useState(0);
   const [collectionDate, setCollectionDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [notes, setNotes] = useState('');
   const [hostSearch, setHostSearch] = useState('');
 
   // Handle escape key to close modal
@@ -78,16 +77,21 @@ export function MobileCollectionEntry() {
       hostName: string;
       individualSandwiches: number;
       collectionDate: string;
-      notes?: string;
     }) => {
-      return apiRequest('POST', '/api/collections', data);
+      return apiRequest('POST', '/api/sandwich-collections', data);
     },
     onSuccess: () => {
       toast({
         title: 'Collection logged!',
         description: `${sandwichCount} sandwiches from ${selectedHost?.name}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/collections'] });
+      // The collections list bakes query params into queryKey[0]
+      // (e.g. '/api/sandwich-collections?limit=100'), so match by prefix.
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          query.queryKey[0].startsWith('/api/sandwich-collections'),
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       navigate('/collections');
     },
@@ -124,7 +128,6 @@ export function MobileCollectionEntry() {
       hostName: selectedHost.name,
       individualSandwiches: sandwichCount,
       collectionDate,
-      notes: notes || undefined,
     });
   };
 
@@ -270,25 +273,6 @@ export function MobileCollectionEntry() {
                 )}
               />
             </div>
-          </div>
-
-          {/* Notes (optional) */}
-          <div>
-            <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Notes (optional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any additional notes..."
-              rows={2}
-              className={cn(
-                "w-full px-4 py-3 rounded-xl resize-none",
-                "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700",
-                "text-slate-900 dark:text-slate-100 placeholder:text-slate-400",
-                "focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent"
-              )}
-            />
           </div>
         </div>
 

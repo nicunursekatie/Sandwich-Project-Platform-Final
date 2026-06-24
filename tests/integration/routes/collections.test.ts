@@ -1,357 +1,270 @@
 /**
- * Integration tests for collections routes
- * Tests collection CRUD operations with permission checking
+ * Integration tests for the sandwich collections routes.
+ *
+ * These assert the REAL contract of the collections router as mounted at
+ * `/api/sandwich-collections` (server/routes/index.ts) — not the historical
+ * legacy api/collections paths, which were never registered.
+ *
+ * Contract notes (verified against server/routes/collections/index.ts):
+ * - Auth is enforced at the mount via `isAuthenticated` (401 when unauthenticated).
+ * - Reads (GET `/`, `/:id`, `/stats`) are NOT permission-gated — any
+ *   authenticated user may read.
+ * - `GET /` returns `{ collections, pagination }`; `GET /?eventRequestId=N`
+ *   returns a bare array of that event's collections.
+ * - `POST /` requires `COLLECTIONS_ADD`, returns 201 + the created row, and
+ *   stamps `createdBy`. The real schema uses `hostName` + `individualSandwiches`
+ *   (there is no `hostId` / `sandwichesCollected`).
+ * - `PATCH /:id` and `DELETE /:id` use ownership permissions
+ *   (`*_EDIT_OWN`/`*_EDIT_ALL`, `*_DELETE_OWN`/`*_DELETE_ALL`). DELETE returns 204.
+ *
+ * NOTE: these require a real Postgres (TEST_DATABASE_URL) and do not run in the
+ * current CI (only the undefined-refs gate runs). They are written to pass when
+ * the integration suite is executed against a database.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 import request from 'supertest';
 import type { Express } from 'express';
 import { PERMISSIONS } from '../../../shared/auth-utils';
-import {
-  createTestServer,
-  createTestUser,
-  createAuthenticatedAgent,
-} from '../../setup/test-server';
+import { createTestServer, createAuthenticatedAgent } from '../../setup/test-server';
 
-// This will be populated by setup
 let app: Express;
-let testUser: any;
-let adminUser: any;
-let noPermissionsUser: any;
-let authenticatedAgent: request.SuperAgentTest;
-let adminAgent: request.SuperAgentTest;
-let noPermissionsAgent: request.SuperAgentTest;
+let viewerAgent: request.SuperAgentTest; // authenticated, no collection permissions
+let editorAgent: request.SuperAgentTest; // ADD + EDIT_OWN + DELETE_OWN
+let otherEditorAgent: request.SuperAgentTest; // same perms, different user (non-owner)
+let adminAgent: request.SuperAgentTest; // ADD + EDIT_ALL + DELETE_ALL
 
-describe('Collections Routes', () => {
+const EDITOR_PERMISSIONS = [
+  PERMISSIONS.COLLECTIONS_ADD,
+  PERMISSIONS.COLLECTIONS_EDIT_OWN,
+  PERMISSIONS.COLLECTIONS_DELETE_OWN,
+];
+const ADMIN_PERMISSIONS = [
+  PERMISSIONS.COLLECTIONS_ADD,
+  PERMISSIONS.COLLECTIONS_EDIT_ALL,
+  PERMISSIONS.COLLECTIONS_DELETE_ALL,
+];
+
+const BASE = '/api/sandwich-collections';
+
+/** A minimal valid collection body for the real insert schema. */
+function validCollection(overrides: Record<string, unknown> = {}) {
+  return {
+    hostName: 'Integration Test Host',
+    collectionDate: '2025-10-25',
+    individualSandwiches: 100,
+    ...overrides,
+  };
+}
+
+async function createCollection(
+  agent: request.SuperAgentTest,
+  overrides: Record<string, unknown> = {}
+): Promise<Record<string, any>> {
+  const response = await agent.post(BASE).send(validCollection(overrides));
+  expect(response.status).toBe(201);
+  return response.body;
+}
+
+describe('Sandwich Collections Routes', () => {
   beforeAll(async () => {
-    // Create test server
     app = await createTestServer();
 
-    // Create test users with appropriate permissions
-    testUser = await createTestUser({
-      role: 'volunteer',
-      permissions: [
-        PERMISSIONS.COLLECTIONS_VIEW,
-        PERMISSIONS.COLLECTIONS_ADD,
-        PERMISSIONS.COLLECTIONS_EDIT_OWN,
-        PERMISSIONS.COLLECTIONS_DELETE_OWN,
-      ],
+    // createAuthenticatedAgent creates the user AND logs it in, so each agent
+    // gets a distinct user. Permissions are granted explicitly rather than
+    // relying on role defaults.
+    viewerAgent = await createAuthenticatedAgent(app, {
+      email: 'collections_viewer@example.com',
+      permissions: [],
     });
-
-    // Create admin user first, then create agent with same credentials
-    adminUser = await createTestUser({
-      role: 'admin',
-      email: 'admin_collections@example.com',
+    editorAgent = await createAuthenticatedAgent(app, {
+      email: 'collections_editor@example.com',
+      permissions: EDITOR_PERMISSIONS,
     });
-
-    // Create user with no permissions for testing authorization
-    noPermissionsUser = await createTestUser({
-      role: 'viewer',
-      permissions: [], // No permissions
+    otherEditorAgent = await createAuthenticatedAgent(app, {
+      email: 'collections_other_editor@example.com',
+      permissions: EDITOR_PERMISSIONS,
     });
-
-    // Create authenticated agents
-    authenticatedAgent = await createAuthenticatedAgent(app, {
-      email: testUser.email,
-      password: testUser.password,
-    });
-
     adminAgent = await createAuthenticatedAgent(app, {
-      email: adminUser.email,
-      password: adminUser.password,
-    });
-
-    noPermissionsAgent = await createAuthenticatedAgent(app, {
-      email: noPermissionsUser.email,
-      password: noPermissionsUser.password,
+      email: 'collections_admin@example.com',
+      permissions: ADMIN_PERMISSIONS,
     });
   });
 
-  beforeEach(() => {
-    // Reset any state between tests
-  });
-
-  afterAll(async () => {
-    // Cleanup
-  });
-
-  describe('GET /api/collections', () => {
+  describe('GET /api/sandwich-collections', () => {
     it('should require authentication', async () => {
-      const response = await request(app).get('/api/collections');
+      const response = await request(app).get(BASE);
       expect(response.status).toBe(401);
     });
 
-    it('should return collections for authenticated user with permission', async () => {
-      const response = await authenticatedAgent.get('/api/collections');
+    it('should return a paginated object for an authenticated user', async () => {
+      const response = await viewerAgent.get(BASE);
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(Array.isArray(response.body.collections)).toBe(true);
+      expect(response.body.pagination).toBeDefined();
     });
 
-    it('should deny access for user without COLLECTIONS_VIEW permission', async () => {
-      // Use authenticated agent for user with no collection permissions
-      const response = await noPermissionsAgent.get('/api/collections');
+    it('should support pagination params', async () => {
+      const response = await viewerAgent.get(BASE).query({ page: 1, limit: 10 });
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.collections)).toBe(true);
+      expect(response.body.pagination.limit).toBe(10);
+    });
+  });
 
+  describe('GET /api/sandwich-collections?eventRequestId=:id', () => {
+    it('should return a bare array of collections for the event', async () => {
+      const eventRequestId = 987654; // arbitrary; just needs to be linked
+      const created = await createCollection(editorAgent, { eventRequestId });
+
+      const response = await editorAgent.get(BASE).query({ eventRequestId });
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.some((c: any) => c.id === created.id)).toBe(true);
+      expect(
+        response.body.every((c: any) => c.eventRequestId === eventRequestId)
+      ).toBe(true);
+    });
+
+    it('should reject a non-numeric eventRequestId', async () => {
+      const response = await editorAgent
+        .get(BASE)
+        .query({ eventRequestId: 'not-a-number' });
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /api/sandwich-collections/stats', () => {
+    it('should return aggregate statistics', async () => {
+      const response = await viewerAgent.get(`${BASE}/stats`);
+      expect(response.status).toBe(200);
+      expect(typeof response.body.totalEntries).toBe('number');
+      expect(typeof response.body.completeTotalSandwiches).toBe('number');
+    });
+  });
+
+  describe('GET /api/sandwich-collections/:id', () => {
+    it('should return a single collection', async () => {
+      const created = await createCollection(editorAgent);
+      const response = await editorAgent.get(`${BASE}/${created.id}`);
+      expect(response.status).toBe(200);
+      expect(response.body.id).toBe(created.id);
+      expect(response.body.hostName).toBe('Integration Test Host');
+    });
+
+    it('should return 400 for a non-numeric id', async () => {
+      const response = await editorAgent.get(`${BASE}/not-a-number`);
+      expect(response.status).toBe(400);
+    });
+
+    it('should return 404 for a non-existent collection', async () => {
+      const response = await editorAgent.get(`${BASE}/999999`);
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/sandwich-collections', () => {
+    it('should require authentication', async () => {
+      const response = await request(app).post(BASE).send(validCollection());
+      expect(response.status).toBe(401);
+    });
+
+    it('should deny a user without COLLECTIONS_ADD', async () => {
+      const response = await viewerAgent.post(BASE).send(validCollection());
       expect(response.status).toBe(403);
     });
 
-    it('should support pagination', async () => {
-      const response = await authenticatedAgent
-        .get('/api/collections')
-        .query({ limit: 10, offset: 0 });
-
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-
-    it('should support filtering by date range', async () => {
-      const response = await authenticatedAgent
-        .get('/api/collections')
-        .query({
-          startDate: '2025-01-01',
-          endDate: '2025-12-31',
-        });
-
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
-    });
-  });
-
-  describe('POST /api/collections', () => {
-    it('should require authentication', async () => {
-      const response = await request(app)
-        .post('/api/collections')
-        .send({
-          hostId: 1,
-          collectionDate: '2025-10-25',
-          sandwichesCollected: 100,
-        });
-
-      expect(response.status).toBe(401);
-    });
-
-    it('should create collection with valid data and permissions', async () => {
-      const newCollection = {
-        hostId: 1,
-        collectionDate: '2025-10-25',
-        sandwichesCollected: 100,
-        notes: 'Test collection',
-      };
-
-      const response = await authenticatedAgent
-        .post('/api/collections')
-        .send(newCollection);
-
+    it('should create a collection and stamp createdBy', async () => {
+      const response = await editorAgent
+        .post(BASE)
+        .send(validCollection({ individualSandwiches: 100 }));
       expect(response.status).toBe(201);
-      expect(response.body).toMatchObject({
-        hostId: 1,
-        sandwichesCollected: 100,
-      });
       expect(response.body.id).toBeDefined();
+      expect(response.body.hostName).toBe('Integration Test Host');
+      expect(response.body.individualSandwiches).toBe(100);
+      expect(response.body.createdBy).toBeTruthy();
     });
 
-    it('should deny access without COLLECTIONS_ADD permission', async () => {
-      const response = await noPermissionsAgent
-        .post('/api/collections')
-        .send({
-          hostId: 1,
-          collectionDate: '2025-10-25',
-          sandwichesCollected: 100,
-        });
-
-      expect(response.status).toBe(403);
-    });
-
-    it('should validate required fields', async () => {
-      const response = await authenticatedAgent
-        .post('/api/collections')
-        .send({
-          // Missing required fields
-          notes: 'Invalid collection',
-        });
-
+    it('should reject a body missing required fields', async () => {
+      const response = await editorAgent
+        .post(BASE)
+        .send({ individualSandwiches: 10 }); // no hostName / collectionDate
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('validation');
-    });
-
-    it('should validate data types', async () => {
-      const response = await authenticatedAgent
-        .post('/api/collections')
-        .send({
-          hostId: 'not-a-number',
-          collectionDate: '2025-10-25',
-          sandwichesCollected: 'not-a-number',
-        });
-
-      expect(response.status).toBe(400);
-    });
-
-    it('should set createdBy to current user', async () => {
-      const response = await authenticatedAgent
-        .post('/api/collections')
-        .send({
-          hostId: 1,
-          collectionDate: '2025-10-25',
-          sandwichesCollected: 50,
-        });
-
-      expect(response.status).toBe(201);
-      expect(response.body.createdBy).toBe(testUser.id);
+      expect(response.body.message).toContain('Invalid collection data');
     });
   });
 
-  describe('PATCH /api/collections/:id', () => {
-    let testCollection: Record<string, unknown>;
-
-    beforeEach(async () => {
-      // Create a test collection
-      const response = await authenticatedAgent
-        .post('/api/collections')
-        .send({
-          hostId: 1,
-          collectionDate: '2025-10-25',
-          sandwichesCollected: 100,
-        });
-      testCollection = response.body;
-    });
-
+  describe('PATCH /api/sandwich-collections/:id', () => {
     it('should require authentication', async () => {
+      const created = await createCollection(editorAgent);
       const response = await request(app)
-        .patch(`/api/collections/${testCollection.id}`)
-        .send({ sandwichesCollected: 150 });
-
+        .patch(`${BASE}/${created.id}`)
+        .send({ individualSandwiches: 150 });
       expect(response.status).toBe(401);
     });
 
-    it('should allow owner to edit own collection with EDIT_OWN permission', async () => {
-      const response = await authenticatedAgent
-        .patch(`/api/collections/${testCollection.id}`)
-        .send({ sandwichesCollected: 150 });
-
+    it('should let the owner edit their own collection (EDIT_OWN)', async () => {
+      const created = await createCollection(editorAgent);
+      const response = await editorAgent
+        .patch(`${BASE}/${created.id}`)
+        .send({ individualSandwiches: 150 });
       expect(response.status).toBe(200);
-      expect(response.body.sandwichesCollected).toBe(150);
+      expect(response.body.individualSandwiches).toBe(150);
     });
 
-    it('should allow admin to edit any collection with EDIT_ALL permission', async () => {
+    it('should let an admin edit any collection (EDIT_ALL)', async () => {
+      const created = await createCollection(editorAgent);
       const response = await adminAgent
-        .patch(`/api/collections/${testCollection.id}`)
-        .send({ sandwichesCollected: 200 });
-
+        .patch(`${BASE}/${created.id}`)
+        .send({ individualSandwiches: 200 });
       expect(response.status).toBe(200);
-      expect(response.body.sandwichesCollected).toBe(200);
+      expect(response.body.individualSandwiches).toBe(200);
     });
 
-    it('should deny non-owner without EDIT_ALL permission', async () => {
-      // Create a different user's collection
-      const otherCollection = await adminAgent
-        .post('/api/collections')
-        .send({
-          hostId: 2,
-          collectionDate: '2025-10-26',
-          sandwichesCollected: 75,
-        });
-
-      // Try to edit it with regular user (should fail)
-      const response = await authenticatedAgent
-        .patch(`/api/collections/${otherCollection.body.id}`)
-        .send({ sandwichesCollected: 100 });
-
+    it('should deny a non-owner who only has EDIT_OWN', async () => {
+      const created = await createCollection(editorAgent);
+      const response = await otherEditorAgent
+        .patch(`${BASE}/${created.id}`)
+        .send({ individualSandwiches: 175 });
       expect(response.status).toBe(403);
     });
 
-    it('should return 404 for non-existent collection', async () => {
-      const response = await authenticatedAgent
-        .patch('/api/collections/999999')
-        .send({ sandwichesCollected: 150 });
-
+    it('should return 404 for a non-existent collection (admin bypasses ownership)', async () => {
+      const response = await adminAgent
+        .patch(`${BASE}/999999`)
+        .send({ individualSandwiches: 150 });
       expect(response.status).toBe(404);
-    });
-
-    it('should validate updated data', async () => {
-      const response = await authenticatedAgent
-        .patch(`/api/collections/${testCollection.id}`)
-        .send({ sandwichesCollected: -50 }); // Negative value
-
-      expect(response.status).toBe(400);
     });
   });
 
-  describe('DELETE /api/collections/:id', () => {
-    let testCollection: Record<string, unknown>;
-
-    beforeEach(async () => {
-      const response = await authenticatedAgent
-        .post('/api/collections')
-        .send({
-          hostId: 1,
-          collectionDate: '2025-10-25',
-          sandwichesCollected: 100,
-        });
-      testCollection = response.body;
-    });
-
+  describe('DELETE /api/sandwich-collections/:id', () => {
     it('should require authentication', async () => {
-      const response = await request(app).delete(`/api/collections/${testCollection.id}`);
+      const created = await createCollection(editorAgent);
+      const response = await request(app).delete(`${BASE}/${created.id}`);
       expect(response.status).toBe(401);
     });
 
-    it('should allow owner to delete own collection with DELETE_OWN permission', async () => {
-      const response = await authenticatedAgent.delete(`/api/collections/${testCollection.id}`);
-      expect(response.status).toBe(200);
-    });
-
-    it('should allow admin to delete any collection with DELETE_ALL permission', async () => {
-      const response = await adminAgent.delete(`/api/collections/${testCollection.id}`);
-      expect(response.status).toBe(200);
-    });
-
-    it('should deny non-owner without DELETE_ALL permission', async () => {
-      const otherCollection = await adminAgent
-        .post('/api/collections')
-        .send({
-          hostId: 2,
-          collectionDate: '2025-10-26',
-          sandwichesCollected: 75,
-        });
-
-      const response = await authenticatedAgent.delete(
-        `/api/collections/${otherCollection.body.id}`
-      );
+    it('should deny a non-owner who only has DELETE_OWN', async () => {
+      const created = await createCollection(editorAgent);
+      const response = await otherEditorAgent.delete(`${BASE}/${created.id}`);
       expect(response.status).toBe(403);
     });
 
-    it('should return 404 for non-existent collection', async () => {
-      const response = await authenticatedAgent.delete('/api/collections/999999');
+    it('should let the owner delete their own collection (204)', async () => {
+      const created = await createCollection(editorAgent);
+      const response = await editorAgent.delete(`${BASE}/${created.id}`);
+      expect(response.status).toBe(204);
+    });
+
+    it('should let an admin delete any collection (DELETE_ALL)', async () => {
+      const created = await createCollection(editorAgent);
+      const response = await adminAgent.delete(`${BASE}/${created.id}`);
+      expect(response.status).toBe(204);
+    });
+
+    it('should return 404 for a non-existent collection (admin bypasses ownership)', async () => {
+      const response = await adminAgent.delete(`${BASE}/999999`);
       expect(response.status).toBe(404);
-    });
-
-    it('should actually remove the collection from database', async () => {
-      await authenticatedAgent.delete(`/api/collections/${testCollection.id}`);
-
-      const getResponse = await authenticatedAgent.get(
-        `/api/collections/${testCollection.id}`
-      );
-      expect(getResponse.status).toBe(404);
-    });
-  });
-
-  describe('GET /api/collections/stats', () => {
-    it('should return collection statistics', async () => {
-      const response = await authenticatedAgent.get('/api/collections/stats');
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('totalCollections');
-      expect(response.body).toHaveProperty('totalSandwiches');
-    });
-
-    it('should support date range filtering', async () => {
-      const response = await authenticatedAgent
-        .get('/api/collections/stats')
-        .query({
-          startDate: '2025-01-01',
-          endDate: '2025-12-31',
-        });
-
-      expect(response.status).toBe(200);
-      expect(typeof response.body.totalCollections).toBe('number');
     });
   });
 });

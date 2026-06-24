@@ -25,7 +25,7 @@ export function MobileCollectionDetail() {
 
   // Fetch collection details
   const { data: collection, isLoading, error } = useQuery({
-    queryKey: ['/api/collections', collectionId],
+    queryKey: [`/api/sandwich-collections/${collectionId}`],
     enabled: !!collectionId,
     staleTime: 60000,
   });
