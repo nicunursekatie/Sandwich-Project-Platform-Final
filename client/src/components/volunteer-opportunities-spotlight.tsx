@@ -197,17 +197,17 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
                   <div className="flex flex-wrap gap-2">
                     {needs.needsSpeaker && (
                       <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                        {needs.speakersNeeded} Speaker{needs.speakersNeeded > 1 ? 's' : ''} Needed
+                        {needs.speakersNeeded} {needs.speakersNeeded === 1 ? 'Speaker' : 'Speakers'} Needed
                       </Badge>
                     )}
                     {needs.needsVolunteer && (
                       <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                        {needs.volunteersNeeded} Volunteer{needs.volunteersNeeded > 1 ? 's' : ''} Needed
+                        {needs.volunteersNeeded} {needs.volunteersNeeded === 1 ? 'Volunteer' : 'Volunteers'} Needed
                       </Badge>
                     )}
                     {needs.needsDriver && (
                       <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
-                        {needs.driversNeeded} Driver{needs.driversNeeded > 1 ? 's' : ''} Needed
+                        {needs.driversNeeded} {needs.driversNeeded === 1 ? 'Driver' : 'Drivers'} Needed
                       </Badge>
                     )}
                   </div>

@@ -211,7 +211,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                 stats.totalSpeakersNeeded > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
               }`}>
                 <Mic2 className="w-4 h-4 mr-1" />
-                {stats.totalSpeakersNeeded} speaker{stats.totalSpeakersNeeded !== 1 ? 's' : ''} needed
+                {stats.totalSpeakersNeeded} {stats.totalSpeakersNeeded === 1 ? 'speaker' : 'speakers'} needed
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                 stats.totalDriversNeeded > 0 ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
               }`}>
                 <Car className="w-4 h-4 mr-1" />
-                {stats.totalDriversNeeded} driver{stats.totalDriversNeeded !== 1 ? 's' : ''} needed
+                {stats.totalDriversNeeded} {stats.totalDriversNeeded === 1 ? 'driver' : 'drivers'} needed
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                 stats.totalVolunteersNeeded > 0 ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
               }`}>
                 <Users className="w-4 h-4 mr-1" />
-                {stats.totalVolunteersNeeded} volunteer{stats.totalVolunteersNeeded !== 1 ? 's' : ''} needed
+                {stats.totalVolunteersNeeded} {stats.totalVolunteersNeeded === 1 ? 'volunteer' : 'volunteers'} needed
               </span>
             </div>
           </div>

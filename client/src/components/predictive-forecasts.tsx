@@ -608,13 +608,13 @@ export default function PredictiveForecasts() {
               <div className="text-xs text-gray-700 mt-2 space-y-0.5">
                 <div>{forecasts.weekly.completed.toLocaleString()} completed collections (past)</div>
                 {forecasts.weekly.pastEventCount > 0 && (
-                  <div>+ {forecasts.weekly.pastEventCount} past event{forecasts.weekly.pastEventCount !== 1 ? 's' : ''} ({forecasts.weekly.pastEvents.toLocaleString()})</div>
+                  <div>+ {forecasts.weekly.pastEventCount} past {forecasts.weekly.pastEventCount === 1 ? 'event' : 'events'} ({forecasts.weekly.pastEvents.toLocaleString()})</div>
                 )}
                 {forecasts.weekly.planned > 0 && (
                   <div>+ {forecasts.weekly.planned.toLocaleString()} planned group collections</div>
                 )}
                 {forecasts.weekly.scheduledEventCount > 0 && (
-                  <div>+ {forecasts.weekly.scheduledEventCount} upcoming event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} ({forecasts.weekly.scheduled.toLocaleString()})</div>
+                  <div>+ {forecasts.weekly.scheduledEventCount} upcoming {forecasts.weekly.scheduledEventCount === 1 ? 'event' : 'events'} ({forecasts.weekly.scheduled.toLocaleString()})</div>
                 )}
                 {forecasts.weekly.expectedIndividual > 0 && (
                   <div>+ {forecasts.weekly.expectedIndividual.toLocaleString()} expected individual</div>
@@ -744,9 +744,9 @@ export default function PredictiveForecasts() {
                 </>
               ) : (
                 <>
-                  <p className="text-gray-700">• <strong>Priority:</strong> Add one more collection event or send out volunteer reminder for {forecasts.weekly.daysRemaining} remaining day{forecasts.weekly.daysRemaining !== 1 ? 's' : ''}</p>
+                  <p className="text-gray-700">• <strong>Priority:</strong> Add one more collection event or send out volunteer reminder for {forecasts.weekly.daysRemaining} remaining {forecasts.weekly.daysRemaining === 1 ? 'day' : 'days'}</p>
                   {forecasts.weekly.daysRemaining > 0 ? (
-                    <p className="text-gray-700">• <strong>Goal:</strong> Recruit ~{Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)} sandwiches/day for remaining {forecasts.weekly.daysRemaining} day{forecasts.weekly.daysRemaining !== 1 ? 's' : ''}</p>
+                    <p className="text-gray-700">• <strong>Goal:</strong> Recruit ~{Math.round((forecasts.weekly.average - forecasts.weekly.projected) / forecasts.weekly.daysRemaining)} sandwiches/day for remaining {forecasts.weekly.daysRemaining} {forecasts.weekly.daysRemaining === 1 ? 'day' : 'days'}</p>
                   ) : (
                     <p className="text-gray-700">• <strong>Goal:</strong> Final push needed today - {Math.round(forecasts.weekly.average - forecasts.weekly.projected)} sandwiches to reach weekly average</p>
                   )}
@@ -755,9 +755,9 @@ export default function PredictiveForecasts() {
               {!forecasts.weekly.isExcludedWeek && (
                 <>
                   {forecasts.weekly.pastEventCount > 0 && (
-                    <p className="text-gray-700">• <strong>Past events this week:</strong> {forecasts.weekly.pastEventCount} event{forecasts.weekly.pastEventCount !== 1 ? 's' : ''} for {forecasts.weekly.pastEvents.toLocaleString()} sandwiches</p>
+                    <p className="text-gray-700">• <strong>Past events this week:</strong> {forecasts.weekly.pastEventCount} {forecasts.weekly.pastEventCount === 1 ? 'event' : 'events'} for {forecasts.weekly.pastEvents.toLocaleString()} sandwiches</p>
                   )}
-                  <p className="text-gray-700">• <strong>Upcoming events:</strong> {forecasts.weekly.scheduledEventCount} event{forecasts.weekly.scheduledEventCount !== 1 ? 's' : ''} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
+                  <p className="text-gray-700">• <strong>Upcoming events:</strong> {forecasts.weekly.scheduledEventCount} {forecasts.weekly.scheduledEventCount === 1 ? 'event' : 'events'} for {forecasts.weekly.scheduled.toLocaleString()} sandwiches</p>
                   <p className="text-gray-700">• <strong>Expected individual collections:</strong> ~{forecasts.weekly.expectedIndividual.toLocaleString()} sandwiches from regular donors</p>
                 </>
               )}

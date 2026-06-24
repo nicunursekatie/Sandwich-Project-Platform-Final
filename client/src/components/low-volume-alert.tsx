@@ -262,6 +262,44 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
   const hasLowVolumeWeeks = lowVolumeWeeks.length > 0;
   const urgentWeek = hasLowVolumeWeeks ? lowVolumeWeeks[0] : null;
   const shortfall = urgentWeek ? historicalAverage - urgentWeek.totalSandwiches : 0;
+
+  // ── Severity tier ─────────────────────────────────────────────────────
+  // The orange warning icon used to appear any time there was AT LEAST ONE
+  // forecast week below 60% of average — which meant the card looked like a
+  // fire alarm almost continuously and users started ignoring it (alert
+  // fatigue). The UI now distinguishes three tiers so the icon escalates
+  // only when there's actually a problem worth shouting about:
+  //
+  //   healthy → trending-up green ("On track")        — no low weeks
+  //   watch   → calendar neutral ("Forecast")         — there ARE low weeks
+  //                                                     but the worst is a
+  //                                                     soft dip (< 50% below)
+  //   severe  → alert-triangle amber ("Action needed")— at least one week is
+  //                                                     a SEVERE drop
+  //                                                     (≥ 50% below avg).
+  //                                                     This is the case
+  //                                                     where leadership
+  //                                                     should pay attention
+  //                                                     (e.g. the 73% drop).
+  //
+  // The 50% threshold for "severe" is intentionally tighter than the 60%
+  // detection threshold above so the icon doesn't flip back to amber for
+  // borderline cases — it requires a genuinely alarming forecast.
+  const SEVERE_DROP_THRESHOLD_PERCENT = 50;
+  const worstDropPercent = hasLowVolumeWeeks
+    ? Math.max(
+        ...lowVolumeWeeks.map((w) =>
+          historicalAverage > 0
+            ? Math.round(((historicalAverage - w.totalSandwiches) / historicalAverage) * 100)
+            : 0,
+        ),
+      )
+    : 0;
+  const severity: 'healthy' | 'watch' | 'severe' = !hasLowVolumeWeeks
+    ? 'healthy'
+    : worstDropPercent >= SEVERE_DROP_THRESHOLD_PERCENT
+      ? 'severe'
+      : 'watch';
   const percentBelow = urgentWeek ? Math.round((shortfall / historicalAverage) * 100) : 0;
 
   // Current week data
@@ -270,24 +308,37 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
     ? Math.min(100, Math.round((currentWeek.actualSandwiches || 0) / currentWeek.totalSandwiches * 100))
     : 0;
 
+  // Card chrome driven by severity tier — see the comment block above.
+  const cardClassName =
+    severity === 'severe'
+      ? 'border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800'
+      : 'border-gray-200 dark:border-gray-700';
+
   return (
-    <Card className={hasLowVolumeWeeks
-      ? "border-amber-300 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800"
-      : "border-gray-200 dark:border-gray-700"
-    }>
+    <Card className={cardClassName}>
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
-          {hasLowVolumeWeeks ? (
+          {severity === 'severe' ? (
             <>
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTriangle className="h-5 w-5 text-amber-600" aria-label="Action needed" />
               <span className="text-amber-800 dark:text-amber-200">Group Event Forecast</span>
               <Badge variant="outline" className="text-amber-700 border-amber-400 ml-auto">
-                {lowVolumeWeeks.length} low week{lowVolumeWeeks.length > 1 ? 's' : ''}
+                {lowVolumeWeeks.length} {lowVolumeWeeks.length === 1 ? 'low week' : 'low weeks'}
+              </Badge>
+            </>
+          ) : severity === 'watch' ? (
+            <>
+              {/* Neutral calendar icon for soft dips — there are a couple of
+                  light weeks in the forecast, but nothing dire. */}
+              <Calendar className="h-5 w-5 text-slate-500" aria-label="Forecast" />
+              <span>Group Event Forecast</span>
+              <Badge variant="outline" className="text-slate-600 border-slate-300 ml-auto">
+                {lowVolumeWeeks.length} {lowVolumeWeeks.length === 1 ? 'lighter week' : 'lighter weeks'}
               </Badge>
             </>
           ) : (
             <>
-              <TrendingUp className="h-5 w-5 text-green-600" />
+              <TrendingUp className="h-5 w-5 text-green-600" aria-label="On track" />
               <span>Group Event Forecast</span>
               <Badge variant="outline" className="text-green-700 border-green-400 ml-auto">
                 On track
@@ -360,7 +411,10 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
           Weekly average from group events: <span className="font-medium">{historicalAverage.toLocaleString()}</span> sandwiches
         </div>
 
-        {/* Alert message for low volume weeks */}
+        {/* Alert message — only the SEVERE tier gets the amber "Heads up"
+            block, since that's a genuine call-to-action moment. The watch
+            tier surfaces a calmer slate-toned note so users see the soft
+            dip but don't get the fire-alarm treatment for it. */}
         {hasLowVolumeWeeks && urgentWeek && (() => {
           // Calculate the Friday before the low week (weekStart is Monday, so Friday before is 3 days earlier)
           const calloutDate = new Date(urgentWeek.weekStart);
@@ -370,26 +424,38 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
             month: 'long',
             day: 'numeric'
           });
+          const weekOf = urgentWeek.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+          if (severity === 'severe') {
+            return (
+              <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  <strong>Heads up:</strong> The week of{' '}
+                  <strong>{weekOf}</strong> is{' '}
+                  <strong>{percentBelow}% below</strong> typical volume. Consider a callout for more individual sandwiches by{' '}
+                  <strong>{calloutDateStr}</strong>.
+                </p>
+              </div>
+            );
+          }
+          // Watch tier — calmer note, slate background.
           return (
-            <div className="bg-amber-100 dark:bg-amber-900/30 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                <strong>Heads up:</strong> The week of{' '}
-                <strong>{urgentWeek.weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</strong> is{' '}
-                <strong>{percentBelow}% below</strong> typical volume. Consider a callout for more individual sandwiches by{' '}
-                <strong>{calloutDateStr}</strong>.
+            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+              <p className="text-sm text-slate-700 dark:text-slate-300">
+                The week of <strong>{weekOf}</strong> is forecast slightly below typical volume
+                ({percentBelow}% below). Likely fine, but worth a glance.
               </p>
             </div>
           );
         })()}
 
-        {/* Action button */}
+        {/* Action button — only takes the amber treatment under severe. */}
         {onNavigateToEvents && (
           <Button
             variant="outline"
             size="sm"
             onClick={onNavigateToEvents}
-            className={hasLowVolumeWeeks
+            className={severity === 'severe'
               ? "border-amber-400 text-amber-700 hover:bg-amber-100"
               : ""}
           >

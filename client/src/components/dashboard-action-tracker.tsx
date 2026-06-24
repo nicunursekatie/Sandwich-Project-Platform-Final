@@ -325,28 +325,28 @@ const DashboardActionTracker = ({ onNavigate }: DashboardActionTrackerProps) => 
                       <div className="flex items-center gap-1.5">
                         <FileText className="w-4 h-4 text-[#236383]" />
                         <span className="text-sm font-semibold text-[#236383]">{dashboardData.counts.projects}</span>
-                        <span className="text-sm text-gray-600">Project{dashboardData.counts.projects !== 1 ? 's' : ''}</span>
+                        <span className="text-sm text-gray-600">{dashboardData.counts.projects === 1 ? 'Project' : 'Projects'}</span>
                       </div>
                     )}
                     {dashboardData.counts.tasks > 0 && (
                       <div className="flex items-center gap-1.5">
                         <SquareCheck className="w-4 h-4 text-[#007E8C]" />
                         <span className="text-sm font-semibold text-[#007E8C]">{dashboardData.counts.tasks}</span>
-                        <span className="text-sm text-gray-600">Task{dashboardData.counts.tasks !== 1 ? 's' : ''}</span>
+                        <span className="text-sm text-gray-600">{dashboardData.counts.tasks === 1 ? 'Task' : 'Tasks'}</span>
                       </div>
                     )}
                     {dashboardData.counts.events > 0 && (
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-4 h-4 text-[#47B3CB]" />
                         <span className="text-sm font-semibold text-[#47B3CB]">{dashboardData.counts.events}</span>
-                        <span className="text-sm text-gray-600">Event{dashboardData.counts.events !== 1 ? 's' : ''}</span>
+                        <span className="text-sm text-gray-600">{dashboardData.counts.events === 1 ? 'Event' : 'Events'}</span>
                       </div>
                     )}
                     {dashboardData.counts.messages > 0 && (
                       <div className="flex items-center gap-1.5">
                         <MessageSquare className="w-4 h-4 text-[#FBAD3F]" />
                         <span className="text-sm font-semibold text-[#FBAD3F]">{dashboardData.counts.messages}</span>
-                        <span className="text-sm text-gray-600">Message{dashboardData.counts.messages !== 1 ? 's' : ''}</span>
+                        <span className="text-sm text-gray-600">{dashboardData.counts.messages === 1 ? 'Message' : 'Messages'}</span>
                       </div>
                     )}
                     {dashboardData.counts.projects === 0 && dashboardData.counts.tasks === 0 && dashboardData.counts.events === 0 && dashboardData.counts.messages === 0 && (
