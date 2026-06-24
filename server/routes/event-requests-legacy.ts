@@ -1138,6 +1138,15 @@ router.get(
       const daysParam = req.query.days as string | undefined;
       const statusParam = req.query.status as string | undefined;
       const needsActionParam = req.query.needsAction as string | undefined;
+      // The client (EventRequestContext) falls back to this endpoint when
+      // /api/event-requests/list fails, reusing the SAME query string. These
+      // advanced filters therefore mirror the /list handler below exactly so a
+      // fallback returns the same set instead of silently broadening the data
+      // (e.g. dropping the week scope). Keep the two handlers in sync.
+      const needsDriverParam = req.query.needsDriver as string | undefined;
+      const weekParam = req.query.week as string | undefined;
+      const needsVanParam = req.query.needsVan as string | undefined;
+      const corporatePriorityParam = req.query.corporatePriority as string | undefined;
 
       // Use database-level filtering when status is specified (much faster than loading all rows)
       let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
@@ -1150,6 +1159,29 @@ router.get(
         }
       } else {
         eventRequests = await storage.getAllEventRequests();
+      }
+
+      // Filter to the current Monday-Sunday calendar week in Eastern Time.
+      // Mirrors the /list handler (and thisWeekEventsCount in /operational-stats)
+      // so the dashboard "This Week" tile and the list it opens stay in lockstep
+      // even when the client falls back from /list to this endpoint.
+      if (weekParam === 'current') {
+        const today = parseDateOnly(getTodayString())!;
+        const startOfWeek = new Date(today);
+        const dayOfWeek = startOfWeek.getDay();
+        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back
+        startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        eventRequests = eventRequests.filter(event => {
+          const eventDate = getEffectiveEventDate(event);
+          if (!eventDate) return false;
+          const date = parseDateOnly(eventDate);
+          if (!date) return false;
+          return date >= startOfWeek && date <= endOfWeek;
+        });
       }
 
       // Filter by days (next N days from today) - done in memory since date logic is complex
@@ -1228,7 +1260,28 @@ router.get(
           return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
         });
       }
-      
+
+      // Advanced staffing/priority filters. These mirror the /list handler
+      // exactly so a client fallback (list -> this endpoint) returns the same
+      // set instead of silently broadening it.
+      if (needsDriverParam === 'true') {
+        eventRequests = eventRequests.filter(event => {
+          const driversNeeded = event.driversNeeded || 0;
+          const assignedDrivers = Array.isArray(event.assignedDriverIds)
+            ? event.assignedDriverIds.filter(Boolean).length
+            : 0;
+          return (driversNeeded - assignedDrivers) > 0 && !event.selfTransport;
+        });
+      }
+
+      if (needsVanParam === 'true') {
+        eventRequests = eventRequests.filter(event => event.vanDriverNeeded === true);
+      }
+
+      if (corporatePriorityParam === 'true') {
+        eventRequests = eventRequests.filter(event => event.isCorporatePriority === true);
+      }
+
       // DEBUG: Log details about what we're returning
       const completedCount = eventRequests.filter(e => e.status === 'completed').length;
       logger.info(`📊 API returning ${eventRequests.length} filtered events (${completedCount} completed)`);
@@ -1261,6 +1314,7 @@ router.get(
       const statusParam = req.query.status as string | undefined;
       const needsActionParam = req.query.needsAction as string | undefined;
       const needsDriverParam = req.query.needsDriver as string | undefined;
+      const weekParam = req.query.week as string | undefined;
 
       // Use database-level filtering when status is specified (much faster than loading all rows)
       let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
@@ -1273,6 +1327,28 @@ router.get(
         }
       } else {
         eventRequests = await storage.getAllEventRequests();
+      }
+
+      // Filter to the current Monday-Sunday calendar week in Eastern Time. This
+      // mirrors the thisWeekEventsCount logic in /operational-stats so the
+      // dashboard "This Week" tile and the list it opens stay in lockstep.
+      if (weekParam === 'current') {
+        const today = parseDateOnly(getTodayString())!;
+        const startOfWeek = new Date(today);
+        const dayOfWeek = startOfWeek.getDay();
+        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back
+        startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(endOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        eventRequests = eventRequests.filter(event => {
+          const eventDate = getEffectiveEventDate(event);
+          if (!eventDate) return false;
+          const date = parseDateOnly(eventDate);
+          if (!date) return false;
+          return date >= startOfWeek && date <= endOfWeek;
+        });
       }
 
       // Apply date filter in memory (complex date logic is harder to do in SQL)
@@ -1338,20 +1414,18 @@ router.get(
         });
       }
 
-      // Filter for events specifically needing drivers (includes van drivers)
+      // Filter for events that still need regular drivers. This intentionally
+      // mirrors eventsNeedingDrivers in /operational-stats exactly (regular
+      // drivers only, self-transport excluded, same assigned-count semantics)
+      // so the dashboard "Need Drivers" tile and the list it opens agree.
+      // Van-only needs are surfaced by the separate "Needs Van" filter.
       if (needsDriverParam === 'true') {
         eventRequests = eventRequests.filter(event => {
-          // Regular drivers needed
           const driversNeeded = event.driversNeeded || 0;
-          const assignedDrivers = event.assignedDriverIds
-            ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
+          const assignedDrivers = Array.isArray(event.assignedDriverIds)
+            ? event.assignedDriverIds.filter(Boolean).length
             : 0;
-          const needsRegularDriver = driversNeeded > assignedDrivers;
-
-          // Van driver needed
-          const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
-
-          return needsRegularDriver || needsVanDriver;
+          return (driversNeeded - assignedDrivers) > 0 && !event.selfTransport;
         });
       }
 

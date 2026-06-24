@@ -2,6 +2,7 @@ export type EventRequestsQuickFilter = 'week' | 'today' | 'needsDriver' | 'needs
 
 export type EventRequestsListFilterParams = {
   days?: number;
+  week?: string;
   status?: string;
   needsAction?: string;
   needsDriver?: string;
@@ -12,6 +13,7 @@ export type EventRequestsListFilterParams = {
 function buildQueryString(filterParams: EventRequestsListFilterParams): string {
   const queryParams = new URLSearchParams();
   if (filterParams.days) queryParams.set('days', filterParams.days.toString());
+  if (filterParams.week) queryParams.set('week', filterParams.week);
   if (filterParams.status) queryParams.set('status', filterParams.status);
   if (filterParams.needsAction) queryParams.set('needsAction', filterParams.needsAction);
   if (filterParams.needsDriver) queryParams.set('needsDriver', filterParams.needsDriver);
@@ -24,8 +26,20 @@ export function buildEventRequestsListFilterParams(
   activeTab: string,
   quickFilter: EventRequestsQuickFilter
 ): EventRequestsListFilterParams {
+  // The dashboard's Operational Overview tiles drill in via the "all" tab so
+  // the opened list spans every active stage and exactly matches the tile
+  // count (which /operational-stats computes across new/in_process/scheduled/
+  // rescheduled). The Events-page filter chips keep their original
+  // scheduled-scoped behavior because they navigate via a specific status tab.
+  const ALL_ACTIVE_STATUSES = 'new,in_process,scheduled,rescheduled';
+
   // Handle quick filters first
   if (quickFilter === 'week') {
+    // Dashboard "This Week" tile: all active events within the current
+    // Monday-Sunday calendar week (Eastern), matching thisWeekEventsCount.
+    if (activeTab === 'all') {
+      return { week: 'current', status: ALL_ACTIVE_STATUSES };
+    }
     const status =
       activeTab === 'scheduled'
         ? 'scheduled'
@@ -50,6 +64,11 @@ export function buildEventRequestsListFilterParams(
   }
 
   if (quickFilter === 'needsDriver') {
+    // Dashboard "Need Drivers" tile: all active events that need drivers,
+    // matching eventsNeedingDrivers. The chip stays scheduled-scoped.
+    if (activeTab === 'all') {
+      return { status: ALL_ACTIVE_STATUSES, needsDriver: 'true' };
+    }
     // Show ALL scheduled (or rescheduled) events that need drivers (no date restriction)
     return { status: 'scheduled,rescheduled', needsDriver: 'true' };
   }

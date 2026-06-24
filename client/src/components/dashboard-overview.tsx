@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
   TrendingUp,
+  TrendingDown,
+  ArrowRight,
   Calendar,
   Award,
   Download,
@@ -23,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Card,
   CardContent,
@@ -35,8 +38,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/useResourcePermissions';
 import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { getTodayString } from '@shared/date-utils';
 import { useToast } from '@/hooks/use-toast';
-import { calculateActualWeeklyAverage } from '@/lib/analytics-utils';
+import { calculateActualWeeklyAverage, calculateWeeklyData } from '@/lib/analytics-utils';
+import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -70,6 +75,20 @@ const sandwichIconSvg = '/sandwich-icon-optimized.svg';
 
 interface DashboardOverviewProps {
   onSectionChange: (section: string) => void;
+}
+
+// Standalone section band header — gives the dashboard a clear hierarchy
+// (TODAY / VOLUNTEERS / OPERATIONS / TOOLS / INSIGHTS) so the page reads as
+// grouped priorities instead of one long undifferentiated scroll. Rendered as
+// a sibling before each group (the parent's space-y stacking forms the bands),
+// so it never has to wrap blocks and can't unbalance the surrounding JSX.
+function SectionHeader({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <div className="mx-4 flex items-baseline gap-3 border-b border-gray-200 pb-2 pt-2">
+      <h2 className="text-xs font-bold uppercase tracking-wider text-[#236383]">{label}</h2>
+      {hint && <span className="text-xs text-gray-400">{hint}</span>}
+    </div>
+  );
 }
 
 export default function DashboardOverview({
@@ -405,7 +424,19 @@ export default function DashboardOverview({
     };
   }, [statsData, allCollectionsData, annualSandwichGoal]);
 
-  // Remove fake mini chart data - only use real data
+  // Last 12 completed weeks of real collection totals for the dashboard trend
+  // chart. Excludes the in-progress week so the line doesn't dip artificially.
+  const weeklyTrend = React.useMemo(() => {
+    const collections = allCollectionsData?.collections;
+    if (!collections?.length) return [];
+    return calculateWeeklyData(collections)
+      .filter((w) => w.isComplete)
+      .slice(-12)
+      .map((w) => ({
+        week: w.weekLabel.split(' - ')[0], // short Friday label
+        sandwiches: w.totalSandwiches,
+      }));
+  }, [allCollectionsData]);
 
   return (
     <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
@@ -542,25 +573,87 @@ export default function DashboardOverview({
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     {statsData.currentMonthName} {statsData.currentMonthYear}
                   </p>
+                  {/* Projected month-end total based on the pace so far, with a
+                      trend vs last month. Projecting (rather than comparing a
+                      partial month to a full one) keeps the signal honest early
+                      in the month instead of always reading as a drop. */}
+                  {statsData?.lastMonthSandwiches != null && statsData.lastMonthSandwiches > 0 && (() => {
+                    // Derive the day/month in Eastern Time so the projection
+                    // lines up with currentMonthSandwiches (computed server-side
+                    // in America/New_York); a local browser clock could project
+                    // against the wrong month/day near month boundaries.
+                    const [eY, eM, eD] = getTodayString().split('-').map(Number);
+                    const dayOfMonth = eD;
+                    const daysInMonth = new Date(eY, eM, 0).getDate();
+                    if (dayOfMonth < 1) return null;
+                    const projected = Math.round((statsData.currentMonthSandwiches / dayOfMonth) * daysInMonth);
+                    const pct = Math.round(((projected - statsData.lastMonthSandwiches) / statsData.lastMonthSandwiches) * 100);
+                    const up = pct >= 0;
+                    return (
+                      <p className={`text-xs font-medium mt-0.5 flex items-center justify-center gap-0.5 ${up ? 'text-green-600' : 'text-amber-600'}`}>
+                        {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        on pace for ~{projected.toLocaleString()} ({up ? '+' : ''}{pct}% vs {statsData.lastMonthName})
+                      </p>
+                    );
+                  })()}
                 </div>
               )}
             </div>
+            {/* Progress toward the annual goal — turns the bare YTD number and
+                the "Annual Goal" target into an at-a-glance progress bar. */}
+            {statsData?.ytdSandwiches != null && annualSandwichGoal > 0 && (() => {
+              const goalPct = Math.min(100, Math.round((statsData.ytdSandwiches / annualSandwichGoal) * 100));
+              return (
+                <div className="max-w-md mx-auto mb-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-1">
+                    <span>{statsData.ytdYear} progress toward goal</span>
+                    <span className="font-semibold text-brand-primary">
+                      {statsData.ytdSandwiches.toLocaleString()} / {annualSandwichGoal.toLocaleString()} ({goalPct}%)
+                    </span>
+                  </div>
+                  <Progress value={goalPct} className="h-2" />
+                </div>
+              );
+            })()}
             <div className="premium-text-body-sm text-gray-600">
               Real data from verified collection records
             </div>
           </div>
         </div>
 
-        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
-        <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
-        </div>
+        {/* ── TODAY: the things that need attention right now ── */}
+        <SectionHeader label="Today" hint="What needs your attention right now" />
 
         {/* Operational Overview - Key metrics and urgent items */}
         <OperationalOverview onNavigate={onSectionChange || (() => {})} />
 
-        {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
+        {/* Action Tracker — your assigned tasks, events, and messages (moved up
+            from below the tools grid: it belongs with today's priorities). */}
+        <div className="mx-4 mb-8 max-w-full">
+          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
+        </div>
+
+        {/* Continue where you left off — people reopen the same resources constantly. */}
+        <div className="mx-4 mb-8 max-w-full">
+          <RecentlyAccessedResources />
+        </div>
+
+        {/* ── VOLUNTEERS ── */}
+        <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
+
+        {/* Volunteer Opportunities Spotlight */}
         <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+
+        {/* ── OPERATIONS ── */}
+        <SectionHeader label="Operations" hint="Forecast and capacity" />
+
+        {/* Group Event Forecast - current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+        </div>
+
+        {/* ── TOOLS ── */}
+        <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
 
         {/* TSP Additional Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
@@ -900,15 +993,51 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
+        {/* ── INSIGHTS ── (Action Tracker moved up to the Today section) */}
+        <SectionHeader label="Insights" hint="Totals, capacity, and resources" />
 
-        {/* Recently Accessed Resources Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <RecentlyAccessedResources />
-        </div>
+        {/* Weekly collections trend — a compact 12-week chart so the dashboard
+            shows momentum visually, not just as numbers. Full analytics live on
+            the dedicated pages; this is the at-a-glance snapshot. */}
+        {weeklyTrend.length > 1 && (
+          <div className="mx-4 mb-8 max-w-full">
+            <div className="premium-card p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="premium-text-caption text-brand-primary uppercase">
+                  Weekly Collections — last {weeklyTrend.length} weeks
+                </h3>
+                <button
+                  onClick={() => onSectionChange?.('analytics')}
+                  className="text-sm text-brand-primary hover:underline flex items-center gap-1"
+                >
+                  Full analytics <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="dashTrendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#007E8C" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#007E8C" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#6b7280' }} interval="preserveStartEnd" />
+                  <RechartsTooltip
+                    formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']}
+                    labelStyle={{ color: '#236383', fontWeight: 600 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sandwiches"
+                    stroke="#007E8C"
+                    strokeWidth={2}
+                    fill="url(#dashTrendFill)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 mb-6 sm:mb-8 max-w-full">
