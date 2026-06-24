@@ -7,6 +7,19 @@ import { getVolunteerCount, getTotalDriverCount, getSpeakerCount } from '@/lib/a
 import type { EventRequest } from '@shared/schema';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+import { parseDateOnly } from '@shared/date-utils';
+
+// Whole-day difference between an event's date and today, parsing the
+// date-only value as a local date (parseDateOnly) so YYYY-MM-DD isn't shifted
+// to the previous day by UTC-midnight interpretation in Eastern time.
+const daysUntil = (request: EventRequest): number => {
+  const date = getEffectiveEventDate(request);
+  const parsed = date ? parseDateOnly(date) : null;
+  if (!parsed) return Infinity;
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((parsed.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
+};
 
 interface VolunteerOpportunitiesSpotlightProps {
   onNavigate: (section: string) => void;
@@ -46,10 +59,7 @@ const getUnfilledNeeds = (request: EventRequest): UnfilledNeeds => {
 type Urgency = { level: 'critical' | 'soon' | 'upcoming'; label: string; badgeClass: string; borderClass: string };
 
 const getUrgency = (request: EventRequest): Urgency => {
-  const date = getEffectiveEventDate(request);
-  const days = date
-    ? Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : Infinity;
+  const days = daysUntil(request);
   if (days <= 3) {
     return { level: 'critical', label: 'Critical', badgeClass: 'bg-red-100 text-red-800', borderClass: 'border-l-red-500' };
   }
@@ -74,8 +84,8 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
     .sort((a, b) => {
       const dateA = getEffectiveEventDate(a);
       const dateB = getEffectiveEventDate(b);
-      const timeA = dateA ? new Date(dateA).getTime() : Infinity;
-      const timeB = dateB ? new Date(dateB).getTime() : Infinity;
+      const timeA = dateA ? (parseDateOnly(dateA)?.getTime() ?? Infinity) : Infinity;
+      const timeB = dateB ? (parseDateOnly(dateB)?.getTime() ?? Infinity) : Infinity;
       return timeA - timeB;
     })
     .slice(0, 3);

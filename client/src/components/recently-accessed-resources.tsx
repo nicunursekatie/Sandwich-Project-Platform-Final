@@ -102,7 +102,7 @@ export function RecentlyAccessedResources() {
             Nothing here yet — the files and links you open will show up here for quick access.
           </p>
           <a
-            href="/resources"
+            href="/dashboard?section=resources"
             className="inline-flex items-center gap-1 text-sm text-[#236383] hover:text-[#007E8C] font-medium"
           >
             Browse resources
@@ -155,7 +155,7 @@ export function RecentlyAccessedResources() {
 
       <div className="mt-3 pt-3 border-t border-gray-200">
         <a
-          href="/resources"
+          href="/dashboard?section=resources"
           className="text-sm text-[#236383] hover:text-[#007E8C] font-medium flex items-center justify-center gap-1"
         >
           View all resources

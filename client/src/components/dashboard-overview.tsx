@@ -38,6 +38,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/useResourcePermissions';
 import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { getTodayString } from '@shared/date-utils';
 import { useToast } from '@/hooks/use-toast';
 import { calculateActualWeeklyAverage, calculateWeeklyData } from '@/lib/analytics-utils';
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip as RechartsTooltip } from 'recharts';
@@ -574,9 +575,13 @@ export default function DashboardOverview({
                       partial month to a full one) keeps the signal honest early
                       in the month instead of always reading as a drop. */}
                   {statsData?.lastMonthSandwiches != null && statsData.lastMonthSandwiches > 0 && (() => {
-                    const now = new Date();
-                    const dayOfMonth = now.getDate();
-                    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                    // Derive the day/month in Eastern Time so the projection
+                    // lines up with currentMonthSandwiches (computed server-side
+                    // in America/New_York); a local browser clock could project
+                    // against the wrong month/day near month boundaries.
+                    const [eY, eM, eD] = getTodayString().split('-').map(Number);
+                    const dayOfMonth = eD;
+                    const daysInMonth = new Date(eY, eM, 0).getDate();
                     if (dayOfMonth < 1) return null;
                     const projected = Math.round((statsData.currentMonthSandwiches / dayOfMonth) * daysInMonth);
                     const pct = Math.round(((projected - statsData.lastMonthSandwiches) / statsData.lastMonthSandwiches) * 100);
