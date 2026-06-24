@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Users, X, MessageCircle } from 'lucide-react';
+import { Users, X, MessageCircle, Smartphone, Monitor } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,29 @@ interface OnlineUser {
   email: string | null;
   profileImageUrl: string | null;
   lastActiveAt: string | null;
+  /**
+   * Devices the user is currently active on. The server sniffs each
+   * heartbeat's User-Agent and records the user as active on 'mobile' or
+   * 'desktop' — when they have the app open on both phone AND laptop, both
+   * appear here. Empty array means the device-presence map hasn't seen a
+   * heartbeat yet (e.g. just after a server restart) — fall back to no icon.
+   */
+  devices?: Array<'mobile' | 'desktop'>;
+}
+
+/** Render small icons for each device a user is active on. */
+function DeviceIcons({ devices }: { devices: Array<'mobile' | 'desktop'> | undefined }) {
+  if (!devices || devices.length === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-0.5" title={devices.join(' + ')}>
+      {devices.includes('desktop') && (
+        <Monitor className="w-3.5 h-3.5 text-teal-600" aria-label="on a computer" />
+      )}
+      {devices.includes('mobile') && (
+        <Smartphone className="w-3.5 h-3.5 text-teal-600" aria-label="on a phone" />
+      )}
+    </span>
+  );
 }
 
 function getInitials(user: OnlineUser): string {
@@ -179,9 +202,12 @@ export function OnlineUsers() {
                       <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {getDisplayName(user)}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {getDisplayName(user)}
+                        </p>
+                        <DeviceIcons devices={user.devices} />
+                      </div>
                       <p className="text-xs text-slate-500 truncate">
                         {getTimeAgo(user.lastActiveAt)}
                       </p>

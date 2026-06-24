@@ -58,7 +58,9 @@ import {
   SparkleIcon,
   NetworkIcon,
 } from '@/components/modern-dashboard/custom-svg-icons';
-import CMYK_PRINT_TSP_01__2_ from '@assets/CMYK_PRINT_TSP-01 (2).png';
+// CMYK_PRINT_TSP_01 logo import removed — the centered logo card it powered
+// was relocated to the sidebar brand block (simple-nav.tsx) so the dashboard
+// can promote actionable content into the top slot.
 import { logger } from '@/lib/logger';
 // Using optimized SVG logos for faster loading
 const tspLogoSvg = '/logo-optimized.svg';
@@ -409,22 +411,12 @@ export default function DashboardOverview({
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8 w-full">
-        {/* Header */}
-        <div className="premium-card mx-4 mt-8 p-4 sm:p-6 text-center max-w-full">
-          <div className="relative max-w-full">
-            <img
-              src={CMYK_PRINT_TSP_01__2_}
-              alt="The Sandwich Project"
-              className="w-[140px] sm:w-[170px] md:w-[240px] max-w-full mb-2 sm:mb-3 mx-auto"
-              width="240"
-              height="75"
-            />
-          </div>
-          <p className="text-sm sm:text-base text-brand-primary font-medium">
-            Nourish The Hungry. Feed The Soul.
-          </p>
-        </div>
+      <div className="space-y-8 pb-8 pt-4 w-full">
+        {/* The big centered TSP logo+tagline card that used to live here was
+            moved to the top-left of the sidebar so the dashboard's prime
+            above-the-fold space (Universal Search + Collection CTA) shows
+            without scrolling. The brand still anchors the page via the
+            sidebar — standard SaaS convention (Slack, Linear, Notion). */}
 
         {/* Universal Search */}
         <div className="mx-4">
@@ -445,20 +437,30 @@ export default function DashboardOverview({
                   </p>
                 )}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {/* Primary + secondary action hierarchy.
+                  "Enter New Collection Data" is the page's reason for being —
+                  it gets the spotlight via larger padding, bigger text, and
+                  the amber accent (#FBAD3F) which pops against the teal-heavy
+                  page palette. "View Collection History" steps back to a
+                  text-link treatment so the eye lands on the primary action
+                  first. The buttons no longer share visual weight. */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
                 <button
-                  className="premium-btn-accent"
+                  className="premium-btn-accent text-base sm:text-lg font-bold px-8 py-3.5 shadow-[0_4px_14px_rgba(251,173,63,0.4)] hover:shadow-[0_6px_20px_rgba(251,173,63,0.5)]"
+                  style={{ minHeight: '52px' }}
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
+                  data-testid="button-enter-collection-data"
                 >
                   {showCollectionForm
                     ? 'Hide Form'
                     : 'Enter New Collection Data'}
                 </button>
                 <button
-                  className="premium-btn-outline"
+                  className="text-sm font-medium text-brand-primary hover:text-brand-primary-dark hover:underline underline-offset-4 transition-colors px-3 py-2"
                   onClick={() => onSectionChange?.('collections')}
+                  data-testid="button-view-collection-history"
                 >
-                  View Collection History
+                  View Collection History →
                 </button>
               </div>
             </div>

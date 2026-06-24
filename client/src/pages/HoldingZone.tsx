@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { MentionTextarea, MessageWithMentions } from '@/components/mention-input';
-import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Loader2,
   Plus,
@@ -1331,24 +1330,19 @@ export default function HoldingZone() {
   if (!canView) {
     return (
       <div className="container mx-auto p-6">
-        <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
-        <div className="mt-6">
-          <PermissionDenied
-            action="view the Holding Zone"
-            requiredPermission="TEAM_BOARD_VIEW"
-            variant="card"
-          />
-        </div>
+        <PermissionDenied
+          action="view the Holding Zone"
+          requiredPermission="TEAM_BOARD_VIEW"
+          variant="card"
+        />
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
-
       {/* Header */}
-      <div className="flex items-center justify-between mt-6 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Holding Zone</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">

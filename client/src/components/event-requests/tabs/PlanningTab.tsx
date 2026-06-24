@@ -215,8 +215,8 @@ export function PlanningTab({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-lg text-slate-900 mb-1">Sandwich Planning</h3>
-                <p className="text-sm text-slate-600">
-                  Plan sandwich production based on scheduled events
+                <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">
+                  See total sandwich counts and types grouped by week—plan production and ingredients for your distribution cycle.
                 </p>
               </div>
             </div>
@@ -232,8 +232,8 @@ export function PlanningTab({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-lg text-slate-900 mb-1">Staffing Planning</h3>
-                <p className="text-sm text-slate-600">
-                  Coordinate drivers, speakers, and volunteers
+                <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">
+                  See how many drivers, speakers, and volunteers are still needed each week—spot open roles across all events at once.
                 </p>
               </div>
             </div>
