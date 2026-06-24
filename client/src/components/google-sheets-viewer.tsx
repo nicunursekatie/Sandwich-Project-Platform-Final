@@ -130,6 +130,7 @@ export function GoogleSheetsViewer({
               }}
               title="Sandwich Totals Data Sheet"
               onLoad={() => setIsLoading(false)}
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
             />
           </div>
         </CardContent>

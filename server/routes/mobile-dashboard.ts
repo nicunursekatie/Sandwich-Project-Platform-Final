@@ -42,7 +42,9 @@ function currentWeek() {
   const todayStr = new Date().toLocaleDateString('en-CA', {
     timeZone: 'America/New_York',
   }); // YYYY-MM-DD
-  const today = new Date(`${todayStr}T00:00:00`);
+  // Parse date-only at local noon (repo convention, shared/date-utils.ts) so
+  // the weekday math is stable regardless of the server's timezone.
+  const today = new Date(`${todayStr}T12:00:00`);
   const daysFromFriday = (today.getDay() + 2) % 7; // Fri (5) -> 0
   const friday = new Date(today);
   friday.setDate(today.getDate() - daysFromFriday);
@@ -75,7 +77,12 @@ export function createMobileDashboardRouter(deps: RouterDependencies) {
       // Sandwich totals collected this week (collection_date is a YYYY-MM-DD
       // string, so ISO string comparison gives the correct range).
       const weekCollections = await db
-        .select()
+        .select({
+          individualSandwiches: sandwichCollections.individualSandwiches,
+          groupCollections: sandwichCollections.groupCollections,
+          group1Count: sandwichCollections.group1Count,
+          group2Count: sandwichCollections.group2Count,
+        })
         .from(sandwichCollections)
         .where(
           and(
@@ -125,7 +132,14 @@ export function createMobileDashboardRouter(deps: RouterDependencies) {
   router.get('/activity/recent', isAuthenticated, async (_req, res) => {
     try {
       const recent = await db
-        .select()
+        .select({
+          hostName: sandwichCollections.hostName,
+          submittedAt: sandwichCollections.submittedAt,
+          individualSandwiches: sandwichCollections.individualSandwiches,
+          groupCollections: sandwichCollections.groupCollections,
+          group1Count: sandwichCollections.group1Count,
+          group2Count: sandwichCollections.group2Count,
+        })
         .from(sandwichCollections)
         .where(isNull(sandwichCollections.deletedAt))
         .orderBy(desc(sandwichCollections.submittedAt))
