@@ -57,6 +57,8 @@ export interface UserProfileData {
   preferredEmail?: string;
   address?: string;
   vanApproved?: boolean;
+  speakerApproved?: boolean;
+  driverApproved?: boolean;
   role?: string;
   isActive?: boolean;
 }
@@ -215,8 +217,25 @@ export class UserService implements IUserService {
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.isActive !== undefined)
         updateData.isActive = profileData.isActive;
-      if (profileData.vanApproved !== undefined)
+      // Coordinator-granted event-role approvals. Stamp the audit columns when
+      // any of them is touched so we can trace who vetted a speaker/driver.
+      let eventRoleApprovalChanged = false;
+      if (profileData.vanApproved !== undefined) {
         updateData.vanApproved = profileData.vanApproved;
+        eventRoleApprovalChanged = true;
+      }
+      if (profileData.speakerApproved !== undefined) {
+        updateData.speakerApproved = profileData.speakerApproved;
+        eventRoleApprovalChanged = true;
+      }
+      if (profileData.driverApproved !== undefined) {
+        updateData.driverApproved = profileData.driverApproved;
+        eventRoleApprovalChanged = true;
+      }
+      if (eventRoleApprovalChanged) {
+        updateData.eventRolesModifiedAt = new Date();
+        updateData.eventRolesModifiedBy = requestUserId ?? null;
+      }
 
       // Handle address changes with auto-geocoding
       if (profileData.address !== undefined) {

@@ -19,6 +19,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isAfter, startOfDay } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  isEligibleForRole,
+  getEligibleEventRoles,
+  type UserRoleCapabilities,
+} from '@shared/event-role-eligibility';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -716,6 +721,7 @@ function SignupDialog({
   onSubmit,
   isSubmitting,
   preselectedRole,
+  userCapabilities,
 }: {
   event: AvailableEvent | null;
   open: boolean;
@@ -723,6 +729,7 @@ function SignupDialog({
   onSubmit: (roles: string[], notes: string) => void;
   isSubmitting: boolean;
   preselectedRole?: 'speaker' | 'general' | 'driver';
+  userCapabilities?: UserRoleCapabilities | null;
 }) {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -788,8 +795,13 @@ function SignupDialog({
       });
     }
 
-    return roles;
-  }, [event]);
+    // Tailor to what THIS volunteer is willing/approved to do. Speaker and driver
+    // require coordinator approval; general is the baseline. Roles the event
+    // offers but the user isn't eligible for are dropped here (single source of
+    // truth in shared/event-role-eligibility.ts). The server enforces the same
+    // rule on submit, so this is purely to keep the UI honest.
+    return roles.filter((r) => isEligibleForRole(userCapabilities, r.value));
+  }, [event, userCapabilities]);
 
   useEffect(() => {
     if (open && event) {
@@ -828,7 +840,9 @@ function SignupDialog({
             </Label>
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                No roles are currently available for this event.
+                None of this event's roles match what you're set up for. Update the
+                roles you're willing to do in your profile — speaker and driver roles
+                also need coordinator approval before they show up here.
               </div>
             ) : (
               <div className="space-y-2">
@@ -1414,8 +1428,19 @@ export default function VolunteerEventHub() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [mySignupsRoleFilter, setMySignupsRoleFilter] = useState<string>('all');
   const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
+  // Soft filter (off by default): narrow the list to events with an opening for a
+  // role this volunteer is actually eligible for. Discovery stays open otherwise.
+  const [showOnlyMyRoles, setShowOnlyMyRoles] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const needsOnlyForEventQuery = view === 'calendar' ? false : showOnlyNeeds;
+
+  // Roles this user is willing + (where required) approved for. Drives the
+  // "only opportunities I can do" toggle below. Same helper the signup dialog
+  // and the server use.
+  const myEligibleRoles = useMemo(
+    () => getEligibleEventRoles(user as UserRoleCapabilities | null),
+    [user]
+  );
 
   // User location for distance calculation on map
   const [userAddress, setUserAddress] = useState('');
@@ -1774,6 +1799,19 @@ export default function VolunteerEventHub() {
           // Group is providing their own transport — no driver opportunity here.
           if (event.selfTransport) return false;
         }
+
+        // "Only opportunities I can do": keep events that have an opening for a
+        // role this volunteer is eligible for. Mirrors getEligibleEventRoles.
+        if (showOnlyMyRoles) {
+          const matchesMyRole =
+            (myEligibleRoles.includes('general') && event.volunteersUnfilled > 0) ||
+            (myEligibleRoles.includes('speaker') && event.speakersUnfilled > 0) ||
+            (myEligibleRoles.includes('driver') &&
+              event.driversUnfilled > 0 &&
+              !event.selfTransport &&
+              !event.vanDriverNeeded);
+          if (!matchesMyRole) return false;
+        }
         return true;
       })
       .sort((a, b) => {
@@ -1788,7 +1826,7 @@ export default function VolunteerEventHub() {
         if (dateB) return 1;
         return a.organizationName.localeCompare(b.organizationName);
       });
-  }, [events, roleFilter, searchTerm]);
+  }, [events, roleFilter, searchTerm, showOnlyMyRoles, myEligibleRoles]);
 
   // Calculate summary metrics for dashboard cards
   const summaryMetrics = useMemo(() => {
@@ -2187,6 +2225,19 @@ export default function VolunteerEventHub() {
                   />
                   <Label htmlFor="showOnlyNeeds" className="text-sm cursor-pointer">
                     Only show events that need help
+                  </Label>
+                </div>
+              )}
+
+              {view !== 'calendar' && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="showOnlyMyRoles"
+                    checked={showOnlyMyRoles}
+                    onCheckedChange={(checked) => setShowOnlyMyRoles(checked === true)}
+                  />
+                  <Label htmlFor="showOnlyMyRoles" className="text-sm cursor-pointer">
+                    Only opportunities I can do
                   </Label>
                 </div>
               )}
@@ -3419,6 +3470,7 @@ export default function VolunteerEventHub() {
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
           preselectedRole={preselectedSignupRole}
+          userCapabilities={user as UserRoleCapabilities | null}
         />
 
         <UnavailableDialog

@@ -27,6 +27,7 @@ import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { isEligibleForRole, getEligibleEventRoles, type EventRole } from '../../shared/event-role-eligibility';
 
 const router = Router();
 
@@ -1246,6 +1247,27 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     const invalidRoles = normalizedRoles.filter(r => !['driver', 'speaker', 'general'].includes(r));
     if (invalidRoles.length > 0) {
       return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
+    }
+
+    // Eligibility gate (self-signup only). A volunteer can only sign THEMSELVES
+    // up for roles they're willing AND (where required) approved for. Coordinators
+    // assigning others deliberately bypass this — assigning is itself the
+    // coordinator vouching for the person, and driver assignment is already
+    // gated by DRIVER_SIGNUP_APPROVE below. The hub UI hides ineligible roles;
+    // this is the server-side backstop against a hand-crafted request.
+    if (!isAssigningOther) {
+      const ineligible = normalizedRoles.filter(
+        (r) => !isEligibleForRole(user, r as EventRole)
+      );
+      if (ineligible.length > 0) {
+        return res.status(403).json({
+          error:
+            ineligible.includes('speaker') || ineligible.includes('driver')
+              ? 'You are not yet approved for that role. Speaker and driver roles require coordinator approval — update what you are willing to do in your profile, and a coordinator can approve you.'
+              : 'You are not set up for that role. Update the roles you are willing to do in your profile.',
+          ineligibleRoles: ineligible,
+        });
+      }
     }
 
     // Check if target user already signed up for this event with any requested role

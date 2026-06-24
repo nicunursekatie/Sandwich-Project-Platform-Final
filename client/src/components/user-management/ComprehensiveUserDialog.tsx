@@ -25,6 +25,8 @@ import {
   BarChart3,
   MapPin,
   Truck,
+  Mic,
+  Car,
 } from 'lucide-react';
 import type { User, UserFormData } from '@/types/user';
 import CleanPermissionsEditor from '@/components/clean-permissions-editor';
@@ -52,6 +54,8 @@ const defaultFormData: UserFormData = {
   preferredEmail: '',
   address: '',
   vanApproved: false,
+  speakerApproved: false,
+  driverApproved: false,
   role: 'volunteer',
   isActive: true,
   password: '',
@@ -83,6 +87,8 @@ export function ComprehensiveUserDialog({
         preferredEmail: user.preferredEmail || '',
         address: user.address || '',
         vanApproved: (user as any).vanApproved ?? false,
+        speakerApproved: (user as any).speakerApproved ?? false,
+        driverApproved: (user as any).driverApproved ?? false,
         role: user.role || 'volunteer',
         isActive: user.isActive ?? true,
         password: '',
@@ -356,6 +362,43 @@ export function ComprehensiveUserDialog({
                     Approved Van Driver
                     <span className="block text-xs text-slate-500 ml-1">
                       Can be assigned to drive the van for events
+                    </span>
+                  </Label>
+                </div>
+
+                {/* Event-role approvals. These gate the speaker/driver signup
+                    options on the Volunteer Hub: a user must be approved here AND
+                    willing (set in their own profile) for the role to appear. */}
+                <div className="flex items-center space-x-2 py-2">
+                  <Switch
+                    id="speakerApproved"
+                    checked={formData.speakerApproved || false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, speakerApproved: checked })
+                    }
+                  />
+                  <Label htmlFor="speakerApproved" className="text-sm flex items-center gap-1.5">
+                    <Mic className="h-3.5 w-3.5" />
+                    Approved Speaker
+                    <span className="block text-xs text-slate-500 ml-1">
+                      Vetted to represent the org and speak at events
+                    </span>
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2 py-2">
+                  <Switch
+                    id="driverApproved"
+                    checked={formData.driverApproved || false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, driverApproved: checked })
+                    }
+                  />
+                  <Label htmlFor="driverApproved" className="text-sm flex items-center gap-1.5">
+                    <Car className="h-3.5 w-3.5" />
+                    Approved Driver
+                    <span className="block text-xs text-slate-500 ml-1">
+                      Vetted to drive for event pickups and deliveries
                     </span>
                   </Label>
                 </div>
