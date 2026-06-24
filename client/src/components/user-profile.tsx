@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLocation } from 'wouter';
-import { User, Lock, Save, Bell, Smartphone, Monitor, Mail } from 'lucide-react';
+import { User, Lock, Save, Bell, Smartphone, Monitor, Mail, Mic, Car, HandHeart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,6 +45,11 @@ const profileSchema = z.object({
   preferredEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   phoneNumber: z.string().optional(),
   address: z.string().optional(),
+  // Self-declared event-role willingness. Approval (speaker/driver/van) is set
+  // by coordinators and shown read-only below.
+  willingToVolunteer: z.boolean(),
+  willingToSpeak: z.boolean(),
+  willingToDrive: z.boolean(),
 });
 
 const passwordSchema = z
@@ -71,6 +76,24 @@ interface SMSOptInData {
 type ProfileFormData = z.infer<typeof profileSchema>;
 type PasswordFormData = z.infer<typeof passwordSchema>;
 type SMSFormData = z.infer<typeof smsSchema>;
+
+// Read-only indicator of coordinator approval for a gated role (speaker/driver).
+// Only meaningful once the user is willing — but harmless to show regardless.
+function ApprovalBadge({ approved }: { approved?: boolean | null }) {
+  if (approved) {
+    return (
+      <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#007e8c]">
+        <CheckCircle2 className="w-3.5 h-3.5" />
+        Coordinator approved
+      </span>
+    );
+  }
+  return (
+    <span className="mt-1 inline-block text-xs text-muted-foreground">
+      Pending coordinator approval
+    </span>
+  );
+}
 
 export default function UserProfile() {
   const { toast } = useToast();
@@ -109,6 +132,9 @@ export default function UserProfile() {
       preferredEmail: '',
       phoneNumber: '',
       address: '',
+      willingToVolunteer: true,
+      willingToSpeak: false,
+      willingToDrive: false,
     },
   });
 
@@ -146,6 +172,9 @@ export default function UserProfile() {
         preferredEmail: profile.preferredEmail || '',
         phoneNumber: profile.phoneNumber || '',
         address: profile.address || '',
+        willingToVolunteer: profile.willingToVolunteer ?? true,
+        willingToSpeak: profile.willingToSpeak ?? false,
+        willingToDrive: profile.willingToDrive ?? false,
       });
     }
   }, [userProfile, profileForm]);
@@ -571,6 +600,92 @@ export default function UserProfile() {
                           Your home address is used to show your location on the driver planning map so the team can coordinate logistics.
                         </p>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Volunteer roles: what this person is willing to do. Speaker and
+                    driver also require coordinator approval (shown read-only). */}
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Volunteer Roles</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Tell us what you're up for. You'll see signup opportunities on the
+                      Volunteer Hub for the roles you choose. Speaker and driver roles also
+                      need coordinator approval before they appear.
+                    </p>
+                  </div>
+
+                  <FormField
+                    control={profileForm.control}
+                    name="willingToVolunteer"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-[#007e8c]/10">
+                            <HandHeart className="w-5 h-5 text-[#007e8c]" />
+                          </div>
+                          <div>
+                            <FormLabel className="text-base font-medium">General Volunteer</FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Help out at events — setup, assembly, distribution, and more.
+                            </p>
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={profileForm.control}
+                    name="willingToSpeak"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-[#a31c41]/10">
+                            <Mic className="w-5 h-5 text-[#a31c41]" />
+                          </div>
+                          <div>
+                            <FormLabel className="text-base font-medium">Speaker</FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Represent The Sandwich Project and speak to groups at events.
+                            </p>
+                            <ApprovalBadge approved={(userProfile as any)?.speakerApproved} />
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={profileForm.control}
+                    name="willingToDrive"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-[#236383]/10">
+                            <Car className="w-5 h-5 text-[#236383]" />
+                          </div>
+                          <div>
+                            <FormLabel className="text-base font-medium">Driver</FormLabel>
+                            <p className="text-sm text-muted-foreground">
+                              Drive to pick up and deliver sandwiches for events.
+                            </p>
+                            <ApprovalBadge approved={(userProfile as any)?.driverApproved} />
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
                       </FormItem>
                     )}
                   />
