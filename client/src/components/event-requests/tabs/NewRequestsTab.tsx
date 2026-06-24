@@ -32,31 +32,19 @@ export const NewRequestsTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowScheduleCallDialog,
     setToolkitEventRequest,
-    setShowToolkitSentDialog,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowTspContactAssignmentDialog,
     setTspContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowAiDateSuggestionDialog,
     setAiSuggestionEventRequest,
-    setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
-    setShowIntakeCallDialog,
     setIntakeCallEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-    setShowDeclineDialog,
     setReasonDialogEventRequest,
-    setShowNonEventDialog,
     setNonEventDialogEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const newRequests = filterRequestsByStatus('new');
@@ -245,76 +233,76 @@ export const NewRequestsTab: React.FC = () => {
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onDelete={() => deleteEventRequestMutation.mutate(request.id)}
               onCall={() => handleCall(request)}
               onIntakeCall={() => {
                 setIntakeCallEventRequest(request);
-                setShowIntakeCallDialog(true);
+                openDialog('intakeCall');
               }}
               onContact={() => {
                 setContactEventRequest(request);
-                setShowContactOrganizerDialog(true);
+                openDialog('contactOrganizer');
               }}
               onToolkit={() => {
                 setSelectedEventRequest(request);
                 setToolkitEventRequest(request);
-                setShowToolkitSentDialog(true);
+                openDialog('toolkitSent');
               }}
               onScheduleCall={() => {
                 setSelectedEventRequest(request);
-                setShowScheduleCallDialog(true);
+                openDialog('scheduleCall');
               }}
               onAssignTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onEditTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onApprove={() => handleStatusChange(request.id, 'in_process')}
               onDecline={async () => {
                 const result = await handleStatusChange(request.id, 'declined');
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
-                  setShowDeclineDialog(true);
+                  openDialog('decline');
                 }
               }}
               onNonEvent={async () => {
                 const result = await handleStatusChange(request.id, 'non_event');
                 if (result === 'needs_reason') {
                   setNonEventDialogEventRequest(request);
-                  setShowNonEventDialog(true);
+                  openDialog('nonEvent');
                 }
               }}
               onLogContact={() => {
                 setLogContactEventRequest(request);
-                setShowLogContactDialog(true);
+                openDialog('logContact');
               }}
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
-                setShowAiDateSuggestionDialog(true);
+                openDialog('aiDateSuggestion');
               }}
               onAiIntakeAssist={() => {
                 setAiIntakeAssistantEventRequest(request);
-                setShowAiIntakeAssistantDialog(true);
+                openDialog('aiIntakeAssistant');
               }}
               onAddNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('add');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onEditNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('edit');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onCompleteNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('complete');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onToggleCorporatePriority={(isCorporatePriority) => {
                 toggleCorporatePriorityMutation.mutate({

@@ -24,13 +24,10 @@ export const StalledTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowDeclineDialog,
     setReasonDialogEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const stalledRequests = filterRequestsByStatus('stalled');
@@ -90,12 +87,12 @@ export const StalledTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onDelete={() => {
               if (window.confirm('Are you sure you want to permanently delete this stalled event?')) {
@@ -104,7 +101,7 @@ export const StalledTab: React.FC = () => {
             }}
             onContact={() => {
               setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onCall={() => handleCall(request)}
             onReactivate={() => {
@@ -118,13 +115,13 @@ export const StalledTab: React.FC = () => {
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onDecline={async () => {
               const result = await handleStatusChange(request.id, 'declined');
               if (result === 'needs_reason') {
                 setReasonDialogEventRequest(request);
-                setShowDeclineDialog(true);
+                openDialog('decline');
               }
             }}
           />
