@@ -58,7 +58,9 @@ import {
   SparkleIcon,
   NetworkIcon,
 } from '@/components/modern-dashboard/custom-svg-icons';
-import CMYK_PRINT_TSP_01__2_ from '@assets/CMYK_PRINT_TSP-01 (2).png';
+// CMYK_PRINT_TSP_01 logo import removed — the centered logo card it powered
+// was relocated to the sidebar brand block (simple-nav.tsx) so the dashboard
+// can promote actionable content into the top slot.
 import { logger } from '@/lib/logger';
 // Using optimized SVG logos for faster loading
 const tspLogoSvg = '/logo-optimized.svg';
@@ -409,22 +411,12 @@ export default function DashboardOverview({
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8 w-full">
-        {/* Header */}
-        <div className="premium-card mx-4 mt-8 p-4 sm:p-6 text-center max-w-full">
-          <div className="relative max-w-full">
-            <img
-              src={CMYK_PRINT_TSP_01__2_}
-              alt="The Sandwich Project"
-              className="w-[140px] sm:w-[170px] md:w-[240px] max-w-full mb-2 sm:mb-3 mx-auto"
-              width="240"
-              height="75"
-            />
-          </div>
-          <p className="text-sm sm:text-base text-brand-primary font-medium">
-            Nourish The Hungry. Feed The Soul.
-          </p>
-        </div>
+      <div className="space-y-8 pb-8 pt-4 w-full">
+        {/* The big centered TSP logo+tagline card that used to live here was
+            moved to the top-left of the sidebar so the dashboard's prime
+            above-the-fold space (Universal Search + Collection CTA) shows
+            without scrolling. The brand still anchors the page via the
+            sidebar — standard SaaS convention (Slack, Linear, Notion). */}
 
         {/* Universal Search */}
         <div className="mx-4">
