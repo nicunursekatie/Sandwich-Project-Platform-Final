@@ -43,6 +43,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -1062,113 +1071,173 @@ export default function Dashboard({
                 <QuickCalculator />
               </div>
 
-              {/* Group 3: Help & Navigation */}
-              <div className="hidden sm:flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
-                {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <Tooltip key={item.id}>
+              {/* Group 3: Support dropdown — consolidates Help, Suggestions,
+                  and Report Issue under a single ? icon. These actions are
+                  used occasionally (not every session) so they don't deserve
+                  their own header real estate — but they need to stay
+                  discoverable. Standard SaaS "help menu" pattern. */}
+              {(() => {
+                // Resolve which topNav items the user actually has access to so
+                // we don't render menu items that route to permission-denied pages.
+                const supportNavItems = NAV_ITEMS.filter(
+                  (item) => item.topNav && (!item.permission || hasPermission(user, item.permission))
+                );
+                const hasAnySupport = supportNavItems.length > 0 || true; // Report Issue is always shown
+                if (!hasAnySupport) return null;
+                return (
+                  <DropdownMenu>
+                    <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            logger.log(`${item.label} button clicked`);
-                            trackButtonClick(item.id, 'dashboard_header');
-                            localStorage.setItem('navigation_update_2024_v2_seen', 'true');
-                            if (item.href === 'help') {
-                              setLocation('/help');
-                            } else {
-                              setActiveSection(item.href);
-                              window.history.pushState({}, '', `/dashboard?section=${item.href}`);
-                            }
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="flex items-center justify-center w-9 h-9 rounded-md transition-colors text-white/80 hover:bg-white/15 hover:text-white"
+                            aria-label="Help and support"
+                            data-testid="header-support-menu"
+                          >
+                            <HelpCircle className="w-5 h-5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" sideOffset={8}>Help & Support</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" sideOffset={8} className="w-52 z-[10000]">
+                      <DropdownMenuLabel className="text-xs text-slate-500">
+                        Help & Support
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {supportNavItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={item.id}
+                            onSelect={() => {
+                              logger.log(`${item.label} button clicked`);
+                              trackButtonClick(item.id, 'dashboard_header');
+                              localStorage.setItem('navigation_update_2024_v2_seen', 'true');
+                              if (item.href === 'help') {
+                                setLocation('/help');
+                              } else {
+                                setActiveSection(item.href);
+                                window.history.pushState({}, '', `/dashboard?section=${item.href}`);
+                              }
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            {Icon && <Icon className="w-4 h-4 mr-2 text-slate-500" />}
+                            <span>{item.label}</span>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          trackButtonClick('report_issue', 'dashboard_header');
+                          openReportDialog();
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <AlertCircle className="w-4 h-4 mr-2 text-slate-500" />
+                        <span>Report an issue</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              })()}
+
+              {/* Group 4: Account avatar dropdown — replaces the standalone
+                  Account button + Logout button. Avatar shows the user's
+                  initials (or profile picture). Menu has Account Settings
+                  + Logout, with logout styled destructively. Standard SaaS
+                  pattern — every other app's user menu lives here. */}
+              <div className="flex items-center pl-1 border-l border-white/20">
+                {(() => {
+                  // Compute initials + display name once.
+                  const u = user as any;
+                  const firstName = u?.firstName || '';
+                  const lastName = u?.lastName || '';
+                  const displayName = u?.displayName || `${firstName} ${lastName}`.trim() || u?.email?.split('@')[0] || 'User';
+                  const initials = (() => {
+                    if (firstName && lastName) {
+                      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+                    }
+                    if (firstName) return firstName.substring(0, 2).toUpperCase();
+                    if (u?.displayName) {
+                      const parts = u.displayName.trim().split(/\s+/);
+                      if (parts.length >= 2) {
+                        return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+                      }
+                      return u.displayName.substring(0, 2).toUpperCase();
+                    }
+                    if (u?.email) return u.email.substring(0, 2).toUpperCase();
+                    return 'U';
+                  })();
+
+                  return (
+                    <DropdownMenu>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="flex items-center gap-2 p-0.5 rounded-full transition-colors hover:bg-white/15"
+                              aria-label="User menu"
+                              data-testid="header-user-menu"
+                            >
+                              <Avatar className="h-8 w-8 ring-2 ring-white/30">
+                                <AvatarImage src={u?.profileImageUrl || undefined} />
+                                <AvatarFallback className="bg-white text-brand-primary font-semibold text-sm">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                            </button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={8}>Account menu</TooltipContent>
+                      </Tooltip>
+                      <DropdownMenuContent align="end" sideOffset={8} className="w-56 z-[10000]">
+                        <DropdownMenuLabel className="flex flex-col">
+                          <span className="text-sm font-semibold text-slate-800 truncate">{displayName}</span>
+                          {u?.email && (
+                            <span className="text-xs font-normal text-slate-500 truncate">{u.email}</span>
+                          )}
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            trackButtonClick('profile', 'dashboard_header');
+                            setActiveSection('profile');
+                            window.history.pushState({}, '', '/dashboard?section=profile');
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`flex items-center gap-1.5 px-2 py-2 rounded-md transition-colors text-sm font-medium ${
-                            activeSection === item.href
-                              ? 'bg-white text-brand-primary shadow-sm'
-                              : 'text-white/80 hover:bg-white/15 hover:text-white'
-                          }`}
-                          aria-label={item.label}
+                          className="cursor-pointer"
                         >
-                          {Icon && <Icon className="w-4 h-4" />}
-                          <span className="hidden xl:inline">{item.label}</span>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" sideOffset={8}>{item.label}</TooltipContent>
-                    </Tooltip>
+                          <UserCog className="w-4 h-4 mr-2 text-slate-500" />
+                          <span>Account Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={async () => {
+                            try {
+                              trackButtonClick('logout', 'dashboard_header');
+                              await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                              queryClient.clear();
+                              queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                              queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                              window.location.href = '/login';
+                            } catch (error) {
+                              logger.error('Logout error:', error);
+                              queryClient.clear();
+                              window.location.href = '/login';
+                            }
+                          }}
+                          className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          <span>Logout</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   );
-                })}
-              </div>
-
-              {/* Group 4: Account Menu */}
-              <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-white/20">
-                {/* Report an issue — opens the same dialog as error-toast "Report" actions */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        trackButtonClick('report_issue', 'dashboard_header');
-                        openReportDialog();
-                      }}
-                      className="flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium text-white/80 hover:bg-white/15 hover:text-white"
-                      aria-label="Report an issue"
-                    >
-                      <AlertCircle className="w-4 h-4" />
-                      <span className="hidden xl:inline">Report Issue</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Report an issue</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        trackButtonClick('profile', 'dashboard_header');
-                        setActiveSection('profile');
-                        window.history.pushState({}, '', '/dashboard?section=profile');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
-                        activeSection === 'profile'
-                          ? 'bg-white text-brand-primary shadow-sm'
-                          : 'text-white/80 hover:bg-white/15 hover:text-white'
-                      }`}
-                      aria-label="Account Settings"
-                    >
-                      <UserCog className="w-4 h-4" />
-                      <span className="hidden xl:inline">Account</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Account Settings</TooltipContent>
-                </Tooltip>
-
-                <button
-                  onClick={async () => {
-                    try {
-                      trackButtonClick('logout', 'dashboard_header');
-                      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-                      queryClient.clear();
-                      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-                      queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                      window.location.href = '/login';
-                    } catch (error) {
-                      logger.error('Logout error:', error);
-                      queryClient.clear();
-                      window.location.href = '/login';
-                    }
-                  }}
-                  className="flex items-center gap-1.5 px-1.5 sm:px-2.5 py-1.5 sm:py-2 text-white/80 hover:text-red-200 rounded-md hover:bg-white/10 transition-colors text-sm font-medium"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden xl:inline">Logout</span>
-                </button>
+                })()}
               </div>
             </div>
             </TooltipProvider>

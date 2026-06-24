@@ -437,20 +437,30 @@ export default function DashboardOverview({
                   </p>
                 )}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {/* Primary + secondary action hierarchy.
+                  "Enter New Collection Data" is the page's reason for being —
+                  it gets the spotlight via larger padding, bigger text, and
+                  the amber accent (#FBAD3F) which pops against the teal-heavy
+                  page palette. "View Collection History" steps back to a
+                  text-link treatment so the eye lands on the primary action
+                  first. The buttons no longer share visual weight. */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
                 <button
-                  className="premium-btn-accent"
+                  className="premium-btn-accent text-base sm:text-lg font-bold px-8 py-3.5 shadow-[0_4px_14px_rgba(251,173,63,0.4)] hover:shadow-[0_6px_20px_rgba(251,173,63,0.5)]"
+                  style={{ minHeight: '52px' }}
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
+                  data-testid="button-enter-collection-data"
                 >
                   {showCollectionForm
                     ? 'Hide Form'
                     : 'Enter New Collection Data'}
                 </button>
                 <button
-                  className="premium-btn-outline"
+                  className="text-sm font-medium text-brand-primary hover:text-brand-primary-dark hover:underline underline-offset-4 transition-colors px-3 py-2"
                   onClick={() => onSectionChange?.('collections')}
+                  data-testid="button-view-collection-history"
                 >
-                  View Collection History
+                  View Collection History →
                 </button>
               </div>
             </div>

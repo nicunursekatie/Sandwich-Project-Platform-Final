@@ -2966,9 +2966,9 @@ export default function SandwichCollectionLog() {
                       )}
                     </div>
 
-                    {/* Groups - inline breakdown when available; keeps its column even if Individuals missing */}
+                    {/* Group Event - inline breakdown when available; keeps its column even if Individuals missing */}
                     <div className="w-full sm:min-w-[200px] sm:pl-3 md:pl-4">
-                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Groups</div>
+                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Group Event</div>
                       <div className="text-base lg:text-lg font-bold">
                         {(() => {
                           if (calculateGroupTotal(collection) <= 0 || groupData.length === 0) {
