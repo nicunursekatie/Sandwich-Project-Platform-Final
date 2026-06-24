@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useAuth } from '@/hooks/useAuth';
 import { getOrCreateSocket } from '@/lib/socket-singleton';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { logger } from '@/lib/logger';
 
 // Simple notification sound - uses Web Audio API to generate a pleasant chime
@@ -137,9 +138,48 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     const currentWindows = openWindowsRef.current;
     const existingWindow = currentWindows.find(w => w.user.id === otherUserId);
 
+    // Is the user actively looking at THIS conversation right now? That means the
+    // chat window for this sender is open AND maximized (not minimized) AND the
+    // browser tab itself is focused. If so, the in-window message + chime are
+    // enough — a toast would just be redundant noise.
+    const isChatActive = !!existingWindow && !existingWindow.minimized;
+    const isWindowFocused =
+      typeof document !== 'undefined' ? document.hasFocus() : true;
+
     // Play notification sound only for *incoming* messages; own echoes shouldn't ding.
     if (!isOwnEcho) {
       playNotificationSound();
+
+      // Slide-in toast banner for incoming messages, unless they're already
+      // staring right at this conversation in a focused tab.
+      if (!(isChatActive && isWindowFocused)) {
+        const preview =
+          message.content.length > 80
+            ? `${message.content.slice(0, 80)}…`
+            : message.content;
+        toast({
+          title: otherUserName ? `New message from ${otherUserName}` : 'New message',
+          description: preview,
+          duration: 6000,
+          action: (
+            <ToastAction
+              altText="Open conversation"
+              onClick={() => {
+                openChatRef.current({
+                  id: otherUserId,
+                  firstName: null,
+                  lastName: null,
+                  displayName: otherUserName,
+                  email: null,
+                  profileImageUrl: null,
+                });
+              }}
+            >
+              Open
+            </ToastAction>
+          ),
+        });
+      }
     }
 
     if (existingWindow) {
@@ -207,7 +247,7 @@ export function InstantMessagingProvider({ children }: { children: React.ReactNo
     // another device for someone whose window isn't open here, and we shouldn't
     // surface that as a notification on this device. The next time they open the
     // conversation, the full history will load from the server.
-  }, [user?.id]);
+  }, [user?.id, toast]);
 
   // Polling fallback: Check for new messages when socket is disconnected
   useEffect(() => {

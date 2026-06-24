@@ -41,7 +41,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { getTodayString } from '@shared/date-utils';
 import { useToast } from '@/hooks/use-toast';
 import { calculateActualWeeklyAverage, calculateWeeklyData } from '@/lib/analytics-utils';
-import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip as RechartsTooltip } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -322,9 +322,16 @@ export default function DashboardOverview({
         totalLifetimeSandwiches: 'Loading...',
         peakWeekRecord: 'Loading...',
         peakWeekDate: 'Loading...',
+        annualGoalNumber: 0,
         currentAnnualCapacity: 'Loading...',
+        weeklyAverageNumber: 0,
+        weeklyAverage: 'Loading...',
         weeklyBaseline: 'Loading...',
+        weeklyBaselineMin: 'Loading...',
+        weeklyBaselineMax: 'Loading...',
         surgingCapacity: 'Loading...',
+        surgeMin: 'Loading...',
+        surgeMax: 'Loading...',
         operationalYears: 'Loading...',
         growthMultiplier: 'Loading...',
         individualSandwiches: 'Loading...',
@@ -426,9 +433,16 @@ export default function DashboardOverview({
       totalLifetimeSandwiches: totalSandwiches.toLocaleString(),
       peakWeekRecord: peakWeekRecord.toLocaleString(),
       peakWeekDate: peakWeekDate,
+      annualGoalNumber: annualGoal,
       currentAnnualCapacity: annualGoal.toLocaleString(),
+      weeklyAverageNumber: Math.round(weeklyAverage),
+      weeklyAverage: Math.round(weeklyAverage).toLocaleString(),
       weeklyBaseline: `${baselineMin.toLocaleString()}-${baselineMax.toLocaleString()}`,
+      weeklyBaselineMin: baselineMin.toLocaleString(),
+      weeklyBaselineMax: baselineMax.toLocaleString(),
       surgingCapacity: `${surgeMin.toLocaleString()}-${surgeMax.toLocaleString()}`,
+      surgeMin: surgeMin.toLocaleString(),
+      surgeMax: surgeMax.toLocaleString(),
       operationalYears: operationalYears.toString(),
       growthMultiplier: `${growthMultiplier}x`,
       individualSandwiches: individual.toLocaleString(),
@@ -446,10 +460,30 @@ export default function DashboardOverview({
       .filter((w) => w.isComplete)
       .slice(-12)
       .map((w) => ({
-        week: w.weekLabel.split(' - ')[0], // short Friday label
+        week: w.weekLabel.split(' - ')[0], // short Friday label for x-axis
+        weekFull: w.weekLabel, // full label (e.g. "Jan 12 - Jan 18") for tooltip
         sandwiches: w.totalSandwiches,
       }));
   }, [allCollectionsData]);
+
+  // Min/max for the trend chart — used in the legend strip so the reader
+  // has the line's scale even without inspecting the y-axis.
+  const weeklyTrendStats = React.useMemo(() => {
+    if (!weeklyTrend.length) return null;
+    const totals = weeklyTrend.map((w) => w.sandwiches);
+    return {
+      min: Math.min(...totals),
+      max: Math.max(...totals),
+      avg: Math.round(totals.reduce((a, b) => a + b, 0) / totals.length),
+    };
+  }, [weeklyTrend]);
+
+  // Compact y-axis tick formatter — 12,500 → "12.5k", keeps the axis from
+  // taking too much horizontal real estate.
+  const formatCompactNumber = (n: number) => {
+    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+    return String(n);
+  };
 
   return (
     <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
@@ -692,7 +726,7 @@ export default function DashboardOverview({
             request. The component is still imported by other places if
             needed; just not surfaced here. */}
 
-        {/* Continue where you left off — people reopen the same resources constantly. */}
+        {/* Recently Visited Items — people reopen the same resources constantly. */}
         <div className="mx-4 mb-8 max-w-full">
           <RecentlyAccessedResources />
         </div>
@@ -703,8 +737,8 @@ export default function DashboardOverview({
         {/* Volunteer Opportunities Spotlight */}
         <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
 
-        {/* ── OPERATIONS ── */}
-        <SectionHeader label="Operations" hint="Forecast and capacity" />
+        {/* ── GROUP EVENT FORECAST ── */}
+        <SectionHeader label="Group Event Forecast" />
 
         {/* Group Event Forecast - current week progress and upcoming weeks */}
         <div className="mx-4">
@@ -1086,33 +1120,93 @@ export default function DashboardOverview({
         {weeklyTrend.length > 1 && (
           <div className="mx-4 mb-8 max-w-full">
             <div className="premium-card p-4 sm:p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="premium-text-caption text-brand-primary uppercase">
-                  Weekly Collections — last {weeklyTrend.length} weeks
-                </h3>
+              <div className="flex items-start justify-between mb-1 gap-2">
+                <div>
+                  <h3 className="premium-text-caption text-brand-primary uppercase">
+                    Weekly Collections — last {weeklyTrend.length} weeks
+                  </h3>
+                  <p className="text-sm text-gray-700 mt-0.5">
+                    Total sandwiches collected each week (individual + group)
+                  </p>
+                </div>
                 <button
                   onClick={() => onSectionChange?.('analytics')}
-                  className="text-sm text-brand-primary hover:underline flex items-center gap-1"
+                  className="text-sm text-brand-primary hover:underline flex items-center gap-1 flex-shrink-0 mt-1"
                 >
                   Full analytics <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
+
+              {/* Legend strip — color swatch makes the line's meaning explicit
+                  and the min/avg/max anchors give the reader scale before
+                  they hover any point. */}
+              {weeklyTrendStats && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-gray-600">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="inline-block w-3 h-3 rounded-sm"
+                      style={{ backgroundColor: '#007E8C' }}
+                      aria-hidden="true"
+                    />
+                    <span>Sandwiches per week</span>
+                  </span>
+                  <span className="text-gray-300" aria-hidden="true">·</span>
+                  <span>
+                    Low <span className="font-semibold text-gray-800">{weeklyTrendStats.min.toLocaleString()}</span>
+                  </span>
+                  <span>
+                    Avg <span className="font-semibold text-gray-800">{weeklyTrendStats.avg.toLocaleString()}</span>
+                  </span>
+                  <span>
+                    High <span className="font-semibold text-gray-800">{weeklyTrendStats.max.toLocaleString()}</span>
+                  </span>
+                </div>
+              )}
+
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 4, bottom: 4 }}>
                   <defs>
                     <linearGradient id="dashTrendFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#007E8C" stopOpacity={0.35} />
                       <stop offset="100%" stopColor="#007E8C" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#6b7280' }} interval="preserveStartEnd" />
+                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    interval="preserveStartEnd"
+                    label={{
+                      value: 'Week ending (Friday)',
+                      position: 'insideBottom',
+                      offset: -2,
+                      style: { fontSize: 10, fill: '#9ca3af' },
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    tickFormatter={formatCompactNumber}
+                    width={44}
+                    label={{
+                      value: 'Sandwiches',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 12,
+                      style: { fontSize: 10, fill: '#9ca3af', textAnchor: 'middle' },
+                    }}
+                  />
                   <RechartsTooltip
-                    formatter={(value: number) => [value.toLocaleString(), 'Sandwiches']}
+                    formatter={(value: number) => [`${value.toLocaleString()} sandwiches`, 'Total collected']}
+                    labelFormatter={(_label, payload) => {
+                      const full = (payload?.[0]?.payload as { weekFull?: string } | undefined)?.weekFull;
+                      return full ? `Week of ${full}` : '';
+                    }}
                     labelStyle={{ color: '#236383', fontWeight: 600 }}
                   />
                   <Area
                     type="monotone"
                     dataKey="sandwiches"
+                    name="Sandwiches collected"
                     stroke="#007E8C"
                     strokeWidth={2}
                     fill="url(#dashTrendFill)"
@@ -1140,6 +1234,9 @@ export default function DashboardOverview({
             <p className="premium-text-body-sm text-gray-600">
               Personal contributions
             </p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
 
           <div className="premium-card premium-interactive p-4 sm:p-6">
@@ -1164,6 +1261,9 @@ export default function DashboardOverview({
             <p className="premium-text-body-sm text-gray-600">
               Organization donations
             </p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
 
           <div className="premium-card premium-interactive p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
@@ -1179,60 +1279,112 @@ export default function DashboardOverview({
               <AnimatedCounter value={statsData?.totalEntries || 0} />
             </div>
             <p className="premium-text-body-sm text-gray-600">Data submissions</p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
         </div>
 
-        {/* Operational Capacity - Clean Design with Brand Color Accents */}
+        {/* Operational Capacity — Narrative-forward storytelling cards.
+            Each card leads with an emoji + headline, anchors the big number
+            visually, and closes with a supporting sentence that explains
+            what the number means and the window it reflects. */}
         <div className="mx-4 mb-6 sm:mb-8 max-w-full">
           <div className="premium-card p-4 sm:p-6 max-w-full">
             <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
-              {/* Peak Week - Burgundy accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-burgundy mb-1">
-                  {organizationalStats.peakWeekRecord}
+              {/* Peak Week — Our Best Week Ever (Burgundy) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-burgundy uppercase tracking-wide">
+                  <span aria-hidden="true">🏆</span> Our Best Week Ever
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Peak Week
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-burgundy leading-none">
+                    {organizationalStats.peakWeekRecord}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  Our highest single-week total ever, set on{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.peakWeekDate}
+                  </span>
+                  .
+                </p>
               </div>
 
-              {/* Annual Goal - Orange accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-orange mb-1">
-                  {organizationalStats.currentAnnualCapacity}
+              {/* Annual Goal — This Year's Goal (Orange) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-orange uppercase tracking-wide">
+                  <span aria-hidden="true">🎯</span> This Year's Goal
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Annual Goal
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-orange leading-none">
+                    {organizationalStats.currentAnnualCapacity}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  What we're aiming to collect together in{' '}
+                  <span className="font-semibold">
+                    {new Date().getFullYear()}
+                  </span>
+                  .
+                </p>
               </div>
 
-              {/* Weekly Baseline - Light Blue accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-light-blue mb-1">
-                  {organizationalStats.weeklyBaseline}
+              {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
+                  <span aria-hidden="true">📦</span> A Typical Week
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Weekly Baseline
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-light-blue leading-none">
+                    ~{organizationalStats.weeklyAverage}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">Regular ops</div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  On any given week, most weeks fall between{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.weeklyBaselineMin}
+                  </span>{' '}
+                  and{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.weeklyBaselineMax}
+                  </span>
+                  . Every single week, thousands are fed because of this team.
+                </p>
               </div>
 
-              {/* Surge Capacity - Dark Teal accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-teal mb-1">
-                  {organizationalStats.surgingCapacity}
+              {/* Surge Capacity — When We Mobilize (Dark Teal) */}
+              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all flex flex-col">
+                <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
+                  <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Surge Capacity
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-teal leading-none">
+                    {organizationalStats.surgeMin}
+                  </span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-brand-teal leading-none">
+                    –{organizationalStats.surgeMax}
+                  </span>
+                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  Peak mobilization
-                </div>
+                <p className="text-sm text-gray-700 leading-snug mt-2">
+                  What we've reached when the call goes out — 3 to 5 times a
+                  normal week's pace.
+                </p>
               </div>
             </div>
           </div>
