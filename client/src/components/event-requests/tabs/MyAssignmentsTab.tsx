@@ -644,7 +644,7 @@ export const MyAssignmentsTab: React.FC = () => {
         </div>
       ) : (
         <EventListBatchProviders events={myAssignments}>
-        <div className="space-y-4">
+        <div className="space-y-4" data-tour="my-assignments-list">
           {myAssignments.map((request) => (
             <div
               key={request.id}

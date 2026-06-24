@@ -5064,7 +5064,7 @@ export default function DriverPlanningDashboard() {
 
                 {/* Suggested Drivers - Other nearby options */}
                 {((driverSearchResults && driverSearchResults.length > 0) || nearbyDrivers.length > 0) && (
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-testid="driver-planning-suggested-drivers">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
                       {driverSearchResults
                         ? `Search results (${driverSearchResults.length})`

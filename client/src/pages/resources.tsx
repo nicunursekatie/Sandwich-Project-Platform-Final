@@ -1261,6 +1261,7 @@ export function Resources() {
                       return (
                         <button
                           key={cat.id}
+                          data-tour={`category-${cat.id}`}
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5 ${
                             selectedCategory === cat.id

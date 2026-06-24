@@ -96,27 +96,35 @@ export const TOURS: Tour[] = [
       },
       {
         id: 'logos-tab',
-        title: 'Click the Logos Tab',
-        description: 'In Important Documents, click on the "Logos & Branding" tab to access all TSP brand logos.',
-        targetSelector: '[data-testid="tab-logos"], [data-value="logos"]',
+        title: 'Open the Brand & Marketing category',
+        description: 'In Reference Materials, click the "Brand & Marketing" category to filter down to TSP logos and brand assets.',
+        targetSelector: '[data-tour="category-brand_marketing"]',
         position: 'bottom',
-        highlightPadding: 8
+        highlightPadding: 8,
+        waitForElement: true,
+        beforeShow: () => {
+          const cat = document.querySelector('[data-tour="category-brand_marketing"]');
+          if (cat instanceof HTMLElement) {
+            cat.click();
+          }
+        }
       },
       {
         id: 'logos-available',
         title: 'All Logos Available Here!',
-        description: 'Here you\'ll find all The Sandwich Project logos in various formats - transparent backgrounds, print-ready CMYK versions, and more. Download any logo for your use.',
-        targetSelector: '[data-testid="logos-grid"], .logo-card',
+        description: 'Here you\'ll find The Sandwich Project logos and brand assets - transparent backgrounds, print-ready versions, and more. Click any item to open or download it.',
+        targetSelector: '[data-testid="resources-list"]',
         position: 'top',
-        highlightPadding: 12
+        highlightPadding: 12,
+        waitForElement: true
       }
     ],
     afterComplete: () => {
-      // Auto-open Logos & Branding tab
+      // Auto-filter to the Brand & Marketing category
       setTimeout(() => {
-        const logosTab = document.querySelector('[data-testid="tab-logos"]');
-        if (logosTab instanceof HTMLElement) {
-          logosTab.click();
+        const cat = document.querySelector('[data-tour="category-brand_marketing"]');
+        if (cat instanceof HTMLElement) {
+          cat.click();
         }
       }, 300);
     }
@@ -155,14 +163,15 @@ export const TOURS: Tour[] = [
       },
       {
         id: 'signin-forms-filter',
-        title: 'Click on Forms Category',
-        description: 'In the Documents tab, click the "Forms" category button to see all available forms.',
-        targetSelector: '[data-testid="category-forms"], [data-tour="category-forms"]',
+        title: 'Click on Forms & Templates',
+        description: 'Click the "Forms & Templates" category button to see all available forms.',
+        targetSelector: '[data-tour="category-forms_templates"]',
         position: 'bottom',
         highlightPadding: 8,
+        waitForElement: true,
         beforeShow: () => {
-          // Click Forms category and wait for it to load
-          const formsButton = document.querySelector('[data-testid="category-forms"]');
+          // Click Forms & Templates category and wait for it to load
+          const formsButton = document.querySelector('[data-tour="category-forms_templates"]');
           if (formsButton instanceof HTMLElement) {
             formsButton.click();
           }
@@ -171,17 +180,17 @@ export const TOURS: Tour[] = [
       {
         id: 'signin-forms-location',
         title: 'Sandwich Sign-In Form',
-        description: 'Here it is! This form is used at sandwich collection events to track participants without requiring email addresses. Click Download to get it.',
-        targetSelector: '[data-testid="document-sandwich-signin-form"]',
+        description: 'Look through the Forms & Templates here for the sandwich sign-in form, used at collection events to track participants without requiring email addresses. Click it to open or download.',
+        targetSelector: '[data-testid="resources-list"]',
         position: 'top',
         highlightPadding: 16,
         waitForElement: true // Wait for Forms category to finish loading
       }
     ],
     afterComplete: () => {
-      // After tour completes, automatically open the Forms category
+      // After tour completes, automatically open the Forms & Templates category
       setTimeout(() => {
-        const formsButton = document.querySelector('[data-testid="category-forms"]');
+        const formsButton = document.querySelector('[data-tour="category-forms_templates"]');
         if (formsButton instanceof HTMLElement) {
           formsButton.click();
         }
@@ -222,102 +231,53 @@ export const TOURS: Tour[] = [
       },
       {
         id: 'analytics-impact-tab',
-        title: 'Impact Dashboard',
-        description: 'The Impact Dashboard shows overall community impact, collection trends, and progress toward our annual goal of 500,000 sandwiches.',
-        targetSelector: '[data-value="impact"], [data-testid="tab-impact"]',
+        title: 'Overview Dashboard',
+        description: 'The Overview tab shows overall community impact, collection totals, and progress toward our annual goal.',
+        targetSelector: '[data-tour="analytics-overview-tab"]',
         position: 'bottom',
-        highlightPadding: 8
+        highlightPadding: 8,
+        beforeShow: () => {
+          const tab = document.querySelector('[data-tour="analytics-overview-tab"]');
+          if (tab instanceof HTMLElement) {
+            tab.click();
+          }
+        }
       },
       {
         id: 'analytics-collection-trends',
-        title: 'Collection Trends',
-        description: 'View collection patterns over time - individual vs group contributions, seasonal trends, and historical comparisons.',
-        targetSelector: '[data-value="trends"], [data-testid="tab-trends"], [data-testid="collection-chart"]',
+        title: 'Pace & Comparison',
+        description: 'The Pace & Comparison tab shows collection patterns over time - individual vs group contributions and historical comparisons.',
+        targetSelector: '[data-tour="analytics-pace-tab"]',
         position: 'bottom',
-        highlightPadding: 8
+        highlightPadding: 8,
+        beforeShow: () => {
+          const tab = document.querySelector('[data-tour="analytics-pace-tab"]');
+          if (tab instanceof HTMLElement) {
+            tab.click();
+          }
+        }
       },
       {
         id: 'analytics-metrics',
         title: 'Key Metrics',
         description: 'Track sandwiches collected, volunteer participation, and community impact over time. Export data for grant reports!',
-        targetSelector: '[data-testid="metrics-container"], [data-testid="analytics-content"]',
+        targetSelector: '[data-tour="analytics-content"]',
         position: 'top',
-        highlightPadding: 16
-      }
-    ],
-    afterComplete: () => {
-      // User is already on Analytics - ensure Impact tab is selected
-      setTimeout(() => {
-        const impactTab = document.querySelector('[data-value="impact"]');
-        if (impactTab instanceof HTMLElement) {
-          impactTab.click();
-        }
-      }, 300);
-    }
-  },
-  {
-    id: 'action-hub-guide',
-    title: 'Action Hub - My Actions',
-    description: 'Learn how to use your personal action hub',
-    category: 'my-work',
-    icon: 'ListTodo',
-    estimatedTime: '2 min',
-    requiredPermission: 'NAV_MY_ACTIONS',
-    steps: [
-      {
-        id: 'action-hub-intro',
-        title: 'Your Personal Action Hub',
-        description: 'My Actions is your central hub for all assigned tasks and responsibilities. Let me show you around!',
-        targetSelector: '[data-tour="navigation"]',
-        position: 'right'
-      },
-      {
-        id: 'action-hub-nav',
-        title: 'Navigate to My Actions',
-        description: 'Find "My Actions" in the navigation menu. This is where all your tasks are collected.',
-        targetSelector: '[data-nav-id="my-actions"]',
-        position: 'right',
-        navigationAction: {
-          section: 'my-actions'
-        },
+        highlightPadding: 16,
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="my-actions"]');
-          if (navItem instanceof HTMLElement) {
-            navItem.click();
+          const tab = document.querySelector('[data-tour="analytics-overview-tab"]');
+          if (tab instanceof HTMLElement) {
+            tab.click();
           }
         }
-      },
-      {
-        id: 'action-hub-filters',
-        title: 'Filter Your Tasks',
-        description: 'Use filters to view tasks by status: All, Pending, Completed, or Overdue. Stay organized!',
-        targetSelector: '[data-testid="action-filters"], [data-testid="task-filters"]',
-        position: 'bottom',
-        highlightPadding: 8
-      },
-      {
-        id: 'action-hub-list',
-        title: 'Your Task List',
-        description: 'Here you\'ll see all tasks assigned to you across different categories: event requests, projects, and more.',
-        targetSelector: '[data-testid="action-list"], [data-testid="task-list"]',
-        position: 'left',
-        highlightPadding: 16
-      },
-      {
-        id: 'action-hub-complete',
-        title: 'Complete Tasks',
-        description: 'Click on any task to view details and mark it as complete. Keep your action list up-to-date!',
-        targetSelector: '[data-testid="action-item"]:first-child, [data-testid="task-card"]:first-child',
-        position: 'bottom',
-        highlightPadding: 12
       }
     ],
     afterComplete: () => {
-      // User is already on My Actions - stay there
+      // User is already on Analytics - ensure Overview tab is selected
       setTimeout(() => {
-        const navItem = document.querySelector('[data-nav-id="my-actions"]');
-        if (navItem instanceof HTMLElement) {
-          navItem.click();
+        const overviewTab = document.querySelector('[data-tour="analytics-overview-tab"]');
+        if (overviewTab instanceof HTMLElement) {
+          overviewTab.click();
         }
       }, 300);
     }
@@ -358,31 +318,30 @@ export const TOURS: Tour[] = [
         id: 'assignments-my-tab',
         title: 'My Assignments Tab',
         description: 'Click on the "My Assignments" tab to see only events assigned to you. This filters out all other events.',
-        targetSelector: '[data-value="my-assignments"], [data-testid="tab-my-assignments"]',
+        targetSelector: '[data-tour="my-assignments-tab"], [data-testid="tab-my-assignments"]',
         position: 'bottom',
-        highlightPadding: 8
+        highlightPadding: 8,
+        beforeShow: () => {
+          const tab = document.querySelector('[data-tour="my-assignments-tab"]');
+          if (tab instanceof HTMLElement) {
+            tab.click();
+          }
+        }
       },
       {
         id: 'assignments-list',
         title: 'Your Assigned Events',
         description: 'Here are all events where you have been assigned responsibilities. Click on any event to view details and complete your tasks.',
-        targetSelector: '[data-testid="my-assignments-list"], [data-testid="event-cards"]',
+        targetSelector: '[data-tour="my-assignments-list"]',
         position: 'top',
-        highlightPadding: 16
-      },
-      {
-        id: 'assignments-actions',
-        title: 'Take Action',
-        description: 'Each event card shows your specific assignment. Click to open details, update status, or complete required actions.',
-        targetSelector: '[data-testid="event-card"]:first-child',
-        position: 'bottom',
-        highlightPadding: 12
+        highlightPadding: 16,
+        waitForElement: true
       }
     ],
     afterComplete: () => {
       // Auto-open My Assignments tab
       setTimeout(() => {
-        const myAssignmentsTab = document.querySelector('[data-value="my-assignments"]');
+        const myAssignmentsTab = document.querySelector('[data-tour="my-assignments-tab"]');
         if (myAssignmentsTab instanceof HTMLElement) {
           myAssignmentsTab.click();
         }
@@ -482,13 +441,14 @@ export const TOURS: Tour[] = [
       {
         id: 'calendar-view-tab',
         title: 'Calendar View',
-        description: 'Click on the Calendar tab to see events in a visual timeline.',
-        targetSelector: '[data-value="calendar"], [data-testid="tab-calendar"]',
+        description: 'Click the Calendar button in the view switcher to see events in a visual timeline.',
+        targetSelector: '[data-tour="calendar-tab"]',
         position: 'bottom',
         highlightPadding: 8,
+        waitForElement: true,
         beforeShow: () => {
-          // Click Calendar tab to switch the view
-          const calendarTab = document.querySelector('[data-value="calendar"]');
+          // Click Calendar view toggle to switch the view
+          const calendarTab = document.querySelector('[data-tour="calendar-tab"]');
           if (calendarTab instanceof HTMLElement) {
             calendarTab.click();
           }
@@ -497,8 +457,8 @@ export const TOURS: Tour[] = [
       {
         id: 'calendar-symbols',
         title: 'Status Symbols',
-        description: 'Events are color-coded: 🟢 Confirmed, 🟡 Pending, 🔵 In Progress, ✅ Completed. Use these to quickly understand event status.',
-        targetSelector: '[data-testid="calendar-legend"], [data-testid="calendar-view"]',
+        description: 'Events are color-coded by status so you can quickly understand where each event stands. Use the colors to scan the month at a glance.',
+        targetSelector: '[data-tour="calendar-view"]',
         position: 'top',
         highlightPadding: 16,
         waitForElement: true // Wait for calendar to load after tab switch
@@ -507,16 +467,16 @@ export const TOURS: Tour[] = [
         id: 'calendar-interaction',
         title: 'Click to View Details',
         description: 'Click on any calendar event to view full details, assignments, and take actions. Navigate between months to plan ahead!',
-        targetSelector: '[data-testid="calendar-event"]:first-child, [data-testid="calendar-grid"]',
+        targetSelector: '[data-tour="calendar-view"]',
         position: 'bottom',
         highlightPadding: 12,
         waitForElement: true // Wait for calendar events to render
       }
     ],
     afterComplete: () => {
-      // Auto-open Calendar tab
+      // Auto-open Calendar view
       setTimeout(() => {
-        const calendarTab = document.querySelector('[data-value="calendar"]');
+        const calendarTab = document.querySelector('[data-tour="calendar-tab"]');
         if (calendarTab instanceof HTMLElement) {
           calendarTab.click();
         }
@@ -559,25 +519,28 @@ export const TOURS: Tour[] = [
         id: 'chat-rooms-list',
         title: 'Your Chat Rooms',
         description: 'On the left, you\'ll see all chat rooms you have access to - General team chat, committee chats, and direct messages.',
-        targetSelector: '[data-testid="chat-rooms-list"], [data-testid="channel-list"]',
+        targetSelector: '.str-chat__channel-list, .str-chat__channel-list-messenger',
         position: 'right',
-        highlightPadding: 12
+        highlightPadding: 12,
+        waitForElement: true
       },
       {
         id: 'chat-general',
-        title: 'General Chat',
-        description: 'The General chat room is for team-wide announcements and casual conversation. Everyone can see messages here.',
-        targetSelector: '[data-testid="chat-general"], [data-channel="general"]',
+        title: 'Pick a Room',
+        description: 'Click any room in the list to open it. The General room is for team-wide announcements and casual conversation - everyone can see messages there.',
+        targetSelector: '.str-chat__channel-list-messenger__main, .str-chat__channel-list',
         position: 'right',
-        highlightPadding: 8
+        highlightPadding: 8,
+        waitForElement: true
       },
       {
         id: 'chat-compose',
         title: 'Send Messages',
         description: 'Type your message in the box at the bottom. Use @name to mention someone, and they\'ll get a notification!',
-        targetSelector: '[data-testid="chat-input"], [data-testid="message-input"]',
+        targetSelector: '.str-chat__message-input, .str-chat__input-flat',
         position: 'top',
-        highlightPadding: 12
+        highlightPadding: 12,
+        waitForElement: true
       }
     ]
   },
@@ -624,8 +587,8 @@ export const TOURS: Tour[] = [
       {
         id: 'holding-zone-create',
         title: 'Create New Items',
-        description: 'Click here to add a new item. Choose Task-Draft for actionable work, or Note/Idea for general thoughts.',
-        targetSelector: '[data-testid="create-board-item"], [data-testid="new-item-button"], [data-testid="button-add-item"]',
+        description: 'Use this form to add a new item. Choose Task-Draft for actionable work, or Note/Idea for general thoughts.',
+        targetSelector: '[data-testid="button-submit-item"]',
         position: 'bottom',
         highlightPadding: 8
       },
@@ -641,9 +604,10 @@ export const TOURS: Tour[] = [
         id: 'holding-zone-comments',
         title: 'Add Comments & Likes',
         description: 'Click on any item to view details, add comments, and like items you support. Keep discussions organized!',
-        targetSelector: '[data-testid="board-item"]:first-child, [data-testid="holding-zone-item"]:first-child',
+        targetSelector: '[data-testid^="card-item-"]:first-child',
         position: 'left',
-        highlightPadding: 12
+        highlightPadding: 12,
+        waitForElement: true
       }
     ]
   },
@@ -683,7 +647,7 @@ export const TOURS: Tour[] = [
         id: 'collections-add',
         title: 'Add New Collection',
         description: 'Click here to log a new collection. You\'ll enter the date, host, number of sandwiches, and any notes.',
-        targetSelector: '[data-testid="add-collection"], [data-testid="new-collection-button"]',
+        targetSelector: '[data-tour="add-collection"]',
         position: 'bottom',
         highlightPadding: 8
       },
@@ -691,15 +655,23 @@ export const TOURS: Tour[] = [
         id: 'collections-form',
         title: 'Collection Details',
         description: 'Fill in the collection date, select the host organization, enter sandwich counts, and add any special notes about the event.',
-        targetSelector: '[data-testid="collection-form"], [data-testid="sandwich-form"]',
+        targetSelector: '[data-tour="collection-form"]',
         position: 'right',
-        highlightPadding: 16
+        highlightPadding: 16,
+        waitForElement: true,
+        beforeShow: () => {
+          // Open the entry form so the fields are visible
+          const addButton = document.querySelector('[data-tour="add-collection"]');
+          if (addButton instanceof HTMLElement) {
+            addButton.click();
+          }
+        }
       },
       {
         id: 'collections-history',
         title: 'View History',
         description: 'All past collections are listed here. Filter by date or host to find specific events. Great for tracking trends!',
-        targetSelector: '[data-testid="collections-table"], [data-testid="collections-list"]',
+        targetSelector: '[data-tour="collections-table"]',
         position: 'top',
         highlightPadding: 12
       }
@@ -724,14 +696,14 @@ export const TOURS: Tour[] = [
       {
         id: 'inbox-nav',
         title: 'Open Inbox',
-        description: 'Click on Inbox in the navigation.',
-        targetSelector: '[data-nav-id="gmail-inbox"]',
+        description: 'Click on Project Threads in the navigation.',
+        targetSelector: '[data-nav-id="inbox-consolidated"]',
         position: 'right',
         navigationAction: {
-          section: 'gmail-inbox'
+          section: 'inbox-consolidated'
         },
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="gmail-inbox"]');
+          const navItem = document.querySelector('[data-nav-id="inbox-consolidated"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -741,33 +713,28 @@ export const TOURS: Tour[] = [
         id: 'inbox-folders',
         title: 'Message Folders',
         description: 'Your messages are organized into folders: Inbox, Sent, Starred, Kudos, and more. Just like Gmail!',
-        targetSelector: '[data-testid="inbox-folders"], [data-testid="folder-list"]',
+        targetSelector: '[data-tour="inbox-folders"]',
         position: 'right',
-        highlightPadding: 12
+        highlightPadding: 12,
+        waitForElement: true
       },
       {
         id: 'inbox-kudos',
         title: 'Kudos Folder',
         description: 'The Kudos folder is special - it\'s where all appreciation messages are stored. Send kudos to recognize great work!',
-        targetSelector: '[data-testid="folder-kudos"], [data-folder="kudos"]',
+        targetSelector: '[data-tour="folder-kudos"]',
         position: 'right',
-        highlightPadding: 8
+        highlightPadding: 8,
+        waitForElement: true
       },
       {
         id: 'inbox-compose',
         title: 'Compose New Message',
         description: 'Click here to send a new message or kudos. Choose the recipient, write your message, and optionally mark it as kudos!',
-        targetSelector: '[data-testid="compose-button"], [data-testid="new-message"]',
+        targetSelector: '[data-tour="compose-button"]',
         position: 'left',
-        highlightPadding: 8
-      },
-      {
-        id: 'inbox-kudos-toggle',
-        title: 'Send Kudos',
-        description: 'When composing, toggle "Send as Kudos" to publicly recognize someone\'s great work. Kudos show up on their profile!',
-        targetSelector: '[data-testid="kudos-toggle"], [data-testid="is-kudos-checkbox"]',
-        position: 'top',
-        highlightPadding: 8
+        highlightPadding: 8,
+        waitForElement: true
       }
     ]
   },
@@ -865,7 +832,7 @@ export const TOURS: Tour[] = [
         id: 'hosts-search',
         title: 'Search Hosts',
         description: 'Use the search bar to find specific host organizations or contacts by name, location, or role.',
-        targetSelector: 'input[placeholder*="Search"]',
+        targetSelector: '[data-tour="hosts-search"]',
         position: 'bottom',
         highlightPadding: 8
       },
@@ -873,59 +840,10 @@ export const TOURS: Tour[] = [
         id: 'hosts-contacts',
         title: 'Host Contacts',
         description: 'Browse all host contacts here. You can see their role, phone number, and availability for coordinating collection events.',
-        targetSelector: '.grid.gap-4, .space-y-4',
+        targetSelector: '[data-tour="hosts-list"]',
         position: 'top',
-        highlightPadding: 16
-      }
-    ]
-  },
-  {
-    id: 'event-reminders-guide',
-    title: 'Setting Up Event Reminders',
-    description: 'Create automated reminders for upcoming events',
-    category: 'events-calendar',
-    icon: 'Clock',
-    estimatedTime: '2 min',
-    requiredPermission: 'NAV_EVENT_REMINDERS',
-    steps: [
-      {
-        id: 'reminders-intro',
-        title: 'Event Reminders System',
-        description: 'Event Reminders help you stay on top of upcoming events with automated notifications. Let\'s explore!',
-        targetSelector: '[data-tour="navigation"]',
-        position: 'right'
-      },
-      {
-        id: 'reminders-nav',
-        title: 'Navigate to Event Reminders',
-        description: 'Find "Event Reminders" in the navigation menu.',
-        targetSelector: '[data-nav-id="event-reminders"]',
-        position: 'right',
-        navigationAction: {
-          section: 'event-reminders'
-        },
-        beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="event-reminders"]');
-          if (navItem instanceof HTMLElement) {
-            navItem.click();
-          }
-        }
-      },
-      {
-        id: 'reminders-create',
-        title: 'Create New Reminder',
-        description: 'Click here to set up a reminder. Choose the event, when to send the reminder, and who should receive it.',
-        targetSelector: '[data-testid="create-reminder-btn"]',
-        position: 'bottom',
-        highlightPadding: 8
-      },
-      {
-        id: 'reminders-list',
-        title: 'Active Reminders',
-        description: 'View all scheduled reminders. You can edit, delete, or manually trigger reminders from this list.',
-        targetSelector: '[data-testid="tab-pending"]',
-        position: 'top',
-        highlightPadding: 16
+        highlightPadding: 16,
+        waitForElement: true
       }
     ]
   },
@@ -1198,16 +1116,16 @@ export const TOURS: Tour[] = [
       },
       {
         id: 'host-map-nav',
-        title: 'Navigate to Host Map',
-        description: 'Navigating to the Host Map...',
-        targetSelector: '[data-testid="host-list-panel"]',
+        title: 'Navigate to the Locations Map',
+        description: 'Navigating to the Locations Map...',
+        targetSelector: '[data-tour="host-list-panel"]',
         position: 'right',
         navigationAction: {
           section: 'route-map'
         },
         waitForElement: true,
         beforeShow: () => {
-          const hostMap = document.querySelector('[data-nav-id="host-map"]');
+          const hostMap = document.querySelector('[data-nav-id="route-map"]');
           if (hostMap instanceof HTMLElement) {
             hostMap.click();
           }
@@ -1217,7 +1135,7 @@ export const TOURS: Tour[] = [
         id: 'host-map-search',
         title: 'Search Hosts',
         description: 'Use the search bar to find hosts by name, location, or address. Results update instantly as you type.',
-        targetSelector: '[data-testid="input-search-hosts"]',
+        targetSelector: '[data-tour="host-search"]',
         position: 'bottom',
         highlightPadding: 8,
         waitForElement: true
@@ -1226,7 +1144,7 @@ export const TOURS: Tour[] = [
         id: 'host-map-list',
         title: 'Host Contact List',
         description: 'The left panel shows all host contacts with coordinates. Click any host to zoom to their location on the map.',
-        targetSelector: '[data-testid="host-list-panel"]',
+        targetSelector: '[data-tour="host-list-panel"]',
         position: 'right',
         highlightPadding: 12,
         waitForElement: true
@@ -1235,7 +1153,7 @@ export const TOURS: Tour[] = [
         id: 'host-map-markers',
         title: 'Map Markers',
         description: 'Each marker represents a host location. Click a marker to see the host name and details in a popup.',
-        targetSelector: '[data-testid="host-map-container"]',
+        targetSelector: '[data-tour="host-map-container"]',
         position: 'left',
         highlightPadding: 16,
         waitForElement: true
@@ -1243,8 +1161,8 @@ export const TOURS: Tour[] = [
       {
         id: 'host-map-complete',
         title: 'Explore the Map!',
-        description: 'You now know how to use the Host Map. Try clicking on markers and searching for hosts!',
-        targetSelector: '[data-testid="host-map-container"]',
+        description: 'You now know how to use the Locations Map. Try clicking on markers and searching for hosts!',
+        targetSelector: '[data-tour="host-map-container"]',
         position: 'left',
         highlightPadding: 12
       }
@@ -1286,13 +1204,13 @@ export const TOURS: Tour[] = [
         id: 'event-planning-event-map',
         title: 'Event Map',
         description: 'Visualize all events on an interactive map. Great for understanding geographic coverage and planning routes.',
-        targetSelector: '[data-nav-id="event-map"]',
+        targetSelector: '[data-nav-id="maps"]',
         position: 'right',
         navigationAction: {
-          section: 'event-map'
+          section: 'maps'
         },
         beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="event-map"]');
+          const navItem = document.querySelector('[data-nav-id="maps"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -1309,22 +1227,6 @@ export const TOURS: Tour[] = [
         },
         beforeShow: () => {
           const navItem = document.querySelector('[data-nav-id="driver-planning"]');
-          if (navItem instanceof HTMLElement) {
-            navItem.click();
-          }
-        }
-      },
-      {
-        id: 'event-planning-reminders',
-        title: 'Event Reminders',
-        description: 'Schedule and manage volunteer reminders. Set up SMS or email reminders to be sent before events automatically.',
-        targetSelector: '[data-nav-id="event-reminders"]',
-        position: 'right',
-        navigationAction: {
-          section: 'event-reminders'
-        },
-        beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="event-reminders"]');
           if (navItem instanceof HTMLElement) {
             navItem.click();
           }
@@ -1372,18 +1274,9 @@ export const TOURS: Tour[] = [
       {
         id: 'reminders-profile-nav',
         title: 'Step 1: Set Your Global Defaults',
-        description: 'First, go to your Profile page. Click your profile icon or navigate to Profile from the menu. We\'ll set up your default reminder rules there.',
-        targetSelector: '[data-nav-id="profile"]',
-        position: 'right',
-        navigationAction: {
-          section: 'profile'
-        },
-        beforeShow: () => {
-          const navItem = document.querySelector('[data-nav-id="profile"]');
-          if (navItem instanceof HTMLElement) {
-            navItem.click();
-          }
-        }
+        description: 'First, we\'ll open your Profile page, where your default reminder rules live. Click Next and we\'ll take you there.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'center',
       },
       {
         id: 'reminders-alerts-tab',

@@ -1582,6 +1582,7 @@ export default function HostsManagementConsolidated() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
             <Input
+              data-tour="hosts-search"
               placeholder="Search hosts, contacts, locations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -1774,7 +1775,7 @@ export default function HostsManagementConsolidated() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-tour="hosts-list">
               {filteredContacts.map((contact) => (
                 <Card
                   key={contact.id}
