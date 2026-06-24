@@ -73,9 +73,10 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
 
   // Drill down into the filtered Event Requests view. We stash the target tab
   // + quick filter in sessionStorage (read on mount by EventRequestContext)
-  // then navigate, so "Need Drivers" lands on Scheduled filtered to needsDriver
-  // instead of a generic list. (There is no needsSpeaker quick filter, so the
-  // speakers card just opens the Scheduled tab.)
+  // then navigate. The tiles drill in via the "all" tab so the opened list
+  // spans every active stage and its total exactly matches the tile count
+  // (which /operational-stats computes across all active statuses). (There is
+  // no needsSpeaker quick filter, so the speakers card just opens the list.)
   const drillToEvents = (tab: string, filter?: string) => {
     try {
       sessionStorage.setItem('eventRequests.pendingFilter', JSON.stringify({ tab, filter }));
@@ -132,7 +133,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
           {/* This Week's Events */}
           <div
             className="bg-white rounded-lg p-4 border border-gray-200 hover:border-brand-primary cursor-pointer transition-all"
-            onClick={() => drillToEvents('scheduled', 'week')}
+            onClick={() => drillToEvents('all', 'week')}
           >
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-5 h-5 text-brand-primary" />
@@ -149,7 +150,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                 ? 'border-red-300 hover:border-red-500 bg-red-50'
                 : 'border-gray-200 hover:border-brand-primary'
             }`}
-            onClick={() => drillToEvents('scheduled', 'needsDriver')}
+            onClick={() => drillToEvents('all', 'needsDriver')}
           >
             <div className="flex items-center gap-2 mb-2">
               <Car className={`w-5 h-5 ${stats.eventsNeedingDrivers > 0 ? 'text-red-500' : 'text-brand-orange'}`} />
