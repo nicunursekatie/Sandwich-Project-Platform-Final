@@ -404,7 +404,7 @@ function EventCard({
   existingUnavailable,
 }: {
   event: AvailableEvent;
-  onSignup: (eventId: number) => void;
+  onSignup: (eventId: number, preselectedRole?: 'speaker' | 'general' | 'driver') => void;
   onAssign?: (eventId: number) => void;
   onUnavailable: (eventId: number) => void;
   onClearUnavailable: (eventId: number) => void;
@@ -558,13 +558,67 @@ function EventCard({
           ) : (
             <div className="space-y-2">
               {canSelfSignup ? (
-                <Button
-                  className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
-                  onClick={() => onSignup(event.id)}
-                >
-                  <HandHeart className="w-4 h-4 mr-2" />
-                  Sign Up to Volunteer
-                </Button>
+                (() => {
+                  // Show one button per role this event actually needs. Falls back to a
+                  // generic Volunteer button if no specific roles are unfilled (extra help
+                  // is still welcome). Each button pre-selects its role in the dialog.
+                  const signupButtons: Array<{
+                    role: 'speaker' | 'general' | 'driver';
+                    label: string;
+                    icon: typeof Mic;
+                    className: string;
+                  }> = [];
+
+                  if (event.speakersUnfilled > 0) {
+                    signupButtons.push({
+                      role: 'speaker',
+                      label: `Sign Up to Speak${event.speakersUnfilled > 1 ? ` (${event.speakersUnfilled} needed)` : ''}`,
+                      icon: Mic,
+                      className: 'bg-[#a31c41] hover:bg-[#811535] text-white',
+                    });
+                  }
+                  if (event.volunteersUnfilled > 0) {
+                    signupButtons.push({
+                      role: 'general',
+                      label: `Sign Up to Volunteer${event.volunteersUnfilled > 1 ? ` (${event.volunteersUnfilled} needed)` : ''}`,
+                      icon: HandHeart,
+                      className: 'bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white',
+                    });
+                  }
+                  if (!event.vanDriverNeeded && event.driversUnfilled > 0) {
+                    signupButtons.push({
+                      role: 'driver',
+                      label: `Sign Up to Drive${event.driversUnfilled > 1 ? ` (${event.driversUnfilled} needed)` : ''}`,
+                      icon: Car,
+                      className: 'bg-[#236383] hover:bg-[#1a4b62] text-white',
+                    });
+                  }
+
+                  // Fallback: no specific unfilled roles — still let people volunteer.
+                  if (signupButtons.length === 0) {
+                    signupButtons.push({
+                      role: 'general',
+                      label: 'Sign Up to Volunteer',
+                      icon: HandHeart,
+                      className: 'bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white',
+                    });
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {signupButtons.map(({ role, label, icon: Icon, className }) => (
+                        <Button
+                          key={role}
+                          className={`w-full h-10 shadow-sm ${className}`}
+                          onClick={() => onSignup(event.id, role)}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  );
+                })()
               ) : (
                 <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 text-center">
                   Ask a coordinator to sign you up.
@@ -612,7 +666,7 @@ function MapEventPopupContent({
   existingUnavailable,
 }: {
   event: AvailableEvent;
-  onSignupClick: (eventId: number) => void;
+  onSignupClick: (eventId: number, preselectedRole?: 'speaker' | 'general' | 'driver') => void;
   onUnavailableClick: (eventId: number) => void;
   onClearUnavailable: (eventId: number) => void;
   canSelfSignup: boolean;
@@ -641,7 +695,7 @@ function MapEventPopupContent({
       )}
       <EventCard
         event={event}
-        onSignup={(id) => { map.closePopup(); onSignupClick(id); }}
+        onSignup={(id, role) => { map.closePopup(); onSignupClick(id, role); }}
         onUnavailable={(id) => { map.closePopup(); onUnavailableClick(id); }}
         onClearUnavailable={(id) => { map.closePopup(); onClearUnavailable(id); }}
         onAssign={(id) => { map.closePopup(); onAssignClick(id); }}
@@ -661,12 +715,14 @@ function SignupDialog({
   onOpenChange,
   onSubmit,
   isSubmitting,
+  preselectedRole,
 }: {
   event: AvailableEvent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (roles: string[], notes: string) => void;
   isSubmitting: boolean;
+  preselectedRole?: 'speaker' | 'general' | 'driver';
 }) {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -737,11 +793,15 @@ function SignupDialog({
 
   useEffect(() => {
     if (open && event) {
-      const defaultRole = availableRoles[0]?.value;
+      // Honor preselected role if it's actually available for this event; otherwise
+      // fall back to the first available role (original behavior).
+      const preselectMatches =
+        preselectedRole && availableRoles.some((r) => r.value === preselectedRole);
+      const defaultRole = preselectMatches ? preselectedRole : availableRoles[0]?.value;
       setSelectedRoles(defaultRole ? [defaultRole] : []);
       setNotes('');
     }
-  }, [open, event, availableRoles]);
+  }, [open, event, availableRoles, preselectedRole]);
 
   if (!event) return null;
 
@@ -1885,10 +1945,13 @@ export default function VolunteerEventHub() {
     );
   };
 
-  const handleSignupClick = (eventId: number) => {
+  const [preselectedSignupRole, setPreselectedSignupRole] = useState<'speaker' | 'general' | 'driver' | undefined>(undefined);
+
+  const handleSignupClick = (eventId: number, preselectedRole?: 'speaker' | 'general' | 'driver') => {
     const event = events.find(e => e.id === eventId);
     if (event) {
       setSelectedEvent(event);
+      setPreselectedSignupRole(preselectedRole);
       setSignupDialogOpen(true);
     }
   };
@@ -3352,6 +3415,7 @@ export default function VolunteerEventHub() {
           onOpenChange={setSignupDialogOpen}
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
+          preselectedRole={preselectedSignupRole}
         />
 
         <UnavailableDialog

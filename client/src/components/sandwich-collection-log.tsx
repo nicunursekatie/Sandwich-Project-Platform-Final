@@ -80,7 +80,7 @@ import {
   canDeleteCollection,
 } from '@shared/auth-utils';
 import type { SandwichCollection, Host } from '@shared/schema';
-import { HelpBubble, helpContent } from '@/components/help-system';
+import { HelpBubble } from '@/components/help-system';
 import {
   calculateTotalSandwiches,
   calculateGroupSandwiches,

@@ -1763,13 +1763,23 @@ router.post(
       try {
         validatedData = insertEventRequestSchema.parse(requestData);
       } catch (validationError: unknown) {
-        const errorDetails = validationError instanceof z.ZodError
-          ? validationError.errors
+        const zodError = validationError instanceof z.ZodError ? validationError : null;
+        const errorDetails = zodError
+          ? zodError.errors
           : (validationError as Error).message;
+        // Surface the ACTUAL field-level problem (e.g. an invalid email) instead
+        // of the generic org-name message — that message made real validation
+        // failures look unexplained, since the user had already entered an org name.
+        const firstIssue = zodError?.errors?.[0];
+        const specificMessage = firstIssue
+          ? (firstIssue.path?.length
+              ? `${firstIssue.message} (field: ${firstIssue.path.join('.')})`
+              : firstIssue.message)
+          : null;
         return res.status(400).json({
           error: 'Validation failed',
           details: errorDetails,
-          message: 'Please check your input and try again. Make sure you provide at least an organization name or contact information.'
+          message: specificMessage || 'Please check your input and try again.',
         });
       }
 

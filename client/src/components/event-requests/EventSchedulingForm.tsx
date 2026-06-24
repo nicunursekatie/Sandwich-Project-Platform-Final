@@ -275,23 +275,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
 
-  // Hydrate partial records before the form uses them. Most sources (the list)
-  // already pass a full record, so this fetch is skipped. The event map passes a
-  // PARTIAL record (subset of columns); we fetch the full record by id and use
-  // it everywhere below. A full-form save is blocked (in performSubmit) until the
-  // full record loads, so a partial record can never blank the omitted columns.
-  const recordIsPartial = !!rawEventRequest?.id && !isFullEventRecord(rawEventRequest);
-  const { data: hydratedEventRequest, isError: hydrationFailed, isFetching: hydrationFetching, refetch: refetchHydration } = useQuery<EventRequest>({
-    queryKey: ['/api/event-requests', rawEventRequest?.id, 'full'],
-    queryFn: () => apiRequest('GET', `/api/event-requests/${rawEventRequest!.id}`),
-    enabled: dialogOpen && recordIsPartial,
-    // Always refetch fresh on open: surgical saves no longer write this 'full'
-    // cache key, so a cached copy could be stale when reopening from the map.
-    staleTime: 0,
-    refetchOnMount: 'always',
-  });
-  const eventRequest = recordIsPartial ? (hydratedEventRequest ?? rawEventRequest) : rawEventRequest;
-
+  const eventRequest = rawEventRequest;
   // Event requests now use a single full-record shape from the list query.
   // Do not refetch a second "full" copy here; the form initializes from eventRequest.
 
@@ -548,9 +532,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // The list endpoint now returns full event records, so the form has one
       // authoritative data source and no partial→full upgrade path.
       const currentEventId = eventRequest?.id || 'new';
-      // Include hydration readiness so the form re-initializes once a partial
-      // record (e.g. from the map) is hydrated into the full record.
-      const sessionKey = `${currentEventId}-${recordIsPartial && !hydratedEventRequest ? 'partial' : 'full'}`;
+      const sessionKey = String(currentEventId);
 
       if (formInitSessionRef.current === sessionKey && formInitialized) return;
 
@@ -692,6 +674,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
 
+      // Status-transition diagnostic on the response side. If the server
+      // accepted the save but didn't actually persist the status change, that
+      // shows up here as a mismatch between what we sent and what came back.
+      const requestedStatus = variables.data?.status;
+      if (requestedStatus && updatedEvent?.status !== requestedStatus) {
+        logger.error('⚠️ STATUS MISMATCH after save', {
+          eventId: eventRequest?.id,
+          requested: requestedStatus,
+          actualOnResponse: updatedEvent?.status,
+          originalStatus: eventRequest?.status,
+        });
+        // Surface this to the user so it's not a silent revert.
+        errorToast({
+          title: 'Status change did not save',
+          description: `You tried to move "${orgName}" to ${requestedStatus}, but the server reports the status is still ${updatedEvent?.status || 'unchanged'}. Try again, and if it keeps failing, the event may be locked by another process — refresh and reopen the card to see the latest state.`,
+          duration: Number.POSITIVE_INFINITY,
+          report: {
+            whatDoing: `Move event to ${requestedStatus}`,
+            expectedOutcome: `Event status updates to ${requestedStatus}.`,
+            actualOutcome: `Save returned with status still ${updatedEvent?.status || 'unchanged'}.`,
+            ...(eventRequest?.id
+              ? {
+                  recordType: 'event_request',
+                  recordId: String(eventRequest.id),
+                  recordLabel: eventRequest.organizationName || formData.organizationName,
+                }
+              : {}),
+          },
+        });
+        // Keep the form open so the user can see the failure and retry.
+        return;
+      }
+
       // Only the server-reported dropped fields are authoritative enough to block
       // save completion. The heuristic round-trip comparison below is logged for
       // diagnostics but must NOT keep the dialog open — treating its false
@@ -807,9 +822,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       saveToLocalStorage();
       const serverMessage = error?.data?.message || error?.message;
+      const validationDetail = Array.isArray(error?.data?.details)
+        ? error.data.details[0]?.message
+        : undefined;
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       let errorTitle = 'Creation Failed';
-      let errorDescription = serverMessage || 'Failed to create event. Please try again.';
+      let errorDescription =
+        validationDetail || serverMessage || 'Failed to create event. Please try again.';
       if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not create event. Check your connection.';
@@ -904,30 +923,18 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return;
     }
 
-    // Block saving a partial record (e.g. opened from the map) until the FULL
-    // record is freshly hydrated. Also block while a hydration fetch is in flight
-    // or has errored: refetchOnMount serves the stale cached copy during the
-    // background refetch, and saving then would build the payload from stale
-    // values. A full-form save from a partial/stale record would overwrite the
-    // columns the partial source omitted (notes, backup contacts, toolkit, etc.).
-    if (recordIsPartial && (!hydratedEventRequest || hydrationFetching || hydrationFailed)) {
+    // Block saving a partial record (e.g. opened from the map). A full-form save
+    // from a partial record would overwrite columns the partial source omitted
+    // (notes, backup contacts, toolkit, etc.) with empty/default values.
+    if (eventRequest && !isFullEventRecord(eventRequest)) {
       setIsSubmitting(false);
-      if (hydrationFailed && !hydrationFetching) {
-        // The full-record fetch failed and isn't already retrying. Don't leave
-        // the user stuck behind a "loading" message — retry and tell them plainly.
-        // Saving stays blocked so a partial/stale payload can't overwrite data.
-        logger.log('⛔ Save blocked: full event failed to load; retrying');
-        refetchHydration();
-        toast({
-          title: "Couldn't load this event",
-          description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or reopen it from the list.",
-          variant: 'destructive',
-          duration: Number.POSITIVE_INFINITY,
-        });
-      } else {
-        logger.log('⛔ Save blocked: full record not freshly hydrated yet');
-        toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to finish loading before saving.', variant: 'destructive' });
-      }
+      logger.log('⛔ Save blocked: partial event record detected (missing fields)');
+      toast({
+        title: "Can't save from map view",
+        description: "This event was opened from the map and doesn't have all fields loaded. Please close this and reopen the event from the list to edit it.",
+        variant: 'destructive',
+        duration: 10000,
+      });
       return;
     }
 
@@ -1001,6 +1008,17 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       }
 
       logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
+      // Extra status-transition diagnostic: any standby-related save logs the
+      // exact status payload being sent. Helps debug the "save closes but
+      // status reverts" symptom when it shows up in production.
+      if (eventData.status && eventData.status !== eventRequest.status) {
+        logger.log('🔁 STATUS TRANSITION in payload:', {
+          from: eventRequest.status,
+          to: eventData.status,
+          standbyExpectedDate: eventData.standbyExpectedDate,
+          eventId: eventRequest.id,
+        });
+      }
       updateEventRequestMutation.mutate({ id: eventRequest.id, data: eventData });
     } else {
       logger.log('➕ Creating new event');
@@ -1034,13 +1052,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         .catch(() => { setVanConflictChecked(true); });
     }
 
-    // Standby follow-up date prompt
+    // Standby follow-up date prompt — fires for EVERY transition into standby
+    // from another status, regardless of whether standbyExpectedDate already has
+    // a value. Previously this check skipped the dialog when standbyExpectedDate
+    // was truthy, which broke the flow when an event had a leftover date from a
+    // prior standby episode: the dialog never appeared, but the save sometimes
+    // landed in a state where the status reverted to scheduled without warning.
+    // Always confirming the follow-up date with the user keeps intent explicit
+    // for the current standby episode.
     const originalStatus = eventRequest?.status || 'new';
-    if (formData.status === 'standby' && originalStatus !== 'standby' && !formData.standbyExpectedDate) {
-      const oneWeekFromNow = new Date();
-      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
-      setStandbyFollowUpMode('one_week');
+    if (formData.status === 'standby' && originalStatus !== 'standby') {
+      // Pre-fill: use the existing standbyExpectedDate if present (so users
+      // don't have to retype a date they already set), otherwise default to
+      // one week from today.
+      const existingDate = formData.standbyExpectedDate;
+      if (existingDate) {
+        setStandbyFollowUpDate(existingDate);
+        setStandbyFollowUpMode('specific');
+      } else {
+        const oneWeekFromNow = new Date();
+        oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+        setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+        setStandbyFollowUpMode('one_week');
+      }
+      logger.log('🟡 Standby transition detected: opening follow-up dialog', {
+        originalStatus,
+        targetStatus: formData.status,
+        existingDate,
+      });
       setShowStandbyFollowUpDialog(true);
       return;
     }
@@ -1184,7 +1223,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
+          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form" noValidate>
 
             {/* Lifecycle & Core Scheduling */}
             <div className="bg-white border rounded-lg p-4 space-y-4">
@@ -1427,8 +1466,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
               {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
-                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...')
-                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
+                ? (isCreateMode ? 'Creating...' : mode === 'edit' ? 'Saving...' : 'Scheduling...')
+                : (isCreateMode ? 'Create Event' : mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
             </Button>
           </div>
         </div>

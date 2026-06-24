@@ -2443,6 +2443,17 @@ export const eventRequests = pgTable(
     toolkitSentDate: timestamp('toolkit_sent_date'), // When toolkit was sent
     toolkitStatus: varchar('toolkit_status').default('not_sent'), // 'not_sent', 'sent', 'received_confirmed', 'not_needed'
     toolkitSentBy: varchar('toolkit_sent_by'), // User ID of who sent the toolkit
+
+    // TSP-shopped events: TSP purchases the supplies for the group for a fee + admin/donation
+    // (instead of the group shopping). Designation + tracking checklist + shopping plan.
+    isTspShopped: boolean('is_tsp_shopped').default(false), // Marks this as a TSP-shopped event
+    tspShopFeeAgreed: boolean('tsp_shop_fee_agreed').default(false), // Group notified of the fee and agreed
+    tspShopEstimateProvided: boolean('tsp_shop_estimate_provided').default(false), // Group given a budget/estimate
+    tspShopEstimateAmount: decimal('tsp_shop_estimate_amount', { precision: 10, scale: 2 }), // Estimated supplies + fee total
+    tspShopPaid: boolean('tsp_shop_paid').default(false), // Group has paid TSP (supplies + fee)
+    tspShopAmountPaid: decimal('tsp_shop_amount_paid', { precision: 10, scale: 2 }), // Amount the group actually paid
+    tspShopPlanReady: boolean('tsp_shop_plan_ready').default(false), // TSP has a plan to shop the supplies
+    tspShoppingPlan: text('tsp_shopping_plan'), // The shopping plan; shows on the card and flows to the planning sheet "All Details" column
     eventStartTime: varchar('event_start_time'), // Event start time (stored as string for flexibility)
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
@@ -3031,8 +3042,46 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     firstName: z.string().nullable().optional(),
     lastName: z.string().nullable().optional(),
     email: z
-      .union([z.string().email(), z.literal(''), z.null(), z.undefined()])
-      .transform((val) => val || undefined)
+      .union([z.string(), z.null(), z.undefined()])
+      // Trim first: a pasted address with leading/trailing whitespace (or a
+      // stray newline) is the most common reason a manual event silently fails
+      // to save. Empty/whitespace-only becomes undefined so the field is simply
+      // omitted, matching the previous behavior.
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      // Only enforce email format when a value is actually present, with a clear
+      // message (the create endpoint surfaces this to the user).
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid email address (e.g., name@example.com).' }
+      )
+      .optional(),
+    phone: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .optional(),
+    backupContactEmail: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid backup contact email address.' }
+      )
+      .optional(),
+    backupContactPhone: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
       .optional(),
     organizationName: z.string().nullable().optional(),
     manualEntrySource: z.string().nullable().optional(),
@@ -3129,6 +3178,37 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
       ])
       .nullable()
       .optional(),
+    // Optional next-follow-up date (suppresses follow-up nagging for long-lead events)
+    nextFollowUpDate: z
+      .union([
+        z.date(),
+        z
+          .string()
+          .trim()
+          .transform((str) => {
+            if (!str) return null;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+              throw new Error('Invalid date format, expected YYYY-MM-DD');
+            }
+            // Parse at local noon (NOT bare `new Date(str)`, which is midnight UTC
+            // and renders/compares a day early in America/New_York). Mirrors the
+            // toolkitSentDate coercion above.
+            const date = new Date(str + 'T12:00:00');
+            return isNaN(date.getTime()) ? null : date;
+          }),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
+    // TSP-shopped event fields
+    isTspShopped: z.boolean().nullable().optional(),
+    tspShopFeeAgreed: z.boolean().nullable().optional(),
+    tspShopEstimateProvided: z.boolean().nullable().optional(),
+    tspShopEstimateAmount: z.union([z.string(), z.number(), z.null()]).optional(),
+    tspShopPaid: z.boolean().nullable().optional(),
+    tspShopAmountPaid: z.union([z.string(), z.number(), z.null()]).optional(),
+    tspShopPlanReady: z.boolean().nullable().optional(),
+    tspShoppingPlan: z.string().nullable().optional(),
     followUpOneDayCompleted: z.boolean().nullable().optional(),
     followUpOneDayDate: z
       .union([
@@ -3228,24 +3308,11 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
-  })
-  .refine(
-    (data) => {
-      // Require at least organization name OR some contact information
-      const hasOrgName =
-        data.organizationName && data.organizationName.trim().length > 0;
-      const hasContactInfo =
-        (data.firstName && data.firstName.trim().length > 0) ||
-        (data.lastName && data.lastName.trim().length > 0) ||
-        (data.email && data.email.trim().length > 0);
-      return hasOrgName || hasContactInfo;
-    },
-    {
-      message:
-        'Either organization name or contact information (name/email) is required',
-      path: ['organizationName'],
-    }
-  );
+  });
+// NOTE: No "must have at least one identifier" refine. Manual entries are
+// intentionally allowed to be created fully blank (no org name, contact name,
+// email, or phone) and filled in later as intake details come in. Email format
+// is still validated when an email IS provided (see the `email` field above).
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
   .omit({

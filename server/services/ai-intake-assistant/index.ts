@@ -723,7 +723,7 @@ async function generateAiRecommendations(
   const prompt = buildAiPrompt(eventRequest, critical, warnings, suggestions);
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',

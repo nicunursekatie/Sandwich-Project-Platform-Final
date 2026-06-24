@@ -76,7 +76,15 @@ Desktop.ini*_session.txt
 *_test.txt
 *.txt
 attached_assets/*.json
-attached_assets/
+attached_assets/*
+# Logo assets imported at build time via `@assets/...` MUST stay in version control,
+# otherwise `vite build` fails to resolve them and deployment publishing breaks.
+!attached_assets/LOGOS/
+!attached_assets/LOGOS/sandwich logo.png
+!attached_assets/LOGOS/Copy of TSP_transparent.png
+!attached_assets/LOGOS/TSP_transparent.png
+!attached_assets/CMYK_PRINT_TSP-01_1749585167435.png
+!attached_assets/CMYK_PRINT_TSP-01 (2).png
 
 # Windows reserved device names (cannot be deleted normally)
 nul
@@ -103,3 +111,6 @@ backups/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Claude Code personal/local settings (machine-specific, should not be tracked)
+.claude/settings.local.json

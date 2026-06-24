@@ -1287,7 +1287,7 @@ export default function Dashboard({
 
                   if (isDriverPlanning) {
                     return (
-                      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+                      <div className="h-full min-h-0 overflow-hidden w-full max-w-full">
                         {renderContent(section)}
                       </div>
                     );

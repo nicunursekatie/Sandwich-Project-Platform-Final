@@ -89,7 +89,6 @@ interface InProcessCardProps {
   request: EventRequest;
   resolveUserName?: (id: string) => string;
   isStale?: boolean;
-  followUpStatus?: 'toolkit' | 'contact' | null;
   onEdit: () => void;
   onDelete: () => void;
   onSchedule: () => void;
@@ -941,7 +940,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   request,
   resolveUserName,
   isStale = false,
-  followUpStatus = null,
   onEdit,
   onDelete,
   onSchedule,
@@ -1058,21 +1056,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   </span>
                 )}
               </div>
-              {followUpStatus === 'toolkit' && (
-                <div className="mt-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge className="bg-[#A31C41] text-white border-[#A31C41] px-3 py-1 cursor-help">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Follow-up needed - Over 1 week since toolkit sent
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{indicatorTooltips.toolkitFollowUp}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
             </div>
           );
         })()}

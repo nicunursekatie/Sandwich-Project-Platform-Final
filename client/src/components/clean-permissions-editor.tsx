@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { USER_ROLES, getDefaultPermissionsForRole, getRoleDisplayName, applyPermissionDependencies, PERMISSION_DEPENDENCIES } from '@shared/auth-utils';
+import { USER_ROLES, getDefaultPermissionsForRole, getRoleDisplayName, applyPermissionDependencies, PERMISSION_DEPENDENCIES, PERMISSIONS } from '@shared/auth-utils';
 import { PERMISSION_GROUPS, getPermissionLabel, getPermissionDescription } from '@shared/permission-config';
 import { getPermissionRiskInfo, countPermissionsByRisk, type PermissionRiskLevel } from '@shared/permission-security-levels';
 import type { User } from '@/types/user';
@@ -99,6 +99,13 @@ export default function CleanPermissionsEditor({
   const togglePermission = (permission: string) => {
     const newPermissions = new Set(selectedPermissions);
     if (newPermissions.has(permission)) {
+      // Volunteer Hub access always includes self sign-up — don't allow removing it separately
+      if (
+        permission === PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP &&
+        newPermissions.has(PERMISSIONS.NAV_VOLUNTEER_HUB)
+      ) {
+        return;
+      }
       newPermissions.delete(permission);
     } else {
       newPermissions.add(permission);
@@ -121,6 +128,12 @@ export default function CleanPermissionsEditor({
         if (dependencies) {
           dependencies.forEach(dep => newPermissions.add(dep));
         }
+      } else if (
+        perm === PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP &&
+        newPermissions.has(PERMISSIONS.NAV_VOLUNTEER_HUB)
+      ) {
+        // Keep self sign-up when Volunteer Hub access remains
+        newPermissions.add(perm);
       } else {
         newPermissions.delete(perm);
       }
@@ -358,6 +371,9 @@ export default function CleanPermissionsEditor({
                                 {visiblePermissions.map((permission) => {
                                   const isSelected = selectedPermissions.has(permission);
                                   const isDefault = defaultPermissions.has(permission);
+                                  const isImpliedByVolunteerHub =
+                                    permission === PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP &&
+                                    selectedPermissions.has(PERMISSIONS.NAV_VOLUNTEER_HUB);
                                   const label = getPermissionLabel(permission);
                                   const riskInfo = getPermissionRiskInfo(permission);
 
@@ -371,14 +387,20 @@ export default function CleanPermissionsEditor({
                                           checked={isSelected}
                                           onCheckedChange={() => togglePermission(permission)}
                                           id={permission}
+                                          disabled={isImpliedByVolunteerHub}
                                           className="data-[state=checked]:bg-brand-primary"
                                         />
                                         <Label
                                           htmlFor={permission}
-                                          className="cursor-pointer text-sm flex items-center gap-2 flex-1 font-medium text-slate-700"
+                                          className={`cursor-pointer text-sm flex items-center gap-2 flex-1 font-medium text-slate-700 ${isImpliedByVolunteerHub ? 'opacity-80' : ''}`}
                                         >
                                           <span className="flex-1">{label}</span>
                                           <div className="flex items-center gap-1.5">
+                                            {isImpliedByVolunteerHub && (
+                                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-yellow-50 border-yellow-300 text-yellow-800 font-medium">
+                                                Included with Volunteer Hub
+                                              </Badge>
+                                            )}
                                             <Badge
                                               variant="outline"
                                               className={`text-[10px] px-1.5 py-0 border ${riskInfo.badgeColor} font-semibold`}

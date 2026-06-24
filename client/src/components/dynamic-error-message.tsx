@@ -69,7 +69,7 @@ export function DynamicErrorMessageDisplay({
       case 'contact':
         // Open email client or contact form
         window.location.href =
-          'mailto:support@sandwichproject.org?subject=Error Report';
+          'mailto:katie@thesandwichproject.org?subject=Error Report';
         break;
       case 'custom':
         // Custom actions should be handled by the parent component
