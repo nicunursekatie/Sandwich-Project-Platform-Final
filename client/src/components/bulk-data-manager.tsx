@@ -97,8 +97,9 @@ export default function BulkDataManager({
   // Run bulk mapping
   const bulkMapMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/data-management/bulk-map-hosts', {});
-      return response.json();
+      // apiRequest already parses and returns the JSON body (not a Response),
+      // so return it directly — calling .json() on it would throw.
+      return await apiRequest('POST', '/api/data-management/bulk-map-hosts', {});
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['/api/data-management/collection-stats'] });
