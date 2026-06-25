@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  CalendarDays,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -55,12 +54,11 @@ export type CalendarSectionChipKey = MonthSectionKey;
 export const MONTH_SECTIONS: Array<{
   key: MonthSectionKey;
   label: string;
-  emoji: string;
 }> = [
-  { key: 'external', label: 'External Factors', emoji: '🌎' },
-  { key: 'tsp_activities', label: 'TSP Activities', emoji: '📋' },
-  { key: 'planning_reminders', label: 'Planning Reminders', emoji: '💡' },
-  { key: 'leadership', label: 'Leadership Availability', emoji: '👥' },
+  { key: 'external', label: 'External Factors' },
+  { key: 'tsp_activities', label: 'TSP Activities' },
+  { key: 'planning_reminders', label: 'Planning Reminders' },
+  { key: 'leadership', label: 'Leadership Availability' },
 ];
 
 export const RENDERABLE_TRACKED_CATEGORIES = new Set([
@@ -239,18 +237,76 @@ function trackedItemStyle<TTracked extends TrackedCalendarItemRow>(item: TTracke
   };
 }
 
+const YEARLY_CATEGORY_LABELS: Record<string, string> = {
+  action_item: 'Action Item',
+  event: 'Event',
+  board: 'Board',
+  staffing: 'Staffing',
+  preparation: 'Preparation',
+  'event-rush': 'Event Rush',
+  planning: 'Planning',
+  leadership_availability: 'Leadership',
+  seasonal: 'Seasonal',
+  other: 'Other',
+};
+
+function trackedItemBadge<TTracked extends TrackedCalendarItemRow>(item: TTracked) {
+  const districts = item.metadata?.districts || [];
+  const style = trackedItemStyle(item);
+  if (style.kind === 'school') {
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] px-1.5 py-0 bg-sky-50 text-sky-700 border-sky-200 shrink-0"
+      >
+        {districts[0] || 'School'}
+      </Badge>
+    );
+  }
+  if (style.kind === 'religious') {
+    return (
+      <Badge
+        variant="outline"
+        className="text-[10px] px-1.5 py-0 bg-violet-50 text-violet-700 border-violet-200 shrink-0"
+      >
+        {style.label}
+      </Badge>
+    );
+  }
+  return (
+    <Badge
+      variant="outline"
+      className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200 shrink-0"
+    >
+      Holiday
+    </Badge>
+  );
+}
+
+function ItemExpandChevron({ expanded }: { expanded: boolean }) {
+  return expanded ? (
+    <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0 mt-0.5" aria-hidden="true" />
+  ) : (
+    <ChevronRight className="h-3.5 w-3.5 text-gray-400 shrink-0 mt-0.5" aria-hidden="true" />
+  );
+}
+
 function TrackedItemLine<TTracked extends TrackedCalendarItemRow>({
   item,
   formatDateRange,
   canEditAll,
   onEditTracked,
   onDeleteTracked,
+  isExpanded,
+  onToggle,
 }: {
   item: TTracked;
   formatDateRange: (start: string, end: string) => string;
   canEditAll: boolean;
   onEditTracked: (item: TTracked) => void;
   onDeleteTracked: (item: TTracked) => void;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
   const districts = item.metadata?.districts || [];
   const style = trackedItemStyle(item);
@@ -258,29 +314,45 @@ function TrackedItemLine<TTracked extends TrackedCalendarItemRow>({
 
   return (
     <li
-      className={`group/tr rounded-md border bg-white dark:bg-gray-900 p-2.5 ${style.borderClass}`}
+      className={`group/tr rounded-md border bg-white dark:bg-gray-900 ${style.borderClass} ${
+        isExpanded ? 'p-2.5' : 'p-0'
+      }`}
     >
-      <div className="flex items-start gap-2.5">
-        <div
-          className={`mt-0.5 w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${style.iconBg}`}
-          aria-hidden="true"
-        >
-          <Icon className="h-4 w-4" />
-        </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        className={`w-full text-left flex items-start gap-1.5 ${
+          isExpanded
+            ? 'mb-2'
+            : 'p-2 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 rounded-md transition-colors'
+        }`}
+      >
+        <ItemExpandChevron expanded={isExpanded} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 leading-snug truncate">
             {item.title}
           </p>
-          <div className="flex items-center gap-1 mt-1">
-            <CalendarDays className="h-3.5 w-3.5 text-[#236383]" />
+          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
             <span className="text-xs font-semibold text-[#236383]">
               {formatDateRange(item.startDate, item.endDate)}
             </span>
+            {trackedItemBadge(item)}
           </div>
-          {(districts.length > 0 || style.kind === 'religious' || style.kind === 'holiday') && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {style.kind === 'school' &&
-                districts.map((district) => (
+        </div>
+      </button>
+      {isExpanded && (
+        <div className="flex items-start gap-2.5">
+          <div
+            className={`mt-0.5 w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${style.iconBg}`}
+            aria-hidden="true"
+          >
+            <Icon className="h-4 w-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            {districts.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-1.5">
+                {districts.map((district) => (
                   <Badge
                     key={district}
                     variant="outline"
@@ -289,46 +361,42 @@ function TrackedItemLine<TTracked extends TrackedCalendarItemRow>({
                     {district}
                   </Badge>
                 ))}
-              {style.kind === 'religious' && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 bg-violet-50 text-violet-700 border-violet-200"
-                >
-                  {style.label}
-                </Badge>
-              )}
-              {style.kind === 'holiday' && (
-                <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 border-amber-200"
-                >
-                  Holiday
-                </Badge>
-              )}
+              </div>
+            )}
+            {item.notes && (
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-snug">
+                {item.notes}
+              </p>
+            )}
+          </div>
+          {canEditAll && (
+            <div className="opacity-0 group-hover/tr:opacity-100 flex gap-0.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditTracked(item);
+                }}
+              >
+                <Edit2 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-red-500"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteTracked(item);
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
             </div>
           )}
-          {item.notes && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 leading-snug">
-              {item.notes}
-            </p>
-          )}
         </div>
-        {canEditAll && (
-          <div className="opacity-0 group-hover/tr:opacity-100 flex gap-0.5 shrink-0">
-            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => onEditTracked(item)}>
-              <Edit2 className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-red-500"
-              onClick={() => onDeleteTracked(item)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
     </li>
   );
 }
@@ -344,6 +412,8 @@ function YearlyItemLine<TYearly extends YearlyCalendarItemRow>({
   onToggleComplete,
   onDeleteYearly,
   onCopyYearly,
+  isExpanded,
+  onToggle,
 }: {
   item: TYearly;
   categoryColors: Record<string, string>;
@@ -355,32 +425,63 @@ function YearlyItemLine<TYearly extends YearlyCalendarItemRow>({
   onToggleComplete: (item: TYearly) => void;
   onDeleteYearly: (id: number) => void;
   onCopyYearly: (id: number) => void;
+  isExpanded: boolean;
+  onToggle: () => void;
 }) {
+  const categoryClass = categoryColors[item.category] || categoryColors.other;
+  const categoryLabel = YEARLY_CATEGORY_LABELS[item.category] || item.category;
+
   return (
     <li
-      className={`rounded-md border p-2.5 ${
+      className={`rounded-md border ${
         item.isCompleted ? 'opacity-60 bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-900'
-      } ${categoryColors[item.category] || categoryColors.other}`}
+      } ${categoryClass} ${isExpanded ? 'p-2.5' : 'p-0'}`}
     >
-      <div className="flex items-start gap-2">
-        {item.isCompleted && <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />}
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        className={`w-full text-left flex items-start gap-1.5 ${
+          isExpanded
+            ? 'mb-2'
+            : 'p-2 hover:bg-gray-50/80 dark:hover:bg-gray-800/50 rounded-md transition-colors'
+        }`}
+      >
+        <ItemExpandChevron expanded={isExpanded} />
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold ${item.isCompleted ? 'line-through' : ''}`}>
+          <p
+            className={`text-sm font-semibold truncate ${
+              item.isCompleted ? 'line-through text-gray-600' : 'text-gray-900 dark:text-gray-100'
+            }`}
+          >
+            {item.isCompleted && (
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600 inline mr-1 -mt-0.5" aria-hidden="true" />
+            )}
             {item.title}
           </p>
-          {item.startDate && (
-            <div className="flex items-center gap-1 mt-1">
-              <CalendarDays className="h-3.5 w-3.5 text-[#236383]" />
+          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+            {item.startDate && (
               <span className="text-xs font-semibold text-[#236383]">
                 {formatDateRangeWithWeekday(item.startDate, item.endDate || item.startDate)}
               </span>
-            </div>
-          )}
+            )}
+            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${categoryClass}`}>
+              {categoryLabel}
+            </Badge>
+          </div>
+        </div>
+      </button>
+      {isExpanded && (
+        <>
           {item.description && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{item.description}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 leading-snug px-1">
+              {item.description}
+            </p>
           )}
-          <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-            <span className={`text-[10px] font-medium ${priorityColors[item.priority] || priorityColors.medium}`}>
+          <div className="flex flex-wrap items-center gap-1.5 mb-2 px-1">
+            <span
+              className={`text-[10px] font-medium ${priorityColors[item.priority] || priorityColors.medium}`}
+            >
               {item.priority} priority
             </span>
             {item.isRecurring && (
@@ -389,41 +490,63 @@ function YearlyItemLine<TYearly extends YearlyCalendarItemRow>({
               </Badge>
             )}
           </div>
-        </div>
-      </div>
-      {(canEdit || canDelete) && (
-        <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-          {canEdit && item.category === 'action_item' && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
-              onClick={() => onToggleComplete(item)}
-            >
-              {item.isCompleted ? 'Undo' : 'Complete'}
-            </Button>
+          {(canEdit || canDelete) && (
+            <div className="flex items-center gap-1 pt-2 border-t border-gray-200 dark:border-gray-700">
+              {canEdit && item.category === 'action_item' && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleComplete(item);
+                  }}
+                >
+                  {item.isCompleted ? 'Undo' : 'Complete'}
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditYearly(item);
+                  }}
+                >
+                  <Edit2 className="h-3 w-3" />
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteYearly(item.id);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+              {canEdit && item.isRecurring && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCopyYearly(item.id);
+                  }}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
           )}
-          {canEdit && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onEditYearly(item)}>
-              <Edit2 className="h-3 w-3" />
-            </Button>
-          )}
-          {canDelete && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs text-red-600"
-              onClick={() => onDeleteYearly(item.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          )}
-          {canEdit && item.isRecurring && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => onCopyYearly(item.id)}>
-              <Copy className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
+        </>
       )}
     </li>
   );
@@ -477,9 +600,25 @@ export function MonthSectionsContent<
     [scopeKey],
   );
 
+  // Individual item cards default collapsed (title + date + badge only).
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(() => new Set());
+
+  React.useEffect(() => {
+    setExpandedItems(new Set());
+  }, [scopeKey]);
+
+  const toggleItem = useCallback((itemKey: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemKey)) next.delete(itemKey);
+      else next.add(itemKey);
+      return next;
+    });
+  }, []);
+
   return (
-    <div className="space-y-3">
-      {MONTH_SECTIONS.map(({ key, label, emoji }) => {
+    <div className="space-y-2">
+      {MONTH_SECTIONS.map(({ key, label }) => {
         const { yearly, tracked } = sections[key];
         if (yearly.length === 0 && tracked.length === 0) return null;
         const isOpen = !collapsed.has(key);
@@ -501,7 +640,6 @@ export function MonthSectionsContent<
               ) : (
                 <ChevronRight className="h-3.5 w-3.5 text-gray-500" aria-hidden="true" />
               )}
-              <span aria-hidden>{emoji}</span>
               <h4 className="text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300 m-0">
                 {label}
               </h4>
@@ -510,32 +648,42 @@ export function MonthSectionsContent<
               </span>
             </button>
             {isOpen && (
-              <ul id={sectionId} className="space-y-1.5 list-none m-0 p-0 mt-1.5">
-                {tracked.map((item) => (
-                  <TrackedItemLine
-                    key={`tracked-${item.id}`}
-                    item={item}
-                    formatDateRange={formatDateRange}
-                    canEditAll={canEditAll}
-                    onEditTracked={onEditTracked}
-                    onDeleteTracked={onDeleteTracked}
-                  />
-                ))}
-                {yearly.map((item) => (
-                  <YearlyItemLine
-                    key={`yearly-${item.id}`}
-                    item={item}
-                    categoryColors={categoryColors}
-                    priorityColors={priorityColors}
-                    formatDateRangeWithWeekday={formatDateRangeWithWeekday}
-                    canEdit={canEditItem(item)}
-                    canDelete={canDeleteItem(item)}
-                    onEditYearly={onEditYearly}
-                    onToggleComplete={onToggleComplete}
-                    onDeleteYearly={onDeleteYearly}
-                    onCopyYearly={onCopyYearly}
-                  />
-                ))}
+              <ul id={sectionId} className="space-y-1 list-none m-0 p-0 mt-1">
+                {tracked.map((item) => {
+                  const itemKey = `tracked-${item.id}`;
+                  return (
+                    <TrackedItemLine
+                      key={itemKey}
+                      item={item}
+                      formatDateRange={formatDateRange}
+                      canEditAll={canEditAll}
+                      onEditTracked={onEditTracked}
+                      onDeleteTracked={onDeleteTracked}
+                      isExpanded={expandedItems.has(itemKey)}
+                      onToggle={() => toggleItem(itemKey)}
+                    />
+                  );
+                })}
+                {yearly.map((item) => {
+                  const itemKey = `yearly-${item.id}`;
+                  return (
+                    <YearlyItemLine
+                      key={itemKey}
+                      item={item}
+                      categoryColors={categoryColors}
+                      priorityColors={priorityColors}
+                      formatDateRangeWithWeekday={formatDateRangeWithWeekday}
+                      canEdit={canEditItem(item)}
+                      canDelete={canDeleteItem(item)}
+                      onEditYearly={onEditYearly}
+                      onToggleComplete={onToggleComplete}
+                      onDeleteYearly={onDeleteYearly}
+                      onCopyYearly={onCopyYearly}
+                      isExpanded={expandedItems.has(itemKey)}
+                      onToggle={() => toggleItem(itemKey)}
+                    />
+                  );
+                })}
               </ul>
             )}
           </section>
