@@ -395,17 +395,24 @@ export default function DashboardOverview({
     const collections = allCollectionsData?.collections;
     if (!collections?.length) return null;
 
-    const today = new Date();
-    const thisYear = today.getFullYear();
+    // Anchor "today" to the app's Eastern-time definition (getTodayString),
+    // not the viewer's local clock — otherwise the cutoff window can shift by
+    // a day for users outside ET around midnight ET. getTodayString returns a
+    // 1-based-month YYYY-MM-DD string; Date wants a 0-based month.
+    const [thisYear, todayMonth1, todayDay] = getTodayString().split('-').map(Number);
     const lastYear = thisYear - 1;
-    const month = today.getMonth();
-    const day = today.getDate();
+    const month = todayMonth1 - 1;
+
+    // Clamp the day to the last valid day of the target month so a Feb 29
+    // "today" doesn't roll over to Mar 1 when last year isn't a leap year.
+    const clampDay = (year: number, monthIdx: number, day: number) =>
+      Math.min(day, new Date(year, monthIdx + 1, 0).getDate());
 
     // Inclusive end-of-day cutoffs so today's / last-year-today's records count.
     const thisStart = new Date(thisYear, 0, 1, 0, 0, 0, 0);
-    const thisEnd = new Date(thisYear, month, day, 23, 59, 59, 999);
+    const thisEnd = new Date(thisYear, month, clampDay(thisYear, month, todayDay), 23, 59, 59, 999);
     const lastStart = new Date(lastYear, 0, 1, 0, 0, 0, 0);
-    const lastEnd = new Date(lastYear, month, day, 23, 59, 59, 999);
+    const lastEnd = new Date(lastYear, month, clampDay(lastYear, month, todayDay), 23, 59, 59, 999);
 
     let thisSum = 0;
     let lastSum = 0;
@@ -517,6 +524,13 @@ export default function DashboardOverview({
                     });
                     queryClient.invalidateQueries({
                       queryKey: ['/api/sandwich-collections/stats'],
+                    });
+                    // Also refresh the full collections list backing the
+                    // weekly trend chart and the YoY pace pill — otherwise the
+                    // YTD total (from /stats) updates immediately while the
+                    // YoY % stays stale until the next refetch.
+                    queryClient.invalidateQueries({
+                      queryKey: ['/api/sandwich-collections/all'],
                     });
                   }}
                   onCancel={() => setShowCollectionForm(false)}
