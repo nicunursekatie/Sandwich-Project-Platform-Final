@@ -303,6 +303,15 @@ export function createAuthRouter() {
         profileImageUrl: freshUser.profileImageUrl,
         role: freshUser.role,
         isActive: freshUser.isActive,
+        // Self-declared event-role willingness (editable below). Approval flags
+        // (speakerApproved/driverApproved/vanApproved) are intentionally not
+        // editable here — only coordinators set those via user management.
+        willingToVolunteer: freshUser.willingToVolunteer ?? true,
+        willingToSpeak: freshUser.willingToSpeak ?? false,
+        willingToDrive: freshUser.willingToDrive ?? false,
+        speakerApproved: freshUser.speakerApproved ?? false,
+        driverApproved: freshUser.driverApproved ?? false,
+        vanApproved: freshUser.vanApproved ?? false,
       });
     } catch (error) {
       logger.error('Get profile error:', error);
@@ -320,7 +329,10 @@ export function createAuthRouter() {
         return res.status(401).json({ message: 'Not authenticated' });
       }
 
-      const { firstName, lastName, displayName, preferredEmail, phoneNumber, address } = req.body;
+      const {
+        firstName, lastName, displayName, preferredEmail, phoneNumber, address,
+        willingToVolunteer, willingToSpeak, willingToDrive,
+      } = req.body;
 
       // Build update object with only provided fields
       const updateData: any = {};
@@ -329,6 +341,14 @@ export function createAuthRouter() {
       if (displayName !== undefined) updateData.displayName = displayName;
       if (preferredEmail !== undefined) updateData.preferredEmail = preferredEmail;
       if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+      // Self-declared willingness only. Users can say what they want to do; they
+      // cannot grant themselves the approval flags (speaker/driver/van) — those
+      // are coordinator-controlled in user management.
+      // Only a literal boolean true counts as "willing" — coerce strictly so a
+      // crafted body like { willingToSpeak: 'false' } can't flip the flag on.
+      if (willingToVolunteer !== undefined) updateData.willingToVolunteer = willingToVolunteer === true;
+      if (willingToSpeak !== undefined) updateData.willingToSpeak = willingToSpeak === true;
+      if (willingToDrive !== undefined) updateData.willingToDrive = willingToDrive === true;
       if (address !== undefined) {
         updateData.address = address;
         // Auto-geocode when address changes
@@ -381,6 +401,14 @@ export function createAuthRouter() {
         profileImageUrl: updatedUser.profileImageUrl,
         role: updatedUser.role,
         isActive: updatedUser.isActive,
+        willingToVolunteer: updatedUser.willingToVolunteer ?? true,
+        willingToSpeak: updatedUser.willingToSpeak ?? false,
+        willingToDrive: updatedUser.willingToDrive ?? false,
+        // Mirror GET /profile's shape — include the (read-only) approval flags so
+        // clients can rely on a consistent payload after a save.
+        speakerApproved: updatedUser.speakerApproved ?? false,
+        driverApproved: updatedUser.driverApproved ?? false,
+        vanApproved: updatedUser.vanApproved ?? false,
       });
     } catch (error) {
       logger.error('Update profile error:', error);

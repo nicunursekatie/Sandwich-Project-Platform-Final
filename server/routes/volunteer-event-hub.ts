@@ -27,6 +27,7 @@ import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { isEligibleForRole, getIneligibilityReason, type EventRole } from '../../shared/event-role-eligibility';
 
 const router = Router();
 
@@ -1246,6 +1247,38 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     const invalidRoles = normalizedRoles.filter(r => !['driver', 'speaker', 'general'].includes(r));
     if (invalidRoles.length > 0) {
       return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
+    }
+
+    // Eligibility gate (self-signup only). A volunteer can only sign THEMSELVES
+    // up for roles they're willing AND (where required) approved for. Coordinators
+    // assigning others deliberately bypass this — assigning is itself the
+    // coordinator vouching for the person, and driver assignment is already
+    // gated by DRIVER_SIGNUP_APPROVE below. The hub UI hides ineligible roles;
+    // this is the server-side backstop against a hand-crafted request.
+    if (!isAssigningOther) {
+      const ineligible = normalizedRoles.filter(
+        (r) => !isEligibleForRole(user, r as EventRole)
+      );
+      if (ineligible.length > 0) {
+        // Tailor the message to WHY it's blocked: not opted-in (willingness) vs
+        // opted-in but awaiting coordinator approval. Keying off the role name
+        // alone would tell a not-willing user they need "approval", which is wrong.
+        const reasons = ineligible.map((r) => getIneligibilityReason(user, r as EventRole));
+        const needsApproval = reasons.includes('not_approved');
+        const needsWillingness = reasons.includes('not_willing');
+        let error: string;
+        if (needsApproval && !needsWillingness) {
+          error =
+            "That role needs coordinator approval. You've said you're willing — a coordinator just needs to approve you before you can sign up.";
+        } else if (needsWillingness && !needsApproval) {
+          error =
+            "You haven't opted into that role yet. Update the roles you're willing to do in your profile.";
+        } else {
+          error =
+            "You're not set up for that role yet. Update the roles you're willing to do in your profile — speaker and driver also need coordinator approval.";
+        }
+        return res.status(403).json({ error, ineligibleRoles: ineligible });
+      }
     }
 
     // Check if target user already signed up for this event with any requested role

@@ -288,6 +288,8 @@ export default function UserManagementFinal() {
           preferredEmail: formData.preferredEmail,
           address: formData.address,
           vanApproved: formData.vanApproved,
+          speakerApproved: formData.speakerApproved,
+          driverApproved: formData.driverApproved,
           role: formData.role,
           isActive: formData.isActive,
         },
