@@ -845,14 +845,50 @@ Thanks!
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Show scheduled + completed events to volunteers
+    // Returns:
+    //   - All upcoming events (status scheduled/rescheduled, date ≥ today)
+    //     for list, map, and forward-looking calendar views.
+    //   - Optionally, completed events for a SINGLE past month — when the
+    //     calendar is showing a month with past dates, the client passes
+    //     `?pastMonth=YYYY-MM` and we add only that month's completed
+    //     events so the calendar can render them as faded "Completed"
+    //     context. We do NOT load all completed events at once because
+    //     the calendar only shows one month at a time anyway.
+    //
     // Use Eastern Time to determine "today" since server may be in UTC
     // (at 7pm+ EST, UTC has already rolled to the next day)
     const now = new Date();
     const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
-    logger.log(`[VolunteerHub] Fetching scheduled events`);
+    // Parse optional pastMonth=YYYY-MM (e.g. "2026-05"). Strict format —
+    // any malformed value is ignored rather than rejected, so a stale
+    // client doesn't fail the whole request.
+    const pastMonthRaw = typeof req.query.pastMonth === 'string' ? req.query.pastMonth : '';
+    const pastMonthMatch = /^(\d{4})-(\d{1,2})$/.exec(pastMonthRaw);
+    let pastWindowStart: Date | null = null;
+    let pastWindowEnd: Date | null = null;
+    if (pastMonthMatch) {
+      const year = parseInt(pastMonthMatch[1], 10);
+      const monthIdx = parseInt(pastMonthMatch[2], 10) - 1;
+      if (monthIdx >= 0 && monthIdx <= 11) {
+        const candidateStart = new Date(year, monthIdx, 1);
+        const candidateEnd = new Date(year, monthIdx + 1, 1);
+        // Only honor pastMonth if it's actually in the past — no point
+        // doing the extra completed-event query for the current or
+        // future month (those events are already covered by the
+        // upcoming branch below).
+        if (candidateEnd <= today) {
+          pastWindowStart = candidateStart;
+          pastWindowEnd = candidateEnd;
+        }
+      }
+    }
+
+    logger.log(
+      `[VolunteerHub] Fetching events` +
+        (pastWindowStart ? ` + completed events for ${pastMonthRaw}` : ''),
+    );
 
     const events = await db
       .select()
@@ -862,30 +898,40 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
           eq(eventRequests.showOnVolunteerHub, true),
           or(
             eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled')
+            eq(eventRequests.status, 'rescheduled'),
+            eq(eventRequests.status, 'completed')
           )
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/completed status`);
+    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/rescheduled/completed status`);
 
-    // Filter to events with dates today or in the future
-    // Include events with no date set (they're still active)
-    const upcomingEvents = events.filter(event => {
+    // Build the visible set:
+    //   - Future or undated events: always include.
+    //   - Past events: include ONLY if status=completed AND they fall
+    //     within the requested past-month window. A scheduled event
+    //     whose date slipped into the past without being marked complete
+    //     is stale data — don't surface it.
+    const visibleEvents = events.filter(event => {
       const eventDate = getEffectiveEventDate(event);
-      if (!eventDate) {
-        // Include events without dates - they're still active
-        return true;
-      }
+      if (!eventDate) return true;
       const eventDateObj = new Date(eventDate);
-      return eventDateObj >= today;
+      const isPast = eventDateObj < today;
+      if (!isPast) return true;
+      // Past events: only completed AND within the requested window
+      if (event.status !== 'completed') return false;
+      if (!pastWindowStart || !pastWindowEnd) return false;
+      return eventDateObj >= pastWindowStart && eventDateObj < pastWindowEnd;
     });
 
-    logger.log(`[VolunteerHub] ${upcomingEvents.length} events are upcoming or have no date set`);
+    logger.log(
+      `[VolunteerHub] ${visibleEvents.length} events visible after filtering` +
+        (pastWindowStart ? ` (incl. completed events for ${pastMonthRaw})` : ''),
+    );
 
     // Calculate unfilled needs for each event using centralized utils
-    const eventsWithNeeds = upcomingEvents.map(event => {
+    const eventsWithNeeds = visibleEvents.map(event => {
       const counts = getUnfilledCounts(event);
       const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 

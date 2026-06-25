@@ -609,23 +609,14 @@ export default function Dashboard({
       case 'messaging-inbox':
         return <MessagingInbox />;
       case 'chat':
+        // Outer "Team Chat" page header was removed — it was duplicating
+        // what the channel header already tells the user (which room
+        // they're in) and pushing the actual chat surface down the page.
+        // The chat now reads top-to-bottom like a native app, with the
+        // channel list and active room stretching to the top.
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex-shrink-0 flex items-center gap-4 p-6 pb-2 border-b border-gray-200">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-                <MessageCircle className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Team Chat</h1>
-                <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Real-time communication with your team across different
-                  channels
-                </p>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0">
-              <StreamChatRooms defaultTab={urlParams.tab} />
-            </div>
+          <div className="h-full min-h-0">
+            <StreamChatRooms defaultTab={urlParams.tab} />
           </div>
         );
       case 'kudos':

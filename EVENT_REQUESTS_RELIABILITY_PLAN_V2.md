@@ -934,7 +934,17 @@ _[fill in]_
 
 **Closes:** the "form empty, save submitted empty" class of bugs
 
-**Status:** [ ] Not started
+**Status:** [x] Shipped 2026-06-24 — Added an explicit `isFormLoading` derived
+state (`!!eventRequest && !formInitialized`) and wired it into the Save button:
+it is now **disabled and shows "Loading…"** until the edit form has populated
+from the record, instead of letting the user click Save and bounce off a
+"please wait" toast. The performSubmit guard remains as defense-in-depth (Enter
+key / form submit). The raw `❌ [PROD DEBUG] console.error` was replaced with
+`logger.error`. The underlying `formInitialized` flag was **kept** rather than
+removed: it is still required by the autosave and localStorage-recovery effects
+to avoid persisting an empty form before init, and the async two-phase load that
+originally made it a *race* is already gone (Unit 7), so it no longer behaves as
+the defensive band-aid the plan flagged. Build + undefined-refs gate green.
 
 **Why now:** After Unit 1, the refetch storms that *cause* the race are mostly gone. But the defensive `formInitialized` flag and DEBUG logs are still there. Remove them properly.
 
@@ -1022,9 +1032,17 @@ _[fill in]_
 
 **Closes:** #6 (two edit paths)
 
-**Status:** [ ] Not started
+**Status:** [WON'T DO] — reclassified 2026-06-25 after a code audit. See decision below.
 
-**Why now:** With Unit 7 done, both edit dialogs read the same data shape. Now make them share save logic too — or delete one.
+**Decision (2026-06-25): do not unify; the divergence is justified.**
+An audit found `EventEditDialog` is **not** a redundant copy of `EventSchedulingForm`:
+- It is a *focused driver-planning editor* with three tabs — Logistics, Staffing, and **Activity (audit log)** — plus an inline people-search assignment UI for drivers/speakers/volunteers.
+- It does a **diff-based partial PATCH** (sends only changed fields, e.g. `assignedDriverIds`) and already uses the Unit-1 surgical cache (`applyPatchResponseToCache`).
+- It operates directly on the **partial `EventMapData`** the map/driver-planning page already has — it never needs the full record.
+
+`EventSchedulingForm`, by contrast, is the full-form scheduler: it requires the **full** event record and writes the *entire* form on save. There is **no `GET /api/event-requests/:id`** endpoint, so driving it from driver-planning would require adding a full-record fetch first, and would replace driver-planning's focused logistics/assignment workflow with the large scheduling form — a real UX regression for that page, for no correctness gain. The original "two edit paths" worry (#6) was about *divergent PATCH/cache/error handling causing inconsistency*; that no longer applies here, since `EventEditDialog` already shares the surgical-cache write path. Leaving both as distinct, purpose-built tools is the right call. If they ever drift, prefer extracting shared field-mapping/assignment helpers over forcing one dialog onto the other.
+
+**Why now (historical):** With Unit 7 done, both edit dialogs read the same data shape. Now make them share save logic too — or delete one.
 
 **Scope:**
 1. Audit what `EventEditDialog` does that `EventSchedulingForm` doesn't (driver-planning–specific assignments).
@@ -1241,13 +1259,13 @@ If you do one unit per week, that's 12 weeks. If you do one per month, that's a 
 | Unit | Status | Shipped date | Notes |
 |---|---|---|---|
 | 1 — Surgical cache | [x] | 2026-06-18 | Implemented in `queryClient.ts`; production smoke still called out in §1.5. |
-| 2 — Optimistic keep/delete | [~] | 2026-06-18 audit | Old dead-key target appears gone; remaining correct-key inline optimistic patch needs keep/delete decision. |
+| 2 — Optimistic keep/delete | [x] | 2026-06-25 | Audit confirmed no dead-key writes remain (the only `['/api/event-requests', id]` write is the by-id cache helper, not the dead list key). Decision: **KEEP** the one inline scheduled-field optimistic patch — correct-key, cancels in-flight fetches, snapshots + rolls back, and gives inline cell edits pre-response feedback. Documented in code at `updateScheduledFieldMutation.onMutate`. |
 | 3 — Strip `_expectedVersion` | [x] | 2026-06-18 audit | Client sends removed/avoided; server strip remains defensive. |
 | 4 — Sync `updatedAt` fix | [ ] | | |
 | 5 — Dialog state collapse | [x] | 2026-06-24 | 23 `showXDialog` booleans → one `activeDialog` discriminated union + `openDialog`/`closeDialog` in `EventDialogContext`; ~16 consumers migrated. Type-clean (net 0 new tsc errors) + build green. **Manual click-through of every dialog still pending in dev.** |
-| 6 — Form init race | [ ] | | |
+| 6 — Form init race | [x] | 2026-06-24 | Explicit `isFormLoading` state; Save button disabled + "Loading…" until the edit form populates (was click-then-toast); raw `[PROD DEBUG] console.error` → `logger.error`. Underlying `formInitialized` init-tracking kept (still used by autosave/localStorage effects; async-load cause already gone via Unit 7). Build + undefined-refs green. |
 | 7 — Partial/full collapse | [x] | 2026-06-19 | `/list` returns full records; form second fetch removed; lightweight projection deleted. |
-| 8 — Retire EventEditDialog | [ ] | | |
+| 8 — Retire EventEditDialog | [WON'T DO] | 2026-06-25 | Reclassified after audit: `EventEditDialog` is **not a redundant duplicate** — it's a focused driver-planning editor (Logistics/Staffing/Activity-audit tabs, inline people-search assignment UI, diff-based partial PATCH off partial `EventMapData`, already on Unit-1 surgical cache). `EventSchedulingForm` is the full-form scheduler needing the full record (no `GET /:id` exists). Unifying would replace driver-planning's focused UX with the big form for no correctness gain. Divergence is justified; see §Unit 8 note. |
 | 9 — Consolidate status paths | [ ] | | |
 | 10 — Reason dialogs | [ ] | | |
 | 11 — Extract legacy monolith | [ ] | | |

@@ -366,6 +366,15 @@ export const useEventMutations = () => {
       field: string;
       value: any;
     }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
+    // KEEP (Unit 2 decision, 2026-06-25): this is the one intentional optimistic
+    // update left in the event-requests path. It targets the correct
+    // `/api/event-requests/list` cache family (via patchEventInListCaches), cancels
+    // in-flight list fetches, snapshots for rollback, and reverts in onError. Inline
+    // scheduled-field edits (spreadsheet/card cells) need pre-response feedback so the
+    // cell doesn't visibly lag a round-trip before committing — onSuccess's surgical
+    // applyEventRequestSaveToCache alone would leave that gap. The bug Unit 2 looked
+    // for was optimistic writes to DEAD keys (['/api/event-requests'] / [...,'v2']);
+    // an audit confirmed none remain, so this correct-key patch stays.
     onMutate: async ({ id, field, value }) => {
       await queryClient.cancelQueries({
         predicate: (query) =>
