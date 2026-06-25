@@ -48,6 +48,7 @@ import {
   Upload,
   Plus,
   MoreHorizontal,
+  ArrowRight,
 } from 'lucide-react';
 import {
   Dialog,
@@ -746,6 +747,32 @@ export default function HostResources() {
         )}
       </div>
 
+      {/* Primary action — weekly collection logging, separate from reference tools */}
+      <section>
+        <Link href="/collections" className="block group">
+          <Card className="bg-gradient-to-r from-[#fbad3f]/25 via-[#fbad3f]/10 to-white border-2 border-[#fbad3f]/60 hover:border-[#fbad3f] hover:shadow-md transition-all cursor-pointer">
+            <CardContent className="flex flex-col sm:flex-row items-center gap-4 p-5 sm:p-6">
+              <div className="p-3.5 bg-[#fbad3f] rounded-xl shadow-sm flex-shrink-0">
+                <ClipboardList className="w-7 h-7 text-[#3d2800]" aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#fbad3f] mb-1">
+                  Weekly action
+                </p>
+                <h2 className="text-lg sm:text-xl font-bold text-[#236383]">Log Your Collections</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Record sandwich collections from your site — the task hosts do every week.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[#236383] bg-white border border-[#fbad3f]/40 rounded-lg px-4 py-2.5 shrink-0 group-hover:bg-[#fbad3f]/10 transition-colors">
+                Open collection form
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+      </section>
+
       {/* Upload Dialog */}
       {isAdmin && <UploadResourceDialog open={uploadOpen} onOpenChange={setUploadOpen} />}
 
@@ -774,20 +801,16 @@ export default function HostResources() {
         </a>
       </section>
 
-      {/* Quick Links Section */}
+      {/* Reference — passive lookup tools (not weekly actions) */}
       <section>
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Sandwich className="w-5 h-5 text-[#fbad3f]" />
-          Collection Tools
+        <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
+          <Sandwich className="w-5 h-5 text-[#236383]" />
+          Collection Reference
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ResourceCard
-            title="Log Your Collections"
-            description="Record sandwich collections from your site with the easy-to-use collection form."
-            icon={ClipboardList}
-            href="collections"
-            variant="primary"
-          />
+        <p className="text-sm text-muted-foreground mb-4">
+          Look up past entries and recipient organizations when you need them.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ResourceCard
             title="Collection History"
             description="View your past collection entries and see your site's impact over time."
