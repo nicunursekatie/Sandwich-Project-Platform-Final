@@ -223,6 +223,26 @@ function getEventDateLabel(
   return parsedDate ? format(parsedDate, pattern) : 'Date TBD';
 }
 
+/** Calendar bucket key — local YYYY-MM-DD, aligned with date-fns format(day). */
+function getCalendarDateKey(
+  event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
+): string | null {
+  const effective = getEffectiveEventDate(event);
+  if (!effective) return null;
+  const parsed = parseEventDate(effective);
+  return parsed ? format(parsed, 'yyyy-MM-dd') : null;
+}
+
+function dedupeEventsById(events: AvailableEvent[]): AvailableEvent[] {
+  const byId = new Map<number, AvailableEvent>();
+  for (const event of events) {
+    if (!byId.has(event.id)) {
+      byId.set(event.id, event);
+    }
+  }
+  return Array.from(byId.values());
+}
+
 /** Today or later — matches the calendar's actionable/upcoming definition. */
 function isUpcomingHubEvent(
   event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
@@ -1994,7 +2014,7 @@ export default function VolunteerEventHub() {
   const filteredEvents = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return events
+    return dedupeEventsById(events)
       .filter(event => {
         if (normalizedSearch) {
           const searchableText = [
@@ -2073,9 +2093,8 @@ export default function VolunteerEventHub() {
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, AvailableEvent[]> = {};
     filteredEvents.forEach(event => {
-      const dateStr = getEffectiveEventDate(event);
-      if (dateStr) {
-        const key = dateStr.split('T')[0];
+      const key = getCalendarDateKey(event);
+      if (key) {
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(event);
       }
@@ -2128,7 +2147,9 @@ export default function VolunteerEventHub() {
     return {
       events: monthEvents.length,
       openings: getTotalOpeningsForEvents(monthEvents),
-      days: new Set(monthEvents.map((event) => (getEffectiveEventDate(event) || '').split('T')[0])).size,
+      days: new Set(
+        monthEvents.map((event) => getCalendarDateKey(event)).filter(Boolean),
+      ).size,
     };
   }, [filteredEvents, currentMonth]);
 

@@ -7,7 +7,7 @@
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import { eq, and, or, gte, inArray, sql, desc } from 'drizzle-orm';
+import { eq, and, or, gte, inArray, sql, desc, isNull } from 'drizzle-orm';
 import { db } from '../db';
 import {
   eventRequests,
@@ -37,6 +37,46 @@ const COORDINATOR_EMAILS = [
 ];
 
 const ACTIVE_SIGNUP_STATUSES = ['pending', 'confirmed', 'assigned'];
+
+type VolunteerHubEventRow = typeof eventRequests.$inferSelect;
+
+/** Prefer active scheduled records when sheet sync created duplicate rows. */
+function pickVolunteerHubDuplicate(a: VolunteerHubEventRow, b: VolunteerHubEventRow): VolunteerHubEventRow {
+  const activeStatuses = new Set(['scheduled', 'rescheduled']);
+  const aActive = activeStatuses.has(a.status);
+  const bActive = activeStatuses.has(b.status);
+  if (aActive !== bActive) return aActive ? a : b;
+  const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+  const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+  if (aTime !== bTime) return aTime > bTime ? a : b;
+  return a.id > b.id ? a : b;
+}
+
+/** Collapse duplicate hub rows (same googleSheetRowId) so calendar days don't list one event twice. */
+function dedupeVolunteerHubEvents(events: VolunteerHubEventRow[]): VolunteerHubEventRow[] {
+  const byId = new Map<number, VolunteerHubEventRow>();
+  const bySheetRow = new Map<string, VolunteerHubEventRow>();
+
+  for (const event of events) {
+    const sheetKey = event.googleSheetRowId?.trim();
+    if (sheetKey) {
+      const existing = bySheetRow.get(sheetKey);
+      if (existing) {
+        const keep = pickVolunteerHubDuplicate(existing, event);
+        byId.delete(existing.id);
+        byId.set(keep.id, keep);
+        bySheetRow.set(sheetKey, keep);
+        continue;
+      }
+      bySheetRow.set(sheetKey, event);
+    }
+    if (!byId.has(event.id)) {
+      byId.set(event.id, event);
+    }
+  }
+
+  return Array.from(byId.values());
+}
 
 // ============================================================================
 // Helper Functions
@@ -890,11 +930,12 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
         (pastWindowStart ? ` + completed events for ${pastMonthRaw}` : ''),
     );
 
-    const events = await db
+    const rawEvents = await db
       .select()
       .from(eventRequests)
       .where(
         and(
+          isNull(eventRequests.deletedAt),
           eq(eventRequests.showOnVolunteerHub, true),
           or(
             eq(eventRequests.status, 'scheduled'),
@@ -905,7 +946,12 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/rescheduled/completed status`);
+    const events = dedupeVolunteerHubEvents(rawEvents);
+
+    logger.log(
+      `[VolunteerHub] Found ${rawEvents.length} hub events` +
+        (events.length !== rawEvents.length ? ` (${events.length} after dedupe)` : ''),
+    );
 
     // Build the visible set:
     //   - Future or undated events: always include.
@@ -1704,19 +1750,22 @@ router.get('/coverage-summary', isAuthenticated, async (req: AuthenticatedReques
     const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
-    const events = await db
-      .select()
-      .from(eventRequests)
-      .where(
-        and(
-          eq(eventRequests.showOnVolunteerHub, true),
-          or(
-            eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled')
+    const events = dedupeVolunteerHubEvents(
+      await db
+        .select()
+        .from(eventRequests)
+        .where(
+          and(
+            isNull(eventRequests.deletedAt),
+            eq(eventRequests.showOnVolunteerHub, true),
+            or(
+              eq(eventRequests.status, 'scheduled'),
+              eq(eventRequests.status, 'rescheduled')
+            )
           )
         )
-      )
-      .orderBy(eventRequests.scheduledEventDate);
+        .orderBy(eventRequests.scheduledEventDate),
+    );
 
     const upcomingEvents = events.filter((event) => {
       const eventDate = getEffectiveEventDate(event);
