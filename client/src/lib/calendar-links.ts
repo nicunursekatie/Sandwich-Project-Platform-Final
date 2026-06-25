@@ -5,13 +5,68 @@
  * (used in approval emails) so the "Add to calendar" buttons shown right after
  * signup behave identically to the links a volunteer later receives by email.
  *
- * Times are treated as UTC wall-clock (e.g. "10:00 AM" -> 10:00 UTC), matching
- * the existing email behavior. This keeps the two code paths consistent.
+ * Event times are stored as Eastern Time (America/New_York) wall-clock strings
+ * (e.g. "10:00 AM" means 10am in Atlanta). We convert them to the correct UTC
+ * instant — accounting for EDT/EST — so a 10am event lands on the volunteer's
+ * calendar as 10am, not shifted by the timezone offset. The event *day* is taken
+ * from the date's UTC parts so it never drifts a day early.
  */
 
+const APP_TIMEZONE = 'America/New_York';
+
 /**
- * Parse "HH:MM" or "H:MM AM/PM" into a Date on the given day (UTC).
- * Returns null if the time can't be parsed so callers can fall back to all-day.
+ * Offset (in ms) of the app timezone from UTC at a given instant.
+ * Positive east of UTC; for Eastern it's negative (-4h EDT, -5h EST).
+ */
+function appTimezoneOffsetMs(date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const map: Record<string, string> = {};
+  for (const part of dtf.formatToParts(date)) {
+    if (part.type !== 'literal') map[part.type] = part.value;
+  }
+  let hour = Number(map.hour);
+  if (hour === 24) hour = 0; // some engines render midnight as 24
+  const asUtc = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    hour,
+    Number(map.minute),
+    Number(map.second),
+  );
+  return asUtc - date.getTime();
+}
+
+/**
+ * Convert an Eastern wall-clock time (the calendar day + h:mm) into the true UTC
+ * instant, handling daylight saving automatically.
+ */
+function easternWallClockToUtc(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours: number,
+  minutes: number,
+): Date {
+  // First approximation: pretend the wall clock is already UTC.
+  const guess = Date.UTC(year, monthIndex, day, hours, minutes, 0);
+  // Then shift by the zone's offset at (approximately) that instant.
+  return new Date(guess - appTimezoneOffsetMs(new Date(guess)));
+}
+
+/**
+ * Parse "HH:MM" or "H:MM AM/PM" into the true UTC Date for that Eastern
+ * wall-clock time on the given calendar day. Returns null if the time can't be
+ * parsed so callers can fall back to all-day.
  */
 function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Date | null {
   if (!time) return null;
@@ -23,9 +78,14 @@ function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Da
   if (ampm === 'PM' && hours < 12) hours += 12;
   if (ampm === 'AM' && hours === 12) hours = 0;
   if (hours > 23 || minutes > 59) return null;
-  const out = new Date(dateOnly);
-  out.setUTCHours(hours, minutes, 0, 0);
-  return out;
+  // dateOnly holds the intended calendar day in its UTC parts.
+  return easternWallClockToUtc(
+    dateOnly.getUTCFullYear(),
+    dateOnly.getUTCMonth(),
+    dateOnly.getUTCDate(),
+    hours,
+    minutes,
+  );
 }
 
 function formatICalDate(d: Date, allDay: boolean): string {
