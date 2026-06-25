@@ -14,13 +14,19 @@ import {
   Trash2,
 } from 'lucide-react';
 
-// localStorage key for which sections are collapsed. Versioned so we can
-// safely re-default in the future without users carrying old state.
-const SECTION_COLLAPSE_KEY = 'yearlyCalendar.monthSection.collapsed.v1';
+// localStorage key prefix for which sections are collapsed. Versioned so we
+// can safely re-default in the future without users carrying old state.
+// The full key includes a per-card scope (e.g. `2026-1` for Jan 2026) so
+// collapsing External Factors in January doesn't affect February.
+const SECTION_COLLAPSE_KEY_PREFIX = 'yearlyCalendar.monthSection.collapsed.v2';
 
-function loadCollapsedSections(): Set<string> {
+function collapseKeyFor(scopeKey: string): string {
+  return `${SECTION_COLLAPSE_KEY_PREFIX}.${scopeKey}`;
+}
+
+function loadCollapsedSections(scopeKey: string): Set<string> {
   try {
-    const raw = localStorage.getItem(SECTION_COLLAPSE_KEY);
+    const raw = localStorage.getItem(collapseKeyFor(scopeKey));
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? new Set(parsed.filter((v): v is string => typeof v === 'string')) : new Set();
@@ -29,9 +35,9 @@ function loadCollapsedSections(): Set<string> {
   }
 }
 
-function persistCollapsedSections(next: Set<string>) {
+function persistCollapsedSections(scopeKey: string, next: Set<string>) {
   try {
-    localStorage.setItem(SECTION_COLLAPSE_KEY, JSON.stringify(Array.from(next)));
+    localStorage.setItem(collapseKeyFor(scopeKey), JSON.stringify(Array.from(next)));
   } catch {
     // localStorage disabled or full — fall back to in-session state.
   }
@@ -153,6 +159,13 @@ interface MonthSectionsProps<
   onCopyYearly: (id: number) => void;
   onEditTracked: (item: TTracked) => void;
   onDeleteTracked: (item: TTracked) => void;
+  /**
+   * Scopes the section-collapse state in localStorage. Pass something
+   * unique per card (e.g. `2026-1`) so collapsing External Factors in
+   * January doesn't affect any other month. Falls back to `'global'` when
+   * omitted, which collapses every card together.
+   */
+  scopeKey?: string;
 }
 
 function buildMonthSections<
@@ -435,22 +448,34 @@ export function MonthSectionsContent<
   onCopyYearly,
   onEditTracked,
   onDeleteTracked,
+  scopeKey = 'global',
 }: MonthSectionsProps<TYearly, TTracked>) {
   const sections = buildMonthSections(monthItems, monthTrackedItems);
 
   // Section collapse state — defaults to all-open (empty set) and persists
-  // the user's choice across renders and reloads.
-  const [collapsed, setCollapsed] = useState<Set<string>>(loadCollapsedSections);
+  // per-scope (e.g. per month/year card) so each month remembers its own
+  // open/closed state independently.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => loadCollapsedSections(scopeKey));
 
-  const toggleSection = useCallback((key: string) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      persistCollapsedSections(next);
-      return next;
-    });
-  }, []);
+  // If the parent swaps in a different scope (e.g. selectedYear changes
+  // and the same card is reused), re-read state for the new scope so we
+  // don't bleed January's state into February.
+  React.useEffect(() => {
+    setCollapsed(loadCollapsedSections(scopeKey));
+  }, [scopeKey]);
+
+  const toggleSection = useCallback(
+    (key: string) => {
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        persistCollapsedSections(scopeKey, next);
+        return next;
+      });
+    },
+    [scopeKey],
+  );
 
   return (
     <div className="space-y-3">

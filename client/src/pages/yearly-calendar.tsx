@@ -1155,6 +1155,7 @@ export default function YearlyCalendar() {
                     </p>
                   ) : (
                     <MonthSectionsContent
+                      scopeKey={`${selectedYear}-${monthNumber}`}
                       monthItems={monthItems}
                       monthTrackedItems={monthTrackedItems}
                       categoryColors={CATEGORY_COLORS}

@@ -22,6 +22,7 @@ import {
   Layers,
   Calculator,
   Package,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -761,7 +762,7 @@ export default function DashboardOverview({
               onClick={() => onSectionChange?.('messages')}
             >
               <div className="w-12 h-12 bg-brand-burgundy rounded-lg flex items-center justify-center mb-3">
-                <Calendar className="w-6 h-6 text-white" />
+                <MessageSquare className="w-6 h-6 text-white" />
               </div>
               <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
                 Messages
