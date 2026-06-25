@@ -1778,7 +1778,7 @@ export default function VolunteerEventHub() {
 
   // Signup mutation
   const signupMutation = useMutation({
-    mutationFn: async ({ eventId, roles, notes }: { eventId: number; roles: string[]; notes: string }) => {
+    mutationFn: async ({ eventId, roles, notes }: { eventId: number; event: AvailableEvent; roles: string[]; notes: string }) => {
       const response = await fetch(`/api/volunteer-hub/signup/${eventId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1792,19 +1792,12 @@ export default function VolunteerEventHub() {
       return response.json();
     },
     onSuccess: (_data, variables) => {
-      // Hand off to the celebratory "You're in!" dialog. Capture the event
-      // before clearing selection so the confirmation has its details.
-      const confirmedEvent = selectedEvent;
+      // Hand off to the celebratory "You're in!" dialog. Use the event captured
+      // in the mutation variables — not selectedEvent, which may have changed if
+      // the user clicked a different event while this request was in flight.
       setSignupDialogOpen(false);
       setSelectedEvent(null);
-      if (confirmedEvent) {
-        setSignupConfirmation({ event: confirmedEvent, roles: variables.roles });
-      } else {
-        toast({
-          title: "You're signed up! 🎉",
-          description: 'Thanks for volunteering. A coordinator will confirm your spot.',
-        });
-      }
+      setSignupConfirmation({ event: variables.event, roles: variables.roles });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
@@ -2242,7 +2235,7 @@ export default function VolunteerEventHub() {
   // Handle signup submit
   const handleSignupSubmit = (roles: string[], notes: string) => {
     if (selectedEvent) {
-      signupMutation.mutate({ eventId: selectedEvent.id, roles, notes });
+      signupMutation.mutate({ eventId: selectedEvent.id, event: selectedEvent, roles, notes });
     }
   };
 

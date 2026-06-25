@@ -12,7 +12,7 @@
  * from the date's UTC parts so it never drifts a day early.
  */
 
-const APP_TIMEZONE = 'America/New_York';
+import { APP_TIMEZONE } from '@/lib/date-utils';
 
 /**
  * Offset (in ms) of the app timezone from UTC at a given instant.
