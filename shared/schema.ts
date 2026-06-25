@@ -63,6 +63,19 @@ export const users = pgTable('users', {
   permissionsModifiedBy: varchar('permissions_modified_by'),
   address: text('address'), // Home address for map display in driver planning tool
   vanApproved: boolean('van_approved').default(false), // Whether this user is approved to drive the van
+  // Event-role capabilities. Two axes per role (see shared/event-role-eligibility.ts):
+  //  - "willing*" = self-declared by the user in their profile (what they want to do)
+  //  - "*Approved" = coordinator-granted vetting for roles that carry responsibility
+  // A user is offered a role on the Volunteer Hub when they're willing AND
+  // (where the role requires it) approved. General volunteering is the baseline
+  // everyone can do, so willingToVolunteer defaults to true.
+  willingToVolunteer: boolean('willing_to_volunteer').default(true), // Willing to help as a general volunteer
+  willingToSpeak: boolean('willing_to_speak').default(false), // Willing to speak at events
+  willingToDrive: boolean('willing_to_drive').default(false), // Willing to drive for events
+  speakerApproved: boolean('speaker_approved').default(false), // Coordinator-approved to speak on behalf of the org
+  driverApproved: boolean('driver_approved').default(false), // Coordinator-approved to drive for events
+  eventRolesModifiedAt: timestamp('event_roles_modified_at'), // When approval flags were last changed
+  eventRolesModifiedBy: varchar('event_roles_modified_by'), // Who changed the approval flags
   latitude: varchar('latitude'), // Geocoded latitude for map display
   longitude: varchar('longitude'), // Geocoded longitude for map display
   geocodedAt: timestamp('geocoded_at'), // When coordinates were last geocoded

@@ -8,6 +8,11 @@ export interface User {
   preferredEmail?: string | null;
   address?: string | null;
   vanApproved?: boolean | null;
+  speakerApproved?: boolean | null;
+  driverApproved?: boolean | null;
+  willingToVolunteer?: boolean | null;
+  willingToSpeak?: boolean | null;
+  willingToDrive?: boolean | null;
   role: string;
   permissions: string[];
   permissionsModifiedAt?: string | null;
@@ -35,6 +40,8 @@ export interface UserFormData {
   preferredEmail?: string;
   address?: string;
   vanApproved?: boolean;
+  speakerApproved?: boolean;
+  driverApproved?: boolean;
   role: string;
   isActive: boolean;
   password?: string;

@@ -57,6 +57,8 @@ export interface UserProfileData {
   preferredEmail?: string;
   address?: string;
   vanApproved?: boolean;
+  speakerApproved?: boolean;
+  driverApproved?: boolean;
   role?: string;
   isActive?: boolean;
 }
@@ -215,8 +217,28 @@ export class UserService implements IUserService {
       if (profileData.role !== undefined) updateData.role = profileData.role;
       if (profileData.isActive !== undefined)
         updateData.isActive = profileData.isActive;
-      if (profileData.vanApproved !== undefined)
+      // Coordinator-granted event-role approvals. The user-management dialog
+      // sends all three flags on every profile save, so presence alone doesn't
+      // mean a change. Compare against the stored values and only re-stamp the
+      // audit columns when an approval actually flips — otherwise editing a
+      // name would overwrite "who vetted this speaker/driver".
+      let eventRoleApprovalChanged = false;
+      if (profileData.vanApproved !== undefined) {
         updateData.vanApproved = profileData.vanApproved;
+        if (!!oldUser?.vanApproved !== !!profileData.vanApproved) eventRoleApprovalChanged = true;
+      }
+      if (profileData.speakerApproved !== undefined) {
+        updateData.speakerApproved = profileData.speakerApproved;
+        if (!!oldUser?.speakerApproved !== !!profileData.speakerApproved) eventRoleApprovalChanged = true;
+      }
+      if (profileData.driverApproved !== undefined) {
+        updateData.driverApproved = profileData.driverApproved;
+        if (!!oldUser?.driverApproved !== !!profileData.driverApproved) eventRoleApprovalChanged = true;
+      }
+      if (eventRoleApprovalChanged) {
+        updateData.eventRolesModifiedAt = new Date();
+        updateData.eventRolesModifiedBy = requestUserId ?? null;
+      }
 
       // Handle address changes with auto-geocoding
       if (profileData.address !== undefined) {

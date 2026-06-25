@@ -19,15 +19,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { SMSSetupSection } from './alert-preferences/SMSSetupSection';
 import { useAuth } from '@/hooks/useAuth';
 import { USER_ROLES } from '@shared/auth-utils';
 import { ALERT_TYPES } from '@shared/alert-catalog';
@@ -226,16 +219,20 @@ export default function AlertPreferences() {
         </CardContent>
       </Card>
 
-      <Accordion type="single" collapsible defaultValue={hasSmsOptIn ? undefined : 'sms-setup'}>
-        <AccordionItem value="sms-setup">
-          <AccordionTrigger className="text-sm font-medium">
-            {hasSmsOptIn ? 'Manage SMS setup' : 'Set up SMS to receive text alerts'}
-          </AccordionTrigger>
-          <AccordionContent>
-            <SMSSetupSection userSMSStatus={smsStatus} isLoading={smsStatusLoading} />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+      {/* SMS setup lives in its own tab now so users don't have to scroll
+          past the entire alert list to find it. Show a one-line pointer here
+          for anyone who lands on the Alerts tab looking for the SMS flow. */}
+      <p className="text-xs text-muted-foreground">
+        Need to {hasSmsOptIn ? 'update or unsubscribe from' : 'set up'} text alerts?{' '}
+        <a
+          href="?tab=sms"
+          className="text-primary hover:underline font-medium"
+          data-testid="link-go-to-sms-tab"
+        >
+          Open the SMS tab
+        </a>
+        .
+      </p>
     </div>
   );
 }

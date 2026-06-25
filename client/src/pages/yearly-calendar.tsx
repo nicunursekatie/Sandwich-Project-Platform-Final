@@ -32,6 +32,7 @@ import {
   MonthSectionsContent,
   chipKeyForTrackedCategory,
   chipKeyForYearlyCategory,
+  countRenderableTrackedItems,
   type CalendarSectionChipKey,
 } from '@/components/yearly-calendar/month-sections';
 import { PermissionDenied } from '@/components/permission-denied';
@@ -1104,8 +1105,7 @@ export default function YearlyCalendar() {
             const monthNumber = index + 1;
             const monthItems = itemsByMonth[monthNumber] || [];
             const monthTrackedItems = trackedItemsByMonth[monthNumber] || {};
-            const trackedCategories = Object.keys(monthTrackedItems);
-            const totalTrackedCount = trackedCategories.reduce((sum, cat) => sum + monthTrackedItems[cat].length, 0);
+            const totalTrackedCount = countRenderableTrackedItems(monthTrackedItems);
             const isCurrentMonth = new Date().getMonth() + 1 === monthNumber && new Date().getFullYear() === selectedYear;
             const isPastMonth = selectedYear < new Date().getFullYear() ||
               (selectedYear === new Date().getFullYear() && monthNumber < new Date().getMonth() + 1);
@@ -1114,23 +1114,32 @@ export default function YearlyCalendar() {
             return (
               <Card
                 key={monthNumber}
-                className={`transition-all hover:shadow-md flex flex-col ${
+                className={`min-w-0 overflow-hidden transition-all hover:shadow-md flex flex-col ${
                   isCurrentMonth ? 'ring-2 ring-[#236383]' : ''
                 } ${isPastMonth ? 'opacity-75' : ''} ${isExpanded ? 'ring-2 ring-amber-400' : ''}`}
               >
-                <CardHeader className="pb-3 flex-shrink-0">
-                  <CardTitle className="text-lg flex items-center justify-between gap-3">
-                    <span className="uppercase tracking-wide">{monthName}</span>
-                    <div className="flex items-center gap-1">
-                      {monthItems.length > 0 && (
-                        <Badge variant="secondary" className="ml-2">
-                          {monthItems.length}
-                        </Badge>
-                      )}
-                      {totalTrackedCount > 0 && (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300">
-                          {totalTrackedCount}
-                        </Badge>
+                <CardHeader className="pb-3 flex-shrink-0 min-w-0">
+                  <CardTitle className="text-lg min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 min-w-0">
+                      <span className="uppercase tracking-wide truncate min-w-0 max-w-full">
+                        {monthName}
+                      </span>
+                      {(monthItems.length > 0 || totalTrackedCount > 0) && (
+                        <div className="flex items-center gap-1 shrink-0 flex-wrap">
+                          {monthItems.length > 0 && (
+                            <Badge variant="secondary" className="tabular-nums">
+                              {monthItems.length}
+                            </Badge>
+                          )}
+                          {totalTrackedCount > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-50 text-amber-700 border-amber-300 tabular-nums"
+                            >
+                              {totalTrackedCount}
+                            </Badge>
+                          )}
+                        </div>
                       )}
                     </div>
                   </CardTitle>
@@ -1145,7 +1154,7 @@ export default function YearlyCalendar() {
                     }
                   >
                     <CalendarDays className="h-4 w-4 mr-2" />
-                    {isExpanded ? 'Close Calendar View' : 'View Month Calendar'}
+                    {isExpanded ? 'Close Calendar View' : 'View Single Month Grid'}
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-2 flex-1 overflow-y-auto max-h-[500px] min-h-[100px]">
@@ -1155,6 +1164,7 @@ export default function YearlyCalendar() {
                     </p>
                   ) : (
                     <MonthSectionsContent
+                      scopeKey={`${selectedYear}-${monthNumber}`}
                       monthItems={monthItems}
                       monthTrackedItems={monthTrackedItems}
                       categoryColors={CATEGORY_COLORS}

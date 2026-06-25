@@ -27,6 +27,7 @@ import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
 import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { isEligibleForRole, getIneligibilityReason, type EventRole } from '../../shared/event-role-eligibility';
 
 const router = Router();
 
@@ -303,9 +304,61 @@ function displayRole(role: string | null | undefined): string {
   return ROLE_DISPLAY[role] || role;
 }
 
+const CALENDAR_TIMEZONE = 'America/New_York';
+
 /**
- * Parse "HH:MM" or "H:MM AM/PM" into a Date on the given dateOnly day (UTC).
- * If parsing fails, returns null so caller can fall back to all-day.
+ * Offset (in ms) of the app timezone from UTC at a given instant.
+ * For Eastern this is negative (-4h EDT, -5h EST).
+ */
+function calendarTimezoneOffsetMs(date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: CALENDAR_TIMEZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const map: Record<string, string> = {};
+  for (const part of dtf.formatToParts(date)) {
+    if (part.type !== 'literal') map[part.type] = part.value;
+  }
+  let hour = Number(map.hour);
+  if (hour === 24) hour = 0; // some engines render midnight as 24
+  const asUtc = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    hour,
+    Number(map.minute),
+    Number(map.second),
+  );
+  return asUtc - date.getTime();
+}
+
+/**
+ * Convert an Eastern wall-clock time (calendar day + h:mm) into the true UTC
+ * instant, handling daylight saving automatically.
+ */
+function easternWallClockToUtc(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours: number,
+  minutes: number,
+): Date {
+  const guess = Date.UTC(year, monthIndex, day, hours, minutes, 0);
+  return new Date(guess - calendarTimezoneOffsetMs(new Date(guess)));
+}
+
+/**
+ * Parse "HH:MM" or "H:MM AM/PM" into the true UTC Date for that Eastern
+ * wall-clock time on the given calendar day. Event times are stored as Eastern
+ * (America/New_York) wall-clock, so e.g. "10:00 AM" must land on a calendar as
+ * 10am Eastern — not 10:00 UTC, which would show as 6am. If parsing fails,
+ * returns null so caller can fall back to all-day.
  */
 function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Date | null {
   if (!time) return null;
@@ -319,9 +372,14 @@ function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Da
   if (ampm === 'PM' && hours < 12) hours += 12;
   if (ampm === 'AM' && hours === 12) hours = 0;
   if (hours > 23 || minutes > 59) return null;
-  const out = new Date(dateOnly);
-  out.setUTCHours(hours, minutes, 0, 0);
-  return out;
+  // dateOnly holds the intended calendar day in its UTC parts.
+  return easternWallClockToUtc(
+    dateOnly.getUTCFullYear(),
+    dateOnly.getUTCMonth(),
+    dateOnly.getUTCDate(),
+    hours,
+    minutes,
+  );
 }
 
 function formatICalDate(d: Date, allDay: boolean): string {
@@ -787,14 +845,18 @@ Thanks!
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Show scheduled + completed events to volunteers
+    // Show scheduled + rescheduled (upcoming) AND completed (past) events
+    // to volunteers. The calendar view styles past events as faded
+    // read-only context so volunteers see the full month, but only
+    // upcoming events read as actionable.
+    //
     // Use Eastern Time to determine "today" since server may be in UTC
     // (at 7pm+ EST, UTC has already rolled to the next day)
     const now = new Date();
     const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
-    logger.log(`[VolunteerHub] Fetching scheduled events`);
+    logger.log(`[VolunteerHub] Fetching scheduled + completed events`);
 
     const events = await db
       .select()
@@ -804,30 +866,40 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
           eq(eventRequests.showOnVolunteerHub, true),
           or(
             eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled')
+            eq(eventRequests.status, 'rescheduled'),
+            eq(eventRequests.status, 'completed')
           )
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/completed status`);
+    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/rescheduled/completed status`);
 
-    // Filter to events with dates today or in the future
-    // Include events with no date set (they're still active)
-    const upcomingEvents = events.filter(event => {
+    // Keep both past (completed) and future (scheduled/rescheduled) events.
+    // Past events are intentionally surfaced to give the calendar full-month
+    // context — the client renders them as muted read-only cells with no
+    // signup actions. Events without a date set are still included since
+    // they're effectively undated drafts.
+    const visibleEvents = events.filter(event => {
       const eventDate = getEffectiveEventDate(event);
-      if (!eventDate) {
-        // Include events without dates - they're still active
-        return true;
-      }
+      if (!eventDate) return true;
       const eventDateObj = new Date(eventDate);
-      return eventDateObj >= today;
+      const isPast = eventDateObj < today;
+      // Past events are only included if they're actually completed —
+      // a scheduled event whose date slipped into the past without being
+      // marked complete is probably stale data, not something a volunteer
+      // should see in their calendar.
+      if (isPast && event.status !== 'completed') return false;
+      return true;
     });
 
-    logger.log(`[VolunteerHub] ${upcomingEvents.length} events are upcoming or have no date set`);
+    logger.log(
+      `[VolunteerHub] ${visibleEvents.length} events visible after filtering ` +
+        `(includes completed past events for calendar context)`,
+    );
 
     // Calculate unfilled needs for each event using centralized utils
-    const eventsWithNeeds = upcomingEvents.map(event => {
+    const eventsWithNeeds = visibleEvents.map(event => {
       const counts = getUnfilledCounts(event);
       const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 
@@ -1246,6 +1318,38 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     const invalidRoles = normalizedRoles.filter(r => !['driver', 'speaker', 'general'].includes(r));
     if (invalidRoles.length > 0) {
       return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
+    }
+
+    // Eligibility gate (self-signup only). A volunteer can only sign THEMSELVES
+    // up for roles they're willing AND (where required) approved for. Coordinators
+    // assigning others deliberately bypass this — assigning is itself the
+    // coordinator vouching for the person, and driver assignment is already
+    // gated by DRIVER_SIGNUP_APPROVE below. The hub UI hides ineligible roles;
+    // this is the server-side backstop against a hand-crafted request.
+    if (!isAssigningOther) {
+      const ineligible = normalizedRoles.filter(
+        (r) => !isEligibleForRole(user, r as EventRole)
+      );
+      if (ineligible.length > 0) {
+        // Tailor the message to WHY it's blocked: not opted-in (willingness) vs
+        // opted-in but awaiting coordinator approval. Keying off the role name
+        // alone would tell a not-willing user they need "approval", which is wrong.
+        const reasons = ineligible.map((r) => getIneligibilityReason(user, r as EventRole));
+        const needsApproval = reasons.includes('not_approved');
+        const needsWillingness = reasons.includes('not_willing');
+        let error: string;
+        if (needsApproval && !needsWillingness) {
+          error =
+            "That role needs coordinator approval. You've said you're willing — a coordinator just needs to approve you before you can sign up.";
+        } else if (needsWillingness && !needsApproval) {
+          error =
+            "You haven't opted into that role yet. Update the roles you're willing to do in your profile.";
+        } else {
+          error =
+            "You're not set up for that role yet. Update the roles you're willing to do in your profile — speaker and driver also need coordinator approval.";
+        }
+        return res.status(403).json({ error, ineligibleRoles: ineligible });
+      }
     }
 
     // Check if target user already signed up for this event with any requested role
