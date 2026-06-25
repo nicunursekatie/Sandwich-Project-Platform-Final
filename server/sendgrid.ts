@@ -85,8 +85,29 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       }
     }
     
-    // Set BCC with all recipients (deduplicated)
-    emailData.bcc = [...new Set(bccList)];
+    // Set BCC with all recipients, deduplicated (case-insensitively) AND
+    // excluding any address that is already in `to` (or `cc`). SendGrid rejects
+    // the ENTIRE send with a 400 if the same address appears in both `to` and
+    // `bcc` — and since we always force-BCC the admin (katie@), every email sent
+    // *to* that same admin address would otherwise fail. (See SendGrid error:
+    // "Each email address ... should be unique between to, cc, and bcc".)
+    const excludeAddresses = new Set(
+      [params.to, (params as any).cc]
+        .flat()
+        .filter((addr): addr is string => typeof addr === 'string')
+        .map((addr) => addr.trim().toLowerCase())
+    );
+    const seenBcc = new Set<string>();
+    const finalBcc = bccList.filter((addr) => {
+      const key = (addr || '').trim().toLowerCase();
+      if (!key || excludeAddresses.has(key) || seenBcc.has(key)) return false;
+      seenBcc.add(key);
+      return true;
+    });
+    // SendGrid rejects an empty bcc array — only attach when there's something left
+    if (finalBcc.length > 0) {
+      emailData.bcc = finalBcc;
+    }
     
     // Process attachments if provided
     if (params.attachments && params.attachments.length > 0) {
