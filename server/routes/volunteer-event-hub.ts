@@ -845,14 +845,18 @@ Thanks!
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Show scheduled + completed events to volunteers
+    // Show scheduled + rescheduled (upcoming) AND completed (past) events
+    // to volunteers. The calendar view styles past events as faded
+    // read-only context so volunteers see the full month, but only
+    // upcoming events read as actionable.
+    //
     // Use Eastern Time to determine "today" since server may be in UTC
     // (at 7pm+ EST, UTC has already rolled to the next day)
     const now = new Date();
     const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
-    logger.log(`[VolunteerHub] Fetching scheduled events`);
+    logger.log(`[VolunteerHub] Fetching scheduled + completed events`);
 
     const events = await db
       .select()
@@ -862,30 +866,40 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
           eq(eventRequests.showOnVolunteerHub, true),
           or(
             eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled')
+            eq(eventRequests.status, 'rescheduled'),
+            eq(eventRequests.status, 'completed')
           )
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/completed status`);
+    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/rescheduled/completed status`);
 
-    // Filter to events with dates today or in the future
-    // Include events with no date set (they're still active)
-    const upcomingEvents = events.filter(event => {
+    // Keep both past (completed) and future (scheduled/rescheduled) events.
+    // Past events are intentionally surfaced to give the calendar full-month
+    // context — the client renders them as muted read-only cells with no
+    // signup actions. Events without a date set are still included since
+    // they're effectively undated drafts.
+    const visibleEvents = events.filter(event => {
       const eventDate = getEffectiveEventDate(event);
-      if (!eventDate) {
-        // Include events without dates - they're still active
-        return true;
-      }
+      if (!eventDate) return true;
       const eventDateObj = new Date(eventDate);
-      return eventDateObj >= today;
+      const isPast = eventDateObj < today;
+      // Past events are only included if they're actually completed —
+      // a scheduled event whose date slipped into the past without being
+      // marked complete is probably stale data, not something a volunteer
+      // should see in their calendar.
+      if (isPast && event.status !== 'completed') return false;
+      return true;
     });
 
-    logger.log(`[VolunteerHub] ${upcomingEvents.length} events are upcoming or have no date set`);
+    logger.log(
+      `[VolunteerHub] ${visibleEvents.length} events visible after filtering ` +
+        `(includes completed past events for calendar context)`,
+    );
 
     // Calculate unfilled needs for each event using centralized utils
-    const eventsWithNeeds = upcomingEvents.map(event => {
+    const eventsWithNeeds = visibleEvents.map(event => {
       const counts = getUnfilledCounts(event);
       const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 
