@@ -219,6 +219,18 @@ function getEventDateLabel(
   return parsedDate ? format(parsedDate, pattern) : 'Date TBD';
 }
 
+/** Today or later — matches the calendar's actionable/upcoming definition. */
+function isUpcomingHubEvent(
+  event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
+): boolean {
+  const dateStr = getEffectiveEventDate(event);
+  if (!dateStr) return true;
+  const eventDate = parseEventDate(dateStr);
+  if (!eventDate) return true;
+  const today = startOfDay(new Date());
+  return isAfter(eventDate, today) || isSameDay(eventDate, today);
+}
+
 interface MySignup {
   id: number;
   eventRequestId: number;
@@ -2013,11 +2025,12 @@ export default function VolunteerEventHub() {
 
   // Calculate summary metrics for dashboard cards
   const summaryMetrics = useMemo(() => {
-    const totalEvents = events.length;
-    const eventsNeedingHelp = events.filter(e => e.hasUnfilledNeeds).length;
-    const totalSpeakerOpenings = events.reduce((sum, e) => sum + e.speakersUnfilled, 0);
-    const totalVolunteerOpenings = events.reduce((sum, e) => sum + e.volunteersUnfilled, 0);
-    const totalDriverOpenings = events.reduce((sum, e) => sum + e.driversUnfilled, 0);
+    const upcomingEvents = events.filter(isUpcomingHubEvent);
+    const totalEvents = upcomingEvents.length;
+    const eventsNeedingHelp = upcomingEvents.filter((e) => e.hasUnfilledNeeds).length;
+    const totalSpeakerOpenings = upcomingEvents.reduce((sum, e) => sum + e.speakersUnfilled, 0);
+    const totalVolunteerOpenings = upcomingEvents.reduce((sum, e) => sum + e.volunteersUnfilled, 0);
+    const totalDriverOpenings = upcomingEvents.reduce((sum, e) => sum + e.driversUnfilled, 0);
     const totalOpenings = totalSpeakerOpenings + totalVolunteerOpenings + totalDriverOpenings;
 
     return {
