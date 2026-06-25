@@ -304,9 +304,61 @@ function displayRole(role: string | null | undefined): string {
   return ROLE_DISPLAY[role] || role;
 }
 
+const CALENDAR_TIMEZONE = 'America/New_York';
+
 /**
- * Parse "HH:MM" or "H:MM AM/PM" into a Date on the given dateOnly day (UTC).
- * If parsing fails, returns null so caller can fall back to all-day.
+ * Offset (in ms) of the app timezone from UTC at a given instant.
+ * For Eastern this is negative (-4h EDT, -5h EST).
+ */
+function calendarTimezoneOffsetMs(date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: CALENDAR_TIMEZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const map: Record<string, string> = {};
+  for (const part of dtf.formatToParts(date)) {
+    if (part.type !== 'literal') map[part.type] = part.value;
+  }
+  let hour = Number(map.hour);
+  if (hour === 24) hour = 0; // some engines render midnight as 24
+  const asUtc = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    hour,
+    Number(map.minute),
+    Number(map.second),
+  );
+  return asUtc - date.getTime();
+}
+
+/**
+ * Convert an Eastern wall-clock time (calendar day + h:mm) into the true UTC
+ * instant, handling daylight saving automatically.
+ */
+function easternWallClockToUtc(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours: number,
+  minutes: number,
+): Date {
+  const guess = Date.UTC(year, monthIndex, day, hours, minutes, 0);
+  return new Date(guess - calendarTimezoneOffsetMs(new Date(guess)));
+}
+
+/**
+ * Parse "HH:MM" or "H:MM AM/PM" into the true UTC Date for that Eastern
+ * wall-clock time on the given calendar day. Event times are stored as Eastern
+ * (America/New_York) wall-clock, so e.g. "10:00 AM" must land on a calendar as
+ * 10am Eastern — not 10:00 UTC, which would show as 6am. If parsing fails,
+ * returns null so caller can fall back to all-day.
  */
 function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Date | null {
   if (!time) return null;
@@ -320,9 +372,14 @@ function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Da
   if (ampm === 'PM' && hours < 12) hours += 12;
   if (ampm === 'AM' && hours === 12) hours = 0;
   if (hours > 23 || minutes > 59) return null;
-  const out = new Date(dateOnly);
-  out.setUTCHours(hours, minutes, 0, 0);
-  return out;
+  // dateOnly holds the intended calendar day in its UTC parts.
+  return easternWallClockToUtc(
+    dateOnly.getUTCFullYear(),
+    dateOnly.getUTCMonth(),
+    dateOnly.getUTCDate(),
+    hours,
+    minutes,
+  );
 }
 
 function formatICalDate(d: Date, allDay: boolean): string {

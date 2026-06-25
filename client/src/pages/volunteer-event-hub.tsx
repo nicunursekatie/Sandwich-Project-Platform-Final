@@ -87,8 +87,17 @@ import {
   CheckCircle2,
   LocateFixed,
   Ban,
+  PartyPopper,
+  CalendarPlus,
+  Download,
 } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import {
+  buildEventTimes,
+  googleCalendarUrl,
+  buildIcs,
+  downloadIcs,
+} from '@/lib/calendar-links';
 
 // Fix Leaflet default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -958,6 +967,172 @@ function SignupDialog({
   );
 }
 
+// Friendly labels for the roles a volunteer signed up for.
+const SIGNUP_ROLE_LABELS: Record<string, string> = {
+  speaker: 'Speaker',
+  general: 'General Volunteer',
+  driver: 'Driver',
+};
+
+function signupRoleLabel(role: string): string {
+  return SIGNUP_ROLE_LABELS[role] || role;
+}
+
+/**
+ * The "You're in!" moment. Shown immediately after a successful signup so the
+ * volunteer gets a clear, enthusiastic confirmation (this is the SignUpGenius
+ * replacement — it needs to feel reassuring, especially for non-tech users) plus
+ * a one-tap way to add the event to their calendar.
+ */
+function SignupSuccessDialog({
+  event,
+  roles,
+  open,
+  onOpenChange,
+}: {
+  event: AvailableEvent | null;
+  roles: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!event) return null;
+
+  const eventDate = getEffectiveEventDate(event);
+  const parsedDate = eventDate ? parseEventDate(eventDate) : null;
+  const formattedDate = parsedDate ? format(parsedDate, 'EEEE, MMMM d') : 'a date to be confirmed';
+  const shortDate = parsedDate ? format(parsedDate, 'MMMM d') : 'TBD';
+  const timeText = formatEventTime(event.eventStartTime, event.eventEndTime);
+  const addressText = getAddressText(event);
+
+  const times = buildEventTimes(eventDate, event.eventStartTime, event.eventEndTime);
+  const calTitle = `Sandwich Project — ${event.organizationName}`;
+  const roleLabels = roles.map(signupRoleLabel);
+  const calDetails = [
+    roleLabels.length ? `Role${roleLabels.length > 1 ? 's' : ''}: ${roleLabels.join(', ')}` : null,
+    'Thanks for volunteering with The Sandwich Project!',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const handleGoogle = () => {
+    if (!times) return;
+    const url = googleCalendarUrl(calTitle, times, addressText || null, calDetails);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleIcs = () => {
+    if (!times) return;
+    const ics = buildIcs(
+      `tsp-volunteer-${event.id}@thesandwichproject.org`,
+      calTitle,
+      times,
+      addressText || null,
+      calDetails,
+    );
+    downloadIcs(`sandwich-project-${event.id}.ics`, ics);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="items-center text-center">
+          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#007e8c] to-[#47b3cb] text-white shadow-sm">
+            <PartyPopper className="h-7 w-7" />
+          </div>
+          <DialogTitle className="text-xl">You're in! 🎉</DialogTitle>
+          <DialogDescription className="text-base text-[#236383]">
+            Thanks for signing up to volunteer at{' '}
+            <span className="font-semibold">{event.organizationName}</span> on{' '}
+            <span className="font-semibold">{shortDate}</span>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Event recap */}
+          <div className="rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-4 space-y-2.5 text-sm">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Building2 className="h-4 w-4 shrink-0 text-[#007e8c]" />
+              <span className="font-medium">{event.organizationName}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              <CalendarDays className="h-4 w-4 shrink-0 text-[#007e8c]" />
+              <span>{formattedDate}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              <Clock className="h-4 w-4 shrink-0 text-[#007e8c]" />
+              <span>{timeText}</span>
+            </div>
+            {addressText && (
+              <div className="flex items-start gap-2 text-gray-700">
+                <MapPin className="h-4 w-4 shrink-0 text-[#007e8c] mt-0.5" />
+                <span>{addressText}</span>
+              </div>
+            )}
+            {roleLabels.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {roleLabels.map((label) => (
+                  <Badge
+                    key={label}
+                    variant="secondary"
+                    className="bg-[#007e8c]/10 text-[#236383] hover:bg-[#007e8c]/10"
+                  >
+                    {label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add to calendar */}
+          {times && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Add it to your calendar so you don't forget:
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={handleGoogle}
+                  className="flex-1 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/5"
+                >
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Google Calendar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleIcs}
+                  className="flex-1 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/5"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Apple / Outlook
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* What happens next */}
+          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#007e8c] mt-0.5" />
+            <span>
+              A coordinator will confirm your spot, and we've emailed you the details. See you on{' '}
+              {shortDate}!
+            </span>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            onClick={() => onOpenChange(false)}
+            className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
+          >
+            Done
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function UnavailableDialog({
   event,
   existingUnavailable,
@@ -1417,6 +1592,11 @@ export default function VolunteerEventHub() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  // "You're in!" confirmation shown after a successful self-signup.
+  const [signupConfirmation, setSignupConfirmation] = useState<{
+    event: AvailableEvent;
+    roles: string[];
+  } | null>(null);
   const [unavailableDialogOpen, setUnavailableDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [manageSignup, setManageSignup] = useState<any | null>(null);
@@ -1610,7 +1790,7 @@ export default function VolunteerEventHub() {
 
   // Signup mutation
   const signupMutation = useMutation({
-    mutationFn: async ({ eventId, roles, notes }: { eventId: number; roles: string[]; notes: string }) => {
+    mutationFn: async ({ eventId, roles, notes }: { eventId: number; event: AvailableEvent; roles: string[]; notes: string }) => {
       const response = await fetch(`/api/volunteer-hub/signup/${eventId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1623,13 +1803,13 @@ export default function VolunteerEventHub() {
       }
       return response.json();
     },
-    onSuccess: (data) => {
-      toast({
-        title: 'Signup Submitted!',
-        description: data.message || 'Your volunteer request has been submitted.',
-      });
+    onSuccess: (_data, variables) => {
+      // Hand off to the celebratory "You're in!" dialog. Use the event captured
+      // in the mutation variables — not selectedEvent, which may have changed if
+      // the user clicked a different event while this request was in flight.
       setSignupDialogOpen(false);
       setSelectedEvent(null);
+      setSignupConfirmation({ event: variables.event, roles: variables.roles });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
@@ -2068,7 +2248,7 @@ export default function VolunteerEventHub() {
   // Handle signup submit
   const handleSignupSubmit = (roles: string[], notes: string) => {
     if (selectedEvent) {
-      signupMutation.mutate({ eventId: selectedEvent.id, roles, notes });
+      signupMutation.mutate({ eventId: selectedEvent.id, event: selectedEvent, roles, notes });
     }
   };
 
@@ -3644,6 +3824,16 @@ export default function VolunteerEventHub() {
           isSubmitting={signupMutation.isPending}
           preselectedRole={preselectedSignupRole}
           userCapabilities={user as UserRoleCapabilities | null}
+        />
+
+        {/* "You're in!" confirmation shown right after a successful signup */}
+        <SignupSuccessDialog
+          event={signupConfirmation?.event ?? null}
+          roles={signupConfirmation?.roles ?? []}
+          open={signupConfirmation !== null}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setSignupConfirmation(null);
+          }}
         />
 
         <UnavailableDialog
