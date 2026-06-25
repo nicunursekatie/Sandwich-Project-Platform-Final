@@ -35,6 +35,7 @@ import { TollFreeVerificationPanel } from './toll-free-verification-panel';
 import AlertPreferences from './alert-preferences';
 import CheckInReminderPreferences from './check-in-reminder-preferences';
 import UserEmailTemplatesSettings from './user-email-templates-settings';
+import { SMSSetupSection } from './alert-preferences/SMSSetupSection';
 import { useMobilePreference } from '@/mobile/components/mobile-layout-prompt';
 
 const profileSchema = z.object({
@@ -105,13 +106,21 @@ export default function UserProfile() {
   const getTabFromURL = () => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get('tab');
-    if (tabParam === 'password' || tabParam === 'notifications' || tabParam === 'profile' || tabParam === 'email-templates') {
+    if (
+      tabParam === 'password' ||
+      tabParam === 'notifications' ||
+      tabParam === 'profile' ||
+      tabParam === 'email-templates' ||
+      tabParam === 'sms'
+    ) {
       return tabParam;
     }
     return 'profile'; // default
   };
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'notifications' | 'email-templates'>(getTabFromURL());
+  const [activeTab, setActiveTab] = useState<
+    'profile' | 'password' | 'notifications' | 'email-templates' | 'sms'
+  >(getTabFromURL());
   const [phoneNumber, setPhoneNumber] = useState('');
   const [consent, setConsent] = useState(false);
   const [verificationCode, setVerificationCode] = useState('');
@@ -437,6 +446,18 @@ export default function UserProfile() {
         >
           <Bell className="w-4 h-4 inline mr-2" />
           Alerts
+        </button>
+        <button
+          onClick={() => setActiveTab('sms')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'sms'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+          data-testid="button-sms-tab"
+        >
+          <Smartphone className="w-4 h-4 inline mr-2" />
+          SMS
         </button>
         <button
           onClick={() => setActiveTab('email-templates')}
@@ -866,6 +887,14 @@ export default function UserProfile() {
         <div className="space-y-6">
           <Separator />
           <TollFreeVerificationPanel />
+        </div>
+      )}
+
+      {/* SMS Tab — promoted out of Alert Preferences so users can find the
+          opt-in/setup flow without scrolling past every alert toggle. */}
+      {activeTab === 'sms' && (
+        <div className="space-y-6">
+          <SMSSetupSection userSMSStatus={userSMSStatus} isLoading={statusLoading} />
         </div>
       )}
 
