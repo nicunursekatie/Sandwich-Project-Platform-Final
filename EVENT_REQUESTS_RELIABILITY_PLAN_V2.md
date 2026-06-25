@@ -934,7 +934,17 @@ _[fill in]_
 
 **Closes:** the "form empty, save submitted empty" class of bugs
 
-**Status:** [ ] Not started
+**Status:** [x] Shipped 2026-06-24 — Added an explicit `isFormLoading` derived
+state (`!!eventRequest && !formInitialized`) and wired it into the Save button:
+it is now **disabled and shows "Loading…"** until the edit form has populated
+from the record, instead of letting the user click Save and bounce off a
+"please wait" toast. The performSubmit guard remains as defense-in-depth (Enter
+key / form submit). The raw `❌ [PROD DEBUG] console.error` was replaced with
+`logger.error`. The underlying `formInitialized` flag was **kept** rather than
+removed: it is still required by the autosave and localStorage-recovery effects
+to avoid persisting an empty form before init, and the async two-phase load that
+originally made it a *race* is already gone (Unit 7), so it no longer behaves as
+the defensive band-aid the plan flagged. Build + undefined-refs gate green.
 
 **Why now:** After Unit 1, the refetch storms that *cause* the race are mostly gone. But the defensive `formInitialized` flag and DEBUG logs are still there. Remove them properly.
 
@@ -1253,7 +1263,7 @@ If you do one unit per week, that's 12 weeks. If you do one per month, that's a 
 | 3 — Strip `_expectedVersion` | [x] | 2026-06-18 audit | Client sends removed/avoided; server strip remains defensive. |
 | 4 — Sync `updatedAt` fix | [ ] | | |
 | 5 — Dialog state collapse | [x] | 2026-06-24 | 23 `showXDialog` booleans → one `activeDialog` discriminated union + `openDialog`/`closeDialog` in `EventDialogContext`; ~16 consumers migrated. Type-clean (net 0 new tsc errors) + build green. **Manual click-through of every dialog still pending in dev.** |
-| 6 — Form init race | [ ] | | |
+| 6 — Form init race | [x] | 2026-06-24 | Explicit `isFormLoading` state; Save button disabled + "Loading…" until the edit form populates (was click-then-toast); raw `[PROD DEBUG] console.error` → `logger.error`. Underlying `formInitialized` init-tracking kept (still used by autosave/localStorage effects; async-load cause already gone via Unit 7). Build + undefined-refs green. |
 | 7 — Partial/full collapse | [x] | 2026-06-19 | `/list` returns full records; form second fetch removed; lightweight projection deleted. |
 | 8 — Retire EventEditDialog | [WON'T DO] | 2026-06-25 | Reclassified after audit: `EventEditDialog` is **not a redundant duplicate** — it's a focused driver-planning editor (Logistics/Staffing/Activity-audit tabs, inline people-search assignment UI, diff-based partial PATCH off partial `EventMapData`, already on Unit-1 surgical cache). `EventSchedulingForm` is the full-form scheduler needing the full record (no `GET /:id` exists). Unifying would replace driver-planning's focused UX with the big form for no correctness gain. Divergence is justified; see §Unit 8 note. |
 | 9 — Consolidate status paths | [ ] | | |
