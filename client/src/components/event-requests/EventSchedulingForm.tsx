@@ -433,7 +433,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     setSandwichMode(determineSandwichMode(
       sourceEvent.sandwichTypes,
       (sourceEvent as any)?.estimatedSandwichCountMin,
-      (sourceEvent as any)?.estimatedSandwichCountMax
+      (sourceEvent as any)?.estimatedSandwichCountMax,
+      sourceEvent.estimatedSandwichCount,
     ));
     setActualSandwichMode(determineActualSandwichMode(sourceEvent?.actualSandwichTypes));
     const hasAttendeeBreakdown = ((sourceEvent as any)?.adultCount || 0) > 0 || ((sourceEvent as any)?.childrenCount || 0) > 0;
@@ -588,7 +589,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               }
 
               setFormData(mergedData as any);
-              if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
+              setSandwichMode(determineSandwichMode(
+                eventRequest?.sandwichTypes,
+                (eventRequest as any)?.estimatedSandwichCountMin,
+                (eventRequest as any)?.estimatedSandwichCountMax,
+                mergedData.totalSandwichCount ?? eventRequest?.estimatedSandwichCount,
+              ));
               if (savedData.actualSandwichMode) setActualSandwichMode(savedData.actualSandwichMode);
               if (savedData.attendeeMode) setAttendeeMode(savedData.attendeeMode);
               setHasRecoveredData(true);
@@ -630,7 +636,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         setSandwichMode(determineSandwichMode(
           eventRequest?.sandwichTypes,
           (eventRequest as any)?.estimatedSandwichCountMin,
-          (eventRequest as any)?.estimatedSandwichCountMax
+          (eventRequest as any)?.estimatedSandwichCountMax,
+          eventRequest?.estimatedSandwichCount,
         ));
         setActualSandwichMode(determineActualSandwichMode(eventRequest?.actualSandwichTypes));
         const hasBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
@@ -942,14 +949,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return;
     }
 
-    // Speaker warning check
-    const totalRelevantSandwiches = calculateRelevantSandwichCount(formData as EventFormData, sandwichMode);
-    if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
-      setIsSubmitting(false);
-      logger.log('⚠️ Save paused: speaker warning dialog shown');
-      setShowSpeakerWarningDialog(true);
-      return;
-    }
+    // Speaker recommendation check used to block saves on events with
+    // 500+ sandwiches if no speaker was assigned. Removed because (a) it
+    // was framed as a "recommendation" but enforced as a hard block, and
+    // (b) the nested warning dialog was implicated in silent save
+    // failures when other dialogs (e.g. standby reminder) were also in
+    // flight. Speaker staffing is now purely advisory — coordinators
+    // see open speaker slots in the dashboards instead.
 
     // Manual entry source is strongly recommended, but should not block saves.
     // Intake often captures details over multiple touchpoints/calls.
@@ -1023,10 +1029,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           eventId: eventRequest.id,
         });
       }
-      updateEventRequestMutation.mutate({ id: eventRequest.id, data: eventData });
+      // Use mutateAsync so performSubmit's caller can await completion
+      // and detect failures. The mutation's own onError handler still
+      // toasts (no duplicate notifications) — awaiting here just lets
+      // wrapper flows like the standby dialog keep their UI in sync
+      // with whether the save actually landed.
+      await updateEventRequestMutation.mutateAsync({ id: eventRequest.id, data: eventData });
     } else {
       logger.log('➕ Creating new event');
-      createEventRequestMutation.mutate(eventData);
+      await createEventRequestMutation.mutateAsync(eventData);
     }
   };
 
@@ -1517,11 +1528,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         followUpMode={standbyFollowUpMode}
         setFollowUpMode={setStandbyFollowUpMode}
         onSave={async () => {
+          // Keep the dialog OPEN while the save is in flight so it never
+          // visually disappears mid-flight. We close it only after the
+          // submit resolves; if the save throws/toasts an error, leaving
+          // the dialog open lets the user correct and retry instead of
+          // seeing the form silently refresh with no feedback.
           standbySaveClickedRef.current = true;
           setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
-          setShowStandbyFollowUpDialog(false);
           try {
             await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
+            setShowStandbyFollowUpDialog(false);
+          } catch (err) {
+            // performSubmit's mutation onError already toasts. We leave
+            // the dialog open so the user can adjust and try again.
+            logger.error('Standby save failed; keeping dialog open', err);
           } finally {
             standbySaveClickedRef.current = false;
           }
