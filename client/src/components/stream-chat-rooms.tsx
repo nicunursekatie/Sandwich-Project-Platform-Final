@@ -327,6 +327,103 @@ const customChatStyles = `
     gap: 8px !important;
     margin-bottom: 4px !important;
   }
+
+  /* ── #1: Alignment & ownership model ──────────────────────────────
+     Standard chat UI: my messages on the right, others on the left.
+     Stream Chat ships them all left-aligned by default; here we flip
+     the user's own messages so spatial position alone communicates
+     ownership before the user reads anything. */
+  .str-chat__list .str-chat__message--me,
+  .str-chat__list .str-chat__message-simple--me {
+    flex-direction: row-reverse !important;
+    justify-content: flex-end !important;
+    text-align: right !important;
+  }
+
+  /* The inner wrapper that holds the bubble + metadata stack should
+     also align right so the metadata sits flush with the bubble's
+     right edge. */
+  .str-chat__list .str-chat__message--me .str-chat__message-inner,
+  .str-chat__list .str-chat__message-simple--me .str-chat__message-inner {
+    align-items: flex-end !important;
+  }
+
+  /* Push avatar to the right side of own messages too — Stream's
+     default leaves it on the left even when the bubble flips. */
+  .str-chat__list .str-chat__message--me .str-chat__avatar,
+  .str-chat__list .str-chat__message-simple--me .str-chat__avatar {
+    margin-left: 8px !important;
+    margin-right: 0 !important;
+  }
+
+  /* ── #2: Metadata hierarchy ───────────────────────────────────────
+     Sender name should appear ABOVE the bubble, not below it. The
+     timestamp can sit next to the name in a smaller/lighter font.
+     Stream renders metadata in a single .str-chat__message-data
+     row; we hoist it above the bubble via flex order. */
+  .str-chat__list .str-chat__message-inner,
+  .str-chat__list .str-chat__message-simple .str-chat__message-inner {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .str-chat__list .str-chat__message-data {
+    order: -1 !important;        /* before the bubble */
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+    font-size: 12px !important;
+  }
+
+  /* Lighter timestamp so the eye lands on the name first. */
+  .str-chat__list .str-chat__message-data time,
+  .str-chat__list .str-chat__message-timestamp {
+    color: #6b7280 !important;
+    font-weight: 400 !important;
+    font-size: 11px !important;
+  }
+
+  /* ── #4: Flatten deleted messages ─────────────────────────────────
+     Stream renders deleted messages inside the same bubble shell as
+     real messages, giving them equal visual weight. Strip the bubble
+     entirely and present a small inline italic notice. */
+  .str-chat__list .str-chat__message--deleted .str-chat__message-bubble,
+  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-bubble {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .str-chat__list .str-chat__message--deleted .str-chat__message-text,
+  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-text,
+  .str-chat__list .str-chat__message--deleted .str-chat__message-text-inner,
+  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-text-inner {
+    background: transparent !important;
+    color: #9ca3af !important;
+    font-style: italic !important;
+    font-size: 12px !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  /* Hide the avatar + metadata row for deleted messages — there's
+     no useful "who said this" context once the content is gone. */
+  .str-chat__list .str-chat__message--deleted .str-chat__avatar,
+  .str-chat__list .str-chat__message-simple--deleted .str-chat__avatar,
+  .str-chat__list .str-chat__message--deleted .str-chat__message-data,
+  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-data {
+    display: none !important;
+  }
+
+  /* Tighten the vertical footprint so deleted entries don't take up
+     bubble-sized space in the scroll. */
+  .str-chat__list .str-chat__message--deleted,
+  .str-chat__list .str-chat__message-simple--deleted {
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
 `;
 
 // Room definitions matching your Socket.io setup
