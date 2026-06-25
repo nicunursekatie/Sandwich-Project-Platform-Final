@@ -23,6 +23,7 @@ import {
   Calculator,
   Package,
   MessageSquare,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -629,6 +630,39 @@ export default function DashboardOverview({
           </div>
         </div>
 
+        {/* Volunteer Handbook — same external reference as the nav bar link,
+            surfaced near the top so it is easy to find without opening the menu. */}
+        <div className="mx-4 mb-8 max-w-full">
+          <a
+            href="https://tsp-host-handbook-ylfb92u.gamma.site/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block group"
+            aria-label="Open TSP Volunteer Handbook in a new tab"
+          >
+            <div className="rounded-xl border-2 border-[#007E8C]/50 bg-gradient-to-r from-[#007e8c]/15 via-white to-[#236383]/10 p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-[#007E8C] transition-all">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-[#007E8C] flex items-center justify-center shrink-0 shadow-sm">
+                  <BookOpen className="w-7 h-7 text-white" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-[#236383]">
+                    TSP Volunteer Handbook
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    The all-encompassing handbook for every volunteer role — policies, procedures, and reference material.
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 shrink-0 font-semibold text-[#007E8C] group-hover:underline underline-offset-4">
+                  Open Handbook
+                  <ExternalLink className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <ExternalLink className="w-5 h-5 text-[#007E8C] shrink-0 sm:hidden" aria-hidden="true" />
+              </div>
+            </div>
+          </a>
+        </div>
+
         {/* ── TODAY: the things that need attention right now ── */}
         <SectionHeader label="Today" hint="What needs your attention right now" />
 
@@ -960,19 +994,19 @@ export default function DashboardOverview({
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
               {/* Peak Week — Our Best Week Ever (Burgundy) */}
-              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all flex flex-col">
+              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all flex flex-col">
                 <div className="text-sm font-semibold text-brand-burgundy uppercase tracking-wide">
                   <span aria-hidden="true">🏆</span> Our Best Week Ever
                 </div>
-                <div className="mt-3 mb-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-burgundy leading-none">
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-burgundy leading-none break-all">
                     {organizationalStats.peakWeekRecord}
                   </span>
-                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                  <span className="text-sm text-gray-600 font-medium">
                     sandwiches
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 leading-snug mt-2">
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
                   Our highest single-week total ever, set on{' '}
                   <span className="font-semibold">
                     {organizationalStats.peakWeekDate}
@@ -982,19 +1016,19 @@ export default function DashboardOverview({
               </div>
 
               {/* Annual Goal — This Year's Goal (Orange) */}
-              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all flex flex-col">
+              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all flex flex-col">
                 <div className="text-sm font-semibold text-brand-orange uppercase tracking-wide">
                   <span aria-hidden="true">🎯</span> This Year's Goal
                 </div>
-                <div className="mt-3 mb-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-orange leading-none">
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-orange leading-none break-all">
                     {organizationalStats.currentAnnualCapacity}
                   </span>
-                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                  <span className="text-sm text-gray-600 font-medium">
                     sandwiches
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 leading-snug mt-2">
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
                   What we're aiming to collect together in{' '}
                   <span className="font-semibold">
                     {new Date().getFullYear()}
@@ -1004,19 +1038,19 @@ export default function DashboardOverview({
               </div>
 
               {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
-              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all flex flex-col">
+              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all flex flex-col">
                 <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
                   <span aria-hidden="true">📦</span> A Typical Week
                 </div>
-                <div className="mt-3 mb-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-light-blue leading-none">
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-light-blue leading-none break-all">
                     ~{organizationalStats.weeklyAverage}
                   </span>
-                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                  <span className="text-sm text-gray-600 font-medium">
                     sandwiches
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 leading-snug mt-2">
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
                   On any given week, most weeks fall between{' '}
                   <span className="font-semibold">
                     {organizationalStats.weeklyBaselineMin}
@@ -1029,23 +1063,23 @@ export default function DashboardOverview({
                 </p>
               </div>
 
-              {/* Surge Capacity — When We Mobilize (Dark Teal) */}
-              <div className="bg-white rounded-lg p-4 sm:p-5 border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all flex flex-col">
+              {/* Surge Capacity — When We Mobilize (Dark Teal).
+                  This card carries the longest number (range like 24,580–40,966)
+                  so we render the range as a single inline-block unit that
+                  break-words can wrap as a whole, never mid-digit. */}
+              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all flex flex-col">
                 <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
                   <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
-                <div className="mt-3 mb-1">
-                  <span className="text-3xl sm:text-4xl font-extrabold text-brand-teal leading-none">
-                    {organizationalStats.surgeMin}
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-tight break-all">
+                    {organizationalStats.surgeMin}–{organizationalStats.surgeMax}
                   </span>
-                  <span className="text-2xl sm:text-3xl font-extrabold text-brand-teal leading-none">
-                    –{organizationalStats.surgeMax}
-                  </span>
-                  <span className="ml-1 text-sm text-gray-600 font-medium">
+                  <span className="text-sm text-gray-600 font-medium">
                     sandwiches
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 leading-snug mt-2">
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
                   What we've reached when the call goes out — 3 to 5 times a
                   normal week's pace.
                 </p>
