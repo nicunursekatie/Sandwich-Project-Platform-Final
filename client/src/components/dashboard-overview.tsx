@@ -21,7 +21,7 @@ import {
   Building2,
   Layers,
   Calculator,
-  Share2,
+  Package,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -80,7 +80,7 @@ interface DashboardOverviewProps {
 }
 
 // Standalone section band header — gives the dashboard a clear hierarchy
-// (TODAY / VOLUNTEERS / OPERATIONS / TOOLS / INSIGHTS) so the page reads as
+// (TODAY / QUICK RESOURCES / INSIGHTS / VOLUNTEERS / OPERATIONS / TOOLS) so the page reads as
 // grouped priorities instead of one long undifferentiated scroll. Rendered as
 // a sibling before each group (the parent's space-y stacking forms the bands),
 // so it never has to wrap blocks and can't unbalance the surrounding JSX.
@@ -146,94 +146,6 @@ export default function DashboardOverview({
       documentName: '',
       documentType: '',
     });
-  };
-
-  const handleShareInventoryCalculator = async () => {
-    const url =
-      'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
-    const title = 'Inventory Calculator';
-    const text =
-      'Interactive tool for calculating sandwich inventory and planning quantities for collections';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (error) {
-        // User cancelled the share or error occurred, fallback to clipboard
-        handleCopyLink(url);
-      }
-    } else {
-      // Fallback to clipboard for browsers that don't support Web Share API
-      handleCopyLink(url);
-    }
-  };
-
-  const handleShareEventToolkit = async () => {
-    const url = 'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
-    const title = 'Event Toolkit for Volunteers';
-    const text =
-      'Everything you need to plan and host a sandwich-making event - includes safety guides, instructions, and labels';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (error) {
-        // User cancelled the share or error occurred, fallback to clipboard
-        handleCopyLink(url);
-      }
-    } else {
-      // Fallback to clipboard for browsers that don't support Web Share API
-      handleCopyLink(url);
-    }
-  };
-
-  const handleShareCollectionSites = async () => {
-    const url = 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/';
-    const title = 'Host Collection Sites Directory';
-    const text =
-      'Public-facing directory of all host collection sites - easy to share with volunteers and partners';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (error) {
-        // User cancelled the share or error occurred, fallback to clipboard
-        handleCopyLink(url);
-      }
-    } else {
-      // Fallback to clipboard for browsers that don't support Web Share API
-      handleCopyLink(url);
-    }
-  };
-
-  const handleCopyLink = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: 'Link copied!',
-        description:
-          'The inventory calculator link has been copied to your clipboard.',
-      });
-    } catch (error) {
-      logger.error('Failed to copy link:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to copy link to clipboard.',
-        variant: 'destructive',
-      });
-    }
   };
 
   // Defer stats loading until after first render for better FCP/LCP
@@ -731,302 +643,53 @@ export default function DashboardOverview({
           <RecentlyAccessedResources />
         </div>
 
-        {/* ── VOLUNTEERS ── */}
-        <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
+        {/* ── QUICK RESOURCES (external links + in-app shortcuts) ── */}
+        <SectionHeader label="Quick Resources" hint="Toolkits, directories, and common pages" />
 
-        {/* Volunteer Opportunities Spotlight */}
-        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
-
-        {/* ── GROUP EVENT FORECAST ── */}
-        <SectionHeader label="Group Event Forecast" />
-
-        {/* Group Event Forecast - current week progress and upcoming weeks */}
-        <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
-        </div>
-
-        {/* ── TOOLS ── */}
-        <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
-
-        {/* TSP Additional Tools Section */}
         <div className="mx-4 mb-8 max-w-full">
-          <h3 className="premium-text-h3 text-brand-primary mb-6">
-            TSP Additional Tools
-          </h3>
-          <p className="premium-text-body-sm text-gray-600 mb-6">
-            External platforms we've built to support TSP operations
-          </p>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
-            {/* Hour Hero Magic - Service Hours Portal */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #FBAD3F' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center mr-3">
-                  <Clock className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Service Hours Sign-Off Portal
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Portal for volunteers to enter their info and receive automated service hours letters
-              </p>
-              <button
-                onClick={() => window.open('https://hour-hero-magic.lovable.app', '_blank')}
-                className="premium-btn-accent w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Hour Hero Magic in a new tab"
-              >
-                Open Hour Hero Magic
-                {/* Trailing external-link glyph — standard convention so users
-                    expect a new tab. Smaller than the leading icon used to
-                    be so the label stays the visual anchor. */}
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Bread and Butter Donors - Donor Management */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #236383' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center mr-3">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Donor Management Platform
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                DIY donor management - tracks donations, donors, and "Friends in TSP" network connections
-              </p>
-              <button
-                onClick={() => window.open('https://bread-and-butter-donors.lovable.app/', '_blank')}
-                className="premium-btn-primary w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Bread & Butter Donors in a new tab"
-              >
-                Open Bread & Butter Donors
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* TSP Grant Manager */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #007E8C' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center mr-3">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Grant Tracking & Application Manager
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Track grants, deadlines, and use AI research tools to work on grant applications
-              </p>
-              <button
-                onClick={() => window.open('https://tsp-grant-manager.lovable.app', '_blank')}
-                className="premium-btn-secondary w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open TSP Grant Manager in a new tab"
-              >
-                Open TSP Grant Manager
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Sandwich Steward - Host Onboarding */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #5B9EA6' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-light-blue rounded-lg flex items-center justify-center mr-3">
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Host Onboarding Tracker
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Track hosts being onboarded - will eventually include all existing hosts
-              </p>
-              <button
-                onClick={() => window.open('https://sandwich-steward.lovable.app', '_blank')}
-                className="premium-btn-outline w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Sandwich Steward in a new tab"
-              >
-                Open Sandwich Steward
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Receipt Generator */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #A31C41' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-burgundy rounded-lg flex items-center justify-center mr-3">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Donation Receipt Generator
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Generate donation receipts for donors quickly and easily
-              </p>
-              <button
-                onClick={() => window.open('https://receipt-gen--katielong2316.replit.app', '_blank')}
-                className="premium-btn-outline w-full text-sm border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Receipt Generator in a new tab"
-              >
-                Open Receipt Generator
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Resources — consolidates what used to be three stacked H2
-            sections (Planning Tools / Event Toolkit / Host Collection Sites
-            Directory). Each tool became its own banner-style card, creating
-            horizontal banding down the page. Now: one section header, three
-            equal-weight cards in a responsive grid (same visual rhythm as
-            the Additional Tools grid above) so users can scan side-by-side
-            and the page reads as one Resources stripe instead of three. */}
-        <div className="mx-4 mb-8 max-w-full">
-          <h3 className="premium-text-h3 text-brand-primary mb-2">
-            Quick Resources
-          </h3>
-          <p className="premium-text-body-sm text-gray-600 mb-6">
-            Toolkits and directories for planning, hosting, and sharing
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
-            {/* Inventory Calculator */}
-            <div
-              className="premium-card-elevated p-5 flex flex-col"
-              style={{ borderTop: '3px solid #236383' }}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-full">
+            <a
+              href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#236383] hover:bg-[#e8f4f8]/40 transition-colors group"
             >
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center mr-3">
-                  <Calculator className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="premium-text-body font-semibold text-brand-primary">
-                  Inventory Calculator
-                </h4>
+              <div className="w-9 h-9 rounded-lg bg-[#236383] flex items-center justify-center shrink-0">
+                <Calculator className="w-4 h-4 text-white" />
               </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4 flex-1">
-                Essential tool for planning sandwich quantities
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() =>
-                    window.open(
-                      'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
-                      '_blank',
-                    )
-                  }
-                  className="premium-btn-primary text-sm inline-flex items-center justify-center gap-1.5"
-                  aria-label="Open Inventory Calculator in a new tab"
-                >
-                  Open Calculator
-                  <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-                </button>
-                <button
-                  onClick={handleShareInventoryCalculator}
-                  className="premium-btn-outline text-sm inline-flex items-center justify-center gap-1.5"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-              </div>
-            </div>
+              <span className="font-semibold text-[#236383] text-sm flex-1">Inventory Calculator</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#236383]" aria-hidden="true" />
+            </a>
 
-            {/* Event Toolkit */}
-            <div
-              className="premium-card-elevated p-5 flex flex-col"
-              style={{ borderTop: '3px solid #FBAD3F' }}
+            <a
+              href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#FBAD3F] hover:bg-[#FBAD3F]/10 transition-colors group"
             >
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center mr-3">
-                  <span className="text-xl" aria-hidden="true">📦</span>
-                </div>
-                <h4 className="premium-text-body font-semibold text-brand-orange">
-                  Event Toolkit
-                </h4>
+              <div className="w-9 h-9 rounded-lg bg-[#FBAD3F] flex items-center justify-center shrink-0">
+                <Package className="w-4 h-4 text-[#3d2800]" />
               </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4 flex-1">
-                For volunteers — guides, labels, and instructions to share
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() =>
-                    window.open(
-                      'https://nicunursekatie.github.io/sandwichinventory/toolkit.html',
-                      '_blank',
-                    )
-                  }
-                  className="premium-btn-primary text-sm inline-flex items-center justify-center gap-1.5"
-                  aria-label="Open Event Toolkit in a new tab"
-                >
-                  Open Toolkit
-                  <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-                </button>
-                <button
-                  onClick={handleShareEventToolkit}
-                  className="premium-btn-outline text-sm inline-flex items-center justify-center gap-1.5"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-              </div>
-            </div>
+              <span className="font-semibold text-[#236383] text-sm flex-1">Event Toolkit</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#FBAD3F]" aria-hidden="true" />
+            </a>
 
-            {/* Host Collection Sites Directory */}
-            <div
-              className="premium-card-elevated p-5 flex flex-col"
-              style={{ borderTop: '3px solid #007E8C' }}
+            <a
+              href="https://nicunursekatie.github.io/sandwichprojectcollectionsites/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#007E8C] hover:bg-[#e8f4f8]/40 transition-colors group"
             >
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center mr-3">
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
-                <h4 className="premium-text-body font-semibold text-brand-teal">
-                  Collection Sites Directory
-                </h4>
+              <div className="w-9 h-9 rounded-lg bg-[#007E8C] flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-white" />
               </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4 flex-1">
-                Public directory of all host sites — share with partners
-              </p>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() =>
-                    window.open(
-                      'https://nicunursekatie.github.io/sandwichprojectcollectionsites/',
-                      '_blank',
-                    )
-                  }
-                  className="premium-btn-secondary text-sm inline-flex items-center justify-center gap-1.5"
-                  aria-label="Open Collection Sites Directory in a new tab"
-                >
-                  View Directory
-                  <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-                </button>
-                <button
-                  onClick={handleShareCollectionSites}
-                  className="premium-btn-outline text-sm inline-flex items-center justify-center gap-1.5"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Share
-                </button>
-              </div>
-            </div>
+              <span className="font-semibold text-[#236383] text-sm flex-1">Host Finder Tool</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#007E8C]" aria-hidden="true" />
+            </a>
           </div>
 
-          {/* Quick Actions Grid */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-w-full">
+          {/* In-app shortcuts — separated from external links above */}
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-w-full mt-8 pt-8 border-t border-gray-200">
             <div
               className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('collections')}
@@ -1386,6 +1049,163 @@ export default function DashboardOverview({
                   normal week's pace.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── VOLUNTEERS ── */}
+        <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
+
+        {/* Volunteer Opportunities Spotlight */}
+        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+
+        {/* ── GROUP EVENT FORECAST ── */}
+        <SectionHeader label="Group Event Forecast" />
+
+        {/* Group Event Forecast - current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+        </div>
+
+        {/* ── TOOLS ── */}
+        <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
+
+        {/* TSP Additional Tools Section */}
+        <div className="mx-4 mb-8 max-w-full">
+          <h3 className="premium-text-h3 text-brand-primary mb-6">
+            TSP Additional Tools
+          </h3>
+          <p className="premium-text-body-sm text-gray-600 mb-6">
+            External platforms we've built to support TSP operations
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
+            {/* Hour Hero Magic - Service Hours Portal */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #FBAD3F' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center mr-3">
+                  <Clock className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Service Hours Sign-Off Portal
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Portal for volunteers to enter their info and receive automated service hours letters
+              </p>
+              <button
+                onClick={() => window.open('https://hour-hero-magic.lovable.app', '_blank')}
+                className="premium-btn-accent w-full text-sm inline-flex items-center justify-center gap-1.5"
+                aria-label="Open Hour Hero Magic in a new tab"
+              >
+                Open Hour Hero Magic
+                {/* Trailing external-link glyph — standard convention so users
+                    expect a new tab. Smaller than the leading icon used to
+                    be so the label stays the visual anchor. */}
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Bread and Butter Donors - Donor Management */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #236383' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center mr-3">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Donor Management Platform
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                DIY donor management - tracks donations, donors, and "Friends in TSP" network connections
+              </p>
+              <button
+                onClick={() => window.open('https://bread-and-butter-donors.lovable.app/', '_blank')}
+                className="premium-btn-primary w-full text-sm inline-flex items-center justify-center gap-1.5"
+                aria-label="Open Bread & Butter Donors in a new tab"
+              >
+                Open Bread & Butter Donors
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* TSP Grant Manager */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #007E8C' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center mr-3">
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Grant Tracking & Application Manager
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Track grants, deadlines, and use AI research tools to work on grant applications
+              </p>
+              <button
+                onClick={() => window.open('https://tsp-grant-manager.lovable.app', '_blank')}
+                className="premium-btn-secondary w-full text-sm inline-flex items-center justify-center gap-1.5"
+                aria-label="Open TSP Grant Manager in a new tab"
+              >
+                Open TSP Grant Manager
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Sandwich Steward - Host Onboarding */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #5B9EA6' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-light-blue rounded-lg flex items-center justify-center mr-3">
+                  <Building2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Host Onboarding Tracker
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Track hosts being onboarded - will eventually include all existing hosts
+              </p>
+              <button
+                onClick={() => window.open('https://sandwich-steward.lovable.app', '_blank')}
+                className="premium-btn-outline w-full text-sm inline-flex items-center justify-center gap-1.5"
+                aria-label="Open Sandwich Steward in a new tab"
+              >
+                Open Sandwich Steward
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Receipt Generator */}
+            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #A31C41' }}>
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-brand-burgundy rounded-lg flex items-center justify-center mr-3">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="premium-text-body font-semibold text-brand-primary">
+                    Donation Receipt Generator
+                  </h4>
+                </div>
+              </div>
+              <p className="premium-text-body-sm text-gray-600 mb-4">
+                Generate donation receipts for donors quickly and easily
+              </p>
+              <button
+                onClick={() => window.open('https://receipt-gen--katielong2316.replit.app', '_blank')}
+                className="premium-btn-outline w-full text-sm border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white inline-flex items-center justify-center gap-1.5"
+                aria-label="Open Receipt Generator in a new tab"
+              >
+                Open Receipt Generator
+                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+              </button>
             </div>
           </div>
         </div>
