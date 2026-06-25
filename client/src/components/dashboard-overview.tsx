@@ -42,7 +42,12 @@ import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import { PERMISSIONS } from '@shared/auth-utils';
 import { getTodayString } from '@shared/date-utils';
 import { useToast } from '@/hooks/use-toast';
-import { calculateActualWeeklyAverage, calculateWeeklyData } from '@/lib/analytics-utils';
+import {
+  calculateActualWeeklyAverage,
+  calculateWeeklyData,
+  parseCollectionDate,
+  calculateTotalSandwiches,
+} from '@/lib/analytics-utils';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
@@ -380,6 +385,47 @@ export default function DashboardOverview({
       }));
   }, [allCollectionsData]);
 
+  // Year-over-year pace: this year's running total (Jan 1 → today) vs the
+  // SAME calendar window last year (Jan 1 → today's month/day a year ago).
+  // Apples-to-apples — both are partial-year totals to the same day-of-year,
+  // so a healthy mid-year reading isn't penalized against a full prior year.
+  // Computed client-side from the collections already loaded for the trend
+  // chart, using the canonical per-record total, so no new endpoint is needed.
+  const ytdYoY = React.useMemo(() => {
+    const collections = allCollectionsData?.collections;
+    if (!collections?.length) return null;
+
+    const today = new Date();
+    const thisYear = today.getFullYear();
+    const lastYear = thisYear - 1;
+    const month = today.getMonth();
+    const day = today.getDate();
+
+    // Inclusive end-of-day cutoffs so today's / last-year-today's records count.
+    const thisStart = new Date(thisYear, 0, 1, 0, 0, 0, 0);
+    const thisEnd = new Date(thisYear, month, day, 23, 59, 59, 999);
+    const lastStart = new Date(lastYear, 0, 1, 0, 0, 0, 0);
+    const lastEnd = new Date(lastYear, month, day, 23, 59, 59, 999);
+
+    let thisSum = 0;
+    let lastSum = 0;
+    for (const c of collections) {
+      if (!c.collectionDate) continue;
+      const dt = parseCollectionDate(c.collectionDate);
+      if (Number.isNaN(dt.getTime())) continue;
+      if (dt >= thisStart && dt <= thisEnd) {
+        thisSum += calculateTotalSandwiches(c);
+      } else if (dt >= lastStart && dt <= lastEnd) {
+        lastSum += calculateTotalSandwiches(c);
+      }
+    }
+
+    // No comparable window last year → nothing honest to show.
+    if (lastSum <= 0) return null;
+    const pct = Math.round(((thisSum - lastSum) / lastSum) * 100);
+    return { pct, lastYear };
+  }, [allCollectionsData]);
+
   // Min/max for the trend chart — used in the legend strip so the reader
   // has the line's scale even without inspecting the y-axis.
   const weeklyTrendStats = React.useMemo(() => {
@@ -521,6 +567,25 @@ export default function DashboardOverview({
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     in {statsData.ytdYear} so far
                   </p>
+                  {/* YoY pace pill — running total vs the same window last year.
+                      Green when up, amber when down; only shown when there's a
+                      comparable prior-year window so we never invent a trend. */}
+                  {ytdYoY && (
+                    <p
+                      className={`text-xs font-semibold mt-1 inline-flex items-center gap-0.5 ${
+                        ytdYoY.pct >= 0 ? 'text-green-600' : 'text-amber-600'
+                      }`}
+                      title={`Year-to-date total vs Jan 1–today in ${ytdYoY.lastYear}`}
+                    >
+                      {ytdYoY.pct >= 0 ? (
+                        <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />
+                      ) : (
+                        <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      {ytdYoY.pct >= 0 ? '+' : ''}
+                      {ytdYoY.pct}% vs this point in {ytdYoY.lastYear}
+                    </p>
+                  )}
                 </div>
               )}
               {statsData?.ytdSandwiches != null && statsData?.currentMonthSandwiches != null && (
