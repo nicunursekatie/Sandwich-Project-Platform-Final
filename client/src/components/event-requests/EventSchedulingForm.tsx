@@ -356,7 +356,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const isCreateMode = mode === 'create' || !eventRequest;
 
-
+  // Explicit loading state for the UI. When editing an existing event the form
+  // populates from `eventRequest` in an init effect; until that has run the form
+  // fields are empty, so Save must be disabled (saving now would write blanks).
+  // Create mode has no record to load, so it is never "loading".
+  const isFormLoading = !!eventRequest && !formInitialized;
 
 
   const canRemoveCorporatePriority = useMemo(() => {
@@ -971,7 +975,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         fieldOverrides,
       });
     } catch (constructionError) {
-      console.error('❌ [PROD DEBUG] ERROR constructing eventData:', constructionError);
+      logger.error('Failed to construct eventData for save:', constructionError);
       setIsSubmitting(false);
       toast({ title: 'Error', description: 'Failed to prepare form data. Please try again.', variant: 'destructive' });
       return;
@@ -1462,10 +1466,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             */}
             <Button type="submit" form="event-scheduling-form" className="text-white"
               style={{ backgroundColor: '#236383' }}
-              disabled={isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              disabled={isFormLoading || isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
               onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
-              {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
+              {isFormLoading
+                ? 'Loading…'
+                : (updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
                 ? (isCreateMode ? 'Creating...' : mode === 'edit' ? 'Saving...' : 'Scheduling...')
                 : (isCreateMode ? 'Create Event' : mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
             </Button>
