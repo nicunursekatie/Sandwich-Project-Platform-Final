@@ -7,7 +7,11 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { logger } from '../utils/production-safe-logger';
-import { checkWeeklySubmissions, getWeekRange } from '../weekly-monitoring';
+import {
+  checkWeeklySubmissions,
+  getWeekRange,
+  getExpectedHostLocations,
+} from '../weekly-monitoring';
 import { db } from '../db';
 import { sandwichCollections } from '@shared/schema';
 import { and, gte, lte, isNull, asc } from 'drizzle-orm';
@@ -205,17 +209,8 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
     const weekReports = [];
     const locationStats: { [location: string]: { submitted: number; missed: number } } = {};
 
-    // Get all expected locations
-    const expectedLocations = [
-      'East Cobb/Roswell',
-      'Dunwoody/PTC',
-      'Alpharetta',
-      'Sandy Springs',
-      'Intown/Druid Hills',
-      'Dacula',
-      'Flowery Branch',
-      'Collective Learning',
-    ];
+    // Get all expected locations (inactive/hidden hosts are excluded)
+    const expectedLocations = await getExpectedHostLocations();
 
     // Initialize stats for all locations
     expectedLocations.forEach((location) => {

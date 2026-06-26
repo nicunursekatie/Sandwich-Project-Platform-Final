@@ -224,6 +224,59 @@ function checkDunwoodyStatus(submissions: any[], location: string): any {
 }
 
 /**
+ * Loosely match a curated expected-location name against a host record name.
+ * Normalized equality first, then a guarded substring match (shorter side
+ * must be >= 4 chars) so "Dacula" matches "Dacula" without tiny names like
+ * "UGA" matching unrelated hosts.
+ */
+function locationMatchesHostName(location: string, hostName: string): boolean {
+  const a = (location || '').toLowerCase().trim();
+  const b = (hostName || '').toLowerCase().trim();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const sa = a.replace(/[\/\-\s]/g, '');
+  const sb = b.replace(/[\/\-\s]/g, '');
+  if (!sa || !sb) return false;
+  if (sa === sb) return true;
+  const [shorter, longer] = sa.length <= sb.length ? [sa, sb] : [sb, sa];
+  return shorter.length >= 4 && longer.includes(shorter);
+}
+
+/**
+ * The curated weekly host locations, with any location whose matching host
+ * record is explicitly marked inactive/hidden in Host Management removed.
+ * This lets coordinators retire a location (e.g. Dacula) simply by setting
+ * its host status to "inactive" — it then drops out of weekly monitoring,
+ * the multi-week report, and reminder emails automatically. A location is
+ * only removed when a host is *positively* known to be inactive, so unknown
+ * or unmatched locations are kept (fail-open).
+ */
+export async function getExpectedHostLocations(): Promise<string[]> {
+  try {
+    const hostRecords = await db
+      .select({ name: hosts.name, status: hosts.status })
+      .from(hosts);
+
+    const inactiveHostNames = hostRecords
+      .filter((h) => h.status === 'inactive' || h.status === 'hidden')
+      .map((h) => h.name);
+
+    return EXPECTED_HOST_LOCATIONS.filter(
+      (location) =>
+        !inactiveHostNames.some((name) =>
+          locationMatchesHostName(location, name)
+        )
+    );
+  } catch (error) {
+    logger.error(
+      'Failed to filter expected host locations by status; using full curated list',
+      error
+    );
+    return [...EXPECTED_HOST_LOCATIONS];
+  }
+}
+
+/**
  * Check which host locations have submitted for a specific week
  * @param weeksAgo - Number of weeks to go back (0 = current week, 1 = last week, etc.)
  */
@@ -276,10 +329,11 @@ export async function checkWeeklySubmissions(
       weeklySubmissions.map((sub) => sub.hostName?.toLowerCase().trim())
     );
 
-    // Check each expected location
+    // Check each expected location (inactive/hidden hosts are excluded)
+    const expectedLocations = await getExpectedHostLocations();
     const statusResults: WeeklySubmissionStatus[] = [];
 
-    for (const expectedLocation of EXPECTED_HOST_LOCATIONS) {
+    for (const expectedLocation of expectedLocations) {
       const normalizedExpected = expectedLocation.toLowerCase().trim();
 
       // Get submissions for this location
@@ -360,8 +414,8 @@ export async function generateMultiWeekReport(
     });
   }
 
-  // Calculate summary statistics
-  const locationsTracked = EXPECTED_HOST_LOCATIONS;
+  // Calculate summary statistics (excluding inactive/hidden hosts)
+  const locationsTracked = await getExpectedHostLocations();
   const overallStats: {
     [location: string]: {
       submitted: number;

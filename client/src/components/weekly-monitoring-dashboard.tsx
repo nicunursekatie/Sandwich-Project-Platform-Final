@@ -1611,17 +1611,18 @@ export default function WeeklyMonitoringDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              These are the active host locations tracked for weekly
+              submissions. A location is removed automatically when its host is
+              marked inactive in Host Management.
+            </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {[
-                'East Cobb/Roswell',
-                'Dunwoody/PTC',
-                'Alpharetta',
-                'Sandy Springs',
-                'Intown/Druid Hills',
-                'Dacula',
-                'Flowery Branch',
-                'Collective Learning',
-              ].map((location) => (
+              {(Array.isArray(submissionStatus)
+                ? submissionStatus.map(
+                    (s: WeeklySubmissionStatus) => s.location
+                  )
+                : []
+              ).map((location: string) => (
                 <div
                   key={location}
                   className={`p-2 rounded-lg text-sm text-center ${
@@ -1658,9 +1659,6 @@ export default function WeeklyMonitoringDashboard() {
                 location.
               </p>
             </div>
-            <p className="text-sm text-gray-600">
-              Note: Dacula is marked as "maybe" - they may not submit every week
-            </p>
           </div>
         </CardContent>
       </Card>
