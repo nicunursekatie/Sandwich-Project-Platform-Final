@@ -830,7 +830,11 @@ export default function Dashboard({
       case 'committee':
       case 'committee-chat':
         // Redirect to main Team Chat
-        return <StreamChatRooms defaultTab={urlParams.tab} />;
+        return (
+          <div className="h-full min-h-0">
+            <StreamChatRooms defaultTab={urlParams.tab} />
+          </div>
+        );
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':
