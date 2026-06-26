@@ -29,6 +29,8 @@ import {
   Settings,
   Send,
   Download,
+  LayoutGrid,
+  Minus,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -94,6 +96,7 @@ export default function WeeklyMonitoringDashboard() {
   const queryClient = useQueryClient();
   const [selectedWeek, setSelectedWeek] = useState(0); // 0 = current week, 1 = last week, etc.
   const [reportWeeks, setReportWeeks] = useState(4); // Number of weeks for multi-week report
+  const [gridWeeks, setGridWeeks] = useState(12); // Number of weeks for the submission grid
   const [showSMSTest, setShowSMSTest] = useState(false);
   const [testPhoneNumber, setTestPhoneNumber] = useState('');
   const [showAnnouncementPanel, setShowAnnouncementPanel] = useState(false);
@@ -150,6 +153,14 @@ export default function WeeklyMonitoringDashboard() {
     queryFn: () =>
       apiRequest('GET', `/api/monitoring/multi-week-report/${reportWeeks}`),
     enabled: reportWeeks > 0,
+  });
+
+  // Get multi-week data for the submission grid (locations x weeks matrix)
+  const { data: gridReport, isLoading: gridLoading } = useQuery({
+    queryKey: ['/api/monitoring/multi-week-report', gridWeeks],
+    queryFn: () =>
+      apiRequest('GET', `/api/monitoring/multi-week-report/${gridWeeks}`),
+    enabled: gridWeeks > 0,
   });
 
   // Get monitoring statistics
@@ -1048,11 +1059,16 @@ export default function WeeklyMonitoringDashboard() {
 
       {/* Main Content - Tabs for different views */}
       <Tabs defaultValue="weekly" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="weekly" className="flex items-center gap-2">
             <MapPin className="w-4 h-4" />
             <span className="hidden sm:inline">Weekly Status</span>
             <span className="sm:hidden">Weekly</span>
+          </TabsTrigger>
+          <TabsTrigger value="grid" className="flex items-center gap-2">
+            <LayoutGrid className="w-4 h-4" />
+            <span className="hidden sm:inline">Submission Grid</span>
+            <span className="sm:hidden">Grid</span>
           </TabsTrigger>
           <TabsTrigger value="report" className="flex items-center gap-2">
             <FileBarChart className="w-4 h-4" />
@@ -1198,6 +1214,168 @@ export default function WeeklyMonitoringDashboard() {
           </Card>
         </TabsContent>
 
+
+        <TabsContent value="grid" className="mt-6">
+          {/* Submission Grid: all locations (rows) x weeks (columns) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LayoutGrid className="h-5 w-5" />
+                Submission Grid — All Locations × Weeks
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Each row is a host location; each column is a week (most recent
+                on the left). A green check means a collection log was submitted
+                for that week.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <label className="text-sm font-medium">Weeks to show:</label>
+                <Select
+                  value={gridWeeks.toString()}
+                  onValueChange={(value) => setGridWeeks(parseInt(value))}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="4">4 weeks</SelectItem>
+                    <SelectItem value="8">8 weeks</SelectItem>
+                    <SelectItem value="12">12 weeks</SelectItem>
+                    <SelectItem value="26">26 weeks</SelectItem>
+                    <SelectItem value="52">52 weeks</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="hidden sm:flex items-center gap-4 ml-auto text-xs text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4 text-green-600" /> Submitted
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <XCircle className="h-4 w-4 text-red-400" /> Missing
+                  </span>
+                </div>
+              </div>
+
+              {gridLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                  <span className="ml-2 text-gray-600">
+                    Loading submission grid...
+                  </span>
+                </div>
+              ) : gridReport &&
+                Array.isArray(gridReport.weeks) &&
+                gridReport.weeks.length > 0 ? (
+                (() => {
+                  // weeks come back most-recent-first (index 0 = this week)
+                  const weeks: MultiWeekReport[] = gridReport.weeks;
+                  const locations: string[] =
+                    weeks[0]?.submissionStatus?.map((s) => s.location) ?? [];
+
+                  const formatWeek = (w: MultiWeekReport) => {
+                    const d = new Date(w.weekRange.startDate);
+                    return d.toLocaleDateString('en-US', {
+                      month: 'numeric',
+                      day: 'numeric',
+                    });
+                  };
+                  const statusFor = (loc: string, w: MultiWeekReport) =>
+                    w.submissionStatus?.find((s) => s.location === loc);
+
+                  return (
+                    <div className="overflow-x-auto border rounded-lg">
+                      <table className="w-full border-collapse text-sm">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="sticky left-0 z-10 bg-gray-50 text-left font-medium text-gray-700 px-3 py-2 border-b border-r min-w-[150px]">
+                              Location
+                            </th>
+                            {weeks.map((w, i) => (
+                              <th
+                                key={i}
+                                className="px-2 py-2 border-b text-center font-medium text-gray-600 whitespace-nowrap"
+                                title={w.weekLabel}
+                              >
+                                <div>{formatWeek(w)}</div>
+                                <div className="text-[10px] font-normal text-gray-400">
+                                  {i === 0
+                                    ? 'This wk'
+                                    : i === 1
+                                    ? 'Last wk'
+                                    : `${i}w ago`}
+                                </div>
+                              </th>
+                            ))}
+                            <th className="px-3 py-2 border-b border-l text-center font-medium text-gray-700 whitespace-nowrap">
+                              Rate
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {locations.map((loc) => {
+                            const submittedCount = weeks.filter(
+                              (w) => statusFor(loc, w)?.hasSubmitted
+                            ).length;
+                            const pct =
+                              weeks.length > 0
+                                ? Math.round(
+                                    (submittedCount / weeks.length) * 100
+                                  )
+                                : 0;
+                            return (
+                              <tr key={loc} className="hover:bg-gray-50">
+                                <td className="sticky left-0 z-10 bg-white px-3 py-2 border-b border-r font-medium text-gray-800 min-w-[150px]">
+                                  {loc}
+                                </td>
+                                {weeks.map((w, i) => {
+                                  const s = statusFor(loc, w);
+                                  return (
+                                    <td
+                                      key={i}
+                                      className="px-2 py-2 border-b text-center"
+                                    >
+                                      {s ? (
+                                        s.hasSubmitted ? (
+                                          <CheckCircle className="h-4 w-4 text-green-600 inline" />
+                                        ) : (
+                                          <XCircle className="h-4 w-4 text-red-400 inline" />
+                                        )
+                                      ) : (
+                                        <Minus className="h-4 w-4 text-gray-300 inline" />
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                                <td className="px-3 py-2 border-b border-l text-center">
+                                  <Badge
+                                    className={
+                                      pct >= 75
+                                        ? 'bg-green-100 text-green-800'
+                                        : pct >= 40
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }
+                                  >
+                                    {submittedCount}/{weeks.length}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No submission grid data available.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="report" className="mt-6">
           {/* Multi-Week Report */}
