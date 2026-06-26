@@ -29,3 +29,10 @@ User reports a page/component (e.g. the events view) "stalling out / failing to 
 ## Disposition
 - These incidents are usually **transient and self-recover**. Confirm recovery by log silence (no new DB errors) + resumed normal endpoint traffic, then have the user reload.
 - Only consider code work if it recurs: graceful error/retry UI instead of an infinite spinner, and/or hardening the session-store TCP pool (the chronic low-grade source of heartbeat 500s).
+
+## Escalation: a DB storm can FULLY HANG the prod process (whole app down, not just data)
+- Symptom: live site returns **nothing** — `curl https://tspapp.org/` times out with HTTP 000 / 0 bytes (vs. a normal 200 or even a 500). Deployment logs go **silent** (no new lines), the periodic "Production heartbeat - uptime" stops, and the next scheduled hourly cron (`:15`) never fires. Often a `Slow request detected ... duration: 60s` appears right before the silence.
+- Meaning: the Node process is **wedged/hung** (event loop stuck or crashed), not just slow. This deployment is **vm** (always-on), so a hung-but-not-exited process does **NOT** auto-restart — it sits frozen until someone redeploys.
+- Confirm it's the app, not the platform/DB: `getDeploymentInfo()` shows `isDeployed:true, hasSuccessfulBuild:true` (build is fine), and a prod read-replica `SELECT 1` (executeSql `environment:"production"`) **succeeds** (DB is fine). So neither Replit's platform nor Neon is "down" — the app's own process is stuck.
+- **Remedy = restart it.** No direct prod-restart tool exists for the agent; the user must Redeploy/Republish from the Publishing pane (surface the button via `suggestDeploy()`). With DB + build healthy, a fresh process comes right back.
+- **Real root cause to fix so it stops recurring:** the app does not ride through Neon connection blips — the `connect-pg-simple` TCP pool throws on every request during a storm and can wedge/crash the process. Hardening (pool `error` handlers so a pool error never crashes the process, connection/idle/statement timeouts, TCP keepalive, and not hard-failing request handling when the session store is briefly unreachable) is the durable fix.
