@@ -150,7 +150,7 @@ body {
   }
 
   body {
-    @apply font-sans antialiased text-foreground;
+    @apply font-sans antialiased text-base text-foreground;
     font-family: 'Roboto', system-ui, sans-serif;
     background-color: #007E8C; /* Deep teal for app shell */
   }

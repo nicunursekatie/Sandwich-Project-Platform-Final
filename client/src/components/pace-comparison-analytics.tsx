@@ -378,8 +378,8 @@ export default function PaceComparisonAnalytics() {
       {/* Period picker */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Calendar className="h-4 w-4" /> Compare period
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" /> Compare period
           </CardTitle>
           <CardDescription>
             Showing <strong>{currentPeriod.label}</strong> ({fmtDate(currentPeriod.start)} – {fmtDate(currentPeriod.end)}). Each card compares against the <em>same dates last year</em> and the <em>equal-length window immediately before</em> this one.
@@ -398,7 +398,6 @@ export default function PaceComparisonAnalytics() {
             ] as [PresetKey, string][]).map(([k, label]) => (
               <Button
                 key={k}
-                size="sm"
                 variant={preset === k ? 'default' : 'outline'}
                 onClick={() => setPreset(k)}
               >
@@ -409,7 +408,7 @@ export default function PaceComparisonAnalytics() {
           {preset === 'custom' && (
             <div className="flex flex-wrap items-end gap-3 mt-3">
               <div>
-                <Label htmlFor="pc-start" className="text-xs">From</Label>
+                <Label htmlFor="pc-start">From</Label>
                 <Input
                   id="pc-start"
                   type="date"
@@ -419,7 +418,7 @@ export default function PaceComparisonAnalytics() {
                 />
               </div>
               <div>
-                <Label htmlFor="pc-end" className="text-xs">To</Label>
+                <Label htmlFor="pc-end">To</Label>
                 <Input
                   id="pc-end"
                   type="date"
@@ -475,8 +474,8 @@ export default function PaceComparisonAnalytics() {
       {projection && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Target className="h-4 w-4" /> Year-end projection
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" /> Year-end projection
             </CardTitle>
             <CardDescription>
               Based on day {projection.dayOfYear} of {projection.daysInYear} at current pace.
@@ -488,13 +487,13 @@ export default function PaceComparisonAnalytics() {
                 <div className="text-3xl font-bold text-slate-900">
                   {fmtNum(projection.projected)}
                 </div>
-                <div className="text-xs text-slate-500">Projected year-end</div>
+                <div className="text-sm text-slate-600">Projected year-end</div>
               </div>
               <div>
                 <div className="text-2xl font-semibold text-slate-700">
                   {((projection.projected / ANNUAL_GOAL) * 100).toFixed(0)}%
                 </div>
-                <div className="text-xs text-slate-500 flex items-center gap-1">
+                <div className="text-sm text-slate-600 flex items-center gap-1">
                   of {fmtNum(ANNUAL_GOAL)} goal
                   {canEditGoal && !editingGoal && (
                     <button
@@ -629,7 +628,7 @@ export default function PaceComparisonAnalytics() {
           <CardContent>
             <ul className="space-y-1.5">
               {narrative.map((line, i) => (
-                <li key={i} className="text-sm text-slate-700 flex gap-2">
+                <li key={i} className="text-base text-slate-700 flex gap-2 leading-relaxed">
                   <span className="text-blue-500 mt-0.5">•</span>
                   <span>{line}</span>
                 </li>
@@ -658,12 +657,12 @@ function ComparisonCard({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-slate-600">{title}</CardTitle>
+        <CardTitle className="text-base font-semibold text-slate-700">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-3xl font-bold text-slate-900">{fmtNum(current)}</div>
         {(periodRange || entries !== undefined) && (
-          <div className="text-xs text-slate-500 mt-0.5">
+          <div className="text-sm text-slate-600 mt-1 leading-snug">
             {periodRange}
             {periodRange && entries !== undefined && ' · '}
             {entries !== undefined && (
@@ -673,30 +672,30 @@ function ComparisonCard({
             )}
           </div>
         )}
-        <div className="mt-3 space-y-1.5">
+        <div className="mt-4 space-y-3">
           {comparisons.map((c, i) => {
             const isUp = c.pct !== null && c.pct >= 0;
             return (
-              <div key={i} className="flex items-start justify-between gap-2 text-sm">
-                <span className="text-slate-600 leading-snug">{c.label}</span>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-slate-500 text-xs">{fmtNum(c.value)}</span>
+              <div key={i} className="space-y-1.5 border-t border-slate-100 pt-3 first:border-0 first:pt-0">
+                <div className="text-base text-slate-700 leading-snug">{c.label}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium text-slate-600">{fmtNum(c.value)}</span>
                   <Badge
                     variant="outline"
                     className={
                       c.pct === null
-                        ? 'text-slate-500'
+                        ? 'text-slate-600 text-sm'
                         : isUp
-                          ? 'text-emerald-700 border-emerald-200 bg-emerald-50'
-                          : 'text-rose-700 border-rose-200 bg-rose-50'
+                          ? 'text-emerald-800 border-emerald-200 bg-emerald-50 text-sm'
+                          : 'text-rose-800 border-rose-200 bg-rose-50 text-sm'
                     }
                   >
                     {c.pct === null ? '—' : (
                       <>
                         {isUp ? (
-                          <TrendingUp className="h-3 w-3 mr-1" />
+                          <TrendingUp className="h-3.5 w-3.5 mr-1" />
                         ) : (
-                          <TrendingDown className="h-3 w-3 mr-1" />
+                          <TrendingDown className="h-3.5 w-3.5 mr-1" />
                         )}
                         {fmtPct(c.pct)}
                       </>

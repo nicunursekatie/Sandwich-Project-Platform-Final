@@ -753,36 +753,36 @@ export default function Dashboard({
               <h1 className="text-lg sm:text-xl md:text-2xl font-main-heading text-primary break-words">
                 Impact & Analytics Dashboard
               </h1>
-              <p className="text-sm sm:text-base font-body text-muted-foreground break-words">
+              <p className="text-base font-body text-muted-foreground break-words">
                 Track community impact, collection trends, and host performance
               </p>
             </div>
             <Tabs defaultValue="pace" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+              <TabsList className="grid w-full grid-cols-4 min-h-11 sm:min-h-12 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
                   value="pace"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Pace &amp; Comparison
                 </TabsTrigger>
                 <TabsTrigger
                   value="impact"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Impact Dashboard
                 </TabsTrigger>
                 <TabsTrigger
                   value="low-high-weeks"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Low / High Weeks
                 </TabsTrigger>
                 <TabsTrigger
                   value="hosts"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Host Analytics
