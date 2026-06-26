@@ -184,6 +184,14 @@ const CustomMessage = () => {
 
 // Custom CSS for Stream Chat with brand colors
 const customChatStyles = `
+  /* Fill dashboard content area instead of a fixed viewport calc */
+  .str-chat {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    display: flex;
+  }
+
   /* Multi-line textarea */
   .str-chat__textarea textarea {
     min-height: 60px !important;
@@ -1056,7 +1064,7 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
   return (
     <>
       <style>{customChatStyles}</style>
-      <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg border overflow-hidden">
+      <div className="flex h-full min-h-0 bg-white rounded-lg border overflow-hidden">
         <Chat client={client}>
         {/* Sidebar - hidden on mobile when viewing chat */}
         <div className={`w-full md:w-72 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col ${!mobileShowSidebar ? 'hidden md:flex' : 'flex'}`}>

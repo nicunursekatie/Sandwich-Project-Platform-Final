@@ -177,7 +177,7 @@ export function buildEventDataForServer(
     eventData.sandwichTypes = null;
   } else {
     eventData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
-    eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    eventData.estimatedSandwichCount = sumSandwichTypeQuantities(formData.sandwichTypes);
     eventData.estimatedSandwichCountMin = null;
     eventData.estimatedSandwichCountMax = null;
   }
@@ -220,18 +220,63 @@ export function buildEventDataForServer(
 }
 
 /**
+ * Sum quantities from a sandwichTypes value (array or JSON string).
+ */
+export function sumSandwichTypeQuantities(sandwichTypes: unknown): number {
+  if (!sandwichTypes) return 0;
+  try {
+    const parsed =
+      typeof sandwichTypes === 'string' ? JSON.parse(sandwichTypes) : sandwichTypes;
+    if (!Array.isArray(parsed)) return 0;
+    return parsed.reduce(
+      (sum, item) => sum + (Number((item as { quantity?: number })?.quantity) || 0),
+      0,
+    );
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Determine sandwich mode from existing event data.
+ *
+ * When estimatedSandwichCount disagrees with a stale sandwichTypes breakdown,
+ * prefer Exact Count so a full-form save does not silently revert the total
+ * (e.g. user enters 200 but old types still sum to 198).
  */
 export function determineSandwichMode(
   sandwichTypes: any,
   estimatedSandwichCountMin: any,
-  estimatedSandwichCountMax: any
+  estimatedSandwichCountMax: any,
+  estimatedSandwichCount?: number | null,
 ): 'total' | 'range' | 'types' {
-  const parsed = sandwichTypes ?
-    (typeof sandwichTypes === 'string' ? JSON.parse(sandwichTypes) : sandwichTypes) : [];
-  const hasTypesData = Array.isArray(parsed) && parsed.length > 0;
   const hasRangeData = estimatedSandwichCountMin && estimatedSandwichCountMax;
-  return hasTypesData ? 'types' : hasRangeData ? 'range' : 'total';
+  if (hasRangeData) return 'range';
+
+  let parsed: unknown[] = [];
+  try {
+    parsed = sandwichTypes
+      ? typeof sandwichTypes === 'string'
+        ? JSON.parse(sandwichTypes)
+        : sandwichTypes
+      : [];
+  } catch {
+    parsed = [];
+  }
+  const hasTypesData = Array.isArray(parsed) && parsed.length > 0;
+  if (!hasTypesData) return 'total';
+
+  const typesTotal = sumSandwichTypeQuantities(parsed);
+  const storedTotal =
+    typeof estimatedSandwichCount === 'number' && estimatedSandwichCount > 0
+      ? estimatedSandwichCount
+      : null;
+
+  if (storedTotal !== null && typesTotal !== storedTotal) {
+    return 'total';
+  }
+
+  return 'types';
 }
 
 /**

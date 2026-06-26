@@ -5,6 +5,8 @@ import {
   findMismatchedSavedFields,
   getDroppedServerFields,
   buildEventDataForServer,
+  determineSandwichMode,
+  sumSandwichTypeQuantities,
 } from '../form-utils';
 
 const baseFormData: any = {
@@ -160,5 +162,67 @@ describe('Mark Scheduled save completion gating', () => {
     expect(getDroppedServerFields({ id: 1, status: 'scheduled' })).toEqual([]);
     expect(getDroppedServerFields(null)).toEqual([]);
     expect(getDroppedServerFields(undefined)).toEqual([]);
+  });
+});
+
+describe('determineSandwichMode (sandwich count drift)', () => {
+  it('prefers Exact Count when stored total disagrees with stale types breakdown', () => {
+    expect(
+      determineSandwichMode(
+        [{ type: 'deli', quantity: 100 }, { type: 'pbj', quantity: 98 }],
+        null,
+        null,
+        200,
+      ),
+    ).toBe('total');
+  });
+
+  it('uses Specify Types when breakdown matches stored total', () => {
+    expect(
+      determineSandwichMode(
+        [{ type: 'deli', quantity: 100 }, { type: 'pbj', quantity: 98 }],
+        null,
+        null,
+        198,
+      ),
+    ).toBe('types');
+  });
+
+  it('clears types semantics in total-mode full-form save payload', () => {
+    const payload = buildEventDataForServer(
+      {
+        ...baseFormData,
+        totalSandwichCount: 200,
+        sandwichTypes: [{ type: 'deli', quantity: 100 }, { type: 'pbj', quantity: 98 }],
+      },
+      {
+        mode: 'edit',
+        hasEventRequest: true,
+        eventRequestStatus: 'scheduled',
+        sandwichMode: 'total',
+        actualSandwichMode: 'total',
+      },
+    );
+    expect(payload.estimatedSandwichCount).toBe(200);
+    expect(payload.sandwichTypes).toBeNull();
+  });
+
+  it('derives estimatedSandwichCount from types in types-mode save', () => {
+    const payload = buildEventDataForServer(
+      {
+        ...baseFormData,
+        totalSandwichCount: 200,
+        sandwichTypes: [{ type: 'deli', quantity: 100 }, { type: 'pbj', quantity: 98 }],
+      },
+      {
+        mode: 'edit',
+        hasEventRequest: true,
+        eventRequestStatus: 'scheduled',
+        sandwichMode: 'types',
+        actualSandwichMode: 'total',
+      },
+    );
+    expect(payload.estimatedSandwichCount).toBe(198);
+    expect(sumSandwichTypeQuantities(payload.sandwichTypes)).toBe(198);
   });
 });

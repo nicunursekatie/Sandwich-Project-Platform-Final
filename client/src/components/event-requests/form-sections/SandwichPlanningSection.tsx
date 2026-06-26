@@ -23,6 +23,7 @@ import {
 import { Sandwich, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import { SANDWICH_TYPES } from '../constants';
 import type { FormSectionProps } from './types';
+import { sumSandwichTypeQuantities } from '../form-utils';
 
 interface SandwichPlanningSectionProps extends FormSectionProps {
   /** Current sandwich planning mode */
@@ -78,7 +79,17 @@ export const SandwichPlanningSection: React.FC<SandwichPlanningSectionProps> = (
           type="button"
           size="sm"
           variant={sandwichMode === 'total' ? 'default' : 'outline'}
-          onClick={() => setSandwichMode('total')}
+          onClick={() => {
+            setSandwichMode('total');
+            setFormData((prev) => ({
+              ...prev,
+              totalSandwichCount:
+                prev.totalSandwichCount ||
+                sumSandwichTypeQuantities(prev.sandwichTypes) ||
+                0,
+              sandwichTypes: [],
+            }));
+          }}
           className="text-xs"
         >
           Exact Count
@@ -87,7 +98,13 @@ export const SandwichPlanningSection: React.FC<SandwichPlanningSectionProps> = (
           type="button"
           size="sm"
           variant={sandwichMode === 'range' ? 'default' : 'outline'}
-          onClick={() => setSandwichMode('range')}
+          onClick={() => {
+            setSandwichMode('range');
+            setFormData((prev) => ({
+              ...prev,
+              sandwichTypes: [],
+            }));
+          }}
           className="text-xs"
         >
           Range

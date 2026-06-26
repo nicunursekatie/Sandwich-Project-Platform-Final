@@ -41,6 +41,8 @@ interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
   events?: EventRequest[]; // Optional: pre-filtered events (e.g., only volunteer opportunities)
   filterByNeeds?: boolean; // If true, only show events that need speakers or volunteers
+  /** Hide org self-transport events (default true — they don't need TSP logistics on the calendar). */
+  hideSelfTransport?: boolean;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -344,7 +346,12 @@ const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
   };
 };
 
-export function EventCalendarView({ onEventClick, events: providedEvents, filterByNeeds = false }: EventCalendarViewProps) {
+export function EventCalendarView({
+  onEventClick,
+  events: providedEvents,
+  filterByNeeds = false,
+  hideSelfTransport = true,
+}: EventCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [statusFilters, setStatusFilters] = useState<string[]>([
@@ -378,6 +385,11 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   const filteredEvents = useMemo(() => {
     let filtered = events.filter((event) => statusFilters.includes(event.status));
 
+    // Self-transport groups handle their own sandwich delivery — omit from logistics calendar
+    if (hideSelfTransport) {
+      filtered = filtered.filter((event) => !event.selfTransport);
+    }
+
     // Hide cancelled events when the toggle is active
     if (hideCancelled) {
       filtered = filtered.filter((event) => event.status !== 'cancelled');
@@ -395,7 +407,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
     }
 
     return filtered;
-  }, [events, statusFilters, filterByNeeds, hideCancelled]);
+  }, [events, statusFilters, filterByNeeds, hideCancelled, hideSelfTransport]);
 
   const ALL_STATUSES = ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'cancelled'];
 
