@@ -513,8 +513,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'weekly-monitoring',
     permission: PERMISSIONS.NAV_WEEKLY_MONITORING,
     group: 'data',
-    parentId: 'analytics-section',
-    isSubItem: true,
   },
   {
     id: 'event-impact-reports',
@@ -523,8 +521,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-impact-reports',
     permission: PERMISSIONS.NAV_EVENT_IMPACT_REPORTS,
     group: 'data',
-    parentId: 'analytics-section',
-    isSubItem: true,
   },
   {
     id: 'cooler-tracking',
