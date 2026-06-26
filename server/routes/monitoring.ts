@@ -7,9 +7,31 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { logger } from '../utils/production-safe-logger';
-import { checkWeeklySubmissions } from '../weekly-monitoring';
+import { checkWeeklySubmissions, getWeekRange } from '../weekly-monitoring';
+import { db } from '../db';
+import { sandwichCollections } from '@shared/schema';
+import { and, gte, lte, isNull } from 'drizzle-orm';
 
 const router = Router();
+
+/**
+ * Loosely match a collection's free-text hostName against a host location name.
+ * Uses normalized equality first, then a guarded substring match (shorter side
+ * must be >= 4 chars) to tolerate variations like "East Cobb" vs
+ * "East Cobb/Roswell" without producing false positives on tiny names.
+ */
+function hostNameMatches(collectionHostName: string, locationName: string): boolean {
+  const a = (collectionHostName || '').toLowerCase().trim();
+  const b = (locationName || '').toLowerCase().trim();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const sa = a.replace(/[\/\-\s]/g, '');
+  const sb = b.replace(/[\/\-\s]/g, '');
+  if (!sa || !sb) return false;
+  if (sa === sb) return true;
+  const [shorter, longer] = sa.length <= sb.length ? [sa, sb] : [sb, sa];
+  return shorter.length >= 4 && longer.includes(shorter);
+}
 
 // Get SMS configuration status with enhanced health checks
 router.get('/sms-config', async (req, res) => {
@@ -280,6 +302,85 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
   } catch (error) {
     logger.error('Error getting multi-week report:', error);
     res.status(500).json({ error: 'Failed to get multi-week report' });
+  }
+});
+
+// Get submission grid covering ALL host locations (rows) x weeks (columns)
+router.get('/grid-report/:weeks', async (req, res) => {
+  try {
+    const numWeeks = Math.min(
+      Math.max(parseInt(req.params.weeks, 10) || 12, 1),
+      52
+    );
+
+    // All host locations from the hosts table (active only by default)
+    const includeInactive = req.query.includeInactive === 'true';
+    const allHosts = await storage.getAllHosts();
+    const hostsToShow = allHosts
+      .filter((h: any) =>
+        includeInactive ? true : (h.status ?? 'active') === 'active'
+      )
+      .sort((a: any, b: any) =>
+        String(a.name).localeCompare(String(b.name))
+      );
+
+    const weeks = [];
+    for (let i = 0; i < numWeeks; i++) {
+      // Wednesday-Tuesday week window, matching the rest of monitoring
+      const { startDate, endDate } = getWeekRange(i);
+
+      const submissions = await db
+        .select({
+          hostName: sandwichCollections.hostName,
+          collectionDate: sandwichCollections.collectionDate,
+        })
+        .from(sandwichCollections)
+        .where(
+          and(
+            gte(
+              sandwichCollections.collectionDate,
+              startDate.toISOString().split('T')[0]
+            ),
+            lte(
+              sandwichCollections.collectionDate,
+              endDate.toISOString().split('T')[0]
+            ),
+            isNull(sandwichCollections.deletedAt)
+          )
+        );
+
+      const submissionStatus = hostsToShow.map((host: any) => {
+        const matches = submissions.filter((s) =>
+          hostNameMatches(s.hostName, host.name)
+        );
+        return {
+          location: host.name,
+          hasSubmitted: matches.length > 0,
+          lastSubmissionDate:
+            matches.length > 0
+              ? matches[matches.length - 1].collectionDate
+              : undefined,
+        };
+      });
+
+      const weekLabel =
+        i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i} Weeks Ago`;
+
+      weeks.push({
+        weekRange: { startDate, endDate },
+        weekLabel,
+        submissionStatus,
+      });
+    }
+
+    res.json({
+      weeks,
+      totalHosts: hostsToShow.length,
+      totalWeeks: numWeeks,
+    });
+  } catch (error) {
+    logger.error('Error getting grid report:', error);
+    res.status(500).json({ error: 'Failed to get submission grid report' });
   }
 });
 

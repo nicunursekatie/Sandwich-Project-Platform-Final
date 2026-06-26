@@ -155,11 +155,11 @@ export default function WeeklyMonitoringDashboard() {
     enabled: reportWeeks > 0,
   });
 
-  // Get multi-week data for the submission grid (locations x weeks matrix)
+  // Get submission grid data for ALL host locations (locations x weeks matrix)
   const { data: gridReport, isLoading: gridLoading } = useQuery({
-    queryKey: ['/api/monitoring/multi-week-report', gridWeeks],
+    queryKey: ['/api/monitoring/grid-report', gridWeeks],
     queryFn: () =>
-      apiRequest('GET', `/api/monitoring/multi-week-report/${gridWeeks}`),
+      apiRequest('GET', `/api/monitoring/grid-report/${gridWeeks}`),
     enabled: gridWeeks > 0,
   });
 
