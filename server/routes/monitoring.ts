@@ -10,7 +10,7 @@ import { logger } from '../utils/production-safe-logger';
 import { checkWeeklySubmissions, getWeekRange } from '../weekly-monitoring';
 import { db } from '../db';
 import { sandwichCollections } from '@shared/schema';
-import { and, gte, lte, isNull } from 'drizzle-orm';
+import { and, gte, lte, isNull, asc } from 'drizzle-orm';
 
 const router = Router();
 
@@ -324,54 +324,95 @@ router.get('/grid-report/:weeks', async (req, res) => {
         String(a.name).localeCompare(String(b.name))
       );
 
-    const weeks = [];
-    for (let i = 0; i < numWeeks; i++) {
-      // Wednesday-Tuesday week window, matching the rest of monitoring
+    // Wednesday-Tuesday week windows, matching the rest of monitoring.
+    // Index 0 = this week (most recent), so the last window is the oldest.
+    const weekWindows = Array.from({ length: numWeeks }, (_, i) => {
       const { startDate, endDate } = getWeekRange(i);
+      return {
+        i,
+        startDate,
+        endDate,
+        startStr: startDate.toISOString().split('T')[0],
+        endStr: endDate.toISOString().split('T')[0],
+      };
+    });
 
-      const submissions = await db
-        .select({
-          hostName: sandwichCollections.hostName,
-          collectionDate: sandwichCollections.collectionDate,
+    // Fetch the whole span in a single query (ordered by date so the last
+    // match per host is the most recent), then bucket by week in memory —
+    // avoids one DB round-trip per week (up to 52).
+    const rangeStartStr = weekWindows[weekWindows.length - 1].startStr;
+    const rangeEndStr = weekWindows[0].endStr;
+    const allSubmissions = await db
+      .select({
+        hostName: sandwichCollections.hostName,
+        collectionDate: sandwichCollections.collectionDate,
+        individualSandwiches: sandwichCollections.individualSandwiches,
+      })
+      .from(sandwichCollections)
+      .where(
+        and(
+          gte(sandwichCollections.collectionDate, rangeStartStr),
+          lte(sandwichCollections.collectionDate, rangeEndStr),
+          isNull(sandwichCollections.deletedAt)
+        )
+      )
+      .orderBy(asc(sandwichCollections.collectionDate));
+
+    const weeks = weekWindows.map(({ i, startDate, endDate, startStr, endStr }) => {
+      // collectionDate is a YYYY-MM-DD string, so lexical comparison is safe
+      const submissions = allSubmissions.filter(
+        (s) => s.collectionDate >= startStr && s.collectionDate <= endStr
+      );
+
+      const submissionStatus = hostsToShow
+        // Skip weeks before a host existed so new locations don't get
+        // false "missing" marks (and depressed rates) for weeks that
+        // predate them. The grid renders an omitted host/week as no-data.
+        .filter((host: any) => {
+          if (!host.createdAt) return true;
+          return new Date(host.createdAt) <= endDate;
         })
-        .from(sandwichCollections)
-        .where(
-          and(
-            gte(
-              sandwichCollections.collectionDate,
-              startDate.toISOString().split('T')[0]
-            ),
-            lte(
-              sandwichCollections.collectionDate,
-              endDate.toISOString().split('T')[0]
-            ),
-            isNull(sandwichCollections.deletedAt)
-          )
-        );
+        .map((host: any) => {
+          const matches = submissions.filter((s) =>
+            hostNameMatches(s.hostName, host.name)
+          );
 
-      const submissionStatus = hostsToShow.map((host: any) => {
-        const matches = submissions.filter((s) =>
-          hostNameMatches(s.hostName, host.name)
-        );
-        return {
-          location: host.name,
-          hasSubmitted: matches.length > 0,
-          lastSubmissionDate:
-            matches.length > 0
-              ? matches[matches.length - 1].collectionDate
-              : undefined,
-        };
-      });
+          // Dunwoody/PTC mirrors the weekly-monitoring rule: the week is
+          // only complete with 2+ logs that have individual sandwich counts.
+          const isDunwoody = String(host.name)
+            .toLowerCase()
+            .includes('dunwoody');
+          let hasSubmitted: boolean;
+          if (isDunwoody) {
+            const logsWithCounts = matches.filter(
+              (m) =>
+                typeof m.individualSandwiches === 'number' &&
+                m.individualSandwiches > 0
+            );
+            hasSubmitted = logsWithCounts.length >= 2;
+          } else {
+            hasSubmitted = matches.length > 0;
+          }
+
+          return {
+            location: host.name,
+            hasSubmitted,
+            lastSubmissionDate:
+              matches.length > 0
+                ? matches[matches.length - 1].collectionDate
+                : undefined,
+          };
+        });
 
       const weekLabel =
         i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i} Weeks Ago`;
 
-      weeks.push({
+      return {
         weekRange: { startDate, endDate },
         weekLabel,
         submissionStatus,
-      });
-    }
+      };
+    });
 
     res.json({
       weeks,

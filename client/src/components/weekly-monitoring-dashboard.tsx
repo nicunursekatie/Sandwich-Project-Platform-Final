@@ -1280,8 +1280,17 @@ export default function WeeklyMonitoringDashboard() {
                       day: 'numeric',
                     });
                   };
-                  const statusFor = (loc: string, w: MultiWeekReport) =>
-                    w.submissionStatus?.find((s) => s.location === loc);
+                  // Index each week's statuses by location once, so cell
+                  // lookups are O(1) instead of a linear find per cell.
+                  const weekMaps = weeks.map((w) => {
+                    const m = new Map<string, WeeklySubmissionStatus>();
+                    (w.submissionStatus ?? []).forEach((s) =>
+                      m.set(s.location, s)
+                    );
+                    return m;
+                  });
+                  const statusAt = (loc: string, i: number) =>
+                    weekMaps[i].get(loc);
 
                   return (
                     <div className="overflow-x-auto border rounded-lg">
@@ -1314,13 +1323,19 @@ export default function WeeklyMonitoringDashboard() {
                         </thead>
                         <tbody>
                           {locations.map((loc) => {
+                            // Only count weeks where this host has data (i.e.
+                            // weeks on/after it existed); weeks with no status
+                            // row are excluded from the rate denominator.
+                            const applicableCount = weeks.filter((_, i) =>
+                              weekMaps[i].has(loc)
+                            ).length;
                             const submittedCount = weeks.filter(
-                              (w) => statusFor(loc, w)?.hasSubmitted
+                              (_, i) => statusAt(loc, i)?.hasSubmitted
                             ).length;
                             const pct =
-                              weeks.length > 0
+                              applicableCount > 0
                                 ? Math.round(
-                                    (submittedCount / weeks.length) * 100
+                                    (submittedCount / applicableCount) * 100
                                   )
                                 : 0;
                             return (
@@ -1329,7 +1344,7 @@ export default function WeeklyMonitoringDashboard() {
                                   {loc}
                                 </td>
                                 {weeks.map((w, i) => {
-                                  const s = statusFor(loc, w);
+                                  const s = statusAt(loc, i);
                                   return (
                                     <td
                                       key={i}
@@ -1357,7 +1372,7 @@ export default function WeeklyMonitoringDashboard() {
                                         : 'bg-red-100 text-red-800'
                                     }
                                   >
-                                    {submittedCount}/{weeks.length}
+                                    {submittedCount}/{applicableCount}
                                   </Badge>
                                 </td>
                               </tr>
