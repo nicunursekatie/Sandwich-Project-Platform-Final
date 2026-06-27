@@ -19,6 +19,20 @@ import { and, gte, lte, isNull, asc } from 'drizzle-orm';
 const router = Router();
 
 /**
+ * Placeholder/categorization host names that are NOT real weekly locations and
+ * should never appear in the submission grid. These are data-collection
+ * artifacts (e.g. historical group collections logged under a "Groups"
+ * pseudo-location). Compared lower-cased and trimmed.
+ */
+const NON_LOCATION_HOST_NAMES = new Set([
+  'groups',
+  'group',
+  'unassigned',
+  'unknown',
+  'unnamed groups',
+]);
+
+/**
  * Loosely match a collection's free-text hostName against a host location name.
  * Uses normalized equality first, then a guarded substring match (shorter side
  * must be >= 4 chars) to tolerate variations like "East Cobb" vs
@@ -315,6 +329,12 @@ router.get('/grid-report/:weeks', async (req, res) => {
       .filter((h: any) =>
         includeInactive ? true : (h.status ?? 'active') === 'active'
       )
+      // Exclude placeholder/categorization hosts that aren't real weekly
+      // locations (e.g. "Groups", "Unassigned", "Unknown") — these are data
+      // artifacts, not locations expected to submit a weekly log.
+      .filter((h: any) => !NON_LOCATION_HOST_NAMES.has(
+        String(h.name).toLowerCase().trim()
+      ))
       .sort((a: any, b: any) =>
         String(a.name).localeCompare(String(b.name))
       );
