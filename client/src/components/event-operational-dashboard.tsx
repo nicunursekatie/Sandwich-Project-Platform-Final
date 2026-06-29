@@ -310,10 +310,19 @@ export default function EventOperationalDashboard() {
         return dateA.getTime() - dateB.getTime();
       });
 
-    // Post-event follow-up needed: completed events missing social media or final count
+    // Post-event follow-up needed: completed events missing social media or final count.
+    // Only surface events from the past 90 days — older completed events are realistically
+    // never going to get a social post or a final count, and including them balloons this
+    // list into the thousands, which trains users to ignore the section entirely.
+    const followUpCutoff = new Date();
+    followUpCutoff.setDate(followUpCutoff.getDate() - 90);
     const postEventFollowUp: AttentionItem[] = events
       .filter((e) => {
         if (e.status !== 'completed') return false;
+        const effectiveDate = getEffectiveEventDate(e);
+        if (!effectiveDate) return false;
+        const eventDate = new Date(effectiveDate);
+        if (isNaN(eventDate.getTime()) || eventDate < followUpCutoff) return false;
         const missing: string[] = [];
         if (!e.socialMediaPostCompleted) missing.push('Social media post');
         if (!e.actualSandwichCount) missing.push('Final sandwich count');
@@ -605,9 +614,12 @@ export default function EventOperationalDashboard() {
             defaultOpen={attentionItems.postEventFollowUp.length > 0 && attentionItems.postEventFollowUp.length <= 5}
           >
             {attentionItems.postEventFollowUp.length === 0 ? (
-              <p className="text-gray-500 text-sm">All completed events have follow-up data!</p>
+              <p className="text-gray-500 text-sm">All recent completed events have follow-up data!</p>
             ) : (
               <div className="space-y-2">
+                <p className="text-xs text-gray-400 pb-1">
+                  Showing completed events from the past 90 days that still need a social post or final count.
+                </p>
                 {attentionItems.postEventFollowUp.slice(0, 10).map((item) => (
                   <div
                     key={item.id}
