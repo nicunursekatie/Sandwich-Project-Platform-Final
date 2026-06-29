@@ -198,7 +198,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/auth/approve-user/${userId} | 1 | client/src/components/user-management-redesigned.tsx:158 |
 | /api/auth/change-password | 1 | client/src/components/user-profile.tsx:216 |
 | /api/auth/login | 2 | client/src/pages/login.tsx:57<br>tests/setup/test-server.ts:180 |
-| /api/auth/logout | 1 | client/src/pages/dashboard.tsx:1235 |
+| /api/auth/logout | 1 | client/src/pages/dashboard.tsx:1257 |
 | /api/auth/pending-registrations | 3 | client/src/components/user-management-redesigned.tsx:144<br>client/src/components/user-management-redesigned.tsx:146<br>client/src/components/user-management-redesigned.tsx:171 |
 | /api/auth/profile | 3 | client/src/components/user-profile.tsx:161<br>client/src/components/user-profile.tsx:194<br>client/src/components/user-profile.tsx:198 |
 | /api/auth/request-initial-password | 2 | client/src/pages/login.tsx:79<br>client/src/pages/set-password.tsx:89 |
@@ -353,7 +353,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/list?status=scheduled,in_process,rescheduled | 2 | client/src/components/event-requests/hooks/useDatePopulation.ts:54<br>client/src/components/event-requests/index.tsx:218 |
 | /api/event-requests/my-volunteers | 1 | client/src/components/event-requests/context/EventRequestContext.tsx:212 |
 | /api/event-requests/operational-stats | 1 | client/src/components/operational-overview.tsx:781 |
-| /api/event-requests/status-counts | 5 | client/src/components/event-requests/context/EventRequestContext.tsx:198<br>client/src/components/event-requests/context/EventRequestContext.tsx:200<br>client/src/lib/queryClient.ts:211<br>client/src/pages/dashboard.tsx:476 |
+| /api/event-requests/status-counts | 5 | client/src/components/event-requests/context/EventRequestContext.tsx:198<br>client/src/components/event-requests/context/EventRequestContext.tsx:200<br>client/src/lib/queryClient.ts:211<br>client/src/pages/dashboard.tsx:479 |
 | /api/event-requests/sync/from-sheets | 1 | client/src/components/event-requests/index.tsx:249 |
 | /api/event-requests/van-conflict-dates | 2 | client/src/components/event-requests/VanConflictsButton.tsx:167<br>client/src/components/event-requests/VanConflictsButton.tsx:169 |
 | /api/event-requests/van-requests-for-date?${params} | 1 | client/src/components/event-requests/VanNeededBadgeAndButton.tsx:99 |
