@@ -1127,10 +1127,7 @@ export default function DashboardOverview({
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
               {/* Peak Week — Our Best Week Ever (Burgundy) */}
-              <div
-                className="min-w-0 overflow-hidden premium-card-elevated p-4 sm:p-5 flex flex-col"
-                style={{ borderLeft: '4px solid #A31C41' }}
-              >
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-burgundy p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-burgundy uppercase tracking-wide">
                   <span aria-hidden="true">🏆</span> Our Best Week Ever
                 </div>
@@ -1152,10 +1149,7 @@ export default function DashboardOverview({
               </div>
 
               {/* Annual Goal — This Year's Goal (Orange) */}
-              <div
-                className="min-w-0 overflow-hidden premium-card-elevated p-4 sm:p-5 flex flex-col"
-                style={{ borderLeft: '4px solid #FBAD3F' }}
-              >
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-orange p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-orange uppercase tracking-wide">
                   <span aria-hidden="true">🎯</span> This Year's Goal
                 </div>
@@ -1177,10 +1171,7 @@ export default function DashboardOverview({
               </div>
 
               {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
-              <div
-                className="min-w-0 overflow-hidden premium-card-elevated p-4 sm:p-5 flex flex-col"
-                style={{ borderLeft: '4px solid #47B3CB' }}
-              >
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-light-blue p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
                   <span aria-hidden="true">📦</span> A Typical Week
                 </div>
@@ -1209,10 +1200,7 @@ export default function DashboardOverview({
                   This card carries the longest number (range like 24,580–40,966)
                   so we render the range as a single inline-block unit that
                   break-words can wrap as a whole, never mid-digit. */}
-              <div
-                className="min-w-0 overflow-hidden premium-card-elevated p-4 sm:p-5 flex flex-col"
-                style={{ borderLeft: '4px solid #007E8C' }}
-              >
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-teal p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
                   <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
