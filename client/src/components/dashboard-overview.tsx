@@ -125,7 +125,7 @@ const TSP_APPS: ReadonlyArray<{
       'Track hosts being onboarded — will eventually include all existing hosts.',
     url: 'https://sandwich-steward.lovable.app',
     icon: Building2,
-    accent: '#5B9EA6',
+    accent: '#47B3CB', // brand-light-blue token (tailwind.config.ts)
   },
   {
     name: 'Donation Receipt Generator',
