@@ -760,10 +760,10 @@ export function PlanningTab({
                         {event.organizationName}
                       </button>
                       <div className="text-sm text-slate-600 mt-1 space-y-1">
-                        <div className="flex items-center gap-1" style={{ color: '#FBAD3F' }}>
+                        <Badge variant="attention" className="gap-1 font-medium">
                           <XCircle className="w-3 h-3" />
                           Missing: {missing.join(', ')}
-                        </div>
+                        </Badge>
                         {event.desiredEventDate && (() => {
                           try {
                             const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')

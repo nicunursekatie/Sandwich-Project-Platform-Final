@@ -54,7 +54,6 @@ function getGroupedNavItems() {
 
 const GROUP_LABELS: Record<string, string> = {
   'dashboard': 'Dashboard',
-  'quick-links': 'Quick Links',
   'workspace': 'Workspace',
   'logistics': 'Logistics',
   'network': 'Network',

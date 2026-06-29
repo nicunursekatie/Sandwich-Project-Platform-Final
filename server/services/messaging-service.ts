@@ -998,6 +998,125 @@ export class MessagingService {
   }
 
   /**
+   * Get the team kudos feed — recent kudos sent across the whole org,
+   * regardless of who the current user is. Used by the shared
+   * recognition feed on the Kudos page so the team can see each other
+   * being celebrated, not just their own inbox.
+   *
+   * Includes both sender and recipient names so the feed reads like a
+   * sentence ("Katie gave kudos to Kim for ...") rather than an
+   * anonymous list.
+   */
+  async getTeamFeedKudos(limit = 50): Promise<any[]> {
+    try {
+      const safeLimit = Math.min(Math.max(1, limit), 100);
+
+      const kudosEntries = await db
+        .select({
+          messageId: kudosTracking.messageId,
+          contextType: kudosTracking.contextType,
+          contextId: kudosTracking.contextId,
+          senderId: kudosTracking.senderId,
+          recipientId: kudosTracking.recipientId,
+          createdAt: kudosTracking.sentAt,
+        })
+        .from(kudosTracking)
+        .orderBy(desc(kudosTracking.sentAt))
+        .limit(safeLimit);
+
+      const feed = await Promise.all(
+        kudosEntries.map(async (entry) => {
+          try {
+            // Message content + sender display name
+            const [messageResult] = await db
+              .select({
+                id: messages.id,
+                content: messages.content,
+                createdAt: messages.createdAt,
+                senderId: messages.senderId,
+                senderName: sql<string>`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.displayName}, ${users.email})`.as(
+                  'senderName',
+                ),
+              })
+              .from(messages)
+              .leftJoin(users, eq(messages.senderId, users.id))
+              .where(eq(messages.id, entry.messageId!))
+              .limit(1);
+
+            if (!messageResult) return null;
+
+            // Recipient display name (separate lookup because the recipient
+            // isn't on the messages row — it's on the kudos tracking row).
+            let recipientName = 'Someone';
+            if (entry.recipientId) {
+              const [recipientUser] = await db
+                .select({
+                  displayName: sql<string>`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.displayName}, ${users.email})`,
+                })
+                .from(users)
+                .where(eq(users.id, entry.recipientId))
+                .limit(1);
+              recipientName = recipientUser?.displayName || 'Someone';
+            }
+
+            // Entity name (task title, project title, etc.) for context
+            let entityName = 'Unknown';
+            if (entry.contextType === 'task') {
+              try {
+                const [task] = await db
+                  .select({ title: sql<string>`title` })
+                  .from(sql`project_tasks`)
+                  .where(sql`id = ${entry.contextId}`)
+                  .limit(1);
+                entityName = task?.title || `Task ${entry.contextId}`;
+              } catch {
+                entityName = `Task ${entry.contextId}`;
+              }
+            } else if (entry.contextType === 'project') {
+              try {
+                const [project] = await db
+                  .select({ title: sql<string>`title` })
+                  .from(sql`projects`)
+                  .where(sql`id = ${entry.contextId}`)
+                  .limit(1);
+                entityName = project?.title || `Project ${entry.contextId}`;
+              } catch {
+                entityName = `Project ${entry.contextId}`;
+              }
+            }
+
+            return {
+              id: messageResult.id,
+              content: messageResult.content,
+              message: messageResult.content,
+              senderId: messageResult.senderId,
+              senderName: messageResult.senderName || 'Unknown User',
+              recipientId: entry.recipientId,
+              recipientName,
+              contextType: entry.contextType,
+              contextId: entry.contextId,
+              entityName,
+              projectTitle: entityName,
+              createdAt: messageResult.createdAt,
+            };
+          } catch (error) {
+            logger.error(
+              `Error building team feed entry for messageId ${entry.messageId}:`,
+              error,
+            );
+            return null;
+          }
+        }),
+      );
+
+      return feed.filter(Boolean);
+    } catch (error) {
+      logger.error('Failed to get team feed kudos:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get all messages for a user (inbox messages)
    */
   async getAllMessages(

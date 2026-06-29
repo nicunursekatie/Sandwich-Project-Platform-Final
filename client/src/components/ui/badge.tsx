@@ -30,6 +30,9 @@ const badgeVariants = cva(
           'bg-green-100 text-green-700 border-green-200',
         cancelled:
           'bg-red-100 text-red-700 border-red-200',
+        /** High-contrast warning for missing required fields (WCAG AA on white) */
+        attention:
+          'bg-amber-50 text-amber-950 border-amber-800 hover:bg-amber-100',
       },
     },
     defaultVariants: {

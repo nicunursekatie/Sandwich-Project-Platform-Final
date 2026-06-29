@@ -43,17 +43,46 @@ export function getDefaultNavUserViewVisibleIds(allNavIds: string[]): string[] {
   return allNavIds.filter((id) => !hidden.has(id));
 }
 
+/** True when callers passed a non-empty nav ID catalog for validation/filtering. */
+function hasNavIdCatalog(allNavIds?: string[]): allNavIds is string[] {
+  return Array.isArray(allNavIds) && allNavIds.length > 0;
+}
+
 export function parseNavUserViewVisibleIds(
   raw: string | null | undefined,
   allNavIds?: string[],
 ): string[] {
-  const fallback = allNavIds ? getDefaultNavUserViewVisibleIds(allNavIds) : [];
+  const fallback = hasNavIdCatalog(allNavIds)
+    ? getDefaultNavUserViewVisibleIds(allNavIds)
+    : [];
   if (!raw) return fallback;
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return fallback;
     const ids = parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
-    if (!allNavIds) return ids;
+    if (!hasNavIdCatalog(allNavIds)) return ids;
+    const valid = new Set(allNavIds);
+    return ids.filter((id) => valid.has(id));
+  } catch {
+    return fallback;
+  }
+}
+
+/** Parse saved pinned nav IDs; treats an empty catalog like undefined (no filtering). */
+export function parsePinnedNavIds(
+  raw: string | null | undefined,
+  allNavIds?: string[],
+  defaultPinnedIds: string[] = [],
+): string[] {
+  const fallback = hasNavIdCatalog(allNavIds)
+    ? defaultPinnedIds.filter((id) => allNavIds.includes(id))
+    : defaultPinnedIds;
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return fallback;
+    const ids = parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
+    if (!hasNavIdCatalog(allNavIds)) return ids;
     const valid = new Set(allNavIds);
     return ids.filter((id) => valid.has(id));
   } catch {

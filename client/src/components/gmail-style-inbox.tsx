@@ -974,6 +974,29 @@ export default function GmailStyleInbox() {
           className="flex-1 flex-col bg-white min-w-0 overflow-hidden border-r"
           style={{ display: 'flex' }}
         >
+          {/* "What's this?" explainer — Project Threads vs Team Chat is
+              the #1 source of confusion for new users. Pinning a one-line
+              clarifier above the toolbar so it's visible on every folder
+              eliminates that confusion before it starts. */}
+          <div className="border-b bg-blue-50/60 px-4 py-2 text-xs sm:text-sm text-slate-700 flex items-start gap-2">
+            <InboxIcon className="w-4 h-4 mt-0.5 text-blue-700 flex-shrink-0" aria-hidden="true" />
+            <span>
+              <span className="font-semibold text-blue-900">
+                Project Threads
+              </span>{' '}
+              are for longer, email-style conversations.{' '}
+              <span className="hidden sm:inline">
+                Use{' '}
+                <a
+                  href="/dashboard?section=chat"
+                  className="text-blue-700 font-medium hover:underline"
+                >
+                  Team Chat
+                </a>{' '}
+                for real-time back-and-forth.
+              </span>
+            </span>
+          </div>
           {/* Toolbar */}
           <div className="border-b p-4 space-y-3 bg-white">
             <div className="flex items-center justify-between">
