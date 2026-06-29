@@ -327,7 +327,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/${id}/schedule-call | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:329 |
 | /api/event-requests/${id}/toolkit-sent | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:287 |
 | /api/event-requests/${id}/tsp-contact | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:679 |
-| /api/event-requests/${request.id}/social-media | 2 | client/src/components/event-requests/cards/CompletedCard.tsx:1160<br>client/src/components/event-requests/cards/CompletedCard.tsx:1740 |
+| /api/event-requests/${request.id}/social-media | 2 | client/src/components/event-requests/cards/CompletedCard.tsx:1161<br>client/src/components/event-requests/cards/CompletedCard.tsx:1741 |
 | /api/event-requests/${resourceId}/collaboration/comments | 3 | client/src/hooks/use-collaboration.ts:403<br>client/src/hooks/use-collaboration.ts:570<br>client/src/hooks/use-collaboration.ts:592 |
 | /api/event-requests/${resourceId}/collaboration/comments/${id} | 2 | client/src/hooks/use-collaboration.ts:615<br>client/src/hooks/use-collaboration.ts:642 |
 | /api/event-requests/${resourceId}/collaboration/locks | 2 | client/src/hooks/use-collaboration.ts:407<br>client/src/hooks/use-collaboration.ts:451 |

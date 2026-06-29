@@ -43,6 +43,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface StandbyCardProps {
   request: EventRequest;
@@ -293,7 +294,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -397,7 +398,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -445,7 +446,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
       </CardContent>
 
