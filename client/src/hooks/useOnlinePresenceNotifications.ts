@@ -43,6 +43,13 @@ function getDisplayName(user: OnlineUser): string {
   return 'Someone';
 }
 
+const ONLINE_TOAST_THRESHOLD_MS = 15 * 60 * 1000;
+
+function wasRecentlyActive(lastActiveAt: string | null): boolean {
+  if (!lastActiveAt) return false;
+  return Date.now() - new Date(lastActiveAt).getTime() < ONLINE_TOAST_THRESHOLD_MS;
+}
+
 export function useOnlinePresenceNotifications() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
@@ -111,6 +118,7 @@ export function useOnlinePresenceNotifications() {
 
       if (isFirstLoadRef.current) {
         previousOnlineIdsRef.current = new Set(users.map((u) => u.id));
+        isFirstLoadRef.current = false;
       }
     };
 
@@ -127,7 +135,7 @@ export function useOnlinePresenceNotifications() {
         if (!previousOnlineIdsRef.current.has(data.id)) {
           toast({
             title: `${data.userName} is now online`,
-            description: 'A team member just signed in',
+            description: 'A team member is active on the platform',
             duration: 4000,
           });
         }
@@ -208,27 +216,29 @@ export function useOnlinePresenceNotifications() {
 
     const newUsers = polledOnlineUsers.filter(
       (user) =>
-        user.id !== String(currentUser.id) && !previousOnlineIdsRef.current.has(user.id)
+        user.id !== String(currentUser.id) &&
+        !previousOnlineIdsRef.current.has(user.id) &&
+        wasRecentlyActive(user.lastActiveAt),
     );
 
     if (newUsers.length > 0) {
       if (newUsers.length === 1) {
         toast({
           title: `${getDisplayName(newUsers[0])} is now online`,
-          description: 'A team member just signed in',
+          description: 'A team member is active on the platform',
           duration: 4000,
         });
       } else if (newUsers.length <= 3) {
         const names = newUsers.map((u) => getDisplayName(u)).join(', ');
         toast({
           title: `${names} are now online`,
-          description: `${newUsers.length} team members just signed in`,
+          description: `${newUsers.length} team members are active on the platform`,
           duration: 4000,
         });
       } else {
         toast({
           title: `${newUsers.length} people came online`,
-          description: `${getDisplayName(newUsers[0])} and ${newUsers.length - 1} others just signed in`,
+          description: `${getDisplayName(newUsers[0])} and ${newUsers.length - 1} others are active on the platform`,
           duration: 4000,
         });
       }
