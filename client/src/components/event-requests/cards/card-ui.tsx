@@ -56,17 +56,43 @@ export const InfoBadge: React.FC<InfoBadgeProps> = ({
   icon: Icon,
   children,
   className,
+  onClick,
   ...rest
-}) => (
-  <Badge
-    variant="outline"
-    className={cn('whitespace-nowrap gap-1', badgeTone[tone], className)}
-    {...rest}
-  >
-    {Icon && <Icon className="w-3 h-3" />}
-    {children}
-  </Badge>
-);
+}) => {
+  // When the badge is interactive (has an onClick — e.g. the date-conflict
+  // badges that open the calendar), give it real button semantics so it's
+  // keyboard-accessible: focusable and activatable with Enter/Space. The
+  // underlying Badge already renders a visible focus ring.
+  const interactive = typeof onClick === 'function';
+  return (
+    <Badge
+      variant="outline"
+      className={cn(
+        'whitespace-nowrap gap-1',
+        interactive && 'cursor-pointer',
+        badgeTone[tone],
+        className
+      )}
+      onClick={onClick}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.currentTarget.click();
+              }
+            }
+          : undefined
+      }
+      {...rest}
+    >
+      {Icon && <Icon className="w-3 h-3" />}
+      {children}
+    </Badge>
+  );
+};
 
 /**
  * Standard footer for a card's action zone. Gives every card the same

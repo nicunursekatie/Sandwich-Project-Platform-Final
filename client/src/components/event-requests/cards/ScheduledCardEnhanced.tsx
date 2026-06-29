@@ -107,7 +107,7 @@ import { RefreshCw, Copy } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
-import { InfoBadge, CardActionRow, ActionRowSpacer } from './card-ui';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
