@@ -1264,7 +1264,7 @@ export default function DashboardOverview({
                       className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 shrink-0"
                       style={{ backgroundColor: app.accent }}
                     >
-                      <Icon className="w-5 h-5 text-white" />
+                      <Icon className="w-5 h-5 text-white" aria-hidden="true" />
                     </div>
                     <h4 className="premium-text-body font-semibold text-brand-primary">
                       {app.name}
