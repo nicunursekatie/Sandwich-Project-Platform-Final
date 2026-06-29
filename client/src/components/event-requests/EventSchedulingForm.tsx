@@ -1095,7 +1095,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         targetStatus: formData.status,
         existingDate,
       });
-      setShowStandbyFollowUpDialog(true);
+      // Defer opening to a settled tick instead of opening synchronously inside
+      // this click handler. The form lives in a non-modal parent Dialog
+      // (<Dialog modal={false} onOpenChange={onClose}>), whose dismissable layer
+      // watches for focus/pointer leaving its content. When the modal reminder
+      // AlertDialog mounted during the SAME click that opened it, the in-flight
+      // focus churn from that click could trip the parent's outside-interaction
+      // detection, firing the parent's onClose — which unmounts the whole form.
+      // That is the "popup flashes then disappears and the edit form refreshes"
+      // bug: the parent closed and re-rendered from server data, reverting the
+      // status. The van/speaker dialogs never hit this because they open after
+      // an awaited fetch (a later, settled tick). Matching that timing here lets
+      // the originating click fully resolve before the AlertDialog mounts.
+      setTimeout(() => setShowStandbyFollowUpDialog(true), 0);
       return;
     }
 
@@ -1126,7 +1138,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Render ─────────────────────────────────────────────────────────
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
+    <Dialog
+      open={dialogOpen}
+      // Don't let the form be dismissed out from under the standby reminder
+      // dialog. While that nested AlertDialog is open it owns the interaction;
+      // a close request to the parent here (e.g. a stray focus/pointer-outside
+      // from the non-modal layer) must be ignored so the reminder flow isn't
+      // torn down mid-decision. The user closes the reminder via Cancel/Save.
+      onOpenChange={(open) => { if (!open && !showStandbyFollowUpDialog) onClose(); }}
+      modal={false}
+    >
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
           <div className="flex items-center justify-between">
