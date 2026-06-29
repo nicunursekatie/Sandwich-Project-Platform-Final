@@ -91,7 +91,9 @@ function dedupeVolunteerHubEvents(events: VolunteerHubEventRow[]): VolunteerHubE
  *
  * Note this gates on the *designated* need (count > 0), not unfilled slots, so
  * a fully-staffed event that did request help still appears (the existing
- * "fully staffed, extra help welcome" behavior is preserved for those).
+ * "fully staffed, extra help welcome" behavior is preserved for those). The van
+ * driver role only counts when it isn't a DHL-provided van — DHL handling the
+ * van/driver means there was never a volunteer van-driver role to begin with.
  */
 function eventOffersVolunteerOpportunity(event: VolunteerHubEventRow): boolean {
   if (event.selfTransport) return false;
@@ -99,7 +101,7 @@ function eventOffersVolunteerOpportunity(event: VolunteerHubEventRow): boolean {
     (event.driversNeeded ?? 0) > 0 ||
     (event.speakersNeeded ?? 0) > 0 ||
     (event.volunteersNeeded ?? 0) > 0 ||
-    !!event.vanDriverNeeded
+    (!!event.vanDriverNeeded && !event.isDhlVan)
   );
 }
 
