@@ -28,8 +28,9 @@ import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
 import { useNavViewModeOptional } from '@/contexts/nav-view-mode-context';
 import {
   buildNavSectionGroups,
+  buildPromotedSidebarNavItems,
+  filterItemsForSidebarSections,
   NAV_GROUP_LABELS,
-  PROMOTED_SIDEBAR_NAV_ID,
 } from '@/lib/nav-sidebar-layout';
 
 export default function SimpleNav({
@@ -93,7 +94,7 @@ export default function SimpleNav({
     // most commonly accessed parents so first-time visitors see useful
     // content. Returning users get whatever state they left it in.
     const [expandedParents, setExpandedParents] = useState<Set<string>>(
-      () => loadPersistedSet(EXPANDED_PARENTS_KEY, ['tsp-network', 'collections', 'calendars', 'chat', 'event-requests'])
+      () => loadPersistedSet(EXPANDED_PARENTS_KEY, ['tsp-network', 'collections', 'chat', 'event-requests'])
     );
 
     // Persist on change.
@@ -182,13 +183,9 @@ export default function SimpleNav({
       ?? filteredNavigationItems;
 
     const dashboardItem = displayNavigationItems.find((item) => item.id === 'dashboard');
-    const promotedToolkitItem = displayNavigationItems.find(
-      (item) => item.id === PROMOTED_SIDEBAR_NAV_ID,
-    );
+    const promotedNavItems = buildPromotedSidebarNavItems(displayNavigationItems);
     const sectionGroups = buildNavSectionGroups(
-      displayNavigationItems.filter(
-        (item) => item.group !== 'dashboard' && item.id !== PROMOTED_SIDEBAR_NAV_ID,
-      ),
+      filterItemsForSidebarSections(displayNavigationItems),
     );
 
     const hasExpandableNavState =
@@ -374,13 +371,13 @@ export default function SimpleNav({
             onClick={() => toggleSection(group)}
             className={`w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm ${groupColors.bg} ${groupColors.hover} transition-colors cursor-pointer flex items-center justify-between group`}
           >
-            <div className="font-bold text-white tracking-wide text-[15px] flex-1 text-left">
+            <div className="font-bold text-white tracking-wide text-base flex-1 text-left">
               {getGroupLabel(group)}
             </div>
             {isCollapsedSection ? (
-              <ChevronRight className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
+              <ChevronRight className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
+              <ChevronDown className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
             )}
           </button>
           <div className={`border-t ${groupColors.bg} opacity-30 mx-2`} />
@@ -414,6 +411,7 @@ export default function SimpleNav({
       }
 
       const IconComponent = item.icon;
+      const iconSizeClass = item.isSubItem ? 'h-4 w-4' : 'h-5 w-5';
 
       return (
         <Button
@@ -423,25 +421,25 @@ export default function SimpleNav({
           className={`
               w-full ${
                 isCollapsed
-                  ? 'justify-center px-2'
+                  ? 'justify-center px-2 h-12'
                   : item.isSubItem
-                    ? 'justify-start pl-3 pr-2 ml-5 mr-1 border-l-2 border-slate-300/80 rounded-l-none rounded-r-md h-10'
-                    : 'justify-start px-2 sm:px-3'
+                    ? 'justify-start pl-3 pr-2 ml-5 mr-1 border-l-2 border-slate-300/80 rounded-l-none rounded-r-md h-11'
+                    : 'justify-start px-3 sm:px-3.5 h-12'
               } text-left touch-manipulation relative ${
                 item.isSubItem
-                  ? 'text-sm font-normal text-slate-600'
-                  : 'text-base font-semibold text-slate-800'
+                  ? 'text-sm sm:text-base font-semibold text-slate-700'
+                  : 'text-base sm:text-[17px] font-bold text-slate-900'
               }
               ${
                 active
                   ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
                   : item.highlighted
-                    ? 'hover:bg-[#006e7e]/10 text-[#006e7e] font-semibold rounded-lg hover:shadow-sm transition-all duration-200 h-11'
+                    ? 'hover:bg-[#006e7e]/10 text-[#006e7e] font-bold rounded-lg hover:shadow-sm transition-all duration-200'
                     : item.accentColor
-                      ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-semibold h-11'
+                      ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-bold'
                       : item.isSubItem
                         ? 'hover:bg-slate-100/90 hover:border-slate-400/80 transition-all duration-200'
-                        : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-700 rounded-lg hover:shadow-sm transition-all duration-200 h-11'
+                        : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-800 rounded-lg hover:shadow-sm transition-all duration-200 font-bold'
               }
             `}
           style={!active && item.accentColor ? { color: item.accentColor } : undefined}
@@ -485,20 +483,20 @@ export default function SimpleNav({
             <img
               src={sandwich_logo}
               alt={item.label}
-              className={`h-4 w-4 flex-shrink-0 ${
-                isCollapsed ? '' : 'mr-2 sm:mr-3'
+              className={`${iconSizeClass} flex-shrink-0 ${
+                isCollapsed ? '' : 'mr-2.5 sm:mr-3'
               } ${item.highlighted && !active ? 'opacity-90' : ''}`}
             />
           ) : IconComponent ? (
             <IconComponent
-              className={`h-4 w-4 flex-shrink-0 ${
-                isCollapsed ? '' : 'mr-2 sm:mr-3'
+              className={`${iconSizeClass} flex-shrink-0 ${
+                isCollapsed ? '' : 'mr-2.5 sm:mr-3'
               } ${item.highlighted && !active ? 'text-[#47B3CB]' : ''}`}
             />
           ) : null}
           {!isCollapsed && (
             <>
-              <span className="flex-1 text-left font-medium">{item.label}</span>
+              <span className="flex-1 text-left font-bold leading-snug">{item.label}</span>
               {item.externalUrl && (
                 <ExternalLink className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`} />
               )}
@@ -568,7 +566,7 @@ export default function SimpleNav({
     };
 
     return (
-      <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
+      <nav className="flex flex-col gap-2 p-3" data-tour="navigation">
         {navViewMode?.isUserViewActive && !isCollapsed && (
           <div
             className="mx-1 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900"
@@ -595,7 +593,7 @@ export default function SimpleNav({
 
         {dashboardItem && renderNavItem(dashboardItem)}
 
-        {promotedToolkitItem && renderNavItem(promotedToolkitItem)}
+        {promotedNavItems.map((item) => renderNavItem(item))}
 
         {sectionGroups.map(({ group, items }) => (
           <React.Fragment key={`nav-section-${group}`}>
