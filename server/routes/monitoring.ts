@@ -7,12 +7,30 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { logger } from '../utils/production-safe-logger';
-import { checkWeeklySubmissions, getWeekRange } from '../weekly-monitoring';
+import {
+  checkWeeklySubmissions,
+  getWeekRange,
+  getExpectedHostLocations,
+} from '../weekly-monitoring';
 import { db } from '../db';
 import { sandwichCollections } from '@shared/schema';
 import { and, gte, lte, isNull, asc } from 'drizzle-orm';
 
 const router = Router();
+
+/**
+ * Placeholder/categorization host names that are NOT real weekly locations and
+ * should never appear in the submission grid. These are data-collection
+ * artifacts (e.g. historical group collections logged under a "Groups"
+ * pseudo-location). Compared lower-cased and trimmed.
+ */
+const NON_LOCATION_HOST_NAMES = new Set([
+  'groups',
+  'group',
+  'unassigned',
+  'unknown',
+  'unnamed groups',
+]);
 
 /**
  * Loosely match a collection's free-text hostName against a host location name.
@@ -205,17 +223,8 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
     const weekReports = [];
     const locationStats: { [location: string]: { submitted: number; missed: number } } = {};
 
-    // Get all expected locations
-    const expectedLocations = [
-      'East Cobb/Roswell',
-      'Dunwoody/PTC',
-      'Alpharetta',
-      'Sandy Springs',
-      'Intown/Druid Hills',
-      'Dacula',
-      'Flowery Branch',
-      'Collective Learning',
-    ];
+    // Get all expected locations (inactive/hidden hosts are excluded)
+    const expectedLocations = await getExpectedHostLocations();
 
     // Initialize stats for all locations
     expectedLocations.forEach((location) => {
@@ -233,8 +242,9 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get submission status for this week
-      const submissionStatus = await checkWeeklySubmissions(i);
+      // Get submission status for this week (reuse expected locations to
+      // avoid a redundant hosts query per week)
+      const submissionStatus = await checkWeeklySubmissions(i, expectedLocations);
 
       // Update location stats
       submissionStatus.forEach((status: any) => {
@@ -320,6 +330,12 @@ router.get('/grid-report/:weeks', async (req, res) => {
       .filter((h: any) =>
         includeInactive ? true : (h.status ?? 'active') === 'active'
       )
+      // Exclude placeholder/categorization hosts that aren't real weekly
+      // locations (e.g. "Groups", "Unassigned", "Unknown") — these are data
+      // artifacts, not locations expected to submit a weekly log.
+      .filter((h: any) => !NON_LOCATION_HOST_NAMES.has(
+        String(h.name).toLowerCase().trim()
+      ))
       .sort((a: any, b: any) =>
         String(a.name).localeCompare(String(b.name))
       );
