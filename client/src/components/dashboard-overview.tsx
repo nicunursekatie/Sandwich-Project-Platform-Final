@@ -1179,7 +1179,7 @@ export default function DashboardOverview({
               {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
               <div
                 className="min-w-0 overflow-hidden premium-card-elevated p-4 sm:p-5 flex flex-col"
-                style={{ borderLeft: '4px solid #5B9EA6' }}
+                style={{ borderLeft: '4px solid #47B3CB' }}
               >
                 <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
                   <span aria-hidden="true">📦</span> A Typical Week
