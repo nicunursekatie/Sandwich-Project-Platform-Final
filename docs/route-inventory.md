@@ -30,10 +30,10 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/ai-categorize-organizations | client/src/components/data-management-dashboard.tsx:197<br>client/src/pages/event-impact-reports.tsx:1676 |
 | /api/export/collections | tests/integration/routes/permissions.test.ts:33 |
 | /api/forgot-password | client/src/pages/forgot-password.tsx:31<br>tests/integration/routes/auth.test.ts:46 |
-| /api/host-contacts | client/src/components/event-requests/hooks/useEventQueries.ts:61<br>client/src/components/event-requests/hooks/useEventQueries.ts:64<br>client/src/components/hosts-management-consolidated.tsx:582<br>client/src/components/hosts-management-consolidated.tsx:749 |
-| /api/host-contacts/${data.id} | client/src/components/hosts-management-consolidated.tsx:650 |
-| /api/host-contacts/${id} | client/src/components/hosts-management-consolidated.tsx:729 |
-| /api/hosts-with-contacts | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:91<br>client/src/components/event-requests/hooks/useEventQueries.ts:37<br>client/src/components/hosts-management-consolidated.tsx:273<br>client/src/components/hosts-management-consolidated.tsx:476 |
+| /api/host-contacts | client/src/components/event-requests/hooks/useEventQueries.ts:61<br>client/src/components/event-requests/hooks/useEventQueries.ts:64<br>client/src/components/hosts-management-consolidated.tsx:578<br>client/src/components/hosts-management-consolidated.tsx:745 |
+| /api/host-contacts/${data.id} | client/src/components/hosts-management-consolidated.tsx:646 |
+| /api/host-contacts/${id} | client/src/components/hosts-management-consolidated.tsx:725 |
+| /api/hosts-with-contacts | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:91<br>client/src/components/event-requests/hooks/useEventQueries.ts:37<br>client/src/components/hosts-management-consolidated.tsx:273<br>client/src/components/hosts-management-consolidated.tsx:473 |
 | /api/import-events/import-2023-events | client/src/components/data-management-dashboard.tsx:175 |
 | /api/logout | client/src/mobile/pages/mobile-more.tsx:92<br>client/src/pages/pending-approval.tsx:10 |
 | /api/messages | client/src/components/message-composer.tsx:197<br>client/src/components/modals/chat-history-modal.tsx:23<br>client/src/mobile/pages/mobile-inbox.tsx:32 |
@@ -220,7 +220,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/cooler-inventory/my-inventory | 2 | client/src/pages/cooler-tracking.tsx:130<br>client/src/pages/cooler-tracking.tsx:185 |
 | /api/cooler-inventory/summary | 5 | client/src/pages/cooler-tracking.tsx:136<br>client/src/pages/cooler-tracking.tsx:186<br>client/src/pages/cooler-tracking.tsx:236<br>client/src/pages/cooler-tracking.tsx:268 |
 | /api/cooler-types | 1 | client/src/pages/cooler-tracking.tsx:124 |
-| /api/dashboard-documents | 4 | client/src/components/dashboard-document-selector.tsx:45<br>client/src/components/dashboard-document-selector.tsx:72<br>client/src/components/dashboard-document-selector.tsx:83<br>client/src/components/dashboard-overview.tsx:177 |
+| /api/dashboard-documents | 4 | client/src/components/dashboard-document-selector.tsx:45<br>client/src/components/dashboard-document-selector.tsx:72<br>client/src/components/dashboard-document-selector.tsx:83<br>client/src/components/dashboard-overview.tsx:182 |
 | /api/dashboard-documents/${doc} | 1 | client/src/components/dashboard-document-selector.tsx:68 |
 | /api/dashboard-documents/reorder | 1 | client/src/components/dashboard-document-selector.tsx:79 |
 | /api/dashboard/stats | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:95<br>client/src/mobile/pages/mobile-home.tsx:40 |
@@ -246,7 +246,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/documents/${id} | 2 | client/src/components/document-management.tsx:763<br>client/src/components/document-management.tsx:789 |
 | /api/documents/${item.resource.documentId}/preview | 1 | client/src/pages/resources.tsx:997 |
 | /api/documents/${previewDocument.id}/preview | 1 | client/src/components/document-management.tsx:998 |
-| /api/documents/${resource.resource.documentId} | 1 | client/src/components/recently-accessed-resources.tsx:94 |
+| /api/documents/${resource.resource.documentId} | 1 | client/src/components/recently-accessed-resources.tsx:99 |
 | /api/documents/request-upload-url | 3 | client/src/components/document-management.tsx:147<br>client/src/components/resource-admin-modal.tsx:121<br>client/src/pages/important-documents.tsx:505 |
 | /api/drafts | 3 | client/src/components/gmail-style-inbox.tsx:320<br>client/src/components/gmail-style-inbox.tsx:364<br>client/src/components/gmail-style-inbox.tsx:368 |
 | /api/drafts/${draft.id} | 1 | client/src/components/gmail-style-inbox.tsx:362 |
@@ -391,27 +391,27 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/groups-catalog?viewMode=${viewMode} | 1 | client/src/components/organizations-catalog.tsx:220 |
 | /api/health | 2 | client/src/components/dynamic-error-message.tsx:303<br>client/src/hooks/useErrorHandler.ts:210 |
 | /api/holding-zone/categories | 4 | client/src/mobile/pages/mobile-holding-zone-add.tsx:39<br>client/src/pages/HoldingZone.tsx:647<br>client/src/pages/HoldingZone.tsx:791<br>client/src/pages/HoldingZone.tsx:794 |
-| /api/host-contacts | 6 | client/src/components/event-requests/hooks/useEventQueries.ts:61<br>client/src/components/event-requests/hooks/useEventQueries.ts:64<br>client/src/components/hosts-management-consolidated.tsx:582<br>client/src/components/hosts-management-consolidated.tsx:749 |
-| /api/host-contacts/${data.id} | 1 | client/src/components/hosts-management-consolidated.tsx:650 |
-| /api/host-contacts/${id} | 1 | client/src/components/hosts-management-consolidated.tsx:729 |
+| /api/host-contacts | 6 | client/src/components/event-requests/hooks/useEventQueries.ts:61<br>client/src/components/event-requests/hooks/useEventQueries.ts:64<br>client/src/components/hosts-management-consolidated.tsx:578<br>client/src/components/hosts-management-consolidated.tsx:745 |
+| /api/host-contacts/${data.id} | 1 | client/src/components/hosts-management-consolidated.tsx:646 |
+| /api/host-contacts/${id} | 1 | client/src/components/hosts-management-consolidated.tsx:725 |
 | /api/host-resources | 7 | client/src/pages/host-resources.tsx:567<br>client/src/pages/host-resources.tsx:678<br>client/src/pages/host-resources.tsx:703<br>client/src/pages/resources.tsx:285 |
 | /api/host-resources/${guide.id} | 1 | client/src/pages/resources.tsx:673 |
 | /api/host-resources/${id} | 2 | client/src/pages/host-resources.tsx:698<br>client/src/pages/resources.tsx:292 |
 | /api/host-resources/upload | 2 | client/src/pages/host-resources.tsx:557<br>client/src/pages/resources.tsx:551 |
 | /api/hosts | 32 | client/src/components/compact-collection-form.tsx:177<br>client/src/components/donation-tracking.tsx:114<br>client/src/components/donation-tracking.tsx:115<br>client/src/components/drivers-management-simple.tsx:233 |
-| /api/hosts-with-contacts | 29 | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:91<br>client/src/components/event-requests/hooks/useEventQueries.ts:37<br>client/src/components/hosts-management-consolidated.tsx:273<br>client/src/components/hosts-management-consolidated.tsx:476 |
-| /api/hosts/${data.id} | 1 | client/src/components/hosts-management-consolidated.tsx:496 |
-| /api/hosts/${id} | 1 | client/src/components/hosts-management-consolidated.tsx:518 |
+| /api/hosts-with-contacts | 29 | client/src/components/event-requests/dialogs/AssignmentDialog.tsx:91<br>client/src/components/event-requests/hooks/useEventQueries.ts:37<br>client/src/components/hosts-management-consolidated.tsx:273<br>client/src/components/hosts-management-consolidated.tsx:473 |
+| /api/hosts/${data.id} | 1 | client/src/components/hosts-management-consolidated.tsx:493 |
+| /api/hosts/${id} | 1 | client/src/components/hosts-management-consolidated.tsx:514 |
 | /api/hosts/1 | 6 | tests/integration/routes/hosts.test.ts:136<br>tests/integration/routes/hosts.test.ts:165<br>tests/integration/routes/hosts.test.ts:175<br>tests/integration/routes/hosts.test.ts:186 |
 | /api/hosts/1/events | 2 | tests/integration/routes/hosts.test.ts:214<br>tests/integration/routes/hosts.test.ts:223 |
 | /api/hosts/999999 | 1 | tests/integration/routes/hosts.test.ts:155 |
 | /api/hosts/active | 1 | tests/integration/routes/hosts.test.ts:235 |
-| /api/hosts/export-csv | 1 | client/src/components/hosts-management-consolidated.tsx:969 |
-| /api/hosts/geocode-all | 1 | client/src/components/hosts-management-consolidated.tsx:805 |
-| /api/hosts/geocode-all?force=true | 1 | client/src/components/hosts-management-consolidated.tsx:834 |
-| /api/hosts/map | 12 | client/src/components/event-requests/EventMapView.tsx:232<br>client/src/components/hosts-management-consolidated.tsx:477<br>client/src/components/hosts-management-consolidated.tsx:500<br>client/src/components/hosts-management-consolidated.tsx:532 |
+| /api/hosts/export-csv | 1 | client/src/components/hosts-management-consolidated.tsx:952 |
+| /api/hosts/geocode-all | 1 | client/src/components/hosts-management-consolidated.tsx:801 |
+| /api/hosts/geocode-all?force=true | 1 | client/src/components/hosts-management-consolidated.tsx:830 |
+| /api/hosts/map | 12 | client/src/components/event-requests/EventMapView.tsx:232<br>client/src/components/hosts-management-consolidated.tsx:474<br>client/src/components/hosts-management-consolidated.tsx:497<br>client/src/components/hosts-management-consolidated.tsx:528 |
 | /api/hosts/not-a-number | 1 | tests/integration/routes/hosts.test.ts:145 |
-| /api/hosts/scrape-availability | 1 | client/src/components/hosts-management-consolidated.tsx:782 |
+| /api/hosts/scrape-availability | 1 | client/src/components/hosts-management-consolidated.tsx:778 |
 | /api/impact-reports/ai-suggest-types | 1 | client/src/pages/event-impact-reports.tsx:586 |
 | /api/impact-reports/analyze-sheet | 1 | client/src/pages/event-impact-reports.tsx:497 |
 | /api/impact-reports/apply-locations | 1 | client/src/pages/event-impact-reports.tsx:648 |
@@ -601,21 +601,21 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/reset-password | 1 | client/src/pages/reset-password.tsx:121 |
 | /api/resources | 2 | client/src/components/resource-admin-modal.tsx:204<br>client/src/mobile/pages/mobile-resources.tsx:57 |
 | /api/resources/${existingResource.resource.id} | 1 | client/src/components/resource-admin-modal.tsx:203 |
-| /api/resources/${resource.resource.id}/access | 1 | client/src/components/recently-accessed-resources.tsx:84 |
+| /api/resources/${resource.resource.id}/access | 1 | client/src/components/recently-accessed-resources.tsx:89 |
 | /api/resources/${resourceId}/access | 2 | client/src/mobile/pages/mobile-resources.tsx:81<br>client/src/pages/resources.tsx:849 |
 | /api/resources/${resourceId}/favorite | 2 | client/src/mobile/pages/mobile-resources.tsx:71<br>client/src/pages/resources.tsx:893 |
 | /api/resources/${resourceToDelete.resource.id} | 1 | client/src/pages/resources.tsx:865 |
 | /api/resources/tags | 1 | client/src/components/resource-admin-modal.tsx:236 |
 | /api/resources/tags/all | 1 | client/src/pages/resources.tsx:798 |
 | /api/resources/user/favorites | 3 | client/src/mobile/pages/mobile-resources.tsx:63<br>client/src/mobile/pages/mobile-resources.tsx:74<br>client/src/pages/resources.tsx:796 |
-| /api/resources/user/recent?limit=5 | 2 | client/src/components/recently-accessed-resources.tsx:66<br>client/src/pages/resources.tsx:797 |
+| /api/resources/user/recent?limit=5 | 2 | client/src/components/recently-accessed-resources.tsx:71<br>client/src/pages/resources.tsx:797 |
 | /api/resources?${params} | 1 | client/src/pages/resources.tsx:795 |
 | /api/sandwich-collections | 33 | client/src/components/bulk-data-manager.tsx:111<br>client/src/components/bulk-data-manager.tsx:146<br>client/src/components/compact-collection-form.tsx:225<br>client/src/components/compact-collection-form.tsx:236 |
 | /api/sandwich-collections/${collectionId} | 1 | client/src/mobile/pages/mobile-collection-detail.tsx:28 |
 | /api/sandwich-collections/${data.id} | 1 | client/src/components/sandwich-collection-log.tsx:1222 |
 | /api/sandwich-collections/${data.id}/restore | 1 | client/src/components/sandwich-collection-log.tsx:1297 |
 | /api/sandwich-collections/${id} | 1 | client/src/components/sandwich-collection-log.tsx:1274 |
-| /api/sandwich-collections/all | 7 | client/src/components/action-center.tsx:93<br>client/src/components/dashboard-overview.tsx:217<br>client/src/components/modals/next-month-planning-modal.tsx:50<br>client/src/components/modals/week-outlook-modal.tsx:68 |
+| /api/sandwich-collections/all | 8 | client/src/components/action-center.tsx:93<br>client/src/components/dashboard-overview.tsx:222<br>client/src/components/dashboard-overview.tsx:533<br>client/src/components/modals/next-month-planning-modal.tsx:50 |
 | /api/sandwich-collections/analyze-duplicates | 1 | client/src/components/sandwich-collection-log.tsx:1507 |
 | /api/sandwich-collections/audit-cleanup-impact | 2 | client/src/pages/cleanup-audit.tsx:21<br>client/src/pages/cleanup-audit.tsx:23 |
 | /api/sandwich-collections/batch-delete | 1 | client/src/components/sandwich-collection-log.tsx:1735 |
@@ -627,7 +627,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/sandwich-collections/historical-import/template | 1 | client/src/pages/historical-import.tsx:179 |
 | /api/sandwich-collections/historical-import/upload | 1 | client/src/pages/historical-import.tsx:144 |
 | /api/sandwich-collections/hybrid-stats | 1 | client/src/hooks/useCollectionsData.ts:74 |
-| /api/sandwich-collections/stats | 17 | client/src/components/compact-collection-form.tsx:239<br>client/src/components/dashboard-overview.tsx:157<br>client/src/components/dashboard-overview.tsx:159<br>client/src/components/dashboard-overview.tsx:473 |
+| /api/sandwich-collections/stats | 17 | client/src/components/compact-collection-form.tsx:239<br>client/src/components/dashboard-overview.tsx:162<br>client/src/components/dashboard-overview.tsx:164<br>client/src/components/dashboard-overview.tsx:526 |
 | /api/sandwich-collections/unlinked-groups | 1 | client/src/pages/event-impact-reports.tsx:440 |
 | /api/sandwich-collections?eventRequestId=${eventRequest?.id} | 1 | client/src/components/event-requests/EventCollectionLog.tsx:44 |
 | /api/sandwich-collections?limit=100 | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:89<br>client/src/mobile/pages/mobile-collections.tsx:33 |
@@ -636,7 +636,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam} | 1 | client/src/components/sandwich-collection-log.tsx:807 |
 | /api/sandwich-collections?page=1&limit=1000 | 1 | client/src/pages/landing.tsx:49 |
 | /api/sandwich-collections?page=1&limit=10000 | 2 | client/src/components/pace-comparison-analytics.tsx:239<br>client/src/pages/grant-metrics.tsx:147 |
-| /api/sandwich-collections?page=1&limit=5000 | 4 | client/src/components/dashboard-overview.tsx:220<br>client/src/components/monthly-comparison-analytics.tsx:85<br>client/src/hooks/useCollectionsData.ts:57<br>client/src/hooks/useMonthlyAnalytics.ts:32 |
+| /api/sandwich-collections?page=1&limit=5000 | 4 | client/src/components/dashboard-overview.tsx:225<br>client/src/components/monthly-comparison-analytics.tsx:85<br>client/src/hooks/useCollectionsData.ts:57<br>client/src/hooks/useMonthlyAnalytics.ts:32 |
 | /api/sandwich-distributions | 7 | client/src/components/donation-tracking.tsx:108<br>client/src/components/donation-tracking.tsx:109<br>client/src/components/donation-tracking.tsx:127<br>client/src/components/donation-tracking.tsx:130 |
 | /api/sandwich-distributions/${id} | 2 | client/src/components/donation-tracking.tsx:148<br>client/src/components/donation-tracking.tsx:169 |
 | /api/search | 1 | client/src/components/data-management-dashboard.tsx:63 |

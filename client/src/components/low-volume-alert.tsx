@@ -382,12 +382,17 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
                       {(week.actualSandwiches || 0).toLocaleString()}
                       <span className="text-sm font-normal text-gray-500"> / {week.totalSandwiches.toLocaleString()}</span>
                     </div>
+                    {/* Taller bar with a clearly-tinted "container to fill" so the
+                        forecast reads as a progress bar even at 0% — a 1.5px
+                        hairline on a faint track was invisible when empty. */}
                     <Progress
                       value={currentWeekProgress}
-                      className="h-1.5 mt-1"
+                      className="h-2.5 mt-1.5 bg-blue-100 dark:bg-blue-950/40"
                     />
-                    <div className="text-xs text-gray-500 mt-1">
-                      {currentWeekProgress}% collected
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
+                      {currentWeekProgress === 0
+                        ? 'Collecting toward this week’s goal'
+                        : `${currentWeekProgress}% collected`}
                     </div>
                   </>
                 ) : (
