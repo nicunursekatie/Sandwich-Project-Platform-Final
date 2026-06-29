@@ -1,0 +1,52 @@
+name: Sync route inventory
+
+# Keeps docs/route-inventory.md in sync on main so the route-inventory PR gate
+# never fails through no fault of the PR.
+#
+# Why this exists: the inventory only stays current if someone runs
+# `npm run inventory:routes` and commits the result. Commits to this repo land
+# from Replit ("Published your App"), the GitHub web editor, and bots — none of
+# which run that script. So main's inventory drifts whenever API paths change,
+# and any PR that later merges main in inherits the drift and fails the gate.
+#
+# This job regenerates the inventory on every push to main and commits the
+# result back when it changed. The commit is made with the default GITHUB_TOKEN,
+# and GitHub does not re-trigger workflows for pushes made with that token — so
+# the commit-back does not loop.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialize runs so two quick pushes don't race to commit the same file.
+concurrency:
+  group: sync-route-inventory-main
+  cancel-in-progress: false
+
+jobs:
+  sync-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run inventory:routes
+      - name: Commit regenerated inventory if it changed
+        run: |
+          if git diff --quiet -- docs/route-inventory.md; then
+            echo "Route inventory already up to date — nothing to commit."
+            exit 0
+          fi
+          echo "Route inventory drifted — committing regenerated file."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/route-inventory.md
+          git commit -m "chore: sync route inventory [skip ci]"
+          git push
