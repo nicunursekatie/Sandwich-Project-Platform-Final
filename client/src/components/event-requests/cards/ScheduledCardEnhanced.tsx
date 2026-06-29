@@ -916,37 +916,96 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         <div className="flex flex-col gap-2 mb-3">
           {/* Top: Date + Organization Name */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            {/* Organization Name */}
+            {/* Organization Name + Department (separate edit targets) */}
             <div className="min-w-0 flex-1">
-              {isEditingThisCard && editingField === 'organizationName' ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Input
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') cancelEdit();
-                    }}
-                  />
-                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
-                    <Save className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <h2
-                  className={`text-lg sm:text-xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                  onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
-                >
-                  {request.organizationName}
-                  {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
-                  {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                </h2>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {isEditingThisCard && editingField === 'organizationName' ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Input
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                    />
+                    <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
+                      <Save className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <h2 className="text-lg sm:text-xl font-bold text-[#236383] break-words">
+                      {request.organizationName}
+                    </h2>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('organizationName', request.organizationName || '')}
+                        className="h-6 px-2 hidden group-hover:inline-flex"
+                        title="Edit organization name"
+                        data-testid="button-edit-org-name"
+                      >
+                        <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {(request.department || (isEditingThisCard && editingField === 'department') || canEdit) && (
+                  <>
+                    <span className="text-gray-500 text-lg">&bull;</span>
+                    {isEditingThisCard && editingField === 'department' ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Input
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-8 text-base sm:text-lg font-medium text-[#236383] w-full sm:w-48"
+                          placeholder="Department"
+                          autoFocus
+                          data-testid="input-department"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') cancelEdit();
+                          }}
+                        />
+                        <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0" data-testid="button-save-department">
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0" data-testid="button-cancel-department">
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        {request.department ? (
+                          <span className="text-base sm:text-lg font-medium text-[#236383]/70 break-words">{request.department}</span>
+                        ) : canEdit ? (
+                          <span className="text-base sm:text-lg font-normal text-gray-400 italic">No department</span>
+                        ) : null}
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('department', request.department || '')}
+                            className="h-6 px-2 hidden group-hover:inline-flex"
+                            title={request.department ? 'Edit department' : 'Add department'}
+                            data-testid="button-edit-department"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
               {/* Date — placed directly under the org name so every card leads
                   with date/time (consistent card skeleton). Moved here from the
                   former top-right position. */}
@@ -1567,29 +1626,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Partner/Department editing modals */}
-        {isEditingThisCard && editingField === 'department' && (
-          <div className="flex items-center gap-2 mb-3">
-            <Input
-              value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              className="h-8 text-base w-48"
-              autoFocus
-              placeholder="Department"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
-              }}
-            />
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
-              <Save className="h-3 w-3" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
-        {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
+        {/* Partner editing modals */}
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {(() => {
               const index = parseInt(editingField.split('_')[1]);
