@@ -70,6 +70,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { InfoBadge, CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -564,13 +565,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {datePopulationInfo && datePopulationInfo.isOpen && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
-                          style={{ backgroundColor: '#47B3CB' }}
-                        >
-                          <CalendarCheck className="w-3 h-3" />
+                        <InfoBadge tone="info" icon={CalendarCheck} className="text-xs cursor-help">
                           Open date
-                        </Badge>
+                        </InfoBadge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{indicatorTooltips.openDate}</p>
@@ -580,14 +577,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                          style={{ backgroundColor: '#FBAD3F' }}
+                        <InfoBadge
+                          tone="attention"
+                          icon={AlertTriangle}
+                          className="text-xs cursor-pointer hover:opacity-80"
                           onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                         >
-                          <AlertTriangle className="w-3 h-3" />
                           {datePopulationInfo.scheduledCount} scheduled
-                        </Badge>
+                        </InfoBadge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{indicatorTooltips.scheduledConflict}</p>
@@ -599,14 +596,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                          style={{ backgroundColor: '#007E8C' }}
+                        <InfoBadge
+                          tone="info"
+                          icon={Calendar}
+                          className="text-xs cursor-pointer hover:opacity-80"
                           onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                         >
-                          <Calendar className="w-3 h-3" />
                           {datePopulationInfo.inProcessCount} in process
-                        </Badge>
+                        </InfoBadge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{indicatorTooltips.inProcessConflict}</p>
@@ -1266,7 +1263,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 descriptions.
             Order matches the typical intake flow left → right. */}
         <TooltipProvider>
-          <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t">
+          <CardActionRow>
             {/* PRIMARY: Assign TSP Contact when missing — high-priority intake step */}
             {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
@@ -1396,7 +1393,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               )}
             </div>
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             {/* PRIMARY: Edit Button — always-visible "next action" anchor */}
             <Tooltip>
@@ -1438,7 +1435,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 variant="destructive"
               />
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Audit Log Section */}
