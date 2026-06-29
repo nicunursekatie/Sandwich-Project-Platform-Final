@@ -78,6 +78,33 @@ function dedupeVolunteerHubEvents(events: VolunteerHubEventRow[]): VolunteerHubE
   return Array.from(byId.values());
 }
 
+/**
+ * Whether an event is a genuine volunteer opportunity that belongs on the hub.
+ *
+ * Two kinds of events are auto-excluded even when a coordinator left
+ * `showOnVolunteerHub` on:
+ *   1. Self-transport events — the group handles its own logistics and isn't
+ *      looking for sign-ups at all.
+ *   2. Events with no role explicitly designated as needed — surfacing these
+ *      shows a misleading "extra help welcome" sign-up on events that never
+ *      asked for volunteers.
+ *
+ * Note this gates on the *designated* need (count > 0), not unfilled slots, so
+ * a fully-staffed event that did request help still appears (the existing
+ * "fully staffed, extra help welcome" behavior is preserved for those). The van
+ * driver role only counts when it isn't a DHL-provided van — DHL handling the
+ * van/driver means there was never a volunteer van-driver role to begin with.
+ */
+function eventOffersVolunteerOpportunity(event: VolunteerHubEventRow): boolean {
+  if (event.selfTransport) return false;
+  return (
+    (event.driversNeeded ?? 0) > 0 ||
+    (event.speakersNeeded ?? 0) > 0 ||
+    (event.volunteersNeeded ?? 0) > 0 ||
+    (!!event.vanDriverNeeded && !event.isDhlVan)
+  );
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -105,14 +132,7 @@ async function sendVolunteerSignupNotification(
     const volunteerHubUrl = `${baseUrl}/volunteer-hub`;
 
     // Format event date
-    const formattedDate = eventDate
-      ? new Date(eventDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      : 'Date TBD';
+    const formattedDate = formatEventDateLong(eventDate);
 
     // Format roles for display
     const roleDisplay = roles
@@ -232,14 +252,7 @@ async function sendVolunteerSignupConfirmationEmail(
   }
 
   try {
-    const formattedDate = eventDate
-      ? new Date(eventDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      : 'Date TBD';
+    const formattedDate = formatEventDateLong(eventDate);
 
     const timeDisplay = eventStartTime
       ? `${eventStartTime}${eventEndTime ? ` – ${eventEndTime}` : ''}`
@@ -541,15 +554,54 @@ interface EventForEmail {
   tspContact?: string | null;
 }
 
+/**
+ * Format an event date for display, e.g. "Tuesday, July 22, 2025".
+ *
+ * Event dates live in `timestamp` columns that serialize as UTC midnight
+ * (e.g. "2025-07-22T00:00:00.000Z"). The intended calendar day is therefore in
+ * the value's UTC parts — we read those directly and format without timezone
+ * conversion. Converting to Eastern would shift UTC-midnight back to the
+ * previous day. This matches the calendar-link logic (buildEventTimes) and the
+ * client's parseEventDate, so the displayed date always matches the .ics entry.
+ */
+function formatEventDateLong(value: string | Date | null | undefined): string {
+  if (!value) return 'Date TBD';
+  let year: number;
+  let monthIndex: number;
+  let day: number;
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return 'Date TBD';
+    year = value.getUTCFullYear();
+    monthIndex = value.getUTCMonth();
+    day = value.getUTCDate();
+  } else {
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      year = Number(m[1]);
+      monthIndex = Number(m[2]) - 1;
+      day = Number(m[3]);
+    } else {
+      const parsed = new Date(value);
+      if (isNaN(parsed.getTime())) return 'Date TBD';
+      year = parsed.getUTCFullYear();
+      monthIndex = parsed.getUTCMonth();
+      day = parsed.getUTCDate();
+    }
+  }
+  return new Date(Date.UTC(year, monthIndex, day, 12, 0, 0)).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 function eventDisplayDate(event: EventForEmail): { iso: string | null; formatted: string } {
   const date = getEffectiveEventDate(event);
   if (!date) return { iso: null, formatted: 'Date TBD' };
-  const d = new Date(date);
-  const formatted = d.toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    timeZone: 'America/New_York',
-  });
-  return { iso: typeof date === 'string' ? date : d.toISOString(), formatted };
+  const iso = typeof date === 'string' ? date : new Date(date).toISOString();
+  return { iso, formatted: formatEventDateLong(date) };
 }
 
 /**
@@ -960,6 +1012,11 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
     //     whose date slipped into the past without being marked complete
     //     is stale data — don't surface it.
     const visibleEvents = events.filter(event => {
+      // Auto-exclude self-transport events and events with no designated
+      // volunteer need, regardless of the showOnVolunteerHub flag — these
+      // have nothing for a volunteer to sign up for.
+      if (!eventOffersVolunteerOpportunity(event)) return false;
+
       const eventDate = getEffectiveEventDate(event);
       if (!eventDate) return true;
       const eventDateObj = new Date(eventDate);

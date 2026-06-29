@@ -23,6 +23,8 @@ import {
   Package,
   HelpCircle,
   Download,
+  Power,
+  PowerOff,
 } from 'lucide-react';
 
 // Lazy load map and cooler tracking components
@@ -169,7 +171,6 @@ export default function HostsManagementConsolidated() {
   };
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingHost, setEditingHost] = useState<Host | null>(null);
   const [selectedHost, setSelectedHost] = useState<HostWithContacts | null>(
     null
   );
@@ -238,7 +239,6 @@ export default function HostsManagementConsolidated() {
 
   useEffect(() => {
     const handleOpenCreate = () => {
-      setEditingHost(null);
       setNewHost({
         name: '',
         address: '',
@@ -312,7 +312,6 @@ export default function HostsManagementConsolidated() {
       filtered = filtered.filter(
         (host) =>
           host.name.toLowerCase().includes(term) ||
-          host.address?.toLowerCase().includes(term) ||
           host.notes?.toLowerCase().includes(term) ||
           host.contacts.some(
             (contact) =>
@@ -387,7 +386,6 @@ export default function HostsManagementConsolidated() {
   const allContacts = useMemo(() => {
     const contacts: (HostContact & {
       hostName: string;
-      hostAddress?: string;
       hostStatus: string;
     })[] = [];
 
@@ -396,7 +394,6 @@ export default function HostsManagementConsolidated() {
         contacts.push({
           ...contact,
           hostName: host.name,
-          hostAddress: host.address || undefined,
           hostStatus: host.status,
         });
       });
@@ -426,7 +423,7 @@ export default function HostsManagementConsolidated() {
           contact.phone.toLowerCase().includes(term) ||
           contact.role.toLowerCase().includes(term) ||
           contact.hostName.toLowerCase().includes(term) ||
-          contact.hostAddress?.toLowerCase().includes(term) ||
+          contact.address?.toLowerCase().includes(term) ||
           contact.notes?.toLowerCase().includes(term)
       );
     }
@@ -498,7 +495,6 @@ export default function HostsManagementConsolidated() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
-      setEditingHost(null);
       toast({
         title: 'Host updated',
         description: 'Host has been updated successfully.',
@@ -750,7 +746,7 @@ export default function HostsManagementConsolidated() {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
 
       // Update selectedHost immediately to show the contact is gone
-      if (selectedHost && !editingHost) {
+      if (selectedHost) {
         const updatedContacts = selectedHost.contacts.filter(
           (contact) => contact.id !== deletedContactId
         );
@@ -808,15 +804,15 @@ export default function HostsManagementConsolidated() {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts-with-contacts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
 
-      if (result.hostsProcessed === 0 && result.contactsProcessed === 0) {
+      if (result.contactsProcessed === 0) {
         toast({
           title: 'All Geocoded',
-          description: 'All hosts and contacts with addresses already have coordinates.',
+          description: 'All host contacts with addresses already have coordinates.',
         });
       } else {
         toast({
           title: 'Geocoding Started',
-          description: `Geocoding ${result.hostsProcessed} hosts and ${result.contactsProcessed} contacts in background. Refresh the page in a minute to see updated map pins.`,
+          description: `Geocoding ${result.contactsProcessed} host contacts in background. Refresh the page in a minute to see updated map pins.`,
         });
       }
     },
@@ -838,7 +834,7 @@ export default function HostsManagementConsolidated() {
       queryClient.invalidateQueries({ queryKey: ['/api/hosts/map'] });
       toast({
         title: 'Re-geocoding Started',
-        description: `Re-geocoding ${result.hostsProcessed} hosts and ${result.contactsProcessed} contacts in background. Refresh the page in a minute to see corrected map pins.`,
+        description: `Re-geocoding ${result.contactsProcessed} host contacts in background. Refresh the page in a minute to see corrected map pins.`,
       });
     },
     onError: (error: any) => {
@@ -853,19 +849,6 @@ export default function HostsManagementConsolidated() {
   const handleAddHost = () => {
     if (!newHost.name.trim()) return;
     createHostMutation.mutate(newHost);
-  };
-
-  const handleUpdateHost = () => {
-    if (!editingHost) return;
-    updateHostMutation.mutate({
-      id: editingHost.id,
-      updates: {
-        name: editingHost.name,
-        address: editingHost.address,
-        status: editingHost.status,
-        notes: editingHost.notes,
-      },
-    });
   };
 
   const handleDeleteHost = (id: number) => {
@@ -1059,65 +1042,6 @@ export default function HostsManagementConsolidated() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* Location Information - Display as larger badges */}
-            {editingHost?.id === host.id ? (
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-slate-700">Location Address:</div>
-                <Input
-                  value={editingHost.address || ''}
-                  onChange={(e) =>
-                    setEditingHost({
-                      ...editingHost,
-                      address: e.target.value,
-                    })
-                  }
-                  placeholder="Add location address..."
-                  className="text-sm"
-                />
-              </div>
-            ) : host.address ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                  Location
-                </div>
-                <Badge 
-                  variant="outline" 
-                  className="text-sm font-semibold px-3 py-1.5 bg-slate-50 text-slate-700 border-slate-300 w-full justify-start text-left"
-                >
-                  {host.address}
-                </Badge>
-              </div>
-            ) : canEdit ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                  Location
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto p-2 text-left justify-start text-slate-500 hover:text-slate-700 border border-dashed border-slate-300 w-full"
-                  onClick={() => setEditingHost(host)}
-                >
-                  Add location address...
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
-                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                  Location
-                </div>
-                <Badge 
-                  variant="outline" 
-                  className="text-sm px-3 py-1.5 bg-slate-50 text-slate-400 border-slate-200 w-full justify-start text-left italic"
-                >
-                  Location information not available
-                </Badge>
-              </div>
-            )}
-
             {/* Display contacts */}
             {host.contacts && host.contacts.length > 0 && (
               <div className="space-y-2">
@@ -1222,7 +1146,7 @@ export default function HostsManagementConsolidated() {
               </div>
             )}
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -1243,6 +1167,52 @@ export default function HostsManagementConsolidated() {
                 <Users className="w-3 h-3 mr-1" />
                 Manage Contacts
               </Button>
+              {/* Inline status toggle — the Details tab inside Manage
+                  Contacts already exposes this same control, but burying
+                  it three clicks deep made coordinators think the feature
+                  didn't exist. Surfacing the toggle on the card lets you
+                  deactivate a location with one click + confirm. */}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`w-full ${
+                    host.status === 'active'
+                      ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      : 'text-green-700 border-green-200 hover:bg-green-50 hover:text-green-800'
+                  }`}
+                  disabled={updateHostMutation.isPending}
+                  onClick={() => {
+                    const nextStatus = host.status === 'active' ? 'inactive' : 'active';
+                    const verb = nextStatus === 'inactive' ? 'inactive' : 'active';
+                    if (
+                      window.confirm(
+                        `Mark "${host.name}" as ${verb}? ` +
+                          (nextStatus === 'inactive'
+                            ? 'This location will be hidden from the collection-log dropdown and other active host lists. You can mark it active again any time.'
+                            : 'This location will appear in active host lists and the collection-log dropdown again.'),
+                      )
+                    ) {
+                      updateHostMutation.mutate({
+                        id: host.id,
+                        updates: { status: nextStatus },
+                      });
+                    }
+                  }}
+                >
+                  {host.status === 'active' ? (
+                    <>
+                      <PowerOff className="w-3 h-3 mr-1" />
+                      Mark Inactive
+                    </>
+                  ) : (
+                    <>
+                      <Power className="w-3 h-3 mr-1" />
+                      Mark Active
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1266,12 +1236,12 @@ export default function HostsManagementConsolidated() {
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
                   <p className="font-semibold mb-1">Host Management Help</p>
-                  <p className="text-sm">Manage organizations that host sandwich collection events. Track contact information, view locations on a map, and manage cooler inventory.</p>
+                  <p className="text-sm">Manage host contacts organized by region. Each region groups nearby hosts for coordination and deliveries — lead hosts and alternates have their own addresses listed on their contact cards.</p>
                 </TooltipContent>
               </Tooltip>
             </h2>
             <p className="text-slate-600 mt-1">
-              Manage collection hosts and their contact information
+              Manage host contacts by region. Regions group nearby hosts for coordination — addresses belong to individual contacts.
             </p>
           </div>
 
@@ -1830,7 +1800,7 @@ export default function HostsManagementConsolidated() {
                         </div>
                       </div>
 
-                      {/* Host Location */}
+                      {/* Region */}
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Building2 className="w-4 h-4 flex-shrink-0" />
                         <span className="truncate">{contact.hostName}</span>
@@ -1860,21 +1830,13 @@ export default function HostsManagementConsolidated() {
                           </div>
                         )}
 
-                        {(contact.address || contact.id === 7) && (
+                        {contact.address && (
                           <div className="flex items-start gap-2 text-sm text-gray-600">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-xs">{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
+                            <span className="text-xs">{contact.address}</span>
                           </div>
                         )}
                       </div>
-
-                      {/* Location Address if available */}
-                      {contact.hostAddress && (
-                        <div className="flex items-start gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-xs">{contact.hostAddress}</span>
-                        </div>
-                      )}
 
                       {/* Notes */}
                       {contact.notes && (
@@ -2608,10 +2570,10 @@ export default function HostsManagementConsolidated() {
                                   {contact.email}
                                 </div>
                               )}
-                              {(contact.address || contact.id === 7) && (
+                              {contact.address && (
                                 <div className="flex items-start text-sm text-slate-600">
                                   <MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                                  <span>{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
+                                  <span>{contact.address}</span>
                                 </div>
                               )}
                               {contact.notes && (
@@ -3010,14 +2972,6 @@ export default function HostsManagementConsolidated() {
                       </Badge>
                     )}
                   </div>
-                  {selectedHost.address && (
-                    <div className="col-span-2">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Host Location
-                      </Label>
-                      <p className="text-slate-900">{selectedHost.address}</p>
-                    </div>
-                  )}
                   {selectedHost.notes && (
                     <div className="col-span-2">
                       <Label className="text-sm font-medium text-slate-700">

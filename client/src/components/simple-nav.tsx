@@ -457,7 +457,7 @@ export default function SimpleNav({
                     ? 'justify-start pl-8 pr-2 sm:pr-3'
                     : 'justify-start px-2 sm:px-3'
               } text-left h-11 touch-manipulation relative ${
-                item.isSubItem ? 'text-sm font-normal' : 'text-base font-medium'
+                item.isSubItem ? 'text-base font-normal' : 'text-base font-medium'
               }
               ${
                 active
