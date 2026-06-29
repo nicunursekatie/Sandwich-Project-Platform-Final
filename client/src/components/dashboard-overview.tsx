@@ -1275,14 +1275,19 @@ export default function DashboardOverview({
                   <p className="premium-text-body-sm text-gray-600 mb-4 flex-1">
                     {app.description}
                   </p>
-                  <button
-                    onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
+                  {/* Anchor (not button + window.open) so it carries real link
+                      semantics — copy link, middle-click, context menu, and
+                      screen-reader link recognition. rel guards the new tab. */}
+                  <a
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="premium-btn-primary w-full text-sm inline-flex items-center justify-center gap-1.5"
                     aria-label={`Open ${app.name} in a new tab`}
                   >
                     Open
                     <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-                  </button>
+                  </a>
                 </div>
               );
             })}
