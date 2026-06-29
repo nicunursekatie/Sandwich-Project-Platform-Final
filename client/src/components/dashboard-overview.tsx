@@ -82,6 +82,60 @@ import { logger } from '@/lib/logger';
 const tspLogoSvg = '/logo-optimized.svg';
 const sandwichIconSvg = '/sandwich-icon-optimized.svg';
 
+// TSP-built companion web apps, surfaced on the dashboard as a launcher so they
+// read as one product suite rather than a loose list of external links. Each
+// entry's `accent` is its brand color, used only for the icon tile and the
+// card's left border — the Open action itself is a single uniform button across
+// all apps, which is what makes the group feel like one suite (and sidesteps
+// white-on-light-accent contrast issues). All apps open in a new tab.
+const TSP_APPS: ReadonlyArray<{
+  name: string;
+  description: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent: string;
+}> = [
+  {
+    name: 'Service Hours Sign-Off Portal',
+    description:
+      'Volunteers enter their info and receive automated service-hours letters.',
+    url: 'https://hour-hero-magic.lovable.app',
+    icon: Clock,
+    accent: '#FBAD3F',
+  },
+  {
+    name: 'Donor Management Platform',
+    description:
+      'DIY donor management — tracks donations, donors, and "Friends in TSP" network connections.',
+    url: 'https://bread-and-butter-donors.lovable.app/',
+    icon: Users,
+    accent: '#236383',
+  },
+  {
+    name: 'Grant Tracking & Application Manager',
+    description:
+      'Track grants and deadlines, with AI research tools to work on grant applications.',
+    url: 'https://tsp-grant-manager.lovable.app',
+    icon: Target,
+    accent: '#007E8C',
+  },
+  {
+    name: 'Host Onboarding Tracker',
+    description:
+      'Track hosts being onboarded — will eventually include all existing hosts.',
+    url: 'https://sandwich-steward.lovable.app',
+    icon: Building2,
+    accent: '#5B9EA6',
+  },
+  {
+    name: 'Donation Receipt Generator',
+    description: 'Generate donation receipts for donors quickly and easily.',
+    url: 'https://receipt-gen--katielong2316.replit.app',
+    icon: FileText,
+    accent: '#A31C41',
+  },
+];
+
 interface DashboardOverviewProps {
   onSectionChange: (section: string) => void;
 }
@@ -1184,143 +1238,54 @@ export default function DashboardOverview({
         {/* ── TOOLS ── */}
         <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
 
-        {/* TSP Additional Tools Section */}
+        {/* TSP Apps launcher — companion web apps rendered uniformly from
+            TSP_APPS so they read as one product suite. One card pattern, one
+            "Open" action; per-app brand color lives on the icon tile + left
+            border only. */}
         <div className="mx-4 mb-8 max-w-full">
-          <h3 className="premium-text-h3 text-brand-primary mb-6">
-            TSP Additional Tools
+          <h3 className="premium-text-h3 text-brand-primary mb-1">
+            TSP Apps
           </h3>
           <p className="premium-text-body-sm text-gray-600 mb-6">
-            External platforms we've built to support TSP operations
+            Companion apps we've built for TSP operations — each opens in a new tab.
           </p>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
-            {/* Hour Hero Magic - Service Hours Portal */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #FBAD3F' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center mr-3">
-                  <Clock className="w-5 h-5 text-white" />
+            {TSP_APPS.map((app) => {
+              const Icon = app.icon;
+              return (
+                <div
+                  key={app.url}
+                  className="premium-card-elevated p-5 flex flex-col"
+                  style={{ borderLeft: `4px solid ${app.accent}` }}
+                >
+                  <div className="flex items-center mb-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 shrink-0"
+                      style={{ backgroundColor: app.accent }}
+                    >
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <h4 className="premium-text-body font-semibold text-brand-primary">
+                      {app.name}
+                    </h4>
+                  </div>
+                  {/* flex-1 pushes every Open button to the same baseline
+                      regardless of description length, so the row stays tidy. */}
+                  <p className="premium-text-body-sm text-gray-600 mb-4 flex-1">
+                    {app.description}
+                  </p>
+                  <button
+                    onClick={() => window.open(app.url, '_blank', 'noopener,noreferrer')}
+                    className="premium-btn-primary w-full text-sm inline-flex items-center justify-center gap-1.5"
+                    aria-label={`Open ${app.name} in a new tab`}
+                  >
+                    Open
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+                  </button>
                 </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Service Hours Sign-Off Portal
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Portal for volunteers to enter their info and receive automated service hours letters
-              </p>
-              <button
-                onClick={() => window.open('https://hour-hero-magic.lovable.app', '_blank')}
-                className="premium-btn-accent w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Hour Hero Magic in a new tab"
-              >
-                Open Hour Hero Magic
-                {/* Trailing external-link glyph — standard convention so users
-                    expect a new tab. Smaller than the leading icon used to
-                    be so the label stays the visual anchor. */}
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Bread and Butter Donors - Donor Management */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #236383' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center mr-3">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Donor Management Platform
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                DIY donor management - tracks donations, donors, and "Friends in TSP" network connections
-              </p>
-              <button
-                onClick={() => window.open('https://bread-and-butter-donors.lovable.app/', '_blank')}
-                className="premium-btn-primary w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Bread & Butter Donors in a new tab"
-              >
-                Open Bread & Butter Donors
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* TSP Grant Manager */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #007E8C' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center mr-3">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Grant Tracking & Application Manager
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Track grants, deadlines, and use AI research tools to work on grant applications
-              </p>
-              <button
-                onClick={() => window.open('https://tsp-grant-manager.lovable.app', '_blank')}
-                className="premium-btn-secondary w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open TSP Grant Manager in a new tab"
-              >
-                Open TSP Grant Manager
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Sandwich Steward - Host Onboarding */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #5B9EA6' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-light-blue rounded-lg flex items-center justify-center mr-3">
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Host Onboarding Tracker
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Track hosts being onboarded - will eventually include all existing hosts
-              </p>
-              <button
-                onClick={() => window.open('https://sandwich-steward.lovable.app', '_blank')}
-                className="premium-btn-outline w-full text-sm inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Sandwich Steward in a new tab"
-              >
-                Open Sandwich Steward
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
-
-            {/* Receipt Generator */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #A31C41' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-burgundy rounded-lg flex items-center justify-center mr-3">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Donation Receipt Generator
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Generate donation receipts for donors quickly and easily
-              </p>
-              <button
-                onClick={() => window.open('https://receipt-gen--katielong2316.replit.app', '_blank')}
-                className="premium-btn-outline w-full text-sm border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white inline-flex items-center justify-center gap-1.5"
-                aria-label="Open Receipt Generator in a new tab"
-              >
-                Open Receipt Generator
-                <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
-              </button>
-            </div>
+              );
+            })}
           </div>
         </div>
 
