@@ -274,7 +274,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/emails/event | 2 | client/src/components/event-email-composer.tsx:144<br>client/src/components/event-email-composer.tsx:1458 |
 | /api/emails/event/${eventRequest.id}/drafts | 1 | client/src/components/event-email-composer.tsx:146 |
 | /api/emails/kudos | 3 | client/src/components/gmail-style-inbox.tsx:281<br>client/src/components/gmail-style-inbox.tsx:761<br>client/src/components/gmail-style-inbox.tsx:846 |
-| /api/emails/unread-count | 3 | client/src/components/gmail-style-inbox.tsx:351<br>client/src/components/simple-nav.tsx:109<br>client/src/components/simple-nav.tsx:113 |
+| /api/emails/unread-count | 3 | client/src/components/gmail-style-inbox.tsx:351<br>client/src/components/simple-nav.tsx:110<br>client/src/components/simple-nav.tsx:114 |
 | /api/emails?folder=${activeFolder} | 1 | client/src/components/gmail-style-inbox.tsx:298 |
 | /api/emails?folder=inbox | 1 | client/src/components/gmail-style-inbox.tsx:760 |
 | /api/enhanced-user-activity | 2 | client/src/components/detailed-activity-analytics.tsx:106<br>client/src/components/individual-user-activity.tsx:115 |
@@ -299,7 +299,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-map/geocode/${id} | 1 | client/src/components/event-requests/form-sections/DeliverySection.tsx:34 |
 | /api/event-reminders | 6 | client/src/components/event-reminders-management.tsx:125<br>client/src/components/event-reminders-management.tsx:127<br>client/src/components/event-reminders-management.tsx:136<br>client/src/components/event-reminders-management.tsx:139 |
 | /api/event-reminders/${id} | 1 | client/src/components/event-reminders-management.tsx:164 |
-| /api/event-reminders/count | 4 | client/src/components/event-reminders-management.tsx:141<br>client/src/components/event-reminders-management.tsx:173<br>client/src/components/simple-nav.tsx:127<br>client/src/components/simple-nav.tsx:131 |
+| /api/event-reminders/count | 4 | client/src/components/event-reminders-management.tsx:141<br>client/src/components/event-reminders-management.tsx:173<br>client/src/components/simple-nav.tsx:128<br>client/src/components/simple-nav.tsx:132 |
 | /api/event-requests | 31 | client/src/components/action-center.tsx:103<br>client/src/components/event-calendar-view.tsx:377<br>client/src/components/event-operational-dashboard.tsx:176<br>client/src/components/event-requests/EventSchedulingForm.tsx:822 |
 | /api/event-requests/${deletedId}/restore | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:49 |
 | /api/event-requests/${event.id} | 1 | client/src/components/event-requests/dialogs/EventEditDialog.tsx:597 |
