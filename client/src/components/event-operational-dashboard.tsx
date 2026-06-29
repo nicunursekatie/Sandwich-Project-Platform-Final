@@ -319,10 +319,11 @@ export default function EventOperationalDashboard() {
     const postEventFollowUp: AttentionItem[] = events
       .filter((e) => {
         if (e.status !== 'completed') return false;
-        const effectiveDate = getEffectiveEventDate(e);
-        if (!effectiveDate) return false;
-        const eventDate = new Date(effectiveDate);
-        if (isNaN(eventDate.getTime()) || eventDate < followUpCutoff) return false;
+        // Parse with parseEventDate (not new Date()) — date-only event strings
+        // parsed as UTC midnight drift to the prior day in Eastern time, which
+        // would wrongly drop events sitting right on the 90-day boundary.
+        const eventDate = parseEventDate(getEffectiveEventDate(e));
+        if (!eventDate || eventDate < followUpCutoff) return false;
         const missing: string[] = [];
         if (!e.socialMediaPostCompleted) missing.push('Social media post');
         if (!e.actualSandwichCount) missing.push('Final sandwich count');

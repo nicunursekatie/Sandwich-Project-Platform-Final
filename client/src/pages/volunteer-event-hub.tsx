@@ -2824,7 +2824,7 @@ export default function VolunteerEventHub() {
                                       // glance instead of being a faint tint.
                                       : 'bg-[#FBAD3F] text-white shadow-sm ring-2 ring-white',
                                   )}
-                                  title={`${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'} open`}
+                                  title={`${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'} ${isPastWithEvents ? 'completed' : 'open'}`}
                                 >
                                   {dayEvents.length}
                                 </span>
