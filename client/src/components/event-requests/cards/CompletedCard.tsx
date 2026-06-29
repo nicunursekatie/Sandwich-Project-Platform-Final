@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 import {
   Calendar,
   Clock,
@@ -495,7 +496,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {request.selfTransport && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium inline-flex items-center gap-1 cursor-help">
+                  <Badge className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium inline-flex items-center gap-1 cursor-help">
                     <Car className="w-3 h-3" />
                     <span className="hidden sm:inline">Self-Transport</span>
                     <span className="sm:hidden">Self</span>
@@ -3000,7 +3001,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="sm" variant="outline" onClick={onView}>
@@ -3126,7 +3127,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               </Tooltip>
             )}
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -3208,7 +3209,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Audit Log Section */}

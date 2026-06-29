@@ -40,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface StalledCardProps {
   request: EventRequest;
@@ -306,7 +307,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -417,7 +418,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
               eventStatus={request.status}
             />
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -465,7 +466,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
       </CardContent>
 
