@@ -2816,11 +2816,15 @@ export default function VolunteerEventHub() {
                               {hasEvents && (
                                 <span
                                   className={cn(
-                                    'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                                    'inline-flex min-w-[20px] h-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none',
                                     isPastWithEvents
                                       ? 'bg-gray-200 text-gray-600'
-                                      : 'bg-[#FBAD3F]/20 text-[#92400E]',
+                                      // Solid gold "notification dot" so days with
+                                      // open opportunities pop out of the grid at a
+                                      // glance instead of being a faint tint.
+                                      : 'bg-[#FBAD3F] text-white shadow-sm ring-2 ring-white',
                                   )}
+                                  title={`${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'} ${isPastWithEvents ? 'completed' : 'open'}`}
                                 >
                                   {dayEvents.length}
                                 </span>

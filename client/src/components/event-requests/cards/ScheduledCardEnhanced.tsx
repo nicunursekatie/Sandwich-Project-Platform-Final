@@ -1297,15 +1297,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
                 request.addedToOfficialSheet
                   ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                  : 'bg-amber-500 text-white border border-amber-600'
               }`}
             >
-              {request.addedToOfficialSheet
-                ? `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
-                : 'Not on Calendar'}
+              {request.addedToOfficialSheet ? (
+                `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
+              ) : (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Not on Calendar
+                </>
+              )}
             </Badge>
 
             <Badge
