@@ -379,13 +379,25 @@ export class PlanningSheetSyncService {
     const speakerNames = await this.getAssignedNames(e.assignedSpeakerIds || []);
     const volunteerNames = await this.getAssignedNames(e.assignedVolunteerIds || []);
 
-    // Resolve TSP contact - either customTspContact (free text) or tspContact (user ID)
+    // Resolve TSP contact - either customTspContact (free text) or
+    // tspContact (user ID). The planning sheet TSP Contact column only
+    // holds first names by convention (the team recognizes Katie/Kim/
+    // Christine etc.), so strip everything after the first whitespace.
+    // This is intentionally simple: "Kim Long" → "Kim", "Katie" → "Katie",
+    // "Kim L." → "Kim". If someone has a two-word first name we'd lose
+    // the second word, but that hasn't come up and the sheet convention
+    // is single token.
+    const toFirstName = (raw: string): string => {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) return '';
+      return trimmed.split(/\s+/)[0];
+    };
     let tspContactName = '';
     if (e.customTspContact) {
-      tspContactName = e.customTspContact;
+      tspContactName = toFirstName(e.customTspContact);
     } else if (e.tspContact) {
       const names = await this.getAssignedNames([e.tspContact]);
-      tspContactName = names[0] || e.tspContact; // Fall back to ID if not found
+      tspContactName = toFirstName(names[0] || e.tspContact);
     }
 
     // Build staffing string
@@ -438,16 +450,43 @@ export class PlanningSheetSyncService {
       return `${hours}:${minutes} ${ampm}`;
     };
 
-    // Format sandwich types with proper capitalization (e.g., "deli" -> "Deli", "pbj" -> "PBJ")
+    // Format sandwich types for the planning sheet using the canonical
+    // user-facing label from constants.ts SANDWICH_TYPES. The raw stored
+    // values include "deli_turkey" and "deli_ham" (because turkey/ham
+    // are deli sub-types in our taxonomy), but the planning sheet
+    // column has conditional formatting that expects the bare label —
+    // "Turkey", "Ham", "Deli", "PBJ" — not "Deli_turkey" or "Deli,
+    // Turkey". Map raw → label explicitly.
     const sandwichTypes = e.sandwichTypes as Array<{ type: string; quantity?: number }> | null;
+    const SANDWICH_TYPE_LABELS: Record<string, string> = {
+      pbj: 'PBJ',
+      'pb&j': 'PBJ',
+      deli: 'Deli',
+      deli_turkey: 'Turkey',
+      turkey: 'Turkey',
+      deli_ham: 'Ham',
+      ham: 'Ham',
+      chicken: 'Chicken',
+      unknown: '',
+    };
     const formatSandwichType = (type: string): string => {
-      const lower = type.toLowerCase();
-      if (lower === 'pbj' || lower === 'pb&j') return 'PBJ';
-      if (lower === 'deli') return 'Deli';
-      // Capitalize first letter for any other type
+      const lower = (type || '').toLowerCase();
+      if (lower in SANDWICH_TYPE_LABELS) return SANDWICH_TYPE_LABELS[lower];
+      // Fallback for any unknown future type: capitalize first letter.
       return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
     };
-    const deliOrPbj = sandwichTypes?.map(st => formatSandwichType(st.type)).join(', ') || '';
+    // Dedupe so an event tagged with both "deli" and "deli_turkey"
+    // doesn't render "Deli, Turkey" — pick the more specific label and
+    // drop the empties.
+    const deliOrPbj = sandwichTypes
+      ? Array.from(
+          new Set(
+            sandwichTypes
+              .map((st) => formatSandwichType(st.type))
+              .filter((label) => label.length > 0),
+          ),
+        ).join(', ')
+      : '';
 
     // Build the row array matching column order
     const row: string[] = new Array(27).fill('');
