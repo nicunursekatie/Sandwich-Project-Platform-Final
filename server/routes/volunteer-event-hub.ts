@@ -78,6 +78,33 @@ function dedupeVolunteerHubEvents(events: VolunteerHubEventRow[]): VolunteerHubE
   return Array.from(byId.values());
 }
 
+/**
+ * Whether an event is a genuine volunteer opportunity that belongs on the hub.
+ *
+ * Two kinds of events are auto-excluded even when a coordinator left
+ * `showOnVolunteerHub` on:
+ *   1. Self-transport events — the group handles its own logistics and isn't
+ *      looking for sign-ups at all.
+ *   2. Events with no role explicitly designated as needed — surfacing these
+ *      shows a misleading "extra help welcome" sign-up on events that never
+ *      asked for volunteers.
+ *
+ * Note this gates on the *designated* need (count > 0), not unfilled slots, so
+ * a fully-staffed event that did request help still appears (the existing
+ * "fully staffed, extra help welcome" behavior is preserved for those). The van
+ * driver role only counts when it isn't a DHL-provided van — DHL handling the
+ * van/driver means there was never a volunteer van-driver role to begin with.
+ */
+function eventOffersVolunteerOpportunity(event: VolunteerHubEventRow): boolean {
+  if (event.selfTransport) return false;
+  return (
+    (event.driversNeeded ?? 0) > 0 ||
+    (event.speakersNeeded ?? 0) > 0 ||
+    (event.volunteersNeeded ?? 0) > 0 ||
+    (!!event.vanDriverNeeded && !event.isDhlVan)
+  );
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -985,6 +1012,11 @@ router.get('/available-events', isAuthenticated, async (req: AuthenticatedReques
     //     whose date slipped into the past without being marked complete
     //     is stale data — don't surface it.
     const visibleEvents = events.filter(event => {
+      // Auto-exclude self-transport events and events with no designated
+      // volunteer need, regardless of the showOnVolunteerHub flag — these
+      // have nothing for a volunteer to sign up for.
+      if (!eventOffersVolunteerOpportunity(event)) return false;
+
       const eventDate = getEffectiveEventDate(event);
       if (!eventDate) return true;
       const eventDateObj = new Date(eventDate);
