@@ -23,6 +23,8 @@ import {
   Package,
   HelpCircle,
   Download,
+  Power,
+  PowerOff,
 } from 'lucide-react';
 
 // Lazy load map and cooler tracking components
@@ -1222,7 +1224,7 @@ export default function HostsManagementConsolidated() {
               </div>
             )}
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -1243,6 +1245,52 @@ export default function HostsManagementConsolidated() {
                 <Users className="w-3 h-3 mr-1" />
                 Manage Contacts
               </Button>
+              {/* Inline status toggle — the Details tab inside Manage
+                  Contacts already exposes this same control, but burying
+                  it three clicks deep made coordinators think the feature
+                  didn't exist. Surfacing the toggle on the card lets you
+                  deactivate a location with one click + confirm. */}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`w-full ${
+                    host.status === 'active'
+                      ? 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      : 'text-green-700 border-green-200 hover:bg-green-50 hover:text-green-800'
+                  }`}
+                  disabled={updateHostMutation.isPending}
+                  onClick={() => {
+                    const nextStatus = host.status === 'active' ? 'inactive' : 'active';
+                    const verb = nextStatus === 'inactive' ? 'inactive' : 'active';
+                    if (
+                      window.confirm(
+                        `Mark "${host.name}" as ${verb}? ` +
+                          (nextStatus === 'inactive'
+                            ? 'This location will be hidden from the collection-log dropdown and other active host lists. You can mark it active again any time.'
+                            : 'This location will appear in active host lists and the collection-log dropdown again.'),
+                      )
+                    ) {
+                      updateHostMutation.mutate({
+                        id: host.id,
+                        updates: { status: nextStatus },
+                      });
+                    }
+                  }}
+                >
+                  {host.status === 'active' ? (
+                    <>
+                      <PowerOff className="w-3 h-3 mr-1" />
+                      Mark Inactive
+                    </>
+                  ) : (
+                    <>
+                      <Power className="w-3 h-3 mr-1" />
+                      Mark Active
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
