@@ -160,24 +160,48 @@ export function getTodayString(): string {
 }
 
 /**
- * Format time string for display (12-hour format with AM/PM)
+ * Format wall-clock hours (0–23) as 12-hour display without timezone conversion.
+ */
+function formatWallClock12h(hours24: number, minutes: number): string {
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+}
+
+/**
+ * Format time string for display (12-hour format with AM/PM).
+ *
+ * Event times are stored as Eastern wall-clock strings (e.g. "3:00 PM", "15:00")
+ * — not UTC instants. Parse the string directly; do not run through Date
+ * timezone conversion (that turned "3:00 PM" into 3:00 AM on the volunteer hub).
  */
 export function formatTimeForDisplay(timeString: string): string {
   if (!timeString || timeString === 'TBD') return 'TBD';
 
-  try {
-    const [hours, minutes] = timeString.split(':');
-    const date = new Date();
-    date.setHours(parseInt(hours), parseInt(minutes));
+  const trimmed = timeString.trim();
 
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  } catch {
-    return timeString;
+  // H:MM[:SS] AM/PM — e.g. "3:00 PM", "2:30:00 PM"
+  const ampmMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)$/);
+  if (ampmMatch) {
+    let hours = parseInt(ampmMatch[1], 10);
+    const minutes = parseInt(ampmMatch[2], 10);
+    const ampm = ampmMatch[3].toUpperCase();
+    if (ampm === 'PM' && hours < 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+    if (hours > 23 || minutes > 59) return trimmed;
+    return formatWallClock12h(hours, minutes);
   }
+
+  // 24-hour HH:MM[:SS]
+  const h24Match = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (h24Match) {
+    const hours = parseInt(h24Match[1], 10);
+    const minutes = parseInt(h24Match[2], 10);
+    if (hours > 23 || minutes > 59) return trimmed;
+    return formatWallClock12h(hours, minutes);
+  }
+
+  return trimmed;
 }
 
 /**
