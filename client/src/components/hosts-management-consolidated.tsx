@@ -1908,21 +1908,15 @@ export default function HostsManagementConsolidated() {
                           </div>
                         )}
 
-                        {(contact.address || contact.id === 7) && (
+                        {(contact.address || contact.hostAddress) && (
                           <div className="flex items-start gap-2 text-sm text-gray-600">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                            <span className="text-xs">{contact.address || `DEBUG: Contact ${contact.id} has no address`}</span>
+                            <span className="text-xs">
+                              {contact.address || contact.hostAddress}
+                            </span>
                           </div>
                         )}
                       </div>
-
-                      {/* Location Address if available */}
-                      {contact.hostAddress && (
-                        <div className="flex items-start gap-2 text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                          <span className="text-xs">{contact.hostAddress}</span>
-                        </div>
-                      )}
 
                       {/* Notes */}
                       {contact.notes && (
