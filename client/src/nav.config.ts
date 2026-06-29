@@ -623,16 +623,6 @@ export const NAV_ITEMS: NavItem[] = [
 
   // Items moved out of sidebar
   {
-    id: 'my-actions',
-    label: 'My Actions',
-    icon: ListTodo,
-    href: 'my-actions',
-    permission: PERMISSIONS.NAV_MY_ACTIONS,
-    group: 'settings',
-    parentId: 'tools',
-    isSubItem: true,
-  },
-  {
     id: 'donation-tracking',
     label: 'Distribution Tracking',
     icon: Truck,

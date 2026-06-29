@@ -1556,10 +1556,10 @@
     },
     {
       "id": "my-actions",
-      "title": "My Actions",
-      "description": "View and manage your personal action items, tasks, and to-do list",
+      "title": "Action Center",
+      "description": "Operational action items in Analytics > Impact Dashboard",
       "category": "Dashboard",
-      "route": "/my-actions",
+      "route": "/dashboard?section=analytics",
       "keywords": [
         "actions",
         "tasks",
