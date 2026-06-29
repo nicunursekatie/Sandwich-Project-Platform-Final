@@ -984,17 +984,14 @@ export default function GmailStyleInbox() {
               <span className="font-semibold text-blue-900">
                 Project Threads
               </span>{' '}
-              are for longer, email-style conversations.{' '}
-              <span className="hidden sm:inline">
-                Use{' '}
-                <a
-                  href="/dashboard?section=chat"
-                  className="text-blue-700 font-medium hover:underline"
-                >
-                  Team Chat
-                </a>{' '}
-                for real-time back-and-forth.
-              </span>
+              are for longer email-style conversations — use this when a topic
+              needs a thread history.{' '}
+              <a
+                href="/dashboard?section=chat"
+                className="text-blue-700 font-medium hover:underline whitespace-nowrap"
+              >
+                💬 Chat instead
+              </a>
             </span>
           </div>
           {/* Toolbar */}

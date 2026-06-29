@@ -1070,7 +1070,20 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
         <div className={`w-full md:w-72 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col ${!mobileShowSidebar ? 'hidden md:flex' : 'flex'}`}>
           {/* Header with section tabs */}
           <div className="p-3 border-b border-[#47B3CB]/30 bg-[#236383] text-white">
-            <h2 className="text-lg font-semibold mb-2">Messages</h2>
+            <h2 className="text-lg font-semibold mb-1">Messages</h2>
+            {/* One-line clarifier — Team Chat vs Project Threads is the #1
+                source of confusion for new users. This explains what Team Chat
+                is for and links anyone who actually wants an email-style thread
+                over to Project Threads in one click. */}
+            <p className="text-xs text-white/80 mb-2 leading-snug">
+              For quick back-and-forth with the team — messages are real-time.{' '}
+              <a
+                href="/dashboard?section=gmail-inbox"
+                className="font-medium underline hover:text-white whitespace-nowrap"
+              >
+                📁 Start a Thread instead
+              </a>
+            </p>
             <div className="flex gap-1">
               <button
                 onClick={() => setActiveSection('rooms')}
