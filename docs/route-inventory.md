@@ -220,7 +220,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/cooler-inventory/my-inventory | 2 | client/src/pages/cooler-tracking.tsx:130<br>client/src/pages/cooler-tracking.tsx:185 |
 | /api/cooler-inventory/summary | 5 | client/src/pages/cooler-tracking.tsx:136<br>client/src/pages/cooler-tracking.tsx:186<br>client/src/pages/cooler-tracking.tsx:236<br>client/src/pages/cooler-tracking.tsx:268 |
 | /api/cooler-types | 1 | client/src/pages/cooler-tracking.tsx:124 |
-| /api/dashboard-documents | 4 | client/src/components/dashboard-document-selector.tsx:45<br>client/src/components/dashboard-document-selector.tsx:72<br>client/src/components/dashboard-document-selector.tsx:83<br>client/src/components/dashboard-overview.tsx:182 |
+| /api/dashboard-documents | 4 | client/src/components/dashboard-document-selector.tsx:45<br>client/src/components/dashboard-document-selector.tsx:72<br>client/src/components/dashboard-document-selector.tsx:83<br>client/src/components/dashboard-overview.tsx:236 |
 | /api/dashboard-documents/${doc} | 1 | client/src/components/dashboard-document-selector.tsx:68 |
 | /api/dashboard-documents/reorder | 1 | client/src/components/dashboard-document-selector.tsx:79 |
 | /api/dashboard/stats | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:95<br>client/src/mobile/pages/mobile-home.tsx:40 |
@@ -615,7 +615,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/sandwich-collections/${data.id} | 1 | client/src/components/sandwich-collection-log.tsx:1222 |
 | /api/sandwich-collections/${data.id}/restore | 1 | client/src/components/sandwich-collection-log.tsx:1297 |
 | /api/sandwich-collections/${id} | 1 | client/src/components/sandwich-collection-log.tsx:1274 |
-| /api/sandwich-collections/all | 8 | client/src/components/action-center.tsx:93<br>client/src/components/dashboard-overview.tsx:222<br>client/src/components/dashboard-overview.tsx:533<br>client/src/components/modals/next-month-planning-modal.tsx:50 |
+| /api/sandwich-collections/all | 8 | client/src/components/action-center.tsx:93<br>client/src/components/dashboard-overview.tsx:276<br>client/src/components/dashboard-overview.tsx:587<br>client/src/components/modals/next-month-planning-modal.tsx:50 |
 | /api/sandwich-collections/analyze-duplicates | 1 | client/src/components/sandwich-collection-log.tsx:1507 |
 | /api/sandwich-collections/audit-cleanup-impact | 2 | client/src/pages/cleanup-audit.tsx:21<br>client/src/pages/cleanup-audit.tsx:23 |
 | /api/sandwich-collections/batch-delete | 1 | client/src/components/sandwich-collection-log.tsx:1735 |
@@ -627,7 +627,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/sandwich-collections/historical-import/template | 1 | client/src/pages/historical-import.tsx:179 |
 | /api/sandwich-collections/historical-import/upload | 1 | client/src/pages/historical-import.tsx:144 |
 | /api/sandwich-collections/hybrid-stats | 1 | client/src/hooks/useCollectionsData.ts:74 |
-| /api/sandwich-collections/stats | 17 | client/src/components/compact-collection-form.tsx:239<br>client/src/components/dashboard-overview.tsx:162<br>client/src/components/dashboard-overview.tsx:164<br>client/src/components/dashboard-overview.tsx:526 |
+| /api/sandwich-collections/stats | 17 | client/src/components/compact-collection-form.tsx:239<br>client/src/components/dashboard-overview.tsx:216<br>client/src/components/dashboard-overview.tsx:218<br>client/src/components/dashboard-overview.tsx:580 |
 | /api/sandwich-collections/unlinked-groups | 1 | client/src/pages/event-impact-reports.tsx:440 |
 | /api/sandwich-collections?eventRequestId=${eventRequest?.id} | 1 | client/src/components/event-requests/EventCollectionLog.tsx:44 |
 | /api/sandwich-collections?limit=100 | 2 | client/src/mobile/pages/mobile-collection-entry.tsx:89<br>client/src/mobile/pages/mobile-collections.tsx:33 |
@@ -636,7 +636,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/sandwich-collections?page=${currentPage}&limit=${itemsPerPage}${sortParam} | 1 | client/src/components/sandwich-collection-log.tsx:807 |
 | /api/sandwich-collections?page=1&limit=1000 | 1 | client/src/pages/landing.tsx:49 |
 | /api/sandwich-collections?page=1&limit=10000 | 2 | client/src/components/pace-comparison-analytics.tsx:239<br>client/src/pages/grant-metrics.tsx:147 |
-| /api/sandwich-collections?page=1&limit=5000 | 4 | client/src/components/dashboard-overview.tsx:225<br>client/src/components/monthly-comparison-analytics.tsx:85<br>client/src/hooks/useCollectionsData.ts:57<br>client/src/hooks/useMonthlyAnalytics.ts:32 |
+| /api/sandwich-collections?page=1&limit=5000 | 4 | client/src/components/dashboard-overview.tsx:279<br>client/src/components/monthly-comparison-analytics.tsx:85<br>client/src/hooks/useCollectionsData.ts:57<br>client/src/hooks/useMonthlyAnalytics.ts:32 |
 | /api/sandwich-distributions | 7 | client/src/components/donation-tracking.tsx:108<br>client/src/components/donation-tracking.tsx:109<br>client/src/components/donation-tracking.tsx:127<br>client/src/components/donation-tracking.tsx:130 |
 | /api/sandwich-distributions/${id} | 2 | client/src/components/donation-tracking.tsx:148<br>client/src/components/donation-tracking.tsx:169 |
 | /api/search | 1 | client/src/components/data-management-dashboard.tsx:63 |

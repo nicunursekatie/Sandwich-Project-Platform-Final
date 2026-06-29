@@ -126,6 +126,7 @@ const GmailStyleInbox = lazyWithRetry(() => import('@/components/gmail-style-inb
 const MessagingInbox = lazyWithRetry(() => import('@/pages/messaging-inbox'));
 const ToolkitTabs = lazyWithRetry(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
 const KudosInbox = lazyWithRetry(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox })));
+const KudosTeamFeed = lazyWithRetry(() => import('@/components/kudos-team-feed').then(m => ({ default: m.KudosTeamFeed })));
 const StreamChatRooms = lazyWithRetry(() => import('@/components/stream-chat-rooms'));
 const EventsViewer = lazyWithRetry(() => import('@/components/events-viewer'));
 const SignUpGeniusViewer = lazyWithRetry(() => import('@/components/signup-genius-viewer'));
@@ -627,13 +628,31 @@ export default function Dashboard({
                 <Trophy className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Your Kudos</h1>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Kudos</h1>
                 <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Recognition received for your great work
+                  See recognition you've received — and celebrate the rest of the team.
                 </p>
               </div>
             </div>
-            <KudosInbox />
+            {/* Tabs split the page into two views:
+                  - Your Kudos: existing per-user inbox of kudos received
+                  - Team Feed: shared recognition feed of recent kudos
+                    sent across the org. Builds community morale because
+                    seeing teammates being celebrated is contagious.
+                The default tab stays "Your Kudos" so existing users land
+                where they always have. */}
+            <Tabs defaultValue="received" className="w-full">
+              <TabsList>
+                <TabsTrigger value="received">Your Kudos</TabsTrigger>
+                <TabsTrigger value="team-feed">Team Feed</TabsTrigger>
+              </TabsList>
+              <TabsContent value="received" className="mt-4">
+                <KudosInbox />
+              </TabsContent>
+              <TabsContent value="team-feed" className="mt-4">
+                <KudosTeamFeed />
+              </TabsContent>
+            </Tabs>
           </div>
         );
       case 'profile':
@@ -1274,7 +1293,7 @@ export default function Dashboard({
             </div>
 
             {/* Simple Navigation with enhanced mobile scrolling */}
-            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto">
+            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto sidebar-nav-scroll">
               <MultiViewSidebar
                 navigationItems={NAV_ITEMS}
                 isCollapsed={isSidebarCollapsed}
