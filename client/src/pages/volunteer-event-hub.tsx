@@ -90,6 +90,10 @@ import {
   PartyPopper,
   CalendarPlus,
   Download,
+  ArrowRight,
+  HelpCircle,
+  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import {
@@ -217,6 +221,26 @@ function getEventDateLabel(
 
   const parsedDate = parseEventDate(eventDate);
   return parsedDate ? format(parsedDate, pattern) : 'Date TBD';
+}
+
+/** Calendar bucket key — local YYYY-MM-DD, aligned with date-fns format(day). */
+function getCalendarDateKey(
+  event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
+): string | null {
+  const effective = getEffectiveEventDate(event);
+  if (!effective) return null;
+  const parsed = parseEventDate(effective);
+  return parsed ? format(parsed, 'yyyy-MM-dd') : null;
+}
+
+function dedupeEventsById(events: AvailableEvent[]): AvailableEvent[] {
+  const byId = new Map<number, AvailableEvent>();
+  for (const event of events) {
+    if (!byId.has(event.id)) {
+      byId.set(event.id, event);
+    }
+  }
+  return Array.from(byId.values());
 }
 
 /** Today or later — matches the calendar's actionable/upcoming definition. */
@@ -1640,13 +1664,35 @@ export default function VolunteerEventHub() {
   const [geocodingLoading, setGeocodingLoading] = useState(false);
   const [browserLocationLoading, setBrowserLocationLoading] = useState(false);
 
+  // For the calendar view, also fetch completed events for the displayed
+  // month (only when the month is in the past — current/future months
+  // already get their data via the upcoming-events branch). Other views
+  // (list, map) don't pass a pastMonth so they keep their old behavior.
+  //
+  // Format: YYYY-MM, e.g. "2026-05". The server validates the format and
+  // ignores anything malformed, so a stale render between state changes
+  // can't break the request.
+  const pastMonthParam = useMemo(() => {
+    if (view !== 'calendar') return null;
+    const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const viewedMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    if (viewedMonthStart >= currentMonthStart) return null; // not a past month
+    const yyyy = viewedMonthStart.getFullYear();
+    const mm = String(viewedMonthStart.getMonth() + 1).padStart(2, '0');
+    return `${yyyy}-${mm}`;
+  }, [view, currentMonth]);
+
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
-    queryKey: ['/api/volunteer-hub/available-events', needsOnlyForEventQuery],
+    queryKey: ['/api/volunteer-hub/available-events', needsOnlyForEventQuery, pastMonthParam],
     queryFn: async () => {
-      const response = await fetch(`/api/volunteer-hub/available-events?needsOnly=${needsOnlyForEventQuery}`, {
-        credentials: 'include',
-      });
+      const params = new URLSearchParams({ needsOnly: String(needsOnlyForEventQuery) });
+      if (pastMonthParam) params.set('pastMonth', pastMonthParam);
+      const response = await fetch(
+        `/api/volunteer-hub/available-events?${params.toString()}`,
+        { credentials: 'include' },
+      );
       if (!response.ok) throw new Error('Failed to fetch events');
       return response.json();
     },
@@ -1968,7 +2014,7 @@ export default function VolunteerEventHub() {
   const filteredEvents = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return events
+    return dedupeEventsById(events)
       .filter(event => {
         if (normalizedSearch) {
           const searchableText = [
@@ -2047,9 +2093,8 @@ export default function VolunteerEventHub() {
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, AvailableEvent[]> = {};
     filteredEvents.forEach(event => {
-      const dateStr = getEffectiveEventDate(event);
-      if (dateStr) {
-        const key = dateStr.split('T')[0];
+      const key = getCalendarDateKey(event);
+      if (key) {
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(event);
       }
@@ -2102,7 +2147,9 @@ export default function VolunteerEventHub() {
     return {
       events: monthEvents.length,
       openings: getTotalOpeningsForEvents(monthEvents),
-      days: new Set(monthEvents.map((event) => (getEffectiveEventDate(event) || '').split('T')[0])).size,
+      days: new Set(
+        monthEvents.map((event) => getCalendarDateKey(event)).filter(Boolean),
+      ).size,
     };
   }, [filteredEvents, currentMonth]);
 
@@ -2492,32 +2539,36 @@ export default function VolunteerEventHub() {
           <div className="flex-1" />
 
           <div className="flex w-full flex-col gap-1 sm:w-auto sm:items-end">
+          {/* View toggle — icons sized up and active state given a small
+              shadow lift so switching views feels intentional, not
+              accidental. The label stays so the icon's meaning is
+              never ambiguous. */}
           <div className="flex w-full flex-wrap gap-1 rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-1 sm:w-auto">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('calendar')}
-              className={`flex-1 gap-1.5 sm:flex-none ${view === 'calendar' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 font-semibold sm:flex-none ${view === 'calendar' ? 'bg-[#007e8c] text-white shadow-sm hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <CalendarDays className="w-4 h-4" />
+              <CalendarDays className="w-[18px] h-[18px]" />
               Calendar
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('list')}
-              className={`flex-1 gap-1.5 sm:flex-none ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 font-semibold sm:flex-none ${view === 'list' ? 'bg-[#007e8c] text-white shadow-sm hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <List className="w-4 h-4" />
+              <List className="w-[18px] h-[18px]" />
               List
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('map')}
-              className={`flex-1 gap-1.5 sm:flex-none ${view === 'map' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 font-semibold sm:flex-none ${view === 'map' ? 'bg-[#007e8c] text-white shadow-sm hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <MapIcon className="w-4 h-4" />
+              <MapIcon className="w-[18px] h-[18px]" />
               Map
             </Button>
             <Button
@@ -2617,7 +2668,16 @@ export default function VolunteerEventHub() {
                       <span className="font-semibold">{monthCalendarSummary.openings}</span>
                       <span>open spots</span>
                     </div>
-                    <Button variant="outline" size="sm" onClick={goToToday} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10">
+                    {/* Today button — used constantly on calendar interfaces,
+                        so styled like Google Calendar's: prominent, full
+                        outline, slightly oversized so it never reads as a
+                        utility button. */}
+                    <Button
+                      variant="outline"
+                      onClick={goToToday}
+                      className="h-10 px-5 border-2 border-[#007E8C] text-[#007E8C] font-bold hover:bg-[#007E8C] hover:text-white hover:border-[#007E8C] transition-colors shadow-sm"
+                    >
+                      <CalendarDays className="w-4 h-4 mr-1.5" aria-hidden="true" />
                       Today
                     </Button>
                   </div>
@@ -2697,12 +2757,25 @@ export default function VolunteerEventHub() {
                         // gray date number, no orange count badge, and a
                         // "Completed ✓" pill instead of "X spots open."
                         const isPastWithEvents = isPast && hasEvents;
+                        // Hover preview — native title shows the event
+                        // org names when you hover any day with events, so
+                        // you don't have to click just to see what's there.
+                        const hoverPreview = hasEvents
+                          ? dayEvents
+                              .slice(0, 4)
+                              .map((e) => e.organizationName)
+                              .join('\n') +
+                            (dayEvents.length > 4
+                              ? `\n+ ${dayEvents.length - 4} more`
+                              : '')
+                          : undefined;
                         return (
                           <button
                             key={dateKey}
                             type="button"
                             onClick={() => hasEvents && setSelectedCalendarDate(dateKey)}
                             disabled={!hasEvents}
+                            title={hoverPreview}
                             aria-label={
                               hasEvents
                                 ? isPastWithEvents
@@ -2718,7 +2791,11 @@ export default function VolunteerEventHub() {
                               isPastWithEvents &&
                                 'bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-sm cursor-pointer',
                               isSelected && 'ring-2 ring-[#FBAD3F] border-[#007E8C] shadow-md bg-[#FAF8F4]',
-                              isToday && !isSelected && 'ring-2 ring-[#47B3CB]/60',
+                              // Today gets a stronger emphasis: bold colored
+                              // ring, brand-accent background tint, so the
+                              // "what's happening right now" anchor is
+                              // immediately findable in the grid.
+                              isToday && !isSelected && 'ring-2 ring-[#007E8C] bg-gradient-to-b from-[#47B3CB]/10 to-white shadow-sm',
                             )}
                           >
                             <div className="flex items-center justify-between gap-1">
@@ -2765,11 +2842,19 @@ export default function VolunteerEventHub() {
                                     <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                                     Completed
                                   </div>
+                                ) : roleOpenings > 0 ? (
+                                  // Staffing-status urgency indicator. When
+                                  // roles are unfilled, the row reads as a
+                                  // call to action with a warning icon and
+                                  // amber tint — not a passive count.
+                                  <div className="inline-flex items-center gap-1 rounded-full bg-[#FBAD3F]/15 px-2 py-0.5 text-[10px] sm:text-xs font-bold text-[#92400E]">
+                                    <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                                    {roleOpenings} {roleOpenings === 1 ? 'role' : 'roles'} open
+                                  </div>
                                 ) : (
-                                  <div className="text-[10px] sm:text-xs text-gray-600">
-                                    {roleOpenings > 0
-                                      ? `${roleOpenings} ${roleOpenings === 1 ? 'spot' : 'spots'} open`
-                                      : 'Extra help welcome'}
+                                  <div className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-green-700 font-semibold">
+                                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                    Fully staffed
                                   </div>
                                 )}
                                 {!isPastWithEvents && (
@@ -2839,12 +2924,46 @@ export default function VolunteerEventHub() {
 
                     <div className="mt-4 space-y-3">
                       {selectedDateEvents.length === 0 ? (
-                        <div className="rounded-xl bg-white border border-dashed border-[#47B3CB]/40 p-6 text-center">
-                          <Calendar className="w-9 h-9 mx-auto text-[#47B3CB]" />
-                          <p className="font-semibold text-[#236383] mt-3">Choose a day with events</p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Days with opportunities show a gold count in the corner.
-                          </p>
+                        // Educational empty state. Rather than telling the
+                        // user there's nothing here, use the space to walk
+                        // them through how signing up actually works.
+                        <div className="space-y-3">
+                          <div className="rounded-xl bg-white border border-[#47B3CB]/30 p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Sparkles className="w-5 h-5 text-[#FBAD3F]" aria-hidden="true" />
+                              <h4 className="font-bold text-[#236383]">How volunteering works</h4>
+                            </div>
+                            <ol className="space-y-2.5">
+                              {[
+                                { n: 1, title: 'Select a day', body: 'Click any day with a number on it to see what\'s happening.' },
+                                { n: 2, title: 'Review event details', body: 'Check the location, time, and which roles are still open.' },
+                                { n: 3, title: 'Choose a role', body: 'Driver, speaker, or general volunteer — pick what fits you.' },
+                                { n: 4, title: 'Submit your signup', body: 'Confirm and you\'re done. We\'ll send a reminder before the event.' },
+                              ].map((step) => (
+                                <li key={step.n} className="flex items-start gap-3">
+                                  <span className="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#007E8C] text-white text-xs font-bold">
+                                    {step.n}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-[#236383] leading-tight">{step.title}</p>
+                                    <p className="text-xs text-gray-600 mt-0.5 leading-snug">{step.body}</p>
+                                  </div>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+
+                          <div className="rounded-xl bg-[#FAF8F4] border border-[#FBAD3F]/30 p-4">
+                            <div className="flex items-start gap-2.5">
+                              <HelpCircle className="w-5 h-5 text-[#B45309] mt-0.5 flex-shrink-0" aria-hidden="true" />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm text-[#236383]">Need help?</p>
+                                <p className="text-xs text-gray-700 mt-0.5 leading-snug">
+                                  Reach out to the volunteer coordinator and we'll point you in the right direction.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         selectedDateEvents.map((event) => {

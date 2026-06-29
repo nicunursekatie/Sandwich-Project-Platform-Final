@@ -1,3 +1,4 @@
 - [Stream Chat distinct channels](stream-distinct-channels.md) — group chats need an explicit channel id; distinct (id-less) channels reject addMembers (error 17).
 - [Event mgmt strategy](event-mgmt-strategy.md) — EVENT_REQUESTS_RELIABILITY_PLAN_V2.md is authoritative; "erased edits" = sledgehammer cache invalidation on save (fix = B1 surgical), NOT timers; 409 was the now-removed scratchpad, not Sheets sync.
 - [Gitignored build assets break deploy](gitignored-build-assets.md) — `@assets/...` imports must be un-ignored in .gitignore or `vite build` fails (ENOENT) on publish; merges wipe untracked-ignored assets.
+- [Prod DB connectivity](prod-db-connectivity.md) — a component "stalling/failing to load" in prod is usually Neon DB unreachable (fetch failed / ECONNRESET / "terminating connection due to administrator command"); check deploy logs before blaming the component; socket ERR_NAME_NOT_RESOLVED = client network blip.

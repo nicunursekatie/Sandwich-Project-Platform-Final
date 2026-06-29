@@ -609,23 +609,14 @@ export default function Dashboard({
       case 'messaging-inbox':
         return <MessagingInbox />;
       case 'chat':
+        // Outer "Team Chat" page header was removed — it was duplicating
+        // what the channel header already tells the user (which room
+        // they're in) and pushing the actual chat surface down the page.
+        // The chat now reads top-to-bottom like a native app, with the
+        // channel list and active room stretching to the top.
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex-shrink-0 flex items-center gap-4 p-6 pb-2 border-b border-gray-200">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-                <MessageCircle className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Team Chat</h1>
-                <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Real-time communication with your team across different
-                  channels
-                </p>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0">
-              <StreamChatRooms defaultTab={urlParams.tab} />
-            </div>
+          <div className="h-full min-h-0">
+            <StreamChatRooms defaultTab={urlParams.tab} />
           </div>
         );
       case 'kudos':
@@ -762,36 +753,36 @@ export default function Dashboard({
               <h1 className="text-lg sm:text-xl md:text-2xl font-main-heading text-primary break-words">
                 Impact & Analytics Dashboard
               </h1>
-              <p className="text-sm sm:text-base font-body text-muted-foreground break-words">
+              <p className="text-base font-body text-muted-foreground break-words">
                 Track community impact, collection trends, and host performance
               </p>
             </div>
             <Tabs defaultValue="pace" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+              <TabsList className="grid w-full grid-cols-4 min-h-11 sm:min-h-12 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
                   value="pace"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Pace &amp; Comparison
                 </TabsTrigger>
                 <TabsTrigger
                   value="impact"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Impact Dashboard
                 </TabsTrigger>
                 <TabsTrigger
                   value="low-high-weeks"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Low / High Weeks
                 </TabsTrigger>
                 <TabsTrigger
                   value="hosts"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Host Analytics
@@ -839,7 +830,11 @@ export default function Dashboard({
       case 'committee':
       case 'committee-chat':
         // Redirect to main Team Chat
-        return <StreamChatRooms defaultTab={urlParams.tab} />;
+        return (
+          <div className="h-full min-h-0">
+            <StreamChatRooms defaultTab={urlParams.tab} />
+          </div>
+        );
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':

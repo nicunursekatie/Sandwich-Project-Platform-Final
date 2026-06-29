@@ -336,6 +336,7 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
           <EventCalendarView
             events={opportunities}
             filterByNeeds={true}
+            hideSelfTransport={false}
             onEventClick={(event) => {
               setViewMode('card');
               setTimeout(() => {
