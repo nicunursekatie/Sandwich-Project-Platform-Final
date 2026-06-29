@@ -30,6 +30,7 @@ import {
   buildNavSectionGroups,
   buildPromotedSidebarNavItems,
   filterItemsForSidebarSections,
+  isPromotedSidebarNavItem,
   NAV_GROUP_LABELS,
 } from '@/lib/nav-sidebar-layout';
 
@@ -396,6 +397,7 @@ export default function SimpleNav({
       const itemColors = getGroupColors(item.group || 'events');
 
       const isInCollapsedSection =
+        !isPromotedSidebarNavItem(item) &&
         item.group &&
         collapsedSections.has(item.group) &&
         item.group !== 'dashboard';
