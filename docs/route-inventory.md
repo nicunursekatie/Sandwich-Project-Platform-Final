@@ -198,7 +198,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/auth/approve-user/${userId} | 1 | client/src/components/user-management-redesigned.tsx:158 |
 | /api/auth/change-password | 1 | client/src/components/user-profile.tsx:216 |
 | /api/auth/login | 2 | client/src/pages/login.tsx:57<br>tests/setup/test-server.ts:180 |
-| /api/auth/logout | 1 | client/src/pages/dashboard.tsx:1235 |
+| /api/auth/logout | 1 | client/src/pages/dashboard.tsx:1257 |
 | /api/auth/pending-registrations | 3 | client/src/components/user-management-redesigned.tsx:144<br>client/src/components/user-management-redesigned.tsx:146<br>client/src/components/user-management-redesigned.tsx:171 |
 | /api/auth/profile | 3 | client/src/components/user-profile.tsx:161<br>client/src/components/user-profile.tsx:194<br>client/src/components/user-profile.tsx:198 |
 | /api/auth/request-initial-password | 2 | client/src/pages/login.tsx:79<br>client/src/pages/set-password.tsx:89 |
@@ -274,7 +274,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/emails/event | 2 | client/src/components/event-email-composer.tsx:144<br>client/src/components/event-email-composer.tsx:1458 |
 | /api/emails/event/${eventRequest.id}/drafts | 1 | client/src/components/event-email-composer.tsx:146 |
 | /api/emails/kudos | 3 | client/src/components/gmail-style-inbox.tsx:281<br>client/src/components/gmail-style-inbox.tsx:761<br>client/src/components/gmail-style-inbox.tsx:846 |
-| /api/emails/unread-count | 3 | client/src/components/gmail-style-inbox.tsx:351<br>client/src/components/simple-nav.tsx:109<br>client/src/components/simple-nav.tsx:113 |
+| /api/emails/unread-count | 3 | client/src/components/gmail-style-inbox.tsx:351<br>client/src/components/simple-nav.tsx:110<br>client/src/components/simple-nav.tsx:114 |
 | /api/emails?folder=${activeFolder} | 1 | client/src/components/gmail-style-inbox.tsx:298 |
 | /api/emails?folder=inbox | 1 | client/src/components/gmail-style-inbox.tsx:760 |
 | /api/enhanced-user-activity | 2 | client/src/components/detailed-activity-analytics.tsx:106<br>client/src/components/individual-user-activity.tsx:115 |
@@ -299,7 +299,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-map/geocode/${id} | 1 | client/src/components/event-requests/form-sections/DeliverySection.tsx:34 |
 | /api/event-reminders | 6 | client/src/components/event-reminders-management.tsx:125<br>client/src/components/event-reminders-management.tsx:127<br>client/src/components/event-reminders-management.tsx:136<br>client/src/components/event-reminders-management.tsx:139 |
 | /api/event-reminders/${id} | 1 | client/src/components/event-reminders-management.tsx:164 |
-| /api/event-reminders/count | 4 | client/src/components/event-reminders-management.tsx:141<br>client/src/components/event-reminders-management.tsx:173<br>client/src/components/simple-nav.tsx:127<br>client/src/components/simple-nav.tsx:131 |
+| /api/event-reminders/count | 4 | client/src/components/event-reminders-management.tsx:141<br>client/src/components/event-reminders-management.tsx:173<br>client/src/components/simple-nav.tsx:128<br>client/src/components/simple-nav.tsx:132 |
 | /api/event-requests | 31 | client/src/components/action-center.tsx:103<br>client/src/components/event-calendar-view.tsx:377<br>client/src/components/event-operational-dashboard.tsx:176<br>client/src/components/event-requests/EventSchedulingForm.tsx:822 |
 | /api/event-requests/${deletedId}/restore | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:49 |
 | /api/event-requests/${event.id} | 1 | client/src/components/event-requests/dialogs/EventEditDialog.tsx:597 |
@@ -327,7 +327,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/${id}/schedule-call | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:329 |
 | /api/event-requests/${id}/toolkit-sent | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:287 |
 | /api/event-requests/${id}/tsp-contact | 1 | client/src/components/event-requests/hooks/useEventMutations.tsx:679 |
-| /api/event-requests/${request.id}/social-media | 2 | client/src/components/event-requests/cards/CompletedCard.tsx:1160<br>client/src/components/event-requests/cards/CompletedCard.tsx:1740 |
+| /api/event-requests/${request.id}/social-media | 2 | client/src/components/event-requests/cards/CompletedCard.tsx:1161<br>client/src/components/event-requests/cards/CompletedCard.tsx:1741 |
 | /api/event-requests/${resourceId}/collaboration/comments | 3 | client/src/hooks/use-collaboration.ts:403<br>client/src/hooks/use-collaboration.ts:570<br>client/src/hooks/use-collaboration.ts:592 |
 | /api/event-requests/${resourceId}/collaboration/comments/${id} | 2 | client/src/hooks/use-collaboration.ts:615<br>client/src/hooks/use-collaboration.ts:642 |
 | /api/event-requests/${resourceId}/collaboration/locks | 2 | client/src/hooks/use-collaboration.ts:407<br>client/src/hooks/use-collaboration.ts:451 |
@@ -353,7 +353,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/event-requests/list?status=scheduled,in_process,rescheduled | 2 | client/src/components/event-requests/hooks/useDatePopulation.ts:54<br>client/src/components/event-requests/index.tsx:218 |
 | /api/event-requests/my-volunteers | 1 | client/src/components/event-requests/context/EventRequestContext.tsx:212 |
 | /api/event-requests/operational-stats | 1 | client/src/components/operational-overview.tsx:781 |
-| /api/event-requests/status-counts | 5 | client/src/components/event-requests/context/EventRequestContext.tsx:198<br>client/src/components/event-requests/context/EventRequestContext.tsx:200<br>client/src/lib/queryClient.ts:211<br>client/src/pages/dashboard.tsx:476 |
+| /api/event-requests/status-counts | 5 | client/src/components/event-requests/context/EventRequestContext.tsx:198<br>client/src/components/event-requests/context/EventRequestContext.tsx:200<br>client/src/lib/queryClient.ts:211<br>client/src/pages/dashboard.tsx:479 |
 | /api/event-requests/sync/from-sheets | 1 | client/src/components/event-requests/index.tsx:249 |
 | /api/event-requests/van-conflict-dates | 2 | client/src/components/event-requests/VanConflictsButton.tsx:167<br>client/src/components/event-requests/VanConflictsButton.tsx:169 |
 | /api/event-requests/van-requests-for-date?${params} | 1 | client/src/components/event-requests/VanNeededBadgeAndButton.tsx:99 |

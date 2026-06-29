@@ -84,6 +84,7 @@ import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { InfoBadge, CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface InProcessCardProps {
   request: EventRequest;
@@ -690,13 +691,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {datePopulationInfo && datePopulationInfo.isOpen && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
-                    style={{ backgroundColor: '#47B3CB' }}
-                  >
-                    <CalendarCheck className="w-3 h-3" />
+                  <InfoBadge tone="info" icon={CalendarCheck} className="text-xs cursor-help">
                     Open date
-                  </Badge>
+                  </InfoBadge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{indicatorTooltips.openDate}</p>
@@ -706,14 +703,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                    style={{ backgroundColor: '#FBAD3F' }}
+                  <InfoBadge
+                    tone="attention"
+                    icon={AlertTriangle}
+                    className="text-xs cursor-pointer hover:opacity-80"
                     onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                   >
-                    <AlertTriangle className="w-3 h-3" />
                     {datePopulationInfo.scheduledCount} scheduled
-                  </Badge>
+                  </InfoBadge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{indicatorTooltips.scheduledConflict}</p>
@@ -725,14 +722,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                    style={{ backgroundColor: '#007E8C' }}
+                  <InfoBadge
+                    tone="info"
+                    icon={Calendar}
+                    className="text-xs cursor-pointer hover:opacity-80"
                     onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                   >
-                    <Calendar className="w-3 h-3" />
                     {datePopulationInfo.inProcessCount} in process
-                  </Badge>
+                  </InfoBadge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{indicatorTooltips.inProcessConflict}</p>
@@ -1738,7 +1735,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1908,7 +1905,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </Tooltip>
             )}
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             {/* Card management cluster — visually separated from workflow actions */}
             <div
@@ -1984,7 +1981,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Audit Log Section */}

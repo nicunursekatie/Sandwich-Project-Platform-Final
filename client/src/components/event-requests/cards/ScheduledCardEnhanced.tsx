@@ -107,6 +107,7 @@ import { RefreshCw, Copy } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -504,10 +505,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     return eventDate <= sevenDaysFromNow && eventDate >= today;
   })();
 
-  // Staffing badge colors - red (#A31C41) if within 7 days, gold (#FBAD3F) otherwise
+  // Staffing badge colors - urgent burgundy fill (passes AA) if within 7 days,
+  // otherwise the accessible "attention" tone (dark text on light gold). The old
+  // gold fill used white text (#FBAD3F on white ≈ 1.9:1) and failed WCAG AA.
   const staffingBadgeColors = isWithin7Days
     ? 'bg-[#A31C41] text-white border border-[#A31C41]'
-    : 'bg-[#FBAD3F] text-white border border-[#FBAD3F]';
+    : 'bg-amber-50 text-amber-800 border border-amber-400';
 
   // Sandwich info
   const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
@@ -944,6 +947,47 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
                 </h2>
               )}
+              {/* Date — placed directly under the org name so every card leads
+                  with date/time (consistent card skeleton). Moved here from the
+                  former top-right position. */}
+              <div className="flex items-center gap-1 mt-1 group">
+                {isEditingThisCard && editingField === dateFieldToEdit ? (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                    <Input
+                      type="date"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                    />
+                    <Button size="sm" onClick={saveEdit} aria-label="Save date">
+                      <Save className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                      <X className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                    <span className="text-sm uppercase text-gray-600 mr-1">{dateLabel}:</span>
+                    <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
+                      {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
+                    </span>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                        className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors opacity-0 group-hover:opacity-100"
+                        aria-label="Edit date"
+                      >
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
               {/* Traffic conflict (e.g. World Cup matches). Once scheduled, only
                   the confirmed scheduled date matters — checking the original
                   desiredEventDate too left a stale badge when an event was
@@ -1225,43 +1269,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               ) : null}
             </div>
 
-            {/* Date Display */}
-            <div className="flex items-center shrink-0 group">
-              {isEditingThisCard && editingField === dateFieldToEdit ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Input
-                    type="date"
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
-                  />
-                  <Button size="sm" onClick={saveEdit} aria-label="Save date">
-                    <Save className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
-                    <X className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 group">
-                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
-                  <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
-                    {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
-                  </span>
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors opacity-0 group-hover:opacity-100"
-                      aria-label="Edit date"
-                    >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Rescheduled Badge */}
@@ -1290,15 +1297,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
                 request.addedToOfficialSheet
                   ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                  : 'bg-amber-500 text-white border border-amber-600'
               }`}
             >
-              {request.addedToOfficialSheet
-                ? `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
-                : 'Not on Calendar'}
+              {request.addedToOfficialSheet ? (
+                `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
+              ) : (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Not on Calendar
+                </>
+              )}
             </Badge>
 
             <Badge
@@ -1331,7 +1343,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Sandwich count badge */}
             <Badge
-              className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full"
+              className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full"
               title={sandwichInfo}
             >
               <span aria-hidden="true">🥪</span>
@@ -1353,7 +1365,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Self-transport badge */}
             {request.selfTransport && (
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+              <Badge className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium flex items-center gap-1">
                 <Car className="w-3 h-3" />
                 <span className="hidden sm:inline">Driving Own</span>
                 <span className="sm:hidden">Self</span>
@@ -2423,7 +2435,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <div className="flex-1 group flex items-center gap-2">
-                  <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                  <Badge className="bg-amber-50 text-amber-800 text-lg font-bold px-3 py-1.5 border-2 border-amber-400 shadow-sm flex items-center gap-2">
                     <span className="text-xl">🥪</span>
                     <span>{sandwichInfo}</span>
                   </Badge>
@@ -4390,7 +4402,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             toggle lives in the Team Assignments box, and "Follow Up" is intentionally
             absent — that step belongs to completed events, not scheduled ones. */}
         <TooltipProvider>
-          <div className="flex flex-wrap items-center gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
+          <CardActionRow className="mb-4">
             {/* Group 1 — Organizer outreach */}
             <Button onClick={onContact}>
               <Mail className="w-4 h-4 mr-2" />
@@ -4534,7 +4546,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}
             {canEdit && (
               <>
-                <div className="flex-1" />
+                <ActionRowSpacer />
                 <div
                   className="self-stretch border-l border-slate-200 mx-1"
                   aria-hidden="true"
@@ -4584,7 +4596,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </Tooltip>
               </>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Team Comments Section */}
