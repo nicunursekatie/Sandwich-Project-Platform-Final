@@ -257,16 +257,19 @@ export async function getExpectedHostLocations(): Promise<string[]> {
       .select({ name: hosts.name, status: hosts.status })
       .from(hosts);
 
-    const inactiveHostNames = hostRecords
-      .filter((h) => h.status === 'inactive' || h.status === 'hidden')
-      .map((h) => h.name);
-
-    return EXPECTED_HOST_LOCATIONS.filter(
-      (location) =>
-        !inactiveHostNames.some((name) =>
-          locationMatchesHostName(location, name)
-        )
-    );
+    return EXPECTED_HOST_LOCATIONS.filter((location) => {
+      const matchingHosts = hostRecords.filter((h) =>
+        locationMatchesHostName(location, h.name)
+      );
+      // Fail-open: if no host record matches the curated name, keep it.
+      if (matchingHosts.length === 0) return true;
+      // Only drop the location when EVERY matching host is inactive/hidden.
+      // Host names aren't unique, so a stray duplicate inactive record must
+      // not hide a location that still has an active host.
+      return matchingHosts.some(
+        (h) => h.status !== 'inactive' && h.status !== 'hidden'
+      );
+    });
   } catch (error) {
     logger.error(
       'Failed to filter expected host locations by status; using full curated list',
@@ -279,9 +282,13 @@ export async function getExpectedHostLocations(): Promise<string[]> {
 /**
  * Check which host locations have submitted for a specific week
  * @param weeksAgo - Number of weeks to go back (0 = current week, 1 = last week, etc.)
+ * @param expectedLocationsArg - Optional precomputed expected-locations list.
+ *   Callers that loop over many weeks should fetch it once (via
+ *   getExpectedHostLocations) and pass it in to avoid a hosts query per week.
  */
 export async function checkWeeklySubmissions(
-  weeksAgo: number = 0
+  weeksAgo: number = 0,
+  expectedLocationsArg?: string[]
 ): Promise<WeeklySubmissionStatus[]> {
   const { startDate, endDate } = getWeekRange(weeksAgo);
 
@@ -329,8 +336,11 @@ export async function checkWeeklySubmissions(
       weeklySubmissions.map((sub) => sub.hostName?.toLowerCase().trim())
     );
 
-    // Check each expected location (inactive/hidden hosts are excluded)
-    const expectedLocations = await getExpectedHostLocations();
+    // Check each expected location (inactive/hidden hosts are excluded).
+    // Reuse the caller-provided list when present to avoid a redundant
+    // hosts query on every week in a multi-week loop.
+    const expectedLocations =
+      expectedLocationsArg ?? (await getExpectedHostLocations());
     const statusResults: WeeklySubmissionStatus[] = [];
 
     for (const expectedLocation of expectedLocations) {
@@ -399,10 +409,14 @@ export async function generateMultiWeekReport(
 ): Promise<ComprehensiveReport> {
   const weeks: MultiWeekReport[] = [];
 
+  // Fetch the status-filtered expected locations once and reuse it for every
+  // week (and the summary) to avoid a hosts query per week.
+  const locationsTracked = await getExpectedHostLocations();
+
   // Generate reports for each week
   for (let i = 0; i < numberOfWeeks; i++) {
     const { startDate, endDate } = getWeekRange(i);
-    const submissionStatus = await checkWeeklySubmissions(i);
+    const submissionStatus = await checkWeeklySubmissions(i, locationsTracked);
 
     weeks.push({
       weekRange: { startDate, endDate },
@@ -415,7 +429,6 @@ export async function generateMultiWeekReport(
   }
 
   // Calculate summary statistics (excluding inactive/hidden hosts)
-  const locationsTracked = await getExpectedHostLocations();
   const overallStats: {
     [location: string]: {
       submitted: number;

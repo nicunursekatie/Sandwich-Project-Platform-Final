@@ -242,8 +242,9 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get submission status for this week
-      const submissionStatus = await checkWeeklySubmissions(i);
+      // Get submission status for this week (reuse expected locations to
+      // avoid a redundant hosts query per week)
+      const submissionStatus = await checkWeeklySubmissions(i, expectedLocations);
 
       // Update location stats
       submissionStatus.forEach((status: any) => {
