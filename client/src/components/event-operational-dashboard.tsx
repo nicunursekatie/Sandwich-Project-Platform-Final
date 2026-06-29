@@ -589,7 +589,7 @@ export default function EventOperationalDashboard() {
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {item.missingFields?.map((field) => (
-                        <Badge key={field} variant="outline" className="text-orange-700 border-orange-300">
+                        <Badge key={field} variant="attention" className="font-medium">
                           Missing: {field}
                         </Badge>
                       ))}

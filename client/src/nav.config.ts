@@ -62,7 +62,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // ========================================
-  // COLLECTIONS LOG (standalone gold item)
+  // COLLECTIONS (data & reports — was QUICK LINKS)
   // ========================================
   {
     id: 'collections',
@@ -70,7 +70,7 @@ export const NAV_ITEMS: NavItem[] = [
     customIcon: sandwich_logo,
     href: 'collections',
     permission: PERMISSIONS.NAV_COLLECTIONS_LOG,
-    group: 'quick-links',
+    group: 'data',
     highlighted: true,
     navigateAndExpand: true,
   },
@@ -80,7 +80,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: FileSpreadsheet,
     href: 'weekly-collections-report',
     permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
-    group: 'quick-links',
+    group: 'data',
     parentId: 'collections',
     isSubItem: true,
   },
@@ -90,17 +90,21 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     href: 'group-collections',
     permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
-    group: 'quick-links',
+    group: 'data',
     parentId: 'collections',
     isSubItem: true,
   },
+
+  // ========================================
+  // CALENDARS (events & volunteers)
+  // ========================================
   {
     id: 'calendars',
     label: 'Calendars',
     icon: Calendar,
     href: 'calendars',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
-    group: 'quick-links',
+    group: 'events',
     highlighted: true,
     navigateAndExpand: true,
   },
@@ -110,7 +114,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'yearly-calendar',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -120,7 +124,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'my-availability',
     permission: PERMISSIONS.NAV_MY_AVAILABILITY,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -130,7 +134,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     href: 'team-availability',
     permission: PERMISSIONS.NAV_TEAM_AVAILABILITY,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -140,7 +144,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'google-calendar-availability',
     permission: PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -429,6 +433,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'important-links',
     // No permission - Toolkit & Apps is available to everyone
     group: 'resources',
+    highlighted: true,
     accentColor: '#007E8C',
   },
   {
@@ -629,7 +634,7 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
 
-  // Items moved out of sidebar but kept for reference/other uses
+  // Items moved out of sidebar
   {
     id: 'my-actions',
     label: 'My Actions',
