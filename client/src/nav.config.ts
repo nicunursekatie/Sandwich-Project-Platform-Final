@@ -105,7 +105,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'calendars',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
     group: 'events',
-    highlighted: true,
     navigateAndExpand: true,
   },
   {
