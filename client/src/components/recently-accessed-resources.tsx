@@ -11,8 +11,10 @@ import {
 } from 'lucide-react';
 
 // localStorage key for the collapse state. Versioned so future default
-// changes can reset everyone's saved preference safely.
-const COLLAPSE_STATE_KEY = 'recentlyVisitedItems.expanded.v1';
+// changes can reset everyone's saved preference safely. Bumped v1 → v2 when
+// the default flipped to expanded — returning users get the new default once,
+// then their own toggle choice sticks from then on.
+const COLLAPSE_STATE_KEY = 'recentlyVisitedItems.expanded.v2';
 
 interface Resource {
   resource: {
@@ -34,14 +36,17 @@ export function RecentlyAccessedResources() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Section starts collapsed by default so it doesn't take up dashboard
-  // real estate before the user asks for it. The expanded/collapsed choice
-  // is persisted to localStorage so it stays where the user left it.
+  // Section starts EXPANDED by default — for returning users this is one of
+  // the most useful things on the dashboard ("continue where you left off"),
+  // so it shouldn't be hidden behind a chevron. The expanded/collapsed choice
+  // is persisted to localStorage so once the user toggles it, their choice
+  // sticks. No stored value (first visit after the v2 bump) → expanded.
   const [isExpanded, setIsExpanded] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(COLLAPSE_STATE_KEY) === 'true';
+      const stored = localStorage.getItem(COLLAPSE_STATE_KEY);
+      return stored === null ? true : stored === 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 
