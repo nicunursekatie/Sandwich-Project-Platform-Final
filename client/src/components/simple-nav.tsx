@@ -19,13 +19,18 @@ import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
 // the sidebar is for navigation. Removing the duplicate frees ~70px of
 // vertical space so primary nav items sit higher up the screen.
 import { logger } from '@/lib/logger';
-import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink, ChevronsUp } from 'lucide-react';
 // SmartSearch import removed — its UI was consolidated into UnifiedTopSearch
 // in the top navigation header. The endpoint it called
 // (/api/smart-search/fuzzy) is now used by the unified bar.
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
 import { useNavViewModeOptional } from '@/contexts/nav-view-mode-context';
+import {
+  buildNavSectionGroups,
+  NAV_GROUP_LABELS,
+  PROMOTED_SIDEBAR_NAV_ID,
+} from '@/lib/nav-sidebar-layout';
 
 export default function SimpleNav({
   navigationItems,
@@ -176,6 +181,25 @@ export default function SimpleNav({
     const displayNavigationItems = navViewMode?.applyUserViewFilter(filteredNavigationItems)
       ?? filteredNavigationItems;
 
+    const dashboardItem = displayNavigationItems.find((item) => item.id === 'dashboard');
+    const promotedToolkitItem = displayNavigationItems.find(
+      (item) => item.id === PROMOTED_SIDEBAR_NAV_ID,
+    );
+    const sectionGroups = buildNavSectionGroups(
+      displayNavigationItems.filter(
+        (item) => item.group !== 'dashboard' && item.id !== PROMOTED_SIDEBAR_NAV_ID,
+      ),
+    );
+
+    const hasExpandableNavState =
+      expandedParents.size > 0 ||
+      sectionGroups.some(({ group }) => !collapsedSections.has(group));
+
+    const collapseAllNav = () => {
+      setCollapsedSections(new Set(sectionGroups.map(({ group }) => group)));
+      setExpandedParents(new Set());
+    };
+
     // Toggle section collapse
     const toggleSection = (group: string) => {
       const newCollapsed = new Set(collapsedSections);
@@ -240,40 +264,12 @@ export default function SimpleNav({
       return location === `/${baseHref}`;
     };
 
-    // Group items for visual separation
-    const groupedItems = displayNavigationItems.reduce((acc, item, index) => {
-      const prevItem = displayNavigationItems[index - 1];
-      const showSeparator =
-        prevItem && prevItem.group !== item.group && item.group;
-
-      if (showSeparator) {
-        acc.push({ type: 'separator', group: item.group });
-      }
-      acc.push({ type: 'item', ...item });
-      return acc;
-    }, [] as any[]);
-
     const getGroupLabel = (group: string) => {
-      const labels = {
-        'quick-links': 'QUICK LINKS',
-        events: 'EVENTS & VOLUNTEERS',
-        network: 'NETWORK',
-        resources: 'RESOURCES & TOOLS',
-        communication: 'COMMUNICATION',
-        data: 'DATA & REPORTS',
-        settings: 'SETTINGS',
-      };
-      return labels[group as keyof typeof labels] || group.toUpperCase();
+      return NAV_GROUP_LABELS[group] || group.toUpperCase();
     };
 
     const getGroupColors = (group: string) => {
       const colorMap: Record<string, { bg: string; hover: string; border: string; gradient: string }> = {
-        'quick-links': {
-          bg: 'bg-brand-primary',
-          hover: 'hover:bg-brand-primary-dark',
-          border: 'border-l-brand-orange',
-          gradient: 'from-brand-primary to-brand-primary-dark'
-        },
         'events': {
           bg: 'bg-[#007E8C]',
           hover: 'hover:bg-[#006270]',
@@ -311,7 +307,7 @@ export default function SimpleNav({
           gradient: 'from-slate-600 to-slate-700'
         }
       };
-      return colorMap[group] || colorMap['quick-links'];
+      return colorMap[group] || colorMap['events'];
     };
 
     const getBadgeCount = (itemId: string) => {
@@ -367,21 +363,212 @@ export default function SimpleNav({
     const firstItemWithBadge = displayNavigationItems.find(item => getBadgeCount(item.id) > 0);
     const showNavBadgeIntro = firstItemWithBadge && shouldShowStep('nav-badge-intro') && !hasShownFirstBadge;
 
+    const renderSectionHeader = (group: string, key: string) => {
+      if (isCollapsed) return null;
+      const isCollapsedSection = collapsedSections.has(group);
+      const groupColors = getGroupColors(group);
+      return (
+        <div key={key} className="mt-4 mb-3">
+          <button
+            type="button"
+            onClick={() => toggleSection(group)}
+            className={`w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm ${groupColors.bg} ${groupColors.hover} transition-colors cursor-pointer flex items-center justify-between group`}
+          >
+            <div className="font-bold text-white tracking-wide text-[15px] flex-1 text-left">
+              {getGroupLabel(group)}
+            </div>
+            {isCollapsedSection ? (
+              <ChevronRight className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
+            )}
+          </button>
+          <div className={`border-t ${groupColors.bg} opacity-30 mx-2`} />
+        </div>
+      );
+    };
+
+    const renderNavItem = (item: NavItem) => {
+      const badgeCount = getBadgeCount(item.id);
+
+      if (!item.href) {
+        logger.warn('Navigation item missing href:', { id: item.id, label: item.label });
+      }
+
+      const active = isActive(item.href);
+      const itemColors = getGroupColors(item.group || 'events');
+
+      const isInCollapsedSection =
+        item.group &&
+        collapsedSections.has(item.group) &&
+        item.group !== 'dashboard';
+      if (isInCollapsedSection) {
+        return null;
+      }
+
+      const hasChildren = displayNavigationItems.some((navItem) => navItem.parentId === item.id);
+      const isExpanded = expandedParents.has(item.id);
+
+      if (item.isSubItem && item.parentId && !expandedParents.has(item.parentId)) {
+        return null;
+      }
+
+      const IconComponent = item.icon;
+
+      return (
+        <Button
+          key={item.id}
+          variant={active ? 'default' : 'ghost'}
+          data-nav-level={item.isSubItem ? 'child' : 'parent'}
+          className={`
+              w-full ${
+                isCollapsed
+                  ? 'justify-center px-2'
+                  : item.isSubItem
+                    ? 'justify-start pl-3 pr-2 ml-5 mr-1 border-l-2 border-slate-300/80 rounded-l-none rounded-r-md h-10'
+                    : 'justify-start px-2 sm:px-3'
+              } text-left touch-manipulation relative ${
+                item.isSubItem
+                  ? 'text-sm font-normal text-slate-600'
+                  : 'text-base font-semibold text-slate-800'
+              }
+              ${
+                active
+                  ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
+                  : item.highlighted
+                    ? 'hover:bg-[#006e7e]/10 text-[#006e7e] font-semibold rounded-lg hover:shadow-sm transition-all duration-200 h-11'
+                    : item.accentColor
+                      ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-semibold h-11'
+                      : item.isSubItem
+                        ? 'hover:bg-slate-100/90 hover:border-slate-400/80 transition-all duration-200'
+                        : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-700 rounded-lg hover:shadow-sm transition-all duration-200 h-11'
+              }
+            `}
+          style={!active && item.accentColor ? { color: item.accentColor } : undefined}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (hasChildren) {
+              toggleParent(item.id);
+              if (!item.navigateAndExpand) {
+                return;
+              }
+            }
+
+            if (!item.href) return;
+
+            if (item.externalUrl) {
+              window.open(item.externalUrl, '_blank', 'noopener,noreferrer');
+              return;
+            }
+
+            if (item.external) {
+              setLocation(item.href);
+              return;
+            }
+
+            if (item.href.includes('?')) {
+              const [baseSection, queryString] = item.href.split('?');
+              setLocation(`/dashboard?section=${baseSection}&${queryString}`);
+            } else {
+              onSectionChange(item.href);
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          title={isCollapsed ? item.label : undefined}
+          data-nav-id={item.id}
+          data-testid={`nav-${item.id}`}
+        >
+          {item.customIcon ? (
+            <img
+              src={sandwich_logo}
+              alt={item.label}
+              className={`h-4 w-4 flex-shrink-0 ${
+                isCollapsed ? '' : 'mr-2 sm:mr-3'
+              } ${item.highlighted && !active ? 'opacity-90' : ''}`}
+            />
+          ) : IconComponent ? (
+            <IconComponent
+              className={`h-4 w-4 flex-shrink-0 ${
+                isCollapsed ? '' : 'mr-2 sm:mr-3'
+              } ${item.highlighted && !active ? 'text-[#47B3CB]' : ''}`}
+            />
+          ) : null}
+          {!isCollapsed && (
+            <>
+              <span className="flex-1 text-left font-medium">{item.label}</span>
+              {item.externalUrl && (
+                <ExternalLink className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`} />
+              )}
+              {item.id === 'quick-tools' && shouldShowStep('toolkit-apps-intro') && (
+                <OnboardingTooltip
+                  step="toolkit-apps-intro"
+                  position="right"
+                  showWhen={true}
+                  delay={2000}
+                  completeOnChildClick={true}
+                >
+                  <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#47B3CB] text-white text-[9px] font-bold animate-bounce">
+                    !
+                  </span>
+                </OnboardingTooltip>
+              )}
+              {badgeCount > 0 && (
+                <>
+                  {showNavBadgeIntro && item.id === firstItemWithBadge?.id ? (
+                    <OnboardingTooltip
+                      step="nav-badge-intro"
+                      position="right"
+                      showWhen={true}
+                      delay={1500}
+                      onComplete={() => setHasShownFirstBadge(true)}
+                    >
+                      <Badge variant="destructive" className="ml-auto h-5 min-w-[20px] text-xs animate-pulse">
+                        {badgeCount > 99 ? '99+' : badgeCount}
+                      </Badge>
+                    </OnboardingTooltip>
+                  ) : (
+                    (() => {
+                      const featureStep = getOnboardingStep(item.id);
+                      const showFeatureTooltip =
+                        featureStep &&
+                        !shouldShowStep('nav-badge-intro') &&
+                        shouldShowStep(featureStep);
+
+                      if (showFeatureTooltip && featureStep) {
+                        return (
+                          <OnboardingTooltip step={featureStep} position="right" showWhen={true} delay={2000}>
+                            <Badge variant="destructive" className="ml-auto h-5 min-w-[20px] text-xs animate-pulse">
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </Badge>
+                          </OnboardingTooltip>
+                        );
+                      }
+
+                      return (
+                        <Badge variant="destructive" className="ml-auto h-5 min-w-[20px] text-xs">
+                          {badgeCount > 99 ? '99+' : badgeCount}
+                        </Badge>
+                      );
+                    })()
+                  )}
+                </>
+              )}
+              {hasChildren && (
+                <div className="ml-2">
+                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </div>
+              )}
+            </>
+          )}
+        </Button>
+      );
+    };
+
     return (
       <nav className="flex flex-col gap-1.5 p-3" data-tour="navigation">
-        {/* Sidebar brand block removed — the TSP logo + name already live in
-            the top-left of the top navigation bar (see dashboard.tsx). Standard
-            SaaS convention is one brand anchor in the top-nav slot; the
-            sidebar is reserved for navigation. Removing the duplicate frees
-            ~70px of vertical space so the search field and primary nav items
-            sit higher up the screen. */}
-
-        {/* Sidebar SmartSearch removed — consolidated into the unified
-            search bar in the persistent top navigation header (see
-            UnifiedTopSearch). That bar searches BOTH app pages/actions AND
-            people/orgs from a single, predictable spot that doesn't shift
-            between Dashboard, Calendars, Collection Log, etc. */}
-
         {navViewMode?.isUserViewActive && !isCollapsed && (
           <div
             className="mx-1 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900"
@@ -394,248 +581,28 @@ export default function SimpleNav({
           </div>
         )}
 
-        {groupedItems.map((groupItem, index) => {
-          if (groupItem.type === 'separator') {
-            const isCollapsedSection = collapsedSections.has(groupItem.group);
-            const groupColors = getGroupColors(groupItem.group);
-            return !isCollapsed ? (
-              <div key={`separator-${groupItem.group}-${index}`} className="mt-4 mb-3">
-                <button
-                  onClick={() => toggleSection(groupItem.group)}
-                  className={`w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm ${groupColors.bg} ${groupColors.hover} transition-colors cursor-pointer flex items-center justify-between group`}
-                >
-                  <div className="font-bold text-white tracking-wide text-[15px] flex-1 text-left">
-                    {getGroupLabel(groupItem.group)}
-                  </div>
-                  {isCollapsedSection ? (
-                    <ChevronRight className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-white/80 group-hover:scale-110 transition-transform" />
-                  )}
-                </button>
-                <div className={`border-t ${groupColors.bg} opacity-30 mx-2`} />
-              </div>
-            ) : null;
-          }
+        {!isCollapsed && hasExpandableNavState && (
+          <button
+            type="button"
+            onClick={collapseAllNav}
+            className="mx-1 mb-1 flex w-[calc(100%-0.5rem)] items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white/90 px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+            data-testid="nav-collapse-all"
+          >
+            <ChevronsUp className="h-3.5 w-3.5" />
+            Collapse all
+          </button>
+        )}
 
-          const item = groupItem;
-          const badgeCount = getBadgeCount(item.id);
+        {dashboardItem && renderNavItem(dashboardItem)}
 
-          // Debug: log if we encounter an item without href
-          if (!item.href) {
-            logger.warn('Navigation item missing href:', { id: item.id, label: item.label, type: item.type });
-          }
+        {promotedToolkitItem && renderNavItem(promotedToolkitItem)}
 
-          const active = isActive(item.href);
-          const itemColors = getGroupColors(item.group || 'quick-links');
-
-          // Hide items in collapsed sections (unless item is dashboard)
-          const isInCollapsedSection = item.group && collapsedSections.has(item.group) && item.group !== 'dashboard';
-          if (isInCollapsedSection) {
-            return null;
-          }
-
-          // Check if this item has children
-          const hasChildren = displayNavigationItems.some(navItem => navItem.parentId === item.id);
-          const isExpanded = expandedParents.has(item.id);
-
-          // Hide sub-items if their parent is not expanded
-          if (item.isSubItem && item.parentId && !expandedParents.has(item.parentId)) {
-            return null;
-          }
-
-          return (
-
-            <Button
-              key={item.id}
-              variant={active ? 'default' : 'ghost'}
-              className={`
-              w-full ${
-                isCollapsed
-                  ? 'justify-center px-2'
-                  : item.isSubItem
-                    ? 'justify-start pl-8 pr-2 sm:pr-3'
-                    : 'justify-start px-2 sm:px-3'
-              } text-left h-11 touch-manipulation relative ${
-                item.isSubItem ? 'text-base font-normal' : 'text-base font-medium'
-              }
-              ${
-                active
-                  ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
-                  : item.highlighted
-                    ? 'hover:bg-[#006e7e]/10 text-[#006e7e] font-semibold rounded-lg hover:shadow-sm transition-all duration-200'
-                    : item.accentColor
-                      ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-semibold'
-                      : item.isSubItem
-                        ? 'hover:bg-slate-50 text-slate-600 ml-4 mr-1 rounded-md hover:shadow-sm transition-all duration-200'
-                        : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-700 rounded-lg hover:shadow-sm transition-all duration-200'
-              }
-            `}
-              style={!active && item.accentColor ? { color: item.accentColor } : undefined}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                logger.log('Navigation click:', item.href);
-
-                // If item has children, toggle expansion
-                if (hasChildren) {
-                  toggleParent(item.id);
-
-                  // If item has navigateAndExpand flag, also navigate (don't return early)
-                  if (!item.navigateAndExpand) {
-                    return; // Stop here - don't navigate for regular parent items
-                  }
-                }
-
-                // Handle navigation for items WITHOUT children, or items with navigateAndExpand
-                // Guard against missing href
-                if (!item.href) {
-                  logger.warn('Attempted to navigate to item without href:', item.id);
-                  return;
-                }
-
-                // Handle externalUrl - open in new tab
-                if (item.externalUrl) {
-                  logger.log('Opening external URL in new tab:', item.externalUrl);
-                  window.open(item.externalUrl, '_blank', 'noopener,noreferrer');
-                  return;
-                }
-
-                // Handle external items - navigate directly to the URL (for pages outside dashboard)
-                if (item.external) {
-                  logger.log('External navigation:', item.href);
-                  setLocation(item.href);
-                  return;
-                }
-
-                // Handle hrefs with query parameters
-                if (item.href.includes('?')) {
-                  const [baseSection, queryString] = item.href.split('?');
-                  logger.log('Navigation with query params:', { baseSection, queryString });
-
-                  // Navigate using Wouter's setLocation to keep router in sync
-                  // The Dashboard will pick up the section and tab from URL params
-                  const newUrl = `/dashboard?section=${baseSection}&${queryString}`;
-                  setLocation(newUrl);
-                } else {
-                  onSectionChange(item.href);
-                }
-
-                // Scroll to top of page after navigation
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              title={isCollapsed ? item.label : undefined}
-              data-nav-id={item.id}
-              data-testid={`nav-${item.id}`}
-            >
-              {item.customIcon ? (
-                <img
-                  src={sandwich_logo}
-                  alt={item.label}
-                  className={`h-4 w-4 flex-shrink-0 ${
-                    isCollapsed ? '' : 'mr-2 sm:mr-3'
-                  } ${item.highlighted && !active ? 'opacity-90' : ''}`}
-                />
-              ) : (
-                <item.icon
-                  className={`h-4 w-4 flex-shrink-0 ${
-                    isCollapsed ? '' : 'mr-2 sm:mr-3'
-                  } ${item.highlighted && !active ? 'text-[#47B3CB]' : ''}`}
-
-                />
-              )}
-              {!isCollapsed && (
-                <>
-                  <span className="flex-1 text-left font-medium">{item.label}</span>
-                  {item.externalUrl && (
-                    <ExternalLink className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`} />
-                  )}
-                  {/* One-time discovery tooltip for Toolkit & Apps */}
-                  {item.id === 'quick-tools' && shouldShowStep('toolkit-apps-intro') && (
-                    <OnboardingTooltip
-                      step="toolkit-apps-intro"
-                      position="right"
-                      showWhen={true}
-                      delay={2000}
-                      completeOnChildClick={true}
-                    >
-                      <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#47B3CB] text-white text-[9px] font-bold animate-bounce">
-                        !
-                      </span>
-                    </OnboardingTooltip>
-                  )}
-                  {badgeCount > 0 && (
-                    <>
-                      {/* Show intro tooltip on first badge user sees */}
-                      {showNavBadgeIntro && item.id === firstItemWithBadge?.id ? (
-                        <OnboardingTooltip
-                          step="nav-badge-intro"
-                          position="right"
-                          showWhen={true}
-                          delay={1500}
-                          onComplete={() => {
-                            setHasShownFirstBadge(true);
-                          }}
-                        >
-                          <Badge
-                            variant="destructive"
-                            className="ml-auto h-5 min-w-[20px] text-xs animate-pulse"
-                          >
-                            {badgeCount > 99 ? '99+' : badgeCount}
-                          </Badge>
-                        </OnboardingTooltip>
-                      ) : (
-                        /* After intro is done, show feature-specific tooltips */
-                        (() => {
-                          const featureStep = getOnboardingStep(item.id);
-                          const showFeatureTooltip = featureStep &&
-                            !shouldShowStep('nav-badge-intro') &&
-                            shouldShowStep(featureStep);
-
-                          if (showFeatureTooltip && featureStep) {
-                            return (
-                              <OnboardingTooltip
-                                step={featureStep}
-                                position="right"
-                                showWhen={true}
-                                delay={2000}
-                              >
-                                <Badge
-                                  variant="destructive"
-                                  className="ml-auto h-5 min-w-[20px] text-xs animate-pulse"
-                                >
-                                  {badgeCount > 99 ? '99+' : badgeCount}
-                                </Badge>
-                              </OnboardingTooltip>
-                            );
-                          }
-
-                          return (
-                            <Badge
-                              variant="destructive"
-                              className="ml-auto h-5 min-w-[20px] text-xs"
-                            >
-                              {badgeCount > 99 ? '99+' : badgeCount}
-                            </Badge>
-                          );
-                        })()
-                      )}
-                    </>
-                  )}
-                  {hasChildren && (
-                    <div className="ml-2">
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4" />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </Button>
-          );
-        })}
+        {sectionGroups.map(({ group, items }) => (
+          <React.Fragment key={`nav-section-${group}`}>
+            {renderSectionHeader(group, `section-header-${group}`)}
+            {items.map((item) => renderNavItem(item))}
+          </React.Fragment>
+        ))}
       </nav>
     );
   } catch (error) {

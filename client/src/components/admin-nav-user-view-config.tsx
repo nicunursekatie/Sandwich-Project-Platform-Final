@@ -19,7 +19,6 @@ interface NavUserViewConfigResponse {
 
 const GROUP_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
-  'quick-links': 'Quick Links',
   events: 'Events & Volunteers',
   network: 'Network',
   resources: 'Resources & Tools',

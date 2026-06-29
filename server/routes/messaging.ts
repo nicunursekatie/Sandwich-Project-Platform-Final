@@ -155,6 +155,22 @@ router.post('/kudos/mark-read', isAuthenticated, async (req: AuthenticatedReques
 });
 
 // Get received kudos for a user
+/**
+ * Team kudos feed — recent kudos sent across the org, not just to the
+ * current user. Used by the shared recognition feed on the Kudos page.
+ * Authenticated so we don't expose recognition activity to non-members.
+ */
+router.get('/kudos/team-feed', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const limit = parseInt(String(req.query.limit ?? '50'), 10) || 50;
+    const feed = await messagingService.getTeamFeedKudos(limit);
+    res.json(Array.isArray(feed) ? feed : []);
+  } catch (error) {
+    logger.error('[Messaging API] Error fetching team kudos feed:', error);
+    res.json([]);
+  }
+});
+
 router.get('/kudos/received', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user;

@@ -64,6 +64,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import BulkDataManager from '@/components/bulk-data-manager';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -2498,36 +2504,92 @@ export default function SandwichCollectionLog() {
           </div>
         )}
 
-        {/* Global Search Field - Prominent placement at top */}
+        {/* Global Search Field - Prominent placement at top.
+            Includes a "?" affordance because the placeholder can't
+            comfortably list every searchable field. Hovering / tapping
+            the icon reveals the full set so users know they can search
+            by date range, group name, etc. — not just the three things
+            the placeholder names. */}
         <div className="mb-6">
-          <div className="relative max-w-md mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Scan className="h-5 w-5 text-slate-400" />
-            </div>
-            <Input
-              data-testid="input-global-search"
-              type="text"
-              placeholder="Search hosts, organizations, submitters..."
-              value={searchFilters.globalSearch}
-              onChange={(e) =>
-                setSearchFilters((prev) => ({
-                  ...prev,
-                  globalSearch: e.target.value,
-                }))
-              }
-              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-brand-primary-muted rounded-lg text-base"
-            />
-            {searchFilters.globalSearch && (
-              <button
-                data-testid="button-clear-global-search"
-                onClick={() =>
-                  setSearchFilters((prev) => ({ ...prev, globalSearch: '' }))
+          <div className="relative max-w-md mx-auto flex items-center gap-2">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Scan className="h-5 w-5 text-slate-400" />
+              </div>
+              <Input
+                data-testid="input-global-search"
+                type="text"
+                placeholder="Search hosts, organizations, submitters..."
+                value={searchFilters.globalSearch}
+                onChange={(e) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    globalSearch: e.target.value,
+                  }))
                 }
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-brand-primary-muted rounded-lg text-base"
+              />
+              {searchFilters.globalSearch && (
+                <button
+                  data-testid="button-clear-global-search"
+                  onClick={() =>
+                    setSearchFilters((prev) => ({ ...prev, globalSearch: '' }))
+                  }
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <X className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="What can I search?"
+                  data-testid="button-search-help"
+                  className="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full text-slate-500 hover:bg-slate-100 hover:text-[#236383] transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary-muted"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="end"
+                className="w-72 text-sm"
               >
-                <X className="h-5 w-5 text-slate-400 hover:text-slate-600" />
-              </button>
-            )}
+                <p className="font-semibold text-[#236383] mb-2">
+                  What can I search?
+                </p>
+                <p className="text-slate-600 mb-2 text-xs">
+                  This search box matches any of the fields below — partial
+                  matches work too.
+                </p>
+                <ul className="space-y-1 text-xs text-slate-700">
+                  <li>
+                    <span className="font-semibold">Host name</span> &nbsp;
+                    <span className="text-slate-500">e.g. Alpharetta</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Organization</span> &nbsp;
+                    <span className="text-slate-500">e.g. Boy Scouts</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Submitter</span> &nbsp;
+                    <span className="text-slate-500">person who logged it</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Group name</span> &nbsp;
+                    <span className="text-slate-500">inside group breakdowns</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Date</span> &nbsp;
+                    <span className="text-slate-500">
+                      try <code>2026</code>, <code>Jan 2026</code>, <code>1/15</code>
+                    </span>
+                  </li>
+                </ul>
+              </PopoverContent>
+            </Popover>
           </div>
           {searchFilters.globalSearch && (
             <p className="text-center text-base text-slate-600 mt-2">
@@ -3197,60 +3259,94 @@ export default function SandwichCollectionLog() {
                       <div className="text-lg lg:text-xl font-bold">{totalSandwiches}</div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
-                      {collection.createdBy &&
-                        collection.createdByName && (
-                          <SendKudosButton
-                            recipientId={collection.createdBy}
-                            recipientName={collection.createdByName}
-                            contextType="task"
-                            contextId={collection.id.toString()}
-                            contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
-                            size="sm"
-                            variant="outline"
-                            iconOnly={true}
-                            className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    {/* Actions — each icon-only button is wrapped in a
+                        Tooltip so users who aren't used to icon-only
+                        interfaces get a hover label explaining what the
+                        button does (heart = kudos, comment = message,
+                        pencil = edit, trash = delete). */}
+                    <TooltipProvider delayDuration={200}>
+                      <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
+                        {collection.createdBy &&
+                          collection.createdByName && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
+                                  <SendKudosButton
+                                    recipientId={collection.createdBy}
+                                    recipientName={collection.createdByName}
+                                    contextType="task"
+                                    contextId={collection.id.toString()}
+                                    contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
+                                    size="sm"
+                                    variant="outline"
+                                    iconOnly={true}
+                                    className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Send kudos to {collection.createdByName}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setMessageCollection(collection)}
+                              aria-label="Message about this collection"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Message about this collection
+                          </TooltipContent>
+                        </Tooltip>
+                        {canEditCollection(user, collection) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(collection)}
+                                aria-label="Edit this entry"
+                                className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit this entry</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {canDeleteCollection(user, collection) && (
+                          <ConfirmationDialog
+                            trigger={
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    aria-label="Delete this entry"
+                                    className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete this entry</TooltipContent>
+                              </Tooltip>
+                            }
+                            title="Delete Collection Entry"
+                            description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
+                            confirmText="Delete"
+                            variant="destructive"
+                            onConfirm={() => handleDelete(collection.id)}
                           />
                         )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setMessageCollection(collection)}
-                        title="Message about this collection"
-                        className="h-8 w-8 p-0"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </Button>
-                      {canEditCollection(user, collection) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(collection)}
-                          className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {canDeleteCollection(user, collection) && (
-                        <ConfirmationDialog
-                          trigger={
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          }
-                          title="Delete Collection Entry"
-                          description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
-                          confirmText="Delete"
-                          variant="destructive"
-                          onConfirm={() => handleDelete(collection.id)}
-                        />
-                      )}
-                    </div>
+                      </div>
+                    </TooltipProvider>
                   </div>
 
                   {/* Submission info - small footer detail */}
