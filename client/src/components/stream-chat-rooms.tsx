@@ -1071,10 +1071,9 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
           {/* Header with section tabs */}
           <div className="p-3 border-b border-[#47B3CB]/30 bg-[#236383] text-white">
             <h2 className="text-lg font-semibold mb-1">Messages</h2>
-            {/* One-line clarifier — Team Chat vs Project Threads is the #1
-                source of confusion for new users. This explains what Team Chat
-                is for and links anyone who actually wants an email-style thread
-                over to Project Threads in one click. */}
+            {/* Clarifier line: states that Team Chat is for real-time
+                messaging and links to Project Threads for users who want an
+                email-style thread instead. */}
             <p className="text-xs text-white/80 mb-2 leading-snug">
               For quick back-and-forth with the team — messages are real-time.{' '}
               <a
