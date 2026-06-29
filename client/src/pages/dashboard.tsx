@@ -297,6 +297,9 @@ export default function Dashboard({
   const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+  // Active analytics tab — controlled so we can show a per-tab description
+  // line beneath the tab row that updates when the user switches tabs.
+  const [analyticsTab, setAnalyticsTab] = useState<string>('pace');
 
   // Helper function to get readable section/page names for activity tracking
   const getActivityContext = (section: string) => {
@@ -776,7 +779,7 @@ export default function Dashboard({
                 Track community impact, collection trends, and host performance
               </p>
             </div>
-            <Tabs defaultValue="pace" className="w-full">
+            <Tabs value={analyticsTab} onValueChange={setAnalyticsTab} className="w-full">
               <TabsList className="grid w-full grid-cols-4 min-h-11 sm:min-h-12 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
                   value="pace"
@@ -807,6 +810,25 @@ export default function Dashboard({
                   Host Analytics
                 </TabsTrigger>
               </TabsList>
+              {/* Plain-language description of the active tab. Sits between
+                  the tab row and content so a new user understands what
+                  they're looking at without having to interpret jargon
+                  ("Low / High Weeks" being the worst offender). Greyed
+                  and small so it guides without dominating. */}
+              <p
+                className="mt-2 text-[13px] text-gray-500 leading-snug"
+                aria-live="polite"
+                data-testid="analytics-tab-description"
+              >
+                {analyticsTab === 'pace' &&
+                  "How this year's totals compare to last year and to your annual goal."}
+                {analyticsTab === 'impact' &&
+                  'Totals by sandwich type, collection category, and all-time records.'}
+                {analyticsTab === 'low-high-weeks' &&
+                  'Which weeks had the lowest and highest collection volume — useful for spotting seasonal patterns.'}
+                {analyticsTab === 'hosts' &&
+                  'Breakdown of collection performance by individual host location.'}
+              </p>
               <TabsContent value="pace" className="mt-6">
                 <PaceComparisonAnalytics />
               </TabsContent>
