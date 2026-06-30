@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorToast } from '@/hooks/use-error-toast';
-import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts, findEventInListCaches, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { logger } from '@/lib/logger';
@@ -130,13 +130,15 @@ export const useEventMutations = () => {
         });
       }
 
-      // Patch caches surgically — avoid refetching every list while other forms may be open.
-      const statusChanged =
-        !!selectedEventRequest?.status &&
-        !!updatedEvent?.status &&
-        selectedEventRequest.status !== updatedEvent.status;
-      await applyEventRequestSaveToCache(queryClient, updatedEvent, {
-        statusChanged,
+      // Patch caches surgically — infer status change from the cached row (or the
+      // open dialog event), not only selectedEventRequest (card actions like
+      // Approve often run with no dialog open).
+      const previousStatus =
+        findEventInListCaches(queryClient, variables.id)?.status ??
+        (selectedEventRequest?.id === variables.id ? selectedEventRequest.status : undefined);
+
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus,
         touchedFields: Object.keys(variables.data || {}),
       });
 
@@ -297,9 +299,10 @@ export const useEventMutations = () => {
         description: message,
       });
       await applyPatchResponseToCache(queryClient, updatedEvent, {
-        previousStatus: selectedEventRequest?.status,
+        previousStatus:
+          findEventInListCaches(queryClient, variables.id)?.status ??
+          (selectedEventRequest?.id === variables.id ? selectedEventRequest.status : undefined),
         touchedFields: ['toolkitSentDate', 'status', 'contactAttempts'],
-        statusChanged: true,
       });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {

@@ -86,6 +86,8 @@ interface RequestFiltersProps {
     my_assignments: number;
   };
   statusCountsLoading?: boolean;
+  /** Unopened new requests for this user (tab dot only). */
+  unviewedNewCount?: number;
 
   // Content for each tab
   children: {
@@ -125,6 +127,7 @@ export default function RequestFilters({
   onItemsPerPageChange,
   statusCounts,
   statusCountsLoading,
+  unviewedNewCount = 0,
   children,
   totalItems,
   totalPages,
@@ -183,7 +186,7 @@ export default function RequestFilters({
       shortLabel: 'New',
       icon: Star,
       count: statusCounts.new,
-      hasNotification: statusCounts.new > 0,
+      hasNotification: unviewedNewCount > 0,
     },
     {
       value: 'in_process',

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
@@ -9,6 +9,11 @@ import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
 import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
 import { useIssueReport } from '@/contexts/issue-report-context';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+import {
+  computeUnviewedNewCount,
+  pruneViewedEventIds,
+  subscribeEventRequestViewedChanges,
+} from '@/lib/event-request-viewed';
 
 interface EventRequestContextType {
   // Event requests data
@@ -65,6 +70,8 @@ interface EventRequestContextType {
     my_assignments: number;
   };
   statusCountsLoading: boolean;
+  /** New requests this user hasn't opened yet (workflow status may still be `new`). */
+  unviewedNewCount: number;
 }
 
 const EventRequestContext = createContext<EventRequestContextType | null>(null);
@@ -395,6 +402,74 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     my_assignments: serverStatusCounts?.my_assignments ?? 0,
   };
 
+  const queryClient = useQueryClient();
+  const [viewedRevision, setViewedRevision] = useState(0);
+  useEffect(() => subscribeEventRequestViewedChanges(() => setViewedRevision((v) => v + 1)), []);
+
+  const newTabListQuery = useMemo(() => buildEventRequestsListQuery('new', null), []);
+  const {
+    data: newEventsForBadge,
+    isFetched: newEventsListFetched,
+  } = useQuery<EventRequest[]>({
+    queryKey: newTabListQuery.queryKey,
+    queryFn: async () => {
+      const response = await fetch(newTabListQuery.listUrl, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch new event requests');
+      return response.json();
+    },
+    enabled: !!user?.id && statusCounts.new > 0,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const newEventsForUnviewedCount = useMemo(() => {
+    if (newEventsForBadge && newEventsForBadge.length > 0) {
+      return newEventsForBadge;
+    }
+    if (activeTab === 'new' && eventRequests.length > 0) {
+      return eventRequests;
+    }
+    const cached = queryClient.getQueryData<EventRequest[]>(newTabListQuery.queryKey);
+    return cached ?? [];
+  }, [
+    newEventsForBadge,
+    activeTab,
+    eventRequests,
+    queryClient,
+    newTabListQuery.queryKey,
+  ]);
+
+  useEffect(() => {
+    if (!user?.id || newEventsForUnviewedCount.length === 0) return;
+    pruneViewedEventIds(
+      user.id,
+      newEventsForUnviewedCount
+        .filter((event) => event.status === 'new')
+        .map((event) => event.id)
+    );
+  }, [user?.id, newEventsForUnviewedCount]);
+
+  const unviewedNewCount = useMemo(() => {
+    void viewedRevision;
+    if (!user?.id || statusCounts.new === 0) return 0;
+
+    const listResolved =
+      newEventsForUnviewedCount.some((event) => event.status === 'new') ||
+      newEventsListFetched;
+
+    return computeUnviewedNewCount(
+      user.id,
+      newEventsForUnviewedCount,
+      statusCounts.new,
+      listResolved
+    );
+  }, [
+    user?.id,
+    statusCounts.new,
+    newEventsForUnviewedCount,
+    newEventsListFetched,
+    viewedRevision,
+  ]);
+
   // Sync state with role defaults when user loads (handles async user fetch)
   // Only applies defaults if no explicit initialTab was provided (respects URL navigation)
   // and no dashboard drill-down filter is pending (Operational Overview / My Assignments).
@@ -534,6 +609,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     requestsByStatus,
     statusCounts,
     statusCountsLoading,
+    unviewedNewCount,
 
     // View state
     viewMode,
@@ -563,7 +639,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   }), [
     // Query results / data this context owns
     eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
-    requestsByStatus, statusCounts,
+    requestsByStatus, statusCounts, unviewedNewCount,
     // View state this context owns
     quickFilter, viewMode, scheduledViewMode, activeTab, searchQuery, debouncedSearchQuery,
     statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,

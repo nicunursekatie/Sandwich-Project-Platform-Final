@@ -61,6 +61,7 @@ import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
 // Import hooks
 import { useEventMutations } from './hooks/useEventMutations';
+import { useMarkNewEventViewedOnOpen } from './hooks/useMarkNewEventViewedOnOpen';
 import { useEventQueries } from './hooks/useEventQueries';
 import { useEventAssignments } from './hooks/useEventAssignments';
 import { useEventFilters } from './hooks/useEventFilters';
@@ -150,6 +151,7 @@ const EventRequestsManagementContent: React.FC = () => {
     setItemsPerPage,
     statusCounts,
     statusCountsLoading,
+    unviewedNewCount,
     quickFilter,
     setQuickFilter,
   } = useEventRequestContext();
@@ -269,6 +271,27 @@ const EventRequestsManagementContent: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const { markViewedIfNew } = useMarkNewEventViewedOnOpen(user?.id);
+
+  useEffect(() => {
+    const event =
+      activeDialog === 'intakeCall' ? intakeCallEventRequest : selectedEventRequest;
+    if (
+      (activeDialog === 'eventDetails' ||
+        activeDialog === 'eventDetailsPreview' ||
+        activeDialog === 'intakeCall') &&
+      event?.status === 'new'
+    ) {
+      markViewedIfNew(event);
+    }
+  }, [
+    activeDialog,
+    selectedEventRequest,
+    intakeCallEventRequest,
+    markViewedIfNew,
+    user?.id,
+  ]);
 
   const openManualEventRequest = useCallback(() => {
     closeDialog('scheduleCall');
@@ -865,6 +888,7 @@ const EventRequestsManagementContent: React.FC = () => {
             onItemsPerPageChange={setItemsPerPage}
             statusCounts={statusCounts}
             statusCountsLoading={statusCountsLoading}
+            unviewedNewCount={unviewedNewCount}
             totalItems={totalItems}
             totalPages={totalPages}
             children={tabChildren}
@@ -1194,15 +1218,6 @@ const EventRequestsManagementContent: React.FC = () => {
               setIntakeCallEventRequest(null);
             }}
             eventRequest={intakeCallEventRequest}
-            onCallComplete={() => {
-              // Optionally update status to in_process after call
-              if (intakeCallEventRequest) {
-                updateEventRequestMutation.mutate({
-                  id: intakeCallEventRequest.id,
-                  data: { status: 'in_process' },
-                });
-              }
-            }}
           />
         )}
 
