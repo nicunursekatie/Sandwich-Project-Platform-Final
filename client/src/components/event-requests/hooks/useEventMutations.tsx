@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorToast } from '@/hooks/use-error-toast';
-import { apiRequest, invalidateEventRequestQueries, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts, findEventInListCaches, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries, applyPatchResponseToCache, applyEventRequestSaveToCache, patchEventInListCaches, refreshEventRequestListAndCounts, findEventInListCaches, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { logger } from '@/lib/logger';
