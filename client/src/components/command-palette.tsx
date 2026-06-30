@@ -57,7 +57,7 @@ const QUICK_NAV_SHORTCUTS: Record<string, { label: string; href: string; icon: R
   s: { label: 'Settings', href: '/dashboard?section=admin', icon: Settings },
   c: { label: 'Team Chat', href: '/dashboard?section=chat', icon: MessageCircle },
   k: { label: 'Kudos', href: '/dashboard?section=kudos', icon: Trophy },
-  o: { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package },
+  u: { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package },
   l: { label: 'Event Map', href: '/event-map', icon: MapPin },
 };
 
@@ -93,7 +93,7 @@ const NAV_CATEGORIES = [
   {
     label: 'Operations',
     items: [
-      { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package, shortcut: 'O' },
+      { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package, shortcut: 'U' },
       { label: 'Event Map', href: '/event-map', icon: MapPin, shortcut: 'L' },
       { label: 'Analytics', href: '/dashboard?section=analytics', icon: BarChart3, shortcut: 'A' },
     ],

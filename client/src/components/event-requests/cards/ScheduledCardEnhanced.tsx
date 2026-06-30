@@ -1627,6 +1627,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         )}
 
         {/* Partner editing modals */}
+        {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {(() => {
               const index = parseInt(editingField.split('_')[1]);
