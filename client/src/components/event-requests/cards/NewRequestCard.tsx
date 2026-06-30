@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import EventEmailLogDisplay from '@/components/event-email-log-display';
+import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -1515,61 +1515,28 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
         {/* Email Log - shows if any template emails have been sent */}
         <EventEmailLogDisplay eventId={request.id} compact />
 
-        {/* Request-source indicator — a quiet footer line, not a status
-            badge. Helps intake staff know at a glance whether to expect
-            structured form-style data (website / Google Sheet) or
-            free-text data captured during a call/email. Detection
-            prefers the cleaner explicit fields (googleSheetRowId,
-            manualEntrySource) and falls back to the legacy externalId
-            prefix convention. Silently omitted for records where the
-            source can't be inferred so we don't add noise to old data. */}
+        {/* Request-source indicator — mutually exclusive: website submission
+            (Google Sheets sync) vs manual entry by an app user. */}
         {(() => {
-          const externalId = (request as any).externalId as string | undefined;
-          const manualSource = (request as any).manualEntrySource as string | undefined;
-          const sheetId = (request as any).googleSheetRowId as string | undefined;
+          const source = getEventRequestSourceIndicator(request as any);
+          if (!source) return null;
 
-          const isFromSheet =
-            !!sheetId || (externalId?.startsWith('sheets-import-') ?? false);
-          const isManual =
-            !!manualSource || (externalId?.startsWith('manual-') ?? false);
-
-          if (!isFromSheet && !isManual) return null;
-
-          // Sheet detection wins if both somehow match — a record that
-          // synced from sheets but later had a manual source set is still
-          // primarily a sheet-origin record.
-          if (isFromSheet) {
+          if (source.kind === 'website') {
             return (
               <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
                 <Globe className="w-3 h-3 text-gray-400" aria-hidden="true" />
-                <span>From website / Google Sheet</span>
+                <span>Submitted via website</span>
               </div>
             );
           }
 
-          // Manual entry — name the channel if we have it. Falls back to
-          // a generic "manually entered" note when the source field is
-          // empty but the externalId prefix says manual.
-          const channelLabel = (() => {
-            if (!manualSource) return null;
-            const map: Record<string, string> = {
-              phone_call: 'phone call',
-              text_message: 'text message',
-              email: 'email',
-              social_media: 'social media',
-              in_person: 'in person',
-              referral: 'referral',
-              other: 'other channel',
-            };
-            return map[manualSource] || manualSource.replace(/_/g, ' ');
-          })();
           return (
             <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
               <FileText className="w-3 h-3 text-gray-400" aria-hidden="true" />
               <span>
-                {channelLabel
-                  ? `Manually entered (${channelLabel})`
-                  : 'Manually entered'}
+                {source.channelLabel
+                  ? `Manually entered (${source.channelLabel})`
+                  : 'Manually entered in app'}
               </span>
             </div>
           );
