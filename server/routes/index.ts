@@ -88,6 +88,7 @@ import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createAppSettingsRouter } from './app-settings';
 import { createNavUserViewRouter } from './nav-user-view';
+import { createCollectionFavoritesRouter } from './collection-favorites';
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
@@ -1112,6 +1113,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     navUserViewRouter
   );
   router.use('/api/nav-user-view-config', createErrorHandler('nav-user-view-config'));
+
+  // Per-user "notable" bookmarks on collection log entries. Distinct
+  // from the kudos icon (which sends recognition to the submitter) —
+  // these are private bookmarks the user controls.
+  const collectionFavoritesRouter = createCollectionFavoritesRouter(deps);
+  router.use(
+    '/api/collection-favorites',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    collectionFavoritesRouter,
+  );
+  router.use('/api/collection-favorites', createErrorHandler('collection-favorites'));
 
   // AI alert generation
   const aiAlertRouter = createAIAlertRouter(deps);

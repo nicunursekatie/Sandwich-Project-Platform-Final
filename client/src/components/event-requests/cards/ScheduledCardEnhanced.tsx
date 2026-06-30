@@ -482,6 +482,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const driverNeeded = request.driversNeeded || 0;
   const speakerNeeded = request.speakersNeeded || 0;
   const volunteerNeeded = request.volunteersNeeded || 0;
+  const showMarkVanNeeded =
+    canEdit &&
+    !request.selfTransport &&
+    !request.assignedVanDriverId &&
+    !request.isDhlVan &&
+    !request.vanDriverNeeded;
+  const showSpeakerSection =
+    !request.selfTransport &&
+    (speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded'));
+  const showVolunteerSection =
+    !request.selfTransport &&
+    (volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded'));
+  const showCondensedStaffingAdds =
+    !request.selfTransport && !showSpeakerSection && !showVolunteerSection && canEdit;
   // Include van driver in staffing totals as a separate slot
   const vanDriverNeededCount = (request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan) ? 1 : 0;
   const vanDriverAssignedCount = (request.assignedVanDriverId || request.isDhlVan) ? 1 : 0;
@@ -2645,27 +2659,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
-              {/* TSP Contact — moved from Event Details so all people-on-our-side info
-                  sits next to the volunteer Team Assignments. */}
-              {tspContactDisplay && (
-                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group">
-                  <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
-                    <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
-                      {tspContactDisplay}
-                    </div>
-                  </div>
-                  {canEditTspContact && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={onEditTspContact}
-                      className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Edit TSP contact"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
+              {/* TSP Contact + Mark Van Needed — one compact row */}
+              {(tspContactDisplay || showMarkVanNeeded) && (
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group flex-wrap">
+                  {tspContactDisplay ? (
+                    <>
+                      <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
+                          {tspContactDisplay}
+                        </div>
+                      </div>
+                      {canEditTspContact && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={onEditTspContact}
+                          className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Edit TSP contact"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 min-w-0" />
+                  )}
+                  {showMarkVanNeeded && (
+                    <VanNeededBadgeAndButton
+                      eventRequestId={request.id}
+                      vanDriverNeeded={request.vanDriverNeeded}
+                      vanNeededLikely={(request as any).vanNeededLikely}
+                      canEdit={!!canEdit}
+                      simpleToggle
+                      mode="button"
+                    />
                   )}
                 </div>
               )}
@@ -3194,31 +3223,44 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : null}
 
-                {/* Van needed toggle — lives here in Team Assignments (next to the
-                    driver/transport controls) rather than in the bottom action row,
-                    since it switches the event between needing regular drivers and a
-                    van driver. Only the un-set "Mark Van Needed" call-to-action lives
-                    here; once a van is flagged needed the "Van Driver (Needed)" section
-                    above takes over, so this row is hidden then to avoid an empty strip
-                    (VanNeededBadgeAndButton renders nothing in that state). */}
-                {canEdit && !request.selfTransport && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
-                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200">
-                    <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
-                      Van
-                    </span>
-                    <VanNeededBadgeAndButton
-                      eventRequestId={request.id}
-                      vanDriverNeeded={request.vanDriverNeeded}
-                      vanNeededLikely={(request as any).vanNeededLikely}
-                      canEdit={!!canEdit}
-                      simpleToggle
-                      mode="button"
-                    />
+                {/* Condensed add speaker/volunteer when neither role is needed */}
+                {showCondensedStaffingAdds && (
+                  <div className="flex items-center justify-end gap-1 py-0.5 pb-3 border-b border-gray-200">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('speakersNeeded', '1')}
+                          className="h-5 w-5 p-0 text-[#007E8C]"
+                        >
+                          <Megaphone className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add speaker need</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('volunteersNeeded', '1')}
+                          className="h-5 w-5 p-0 text-[#007E8C]"
+                        >
+                          <Users className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add volunteer need</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
 
                 {/* Speakers */}
-                {!request.selfTransport ? ((speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
+                {showSpeakerSection && (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'speakersNeeded' ? (
@@ -3663,28 +3705,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       })}
                     </div>
                   </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('speakersNeeded', '1')}
-                          className="h-5 w-5 p-0 text-[#007E8C]"
-                        >
-                          <Megaphone className="w-3 h-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add speaker need</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                ) : null) : null}
+                )}
 
                 {/* Volunteers */}
-                {!request.selfTransport ? ((volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
+                {showVolunteerSection && (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'volunteersNeeded' ? (
@@ -4101,25 +4125,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       })}
                     </div>
                   </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('volunteersNeeded', '1')}
-                          className="h-5 px-2 text-[#007E8C] text-xs"
-                        >
-                          <Users className="w-3 h-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add volunteer need</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                ) : null) : null}
+                )}
 
                 {/* Attendance */}
                 <div className="flex items-start gap-2 pb-3 border-b border-gray-200">
