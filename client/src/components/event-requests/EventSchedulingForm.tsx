@@ -1135,17 +1135,34 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const completedSections = Object.values(sectionStatus).filter(Boolean).length;
   const totalSections = Object.keys(sectionStatus).length;
 
+  // True whenever ANY nested confirmation/reminder dialog is mounted. The parent
+  // form lives in a non-modal <Dialog modal={false}>, whose dismissable layer
+  // treats focus/pointer churn from a child dialog mounting as an "interaction
+  // outside" and fires the parent's onClose — unmounting the form and reverting
+  // it from server data. (That's the "popup flashes then the edit form refreshes
+  // and my change is gone" bug.) Suppressing onClose while any child is open
+  // covers every nested dialog, not just the standby reminder that was patched
+  // case-by-case before. Each child owns its own close + cleanup, so none of
+  // them rely on the parent closing.
+  const anyNestedDialogOpen =
+    showDateConfirmation ||
+    showSpeakerWarningDialog ||
+    showVanConflictDialog ||
+    showStandbyFollowUpDialog ||
+    showDeleteConfirmation;
+
   // ── Render ─────────────────────────────────────────────────────────
 
   return (
     <Dialog
       open={dialogOpen}
-      // Don't let the form be dismissed out from under the standby reminder
-      // dialog. While that nested AlertDialog is open it owns the interaction;
-      // a close request to the parent here (e.g. a stray focus/pointer-outside
-      // from the non-modal layer) must be ignored so the reminder flow isn't
-      // torn down mid-decision. The user closes the reminder via Cancel/Save.
-      onOpenChange={(open) => { if (!open && !showStandbyFollowUpDialog) onClose(); }}
+      // Don't let the form be dismissed out from under any nested dialog. While
+      // a child confirmation/reminder is open it owns the interaction; a close
+      // request to the parent here (e.g. a stray focus/pointer-outside from the
+      // non-modal layer, including the focus churn of a child mounting) must be
+      // ignored so the flow isn't torn down mid-decision. The user closes each
+      // child via its own Cancel/Save. See anyNestedDialogOpen above.
+      onOpenChange={(open) => { if (!open && !anyNestedDialogOpen) onClose(); }}
       modal={false}
     >
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
