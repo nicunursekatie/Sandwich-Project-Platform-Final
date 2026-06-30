@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
+import EventEmailLogDisplay from '@/components/event-email-log-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
